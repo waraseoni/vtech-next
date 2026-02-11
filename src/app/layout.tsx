@@ -1,97 +1,107 @@
+"use client";
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
-  LayoutDashboard, 
-  Users, 
-  Package, 
-  FileText, 
-  Settings, 
-  Wrench 
+  LayoutDashboard, Users, Package, FileText, 
+  Settings, Wrench 
 } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkSize = () => setIsMobile(window.innerWidth < 992);
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
+  const isActive = (path: string) => pathname === path;
+
   return (
     <html lang="en">
-      <body style={{ margin: 0, display: 'flex', minHeight: '100vh', backgroundColor: '#f4f6f9', fontFamily: 'sans-serif' }}>
+      <body style={{ margin: 0, backgroundColor: '#f4f6f9', fontFamily: 'sans-serif' }}>
         
-        {/* --- GLOBAL SIDEBAR --- */}
-        <div style={{ width: '250px', backgroundColor: '#343a40', color: '#c2c7d0', display: 'flex', flexDirection: 'column', position: 'fixed', height: '100vh', zIndex: 100 }}>
-          <div style={{ padding: '20px', textAlign: 'center', borderBottom: '1px solid #4b545c', color: 'white', fontWeight: 'bold', fontSize: '20px' }}>
-            V-TECH <span style={{ fontWeight: 'lighter', color: '#adb5bd' }}>Admin</span>
-          </div>
-          
-          <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <Link href="/" style={navStyle}>
-              <LayoutDashboard size={18}/> Dashboard
-            </Link>
-            
-            <Link href="/jobs" style={navStyle}>
-              <Wrench size={18}/> Job Management
-            </Link>
-            
-            <Link href="/clients" style={navStyle}>
-              <Users size={18}/> Client Management
-            </Link>
-            
-            <Link href="/inventory" style={navStyle}>
-              <Package size={18}/> Inventory / Spares
-            </Link>
-            
-            <Link href="/reports" style={navStyle}>
-              <FileText size={18}/> Reports / Khata
-            </Link>
-          </div>
+        {/* --- 1. SIDEBAR (PC View) --- */}
+        {!isMobile && (
+          <aside style={sidebarStyle}>
+            <div style={sidebarHeader}>V-TECH <span style={{fontWeight: 'lighter'}}>Admin</span></div>
+            <nav style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <NavLink href="/" icon={<LayoutDashboard size={20}/>} label="Dashboard" active={isActive('/')} />
+              <NavLink href="/jobs" icon={<Wrench size={20}/>} label="Jobs" active={isActive('/jobs')} />
+              <NavLink href="/clients" icon={<Users size={20}/>} label="Clients" active={isActive('/clients')} />
+              <NavLink href="/inventory" icon={<Package size={20}/>} label="Inventory" active={isActive('/inventory')} />
+              <NavLink href="/reports" icon={<FileText size={20}/>} label="Reports" active={isActive('/reports')} />
+              <NavLink href="/settings" icon={<Settings size={20}/>} label="Settings" active={isActive('/settings')} />
+            </nav>
+          </aside>
+        )}
 
-          {/* Bottom Settings Link */}
-          <div style={{ marginTop: 'auto', padding: '15px', borderTop: '1px solid #4b545c' }}>
-            <Link href="/settings" style={navStyle}>
-              <Settings size={18}/> Settings
-            </Link>
-          </div>
-        </div>
-
-        {/* --- MAIN CONTENT AREA --- */}
-        <div style={{ marginLeft: '250px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-          {/* Top Navbar */}
-          <nav style={{ 
-            height: '57px', 
-            backgroundColor: 'white', 
-            borderBottom: '1px solid #dee2e6', 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '0 20px', 
-            justifyContent: 'space-between',
-            position: 'sticky',
-            top: 0,
-            zIndex: 50
-          }}>
-            <span style={{ color: '#666', fontWeight: 'bold' }}>V-Tech Workshop Management System</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '12px', color: '#999', background: '#eee', padding: '2px 8px', borderRadius: '10px' }}>v2.0</span>
-              <div style={{ width: '30px', height: '30px', background: '#007bff', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>V</div>
-            </div>
-          </nav>
-
-          {/* Page Content */}
-          <main style={{ padding: '25px' }}>
+        {/* --- 2. MAIN CONTENT AREA --- */}
+        <div style={{ 
+          marginLeft: isMobile ? '0' : '250px', 
+          flex: 1, 
+          minHeight: '100vh' 
+        }}>
+          <main style={{ padding: '20px', paddingBottom: isMobile ? '90px' : '20px' }}>
             {children}
           </main>
         </div>
 
+        {/* --- 3. BOTTOM NAVIGATION (Mobile View) --- */}
+        {isMobile && (
+          <nav style={bottomNavStyle}>
+            <FooterLink href="/" icon={<LayoutDashboard size={22}/>} label="Home" active={isActive('/')} />
+            <FooterLink href="/jobs" icon={<Wrench size={22}/>} label="Jobs" active={isActive('/jobs')} />
+            <FooterLink href="/clients" icon={<Users size={22}/>} label="Clients" active={isActive('/clients')} />
+            <FooterLink href="/inventory" icon={<Package size={22}/>} label="Stock" active={isActive('/inventory')} />
+            <FooterLink href="/settings" icon={<Settings size={22}/>} label="Settings" active={isActive('/settings')} />
+          </nav>
+        )}
       </body>
     </html>
   );
 }
 
-const navStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '12px',
-  padding: '12px 15px',
-  color: '#c2c7d0',
-  textDecoration: 'none',
-  fontSize: '15px',
-  borderRadius: '6px',
-  transition: 'all 0.2s ease',
-  // Hover effect CSS is handled by browser usually, 
-  // for Next.js it's better to use a class, but keeping inline for simplicity:
+// --- Helper Components ---
+const NavLink = ({ href, icon, label, active }: any) => (
+  <Link href={href} style={{
+    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 15px',
+    textDecoration: 'none', borderRadius: '6px', fontSize: '15px',
+    backgroundColor: active ? '#495057' : 'transparent',
+    color: active ? 'white' : '#c2c7d0',
+    transition: '0.2s'
+  }}>
+    {icon} {label}
+  </Link>
+);
+
+const FooterLink = ({ href, icon, label, active }: any) => (
+  <Link href={href} style={{
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    textDecoration: 'none', flex: 1, color: active ? '#007bff' : '#666'
+  }}>
+    {icon}
+    <span style={{ fontSize: '10px', marginTop: '4px' }}>{label}</span>
+  </Link>
+);
+
+// --- Styles ---
+const sidebarStyle: React.CSSProperties = {
+  width: '250px', backgroundColor: '#343a40', color: 'white',
+  position: 'fixed', height: '100vh', display: 'flex', flexDirection: 'column'
+};
+
+const sidebarHeader: React.CSSProperties = { 
+  padding: '20px', textAlign: 'center', fontSize: '20px', 
+  fontWeight: 'bold', borderBottom: '1px solid #4b545c', marginBottom: '10px'
+};
+
+const bottomNavStyle: React.CSSProperties = {
+  position: 'fixed', bottom: 0, left: 0, right: 0, height: '70px',
+  backgroundColor: 'white', borderTop: '1px solid #ddd',
+  display: 'flex', justifyContent: 'space-around', alignItems: 'center',
+  zIndex: 1000, paddingBottom: '10px'
 };
