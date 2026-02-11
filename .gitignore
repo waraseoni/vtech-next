@@ -1,6 +1,7 @@
 # --- V-TECH PROJECT GITIGNORE ---
 
-# Dependencies (Inhe GitHub par nahi dalna kyunki ye bahut bhari hoti hain)
+# 1. Dependencies
+# Ye folders 'npm install' se wapas aa jate hain, inko save karne ki zaroorat nahi.
 node_modules/
 /node_modules
 .pnp
@@ -11,31 +12,44 @@ node_modules/
 !.yarn/releases
 !.yarn/versions
 
-# Next.js Build Output
+# 2. Build & Production Outputs
+# Next.js aur static builds ka kachra
 .next/
 /out/
 build/
+dist/
+.cache/
 
-# Secret Environment Variables (SABSE ZAROORI - Ye kabhi commit nahi honi chahiye)
+# 3. Secret Environment Variables (CRITICAL)
+# Inhe galti se bhi push mat karna, warna security risk ho jayega.
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env*.local
 *.env*
+!.env.example  # Example file ko allow rakha hai taaki team ko pata chale kya setup karna hai
 
-# Vercel
+# 4. Vercel & Deployment
 .vercel
+.turbo
 
-# Logs aur Debugging files
+# 5. Logs aur Debugging
+# Jab code fat-ta hai toh ye files banti hain, inki repo mein zarurat nahi.
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 logs
 *.log
+error.log
 
-# OS related (Mac aur Windows ki faltu files)
+# 6. IDE & Editors
+# VS Code ya WebStorm ki personal settings
+.vscode/
+.idea/
+*.swp
+*.swo
+.project
+
+# 7. OS Related (Mac/Windows Junk)
 .DS_Store
 .DS_Store?
 ._*
@@ -43,9 +57,14 @@ Thumbs.db
 ehthumbs.db
 desktop.ini
 
-# TypeScript
+# 8. TypeScript & Testing
 *.tsbuildinfo
 next-env.d.ts
-
-# Testing
 /coverage
+.nyc_output
+
+# 9. Miscellaneous
+# Temporary files aur backups
+*.bak
+*.tmp
+.eslintcache
