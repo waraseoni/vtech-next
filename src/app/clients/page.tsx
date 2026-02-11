@@ -82,19 +82,22 @@ export default function ClientsListPage() {
 }
 
 // Reuse your existing styles...
-const pageContainer = { padding: '10px' };
-const headerSection = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' };
-const btnPrimary = { backgroundColor: '#007bff', color: 'white', padding: '10px 20px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' };
-const toolbarSection = { display: 'flex', gap: '20px', marginBottom: '20px' };
-const searchWrapper = { position: 'relative', flex: 1 };
-const searchIcon = { position: 'absolute', left: '12px', top: '12px', color: '#888' };
-const searchInput = { width: '100%', padding: '12px 40px', borderRadius: '8px', border: '1px solid #ddd' };
-const statsBadge = { padding: '10px 15px', background: '#eef2f7', borderRadius: '8px' };
-const tableWrapper = { background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden' };
-const mainTable = { width: '100%', borderCollapse: 'collapse' as 'collapse' };
-const tableHeader = { backgroundColor: '#f8f9fa' };
-const thStyle = { padding: '15px', textAlign: 'left' as 'left', fontSize: '12px', color: '#666' };
-const tdStyle = { padding: '15px', borderBottom: '1px solid #f1f1f1' };
-const trStyle = { transition: '0.2s' };
-const btnAction = { color: '#007bff', textDecoration: 'none', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center' };
-const loaderContainer: any = { padding: '60px', textAlign: 'center' };
+// ... (Upar ka code wahi rahega)
+
+// --- Styles with Type Safety ---
+const containerStyle = { padding: '20px', maxWidth: '1200px', margin: '0 auto' };
+const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' };
+const btnAdd = { backgroundColor: '#007bff', color: 'white', padding: '10px 20px', borderRadius: '8px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' as 'bold' };
+const toolbarSection = { display: 'flex', gap: '15px', marginBottom: '20px', alignItems: 'center' };
+
+// IN DONO MEIN React.CSSProperties LAGANA ZAROORI THA
+const searchWrapper: React.CSSProperties = { position: 'relative', flex: 1 };
+const searchIcon: React.CSSProperties = { position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#888' };
+
+const searchInput = { width: '100%', padding: '12px 12px 12px 40px', borderRadius: '10px', border: '1px solid #ddd', fontSize: '15px', outline: 'none' };
+const tableCard = { background: 'white', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden' };
+const tableStyle = { width: '100%', borderCollapse: 'collapse' as 'collapse' };
+const thStyle = { backgroundColor: '#f8f9fa', padding: '15px', textAlign: 'left' as 'left', borderBottom: '2px solid #eee', color: '#666', fontSize: '14px' };
+const trStyle = { borderBottom: '1px solid #eee' };
+const tdStyle = { padding: '15px', fontSize: '15px', verticalAlign: 'middle' as 'middle' };
+const btnAction = { color: '#007bff', textDecoration: 'none', fontSize: '14px', fontWeight: 'bold' as 'bold', display: 'flex', alignItems: 'center', gap: '5px' };
