@@ -1,158 +1,256 @@
 "use client";
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, use, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { 
-  ArrowLeft, Edit3, Printer, Smartphone, User, 
-  CheckCircle2, Clock, MapPin, Phone, IndianRupee, 
-  Loader2 
+  Save, ArrowLeft, Loader2, IndianRupee, 
+  Cpu, CheckCircle2, PackagePlus, X, Search, User, Phone, ChevronDown, Check, Smartphone
 } from 'lucide-react';
+import Link from 'next/link';
 
-export default function ViewJobPage({ params }: { params: Promise<{ id: string }> }) {
+export default function EditJobPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const [job, setJob] = useState<any>(null);
+  const router = useRouter();
+  const jobId = resolvedParams.id;
+  
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [inventory, setInventory] = useState<any[]>([]);
+  const [allClients, setAllClients] = useState<any[]>([]);
+  const [invSearch, setInvSearch] = useState("");
+  
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [clientSearch, setClientSearch] = useState("");
+  const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [jobData, setJobData] = useState<any>(null);
 
-  // --- 1. Data Fetch karne ka function ---
-  const fetchJob = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('jobs')
-        .select('*, clients(*)')
-        .eq('id', resolvedParams.id)
-        .single();
-      
-      if (error) throw error;
-      setJob(data);
-    } catch (err) {
-      console.error("Error fetching job:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [form, setForm] = useState({ 
+    item_name: "", 
+    problem: "", 
+    status: "Pending", 
+    final_bill: 0,
+    used_parts_list: [] as {name: string, price: number}[]
+  });
 
   useEffect(() => {
-    fetchJob();
-  }, [resolvedParams.id]);
+    async function getData() {
+      if (!jobId) return;
+      setLoading(true);
+      const [jobRes, invRes, clientRes] = await Promise.all([
+        supabase.from('jobs').select('*, clients(*)').eq('id', jobId).single(),
+        supabase.from('inventory').select('id, partname, price, stock').order('partname'),
+        supabase.from('clients').select('*').order('name')
+      ]);
 
-  // --- 2. Status Change karne ka function (Andar hona chahiye) ---
-  const handleStatusChange = async (newStatus: string) => {
-    if (!job?.id) return;
-
-    setUpdating(true);
-    const { error } = await supabase
-      .from('jobs')
-      .update({ status: newStatus })
-      .eq('id', job.id);
-
-    if (error) {
-      alert("Status update fail!");
-    } else {
-      await fetchJob(); // Turant naya data dikhao
+      if (jobRes.data) {
+        setJobData(jobRes.data);
+        setSelectedClient(jobRes.data.clients);
+        const existingParts = jobRes.data.used_parts 
+          ? jobRes.data.used_parts.split(', ').map((p: string) => ({ name: p, price: 0 })) 
+          : [];
+        setForm({
+          item_name: jobRes.data.item_name || "",
+          problem: jobRes.data.problem || "",
+          status: jobRes.data.status || "Pending",
+          final_bill: jobRes.data.final_bill || 0,
+          used_parts_list: existingParts
+        });
+      }
+      if (invRes.data) setInventory(invRes.data);
+      if (clientRes.data) setAllClients(clientRes.data);
+      setLoading(false);
     }
-    setUpdating(false);
+    getData();
+  }, [jobId]);
+
+  const handleAddPart = (part: any) => {
+    setForm(prev => ({
+      ...prev,
+      used_parts_list: [...prev.used_parts_list, { name: part.partname, price: Number(part.price) }],
+      final_bill: prev.final_bill + (Number(part.price) || 0)
+    }));
+  };
+
+  const handleRemovePart = (index: number) => {
+    const partToRemove = form.used_parts_list[index];
+    setForm(prev => ({
+      ...prev,
+      used_parts_list: prev.used_parts_list.filter((_, i) => i !== index),
+      final_bill: Math.max(0, prev.final_bill - (partToRemove.price || 0))
+    }));
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    const partsString = form.used_parts_list.map(p => p.name).join(', ');
+    const { error } = await supabase.from('jobs').update({
+      client_id: selectedClient?.id,
+      item_name: form.item_name,
+      problem: form.problem,
+      status: form.status,
+      final_bill: Number(form.final_bill),
+      used_parts: partsString
+    }).eq('id', jobId);
+
+    if (!error) {
+      alert("Job Record Updated! ✅");
+      router.push('/jobs');
+    }
+    setSaving(false);
   };
 
   if (loading) return (
-    <div style={centerText}>
-      <Loader2 className="animate-spin" size={32} />
-      <p>Loading Job Details...</p>
+    <div className="flex justify-center items-center min-h-screen">
+      <Loader2 className="animate-spin text-blue-600" size={40} />
     </div>
   );
 
-  if (!job) return <div style={centerText}>Job record not found!</div>;
-
   return (
-    <div style={containerStyle}>
-      <div style={headerStyle}>
-        <Link href="/jobs" style={backLink}><ArrowLeft size={18} /> Back to List</Link>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={() => window.print()} style={btnSecondary}><Printer size={18} /> Print</button>
-          <Link href={`/jobs/${job.id}/edit`} style={btnEdit}><Edit3 size={18} /> Edit Job</Link>
-        </div>
-      </div>
-
-      <div style={mainGrid}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Status Update Section */}
-          <div style={{ ...cardStyle, borderTop: `6px solid ${getStatusColor(job.status)}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-              <p style={labelStyle}>Update Job Status</p>
-              {updating && <Loader2 className="animate-spin" size={18} />}
+    <div className="max-w-6xl mx-auto px-4 py-4 md:py-8 font-sans">
+      
+      {/* 1. Header & Client Info - Compact Style */}
+      <div className="bg-zinc-950 rounded-3xl p-6 mb-6 text-white shadow-xl border-b-4 border-blue-600">
+        <div className="flex flex-wrap justify-between items-start gap-4">
+          <div className="flex items-center gap-4">
+            <Link href="/jobs" className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-white transition-all">
+              <ArrowLeft size={20}/>
+            </Link>
+            <div>
+              <p className="text-[10px] font-black uppercase text-blue-400 tracking-widest mb-1 italic">Ticket #VT-{jobId}</p>
+              <h1 className="text-xl md:text-2xl font-black uppercase tracking-tight italic m-0">{form.item_name || "Device Detail"}</h1>
             </div>
-            <select 
-              value={job.status} 
-              onChange={(e) => handleStatusChange(e.target.value)}
-              disabled={updating}
-              style={{ ...statusDropdown, borderColor: getStatusColor(job.status) }}
+          </div>
+
+          <div className="relative">
+            <button 
+              onClick={() => setIsClientModalOpen(!isClientModalOpen)}
+              className="flex items-center gap-3 bg-zinc-900 border border-zinc-700 p-3 rounded-2xl hover:border-blue-500 transition-all text-left group"
             >
-              <option value="Pending">🟡 Pending</option>
-              <option value="In-Progress">🔵 In-Progress</option>
-              <option value="Repaired">🟢 Repaired</option>
-              <option value="Delivered">⚪ Delivered</option>
-              <option value="Cancelled">🔴 Cancelled</option>
-            </select>
-          </div>
+              <div className="p-2 bg-blue-600/10 rounded-lg text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                <User size={18} />
+              </div>
+              <div className="mr-4">
+                <p className="text-[10px] font-bold text-zinc-500 uppercase m-0">Client Name</p>
+                <p className="text-sm font-black m-0 italic">{selectedClient?.name || "Select Client"}</p>
+              </div>
+              <ChevronDown size={16} className="text-zinc-500" />
+            </button>
 
-          <div style={cardStyle}>
-            <h3 style={sectionTitle}><Smartphone size={18} /> Device Details</h3>
-            <div style={infoRow}><span>Model:</span> <b>{job.item_name}</b></div>
-            <div style={infoRow}><span>IMEI/Serial:</span> <b>{job.serial_no || 'N/A'}</b></div>
-            <hr style={divider} />
-            <p style={labelStyle}>Problem Description:</p>
-            <p style={problemText}>{job.problem || 'No description provided.'}</p>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={cardStyle}>
-            <h3 style={sectionTitle}><User size={18} /> Customer Info</h3>
-            <div style={clientInfoBox}>
-              <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '0 0 10px 0' }}>{job.clients?.name}</p>
-              <p style={infoRow}><Phone size={14} /> {job.clients?.mobile}</p>
-              <p style={infoRow}><MapPin size={14} /> {job.clients?.address || 'N/A'}</p>
-            </div>
-          </div>
-
-          <div style={billingCard}>
-            <p style={{ margin: 0, opacity: 0.9 }}>Final Bill Amount</p>
-            <div style={{ display: 'flex', alignItems: 'center', fontSize: '32px', fontWeight: 'bold' }}>
-              <IndianRupee size={28} /> {job.final_bill}
-            </div>
+            {isClientModalOpen && (
+              <div className="absolute right-0 top-full mt-2 w-72 bg-white text-zinc-950 rounded-2xl shadow-2xl z-50 p-3 border-2 border-zinc-900 animate-in fade-in zoom-in-95">
+                <input placeholder="Search Client..." className="w-full p-3 bg-zinc-100 rounded-xl border-none mb-2 font-bold text-xs"
+                  onChange={e => setClientSearch(e.target.value)} />
+                <div className="max-h-48 overflow-y-auto">
+                  {allClients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase())).map(c => (
+                    <div key={c.id} onClick={() => { setSelectedClient(c); setIsClientModalOpen(false); }}
+                      className="p-3 rounded-xl hover:bg-zinc-950 hover:text-white cursor-pointer transition-all flex justify-between items-center text-xs font-black italic">
+                      {c.name} {selectedClient?.id === c.id && <Check size={14} className="text-blue-500"/>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      <form onSubmit={handleUpdate} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* LEFT COLUMN: Device Info & Inventory */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-zinc-200">
+            <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4 flex items-center gap-2 italic">
+              <Smartphone size={16}/> Device Details
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Device Model</label>
+                <input className="w-full p-3 bg-zinc-50 border-2 border-zinc-100 rounded-xl font-bold text-zinc-900 focus:border-blue-600 outline-none transition-all"
+                  value={form.item_name} onChange={e => setForm({...form, item_name: e.target.value})} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Status</label>
+                <select className="w-full p-3 bg-zinc-50 border-2 border-zinc-900 rounded-xl font-black text-zinc-900 outline-none italic"
+                  value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
+                  <option value="Pending">⚠️ Pending</option>
+                  <option value="In-Progress">⚙️ In-Progress</option>
+                  <option value="Repaired">🛠️ Repaired</option>
+                  <option value="Delivered">✅ Delivered</option>
+                </select>
+              </div>
+              <div className="md:col-span-2 space-y-1">
+                <label className="text-[10px] font-black uppercase text-red-500 ml-1">Issue / Problem</label>
+                <textarea className="w-full p-3 bg-zinc-50 border-2 border-zinc-100 rounded-xl font-bold text-zinc-900 h-20 resize-none outline-none focus:border-red-400"
+                  value={form.problem} onChange={e => setForm({...form, problem: e.target.value})} />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-50/50 rounded-3xl p-6 border-2 border-blue-100 shadow-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-sm font-black uppercase tracking-widest text-blue-700 italic flex items-center gap-2">
+                <PackagePlus size={18}/> Inventory Selection
+              </h2>
+              <div className="relative w-48">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-300" size={14} />
+                <input placeholder="Search Part..." className="w-full pl-9 pr-4 py-2 bg-white border-none rounded-xl text-[11px] font-bold outline-none ring-1 ring-blue-100 focus:ring-blue-400 shadow-sm"
+                  onChange={e => setInvSearch(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+              {inventory.filter(i => i.partname?.toLowerCase().includes(invSearch.toLowerCase())).map(item => (
+                <button key={item.id} type="button" onClick={() => handleAddPart(item)}
+                  className="flex justify-between items-center p-3 bg-white border border-blue-100 hover:border-zinc-950 rounded-xl transition-all group">
+                  <span className="text-[11px] font-bold text-zinc-700 uppercase group-hover:text-zinc-950">{item.partname}</span>
+                  <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-md">₹{item.price}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Parts Used & Billing */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="bg-zinc-50 rounded-3xl p-6 border-2 border-zinc-100 shadow-sm">
+            <h2 className="text-sm font-black uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2 italic">
+              <Cpu size={18} className="text-blue-600"/> Selected Parts
+            </h2>
+            <div className="flex flex-wrap gap-2 min-h-[120px] p-4 bg-white border-2 border-dashed border-zinc-200 rounded-2xl content-start">
+              {form.used_parts_list.length === 0 && (
+                <div className="flex flex-col items-center justify-center w-full h-full text-zinc-300 gap-2 opacity-50">
+                  <PackagePlus size={24}/>
+                  <span className="text-[10px] font-bold italic">No items from stock added</span>
+                </div>
+              )}
+              {form.used_parts_list.map((part, idx) => (
+                <div key={idx} className="flex items-center gap-2 bg-zinc-900 text-white pl-3 pr-1 py-1.5 rounded-xl animate-in fade-in zoom-in-95">
+                  <span className="text-[10px] font-black italic uppercase">{part.name}</span>
+                  <button type="button" onClick={() => handleRemovePart(idx)} className="p-1 hover:text-red-400 transition-colors">
+                    <X size={14} strokeWidth={3} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-emerald-600 rounded-3xl p-6 text-white shadow-xl shadow-emerald-900/10">
+            <label className="text-[10px] font-black uppercase tracking-widest text-emerald-100 mb-3 block italic ml-1">Total Repair Bill</label>
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-emerald-700/50 rounded-2xl">
+                <IndianRupee size={28} className="text-white"/>
+              </div>
+              <input type="number" className="bg-transparent border-none text-4xl font-black text-white outline-none w-full italic"
+                value={form.final_bill} onChange={e => setForm({...form, final_bill: Number(e.target.value)})} />
+            </div>
+          </div>
+
+          <button type="submit" disabled={saving} className="w-full py-5 bg-zinc-950 hover:bg-blue-600 text-white rounded-[2rem] font-black text-lg uppercase italic tracking-tighter transition-all shadow-xl active:scale-95 disabled:bg-zinc-400 flex items-center justify-center gap-3">
+            {saving ? <Loader2 className="animate-spin" /> : <Save size={20} />}
+            {saving ? "UPDATING..." : "SAVE & CONFIRM"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
-
-// --- Styles with Type Safety ---
-const containerStyle: React.CSSProperties = { padding: '30px', maxWidth: '1100px', margin: '0 auto', backgroundColor: '#f4f7f6', minHeight: '100vh' };
-const headerStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' };
-const backLink: React.CSSProperties = { textDecoration: 'none', color: '#555', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' };
-const mainGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '25px' };
-const cardStyle: React.CSSProperties = { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' };
-const billingCard: React.CSSProperties = { backgroundColor: '#007bff', color: 'white', padding: '25px', borderRadius: '12px' };
-const sectionTitle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '16px', margin: '0 0 20px 0', borderBottom: '1px solid #eee', paddingBottom: '10px' };
-const infoRow: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '15px' };
-const labelStyle: React.CSSProperties = { fontSize: '12px', color: '#888', textTransform: 'uppercase', fontWeight: 'bold' };
-const problemText: React.CSSProperties = { backgroundColor: '#fff9e6', padding: '15px', borderRadius: '8px', color: '#856404', marginTop: '10px', fontSize: '14px' };
-const clientInfoBox: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '8px' };
-const divider: React.CSSProperties = { border: 'none', borderTop: '1px solid #eee', margin: '15px 0' };
-const centerText: any = { textAlign: 'center', padding: '100px', fontSize: '18px', color: '#666', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' };
-const btnEdit: React.CSSProperties = { backgroundColor: '#28a745', color: 'white', padding: '10px 20px', borderRadius: '8px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' };
-const btnSecondary: React.CSSProperties = { backgroundColor: 'white', border: '1px solid #ddd', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' };
-const statusDropdown: React.CSSProperties = { width: '100%', padding: '12px', borderRadius: '8px', border: '2px solid', fontSize: '16px', fontWeight: 'bold', outline: 'none', cursor: 'pointer' };
-
-const getStatusColor = (s: string) => {
-  switch (s) {
-    case 'Pending': return '#ffc107';
-    case 'In-Progress': return '#17a2b8';
-    case 'Repaired': return '#28a745';
-    case 'Delivered': return '#6c757d';
-    case 'Cancelled': return '#dc3545';
-    default: return '#007bff';
-  }
-};

@@ -2,15 +2,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Save, ArrowLeft, User, Smartphone, Hash, AlertCircle, IndianRupee, Search, Check } from 'lucide-react';
+import { Save, ArrowLeft, User, Smartphone, Hash, AlertCircle, IndianRupee, Search, Check, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NewJob() {
   const router = useRouter();
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  
-  // Searchable Dropdown States
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
@@ -26,8 +24,6 @@ export default function NewJob() {
 
   useEffect(() => {
     supabase.from('clients').select('*').then(({ data }) => setClients(data || []));
-
-    // Bahar click karne par dropdown band karne ke liye
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -37,7 +33,6 @@ export default function NewJob() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filter logic for search
   const filteredClients = clients.filter(c => 
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     (c.mobile && c.mobile.includes(searchQuery))
@@ -55,14 +50,12 @@ export default function NewJob() {
       alert("Please select a customer and enter item name.");
       return;
     }
-
     setLoading(true);
     const { error } = await supabase.from('jobs').insert([{
       ...formData,
       client_id: parseInt(formData.client_id),
       final_bill: parseInt(formData.labour_charges)
     }]);
-
     if (!error) router.push('/jobs');
     else {
       alert("Error: " + error.message);
@@ -71,156 +64,144 @@ export default function NewJob() {
   };
 
   return (
-    <div style={pageWrapper}>
-      <div style={containerStyle}>
-        <div style={headerNav}>
-          <Link href="/jobs" style={backBtn}><ArrowLeft size={18} /> Back</Link>
+    <div className="max-w-5xl mx-auto px-4 py-6">
+      {/* Header Section */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <Link href="/jobs" className="p-2.5 bg-zinc-950 text-white rounded-xl hover:bg-blue-600 transition-all shadow-md">
+            <ArrowLeft size={20} />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-black text-zinc-950 m-0 uppercase italic tracking-tighter">Create New Job</h1>
+            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Job Entry Terminal</p>
+          </div>
         </div>
+      </div>
 
-        <div style={cardHeader}>
-          <h3 style={{ margin: 0 }}>Create New Job Card</h3>
-        </div>
+      {/* Main Form Card */}
+      <div className="bg-white rounded-[2rem] shadow-2xl border-2 border-zinc-200 overflow-hidden">
+        <div className="p-6 md:p-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-8">
+            
+            {/* Column 1: Customer & Device */}
+            <div className="space-y-6">
+              <div className="relative" ref={dropdownRef}>
+                <label className="text-sm font-black text-zinc-950 uppercase mb-3 block tracking-tight">1. Customer Information</label>
+                <button 
+                  onClick={() => setIsOpen(!isOpen)}
+                  className={`w-full flex items-center justify-between p-4 bg-white border-2 rounded-2xl transition-all text-left outline-none
+                    ${isOpen ? 'border-blue-600 ring-4 ring-blue-50' : 'border-zinc-300 hover:border-zinc-400'}`}
+                >
+                  {selectedClient ? (
+                    <div className="flex flex-col">
+                      <span className="font-black text-zinc-950 text-base italic">{selectedClient.name}</span>
+                      <span className="text-blue-600 font-bold text-sm">{selectedClient.mobile}</span>
+                    </div>
+                  ) : (
+                    <span className="text-zinc-500 font-bold">Search Customer (Name/Mobile)...</span>
+                  )}
+                  <ChevronDown size={20} className="text-zinc-950" />
+                </button>
 
-        <div style={formGrid}>
-          {/* CUSTOM SEARCHABLE DROPDOWN */}
-          <div style={inputGroupFull} ref={dropdownRef}>
-            <label style={labelStyle}><User size={14} /> Search Customer</label>
-            <div style={{ position: 'relative' }}>
-              <div 
-                style={customSelectTrigger} 
-                onClick={() => setIsOpen(!isOpen)}
-              >
-                {selectedClient ? (
-                  <span style={{color: '#333'}}><b>{selectedClient.name}</b> - {selectedClient.mobile}</span>
-                ) : (
-                  <span style={{color: '#888'}}>Type name or mobile...</span>
-                )}
-                <Search size={16} style={{color: '#888'}} />
-              </div>
-
-              {isOpen && (
-                <div style={dropdownMenu}>
-                  <input
-                    autoFocus
-                    placeholder="Type to search..."
-                    style={searchInput}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  <div style={optionsContainer}>
-                    {filteredClients.length > 0 ? (
-                      filteredClients.map(c => (
+                {isOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-3 bg-white border-2 border-zinc-900 rounded-2xl shadow-2xl z-50 p-4">
+                    <div className="relative mb-3">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+                      <input
+                        autoFocus
+                        placeholder="Type to search..."
+                        className="w-full pl-10 pr-4 py-3 bg-zinc-100 border-none rounded-xl text-zinc-950 font-black text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                    <div className="max-h-56 overflow-y-auto space-y-1 custom-scrollbar">
+                      {filteredClients.map(c => (
                         <div 
                           key={c.id} 
-                          style={optionItem} 
-                          onClick={() => handleSelectClient(c)}
+                          onClick={() => handleSelectClient(c)} 
+                          className="flex items-center justify-between p-3.5 rounded-xl hover:bg-zinc-950 hover:text-white cursor-pointer transition-all group"
                         >
                           <div>
-                            <div style={{fontWeight: '600'}}>{c.name}</div>
-                            <div style={{fontSize: '12px', color: '#666'}}>{c.mobile}</div>
+                            <div className="text-sm font-black italic">{c.name}</div>
+                            <div className="text-[11px] font-bold opacity-70 tracking-tighter">{c.mobile}</div>
                           </div>
-                          {selectedClient?.id === c.id && <Check size={16} color="#28a745" />}
+                          {selectedClient?.id === c.id && <Check size={16} className="text-emerald-500" />}
                         </div>
-                      ))
-                    ) : (
-                      <div style={{padding: '10px', color: '#888', textAlign: 'center'}}>No customer found</div>
-                    )}
+                      ))}
+                    </div>
                   </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-zinc-950 uppercase block tracking-tight">Device Model</label>
+                  <input 
+                    className="w-full p-4 bg-white border-2 border-zinc-300 rounded-2xl text-zinc-950 font-black outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-50 transition-all placeholder:text-zinc-300"
+                    placeholder="e.g. iPhone 15 Pro"
+                    onChange={(e) => setFormData({ ...formData, item_name: e.target.value })} 
+                  />
                 </div>
-              )}
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-zinc-950 uppercase block tracking-tight">Serial / IMEI</label>
+                  <input 
+                    className="w-full p-4 bg-white border-2 border-zinc-300 rounded-2xl text-zinc-950 font-black outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-50 transition-all placeholder:text-zinc-300"
+                    placeholder="Enter IMEI number"
+                    onChange={(e) => setFormData({ ...formData, serial_no: e.target.value })} 
+                  />
+                </div>
+              </div>
             </div>
+
+            {/* Column 2: Problem & Bill */}
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-black text-zinc-950 uppercase block tracking-tight">Problem Details</label>
+                <textarea 
+                  className="w-full p-4 bg-white border-2 border-zinc-300 rounded-2xl text-zinc-950 font-black outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-50 transition-all h-[120px] resize-none placeholder:text-zinc-300"
+                  placeholder="What is the issue with the device?"
+                  onChange={(e) => setFormData({ ...formData, problem: e.target.value })} 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-black text-zinc-950 uppercase block tracking-tight">Labour Charges (Estimate)</label>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-zinc-950 text-white rounded-lg flex items-center justify-center">
+                    <IndianRupee size={16} />
+                  </div>
+                  <input 
+                    type="number"
+                    className="w-full p-4 pl-16 bg-white border-2 border-zinc-300 rounded-2xl text-2xl font-black text-emerald-700 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-50 transition-all italic"
+                    placeholder="0"
+                    onChange={(e) => setFormData({ ...formData, labour_charges: e.target.value })} 
+                  />
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          <div style={inputGroup}>
-            <label style={labelStyle}><Smartphone size={14} /> Item Name</label>
-            <input placeholder="Vivo Y20" style={inputStyle} onChange={(e) => setFormData({ ...formData, item_name: e.target.value })} />
-          </div>
-
-          <div style={inputGroup}>
-            <label style={labelStyle}><Hash size={14} /> Serial / IMEI</label>
-            <input placeholder="IMEI No" style={inputStyle} onChange={(e) => setFormData({ ...formData, serial_no: e.target.value })} />
-          </div>
-
-          <div style={inputGroupFull}>
-            <label style={labelStyle}><AlertCircle size={14} /> Problem (Fault)</label>
-            <textarea placeholder="Explain fault..." style={{ ...inputStyle, height: '80px' }} onChange={(e) => setFormData({ ...formData, problem: e.target.value })} />
-          </div>
-
-          <div style={inputGroupFull}>
-            <label style={labelStyle}><IndianRupee size={14} /> Labour Charges</label>
-            <input type="number" style={inputStyle} onChange={(e) => setFormData({ ...formData, labour_charges: e.target.value })} />
+          {/* Action Button */}
+          <div className="mt-12 pt-8 border-t-2 border-zinc-100">
+            <button 
+              onClick={handleSave} 
+              disabled={loading}
+              className="w-full md:w-auto md:px-16 py-5 bg-zinc-950 hover:bg-blue-600 text-white rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-xl shadow-zinc-200 active:scale-95 disabled:bg-zinc-400 flex items-center justify-center gap-4 italic"
+            >
+              {loading ? (
+                "Processing..."
+              ) : (
+                <>
+                  <Save size={24} strokeWidth={3} />
+                  Confirm & Save Job
+                </>
+              )}
+            </button>
           </div>
         </div>
-
-        <button onClick={handleSave} disabled={loading} style={btnSuccess}>
-          {loading ? "Saving..." : <><Save size={20} /> Save Job Card</>}
-        </button>
       </div>
     </div>
   );
 }
-
-// --- Enhanced Styles ---
-const customSelectTrigger: React.CSSProperties = {
-  padding: '14px',
-  background: '#fafafa',
-  border: '1px solid #e0e0e0',
-  borderRadius: '10px',
-  cursor: 'pointer',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  fontSize: '15px'
-};
-
-const dropdownMenu: React.CSSProperties = {
-  position: 'absolute',
-  top: '100%',
-  left: 0,
-  right: 0,
-  background: 'white',
-  border: '1px solid #ddd',
-  borderRadius: '10px',
-  marginTop: '5px',
-  boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-  zIndex: 1000,
-  padding: '10px'
-};
-
-const searchInput: React.CSSProperties = {
-  width: '100%',
-  padding: '10px',
-  marginBottom: '10px',
-  borderRadius: '6px',
-  border: '1px solid #eee',
-  outline: 'none',
-  background: '#f9f9f9'
-};
-
-const optionsContainer: React.CSSProperties = {
-  maxHeight: '200px',
-  overflowY: 'auto'
-};
-
-const optionItem: React.CSSProperties = {
-  padding: '10px',
-  borderRadius: '6px',
-  cursor: 'pointer',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  borderBottom: '1px solid #f5f5f5'
-};
-
-// ... (Baaki styles pehle jaise hi hain)
-const pageWrapper: React.CSSProperties = { background: '#f4f7f9', minHeight: '100vh', padding: '20px 15px' };
-const containerStyle: React.CSSProperties = { maxWidth: '800px', margin: '0 auto', padding: '25px', background: 'white', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' };
-const headerNav: React.CSSProperties = { marginBottom: '15px' };
-const backBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: '#007bff', fontWeight: 'bold' };
-const cardHeader: React.CSSProperties = { marginBottom: '20px' };
-const formGrid: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '15px' };
-const inputGroup: React.CSSProperties = { flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '5px' };
-const inputGroupFull: React.CSSProperties = { flex: '1 1 100%', display: 'flex', flexDirection: 'column', gap: '5px' };
-const labelStyle: React.CSSProperties = { fontSize: '13px', fontWeight: 'bold', color: '#555', display: 'flex', alignItems: 'center', gap: '5px' };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #e0e0e0', fontSize: '15px', background: '#fafafa' };
-const btnSuccess: React.CSSProperties = { background: '#28a745', color: 'white', width: '100%', padding: '16px', border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', fontSize: '18px', fontWeight: 'bold', marginTop: '25px' };
