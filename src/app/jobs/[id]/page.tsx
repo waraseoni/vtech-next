@@ -1,115 +1,158 @@
 "use client";
-import { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Printer, ArrowLeft, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { 
+  ArrowLeft, Edit3, Printer, Smartphone, User, 
+  CheckCircle2, Clock, MapPin, Phone, IndianRupee, 
+  Loader2 
+} from 'lucide-react';
 
-export default function ManageJob({ params }: { params: Promise<{ id: string }> }) {
+export default function ViewJobPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const router = useRouter();
   const [job, setJob] = useState<any>(null);
-  const [inventory, setInventory] = useState<any[]>([]);
-  const [selectedPart, setSelectedPart] = useState({ id: "", qty: 1 });
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
 
-  const fetchJobDetails = async () => {
-    const { data } = await supabase.from('jobs').select('*, clients(*)').eq('id', resolvedParams.id).single();
-    setJob(data);
-    const { data: inv } = await supabase.from('inventory').select('*');
-    setInventory(inv || []);
+  // --- 1. Data Fetch karne ka function ---
+  const fetchJob = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('*, clients(*)')
+        .eq('id', resolvedParams.id)
+        .single();
+      
+      if (error) throw error;
+      setJob(data);
+    } catch (err) {
+      console.error("Error fetching job:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchJobDetails(); }, []);
+  useEffect(() => {
+    fetchJob();
+  }, [resolvedParams.id]);
 
-  const addPart = async () => {
-    const part = inventory.find(p => p.id === parseInt(selectedPart.id));
-    if (!part || part.stock < selectedPart.qty) return alert("Low Stock!");
+  // --- 2. Status Change karne ka function (Andar hona chahiye) ---
+  const handleStatusChange = async (newStatus: string) => {
+    if (!job?.id) return;
 
-    // 1. Bill Update & 2. Stock Update
-    await supabase.from('jobs').update({ final_bill: job.final_bill + (part.price * selectedPart.qty) }).eq('id', job.id);
-    await supabase.from('inventory').update({ stock: part.stock - selectedPart.qty }).eq('id', part.id);
-    
-    alert("Part Added!");
-    fetchJobDetails();
+    setUpdating(true);
+    const { error } = await supabase
+      .from('jobs')
+      .update({ status: newStatus })
+      .eq('id', job.id);
+
+    if (error) {
+      alert("Status update fail!");
+    } else {
+      await fetchJob(); // Turant naya data dikhao
+    }
+    setUpdating(false);
   };
 
-  if (!job) return <p>Loading...</p>;
+  if (loading) return (
+    <div style={centerText}>
+      <Loader2 className="animate-spin" size={32} />
+      <p>Loading Job Details...</p>
+    </div>
+  );
+
+  if (!job) return <div style={centerText}>Job record not found!</div>;
 
   return (
-    <div style={{ maxWidth: '900px', margin: '20px auto', padding: '20px' }}>
-      <Link href="/jobs" style={{ display: 'flex', alignItems: 'center', gap: '5px', textDecoration: 'none', color: '#666' }}><ArrowLeft size={16}/> Back to List</Link>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginTop: '20px' }}>
-        {/* Left Side: Details */}
-        <div style={{ background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-          <h3>Job #VT-{job.id} - {job.status}</h3>
-          <hr />
-          <p><b>Client:</b> {job.clients?.name} ({job.clients?.mobile})</p>
-          <p><b>Address:</b> {job.clients?.address}</p>
-          <p><b>Device:</b> {job.item_name}</p>
-          <p><b>Problem:</b> {job.problem}</p>
-          <div style={{ background: '#f0f9ff', padding: '15px', borderRadius: '8px', marginTop: '20px' }}>
-             <h2 style={{ margin: 0 }}>Total Bill: ₹{job.final_bill}</h2>
+    <div style={containerStyle}>
+      <div style={headerStyle}>
+        <Link href="/jobs" style={backLink}><ArrowLeft size={18} /> Back to List</Link>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={() => window.print()} style={btnSecondary}><Printer size={18} /> Print</button>
+          <Link href={`/jobs/${job.id}/edit`} style={btnEdit}><Edit3 size={18} /> Edit Job</Link>
+        </div>
+      </div>
+
+      <div style={mainGrid}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Status Update Section */}
+          <div style={{ ...cardStyle, borderTop: `6px solid ${getStatusColor(job.status)}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <p style={labelStyle}>Update Job Status</p>
+              {updating && <Loader2 className="animate-spin" size={18} />}
+            </div>
+            <select 
+              value={job.status} 
+              onChange={(e) => handleStatusChange(e.target.value)}
+              disabled={updating}
+              style={{ ...statusDropdown, borderColor: getStatusColor(job.status) }}
+            >
+              <option value="Pending">🟡 Pending</option>
+              <option value="In-Progress">🔵 In-Progress</option>
+              <option value="Repaired">🟢 Repaired</option>
+              <option value="Delivered">⚪ Delivered</option>
+              <option value="Cancelled">🔴 Cancelled</option>
+            </select>
           </div>
-          <button onClick={() => window.print()} style={{ marginTop: '15px', padding: '10px 20px', cursor: 'pointer' }}><Printer size={16}/> Print Invoice</button>
+
+          <div style={cardStyle}>
+            <h3 style={sectionTitle}><Smartphone size={18} /> Device Details</h3>
+            <div style={infoRow}><span>Model:</span> <b>{job.item_name}</b></div>
+            <div style={infoRow}><span>IMEI/Serial:</span> <b>{job.serial_no || 'N/A'}</b></div>
+            <hr style={divider} />
+            <p style={labelStyle}>Problem Description:</p>
+            <p style={problemText}>{job.problem || 'No description provided.'}</p>
+          </div>
         </div>
 
-        {/* Right Side: Spare Parts */}
-        <div style={{ background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-          <h4>Add Spare Parts</h4>
-          <select style={inputStyle} onChange={(e) => setSelectedPart({ ...selectedPart, id: e.target.value })}>
-            <option value="">Select Part</option>
-            {inventory.map(p => <option key={p.id} value={p.id}>{p.partname} (Stock: {p.stock})</option>)}
-          </select>
-          <input type="number" min="1" style={{ ...inputStyle, marginTop: '10px' }} value={selectedPart.qty} onChange={(e) => setSelectedPart({ ...selectedPart, qty: parseInt(e.target.value) })} />
-          <button onClick={addPart} style={{ ...btnPrimary, width: '100%', marginTop: '10px' }}>Add & Update Bill</button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={cardStyle}>
+            <h3 style={sectionTitle}><User size={18} /> Customer Info</h3>
+            <div style={clientInfoBox}>
+              <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '0 0 10px 0' }}>{job.clients?.name}</p>
+              <p style={infoRow}><Phone size={14} /> {job.clients?.mobile}</p>
+              <p style={infoRow}><MapPin size={14} /> {job.clients?.address || 'N/A'}</p>
+            </div>
+          </div>
+
+          <div style={billingCard}>
+            <p style={{ margin: 0, opacity: 0.9 }}>Final Bill Amount</p>
+            <div style={{ display: 'flex', alignItems: 'center', fontSize: '32px', fontWeight: 'bold' }}>
+              <IndianRupee size={28} /> {job.final_bill}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-const inputStyle = { width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' };
-const btnPrimary = { background: '#007bff', color: 'white', padding: '10px', border: 'none', borderRadius: '6px', cursor: 'pointer' };
+// --- Styles with Type Safety ---
+const containerStyle: React.CSSProperties = { padding: '30px', maxWidth: '1100px', margin: '0 auto', backgroundColor: '#f4f7f6', minHeight: '100vh' };
+const headerStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' };
+const backLink: React.CSSProperties = { textDecoration: 'none', color: '#555', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' };
+const mainGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '25px' };
+const cardStyle: React.CSSProperties = { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' };
+const billingCard: React.CSSProperties = { backgroundColor: '#007bff', color: 'white', padding: '25px', borderRadius: '12px' };
+const sectionTitle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '16px', margin: '0 0 20px 0', borderBottom: '1px solid #eee', paddingBottom: '10px' };
+const infoRow: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '15px' };
+const labelStyle: React.CSSProperties = { fontSize: '12px', color: '#888', textTransform: 'uppercase', fontWeight: 'bold' };
+const problemText: React.CSSProperties = { backgroundColor: '#fff9e6', padding: '15px', borderRadius: '8px', color: '#856404', marginTop: '10px', fontSize: '14px' };
+const clientInfoBox: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '8px' };
+const divider: React.CSSProperties = { border: 'none', borderTop: '1px solid #eee', margin: '15px 0' };
+const centerText: any = { textAlign: 'center', padding: '100px', fontSize: '18px', color: '#666', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' };
+const btnEdit: React.CSSProperties = { backgroundColor: '#28a745', color: 'white', padding: '10px 20px', borderRadius: '8px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' };
+const btnSecondary: React.CSSProperties = { backgroundColor: 'white', border: '1px solid #ddd', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' };
+const statusDropdown: React.CSSProperties = { width: '100%', padding: '12px', borderRadius: '8px', border: '2px solid', fontSize: '16px', fontWeight: 'bold', outline: 'none', cursor: 'pointer' };
 
-const handleStatusChange = async (newStatus: string) => {
-  if (!job?.id || !job?.client_id) return;
-
-  setUpdating(true);
-  
-  // 1. Pehle Job ka status update karein
-  const { error: jobError } = await supabase
-    .from('jobs')
-    .update({ status: newStatus })
-    .eq('id', job.id);
-
-  if (jobError) {
-    alert("Status update nahi ho paya!");
-    setUpdating(false);
-    return;
+const getStatusColor = (s: string) => {
+  switch (s) {
+    case 'Pending': return '#ffc107';
+    case 'In-Progress': return '#17a2b8';
+    case 'Repaired': return '#28a745';
+    case 'Delivered': return '#6c757d';
+    case 'Cancelled': return '#dc3545';
+    default: return '#007bff';
   }
-
-  // 2. Agar status 'Delivered' hai, toh Client ka balance update karein
-  if (newStatus === 'Delivered') {
-    // Pehle client ka purana balance nikalein
-    const { data: clientData } = await supabase
-      .from('clients')
-      .select('balance')
-      .eq('id', job.client_id)
-      .single();
-
-    const currentBalance = clientData?.balance || 0;
-    const newBalance = currentBalance + (job.final_bill || 0);
-
-    // Client table mein naya balance save karein
-    await supabase
-      .from('clients')
-      .update({ balance: newBalance })
-      .eq('id', job.client_id);
-      
-    alert(`Job Delivered! ₹${job.final_bill} client ke balance mein jud gaye hain.`);
-  }
-
-  await fetchJob();
-  setUpdating(false);
 };
