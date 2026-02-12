@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { LogIn, Mail, Lock, Loader2, ShieldCheck } from 'lucide-react';
@@ -7,14 +7,27 @@ import { LogIn, Mail, Lock, Loader2, ShieldCheck } from 'lucide-react';
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // Page load hote hi check karein ki kya pehle se credentials saved hain
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("vtech_email");
+    const savedPassword = localStorage.getItem("vtech_password");
+    const savedRemember = localStorage.getItem("vtech_remember") === "true";
+
+    if (savedRemember && savedEmail && savedPassword) {
+      setEmail(savedEmail);
+      setPassword(savedPassword);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    // Naya SSR Compatible Login
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -24,7 +37,17 @@ export default function LoginPage() {
       alert("Error: " + error.message);
       setLoading(false);
     } else {
-      // Refresh taaki middleware cookies detect kar sake
+      // Agar Remember Me checked hai toh credentials save karein, nahi toh delete karein
+      if (rememberMe) {
+        localStorage.setItem("vtech_email", email);
+        localStorage.setItem("vtech_password", password);
+        localStorage.setItem("vtech_remember", "true");
+      } else {
+        localStorage.removeItem("vtech_email");
+        localStorage.removeItem("vtech_password");
+        localStorage.removeItem("vtech_remember");
+      }
+
       router.refresh();
       router.push('/');
     }
@@ -48,6 +71,7 @@ export default function LoginPage() {
                 type="email" 
                 placeholder="staff@vtech.com" 
                 style={inputStyle} 
+                value={email} // Value ko state se bind kiya
                 onChange={(e) => setEmail(e.target.value)} 
                 required 
               />
@@ -62,10 +86,24 @@ export default function LoginPage() {
                 type="password" 
                 placeholder="••••••••" 
                 style={inputStyle} 
+                value={password} // Value ko state se bind kiya
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
               />
             </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input 
+              type="checkbox" 
+              id="remember" 
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+            />
+            <label htmlFor="remember" style={{ fontSize: '13px', color: '#555', fontWeight: 'bold', cursor: 'pointer' }}>
+              Remember My Credentials
+            </label>
           </div>
 
           <button type="submit" disabled={loading} style={loginBtn}>
@@ -77,7 +115,7 @@ export default function LoginPage() {
   );
 }
 
-// Modern CSS Styles
+// Styles remains the same...
 const containerStyle: React.CSSProperties = { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f0f2f5', padding: '15px' };
 const loginCard: React.CSSProperties = { background: 'white', padding: '40px 30px', borderRadius: '20px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', width: '100%', maxWidth: '400px' };
 const iconCircle: React.CSSProperties = { width: '60px', height: '60px', background: '#eef6ff', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto' };

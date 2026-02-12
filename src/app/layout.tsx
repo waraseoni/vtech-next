@@ -1,6 +1,6 @@
 "use client";
 import "./globals.css";
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -47,6 +47,44 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  // LOGOUT FUNCTION
+  const handleLogout = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+      router.push('/login');
+    } catch (error) {
+      console.error("Logout Error:", error);
+    }
+  }, [router]);
+
+  // IDLE TIMER (AUTO-LOGOUT) LOGIC
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+
+    const resetTimer = () => {
+      if (timeout) clearTimeout(timeout);
+      // 15 minutes inactivity = 900,000 ms
+      timeout = setTimeout(() => {
+        const { data } = supabase.auth.onAuthStateChange((event) => {
+          if (event === 'SIGNED_IN') handleLogout();
+        });
+      }, 900000); 
+    };
+
+    // Events to track user activity
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    
+    if (userEmail) { // Timer tabhi chalega jab user login ho
+      events.forEach(event => window.addEventListener(event, resetTimer));
+      resetTimer();
+    }
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [userEmail, handleLogout]);
+
   useEffect(() => {
     const getAuthAndProfile = async () => {
       try {
@@ -87,15 +125,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     window.addEventListener('resize', checkSize);
     return () => window.removeEventListener('resize', checkSize);
   }, [pathname, router]);
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      router.push('/login');
-    } catch (error) {
-      console.error("Logout Error:", error);
-    }
-  };
 
   if (pathname === '/login') return <html lang="en"><body>{children}</body></html>;
 
@@ -143,7 +172,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <NavLink href="/inventory" icon={<Package size={18}/>} label="Inventory" active={isActive('/inventory')} />
               </div>
 
-              {/* Only Show Admin Sections */}
               {isAdmin && (
                 <div className="mt-8 pt-6 border-t border-gray-300/50">
                   <p className="px-3 text-[9px] font-extrabold uppercase text-gray-500 tracking-[0.2em] mb-2">Advanced</p>
@@ -219,7 +247,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
         </div>
 
-        {/* MOBILE FOOTER NAV (ADMIN LINKS FILTERED) */}
         {isMobile && (
           <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-gray-200 flex justify-around items-center z-[1000] px-2 pb-2">
             <FooterLink href="/" icon={<LayoutDashboard size={20}/>} label="Home" active={isActive('/')} />
