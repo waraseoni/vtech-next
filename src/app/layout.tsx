@@ -63,18 +63,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
     const resetTimer = () => {
       if (timeout) clearTimeout(timeout);
-      // 15 minutes inactivity = 900,000 ms
       timeout = setTimeout(() => {
-        const { data } = supabase.auth.onAuthStateChange((event) => {
-          if (event === 'SIGNED_IN') handleLogout();
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) handleLogout();
         });
       }, 900000); 
     };
 
-    // Events to track user activity
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
     
-    if (userEmail) { // Timer tabhi chalega jab user login ho
+    if (userEmail) {
       events.forEach(event => window.addEventListener(event, resetTimer));
       resetTimer();
     }
@@ -94,22 +92,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           setLoading(false);
           return;
         }
-        setUserEmail(authUser.email || null);
+        const email = authUser.email || null;
+        setUserEmail(email);
 
+        // Database se role fetch karna
         const { data: profileData } = await supabase
           .from('profiles')
           .select('full_name, role')
           .eq('id', authUser.id)
           .maybeSingle();
         
-        if (profileData && profileData.full_name) {
-          setProfile(profileData);
+        // DYNAMIC ROLE LOGIC WITH SAFETY NET
+        const isMainAdmin = email === 'vtech.jbp@gmail.com';
+        const dbRole = profileData?.role?.toLowerCase().trim();
+
+        if (profileData) {
+          setProfile({
+            full_name: profileData.full_name || email?.split('@')[0] || 'User',
+            role: (isMainAdmin || dbRole === 'admin') ? 'admin' : 'staff'
+          });
         } else {
-          const metaName = authUser.user_metadata?.full_name;
-          const assignedRole = authUser.email === 'vtech.jbp@gmail.com' ? 'admin' : 'staff';
           setProfile({ 
-            full_name: metaName || authUser.email?.split('@')[0] || 'User', 
-            role: assignedRole 
+            full_name: authUser.user_metadata?.full_name || email?.split('@')[0] || 'User', 
+            role: isMainAdmin ? 'admin' : 'staff' 
           });
         }
       } catch (err) {
@@ -149,7 +154,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="h-full bg-gray-100">
       <body className="h-full m-0 font-sans antialiased text-gray-900 bg-gray-100">
         
-        {/* DESKTOP SIDEBAR */}
         {!isMobile && (
           <aside className="fixed top-0 left-0 h-full w-[280px] bg-gradient-to-b from-gray-100 to-gray-50 border-r border-gray-300/60 shadow-xl flex flex-col z-50">
             <div className="p-7 border-b border-gray-300/50">
@@ -175,6 +179,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {isAdmin && (
                 <div className="mt-8 pt-6 border-t border-gray-300/50">
                   <p className="px-3 text-[9px] font-extrabold uppercase text-gray-500 tracking-[0.2em] mb-2">Advanced</p>
+                  {/* YE LINE ADD KAREIN */}
+                  <NavLink href="/users" icon={<Users size={18}/>} label="Manage Staff" active={pathname === '/users'} />
+                  
                   <NavLink href="/reports" icon={<FileText size={18}/>} label="Analytics" active={isActive('/reports')} />
                   <NavLink href="/settings" icon={<Settings size={18}/>} label="Settings" active={isActive('/settings')} />
                 </div>
