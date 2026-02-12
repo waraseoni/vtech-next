@@ -129,7 +129,7 @@ function JobsListContent() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-3xl font-black text-gray-900 tracking-tighter m-0 uppercase leading-none">Job Registry</h2>
-                {userRole === 'admin' && <ShieldCheck className="text-emerald-600" size={24} title="Admin Access" />}
+                {userRole === 'admin' && <ShieldCheck className="text-emerald-600" size={24} />}
               </div>
               <p className="text-blue-600 text-[11px] font-extrabold uppercase tracking-[0.25em] mt-2">
                 {userRole === 'admin' ? "Full Access Mode" : "Staff View Mode"} | Jobs: {filteredJobs.length}
