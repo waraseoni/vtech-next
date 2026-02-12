@@ -9,20 +9,51 @@ import {
   Loader2, Wrench, Cpu, MessageSquare, Calendar, Hash
 } from 'lucide-react';
 
+// --- Type Definitions ---
+type Client = {
+  id: number;
+  name: string;
+  mobile: string;
+  address?: string;
+};
+
+type Job = {
+  id: number;
+  client_id: number;
+  item_name: string;
+  serial_no?: string;
+  problem?: string;
+  status: string;
+  final_bill?: number;
+  remarks?: string;
+  used_parts?: string;
+  created_at?: string;
+  updated_at?: string;
+  clients?: Client;
+};
+
+type InventoryItem = {
+  id: number;
+  partname: string;
+  price: number;
+};
+
+type UsedPart = {
+  name: string;
+  price: number | null;
+};
+
 export default function ViewJobPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const [job, setJob] = useState<any>(null);
+  const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [inventory, setInventory] = useState<any[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
 
-  // Fetch job details and inventory for part prices
   const fetchJob = async () => {
     try {
       setLoading(true);
-      
-      // Parallel fetch: job with client, and inventory for part prices
       const [jobRes, invRes] = await Promise.all([
         supabase
           .from('jobs')
@@ -33,10 +64,10 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
       ]);
 
       if (jobRes.error) throw jobRes.error;
-      setJob(jobRes.data);
+      setJob(jobRes.data as Job);
       
       if (invRes.data) {
-        setInventory(invRes.data);
+        setInventory(invRes.data as InventoryItem[]);
       }
     } catch (err) {
       console.error("Error fetching job:", err);
@@ -49,8 +80,7 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
     fetchJob();
   }, [resolvedParams.id]);
 
-  // Memoized used parts with prices (if available in inventory)
-  const usedPartsWithPrices = useMemo(() => {
+  const usedPartsWithPrices = useMemo((): UsedPart[] => {
     if (!job?.used_parts) return [];
     const partNames = job.used_parts.split(', ').filter((p: string) => p.trim() !== '');
     return partNames.map((name: string) => {
@@ -62,7 +92,6 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
     });
   }, [job?.used_parts, inventory]);
 
-  // Status update handler
   const handleStatusChange = async (newStatus: string) => {
     if (!job?.id) return;
     setUpdating(true);
@@ -74,13 +103,12 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
     if (error) {
       alert("Status update nahi ho paya!");
     } else {
-      await fetchJob(); // refresh
+      await fetchJob();
     }
     setUpdating(false);
   };
 
-  // Format date
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr?: string) => {
     if (!dateStr) return 'N/A';
     return new Date(dateStr).toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -89,7 +117,6 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
     });
   };
 
-  // Loading state
   if (loading) return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
       <Loader2 className="animate-spin text-blue-600" size={48} />
@@ -99,7 +126,6 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
     </div>
   );
 
-  // Not found
   if (!job) return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
       <h2 className="text-2xl font-black text-gray-900">Job Not Found!</h2>
@@ -113,7 +139,7 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
     <div className="min-h-screen bg-white text-gray-900 p-3 md:p-6 font-sans">
       <div className="max-w-7xl mx-auto">
         
-        {/* ===== TOP BAR ===== */}
+        {/* Top Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6 bg-gray-50 p-4 rounded-3xl border-2 border-gray-300 shadow-sm">
           <div className="flex items-center gap-3">
             <Link 
@@ -140,7 +166,7 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
               <Printer size={16} /> Print
             </button>
             <Link 
-              href={`/jobs/${job.id}`}
+              href={`/jobs/${job.id}/edit`}
               className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-sm uppercase italic tracking-wider transition-all shadow-md shadow-blue-500/20"
             >
               <Edit3 size={16} /> Edit
@@ -148,10 +174,10 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
           </div>
         </div>
 
-        {/* ===== MAIN GRID (2 columns on desktop) ===== */}
+        {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           
-          {/* ----- LEFT COLUMN (Device + Remarks) ----- */}
+          {/* Left Column */}
           <div className="lg:col-span-7 space-y-5">
             
             {/* Device Card */}
@@ -202,7 +228,7 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
               </div>
             </div>
 
-            {/* Created / Updated Info (optional) */}
+            {/* Created/Updated Info */}
             <div className="bg-white border-2 border-gray-300 p-4 rounded-2xl shadow-sm flex flex-wrap gap-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
               <div className="flex items-center gap-2">
                 <Calendar size={14} className="text-gray-400" />
@@ -217,7 +243,7 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
             </div>
           </div>
 
-          {/* ----- RIGHT COLUMN (Client + Parts + Billing) ----- */}
+          {/* Right Column */}
           <div className="lg:col-span-5 space-y-5">
             
             {/* Client Card */}
@@ -244,7 +270,7 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
               </div>
             </div>
 
-            {/* Status Card + Update Dropdown */}
+            {/* Status Card */}
             <div className="bg-white border-2 border-gray-300 p-6 rounded-[2rem] shadow-md">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -294,7 +320,7 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
                     No parts used
                   </p>
                 ) : (
-                  usedPartsWithPrices.map((part, idx) => (
+                  usedPartsWithPrices.map((part: UsedPart, idx: number) => (
                     <div
                       key={idx}
                       className="flex items-center gap-1.5 bg-purple-50 text-purple-800 border-2 border-purple-200 px-3 py-1.5 rounded-lg"
@@ -333,8 +359,8 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
   );
 }
 
-// --- Helper: Status Badge Styles (Tailwind) ---
-const getStatusClass = (status: string) => {
+// Status Badge Styles
+const getStatusClass = (status: string): string => {
   switch (status) {
     case 'Pending':
       return 'bg-amber-50 text-amber-700 border-amber-200';
