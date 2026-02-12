@@ -57,9 +57,9 @@ export default function ClientsPage() {
           .eq('status', 'Delivered');
         if (jobsError) throw jobsError;
 
-        // 3. Aggregate total per client
+        // 3. Aggregate total per client – 🔥 FIX: Removed explicit :Job type
         const totals: Record<number, number> = {};
-        jobsData?.forEach((job: Job) => {
+        jobsData?.forEach((job) => {
           if (job.client_id) {
             totals[job.client_id] = (totals[job.client_id] || 0) + (job.final_bill || 0);
           }
@@ -80,9 +80,7 @@ export default function ClientsPage() {
       try {
         const { error } = await supabase.from('clients').delete().eq('id', id);
         if (error) throw error;
-        // Remove from state
         setClients(prev => prev.filter(client => client.id !== id));
-        // Also remove from deliveredTotals
         setDeliveredTotals(prev => {
           const newTotals = { ...prev };
           delete newTotals[id];
