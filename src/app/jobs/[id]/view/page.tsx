@@ -166,7 +166,7 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
               <Printer size={16} /> Print
             </button>
             <Link 
-              href={`/jobs/${job.id}/edit`}
+              href={`/jobs/${job.id}`}
               className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-sm uppercase italic tracking-wider transition-all shadow-md shadow-blue-500/20"
             >
               <Edit3 size={16} /> Edit
