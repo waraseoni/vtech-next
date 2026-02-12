@@ -26,7 +26,7 @@ export default function LoginPage() {
     } else {
       // Refresh taaki middleware cookies detect kar sake
       router.refresh();
-      router.push('/jobs');
+      router.push('/');
     }
   };
 
