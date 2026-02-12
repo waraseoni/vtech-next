@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { 
   Plus, Eye, Settings, Wrench, Search, 
-  Loader2, Trash2, Smartphone, Phone 
+  Loader2, Trash2, Smartphone, Phone, ShieldCheck
 } from 'lucide-react';
 
-// --- Status Styling Helper (with Cancelled) ---
+// --- Status Styling Helper ---
 const getStatusClass = (status: string) => {
   const base = "px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border-2 whitespace-nowrap";
   if (status === 'Pending') return `${base} bg-amber-50 text-amber-700 border-amber-200`;
@@ -25,25 +25,41 @@ function JobsListContent() {
   const globalSearch = searchParams.get('search') || "";
   
   const [jobs, setJobs] = useState<any[]>([]);
+  const [userRole, setUserRole] = useState<string | null>(null); // Naya: Role state
   const [localSearch, setLocalSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Debounced search – 300ms
+  // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState("");
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(localSearch), 300);
     return () => clearTimeout(timer);
   }, [localSearch]);
 
-  // Mobile detection
+  // Mobile detection aur Role fetch
   useEffect(() => {
     setMounted(true);
     const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handler = (e: MediaQueryListEvent | MediaQueryList) => setIsMobile(e.matches);
     handler(mediaQuery);
     mediaQuery.addEventListener('change', handler);
+
+    // Naya: User ka Role check karna
+    const checkUserRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        setUserRole(profile?.role || 'staff');
+      }
+    };
+    checkUserRole();
+
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
@@ -67,15 +83,19 @@ function JobsListContent() {
 
   useEffect(() => { fetchJobs(); }, [fetchJobs]);
 
-  // Delete handler
+  // Delete handler - Admin checking ke saath
   const handleDelete = useCallback(async (id: number) => {
+    if (userRole !== 'admin') {
+      alert("Permission Denied: Sirf Admin hi delete kar sakta hai!");
+      return;
+    }
     if (confirm("Kya aap pakka delete karna chahte hain?")) {
       const { error } = await supabase.from('jobs').delete().eq('id', id);
       if (!error) setJobs(prev => prev.filter(job => job.id !== id));
     }
-  }, []);
+  }, [userRole]);
 
-  // 🔹 FILTERED JOBS – MEMOIZED, AB STATUS BHI SEARCH HOGA
+  // Filtered Jobs logic
   const filteredJobs = useMemo(() => {
     const s = (globalSearch || debouncedSearch).toLowerCase();
     return jobs.filter(j => 
@@ -83,21 +103,16 @@ function JobsListContent() {
       j.clients?.mobile?.includes(s) ||
       j.id?.toString().includes(s) ||
       j.item_name?.toLowerCase().includes(s) ||
-      // 🔥 NEW: Status bhi search criteria mein shamil
       j.status?.toLowerCase().includes(s)
     );
   }, [jobs, globalSearch, debouncedSearch]);
 
-  // Hydration guard
   if (!mounted) return null;
 
-  // Loader
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] gap-4 bg-white">
       <Loader2 className="animate-spin text-blue-600" size={50} />
-      <p className="text-gray-500 font-bold italic uppercase tracking-[0.3em] text-sm">
-        V-TECH: Accessing Database...
-      </p>
+      <p className="text-gray-500 font-bold italic uppercase tracking-[0.3em] text-sm">V-TECH: Accessing Database...</p>
     </div>
   );
 
@@ -112,18 +127,16 @@ function JobsListContent() {
               <Wrench className="text-white" size={32} />
             </div>
             <div>
-              <h2 className="text-3xl font-black text-gray-900 tracking-tighter m-0 uppercase leading-none">
-                Job Registry
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-3xl font-black text-gray-900 tracking-tighter m-0 uppercase leading-none">Job Registry</h2>
+                {userRole === 'admin' && <ShieldCheck className="text-emerald-600" size={24} title="Admin Access" />}
+              </div>
               <p className="text-blue-600 text-[11px] font-extrabold uppercase tracking-[0.25em] mt-2">
-                Active Repair Cards: {filteredJobs.length}
+                {userRole === 'admin' ? "Full Access Mode" : "Staff View Mode"} | Jobs: {filteredJobs.length}
               </p>
             </div>
           </div>
-          <Link 
-            href="/jobs/new" 
-            className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-5 rounded-[2rem] font-extrabold flex items-center justify-center gap-2 transition-all active:scale-95 no-underline uppercase tracking-tight shadow-md shadow-blue-500/20 text-sm"
-          >
+          <Link href="/jobs/new" className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-5 rounded-[2rem] font-extrabold flex items-center justify-center gap-2 transition-all active:scale-95 no-underline uppercase tracking-tight shadow-md shadow-blue-500/20 text-sm">
             <Plus size={20} strokeWidth={3} /> Create New Job
           </Link>
         </div>
@@ -142,32 +155,20 @@ function JobsListContent() {
         {/* LIST SECTION */}
         {filteredJobs.length === 0 ? (
           <div className="text-center py-16 bg-gray-50 rounded-[2.5rem] border-2 border-dashed border-gray-400 shadow-md">
-            <p className="text-gray-600 font-bold italic uppercase tracking-wider text-sm">
-              No Jobs Found Matching Your Search
-            </p>
+            <p className="text-gray-600 font-bold italic uppercase tracking-wider text-sm">No Jobs Found Matching Your Search</p>
           </div>
         ) : isMobile ? (
           /* ----- MOBILE CARDS ----- */
           <div className="grid gap-4">
             {filteredJobs.map(job => (
-              <div 
-                key={job.id} 
-                className="bg-white p-6 rounded-[2rem] border-2 border-gray-300 shadow-md space-y-4"
-              >
-                {/* Header: ID + Status */}
+              <div key={job.id} className="bg-white p-6 rounded-[2rem] border-2 border-gray-300 shadow-md space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="font-mono font-bold text-gray-500 text-sm tracking-tight">
-                    #VT-{job.id}
-                  </span>
+                  <span className="font-mono font-bold text-gray-500 text-sm tracking-tight">#VT-{job.id}</span>
                   <span className={getStatusClass(job.status)}>{job.status}</span>
                 </div>
                 
-                {/* Client Info */}
                 <div className="bg-gray-50 p-4 rounded-xl border-2 border-gray-200">
-                  <Link 
-                    href={`/clients/${job.client_id}`} 
-                    className="text-lg font-extrabold text-gray-900 no-underline block mb-1 hover:text-blue-600 uppercase transition-colors tracking-tight"
-                  >
+                  <Link href={`/clients/${job.client_id}/view`} className="text-lg font-extrabold text-gray-900 no-underline block mb-1 hover:text-blue-600 uppercase transition-colors tracking-tight">
                     {job.clients?.name || "Unknown Client"}
                   </Link>
                   <div className="text-gray-600 font-bold text-sm flex items-center gap-2 tracking-wide">
@@ -175,51 +176,33 @@ function JobsListContent() {
                   </div>
                 </div>
 
-                {/* Device & Fault */}
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg text-blue-700">
-                      <Smartphone size={20} />
-                    </div>
+                    <div className="p-2 bg-blue-100 rounded-lg text-blue-700"><Smartphone size={20} /></div>
                     <div>
-                      <div className="font-extrabold text-gray-800 uppercase text-sm tracking-tight">
-                        {job.item_name}
-                      </div>
-                      <p className="text-[10px] text-red-600 font-bold mt-1 italic uppercase tracking-wide">
-                        Fault: {job.problem}
-                      </p>
+                      <div className="font-extrabold text-gray-800 uppercase text-sm tracking-tight">{job.item_name}</div>
+                      <p className="text-[10px] text-red-600 font-bold mt-1 italic uppercase tracking-wide">Fault: {job.problem}</p>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-xl font-extrabold italic text-emerald-700 tracking-tight">
-                      ₹{job.final_bill || 0}
-                    </div>
+                    <div className="text-xl font-extrabold italic text-emerald-700 tracking-tight">₹{job.final_bill || 0}</div>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
                 <div className="grid grid-cols-3 gap-3 pt-2">
-                  <Link 
-                    href={`/jobs/${job.id}/view`} 
-                    className="flex flex-col items-center gap-1 p-3 bg-white border-2 border-gray-300 rounded-xl no-underline text-gray-700 hover:bg-gray-100 transition-all"
-                  >
-                    <Eye size={18} /> 
-                    <span className="text-[10px] font-extrabold uppercase tracking-wide">View</span>
+                  <Link href={`/jobs/${job.id}/view`} className="flex flex-col items-center gap-1 p-3 bg-white border-2 border-gray-300 rounded-xl no-underline text-gray-700 hover:bg-gray-100 transition-all">
+                    <Eye size={18} /> <span className="text-[10px] font-extrabold uppercase tracking-wide">View</span>
                   </Link>
-                  <Link 
-                    href={`/jobs/${job.id}`} 
-                    className="flex flex-col items-center gap-1 p-3 bg-blue-50 border-2 border-blue-200 rounded-xl no-underline text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all"
-                  >
-                    <Settings size={18} /> 
-                    <span className="text-[10px] font-extrabold uppercase tracking-wide">Edit</span>
+                  <Link href={`/jobs/${job.id}`} className="flex flex-col items-center gap-1 p-3 bg-blue-50 border-2 border-blue-200 rounded-xl no-underline text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all">
+                    <Settings size={18} /> <span className="text-[10px] font-extrabold uppercase tracking-wide">Edit</span>
                   </Link>
-                  <button 
-                    onClick={() => handleDelete(job.id)} 
-                    className="flex flex-col items-center gap-1 p-3 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all cursor-pointer"
-                  >
-                    <Trash2 size={18} /> 
-                    <span className="text-[10px] font-extrabold uppercase tracking-wide">Del</span>
-                  </button>
+                  
+                  {/* SIRF ADMIN KO DELETE BUTTON DIKHEGA (MOBILE) */}
+                  {userRole === 'admin' && (
+                    <button onClick={() => handleDelete(job.id)} className="flex flex-col items-center gap-1 p-3 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all cursor-pointer">
+                      <Trash2 size={18} /> <span className="text-[10px] font-extrabold uppercase tracking-wide">Del</span>
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -242,58 +225,27 @@ function JobsListContent() {
                 {filteredJobs.map(job => (
                   <tr key={job.id} className="hover:bg-gray-50/80 transition-colors group">
                     <td className="px-6 py-5">
-                      <span className="font-mono font-bold text-gray-600 group-hover:text-blue-600 transition-colors text-sm">
-                        #VT-{job.id}
-                      </span>
+                      <span className="font-mono font-bold text-gray-600 group-hover:text-blue-600 transition-colors text-sm">#VT-{job.id}</span>
                     </td>
                     <td className="px-6 py-5">
-                      <Link 
-                        href={`/clients/${job.client_id}`} 
-                        className="font-extrabold text-gray-900 no-underline hover:text-blue-600 text-base block transition-colors tracking-tight"
-                      >
-                        {job.clients?.name || "N/A"}
-                      </Link>
-                      <span className="text-xs font-bold text-gray-500 tracking-wider">
-                        {job.clients?.mobile}
-                      </span>
+                      <Link href={`/clients/${job.client_id}/view`} className="font-extrabold text-gray-900 no-underline hover:text-blue-600 text-base block transition-colors tracking-tight">{job.clients?.name || "N/A"}</Link>
+                      <span className="text-xs font-bold text-gray-500 tracking-wider">{job.clients?.mobile}</span>
                     </td>
                     <td className="px-6 py-5">
-                      <div className="font-extrabold text-gray-800 uppercase text-sm tracking-tight">
-                        {job.item_name}
-                      </div>
-                      <div className="text-[10px] text-red-600 font-bold italic uppercase tracking-wide mt-1">
-                        Fault: {job.problem}
-                      </div>
+                      <div className="font-extrabold text-gray-800 uppercase text-sm tracking-tight">{job.item_name}</div>
+                      <div className="text-[10px] text-red-600 font-bold italic uppercase tracking-wide mt-1">Fault: {job.problem}</div>
                     </td>
-                    <td className="px-6 py-5">
-                      <span className={getStatusClass(job.status)}>{job.status}</span>
-                    </td>
-                    <td className="px-6 py-5 font-extrabold italic text-emerald-700 text-lg tracking-tight">
-                      ₹{job.final_bill || 0}
-                    </td>
+                    <td className="px-6 py-5"><span className={getStatusClass(job.status)}>{job.status}</span></td>
+                    <td className="px-6 py-5 font-extrabold italic text-emerald-700 text-lg tracking-tight">₹{job.final_bill || 0}</td>
                     <td className="px-6 py-5">
                       <div className="flex items-center justify-center gap-2">
-                        <Link 
-                          href={`/jobs/${job.id}/view`} 
-                          className="p-2.5 bg-white border-2 border-gray-300 text-gray-600 rounded-xl hover:bg-gray-100 transition-all"
-                          title="View"
-                        >
-                          <Eye size={18} />
-                        </Link>
-                        <Link 
-                          href={`/jobs/${job.id}`} 
-                          className="p-2.5 bg-white border-2 border-gray-300 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all"
-                          title="Edit"
-                        >
-                          <Settings size={18} />
-                        </Link>
-                        <button 
-                          onClick={() => handleDelete(job.id)} 
-                          className="p-2.5 bg-white border-2 border-gray-300 text-red-600 rounded-xl hover:bg-red-600 hover:text-white hover:border-red-600 transition-all cursor-pointer"
-                          title="Delete"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        <Link href={`/jobs/${job.id}/view`} className="p-2.5 bg-white border-2 border-gray-300 text-gray-600 rounded-xl hover:bg-gray-100 transition-all" title="View"><Eye size={18} /></Link>
+                        <Link href={`/jobs/${job.id}`} className="p-2.5 bg-white border-2 border-gray-300 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all" title="Edit"><Settings size={18} /></Link>
+                        
+                        {/* SIRF ADMIN KO DELETE BUTTON DIKHEGA (DESKTOP) */}
+                        {userRole === 'admin' && (
+                          <button onClick={() => handleDelete(job.id)} className="p-2.5 bg-white border-2 border-gray-300 text-red-600 rounded-xl hover:bg-red-600 hover:text-white hover:border-red-600 transition-all cursor-pointer" title="Delete"><Trash2 size={18} /></button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -307,17 +259,9 @@ function JobsListContent() {
   );
 }
 
-// --- Boundary Wrapper ---
 export default function JobsPage() {
   return (
-    <Suspense fallback={
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white gap-4">
-        <Loader2 className="animate-spin text-blue-600" size={48} />
-        <p className="text-gray-500 font-bold italic uppercase tracking-[0.25em] text-sm">
-          System Booting...
-        </p>
-      </div>
-    }>
+    <Suspense fallback={<div className="flex flex-col items-center justify-center min-h-screen bg-white gap-4"><Loader2 className="animate-spin text-blue-600" size={48} /><p className="text-gray-500 font-bold italic uppercase tracking-[0.25em] text-sm">System Booting...</p></div>}>
       <JobsListContent />
     </Suspense>
   );
