@@ -1,107 +1,293 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Users, UserPlus, Search, Phone, MapPin, Wallet, Eye, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { 
+  Users, UserPlus, Search, Phone, MapPin, 
+  Eye, Edit3, Trash2, Loader2
+} from 'lucide-react';
+
+type Client = {
+  id: number;
+  name: string;
+  mobile: string;
+  address?: string;
+  created_at?: string;
+};
+
+type Job = {
+  client_id: number;
+  final_bill: number | null;
+  status: string;
+};
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [deliveredTotals, setDeliveredTotals] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
 
+  // Mobile detection
   useEffect(() => {
-    const fetchClients = async () => {
-      const { data } = await supabase.from('clients').select('*').order('name');
-      setClients(data || []);
-      setLoading(false);
-    };
-    fetchClients();
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const filtered = clients.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.mobile.includes(searchTerm)
+  // Fetch clients + delivered totals
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // 1. Fetch all clients
+        const { data: clientsData, error: clientsError } = await supabase
+          .from('clients')
+          .select('*')
+          .order('name');
+        if (clientsError) throw clientsError;
+        setClients(clientsData || []);
+
+        // 2. Fetch only delivered jobs (client_id + final_bill)
+        const { data: jobsData, error: jobsError } = await supabase
+          .from('jobs')
+          .select('client_id, final_bill')
+          .eq('status', 'Delivered');
+        if (jobsError) throw jobsError;
+
+        // 3. Aggregate total per client
+        const totals: Record<number, number> = {};
+        jobsData?.forEach((job: Job) => {
+          if (job.client_id) {
+            totals[job.client_id] = (totals[job.client_id] || 0) + (job.final_bill || 0);
+          }
+        });
+        setDeliveredTotals(totals);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Delete handler
+  const handleDelete = async (id: number, name: string) => {
+    if (confirm(`Kya aap "${name}" ko delete karna chahte hain?`)) {
+      try {
+        const { error } = await supabase.from('clients').delete().eq('id', id);
+        if (error) throw error;
+        // Remove from state
+        setClients(prev => prev.filter(client => client.id !== id));
+        // Also remove from deliveredTotals
+        setDeliveredTotals(prev => {
+          const newTotals = { ...prev };
+          delete newTotals[id];
+          return newTotals;
+        });
+      } catch (err) {
+        console.error("Error deleting client:", err);
+        alert("Client delete nahi ho paya! Shayad uske saath jobs linked hain.");
+      }
+    }
+  };
+
+  // Filter clients by search
+  const filteredClients = clients.filter(c => 
+    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    c.mobile?.includes(searchTerm)
   );
 
-  if (loading) return (
-    <div style={loaderContainer}>
-      <Loader2 className="animate-spin" size={32} />
-      <p>Loading Customers...</p>
-    </div>
-  );
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 bg-white">
+        <Loader2 className="animate-spin text-blue-600" size={48} />
+        <p className="text-gray-500 font-bold italic uppercase tracking-[0.25em] text-sm">
+          Loading Customers...
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div style={containerStyle}>
-      <div style={headerStyle}>
-        <div>
-          <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Users color="#007bff" /> Customers
-          </h2>
-          <p style={{ color: '#666', margin: '5px 0 0 0', fontSize: '14px' }}>Total: {clients.length} Clients</p>
+    <div className="min-h-screen bg-white text-gray-900 p-4 md:p-8 font-sans">
+      <div className="max-w-7xl mx-auto space-y-6">
+        
+        {/* ===== HEADER CARD ===== */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gray-50 p-6 md:p-8 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
+          <div className="flex items-center gap-5">
+            <div className="p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/20">
+              <Users className="text-white" size={32} />
+            </div>
+            <div>
+              <h2 className="text-3xl font-black text-gray-900 tracking-tighter m-0 uppercase leading-none">
+                Customer Registry
+              </h2>
+              <p className="text-blue-600 text-[11px] font-extrabold uppercase tracking-[0.25em] mt-2">
+                Total Clients: {clients.length}
+              </p>
+            </div>
+          </div>
+          <Link 
+            href="/clients/new" 
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-[2rem] font-extrabold flex items-center justify-center gap-2 transition-all active:scale-95 no-underline uppercase tracking-tight shadow-md shadow-blue-500/20 text-sm"
+          >
+            <UserPlus size={20} strokeWidth={2.5} /> Add New Client
+          </Link>
         </div>
-        <Link href="/clients/new" style={btnAdd}>
-          <UserPlus size={18} /> Add New Client
-        </Link>
-      </div>
 
-      <div style={toolbarSection}>
-        <div style={searchWrapper}>
-          <Search size={18} style={searchIcon} />
+        {/* ===== SEARCH BOX ===== */}
+        <div className="relative group">
+          <Search size={22} className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
           <input 
-            placeholder="Search name or mobile..." 
-            style={searchInput} 
+            placeholder="Search by name or mobile..." 
+            value={searchTerm}
+            className="w-full pl-16 pr-8 py-5 bg-white border-2 border-gray-300 rounded-[2rem] outline-none focus:border-blue-600 transition-all shadow-md text-gray-900 font-bold text-lg placeholder:text-gray-400 placeholder:font-medium"
             onChange={(e) => setSearchTerm(e.target.value)} 
           />
         </div>
-      </div>
 
-      <div style={tableCard}>
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              <th style={thStyle}>Client Details</th>
-              <th style={thStyle}>Address</th>
-              <th style={thStyle}>Business / Balance</th>
-              <th style={{...thStyle, textAlign: 'center'}}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(c => (
-              <tr key={c.id} style={trStyle}>
-                <td style={tdStyle}>
-                  <div style={{ fontWeight: 'bold' }}>{c.name}</div>
-                  <div style={{ color: '#666', fontSize: '13px' }}>{c.mobile}</div>
-                </td>
-                <td style={tdStyle}>{c.address || 'N/A'}</td>
-                <td style={tdStyle}>
-                  <div style={{ fontWeight: 'bold' }}>₹{c.balance || 0}</div>
-                </td>
-                <td style={{...tdStyle, textAlign: 'center'}}>
-                  <Link href={`/clients/${c.id}/view`} style={btnAction}>
-                    <Eye size={16} /> View Profile
+        {/* ===== CLIENTS LIST ===== */}
+        {filteredClients.length === 0 ? (
+          <div className="text-center py-16 bg-gray-50 rounded-[2.5rem] border-2 border-dashed border-gray-400 shadow-md">
+            <p className="text-gray-600 font-bold italic uppercase tracking-wider text-sm">
+              No clients found matching your search
+            </p>
+          </div>
+        ) : isMobile ? (
+          /* ----- MOBILE CARDS ----- */
+          <div className="grid gap-4">
+            {filteredClients.map(client => (
+              <div 
+                key={client.id} 
+                className="bg-white p-6 rounded-[2rem] border-2 border-gray-300 shadow-md space-y-4"
+              >
+                {/* Header: Name + Due Balance */}
+                <div className="flex justify-between items-center">
+                  <span className="font-extrabold text-gray-900 text-lg uppercase tracking-tight">
+                    {client.name}
+                  </span>
+                  <span className="px-3 py-1.5 bg-emerald-50 border-2 border-emerald-200 rounded-full text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider">
+                    ₹{deliveredTotals[client.id] || 0}
+                  </span>
+                </div>
+                
+                {/* Contact Info */}
+                <div className="bg-gray-50 p-4 rounded-xl border-2 border-gray-200 space-y-2">
+                  <div className="flex items-center gap-2 text-gray-700 font-bold text-sm">
+                    <Phone size={14} className="text-blue-600" />
+                    <span>{client.mobile || '—'}</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-gray-700 font-bold text-sm">
+                    <MapPin size={14} className="text-blue-600 mt-0.5" />
+                    <span className="flex-1">{client.address || '—'}</span>
+                  </div>
+                </div>
+
+                {/* Action Buttons – View, Edit, Delete */}
+                <div className="grid grid-cols-3 gap-3">
+                  <Link 
+                    href={`/clients/${client.id}/view`} 
+                    className="flex flex-col items-center gap-1 p-3 bg-white border-2 border-gray-300 rounded-xl no-underline text-gray-700 hover:bg-gray-100 transition-all"
+                  >
+                    <Eye size={18} /> 
+                    <span className="text-[9px] font-extrabold uppercase">View</span>
                   </Link>
-                </td>
-              </tr>
+                  <Link 
+                    href={`/clients/${client.id}/edit`} 
+                    className="flex flex-col items-center gap-1 p-3 bg-blue-50 border-2 border-blue-200 rounded-xl no-underline text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all"
+                  >
+                    <Edit3 size={18} /> 
+                    <span className="text-[9px] font-extrabold uppercase">Edit</span>
+                  </Link>
+                  <button 
+                    onClick={() => handleDelete(client.id, client.name)} 
+                    className="flex flex-col items-center gap-1 p-3 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all cursor-pointer"
+                  >
+                    <Trash2 size={18} /> 
+                    <span className="text-[9px] font-extrabold uppercase">Del</span>
+                  </button>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          /* ----- DESKTOP TABLE ----- */
+          <div className="bg-white rounded-[2.5rem] shadow-md border-2 border-gray-300 overflow-hidden">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-100 text-gray-700 border-b-2 border-gray-300">
+                  <th className="px-6 py-5 text-left text-[11px] font-extrabold uppercase tracking-[0.15em]">Customer Details</th>
+                  <th className="px-6 py-5 text-left text-[11px] font-extrabold uppercase tracking-[0.15em]">Contact</th>
+                  <th className="px-6 py-5 text-left text-[11px] font-extrabold uppercase tracking-[0.15em]">Address</th>
+                  <th className="px-6 py-5 text-left text-[11px] font-extrabold uppercase tracking-[0.15em]">Due (₹)</th>
+                  <th className="px-6 py-5 text-center text-[11px] font-extrabold uppercase tracking-[0.15em]">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredClients.map(client => (
+                  <tr key={client.id} className="hover:bg-gray-50/80 transition-colors group">
+                    <td className="px-6 py-5">
+                      <div className="font-extrabold text-gray-900 text-base tracking-tight">
+                        {client.name}
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-2 text-gray-700 font-bold text-sm">
+                        <Phone size={14} className="text-blue-600" />
+                        <span>{client.mobile || '—'}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-start gap-2 text-gray-700 font-bold text-sm max-w-xs">
+                        <MapPin size={14} className="text-blue-600 shrink-0 mt-0.5" />
+                        <span className="line-clamp-2">{client.address || '—'}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="px-3 py-1.5 bg-emerald-50 border-2 border-emerald-200 rounded-full text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider">
+                        ₹{deliveredTotals[client.id] || 0}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center justify-center gap-2">
+                        {/* View Button */}
+                        <Link 
+                          href={`/clients/${client.id}/view`} 
+                          className="p-2.5 bg-white border-2 border-gray-300 text-gray-600 rounded-xl hover:bg-gray-100 transition-all"
+                          title="View Profile"
+                        >
+                          <Eye size={18} />
+                        </Link>
+                        {/* Edit Button */}
+                        <Link 
+                          href={`/clients/${client.id}/edit`} 
+                          className="p-2.5 bg-white border-2 border-gray-300 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all"
+                          title="Edit Client"
+                        >
+                          <Edit3 size={18} />
+                        </Link>
+                        {/* Delete Button */}
+                        <button 
+                          onClick={() => handleDelete(client.id, client.name)} 
+                          className="p-2.5 bg-white border-2 border-gray-300 text-red-600 rounded-xl hover:bg-red-600 hover:text-white hover:border-red-600 transition-all cursor-pointer"
+                          title="Delete Client"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
-// --- Fixed Styles for Vercel Build ---
-const containerStyle: React.CSSProperties = { padding: '20px', maxWidth: '1200px', margin: '0 auto' };
-const headerStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' };
-const btnAdd: React.CSSProperties = { backgroundColor: '#007bff', color: 'white', padding: '10px 20px', borderRadius: '8px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' };
-const toolbarSection: React.CSSProperties = { display: 'flex', gap: '15px', marginBottom: '20px', alignItems: 'center' };
-const searchWrapper: React.CSSProperties = { position: 'relative', flex: 1 };
-const searchIcon: React.CSSProperties = { position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#888' };
-const searchInput: React.CSSProperties = { width: '100%', padding: '12px 12px 12px 40px', borderRadius: '10px', border: '1px solid #ddd', fontSize: '15px', outline: 'none' };
-const tableCard: React.CSSProperties = { background: 'white', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden' };
-const tableStyle: React.CSSProperties = { width: '100%', borderCollapse: 'collapse' };
-const thStyle: React.CSSProperties = { backgroundColor: '#f8f9fa', padding: '15px', textAlign: 'left', borderBottom: '2px solid #eee', color: '#666', fontSize: '14px' };
-const trStyle: React.CSSProperties = { borderBottom: '1px solid #eee' };
-const tdStyle: React.CSSProperties = { padding: '15px', fontSize: '15px' };
-const btnAction: React.CSSProperties = { color: '#007bff', textDecoration: 'none', fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' };
-const loaderContainer: React.CSSProperties = { display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '300px', gap: '10px', color: '#666' };

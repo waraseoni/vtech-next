@@ -2,137 +2,219 @@
 import React, { useState, useEffect, use } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Save, ArrowLeft, UserCheck, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { 
+  Save, ArrowLeft, UserCheck, Loader2, Phone, MapPin, FileText 
+} from 'lucide-react';
 
 export default function EditClientPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: "", mobile: "", gst: "", address: "" });
+  const [form, setForm] = useState({ 
+    name: "", 
+    mobile: "", 
+    gst: "", 
+    address: "" 
+  });
 
-  // --- 1. Purana Data Load Karna ---
+  // Fetch client data
   useEffect(() => {
     const fetchClient = async () => {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', resolvedParams.id)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', resolvedParams.id)
+          .single();
 
-      if (error) {
-        alert("Client details nahi mil payi!");
-        router.push('/clients');
-      } else {
+        if (error) throw error;
+        
         setForm({
-          name: data.name,
-          mobile: data.mobile,
+          name: data.name || "",
+          mobile: data.mobile || "",
           gst: data.gst || "",
           address: data.address || ""
         });
+      } catch (err) {
+        console.error("Error fetching client:", err);
+        alert("Client details nahi mil payi!");
+        router.push('/clients');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchClient();
   }, [resolvedParams.id, router]);
 
-  // --- 2. Data Update Karna ---
+  // Handle form update
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.mobile) return alert("Name aur Mobile zaroori hai!");
     
-    setSaving(true);
-    const { error } = await supabase
-      .from('clients')
-      .update({
-        name: form.name,
-        mobile: form.mobile,
-        gst: form.gst,
-        address: form.address
-      })
-      .eq('id', resolvedParams.id);
-
-    if (error) {
-      alert("Update karne mein galti hui: " + error.message);
-    } else {
-      alert("Client Details Update ho gayi!");
-      router.push(`/clients/${resolvedParams.id}/view`); // Wapas view page par bhej dega
+    if (!form.name.trim()) {
+      alert("Customer name zaroori hai!");
+      return;
     }
-    setSaving(false);
+    if (!form.mobile.trim()) {
+      alert("Mobile number zaroori hai!");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({
+          name: form.name.trim(),
+          mobile: form.mobile.trim(),
+          gst: form.gst.trim() || null,
+          address: form.address.trim() || null
+        })
+        .eq('id', resolvedParams.id);
+
+      if (error) throw error;
+
+      alert("Client details successfully updated! ✅");
+      router.push(`/clients/${resolvedParams.id}/view`);
+    } catch (err: any) {
+      console.error("Update error:", err);
+      alert("Update karne mein galti hui: " + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (loading) return <div style={loaderContainer}><Loader2 className="animate-spin" /> Loading Client Details...</div>;
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 bg-white">
+        <Loader2 className="animate-spin text-blue-600" size={48} />
+        <p className="text-gray-500 font-bold italic uppercase tracking-[0.25em] text-sm">
+          Loading Client Details...
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: '600px', margin: '20px auto', padding: '10px' }}>
-      <Link href={`/clients/${resolvedParams.id}/view`} style={backLink}>
-        <ArrowLeft size={18} /> Profile par wapas jayein
-      </Link>
-
-      <div style={cardStyle}>
-        <div style={headerStyle}>
-          <UserCheck color="#007bff" size={24} />
-          <h3 style={{ margin: 0 }}>Update Customer Profile</h3>
-        </div>
+    <div className="min-h-screen bg-white text-gray-900 p-4 md:p-8 font-sans">
+      <div className="max-w-3xl mx-auto space-y-6">
         
-        <form onSubmit={handleUpdate} style={formStyle}>
-          <div style={inputGroup}>
-            <label style={labelStyle}>Full Name *</label>
-            <input 
-              style={inputStyle} 
-              value={form.name} 
-              onChange={e => setForm({...form, name: e.target.value})} 
-              placeholder="Ex: Vikram Singh"
-            />
+        {/* ===== HEADER CARD ===== */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50 p-6 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
+          <div className="flex items-center gap-4">
+            <Link 
+              href={`/clients/${resolvedParams.id}/view`}
+              className="p-2.5 bg-white border-2 border-gray-300 rounded-xl text-gray-600 hover:bg-gray-100 transition-all"
+            >
+              <ArrowLeft size={20} />
+            </Link>
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-600 rounded-xl shadow-lg shadow-blue-500/20">
+                <UserCheck className="text-white" size={24} />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-gray-900 tracking-tight uppercase leading-none">
+                  Edit Customer
+                </h2>
+                <p className="text-[10px] text-gray-600 font-extrabold uppercase tracking-[0.2em] mt-1">
+                  ID: #C-{resolvedParams.id}
+                </p>
+              </div>
+            </div>
           </div>
+        </div>
 
-          <div style={inputGroup}>
-            <label style={labelStyle}>Mobile Number *</label>
-            <input 
-              style={inputStyle} 
-              value={form.mobile} 
-              onChange={e => setForm({...form, mobile: e.target.value})} 
-              placeholder="Ex: 9876543210"
-            />
-          </div>
+        {/* ===== FORM CARD ===== */}
+        <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
+          <form onSubmit={handleUpdate} className="space-y-6">
+            
+            {/* Full Name */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-[11px] font-extrabold uppercase text-gray-600 tracking-[0.1em]">
+                <UserCheck size={16} className="text-blue-600" />
+                Full Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm({...form, name: e.target.value})}
+                placeholder="e.g. Vikram Singh"
+                className="w-full px-5 py-3.5 bg-white border-2 border-gray-300 rounded-xl outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 font-bold text-base placeholder:text-gray-400"
+                required
+              />
+            </div>
 
-          <div style={inputGroup}>
-            <label style={labelStyle}>GST Number (Optional)</label>
-            <input 
-              style={inputStyle} 
-              value={form.gst} 
-              onChange={e => setForm({...form, gst: e.target.value})} 
-              placeholder="Ex: 22AAAAA0000A1Z5"
-            />
-          </div>
+            {/* Mobile Number */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-[11px] font-extrabold uppercase text-gray-600 tracking-[0.1em]">
+                <Phone size={16} className="text-blue-600" />
+                Mobile Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                value={form.mobile}
+                onChange={(e) => setForm({...form, mobile: e.target.value})}
+                placeholder="e.g. 9876543210"
+                className="w-full px-5 py-3.5 bg-white border-2 border-gray-300 rounded-xl outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 font-bold text-base placeholder:text-gray-400"
+                required
+              />
+            </div>
 
-          <div style={inputGroup}>
-            <label style={labelStyle}>Full Address</label>
-            <textarea 
-              style={{...inputStyle, height: '100px', resize: 'none'}} 
-              value={form.address} 
-              onChange={e => setForm({...form, address: e.target.value})} 
-              placeholder="Dukan ya Ghar ka pata..."
-            />
-          </div>
+            {/* GST Number (Optional) */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-[11px] font-extrabold uppercase text-gray-600 tracking-[0.1em]">
+                <FileText size={16} className="text-blue-600" />
+                GST Number (Optional)
+              </label>
+              <input
+                type="text"
+                value={form.gst}
+                onChange={(e) => setForm({...form, gst: e.target.value})}
+                placeholder="e.g. 22AAAAA0000A1Z5"
+                className="w-full px-5 py-3.5 bg-white border-2 border-gray-300 rounded-xl outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 font-bold text-base placeholder:text-gray-400"
+              />
+            </div>
 
-          <button type="submit" disabled={saving} style={btnUpdate}>
-            {saving ? "Updating..." : <><Save size={18} /> Update Changes</>}
-          </button>
-        </form>
+            {/* Full Address */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-[11px] font-extrabold uppercase text-gray-600 tracking-[0.1em]">
+                <MapPin size={16} className="text-blue-600" />
+                Full Address
+              </label>
+              <textarea
+                value={form.address}
+                onChange={(e) => setForm({...form, address: e.target.value})}
+                placeholder="Shop or home address..."
+                rows={4}
+                className="w-full px-5 py-3.5 bg-white border-2 border-gray-300 rounded-xl outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 font-bold text-base placeholder:text-gray-400 resize-none"
+              />
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full sm:w-auto px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-[2rem] font-extrabold flex items-center justify-center gap-3 transition-all active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300 disabled:active:scale-100 shadow-md shadow-blue-500/20 text-sm uppercase tracking-wide"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    <span>Updating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save size={20} strokeWidth={2.5} />
+                    <span>Save Changes</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
 }
-
-// --- Styles ---
-const backLink = { display: 'flex', alignItems: 'center', gap: '5px', color: '#666', textDecoration: 'none', marginBottom: '15px', fontSize: '14px', fontWeight: 'bold' };
-const cardStyle = { background: 'white', padding: '30px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)' };
-const headerStyle = { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '25px', borderBottom: '1px solid #eee', paddingBottom: '15px' };
-const formStyle = { display: 'flex', flexDirection: 'column' as 'column', gap: '20px' };
-const inputGroup = { display: 'flex', flexDirection: 'column' as 'column', gap: '8px' };
-const labelStyle = { fontSize: '13px', fontWeight: 'bold', color: '#444', textTransform: 'uppercase' as 'uppercase' };
-const inputStyle = { width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '15px', outline: 'none', transition: '0.2s' };
-const btnUpdate = { backgroundColor: '#007bff', color: 'white', padding: '15px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', fontSize: '16px' };
-const loaderContainer: any = { padding: '100px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', color: '#666' };
