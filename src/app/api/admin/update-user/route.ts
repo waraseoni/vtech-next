@@ -1,6 +1,6 @@
 // src/app/api/admin/update-user/route.ts
 import { createServerClient } from '@supabase/ssr';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'; // direct js client for admin
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -9,7 +9,8 @@ export async function POST(request: Request) {
     const { userId, email, password, full_name } = await request.json();
     console.log('📥 Request for user:', userId);
 
-    const cookieStore = cookies(); // no await needed in Next.js 14+
+    // 🔥 FIX: cookies() ko await karna hoga (Next.js 15+)
+    const cookieStore = await cookies();
 
     // 1. Normal client (cookie-based) → current user / auth check ke liye
     const supabase = createServerClient(
@@ -51,7 +52,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Server config error' }, { status: 500 });
     }
 
-    // Direct supabase-js client with service_role (NO cookies!)
     const supabaseAdmin = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY,
