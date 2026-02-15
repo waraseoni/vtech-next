@@ -2,20 +2,22 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
-  Users, UserPlus, Trash2, Shield, 
+  Users, UserPlus, Trash2, Shield, Pencil, 
   UserCheck, Loader2, Mail, Calendar, AlertTriangle 
 } from 'lucide-react';
+import UserEditModal from '@/app/components/UserEditModal'; // 🔴 एडिट मोडल इम्पोर्ट
 
 export default function UsersManager() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  // 🔴 एडिट मोडल के लिए स्टेट
+  const [editingUser, setEditingUser] = useState<any>(null);
 
-  // 1. Fetch Users List (Fixed Query)
+  // 1. Fetch Users List
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      // Specific columns mangwane se 400 error ke chances kam ho jate hain
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, role, created_at') 
@@ -40,7 +42,7 @@ export default function UsersManager() {
   // 2. Update Role (Admin <-> Staff)
   const toggleRole = async (userId: string, currentRole: string) => {
     const newRole = currentRole === 'admin' ? 'staff' : 'admin';
-    if (!confirm(`Kya aap is user ko ${newRole} banana chahte hain?`)) return;
+    if (!confirm(`क्या आप इस यूजर को ${newRole} बनाना चाहते हैं?`)) return;
 
     setActionLoading(userId);
     const { error } = await supabase
@@ -51,14 +53,14 @@ export default function UsersManager() {
     if (error) {
       alert("Role update failed: " + error.message);
     } else {
-      await fetchUsers(); // Refresh the list
+      await fetchUsers();
     }
     setActionLoading(null);
   };
 
   // 3. Delete User Profile
   const deleteUser = async (userId: string) => {
-    if (!confirm("Chetavni: Ye sirf profile data delete karega. User ko poori tarah hatane ke liye Supabase Auth se bhi delete karna hoga.")) return;
+    if (!confirm("चेतावनी: यह सिर्फ प्रोफाइल डेटा डिलीट करेगा। यूजर को पूरी तरह हटाने के लिए Supabase Auth से भी डिलीट करना होगा।")) return;
 
     setActionLoading(userId);
     const { error } = await supabase
@@ -72,6 +74,17 @@ export default function UsersManager() {
       await fetchUsers();
     }
     setActionLoading(null);
+  };
+
+  // 🔴 एडिट मोडल खोलें
+  const openEditModal = (user: any) => {
+    setEditingUser(user);
+  };
+
+  // 🔴 एडिट सेव होने के बाद लिस्ट रिफ्रेश करें और मोडल बंद करें
+  const handleUserSaved = () => {
+    fetchUsers();
+    setEditingUser(null);
   };
 
   if (loading) return (
@@ -91,10 +104,12 @@ export default function UsersManager() {
           <h1 className="text-2xl font-black text-gray-900 uppercase italic flex items-center gap-3">
             <Users className="text-blue-600" /> Staff Management
           </h1>
-          <p className="text-gray-500 text-[10px] font-black mt-1 uppercase tracking-wider">Control who can access the admin panel</p>
+          <p className="text-gray-500 text-[10px] font-black mt-1 uppercase tracking-wider">
+            Control who can access the admin panel
+          </p>
         </div>
         <button 
-          onClick={() => alert("Naye user ko add karne ke liye Supabase Auth Dashboard ka use karein, phir wo yahan dikhne lagenge.")}
+          onClick={() => alert("नए यूजर को जोड़ने के लिए Supabase Auth Dashboard का उपयोग करें, फिर वह यहाँ दिखने लगेंगे।")}
           className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-black uppercase text-xs hover:bg-blue-700 transition-all shadow-lg"
         >
           <UserPlus size={18} /> Invite Staff
@@ -129,7 +144,9 @@ export default function UsersManager() {
                           {u.full_name?.charAt(0) || 'U'}
                         </div>
                         <div>
-                          <div className="font-black text-gray-900 uppercase text-sm">{u.full_name || 'Unnamed User'}</div>
+                          <div className="font-black text-gray-900 uppercase text-sm">
+                            {u.full_name || 'Unnamed User'}
+                          </div>
                           <div className="text-[10px] text-blue-600 font-bold flex items-center gap-1 uppercase tracking-tighter">
                             <Mail size={12} /> ID: {u.id.substring(0, 12)}...
                           </div>
@@ -147,11 +164,22 @@ export default function UsersManager() {
                     </td>
                     <td className="p-5 text-[11px] font-bold text-gray-500 uppercase italic">
                       <div className="flex items-center gap-1">
-                        <Calendar size={14} className="text-gray-400" /> {new Date(u.created_at).toLocaleDateString('en-GB')}
+                        <Calendar size={14} className="text-gray-400" /> 
+                        {new Date(u.created_at).toLocaleDateString('en-GB')}
                       </div>
                     </td>
                     <td className="p-5 text-right">
                       <div className="flex items-center justify-end gap-3">
+                        {/* 🔴 एडिट बटन - सबसे पहले */}
+                        <button 
+                          onClick={() => openEditModal(u)}
+                          className="p-2.5 bg-white border-2 border-gray-300 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all active:scale-95 shadow-sm"
+                          title="Edit User"
+                        >
+                          <Pencil size={18} />
+                        </button>
+
+                        {/* Role Toggle Button */}
                         <button 
                           onClick={() => toggleRole(u.id, u.role)}
                           disabled={actionLoading === u.id}
@@ -162,9 +190,16 @@ export default function UsersManager() {
                           }`}
                           title={u.role === 'admin' ? "Make Staff" : "Make Admin"}
                         >
-                          {actionLoading === u.id ? <Loader2 size={18} className="animate-spin" /> : (u.role === 'admin' ? <Shield size={18} /> : <UserCheck size={18} />)}
+                          {actionLoading === u.id ? (
+                            <Loader2 size={18} className="animate-spin" />
+                          ) : u.role === 'admin' ? (
+                            <Shield size={18} />
+                          ) : (
+                            <UserCheck size={18} />
+                          )}
                         </button>
                         
+                        {/* Delete Button */}
                         <button 
                           onClick={() => deleteUser(u.id)}
                           disabled={actionLoading === u.id}
@@ -191,6 +226,15 @@ export default function UsersManager() {
           Roles changed here take effect immediately on the user's next action. Admin users can access Analytics, Settings, and User Management. Staff users only see Jobs and Inventory.
         </p>
       </div>
+
+      {/* 🔴 एडिट मोडल - यहाँ डालें */}
+      {editingUser && (
+        <UserEditModal 
+          user={editingUser} 
+          onClose={() => setEditingUser(null)} 
+          onSaved={handleUserSaved}
+        />
+      )}
     </div>
   );
 }
