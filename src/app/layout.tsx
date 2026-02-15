@@ -1,12 +1,13 @@
 "use client";
 import "./globals.css";
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import { 
   LayoutDashboard, Users, Package, FileText, 
   Settings, Wrench, Search, Bell, User, LogOut,
-  Menu, ChevronDown, PlusCircle, Sparkles
+  ChevronDown, Sparkles, Loader2, ArrowLeft, RotateCw
 } from 'lucide-react';
 
 // ========== SEARCH COMPONENT ==========
@@ -16,11 +17,8 @@ function NavbarSearch() {
   
   const handleSearch = (term: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (term) {
-      params.set('search', term);
-    } else {
-      params.delete('search');
-    }
+    if (term) params.set('search', term);
+    else params.delete('search');
     router.push(`/jobs?${params.toString()}`);
   };
 
@@ -34,279 +32,261 @@ function NavbarSearch() {
         placeholder="Search jobs, clients or IDs..." 
         className="w-full pl-10 pr-4 py-2.5 bg-white/90 backdrop-blur-sm border border-gray-300/50 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 focus:bg-white focus:border-blue-400 transition-all font-medium text-sm text-gray-900 placeholder:text-gray-500"
         onChange={(e) => handleSearch(e.target.value)}
-        defaultValue={searchParams.get('search')?.toString()}
+        defaultValue={searchParams.get('search')?.toString() || ""}
       />
     </div>
   );
 }
 
-// ========== USER DROPDOWN ==========
-function UserDropdown() {
-  const [isOpen, setIsOpen] = useState(false);
-  
-  return (
-    <div className="relative">
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 pl-2 group focus:outline-none"
-      >
-        <div className="text-right hidden sm:block">
-          <p className="text-sm font-bold text-gray-800 m-0 leading-none group-hover:text-blue-600 transition-colors tracking-tight">
-            Vikram S.
-          </p>
-          <p className="text-[9px] text-gray-600 m-0 mt-0.5 uppercase font-semibold tracking-wider">
-            Admin
-          </p>
-        </div>
-        <div className="relative">
-          <div className="w-10 h-10 rounded-full border-2 border-gray-300/60 p-0.5 group-hover:border-blue-500 transition-all overflow-hidden shadow-sm">
-            <div className="w-full h-full bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white font-bold">
-              V
-            </div>
-          </div>
-          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
-        </div>
-        <ChevronDown size={14} className={`text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-      
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200/80 py-1.5 z-50 animate-in fade-in slide-in-from-top-2">
-          <div className="px-4 py-2 border-b border-gray-100">
-            <p className="text-xs font-bold text-gray-900">Vikram Singh</p>
-            <p className="text-[10px] text-gray-600">vikram@vtech.com</p>
-          </div>
-          <Link href="/profile" className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 transition-colors">
-            <User size={14} /> Profile
-          </Link>
-          <Link href="/settings" className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 transition-colors">
-            <Settings size={14} /> Settings
-          </Link>
-          <div className="border-t border-gray-100 my-1"></div>
-          <button className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 w-full text-left transition-colors">
-            <LogOut size={14} /> Logout
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ========== NOTIFICATION ICON ==========
-function NotificationBell() {
-  return (
-    <div className="relative cursor-pointer hover:scale-110 transition-transform">
-      <Bell size={20} className="text-gray-600 hover:text-blue-600 transition-colors" />
-      <span className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-red-500 to-rose-600 border-2 border-white rounded-full text-[8px] flex items-center justify-center text-white font-black shadow-sm">
-        3
-      </span>
-      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-ping opacity-30"></span>
-    </div>
-  );
-}
-
-// ========== MAIN LAYOUT ==========
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<{full_name: string, role: string} | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // LOGOUT FUNCTION
+  const handleLogout = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+      router.push('/login');
+    } catch (error) {
+      console.error("Logout Error:", error);
+    }
+  }, [router]);
+
+  // IDLE TIMER (AUTO-LOGOUT) LOGIC
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+
+    const resetTimer = () => {
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) handleLogout();
+        });
+      }, 900000); 
+    };
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    
+    if (userEmail) {
+      events.forEach(event => window.addEventListener(event, resetTimer));
+      resetTimer();
+    }
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [userEmail, handleLogout]);
 
   useEffect(() => {
+    const getAuthAndProfile = async () => {
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) {
+          if (pathname !== '/login') router.push('/login');
+          setLoading(false);
+          return;
+        }
+        const email = authUser.email || null;
+        setUserEmail(email);
+
+        // Database se role fetch karna
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name, role')
+          .eq('id', authUser.id)
+          .maybeSingle();
+        
+        // DYNAMIC ROLE LOGIC WITH SAFETY NET
+        const isMainAdmin = email === 'vtech.jbp@gmail.com';
+        const dbRole = profileData?.role?.toLowerCase().trim();
+
+        if (profileData) {
+          setProfile({
+            full_name: profileData.full_name || email?.split('@')[0] || 'User',
+            role: (isMainAdmin || dbRole === 'admin') ? 'admin' : 'staff'
+          });
+        } else {
+          setProfile({ 
+            full_name: authUser.user_metadata?.full_name || email?.split('@')[0] || 'User', 
+            role: isMainAdmin ? 'admin' : 'staff' 
+          });
+        }
+      } catch (err) {
+        console.error("Auth Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getAuthAndProfile();
     const checkSize = () => setIsMobile(window.innerWidth < 1024);
     checkSize();
     window.addEventListener('resize', checkSize);
     return () => window.removeEventListener('resize', checkSize);
-  }, []);
+  }, [pathname, router]);
+
+  if (pathname === '/login') return <html lang="en"><body>{children}</body></html>;
+
+  if (loading) {
+    return (
+      <html lang="en">
+        <body className="h-screen flex items-center justify-center bg-white">
+          <div className="text-center">
+            <Loader2 className="animate-spin text-blue-600 mx-auto" size={40} />
+            <p className="mt-4 text-gray-400 font-bold uppercase tracking-[0.3em] text-[10px]">V-TECH SECURE BOOT</p>
+          </div>
+        </body>
+      </html>
+    );
+  }
 
   const isActive = (path: string) => pathname === path;
+  const displayName = profile?.full_name || "User";
+  const isAdmin = profile?.role === 'admin';
 
   return (
     <html lang="en" className="h-full bg-gray-100">
       <body className="h-full m-0 font-sans antialiased text-gray-900 bg-gray-100">
         
-        {/* ===== DESKTOP SIDEBAR – ENHANCED DARKER SHADE ===== */}
         {!isMobile && (
-          <aside className="fixed top-0 left-0 h-full w-[280px] bg-gradient-to-b from-gray-100 to-gray-100/95 backdrop-blur-xl border-r border-gray-300/60 shadow-2xl shadow-gray-400/20 flex flex-col z-50 transition-all duration-300">
-            
-            {/* Logo Area – refined contrast */}
-            <div className="relative p-7 border-b border-gray-300/50 bg-gradient-to-br from-gray-50/90 to-gray-100/90">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-transparent"></div>
-              <div className="relative flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg shadow-blue-500/30 flex items-center justify-center">
-                  <Sparkles size={20} className="text-white" />
+          <aside className="fixed top-0 left-0 h-full w-[280px] bg-gradient-to-b from-gray-100 to-gray-50 border-r border-gray-300/60 shadow-xl flex flex-col z-50">
+            <div className="p-7 border-b border-gray-300/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg flex items-center justify-center text-white">
+                  <Sparkles size={20} />
                 </div>
-                <div>
-                  <div className="text-xl font-black tracking-tighter italic text-gray-900">
-                    V-TECH <span className="text-blue-600 not-italic">PRO</span>
-                  </div>
-                  <p className="text-[8px] text-gray-600 font-bold uppercase tracking-[0.25em] mt-0.5">
-                    Management Suite
-                  </p>
+                <div className="text-xl font-black tracking-tighter italic text-gray-900 uppercase">
+                  V-TECH <span className="text-blue-600 not-italic">PRO</span>
                 </div>
               </div>
             </div>
             
-            {/* Navigation */}
             <nav className="flex-1 px-4 py-6 overflow-y-auto">
               <div className="space-y-1.5">
-                <p className="px-3 text-[9px] font-extrabold uppercase text-gray-500 tracking-[0.2em] mb-2">
-                  MAIN
-                </p>
+                <p className="px-3 text-[9px] font-extrabold uppercase text-gray-500 tracking-[0.2em] mb-2">Main Menu</p>
                 <NavLink href="/" icon={<LayoutDashboard size={18}/>} label="Dashboard" active={isActive('/')} />
                 <NavLink href="/jobs" icon={<Wrench size={18}/>} label="Repair Jobs" active={isActive('/jobs')} />
                 <NavLink href="/clients" icon={<Users size={18}/>} label="Customers" active={isActive('/clients')} />
                 <NavLink href="/inventory" icon={<Package size={18}/>} label="Inventory" active={isActive('/inventory')} />
               </div>
-              
-              <div className="mt-8 pt-6 border-t border-gray-300/50">
-                <p className="px-3 text-[9px] font-extrabold uppercase text-gray-500 tracking-[0.2em] mb-2">
-                  REPORTS
-                </p>
-                <NavLink href="/reports" icon={<FileText size={18}/>} label="Analytics" active={isActive('/reports')} />
-              </div>
-              
-              <div className="mt-8 pt-6 border-t border-gray-300/50">
-                <p className="px-3 text-[9px] font-extrabold uppercase text-gray-500 tracking-[0.2em] mb-2">
-                  SYSTEM
-                </p>
-                <NavLink href="/settings" icon={<Settings size={18}/>} label="Settings" active={isActive('/settings')} />
-              </div>
-            </nav>
 
-            {/* User Profile Card – Sidebar Bottom */}
-            <div className="mt-auto p-5 bg-gradient-to-b from-gray-100/80 to-gray-100/90 border-t border-gray-300/50">
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/80 backdrop-blur-sm border border-gray-300/60 shadow-sm hover:shadow-md transition-all">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center font-bold text-white shadow-md">
-                  VS
+              {isAdmin && (
+                <div className="mt-8 pt-6 border-t border-gray-300/50">
+                  <p className="px-3 text-[9px] font-extrabold uppercase text-gray-500 tracking-[0.2em] mb-2">Advanced</p>
+                  {/* YE LINE ADD KAREIN */}
+                  <NavLink href="/users" icon={<Users size={18}/>} label="Manage Staff" active={pathname === '/users'} />
+                  
+                  <NavLink href="/reports" icon={<FileText size={18}/>} label="Analytics" active={isActive('/reports')} />
+                  <NavLink href="/settings" icon={<Settings size={18}/>} label="Settings" active={isActive('/settings')} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-extrabold text-gray-900 m-0 leading-none truncate">
-                    Vikram Singh
-                  </p>
-                  <p className="text-[9px] text-gray-600 m-0 mt-1 uppercase font-bold tracking-tight">
-                    Owner Access
-                  </p>
-                </div>
-                <button className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all">
-                  <LogOut size={14} />
-                </button>
-              </div>
-            </div>
+              )}
+            </nav>
           </aside>
         )}
 
-        {/* ===== MAIN CONTENT WRAPPER ===== */}
-        <div className={`${!isMobile ? 'lg:ml-[280px]' : 'ml-0'} flex-1 min-h-screen flex flex-col transition-all duration-300 bg-gray-100`}>
-          
-          {/* ===== TOP NAVBAR – ENHANCED DARKER SHADE ===== */}
-          <header className="sticky top-0 z-40 h-16 bg-gray-100/80 backdrop-blur-xl border-b border-gray-300/60 shadow-sm flex items-center justify-between px-4 sm:px-6">
-            <div className="flex items-center gap-4 flex-1">
-              {isMobile && (
-                <button className="p-2 rounded-lg hover:bg-gray-200/70 transition-colors">
-                  <Menu size={20} className="text-gray-700" />
+        <div className={`${!isMobile ? 'lg:ml-[280px]' : 'ml-0'} flex-1 min-h-screen flex flex-col bg-gray-100`}>
+          <header className="sticky top-0 z-40 h-16 bg-gray-100/80 backdrop-blur-xl border-b border-gray-300/60 flex items-center justify-between px-4 sm:px-6">
+            
+            {isMobile && (
+              <div className="flex items-center gap-2">
+                <button onClick={() => router.back()} className="p-2.5 bg-white border border-gray-300 rounded-xl text-gray-700 active:scale-90 transition-all">
+                  <ArrowLeft size={18} />
                 </button>
-              )}
-              <Suspense fallback={<div className="h-9 w-48 bg-gray-200/70 animate-pulse rounded-lg" />}>
+                <button onClick={() => window.location.reload()} className="p-2.5 bg-white border border-gray-300 rounded-xl text-blue-600 active:scale-90 transition-all">
+                  <RotateCw size={18} />
+                </button>
+              </div>
+            )}
+
+            <div className="flex-1 px-4">
+              <Suspense fallback={<div className="h-9 w-48 bg-gray-200 animate-pulse rounded-lg" />}>
                 <NavbarSearch />
               </Suspense>
             </div>
 
-            <div className="flex items-center gap-4 sm:gap-5">
-              <NotificationBell />
-              <div className="h-6 w-[1px] bg-gray-300/60 hidden sm:block" />
-              <Suspense fallback={<div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />}>
-                <UserDropdown />
-              </Suspense>
+            <div className="flex items-center gap-3 sm:gap-5">
+              <div className="relative cursor-pointer hover:bg-gray-200/50 p-2 rounded-lg transition-all hidden sm:block">
+                <Bell size={20} className="text-gray-600" />
+                <span className="absolute top-1 right-1 w-4 h-4 bg-red-600 border-2 border-white rounded-full text-[8px] flex items-center justify-center text-white font-black">3</span>
+              </div>
+              
+              <div className="relative">
+                <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 sm:gap-3 focus:outline-none group cursor-pointer p-1 rounded-full hover:bg-white/50 transition-all border border-transparent">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-sm font-black text-gray-900 m-0 uppercase leading-none group-hover:text-blue-600 transition-colors">{displayName}</p>
+                    <p className="text-[9px] text-blue-600 m-0 mt-1 uppercase font-black tracking-wider">{isAdmin ? 'Administrator' : 'Staff Member'}</p>
+                  </div>
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center font-black uppercase shadow-md shadow-blue-500/20">
+                    {displayName.charAt(0)}
+                  </div>
+                </button>
+
+                {dropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)}></div>
+                    <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-gray-200 py-2 z-50">
+                      <div className="px-5 py-3 border-b border-gray-100">
+                        <p className="text-sm font-black text-gray-900 m-0 uppercase">{displayName}</p>
+                        <p className="text-[10px] text-gray-500 truncate mt-1 font-bold">{userEmail}</p>
+                      </div>
+                      <div className="p-2">
+                        <MenuLink href="/profile" icon={<User size={16} />} label="My Profile" />
+                        {isAdmin && <MenuLink href="/settings" icon={<Settings size={16} />} label="Settings" />}
+                        <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 text-[13px] font-bold text-red-600 hover:bg-red-50 w-full text-left transition-all rounded-xl border-none bg-transparent">
+                          <LogOut size={16} /> Logout Session
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </header>
 
-          {/* ===== MAIN CONTENT ===== */}
-          <main className={`flex-1 p-5 sm:p-7 ${isMobile ? 'pb-24' : 'pb-7'}`}>
+          <main className={`flex-1 p-4 sm:p-7 ${isMobile ? 'pb-24' : ''}`}>
             {children}
           </main>
-
-          {/* ===== DESKTOP FOOTER – ENHANCED DARKER SHADE ===== */}
-          {!isMobile && (
-            <footer className="py-4 px-6 bg-gray-100/70 backdrop-blur-sm border-t border-gray-300/60">
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-2 text-[10px]">
-                <p className="font-medium text-gray-600 uppercase tracking-wider m-0">
-                  © 2025 <span className="font-extrabold text-gray-800">V-TECH PRO</span>
-                </p>
-                <div className="flex items-center gap-4">
-                  <span className="text-gray-500">v4.2.0</span>
-                  <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                  <Link href="#" className="font-semibold text-gray-600 hover:text-blue-600 transition-colors uppercase tracking-wider">
-                    Support
-                  </Link>
-                  <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                  <Link href="#" className="font-semibold text-gray-600 hover:text-blue-600 transition-colors uppercase tracking-wider">
-                    Privacy
-                  </Link>
-                </div>
-              </div>
-            </footer>
-          )}
         </div>
 
-        {/* ===== MOBILE BOTTOM NAVIGATION – WITH FAB ===== */}
         {isMobile && (
-          <>
-            <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-2xl border-t border-gray-300/60 flex justify-around items-center z-[1000] px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
-              <FooterLink href="/" icon={<LayoutDashboard size={20}/>} label="Home" active={isActive('/')} />
-              <FooterLink href="/jobs" icon={<Wrench size={20}/>} label="Jobs" active={isActive('/jobs')} />
-              <FooterLink href="/clients" icon={<Users size={20}/>} label="Clients" active={isActive('/clients')} />
-              <FooterLink href="/settings" icon={<Settings size={20}/>} label="Settings" active={isActive('/settings')} />
-            </nav>
-            
-            {/* Floating Action Button (FAB) for Quick Job */}
-            <Link 
-              href="/jobs/new"
-              className="fixed right-5 bottom-20 z-[1001] w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center text-white hover:scale-110 transition-transform active:scale-95 border-2 border-white/20"
-            >
-              <PlusCircle size={24} />
-            </Link>
-          </>
+          <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-gray-200 flex justify-around items-center z-[1000] px-2 pb-2">
+            <FooterLink href="/" icon={<LayoutDashboard size={20}/>} label="Home" active={isActive('/')} />
+            <FooterLink href="/jobs" icon={<Wrench size={20}/>} label="Jobs" active={isActive('/jobs')} />
+            <FooterLink href="/inventory" icon={<Package size={20}/>} label="Stock" active={isActive('/inventory')} />
+            <FooterLink href="/clients" icon={<Users size={20}/>} label="Clients" active={isActive('/clients')} />
+            {isAdmin && <FooterLink href="/reports" icon={<FileText size={20}/>} label="Reports" active={isActive('/reports')} />}
+          </nav>
         )}
       </body>
     </html>
   );
 }
 
-// ========== DESKTOP NAVLINK – WITH ACTIVE INDICATOR ==========
-const NavLink = ({ href, icon, label, active }: any) => {
-  return (
-    <Link href={href} className="relative block group">
-      <div className={`
-        flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] font-bold tracking-tight transition-all duration-200 no-underline
-        ${active 
-          ? 'bg-gradient-to-r from-blue-100 to-blue-50/90 text-blue-700 shadow-sm border border-blue-200/60' 
-          : 'text-gray-700 hover:bg-gray-200/70 hover:text-gray-900'}
-      `}>
-        {/* Active Indicator Bar */}
-        {active && (
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-600 rounded-r-full shadow-sm shadow-blue-600/30"></span>
-        )}
-        <span className={`${active ? 'text-blue-600' : 'text-gray-500 group-hover:text-gray-700'} transition-colors`}>
-          {icon}
-        </span>
-        <span className="flex-1">{label}</span>
-        {active && (
-          <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse"></span>
-        )}
-      </div>
-    </Link>
-  );
-};
-
-// ========== MOBILE FOOTER LINK ==========
-const FooterLink = ({ href, icon, label, active }: any) => (
-  <Link href={href} className={`
-    flex flex-col items-center justify-center flex-1 no-underline transition-all duration-200 gap-0.5
-    ${active ? 'text-blue-600' : 'text-gray-600'}
-  `}>
-    <div className={`p-1.5 rounded-lg transition-all ${active ? 'bg-blue-100 scale-110' : 'bg-transparent'}`}>
-      {icon}
+const NavLink = ({ href, icon, label, active }: any) => (
+  <Link href={href} className="relative block group no-underline">
+    <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] font-bold tracking-tight transition-all duration-200 ${active ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'text-gray-700 hover:bg-gray-200'}`}>
+      <span className={active ? 'text-blue-600' : 'text-gray-500'}>{icon}</span>
+      <span className="flex-1">{label}</span>
     </div>
-    <span className="text-[8px] font-extrabold uppercase tracking-wider">{label}</span>
-    {active && <span className="w-1 h-1 bg-blue-600 rounded-full mt-0.5"></span>}
+  </Link>
+);
+
+const MenuLink = ({ href, icon, label }: any) => (
+  <Link href={href} className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-bold text-gray-700 hover:bg-gray-100 transition-all rounded-xl no-underline">
+    <span className="text-gray-400">{icon}</span>
+    {label}
+  </Link>
+);
+
+const FooterLink = ({ href, icon, label, active }: any) => (
+  <Link href={href} className={`flex flex-col items-center justify-center flex-1 no-underline gap-1 ${active ? 'text-blue-600' : 'text-gray-500'}`}>
+    <div className={`p-2 rounded-xl transition-all ${active ? 'bg-blue-50' : ''}`}>{icon}</div>
+    <span className="text-[9px] font-black uppercase tracking-tighter">{label}</span>
   </Link>
 );
