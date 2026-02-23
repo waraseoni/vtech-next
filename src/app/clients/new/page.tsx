@@ -2,43 +2,138 @@
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Save, ArrowLeft, UserPlus } from 'lucide-react';
+import { Save, ArrowLeft, UserPlus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NewClientPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ name: "", mobile: "", gst: "", address: "" });
+  const [form, setForm] = useState({
+    firstname: "",
+    middlename: "",
+    lastname: "",
+    contact: "",
+    email: "",
+    address: "",
+    opening_balance: 0
+  });
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.mobile) return alert("Pehle Name aur Mobile bharein!");
+    if (!form.firstname || !form.lastname || !form.contact || !form.email || !form.address) {
+      return alert("Required fields: First Name, Last Name, Contact, Email, Address!");
+    }
     setLoading(true);
-    const { error } = await supabase.from('clients').insert([{ ...form, balance: 0 }]);
-    if (error) alert(error.message);
-    else router.push('/clients');
+    const { error } = await supabase.from('client_list').insert([form]);
+    if (error) {
+      console.error("Error inserting client:", error);
+      alert(error.message);
+    } else {
+      router.push('/clients');
+    }
     setLoading(false);
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '20px auto' }}>
-      <Link href="/clients" style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#666', textDecoration: 'none', marginBottom: '15px' }}>
-        <ArrowLeft size={18} /> Back to List
-      </Link>
-      <div style={{ background: 'white', padding: '30px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
-        <h3 style={{ marginTop: 0 }}><UserPlus color="#007bff" /> Register New Customer</h3>
-        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <div><label style={labelStyle}>Full Name *</label><input style={inputStyle} value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
-          <div><label style={labelStyle}>Mobile Number *</label><input style={inputStyle} value={form.mobile} onChange={e => setForm({...form, mobile: e.target.value})} /></div>
-          <div><label style={labelStyle}>GST Number</label><input style={inputStyle} value={form.gst} onChange={e => setForm({...form, gst: e.target.value})} /></div>
-          <div><label style={labelStyle}>Address</label><textarea style={{...inputStyle, height: '80px'}} value={form.address} onChange={e => setForm({...form, address: e.target.value})} /></div>
-          <button type="submit" disabled={loading} style={btnSave}>{loading ? "Saving..." : "Save Customer Details"}</button>
-        </form>
+    <div className="min-h-screen bg-white text-gray-900 p-4 md:p-8 font-sans">
+      <div className="max-w-md mx-auto space-y-6 animate-in fade-in duration-500">
+        
+        {/* HEADER */}
+        <div className="flex items-center justify-between">
+          <Link 
+            href="/clients" 
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors no-underline"
+          >
+            <ArrowLeft size={24} /> Back to Clients
+          </Link>
+        </div>
+
+        {/* FORM CARD */}
+        <div className="bg-white p-8 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/20">
+              <UserPlus className="text-white" size={28} />
+            </div>
+            <h1 className="text-2xl font-black text-gray-900 tracking-tighter uppercase leading-none">
+              New Client
+            </h1>
+          </div>
+
+          <form onSubmit={handleSave} className="space-y-6">
+            <div>
+              <label className="block text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em] mb-2">First Name *</label>
+              <input 
+                value={form.firstname} 
+                onChange={e => setForm({...form, firstname: e.target.value})} 
+                className="w-full px-5 py-3 bg-white border-2 border-gray-300 rounded-xl outline-none focus:border-blue-600 transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                required 
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em] mb-2">Middle Name</label>
+              <input 
+                value={form.middlename} 
+                onChange={e => setForm({...form, middlename: e.target.value})} 
+                className="w-full px-5 py-3 bg-white border-2 border-gray-300 rounded-xl outline-none focus:border-blue-600 transition-all text-gray-900 font-bold placeholder:text-gray-400"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em] mb-2">Last Name *</label>
+              <input 
+                value={form.lastname} 
+                onChange={e => setForm({...form, lastname: e.target.value})} 
+                className="w-full px-5 py-3 bg-white border-2 border-gray-300 rounded-xl outline-none focus:border-blue-600 transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                required 
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em] mb-2">Contact *</label>
+              <input 
+                value={form.contact} 
+                onChange={e => setForm({...form, contact: e.target.value})} 
+                className="w-full px-5 py-3 bg-white border-2 border-gray-300 rounded-xl outline-none focus:border-blue-600 transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                required 
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em] mb-2">Email *</label>
+              <input 
+                type="email"
+                value={form.email} 
+                onChange={e => setForm({...form, email: e.target.value})} 
+                className="w-full px-5 py-3 bg-white border-2 border-gray-300 rounded-xl outline-none focus:border-blue-600 transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                required 
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em] mb-2">Address *</label>
+              <textarea 
+                value={form.address} 
+                onChange={e => setForm({...form, address: e.target.value})} 
+                className="w-full px-5 py-3 bg-white border-2 border-gray-300 rounded-xl outline-none focus:border-blue-600 transition-all text-gray-900 font-bold placeholder:text-gray-400 min-h-[100px]"
+                required 
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em] mb-2">Opening Balance</label>
+              <input 
+                type="number"
+                value={form.opening_balance} 
+                onChange={e => setForm({...form, opening_balance: parseFloat(e.target.value) || 0})} 
+                className="w-full px-5 py-3 bg-white border-2 border-gray-300 rounded-xl outline-none focus:border-blue-600 transition-all text-gray-900 font-bold placeholder:text-gray-400"
+              />
+            </div>
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-[2rem] font-extrabold flex items-center justify-center gap-2 transition-all active:scale-95 uppercase tracking-tight shadow-md shadow-blue-500/20 text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} strokeWidth={2.5} />}
+              {loading ? "Saving..." : "Save Client"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
 }
-
-const labelStyle = { fontSize: '13px', fontWeight: 'bold', color: '#444' };
-const inputStyle = { width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', marginTop: '5px' };
-const btnSave = { backgroundColor: '#28a745', color: 'white', padding: '15px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' };

@@ -1,0 +1,262 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.advance_payments (
+  id integer NOT NULL DEFAULT nextval('advance_payments_id_seq'::regclass),
+  mechanic_id integer NOT NULL,
+  amount numeric NOT NULL DEFAULT 0.00,
+  date_paid date NOT NULL,
+  reason text,
+  date_created timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT advance_payments_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.attendance_list (
+  id integer NOT NULL DEFAULT nextval('attendance_list_id_seq'::regclass),
+  mechanic_id integer NOT NULL,
+  status smallint NOT NULL DEFAULT 0,
+  curr_date date NOT NULL,
+  CONSTRAINT attendance_list_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.client_list (
+  id integer NOT NULL DEFAULT nextval('client_list_id_seq'::regclass),
+  firstname text NOT NULL,
+  middlename text,
+  lastname text NOT NULL,
+  contact character varying NOT NULL,
+  email text NOT NULL,
+  address text NOT NULL,
+  image_path text,
+  opening_balance numeric DEFAULT 0.00,
+  delete_flag smallint NOT NULL DEFAULT 0,
+  date_created timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  date_updated timestamp without time zone,
+  CONSTRAINT client_list_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.client_loans (
+  id integer NOT NULL DEFAULT nextval('client_loans_id_seq'::regclass),
+  client_id integer NOT NULL,
+  principal_amount numeric NOT NULL,
+  interest_rate numeric DEFAULT 0.00,
+  loan_period integer NOT NULL,
+  total_payable numeric NOT NULL,
+  emi_amount numeric NOT NULL,
+  remarks text,
+  loan_date date NOT NULL,
+  status smallint DEFAULT 1,
+  created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT client_loans_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.client_payments (
+  id integer NOT NULL DEFAULT nextval('client_payments_id_seq'::regclass),
+  client_id integer NOT NULL,
+  job_id character varying DEFAULT NULL::character varying,
+  loan_id integer,
+  bill_no character varying DEFAULT NULL::character varying,
+  payment_date date DEFAULT CURRENT_DATE,
+  amount numeric NOT NULL,
+  discount numeric DEFAULT 0.00,
+  net_amount numeric DEFAULT (amount - discount),
+  payment_mode USER-DEFINED DEFAULT 'Cash'::payment_mode_type,
+  payment_type USER-DEFINED DEFAULT 'Full'::payment_type_type,
+  remarks text,
+  created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT client_payments_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.direct_sale_items (
+  id integer NOT NULL DEFAULT nextval('direct_sale_items_id_seq'::regclass),
+  sale_id integer NOT NULL,
+  product_id integer NOT NULL,
+  qty integer NOT NULL,
+  price numeric NOT NULL,
+  CONSTRAINT direct_sale_items_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.direct_sales (
+  id integer NOT NULL DEFAULT nextval('direct_sales_id_seq'::regclass),
+  sale_code character varying NOT NULL,
+  client_id integer,
+  mechanic_id integer,
+  total_amount numeric NOT NULL,
+  payment_mode character varying NOT NULL,
+  remarks text,
+  last_edited_by integer,
+  last_edited_by_name character varying DEFAULT NULL::character varying,
+  last_edited_date timestamp without time zone,
+  date_created timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT direct_sales_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.expense_list (
+  id integer NOT NULL DEFAULT nextval('expense_list_id_seq'::regclass),
+  category character varying NOT NULL,
+  amount numeric NOT NULL DEFAULT 0.00,
+  remarks text,
+  date_created timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT expense_list_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.inventory_list (
+  id integer NOT NULL DEFAULT nextval('inventory_list_id_seq'::regclass),
+  product_id integer NOT NULL,
+  quantity integer NOT NULL DEFAULT 0,
+  place text NOT NULL,
+  stock_date date NOT NULL,
+  date_created timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  date_updated timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT inventory_list_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.job_id_counter (
+  id integer NOT NULL DEFAULT nextval('job_id_counter_id_seq'::regclass),
+  last_job_id integer DEFAULT 0,
+  CONSTRAINT job_id_counter_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.lender_list (
+  id integer NOT NULL DEFAULT nextval('lender_list_id_seq'::regclass),
+  fullname character varying NOT NULL,
+  contact character varying NOT NULL,
+  loan_amount numeric NOT NULL DEFAULT 0,
+  interest_rate numeric NOT NULL DEFAULT 0.00,
+  tenure_months integer NOT NULL DEFAULT 0,
+  reason text,
+  emi_amount numeric NOT NULL DEFAULT 0,
+  start_date date NOT NULL,
+  status smallint NOT NULL DEFAULT 1,
+  date_created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT lender_list_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.loan_payments (
+  id integer NOT NULL DEFAULT nextval('loan_payments_id_seq'::regclass),
+  lender_id integer NOT NULL,
+  amount_paid double precision NOT NULL DEFAULT 0,
+  payment_date date NOT NULL,
+  remarks text,
+  CONSTRAINT loan_payments_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.mechanic_commission_history (
+  id integer NOT NULL DEFAULT nextval('mechanic_commission_history_id_seq'::regclass),
+  mechanic_id integer NOT NULL,
+  commission_percent numeric NOT NULL,
+  effective_date date NOT NULL,
+  date_created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT mechanic_commission_history_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.mechanic_list (
+  id integer NOT NULL DEFAULT nextval('mechanic_list_id_seq'::regclass),
+  firstname character varying NOT NULL,
+  middlename text,
+  lastname character varying NOT NULL,
+  contact character varying NOT NULL,
+  designation character varying DEFAULT 'Mechanic'::character varying,
+  daily_salary numeric DEFAULT 0.00 CHECK (daily_salary >= 0::numeric),
+  avatar character varying DEFAULT 'default-avatar.jpg'::character varying,
+  commission_percent numeric DEFAULT 0.00 CHECK (commission_percent >= 0::numeric AND commission_percent <= 100::numeric),
+  status smallint NOT NULL DEFAULT 1,
+  delete_flag smallint NOT NULL DEFAULT 0,
+  date_added timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  date_updated timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  salary_per_day numeric NOT NULL DEFAULT 0.00 CHECK (salary_per_day >= 0::numeric),
+  CONSTRAINT mechanic_list_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.mechanic_salary_history (
+  id integer NOT NULL DEFAULT nextval('mechanic_salary_history_id_seq'::regclass),
+  mechanic_id integer NOT NULL,
+  salary numeric NOT NULL DEFAULT 0.00,
+  effective_date date NOT NULL,
+  date_created timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT mechanic_salary_history_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.message_list (
+  id integer NOT NULL DEFAULT nextval('message_list_id_seq'::regclass),
+  fullname text NOT NULL,
+  contact text NOT NULL,
+  email text NOT NULL,
+  message text NOT NULL,
+  status smallint NOT NULL DEFAULT 0,
+  date_created timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT message_list_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.product_list (
+  id integer NOT NULL DEFAULT nextval('product_list_id_seq'::regclass),
+  name text NOT NULL,
+  description text NOT NULL,
+  cost_price numeric NOT NULL DEFAULT 0 CHECK (cost_price >= 0::numeric),
+  price numeric NOT NULL DEFAULT 0 CHECK (price >= 0::numeric),
+  image_path text NOT NULL,
+  status smallint NOT NULL DEFAULT 1 CHECK (status = ANY (ARRAY[0, 1, 2])),
+  delete_flag smallint NOT NULL DEFAULT 0 CHECK (delete_flag = ANY (ARRAY[0, 1])),
+  date_created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  date_updated timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT product_list_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.service_list (
+  id integer NOT NULL DEFAULT nextval('service_list_id_seq'::regclass),
+  name text NOT NULL,
+  description text NOT NULL,
+  price numeric NOT NULL DEFAULT 0.00 CHECK (price >= 0::numeric),
+  status smallint NOT NULL DEFAULT 1 CHECK (status = ANY (ARRAY[0, 1, 2])),
+  delete_flag smallint NOT NULL DEFAULT 0 CHECK (delete_flag = ANY (ARRAY[0, 1])),
+  date_created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  date_updated timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT service_list_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.system_info (
+  id integer NOT NULL DEFAULT nextval('system_info_id_seq'::regclass),
+  meta_field text NOT NULL,
+  meta_value text NOT NULL,
+  CONSTRAINT system_info_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.transaction_images (
+  id integer NOT NULL DEFAULT nextval('transaction_images_id_seq'::regclass),
+  transaction_id integer NOT NULL,
+  image_path character varying NOT NULL,
+  date_created timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT transaction_images_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.transaction_list (
+  id integer NOT NULL DEFAULT nextval('transaction_list_id_seq'::regclass),
+  user_id integer NOT NULL,
+  mechanic_id integer,
+  code character varying NOT NULL,
+  job_id character varying DEFAULT NULL::character varying,
+  client_name text,
+  fault text NOT NULL,
+  remark text NOT NULL,
+  item text NOT NULL,
+  uniq_id text NOT NULL,
+  amount numeric NOT NULL DEFAULT 0 CHECK (amount >= 0::numeric),
+  mechanic_amount numeric NOT NULL DEFAULT 0 CHECK (mechanic_amount >= 0::numeric),
+  mechanic_commission_amount numeric DEFAULT 0 CHECK (mechanic_commission_amount >= 0::numeric),
+  del_status smallint NOT NULL DEFAULT 0 CHECK (del_status = ANY (ARRAY[0, 1])),
+  status smallint NOT NULL DEFAULT 0 CHECK (status = ANY (ARRAY[0, 1, 2, 3, 4, 5])),
+  date_created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  date_updated timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  date_completed timestamp with time zone,
+  CONSTRAINT transaction_list_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.transaction_products (
+  transaction_id integer NOT NULL,
+  product_id integer NOT NULL,
+  product_name text,
+  qty integer NOT NULL DEFAULT 0,
+  price numeric NOT NULL DEFAULT 0.00,
+  CONSTRAINT transaction_products_pkey PRIMARY KEY (transaction_id, product_id)
+);
+CREATE TABLE public.transaction_services (
+  transaction_id integer NOT NULL,
+  service_id integer NOT NULL,
+  service_name text,
+  price numeric NOT NULL DEFAULT 0.00,
+  CONSTRAINT transaction_services_pkey PRIMARY KEY (transaction_id, service_id)
+);
+CREATE TABLE public.users (
+  id integer NOT NULL DEFAULT nextval('users_id_seq'::regclass),
+  firstname character varying NOT NULL,
+  lastname character varying NOT NULL,
+  username character varying NOT NULL UNIQUE,
+  password character varying NOT NULL,
+  avatar text,
+  last_login timestamp with time zone,
+  type smallint NOT NULL DEFAULT 0 CHECK (type = ANY (ARRAY[0, 1, 2, 3])),
+  mechanic_id integer,
+  date_added timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  date_updated timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT users_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_mechanic FOREIGN KEY (mechanic_id) REFERENCES public.mechanic_list(id)
+);

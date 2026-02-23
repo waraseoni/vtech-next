@@ -10,14 +10,14 @@ import {
 type Client = {
   id: number;
   name: string;
-  mobile: string;
+  contact: string;
   address?: string;
-  created_at?: string;
+  date_created?: string;
 };
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
-  const [deliveredTotals, setDeliveredTotals] = useState<Record<number, number>>({});
+  const [deliveredTotals, setDeliveredTotals] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isMobile, setIsMobile] = useState(false);
@@ -53,24 +53,35 @@ export default function ClientsPage() {
 
       // 1. Fetch all clients
       const { data: clientsData, error: clientsError } = await supabase
-        .from('clients')
-        .select('*')
-        .order('name');
+        .from('client_list')
+        .select('id, firstname, middlename, lastname, contact, address, date_created')
+        .eq('delete_flag', 0)
+        .order('lastname', { ascending: true })
+        .order('firstname', { ascending: true });
       if (clientsError) throw clientsError;
-      setClients(clientsData || []);
+
+      const processedClients = clientsData?.map(client => ({
+        id: client.id,
+        name: [client.firstname, client.middlename, client.lastname].filter(Boolean).join(' '),
+        contact: client.contact,
+        address: client.address,
+        date_created: client.date_created,
+      })) || [];
+      setClients(processedClients);
 
       // 2. Fetch only delivered jobs
       const { data: jobsData, error: jobsError } = await supabase
-        .from('jobs')
-        .select('client_id, final_bill')
-        .eq('status', 'Delivered');
+        .from('transaction_list')
+        .select('client_name, amount')
+        .eq('status', 5)
+        .eq('del_status', 0);
       if (jobsError) throw jobsError;
 
-      // 3. Aggregate total per client
-      const totals: Record<number, number> = {};
+      // 3. Aggregate total per client_name
+      const totals: Record<string, number> = {};
       jobsData?.forEach((job) => {
-        if (job.client_id) {
-          totals[job.client_id] = (totals[job.client_id] || 0) + (job.final_bill || 0);
+        if (job.client_name) {
+          totals[job.client_name] = (totals[job.client_name] || 0) + (job.amount || 0);
         }
       });
       setDeliveredTotals(totals);
@@ -85,7 +96,7 @@ export default function ClientsPage() {
     fetchData();
   }, [fetchData]);
 
-  // Delete handler - Admin permission ke saath
+  // Delete handler - Admin permission ke saath (soft delete)
   const handleDelete = async (id: number, name: string) => {
     if (userRole !== 'admin') {
       alert("Permission Denied: Sirf Admin hi client delete kar sakta hai!");
@@ -94,7 +105,10 @@ export default function ClientsPage() {
     
     if (confirm(`Kya aap "${name}" ko delete karna chahte hain?`)) {
       try {
-        const { error } = await supabase.from('clients').delete().eq('id', id);
+        const { error } = await supabase
+          .from('client_list')
+          .update({ delete_flag: 1 })
+          .eq('id', id);
         if (error) throw error;
         setClients(prev => prev.filter(client => client.id !== id));
       } catch (err) {
@@ -107,7 +121,7 @@ export default function ClientsPage() {
   const filteredClients = useMemo(() => {
     return clients.filter(c => 
       c.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      c.mobile?.includes(searchTerm)
+      c.contact?.includes(searchTerm)
     );
   }, [clients, searchTerm]);
 
@@ -178,13 +192,13 @@ export default function ClientsPage() {
                 <div className="flex justify-between items-center">
                   <span className="font-extrabold text-gray-900 text-lg uppercase tracking-tight">{client.name}</span>
                   <span className="px-3 py-1.5 bg-emerald-50 border-2 border-emerald-200 rounded-full text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider">
-                    ₹{deliveredTotals[client.id] || 0}
+                    ₹{deliveredTotals[client.name] || 0}
                   </span>
                 </div>
                 
                 <div className="bg-gray-50 p-4 rounded-xl border-2 border-gray-200 space-y-2">
                   <div className="flex items-center gap-2 text-gray-700 font-bold text-sm">
-                    <Phone size={14} className="text-blue-600" /> <span>{client.mobile || '—'}</span>
+                    <Phone size={14} className="text-blue-600" /> <span>{client.contact || '—'}</span>
                   </div>
                   <div className="flex items-start gap-2 text-gray-700 font-bold text-sm">
                     <MapPin size={14} className="text-blue-600 mt-0.5" /> <span className="flex-1">{client.address || '—'}</span>
@@ -230,7 +244,7 @@ export default function ClientsPage() {
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-2 text-gray-700 font-bold text-sm">
-                        <Phone size={14} className="text-blue-600" /> <span>{client.mobile || '—'}</span>
+                        <Phone size={14} className="text-blue-600" /> <span>{client.contact || '—'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-5 text-gray-700 font-bold text-sm max-w-xs truncate">
@@ -238,7 +252,7 @@ export default function ClientsPage() {
                     </td>
                     <td className="px-6 py-5">
                       <span className="px-3 py-1.5 bg-emerald-50 border-2 border-emerald-200 rounded-full text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider">
-                        ₹{deliveredTotals[client.id] || 0}
+                        ₹{deliveredTotals[client.name] || 0}
                       </span>
                     </td>
                     <td className="px-6 py-5">

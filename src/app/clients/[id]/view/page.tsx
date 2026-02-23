@@ -1,40 +1,33 @@
 "use client";
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { 
-<<<<<<< HEAD
   ArrowLeft, Edit3, Smartphone, History, 
   Phone, MapPin, Loader2, IndianRupee, User, Calendar,
-  CreditCard, X, CheckCircle
-=======
-  ArrowLeft, Edit3, Smartphone, History, Phone, MapPin, Loader2, 
-  IndianRupee, User, Calendar, Plus, Printer, Filter, X, 
-  ShoppingCart, Receipt, CreditCard, Wallet
->>>>>>> 33432e9de14460d8b5e4bfe9366ae2c36003809c
+  CreditCard, X, CheckCircle, ShoppingCart, Plus, Filter
 } from 'lucide-react';
 
 // ========== TYPES ==========
 type Client = {
   id: number;
   name: string;
-  mobile: string;
+  contact: string;
   address: string;
-  gst?: string;
   opening_balance?: number;
-  image_url?: string;
-  created_at: string;
+  image_path?: string;
+  date_created: string;
 };
 
 type Job = {
   id: number;
-  client_id: number;
-  item_name: string;
-  problem?: string;
-  status: string;
-  final_bill?: number;
-  created_at: string;
+  job_id: string | null;
+  item: string;
+  fault?: string;
+  status: number;
+  amount?: number;
+  date_created: string;
 };
 
 type DirectSale = {
@@ -43,7 +36,7 @@ type DirectSale = {
   payment_mode: string;
   remarks?: string;
   total_amount: number;
-  created_at: string;
+  date_created: string;
 };
 
 type Payment = {
@@ -53,8 +46,8 @@ type Payment = {
   discount: number;
   payment_mode: string;
   remarks?: string;
-  job_id?: string;
-  bill_no?: string;
+  job_id?: string | null;
+  bill_no?: string | null;
 };
 
 // ========== HELPER FUNCTIONS ==========
@@ -65,6 +58,18 @@ const formatDate = (dateStr: string) => {
   });
 };
 
+const getStatusText = (status: number) => {
+  switch (status) {
+    case 0: return 'Pending';
+    case 1: return 'In-Progress';
+    case 2: return 'Repaired';
+    case 3: return 'Paid';
+    case 4: return 'Cancelled';
+    case 5: return 'Delivered';
+    default: return 'Unknown';
+  }
+};
+
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'Pending': return 'bg-amber-50 text-amber-700 border-amber-200';
@@ -72,32 +77,16 @@ const getStatusColor = (status: string) => {
     case 'Repaired': return 'bg-purple-50 text-purple-700 border-purple-200';
     case 'Delivered': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
     case 'Cancelled': return 'bg-red-50 text-red-700 border-red-200';
+    case 'Paid': return 'bg-green-50 text-green-700 border-green-200';
     default: return 'bg-gray-100 text-gray-600 border-gray-300';
   }
 };
 
 // ========== MAIN COMPONENT ==========
-export default function ViewClientProfile({ params }: { params: Promise<{ id: string }> }) {
-  // ✅ params को unwrap करें
-  const resolvedParams = use(params);
+export default function ViewClientProfile() {
   const router = useRouter();
-<<<<<<< HEAD
-  const [client, setClient] = useState<any>(null);
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [payments, setPayments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Payment Modal State
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentDate, setPaymentDate] = useState(
-    new Date().toISOString().split('T')[0]
-  );
-  const [paymentNote, setPaymentNote] = useState('');
-  const [processingPayment, setProcessingPayment] = useState(false);
-=======
-  const clientId = parseInt(resolvedParams.id);
->>>>>>> 33432e9de14460d8b5e4bfe9366ae2c36003809c
+  const params = useParams();
+  const clientId = parseInt(params.id as string);
 
   // State
   const [client, setClient] = useState<Client | null>(null);
@@ -134,99 +123,66 @@ export default function ViewClientProfile({ params }: { params: Promise<{ id: st
     const fetchData = async () => {
       try {
         setLoading(true);
-<<<<<<< HEAD
-        
-        // 1. Fetch client details
-=======
         setError(null);
 
         // 1. Client details
->>>>>>> 33432e9de14460d8b5e4bfe9366ae2c36003809c
         const { data: clientData, error: clientError } = await supabase
-          .from('clients')
-          .select('*')
+          .from('client_list')
+          .select('id, firstname, middlename, lastname, contact, address, opening_balance, image_path, date_created')
           .eq('id', clientId)
+          .eq('delete_flag', 0)
           .single();
 
-        if (clientError) {
-          console.error("❌ Client fetch error:", clientError);
-          throw new Error(`Client error: ${clientError.message || 'Unknown'}`);
-        }
-        if (!clientData) {
-          throw new Error("Client not found");
-        }
-        setClient(clientData);
+        if (clientError) throw clientError;
+        if (!clientData) throw new Error("Client not found");
+
+        const fullName = [clientData.firstname, clientData.middlename, clientData.lastname].filter(Boolean).join(' ').trim();
+
+        setClient({
+          id: clientData.id,
+          name: fullName,
+          contact: clientData.contact,
+          address: clientData.address,
+          opening_balance: clientData.opening_balance,
+          image_path: clientData.image_path,
+          date_created: clientData.date_created
+        });
         setOpeningBalance(clientData.opening_balance || 0);
 
-<<<<<<< HEAD
-        // 2. Fetch all jobs for this client
-=======
-        // 2. Repair Jobs (transaction_list = jobs)
->>>>>>> 33432e9de14460d8b5e4bfe9366ae2c36003809c
+        // 2. Repair Jobs (transaction_list)
         const { data: jobsData, error: jobsError } = await supabase
-          .from('jobs')
-          .select('*')
-          .eq('client_id', clientId)
-          .order('created_at', { ascending: false });
+          .from('transaction_list')
+          .select('id, job_id, item, fault, status, amount, date_created')
+          .eq('client_name', fullName)
+          .eq('del_status', 0)
+          .order('date_created', { ascending: false });
 
-<<<<<<< HEAD
         if (jobsError) throw jobsError;
         setJobs(jobsData || []);
-
-        // 3. Fetch payment history (optional)
-        const { data: paymentsData, error: paymentsError } = await supabase
-          .from('payments')
-          .select('*')
-          .eq('client_id', resolvedParams.id)
-          .order('created_at', { ascending: false });
-
-        if (paymentsError && paymentsError.code !== '42P01') { // Table not exists
-          console.error("Error fetching payments:", paymentsError);
-        }
-        setPayments(paymentsData || []);
-
-      } catch (err) {
-        console.error("Error fetching client profile:", err);
-=======
-        if (jobsError) {
-          console.error("❌ Jobs fetch error:", jobsError);
-          setJobs([]); // अगर टेबल नहीं है तो खाली ऐरे
-        } else {
-          setJobs(jobsData || []);
-        }
 
         // 3. Direct Sales
         const { data: salesData, error: salesError } = await supabase
           .from('direct_sales')
-          .select('*')
+          .select('id, sale_code, payment_mode, remarks, total_amount, date_created')
           .eq('client_id', clientId)
-          .order('created_at', { ascending: false });
+          .order('date_created', { ascending: false });
 
-        if (salesError) {
-          console.error("❌ Direct sales fetch error:", salesError);
-          setDirectSales([]);
-        } else {
-          setDirectSales(salesData || []);
-        }
+        if (salesError) throw salesError;
+        setDirectSales(salesData || []);
 
         // 4. Payments
         const { data: paymentsData, error: paymentsError } = await supabase
           .from('client_payments')
-          .select('*')
+          .select('id, payment_date, amount, discount, payment_mode, remarks, job_id, bill_no')
           .eq('client_id', clientId)
           .order('payment_date', { ascending: false });
 
-        if (paymentsError) {
-          console.error("❌ Payments fetch error:", paymentsError);
-          setPayments([]);
-        } else {
-          setPayments(paymentsData || []);
-        }
+        if (paymentsError) throw paymentsError;
+        setPayments(paymentsData || []);
 
       } catch (err: any) {
-        console.error("🔥 Error fetching client profile:", err);
+        console.error("Error fetching client profile:", err);
         setError(err.message || "Failed to load client data");
->>>>>>> 33432e9de14460d8b5e4bfe9366ae2c36003809c
       } finally {
         setLoading(false);
       }
@@ -237,26 +193,10 @@ export default function ViewClientProfile({ params }: { params: Promise<{ id: st
   // ===== CALCULATE TOTALS =====
   useEffect(() => {
     const repairTotal = jobs
-      .filter(job => job.status === 'Delivered')
-      .reduce((sum, job) => sum + (job.final_bill || 0), 0);
+      .filter(job => job.status === 5)
+      .reduce((sum, job) => sum + (job.amount || 0), 0);
     setTotalRepairBilled(repairTotal);
 
-<<<<<<< HEAD
-  // Total paid amount (from client.total_paid)
-  const totalPaid = client?.total_paid || 0;
-  
-  // Due balance
-  const dueBalance = totalDeliveredAmount - totalPaid;
-
-  // Format date
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return 'N/A';
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-=======
     const directTotal = directSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
     setTotalDirectBilled(directTotal);
 
@@ -271,17 +211,18 @@ export default function ViewClientProfile({ params }: { params: Promise<{ id: st
   }, [openingBalance, totalRepairBilled, totalDirectBilled, totalPaid]);
 
   // ===== FILTER FUNCTIONS =====
-  const filterByDate = (item: any, dateField: string) => {
+  const filterByDate = (item: { date_created?: string; payment_date?: string }, dateField: 'date_created' | 'payment_date') => {
     if (!dateFrom && !dateTo) return true;
-    const itemDate = new Date(item[dateField]).getTime();
-    if (dateFrom && itemDate < new Date(dateFrom).getTime()) return false;
-    if (dateTo && itemDate > new Date(dateTo).getTime() + 86400000) return false;
-    return true;
->>>>>>> 33432e9de14460d8b5e4bfe9366ae2c36003809c
+    const itemDateStr = item[dateField];
+    if (!itemDateStr) return false;
+    const itemDate = new Date(itemDateStr).getTime();
+    const fromTime = dateFrom ? new Date(dateFrom).getTime() : -Infinity;
+    const toTime = dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity;
+    return itemDate >= fromTime && itemDate < toTime;
   };
 
-  const filteredJobs = jobs.filter(job => filterByDate(job, 'created_at'));
-  const filteredSales = directSales.filter(sale => filterByDate(sale, 'created_at'));
+  const filteredJobs = jobs.filter(job => filterByDate(job, 'date_created'));
+  const filteredSales = directSales.filter(sale => filterByDate(sale, 'date_created'));
   const filteredPayments = payments.filter(p => filterByDate(p, 'payment_date'));
 
   // ===== PAYMENT HANDLERS =====
@@ -290,91 +231,18 @@ export default function ViewClientProfile({ params }: { params: Promise<{ id: st
     try {
       const { error } = await supabase.from('client_payments').delete().eq('id', id);
       if (error) throw error;
-      const { data } = await supabase
-        .from('client_payments')
-        .select('*')
-        .eq('client_id', clientId)
-        .order('payment_date', { ascending: false });
-      setPayments(data || []);
+      setPayments(prev => prev.filter(p => p.id !== id));
     } catch (err: any) {
       alert('Error deleting payment: ' + err.message);
     }
   };
 
-<<<<<<< HEAD
-  // Handle payment submission
-  const handlePaymentSubmit = async () => {
-    if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
-      alert("Please enter a valid payment amount!");
-      return;
-    }
-
-    const amount = parseFloat(paymentAmount);
-    if (amount > dueBalance) {
-      alert(`Payment amount (₹${amount}) cannot exceed due balance (₹${dueBalance})!`);
-      return;
-    }
-
-    setProcessingPayment(true);
-    try {
-      // 1. Update client's total_paid
-      const newTotalPaid = totalPaid + amount;
-      const { error: updateError } = await supabase
-        .from('clients')
-        .update({ total_paid: newTotalPaid })
-        .eq('id', client.id);
-
-      if (updateError) throw updateError;
-
-      // 2. Record payment in payments table (if exists)
-      try {
-        await supabase
-          .from('payments')
-          .insert([{
-            client_id: client.id,
-            amount: amount,
-            payment_date: paymentDate,
-            note: paymentNote || null,
-            created_at: new Date().toISOString()
-          }]);
-      } catch (err) {
-        // If payments table doesn't exist, just log error but don't stop
-        console.warn("Could not record payment history:", err);
-      }
-
-      // 3. Refresh client data
-      const { data: updatedClient } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', client.id)
-        .single();
-      
-      if (updatedClient) setClient(updatedClient);
-
-      // 4. Close modal and reset form
-      setShowPaymentModal(false);
-      setPaymentAmount('');
-      setPaymentNote('');
-      setPaymentDate(new Date().toISOString().split('T')[0]);
-      
-      alert(`Payment of ₹${amount} recorded successfully! ✅`);
-
-    } catch (err: any) {
-      console.error("Payment error:", err);
-      alert("Payment record karne mein error: " + err.message);
-    } finally {
-      setProcessingPayment(false);
-    }
-  };
-
-  // Loading state
-=======
   const openEditModal = (payment: Payment) => {
     setEditingPayment(payment);
     setEditFormData({
       amount: payment.amount.toString(),
-      payment_date: payment.payment_date.split('T')[0],
-      discount: payment.discount?.toString() || '0',
+      payment_date: payment.payment_date.split('T')[0] || payment.payment_date,
+      discount: payment.discount.toString(),
       payment_mode: payment.payment_mode,
       remarks: payment.remarks || ''
     });
@@ -384,560 +252,336 @@ export default function ViewClientProfile({ params }: { params: Promise<{ id: st
     e.preventDefault();
     if (!editingPayment) return;
     try {
+      const updates = {
+        amount: parseFloat(editFormData.amount),
+        payment_date: editFormData.payment_date,
+        discount: parseFloat(editFormData.discount),
+        payment_mode: editFormData.payment_mode,
+        remarks: editFormData.remarks
+      };
       const { error } = await supabase
         .from('client_payments')
-        .update({
-          amount: parseFloat(editFormData.amount),
-          payment_date: editFormData.payment_date,
-          discount: parseFloat(editFormData.discount),
-          payment_mode: editFormData.payment_mode,
-          remarks: editFormData.remarks || null
-        })
+        .update(updates)
         .eq('id', editingPayment.id);
       if (error) throw error;
-      const { data } = await supabase
-        .from('client_payments')
-        .select('*')
-        .eq('client_id', clientId)
-        .order('payment_date', { ascending: false });
-      setPayments(data || []);
+      setPayments(prev => prev.map(p => p.id === editingPayment.id ? { ...p, ...updates } : p));
       setEditingPayment(null);
     } catch (err: any) {
       alert('Error updating payment: ' + err.message);
     }
   };
 
-  // ===== LOADING / ERROR STATE =====
->>>>>>> 33432e9de14460d8b5e4bfe9366ae2c36003809c
   if (loading) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 bg-white">
         <Loader2 className="animate-spin text-blue-600" size={48} />
         <p className="text-gray-500 font-bold italic uppercase tracking-[0.25em] text-sm">
-          Loading Customer Profile...
+          Loading Client Profile...
         </p>
       </div>
     );
   }
 
-  if (error) {
+  if (error || !client) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 bg-white">
-        <h2 className="text-2xl font-black text-red-600">Error Loading Profile</h2>
-        <p className="text-gray-600">{error}</p>
-        <Link href="/clients" className="text-blue-600 font-bold underline">
-          ← Back to Customers
-        </Link>
-      </div>
-    );
-  }
-
-  if (!client) {
-    return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 bg-white">
-        <h2 className="text-2xl font-black text-gray-900">Customer Not Found!</h2>
-        <Link href="/clients" className="text-blue-600 font-bold underline">
-          ← Back to Customers
-        </Link>
+      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 bg-white text-red-600">
+        <p>{error || "Client not found"}</p>
+        <button onClick={() => router.back()} className="text-blue-600">Go Back</button>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-white text-gray-900 p-4 md:p-8 font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
-
-        {/* ===== HEADER CARD (unchanged) ===== */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50 p-6 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
-          <div className="flex items-center gap-4">
-            <Link href="/clients" className="p-2.5 bg-white border-2 border-gray-300 rounded-xl text-gray-600 hover:bg-gray-100 transition-all">
-              <ArrowLeft size={20} />
-            </Link>
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-600 rounded-xl shadow-lg shadow-blue-500/20">
-                <User className="text-white" size={24} />
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-gray-900 tracking-tight uppercase leading-none">
-                  Customer Profile
-                </h2>
-                <p className="text-[10px] text-gray-600 font-extrabold uppercase tracking-[0.2em] mt-1">
-                  ID: #C-{client.id}
-                </p>
-              </div>
+      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+        
+        {/* ===== HEADER ===== */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gray-50 p-6 md:p-8 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
+          <div className="flex items-center gap-5">
+            <div className="p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/20">
+              <User className="text-white" size={32} />
+            </div>
+            <div>
+              <h1 className="text-3xl font-black text-gray-900 tracking-tighter m-0 uppercase leading-none">
+                {client.name}
+              </h1>
+              <p className="text-gray-600 text-[11px] font-extrabold uppercase tracking-[0.25em] mt-2">
+                Client ID: {client.id} | Since {formatDate(client.date_created)}
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => window.open(`/clients/ledger-print/${client.id}?from=${dateFrom}&to=${dateTo}`, '_blank')}
-              className="p-2.5 bg-white border-2 border-gray-300 rounded-xl text-amber-600 hover:bg-amber-50 hover:border-amber-300 transition-all"
-              title="Print Photo Statement"
-            >
-              <Printer size={18} />
-            </button>
+          <div className="flex gap-4">
             <Link 
-              href={`/clients/${client.id}/edit`}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-gray-300 rounded-xl font-extrabold text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all uppercase tracking-wide text-sm"
+              href={`/clients/${client.id}/edit`} 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-[2rem] font-extrabold flex items-center justify-center gap-2 transition-all active:scale-95 no-underline uppercase tracking-tight shadow-md shadow-blue-500/20 text-sm"
             >
-              <Edit3 size={18} />
-              Edit Profile
+              <Edit3 size={18} strokeWidth={2.5} /> Edit Profile
             </Link>
+            <button onClick={() => router.back()} className="bg-gray-300 hover:bg-gray-400 text-gray-900 px-8 py-4 rounded-[2rem] font-extrabold flex items-center justify-center gap-2 transition-all active:scale-95 uppercase tracking-tight shadow-md text-sm">
+              <ArrowLeft size={18} strokeWidth={2.5} /> Back
+            </button>
           </div>
         </div>
 
-        {/* ===== FINANCIAL SUMMARY CARDS (unchanged) ===== */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-white p-4 rounded-2xl border-2 border-gray-300 shadow-sm">
-            <p className="text-[9px] font-extrabold uppercase text-gray-500 tracking-wider">Opening Balance</p>
-            <p className="text-xl font-black text-blue-600 mt-1">₹{openingBalance.toFixed(2)}</p>
-          </div>
-          <div className="bg-white p-4 rounded-2xl border-2 border-gray-300 shadow-sm">
-            <p className="text-[9px] font-extrabold uppercase text-gray-500 tracking-wider">Total Billed</p>
-            <p className="text-xl font-black text-gray-900 mt-1">₹{(totalRepairBilled + totalDirectBilled).toFixed(2)}</p>
-            <p className="text-[8px] text-gray-400">(Repair + Direct)</p>
-          </div>
-          <div className="bg-white p-4 rounded-2xl border-2 border-gray-300 shadow-sm">
-            <p className="text-[9px] font-extrabold uppercase text-gray-500 tracking-wider">Total Received</p>
-            <p className="text-xl font-black text-emerald-600 mt-1">₹{totalPaid.toFixed(2)}</p>
-          </div>
-          <div className={`bg-white p-4 rounded-2xl border-2 shadow-sm ${
-            finalBalance >= 0 ? 'border-red-200' : 'border-green-200'
-          }`}>
-            <p className="text-[9px] font-extrabold uppercase text-gray-500 tracking-wider">
-              {finalBalance >= 0 ? 'Due Balance' : 'Advance'}
-            </p>
-            <p className={`text-xl font-black mt-1 ${finalBalance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-              ₹{Math.abs(finalBalance).toFixed(2)}
-            </p>
-          </div>
-        </div>
-
-<<<<<<< HEAD
-              <hr className="my-6 border-t-2 border-gray-200" />
-
-              {/* Contact Info */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border-2 border-gray-200">
-                  <div className="p-2 bg-blue-100 rounded-lg text-blue-700">
-                    <Phone size={18} />
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-extrabold uppercase text-gray-500 tracking-wider">
-                      Mobile Number
-                    </p>
-                    <p className="font-extrabold text-gray-900">
-                      {client.mobile || '—'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border-2 border-gray-200">
-                  <div className="p-2 bg-amber-100 rounded-lg text-amber-700">
-                    <MapPin size={18} />
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-extrabold uppercase text-gray-500 tracking-wider">
-                      Address
-                    </p>
-                    <p className="font-bold text-gray-900 text-sm">
-                      {client.address || 'No Address'}
-                    </p>
-                  </div>
-                </div>
-
-                {client.gst && (
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border-2 border-gray-200">
-                    <div className="p-2 bg-purple-100 rounded-lg text-purple-700">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-extrabold uppercase text-gray-500 tracking-wider">
-                        GST Number
-                      </p>
-                      <p className="font-bold text-gray-900 text-sm">
-                        {client.gst}
-                      </p>
-                    </div>
-                  </div>
-                )}
+        {/* ===== CLIENT INFO ===== */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
+            <h3 className="text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em] mb-4">Contact Info</h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Phone size={20} className="text-blue-600" />
+                <span className="font-bold">{client.contact}</span>
               </div>
-
-              {/* Business Summary Card - Due Balance with Payment Button */}
-              <div className="mt-6 p-5 bg-gradient-to-br from-amber-50 to-amber-100/50 border-2 border-amber-200 rounded-2xl">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-amber-600 rounded-xl shadow-md shadow-amber-200">
-                      <IndianRupee size={20} className="text-white" />
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-extrabold uppercase text-amber-800 tracking-[0.15em]">
-                        Total Due Balance
-                      </p>
-                      <div className="text-2xl font-black italic text-amber-700">
-                        ₹{dueBalance}
-                      </div>
-                      <p className="text-[8px] font-bold text-amber-600 mt-1">
-                        Total Delivered: ₹{totalDeliveredAmount} | Paid: ₹{totalPaid}
-                      </p>
-                    </div>
-                  </div>
-                  {dueBalance > 0 && (
-                    <button
-                      onClick={() => setShowPaymentModal(true)}
-                      className="flex items-center gap-1.5 px-4 py-2.5 bg-white border-2 border-amber-300 rounded-xl font-extrabold text-amber-700 hover:bg-amber-600 hover:text-white hover:border-amber-600 transition-all text-xs uppercase tracking-wider"
-                    >
-                      <CreditCard size={16} />
-                      Record Payment
-                    </button>
-                  )}
-                </div>
+              <div className="flex items-start gap-3">
+                <MapPin size={20} className="text-blue-600 mt-1" />
+                <span className="font-bold">{client.address || 'N/A'}</span>
               </div>
-
-              {/* Payment History (Optional) */}
-              {payments.length > 0 && (
-                <div className="mt-6 pt-4 border-t-2 border-gray-200">
-                  <p className="text-[9px] font-extrabold uppercase text-gray-500 tracking-wider mb-3">
-                    Recent Payments
-                  </p>
-                  <div className="space-y-2">
-                    {payments.slice(0, 3).map(payment => (
-                      <div key={payment.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle size={14} className="text-emerald-600" />
-                          <span className="text-xs font-bold text-gray-700">
-                            ₹{payment.amount}
-                          </span>
-                        </div>
-                        <span className="text-[9px] text-gray-500">
-                          {formatDate(payment.payment_date || payment.created_at)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
-=======
-        {/* ===== TABS SECTION (unchanged) ===== */}
+          </div>
+          <div className="bg-white p-6 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
+            <h3 className="text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em] mb-4">Financial Summary</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="font-bold text-gray-700">Opening Balance</span>
+                <span className="font-extrabold">₹{openingBalance.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-bold text-gray-700">Repair Billed</span>
+                <span className="font-extrabold">₹{totalRepairBilled.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-bold text-gray-700">Direct Billed</span>
+                <span className="font-extrabold">₹{totalDirectBilled.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span className="font-bold text-gray-700">Total Paid (Eff.)</span>
+                <span className="font-extrabold text-emerald-600">₹{totalPaid.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span className="font-bold text-gray-700">Final Balance</span>
+                <span className="font-extrabold text-red-600">₹{finalBalance.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
+            <h3 className="text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em] mb-4">Quick Actions</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <Link href="/jobs/new" className="flex items-center gap-2 p-4 bg-blue-50 rounded-xl border-2 border-blue-200 text-blue-700 font-bold text-sm hover:bg-blue-100 transition-all">
+                <Plus size={18} /> New Job
+              </Link>
+              <button className="flex items-center gap-2 p-4 bg-emerald-50 rounded-xl border-2 border-emerald-200 text-emerald-700 font-bold text-sm hover:bg-emerald-100 transition-all">
+                <CreditCard size={18} /> Add Payment
+              </button>
+              <button className="flex items-center gap-2 p-4 bg-purple-50 rounded-xl border-2 border-purple-200 text-purple-700 font-bold text-sm hover:bg-purple-100 transition-all">
+                <ShoppingCart size={18} /> New Sale
+              </button>
+              <button className="flex items-center gap-2 p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-gray-700 font-bold text-sm hover:bg-gray-100 transition-all">
+                <History size={18} /> Ledger
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== DATE FILTER ===== */}
+        <div className="bg-gray-50 p-6 rounded-[2.5rem] border-2 border-gray-300 shadow-md flex flex-wrap items-center gap-4 justify-between">
+          <div className="flex items-center gap-2">
+            <Filter size={20} className="text-blue-600" />
+            <h3 className="text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em]">Filter by Date</h3>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <input 
+              type="date" 
+              value={dateFrom} 
+              onChange={(e) => setDateFrom(e.target.value)} 
+              className="px-4 py-2 border-2 border-gray-300 rounded-xl focus:border-blue-600 outline-none"
+            />
+            <input 
+              type="date" 
+              value={dateTo} 
+              onChange={(e) => setDateTo(e.target.value)} 
+              className="px-4 py-2 border-2 border-gray-300 rounded-xl focus:border-blue-600 outline-none"
+            />
+            <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="px-4 py-2 bg-gray-200 rounded-xl font-bold text-sm hover:bg-gray-300 transition-all">
+              Clear
+            </button>
+          </div>
+        </div>
+
+        {/* ===== TABS ===== */}
+        <div className="flex border-b-2 border-gray-300">
+          <button 
+            onClick={() => setActiveTab('repairs')} 
+            className={`px-6 py-3 font-extrabold uppercase text-sm ${activeTab === 'repairs' ? 'border-b-4 border-blue-600 text-blue-600' : 'text-gray-500'}`}
+          >
+            Repairs ({filteredJobs.length})
+          </button>
+          <button 
+            onClick={() => setActiveTab('direct')} 
+            className={`px-6 py-3 font-extrabold uppercase text-sm ${activeTab === 'direct' ? 'border-b-4 border-blue-600 text-blue-600' : 'text-gray-500'}`}
+          >
+            Direct Sales ({filteredSales.length})
+          </button>
+          <button 
+            onClick={() => setActiveTab('payments')} 
+            className={`px-6 py-3 font-extrabold uppercase text-sm ${activeTab === 'payments' ? 'border-b-4 border-blue-600 text-blue-600' : 'text-gray-500'}`}
+          >
+            Payments ({filteredPayments.length})
+          </button>
+        </div>
+
+        {/* ===== CONTENT ===== */}
         <div className="bg-white rounded-[2.5rem] border-2 border-gray-300 shadow-md overflow-hidden">
-          {/* Tab Headers */}
-          <div className="flex border-b-2 border-gray-200">
-            <button
-              onClick={() => setActiveTab('repairs')}
-              className={`flex-1 py-4 px-2 text-[11px] font-extrabold uppercase tracking-wider transition-all ${
-                activeTab === 'repairs' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Smartphone size={16} className="inline mr-2" /> Repair History
-            </button>
-            <button
-              onClick={() => setActiveTab('sales')}
-              className={`flex-1 py-4 px-2 text-[11px] font-extrabold uppercase tracking-wider transition-all ${
-                activeTab === 'sales' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <ShoppingCart size={16} className="inline mr-2" /> Direct Sales
-            </button>
-            <button
-              onClick={() => setActiveTab('payments')}
-              className={`flex-1 py-4 px-2 text-[11px] font-extrabold uppercase tracking-wider transition-all ${
-                activeTab === 'payments' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Receipt size={16} className="inline mr-2" /> Payment Ledger
-            </button>
->>>>>>> 33432e9de14460d8b5e4bfe9366ae2c36003809c
-          </div>
-
-          {/* Date Filter Bar */}
-          <div className="p-4 bg-gray-50 border-b-2 border-gray-200 flex flex-wrap items-end gap-3">
-            <div>
-              <label className="text-[9px] font-extrabold uppercase text-gray-500 block mb-1">From Date</label>
-              <input 
-                type="date" 
-                value={dateFrom} 
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="border-2 border-gray-300 rounded-xl px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-[9px] font-extrabold uppercase text-gray-500 block mb-1">To Date</label>
-              <input 
-                type="date" 
-                value={dateTo} 
-                onChange={(e) => setDateTo(e.target.value)}
-                className="border-2 border-gray-300 rounded-xl px-3 py-2 text-sm"
-              />
-            </div>
-            <button 
-              onClick={() => { setDateFrom(''); setDateTo(''); }}
-              className="px-4 py-2 bg-white border-2 border-gray-300 rounded-xl text-xs font-bold hover:bg-gray-100"
-            >
-              <X size={14} className="inline mr-1" /> Reset
-            </button>
-          </div>
-
-          {/* Tab Content */}
-          <div className="p-4">
-            {/* REPAIR HISTORY TAB */}
-            {activeTab === 'repairs' && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100 border-b-2 border-gray-300">
-                    <tr>
-                      <th className="p-3 text-left text-[10px] font-extrabold uppercase">Date</th>
-                      <th className="p-3 text-left text-[10px] font-extrabold uppercase">Job ID</th>
-                      <th className="p-3 text-left text-[10px] font-extrabold uppercase">Item</th>
-                      <th className="p-3 text-left text-[10px] font-extrabold uppercase">Status</th>
-                      <th className="p-3 text-right text-[10px] font-extrabold uppercase">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredJobs.map(job => (
+          {activeTab === 'repairs' && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-100 border-b-2 border-gray-300">
+                  <tr>
+                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Job ID</th>
+                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Item</th>
+                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Fault</th>
+                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Status</th>
+                    <th className="p-3 text-right text-[10px] font-extrabold uppercase">Amount</th>
+                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Date</th>
+                    <th className="p-3 text-center text-[10px] font-extrabold uppercase">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredJobs.map(job => {
+                    const statusText = getStatusText(job.status);
+                    return (
                       <tr key={job.id} className="border-b border-gray-200 hover:bg-blue-50/30">
-                        <td className="p-3 text-xs">{formatDate(job.created_at)}</td>
+                        <td className="p-3">{job.job_id || job.id}</td>
+                        <td className="p-3">{job.item}</td>
+                        <td className="p-3">{job.fault || 'N/A'}</td>
                         <td className="p-3">
-                          <Link href={`/jobs/${job.id}/view`} className="text-blue-600 font-bold hover:underline">
-                            #{job.id}
-                          </Link>
-                        </td>
-                        <td className="p-3 font-medium">{job.item_name}</td>
-                        <td className="p-3">
-                          <span className={`px-2 py-1 rounded-full text-[8px] font-extrabold border ${getStatusColor(job.status)}`}>
-                            {job.status}
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(statusText)}`}>
+                            {statusText}
                           </span>
                         </td>
-                        <td className="p-3 text-right font-bold">₹{job.final_bill?.toFixed(2) || '0.00'}</td>
-                      </tr>
-                    ))}
-                    {filteredJobs.length === 0 && (
-                      <tr><td colSpan={5} className="p-6 text-center text-gray-400 italic">No repair jobs found</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* DIRECT SALES TAB */}
-            {activeTab === 'sales' && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100 border-b-2 border-gray-300">
-                    <tr>
-                      <th className="p-3 text-left text-[10px] font-extrabold uppercase">Date</th>
-                      <th className="p-3 text-left text-[10px] font-extrabold uppercase">Sale Code</th>
-                      <th className="p-3 text-left text-[10px] font-extrabold uppercase">Payment Mode</th>
-                      <th className="p-3 text-left text-[10px] font-extrabold uppercase">Remarks</th>
-                      <th className="p-3 text-right text-[10px] font-extrabold uppercase">Total</th>
-                      <th className="p-3 text-center text-[10px] font-extrabold uppercase">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredSales.map(sale => (
-                      <tr key={sale.id} className="border-b border-gray-200 hover:bg-blue-50/30">
-                        <td className="p-3 text-xs">{formatDate(sale.created_at)}</td>
-                        <td className="p-3 font-mono font-bold">{sale.sale_code}</td>
-                        <td className="p-3">{sale.payment_mode}</td>
-                        <td className="p-3 text-xs text-gray-600">{sale.remarks || '—'}</td>
-                        <td className="p-3 text-right font-bold text-emerald-600">₹{sale.total_amount.toFixed(2)}</td>
+                        <td className="p-3 text-right">₹{job.amount?.toFixed(2) || '0.00'}</td>
+                        <td className="p-3">{formatDate(job.date_created)}</td>
                         <td className="p-3 text-center">
-                          <Link href={`/direct-sales/${sale.id}`} className="text-blue-600 text-xs font-bold hover:underline">
+                          <Link href={`/jobs/view?id=${job.id}`} className="text-blue-600 text-xs font-bold hover:underline">
                             View
                           </Link>
                         </td>
                       </tr>
-                    ))}
-                    {filteredSales.length === 0 && (
-                      <tr><td colSpan={6} className="p-6 text-center text-gray-400 italic">No direct sales found</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    );
+                  })}
+                  {filteredJobs.length === 0 && (
+                    <tr><td colSpan={7} className="p-6 text-center text-gray-400 italic">No repairs found</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-            {/* PAYMENT LEDGER TAB */}
-            {activeTab === 'payments' && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100 border-b-2 border-gray-300">
-                    <tr>
-                      <th className="p-3 text-left text-[10px] font-extrabold uppercase">Date</th>
-                      <th className="p-3 text-left text-[10px] font-extrabold uppercase">Ref. ID</th>
-                      <th className="p-3 text-right text-[10px] font-extrabold uppercase">Amount</th>
-                      <th className="p-3 text-right text-[10px] font-extrabold uppercase">Discount</th>
-                      <th className="p-3 text-right text-[10px] font-extrabold uppercase">Net</th>
-                      <th className="p-3 text-left text-[10px] font-extrabold uppercase">Mode</th>
-                      <th className="p-3 text-center text-[10px] font-extrabold uppercase">Action</th>
+          {activeTab === 'direct' && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-100 border-b-2 border-gray-300">
+                  <tr>
+                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Sale Code</th>
+                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Mode</th>
+                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Remarks</th>
+                    <th className="p-3 text-right text-[10px] font-extrabold uppercase">Amount</th>
+                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Date</th>
+                    <th className="p-3 text-center text-[10px] font-extrabold uppercase">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSales.map(sale => (
+                    <tr key={sale.id} className="border-b border-gray-200 hover:bg-blue-50/30">
+                      <td className="p-3">{sale.sale_code}</td>
+                      <td className="p-3">{sale.payment_mode}</td>
+                      <td className="p-3">{sale.remarks || 'N/A'}</td>
+                      <td className="p-3 text-right">₹{sale.total_amount.toFixed(2)}</td>
+                      <td className="p-3">{formatDate(sale.date_created)}</td>
+                      <td className="p-3 text-center">
+                        <Link href={`/sales/view?id=${sale.id}`} className="text-blue-600 text-xs font-bold hover:underline">
+                          View
+                        </Link>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPayments.map(p => (
-                      <tr key={p.id} className="border-b border-gray-200 hover:bg-blue-50/30">
-                        <td className="p-3 text-xs">{formatDate(p.payment_date)}</td>
-                        <td className="p-3">
-                          {p.job_id && <div>Job: {p.job_id}</div>}
-                          {p.bill_no && <div>Bill: {p.bill_no}</div>}
-                          <div className="text-[9px] text-gray-500">PAY-{p.id}</div>
-                        </td>
-                        <td className="p-3 text-right">₹{p.amount.toFixed(2)}</td>
-                        <td className="p-3 text-right">₹{p.discount?.toFixed(2) || '0.00'}</td>
-                        <td className="p-3 text-right font-bold text-emerald-600">₹{(p.amount + (p.discount||0)).toFixed(2)}</td>
-                        <td className="p-3">{p.payment_mode}</td>
-                        <td className="p-3 text-center">
-                          <button 
-                            onClick={() => openEditModal(p)} 
-                            className="text-blue-600 text-xs font-bold hover:underline mr-2"
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            onClick={() => handleDeletePayment(p.id)} 
-                            className="text-red-600 text-xs font-bold hover:underline"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {filteredPayments.length === 0 && (
-                      <tr><td colSpan={7} className="p-6 text-center text-gray-400 italic">No payments found</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+                  ))}
+                  {filteredSales.length === 0 && (
+                    <tr><td colSpan={6} className="p-6 text-center text-gray-400 italic">No direct sales found</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {activeTab === 'payments' && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-100 border-b-2 border-gray-300">
+                  <tr>
+                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Date</th>
+                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Ref. ID</th>
+                    <th className="p-3 text-right text-[10px] font-extrabold uppercase">Amount</th>
+                    <th className="p-3 text-right text-[10px] font-extrabold uppercase">Discount</th>
+                    <th className="p-3 text-right text-[10px] font-extrabold uppercase">Net</th>
+                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Mode</th>
+                    <th className="p-3 text-center text-[10px] font-extrabold uppercase">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPayments.map(p => (
+                    <tr key={p.id} className="border-b border-gray-200 hover:bg-blue-50/30">
+                      <td className="p-3 text-xs">{formatDate(p.payment_date)}</td>
+                      <td className="p-3">
+                        {p.job_id && <div>Job: {p.job_id}</div>}
+                        {p.bill_no && <div>Bill: {p.bill_no}</div>}
+                        <div className="text-[9px] text-gray-500">PAY-{p.id}</div>
+                      </td>
+                      <td className="p-3 text-right">₹{p.amount.toFixed(2)}</td>
+                      <td className="p-3 text-right">₹{p.discount.toFixed(2)}</td>
+                      <td className="p-3 text-right font-bold text-emerald-600">₹{(p.amount + p.discount).toFixed(2)}</td>
+                      <td className="p-3">{p.payment_mode}</td>
+                      <td className="p-3 text-center">
+                        <button 
+                          onClick={() => openEditModal(p)} 
+                          className="text-blue-600 text-xs font-bold hover:underline mr-2"
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          onClick={() => handleDeletePayment(p.id)} 
+                          className="text-red-600 text-xs font-bold hover:underline"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredPayments.length === 0 && (
+                    <tr><td colSpan={7} className="p-6 text-center text-gray-400 italic">No payments found</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* ===== ACTION BUTTONS ===== */}
         <div className="flex justify-end gap-3">
-          <button 
-            onClick={() => router.push(`/clients/${client.id}/add-payment`)}
+          <Link 
+            href={`/clients/${client.id}/add-payment`} 
             className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-extrabold uppercase text-sm hover:bg-emerald-700 transition-all shadow-lg"
           >
-            <Plus size={18} />
-            Add Payment
-          </button>
-          <button 
-            onClick={() => router.push(`/clients/${client.id}/add-direct-sale`)}
+            <Plus size={18} /> Add Payment
+          </Link>
+          <Link 
+            href={`/clients/${client.id}/add-direct-sale`} 
             className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl font-extrabold uppercase text-sm hover:bg-purple-700 transition-all shadow-lg"
           >
-            <ShoppingCart size={18} />
-            New Direct Sale
-          </button>
+            <ShoppingCart size={18} /> New Direct Sale
+          </Link>
         </div>
 
       </div>
 
-<<<<<<< HEAD
-      {/* ===== PAYMENT MODAL – PREMIUM GLASS DESIGN ===== */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-md p-6 md:p-8 rounded-[2.5rem] border-2 border-gray-300 shadow-2xl animate-in zoom-in-95">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-amber-600 rounded-xl shadow-md shadow-amber-500/30">
-                  <CreditCard className="text-white" size={22} />
-                </div>
-                <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">
-                  Record Payment
-                </h3>
-              </div>
-              <button 
-                onClick={() => setShowPaymentModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
-              >
-                <X size={20} className="text-gray-500" />
-              </button>
-            </div>
-
-            {/* Payment Form */}
-            <div className="space-y-5">
-              {/* Amount */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-[11px] font-extrabold uppercase text-gray-600 tracking-[0.1em]">
-                  <IndianRupee size={16} className="text-amber-600" />
-                  Payment Amount (₹) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  placeholder={`Max: ₹${dueBalance}`}
-                  max={dueBalance}
-                  className="w-full px-5 py-3.5 bg-white border-2 border-gray-300 rounded-xl outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 transition-all text-gray-900 font-bold text-base placeholder:text-gray-400"
-                  autoFocus
-                />
-                <p className="text-[9px] text-gray-500 font-bold">
-                  Due Balance: ₹{dueBalance}
-                </p>
-              </div>
-
-              {/* Payment Date */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-[11px] font-extrabold uppercase text-gray-600 tracking-[0.1em]">
-                  <Calendar size={16} className="text-amber-600" />
-                  Payment Date
-                </label>
-                <input
-                  type="date"
-                  value={paymentDate}
-                  onChange={(e) => setPaymentDate(e.target.value)}
-                  className="w-full px-5 py-3.5 bg-white border-2 border-gray-300 rounded-xl outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 transition-all text-gray-900 font-bold text-base"
-                />
-              </div>
-
-              {/* Note (Optional) */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-[11px] font-extrabold uppercase text-gray-600 tracking-[0.1em]">
-                  Note (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={paymentNote}
-                  onChange={(e) => setPaymentNote(e.target.value)}
-                  placeholder="e.g. Cash, UPI, Cheque..."
-                  className="w-full px-5 py-3.5 bg-white border-2 border-gray-300 rounded-xl outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 transition-all text-gray-900 font-bold text-base placeholder:text-gray-400"
-                />
-              </div>
-
-              {/* Buttons */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={handlePaymentSubmit}
-                  disabled={processingPayment}
-                  className="flex-1 px-6 py-4 bg-amber-600 hover:bg-amber-700 text-white rounded-[2rem] font-extrabold flex items-center justify-center gap-3 transition-all active:scale-95 shadow-md shadow-amber-500/20 uppercase tracking-wide text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  {processingPayment ? (
-                    <>
-                      <Loader2 className="animate-spin" size={20} />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle size={20} />
-                      Confirm Payment
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => setShowPaymentModal(false)}
-                  className="px-6 py-4 bg-white border-2 border-gray-300 hover:bg-gray-100 text-gray-700 rounded-[2rem] font-extrabold transition-all uppercase tracking-wide text-sm"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-=======
       {/* ===== EDIT PAYMENT MODAL ===== */}
       {editingPayment && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1002,7 +646,6 @@ export default function ViewClientProfile({ params }: { params: Promise<{ id: st
                 </button>
               </div>
             </form>
->>>>>>> 33432e9de14460d8b5e4bfe9366ae2c36003809c
           </div>
         </div>
       )}
