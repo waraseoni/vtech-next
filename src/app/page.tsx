@@ -412,8 +412,13 @@ export default function Dashboard() {
               legend: { display: false },
               tooltip: {
                 callbacks: {
-                  // FIX: Use context.parsed.y instead of context.raw to avoid unknown type
-                  label: function(context) { return '₹' + context.parsed.y.toFixed(2); },
+                  // SAFE ACCESS: check if context.parsed exists and y is not null
+                  label: function(context) {
+                    if (context.parsed && context.parsed.y !== null) {
+                      return '₹' + context.parsed.y.toFixed(2);
+                    }
+                    return '₹0';
+                  },
                 },
               },
             },
