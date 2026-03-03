@@ -412,7 +412,8 @@ export default function Dashboard() {
               legend: { display: false },
               tooltip: {
                 callbacks: {
-                  label: function(context) { return '₹' + context.raw.toFixed(2); },
+                  // FIX: Use context.parsed.y instead of context.raw to avoid unknown type
+                  label: function(context) { return '₹' + context.parsed.y.toFixed(2); },
                 },
               },
             },
