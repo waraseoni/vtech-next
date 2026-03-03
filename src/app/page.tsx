@@ -137,31 +137,46 @@ export default function Dashboard() {
           }
         }
 
-        // Stats
-        const today = new Date().toISOString().split('T')[0];
-
-        const { count: clientCount } = await supabase.from('client_list').select('count').eq('delete_flag', 0);
+        // Stats – corrected count queries
+        const { count: clientCount, error: clientCountError } = await supabase
+          .from('client_list')
+          .select('*', { count: 'exact', head: true })
+          .eq('delete_flag', 0);
+        if (clientCountError) console.error('client count error', clientCountError);
         const totalClients = clientCount || 0;
 
-        const { data: allTransactions } = await supabase.from('transaction_list').select('*');
-        const activeTransactions = allTransactions?.filter((t: any) => t.del_status === 0) || [];
+        const { data: allTransactions } = await supabase
+          .from('transaction_list')
+          .select('*')
+          .eq('del_status', 0);
+        const activeTransactions = allTransactions || [];
 
         const pendingJobs = activeTransactions.filter((t: any) => t.status === 0).length;
         const inProgressJobs = activeTransactions.filter((t: any) => t.status === 1).length;
         const finishedJobs = activeTransactions.filter((t: any) => t.status === 2).length;
         const deliveredJobs = activeTransactions.filter((t: any) => t.status === 5).length;
 
-        const { count: mechanicCount } = await supabase.from('mechanic_list').select('count').eq('delete_flag', 0);
+        const { count: mechanicCount, error: mechanicCountError } = await supabase
+          .from('mechanic_list')
+          .select('*', { count: 'exact', head: true })
+          .eq('delete_flag', 0);
+        if (mechanicCountError) console.error('mechanic count error', mechanicCountError);
         const totalMechanics = mechanicCount || 0;
 
-        const { data: lowInventory } = await supabase.from('inventory_list').select('product_id').lte('quantity', 5);
-        const lowStock = [...new Set(lowInventory?.map((i: any) => i.product_id))].length;
+        const { data: lowInventory } = await supabase
+          .from('inventory_list')
+          .select('product_id')
+          .lte('quantity', 5);
+        const lowStock = lowInventory ? [...new Set(lowInventory.map((i: any) => i.product_id))].length : 0;
 
+        const today = new Date().toISOString().split('T')[0];
         const repairRev = activeTransactions
           .filter((t: any) => t.status === 5 && t.date_completed?.split('T')[0] === today)
           .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
-        const { data: directSalesData } = await supabase.from('direct_sales').select('total_amount, date_created');
+        const { data: directSalesData } = await supabase
+          .from('direct_sales')
+          .select('total_amount, date_created');
         const directRev = directSalesData
           ?.filter((d: any) => d.date_created.split('T')[0] === today)
           .reduce((sum: number, d: any) => sum + (d.total_amount || 0), 0) || 0;
@@ -207,22 +222,28 @@ export default function Dashboard() {
         }
         setMonthlyRevenue({ labels, data });
 
-        // Recent Jobs
+        // Recent Jobs – add del_status filter
         const { data: recentTrans } = await supabase
           .from('transaction_list')
           .select('id, job_id, client_name, item, amount, status')
+          .eq('del_status', 0)
           .order('id', { ascending: false })
           .limit(5);
         setRecentJobs(recentTrans || []);
 
-        // Recent Payments
+        // Recent Payments – ensure client_list is object
         const { data: paymentsData } = await supabase
           .from('client_payments')
           .select('id, amount, payment_mode, payment_date, client_list(firstname, lastname)')
           .order('payment_date', { ascending: false })
           .order('id', { ascending: false })
           .limit(10);
-        setRecentPayments(paymentsData || []);
+        // Supabase returns an object for nested joins, but to be safe we transform if it's array
+        const formattedPayments = (paymentsData || []).map((p: any) => ({
+          ...p,
+          client_list: Array.isArray(p.client_list) ? p.client_list[0] : p.client_list,
+        }));
+        setRecentPayments(formattedPayments);
 
         // Low Stock Items
         const { data: lowInvData } = await supabase
@@ -232,9 +253,9 @@ export default function Dashboard() {
           .order('quantity', { ascending: true })
           .limit(10);
         setLowStockItems(lowInvData?.map((i: any) => ({
-          name: i.product_list.name,
+          name: i.product_list?.name || 'Unknown',
           quantity: i.quantity,
-          place: i.place
+          place: i.place || '—'
         })) || []);
 
       } catch (err) {
@@ -582,7 +603,7 @@ export default function Dashboard() {
                     const statusText = ['Pending', 'In Progress', 'Finished', 'Paid', 'Cancelled', 'Delivered'][job.status];
                     return (
                       <tr key={job.id} className="border-b">
-                        <td className="p-3"><Link href={`/jobs/view?id=${job.id}`} className="text-blue-600 hover:underline">{job.job_id || 'N/A'}</Link></td>
+                        <td className="p-3"><Link href={`/jobs/${job.id}`} className="text-blue-600 hover:underline">{job.job_id || 'N/A'}</Link></td>
                         <td className="p-3">{job.client_name || 'Walk-in'}</td>
                         <td className="p-3">{job.item.substring(0, 20)}..</td>
                         <td className="p-3">₹{job.amount.toFixed(2)}</td>
