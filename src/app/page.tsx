@@ -597,7 +597,8 @@ export default function Dashboard() {
           <StatCard label="In Progress" value={stats.inProgressJobs} icon={<Loader2 size={24} className="animate-spin" />} color="blue" href="/jobs?status=1" />
           <StatCard label="Finished" value={stats.finishedJobs} icon={<CheckCircle size={24} />} color="emerald" href="/jobs?status=2" />
           <StatCard label="Delivered" value={stats.deliveredJobs} icon={<ArrowRight size={24} />} color="violet" href="/jobs?status=5" />
-          <StatCard label="Mechanics" value={stats.totalMechanics} icon={<Users size={24} />} color="pink" href="/mechanics" />
+          {/* To avoid 404 for /mechanics, remove the href or create the page */}
+          <StatCard label="Mechanics" value={stats.totalMechanics} icon={<Users size={24} />} color="pink" /* href="/mechanics" */ />
           <StatCard label="Low Stock" value={stats.lowStock} icon={<AlertCircle size={24} />} color="red" href="/inventory" />
           <StatCard label="Today's Revenue" value={`₹${stats.todayRevenue.toFixed(2)}`} icon={<IndianRupee size={24} strokeWidth={2.5} />} color="indigo" />
         </div>
