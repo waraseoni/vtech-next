@@ -69,7 +69,7 @@ type RecentPayment = {
   amount: number;
   payment_mode: string;
   payment_date: string;
-  client_list: { firstname: string; lastname: string } | null;
+  client_name: string;
 };
 
 type LowStockItem = {
@@ -138,11 +138,10 @@ export default function Dashboard() {
         }
 
         // Stats – corrected count queries
-        const { count: clientCount, error: clientCountError } = await supabase
+        const { count: clientCount } = await supabase
           .from('client_list')
           .select('*', { count: 'exact', head: true })
           .eq('delete_flag', 0);
-        if (clientCountError) console.error('client count error', clientCountError);
         const totalClients = clientCount || 0;
 
         const { data: allTransactions } = await supabase
@@ -156,11 +155,10 @@ export default function Dashboard() {
         const finishedJobs = activeTransactions.filter((t: any) => t.status === 2).length;
         const deliveredJobs = activeTransactions.filter((t: any) => t.status === 5).length;
 
-        const { count: mechanicCount, error: mechanicCountError } = await supabase
+        const { count: mechanicCount } = await supabase
           .from('mechanic_list')
           .select('*', { count: 'exact', head: true })
           .eq('delete_flag', 0);
-        if (mechanicCountError) console.error('mechanic count error', mechanicCountError);
         const totalMechanics = mechanicCount || 0;
 
         const { data: lowInventory } = await supabase
@@ -222,7 +220,7 @@ export default function Dashboard() {
         }
         setMonthlyRevenue({ labels, data });
 
-        // Recent Jobs – add del_status filter
+        // Recent Jobs
         const { data: recentTrans } = await supabase
           .from('transaction_list')
           .select('id, job_id, client_name, item, amount, status')
@@ -231,32 +229,56 @@ export default function Dashboard() {
           .limit(5);
         setRecentJobs(recentTrans || []);
 
-        // Recent Payments – ensure client_list is object
+        // Recent Payments (fixed join – fetch clients separately)
         const { data: paymentsData } = await supabase
           .from('client_payments')
-          .select('id, amount, payment_mode, payment_date, client_list(firstname, lastname)')
+          .select('id, amount, payment_mode, payment_date, client_id')
           .order('payment_date', { ascending: false })
           .order('id', { ascending: false })
           .limit(10);
-        // Supabase returns an object for nested joins, but to be safe we transform if it's array
-        const formattedPayments = (paymentsData || []).map((p: any) => ({
-          ...p,
-          client_list: Array.isArray(p.client_list) ? p.client_list[0] : p.client_list,
-        }));
-        setRecentPayments(formattedPayments);
 
-        // Low Stock Items
+        if (paymentsData && paymentsData.length > 0) {
+          const clientIds = paymentsData.map(p => p.client_id).filter(Boolean);
+          const { data: clients } = await supabase
+            .from('client_list')
+            .select('id, firstname, lastname')
+            .in('id', clientIds);
+          const clientMap = Object.fromEntries((clients || []).map(c => [c.id, c]));
+          const formattedPayments: RecentPayment[] = paymentsData.map(p => ({
+            id: p.id,
+            amount: p.amount,
+            payment_mode: p.payment_mode,
+            payment_date: p.payment_date,
+            client_name: clientMap[p.client_id] ? `${clientMap[p.client_id].firstname} ${clientMap[p.client_id].lastname}` : 'Unknown',
+          }));
+          setRecentPayments(formattedPayments);
+        } else {
+          setRecentPayments([]);
+        }
+
+        // Low Stock Items (fixed join)
         const { data: lowInvData } = await supabase
           .from('inventory_list')
-          .select('quantity, place, product_list(name)')
+          .select('quantity, place, product_id')
           .lte('quantity', 5)
           .order('quantity', { ascending: true })
           .limit(10);
-        setLowStockItems(lowInvData?.map((i: any) => ({
-          name: i.product_list?.name || 'Unknown',
-          quantity: i.quantity,
-          place: i.place || '—'
-        })) || []);
+        if (lowInvData && lowInvData.length > 0) {
+          const productIds = lowInvData.map(i => i.product_id).filter(Boolean);
+          const { data: products } = await supabase
+            .from('product_list')
+            .select('id, name')
+            .in('id', productIds);
+          const productMap = Object.fromEntries((products || []).map(p => [p.id, p.name]));
+          const formattedLowStock: LowStockItem[] = lowInvData.map(i => ({
+            name: productMap[i.product_id] || 'Unknown',
+            quantity: i.quantity,
+            place: i.place || '—',
+          }));
+          setLowStockItems(formattedLowStock);
+        } else {
+          setLowStockItems([]);
+        }
 
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
@@ -273,90 +295,119 @@ export default function Dashboard() {
       if (!profile || profile.role !== 'admin') return;
 
       try {
+        // 1. Repair income (transactions completed in range, status=5)
         const { data: transData } = await supabase
           .from('transaction_list')
-          .select('amount, status, date_completed')
+          .select('amount, date_completed')
           .gte('date_completed', from)
-          .lte('date_completed', to);
+          .lte('date_completed', to)
+          .eq('status', 5)
+          .eq('del_status', 0);
 
-        const repairInc = transData
-          ?.filter((t: any) => t.status === 5)
-          .reduce((sum: number, t: any) => sum + (t.amount || 0), 0) || 0;
+        const repairInc = transData?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
 
+        // 2. Direct sales income in range
         const { data: directData } = await supabase
           .from('direct_sales')
           .select('total_amount, date_created')
           .gte('date_created', from)
           .lte('date_created', to);
 
-        const directInc = directData
-          ?.reduce((sum: number, d: any) => sum + (d.total_amount || 0), 0) || 0;
-
+        const directInc = directData?.reduce((sum, d) => sum + (d.total_amount || 0), 0) || 0;
         const totalSales = repairInc + directInc;
 
-        const { data: transProdData } = await supabase
-          .from('transaction_products')
-          .select('qty, price, transaction_list(status, date_completed)')
-          .gte('transaction_list.date_completed', from)
-          .lte('transaction_list.date_completed', to)
-          .eq('transaction_list.status', 5);
+        // 3. Parts cost from transaction_products (via completed transactions)
+        const { data: completedTxIds } = await supabase
+          .from('transaction_list')
+          .select('id')
+          .gte('date_completed', from)
+          .lte('date_completed', to)
+          .eq('status', 5)
+          .eq('del_status', 0);
 
-        const partsTrans = transProdData
-          ?.reduce((sum: number, tp: any) => sum + (tp.qty * tp.price), 0) || 0;
+        const txIds = (completedTxIds || []).map(t => t.id);
+        let partsTrans = 0;
+        if (txIds.length > 0) {
+          const { data: transProdData } = await supabase
+            .from('transaction_products')
+            .select('qty, price')
+            .in('transaction_id', txIds);
+          partsTrans = transProdData?.reduce((sum, tp) => sum + (tp.qty * tp.price), 0) || 0;
+        }
 
-        const { data: directItemsData } = await supabase
-          .from('direct_sale_items')
-          .select('qty, price, direct_sales(date_created)')
-          .gte('direct_sales.date_created', from)
-          .lte('direct_sales.date_created', to);
+        // 4. Parts cost from direct_sale_items (via direct sales in range)
+        const { data: directIds } = await supabase
+          .from('direct_sales')
+          .select('id')
+          .gte('date_created', from)
+          .lte('date_created', to);
 
-        const partsDirect = directItemsData
-          ?.reduce((sum: number, ds: any) => sum + (ds.qty * ds.price), 0) || 0;
+        const dIds = (directIds || []).map(d => d.id);
+        let partsDirect = 0;
+        if (dIds.length > 0) {
+          const { data: directItemsData } = await supabase
+            .from('direct_sale_items')
+            .select('qty, price')
+            .in('direct_sale_id', dIds);
+          partsDirect = directItemsData?.reduce((sum, di) => sum + (di.qty * di.price), 0) || 0;
+        }
 
         const totalPartsSold = partsTrans + partsDirect;
         const partsCost = totalPartsSold * 0.9;
         const grossProfit = totalSales - partsCost;
 
+        // 5. Discounts from client_payments
         const { data: paymentsData } = await supabase
           .from('client_payments')
           .select('discount')
           .gte('created_at', from)
           .lte('created_at', to);
 
-        const discounts = paymentsData
-          ?.reduce((sum: number, p: any) => sum + (p.discount || 0), 0) || 0;
+        const discounts = paymentsData?.reduce((sum, p) => sum + (p.discount || 0), 0) || 0;
 
+        // 6. Staff salary from attendance
         const { data: attendanceData } = await supabase
           .from('attendance_list')
-          .select('status, mechanic_list(salary_per_day)')
+          .select('status, mechanic_id, curr_date')
           .gte('curr_date', from)
           .lte('curr_date', to);
 
-        const salary = attendanceData
-          ?.reduce((sum: number, a: any) => {
-            const dailySalary = a.mechanic_list?.salary_per_day || 0;
-            return sum + (a.status === 1 ? dailySalary : a.status === 3 ? dailySalary / 2 : 0);
-          }, 0) || 0;
+        if (attendanceData && attendanceData.length > 0) {
+          const mechanicIds = [...new Set(attendanceData.map(a => a.mechanic_id).filter(Boolean))];
+          const { data: mechanics } = await supabase
+            .from('mechanic_list')
+            .select('id, salary_per_day')
+            .in('id', mechanicIds);
+          const salaryMap = Object.fromEntries((mechanics || []).map(m => [m.id, m.salary_per_day || 0]));
 
+          const salary = attendanceData.reduce((sum, a) => {
+            const daily = salaryMap[a.mechanic_id] || 0;
+            if (a.status === 1) return sum + daily;
+            if (a.status === 3) return sum + daily / 2;
+            return sum;
+          }, 0);
+          setFinancial(prev => ({ ...prev, salary }));
+        }
+
+        // 7. Loan paid
         const { data: loanPayData } = await supabase
           .from('loan_payments')
           .select('amount_paid')
           .gte('payment_date', from)
           .lte('payment_date', to);
 
-        const loanPaid = loanPayData
-          ?.reduce((sum: number, lp: any) => sum + (lp.amount_paid || 0), 0) || 0;
+        const loanPaid = loanPayData?.reduce((sum, lp) => sum + (lp.amount_paid || 0), 0) || 0;
 
+        // 8. Other expenses
         const { data: expenseData } = await supabase
           .from('expense_list')
           .select('amount')
           .gte('date_created', from)
           .lte('date_created', to);
 
-        const expenses = expenseData
-          ?.reduce((sum: number, e: any) => sum + (e.amount || 0), 0) || 0;
+        const expenses = expenseData?.reduce((sum, e) => sum + (e.amount || 0), 0) || 0;
 
-        const totalOutflow = discounts + salary + loanPaid + expenses;
+        const totalOutflow = discounts + (financial.salary || 0) + loanPaid + expenses;
         const netProfit = grossProfit - totalOutflow;
 
         setFinancial({
@@ -364,7 +415,7 @@ export default function Dashboard() {
           partsCost,
           grossProfit,
           discounts,
-          salary,
+          salary: financial.salary || 0,
           loanPaid,
           expenses,
           totalOutflow,
@@ -378,6 +429,7 @@ export default function Dashboard() {
     fetchFinancialData();
   }, [from, to, profile]);
 
+  // Chart effects remain unchanged (tooltip fixed already)
   useEffect(() => {
     if (revenueChartRef.current && monthlyRevenue.labels.length) {
       if (revenueChartInstance) revenueChartInstance.destroy();
@@ -412,7 +464,6 @@ export default function Dashboard() {
               legend: { display: false },
               tooltip: {
                 callbacks: {
-                  // SAFE ACCESS: check if context.parsed exists and y is not null
                   label: function(context) {
                     if (context.parsed && context.parsed.y !== null) {
                       return '₹' + context.parsed.y.toFixed(2);
@@ -641,7 +692,7 @@ export default function Dashboard() {
                 <tbody>
                   {recentPayments.map((pay) => (
                     <tr key={pay.id} className="border-b">
-                      <td className="p-3">{pay.client_list ? `${pay.client_list.firstname} ${pay.client_list.lastname}` : 'Unknown'}</td>
+                      <td className="p-3">{pay.client_name}</td>
                       <td className="p-3">₹{pay.amount.toFixed(2)}</td>
                       <td className="p-3">{pay.payment_mode}</td>
                       <td className="p-3">{new Date(pay.payment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</td>
