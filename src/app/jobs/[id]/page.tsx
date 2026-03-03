@@ -183,40 +183,78 @@ export default function ViewJobPage({ params }: { params: Promise<{ id: string }
             .single();
 
           if (!mechanicError) setMechanic(mechanicData);
+          else console.error("Mechanic fetch error:", mechanicError);
         }
 
-        // 4. Fetch services
+        // 4. Fetch services (without join to avoid foreign key issues)
         const { data: servicesData, error: servicesError } = await supabase
           .from("transaction_services")
-          .select("*, service_list(name)")
+          .select("*")
           .eq("transaction_id", jobId);
 
-        if (!servicesError) {
-          setServices(
-            servicesData.map((s: any) => ({
-              ...s,
-              service_name: s.service_list?.name,
-            }))
-          );
+        if (servicesError) {
+          console.error("Services fetch error:", JSON.stringify(servicesError, null, 2));
+          setServices([]);
+        } else if (servicesData && servicesData.length > 0) {
+          // Get unique service IDs
+          const serviceIds = servicesData.map(s => s.service_id);
+          // Fetch service names from service_list
+          const { data: serviceNamesData, error: serviceNamesError } = await supabase
+            .from("service_list")
+            .select("id, name")
+            .in("id", serviceIds);
+
+          if (serviceNamesError) {
+            console.error("Service names fetch error:", JSON.stringify(serviceNamesError, null, 2));
+            // Still set services without names
+            setServices(servicesData.map(s => ({ ...s, service_name: null })));
+          } else {
+            const serviceNameMap = Object.fromEntries(
+              serviceNamesData.map(s => [s.id, s.name])
+            );
+            setServices(
+              servicesData.map(s => ({
+                ...s,
+                service_name: serviceNameMap[s.service_id] || null,
+              }))
+            );
+          }
         } else {
-          console.error("Services fetch error:", servicesError);
+          setServices([]);
         }
 
-        // 5. Fetch products
+        // 5. Fetch products (similar approach)
         const { data: productsData, error: productsError } = await supabase
           .from("transaction_products")
-          .select("*, product_list(name)")
+          .select("*")
           .eq("transaction_id", jobId);
 
-        if (!productsError) {
-          setProducts(
-            productsData.map((p: any) => ({
-              ...p,
-              product_name: p.product_list?.name,
-            }))
-          );
+        if (productsError) {
+          console.error("Products fetch error:", JSON.stringify(productsError, null, 2));
+          setProducts([]);
+        } else if (productsData && productsData.length > 0) {
+          const productIds = productsData.map(p => p.product_id);
+          const { data: productNamesData, error: productNamesError } = await supabase
+            .from("product_list")
+            .select("id, name")
+            .in("id", productIds);
+
+          if (productNamesError) {
+            console.error("Product names fetch error:", JSON.stringify(productNamesError, null, 2));
+            setProducts(productsData.map(p => ({ ...p, product_name: null })));
+          } else {
+            const productNameMap = Object.fromEntries(
+              productNamesData.map(p => [p.id, p.name])
+            );
+            setProducts(
+              productsData.map(p => ({
+                ...p,
+                product_name: productNameMap[p.product_id] || null,
+              }))
+            );
+          }
         } else {
-          console.error("Products fetch error:", productsError);
+          setProducts([]);
         }
 
       } catch (err) {
