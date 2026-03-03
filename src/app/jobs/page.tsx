@@ -148,7 +148,7 @@ function JobsListContent() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openDropdownId]);
 
-  // Fetch transactions (optimized)
+  // Fetch transactions (optimized) - FIXED TYPE ISSUE
   const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
@@ -200,9 +200,18 @@ function JobsListContent() {
       });
 
       const clientMap = new Map(clients.map((c) => [c.id, c]));
+      // Provide a default client object with all required fields to avoid TypeScript error
+      const defaultClient = {
+        firstname: '',
+        middlename: '',
+        lastname: '',
+        contact: '',
+        opening_balance: 0,
+      };
+
       const enhancedTxns = txns.map((txn) => {
         const clientId = Number(txn.client_name);
-        const client = clientMap.get(clientId) || {};
+        const client = clientMap.get(clientId) || defaultClient;
         return {
           ...txn,
           client_firstname: client.firstname,
@@ -461,17 +470,17 @@ function JobsListContent() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
             <table className="w-full text-sm table-fixed">
               <colgroup>
-  <col className="w-[5%]" />
-  <col className="w-[9%]" />
-  <col className="w-[9%]" />
-  <col className="w-[18%]" />
-  <col className="w-[10%]" />
-  <col className="w-[10%]" />
-  <col className="w-[5%]" />
-  <col className="w-[7%]" />
-  <col className="w-[9%]" />
-  <col className="w-[8%]" />
-</colgroup>
+                <col className="w-[5%]" />
+                <col className="w-[9%]" />
+                <col className="w-[9%]" />
+                <col className="w-[18%]" />
+                <col className="w-[10%]" />
+                <col className="w-[10%]" />
+                <col className="w-[5%]" />
+                <col className="w-[7%]" />
+                <col className="w-[9%]" />
+                <col className="w-[8%]" />
+              </colgroup>
               <thead className="bg-gray-100 border-b border-gray-300">
                 <tr>
                   <th className="px-3 py-2 text-left font-semibold text-gray-600 text-xs uppercase">#</th>
