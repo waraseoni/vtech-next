@@ -34,15 +34,36 @@ export default function MonthlyReport({ userRole, mechanicId }: { userRole: 'adm
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      
+      // Build query for mechanics based on role
       let mechQuery = supabase
         .from('mechanic_list')
         .select('id, firstname, lastname')
         .eq('status', 1);
-      if (userRole === 'staff' && mechanicId) {
-        mechQuery = mechQuery.eq('id', mechanicId);
+
+      if (userRole === 'staff') {
+        if (mechanicId) {
+          // Staff: only their own record
+          mechQuery = mechQuery.eq('id', mechanicId);
+        } else {
+          // Staff has no mechanicId – return no results
+          mechQuery = mechQuery.eq('id', 0); // will yield empty array
+        }
       }
+
       const { data: mechs, error: mechErr } = await mechQuery.order('firstname');
-      if (mechErr || !mechs) return;
+      if (mechErr || !mechs) {
+        console.error('Error fetching mechanics:', mechErr);
+        setLoading(false);
+        return;
+      }
+
+      // If no mechanics (e.g., staff without mechanicId), set empty data
+      if (mechs.length === 0) {
+        setMechanicsData([]);
+        setLoading(false);
+        return;
+      }
 
       const startDate = `${month}-01`;
       const endDate = `${month}-${new Date(parseInt(month.split('-')[0]), parseInt(month.split('-')[1]), 0).getDate()}`;
@@ -99,6 +120,7 @@ export default function MonthlyReport({ userRole, mechanicId }: { userRole: 'adm
     window.history.pushState(null, '', `/attendance?view=report&month=${newMonth}`);
   };
 
+  // Only admin can open the edit modal
   const handleDayClick = (mechanicId: number, mechanicName: string, dateStr: string) => {
     if (userRole !== 'admin') return;
     setSelected({ mechanicId, mechanicName, date: dateStr });
@@ -107,12 +129,25 @@ export default function MonthlyReport({ userRole, mechanicId }: { userRole: 'adm
 
   if (loading) return <div className="text-center py-10">Loading...</div>;
 
+  // If no data (e.g., staff without mechanicId), show a message
+  if (mechanicsData.length === 0) {
+    return (
+      <div className="text-center py-16 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-400">
+        <p className="text-gray-600 font-bold italic uppercase tracking-wider text-sm">
+          {userRole === 'staff' 
+            ? 'No mechanic profile linked to your account. Please contact admin.'
+            : 'No active mechanics found.'}
+        </p>
+      </div>
+    );
+  }
+
   const daysInMonth = new Date(parseInt(month.split('-')[0]), parseInt(month.split('-')[1]), 0).getDate();
   const firstDay = new Date(month + '-01').getDay();
 
   return (
     <div>
-      {/* Month Navigation */}
+      {/* Month Navigation (available for both roles) */}
       <div className="flex items-center justify-between mb-6">
         <button onClick={handlePrevMonth} className="p-2 bg-gray-200 rounded-lg hover:bg-gray-300">
           <ChevronLeft size={20} />
@@ -161,11 +196,18 @@ export default function MonthlyReport({ userRole, mechanicId }: { userRole: 'adm
                 else if (day.status === 2) bgColor = 'bg-red-500 text-white';
                 if (day.isSunday && day.status === 0) bgColor = 'bg-red-100 text-red-600';
 
+                // Conditionally attach onClick only for admin
+                const clickProps = userRole === 'admin'
+                  ? { onClick: () => handleDayClick(md.mechanic.id, md.mechanic.name, dateStr) }
+                  : {};
+
                 return (
                   <div
                     key={day.day}
-                    onClick={() => handleDayClick(md.mechanic.id, md.mechanic.name, dateStr)}
-                    className={`aspect-square flex items-center justify-center rounded-md cursor-pointer transition-all hover:scale-105 ${bgColor} ${userRole === 'admin' ? 'hover:ring-2 hover:ring-blue-400' : ''}`}
+                    {...clickProps}
+                    className={`aspect-square flex items-center justify-center rounded-md transition-all ${
+                      userRole === 'admin' ? 'cursor-pointer hover:scale-105 hover:ring-2 hover:ring-blue-400' : ''
+                    } ${bgColor}`}
                   >
                     {day.day}
                   </div>
@@ -176,7 +218,8 @@ export default function MonthlyReport({ userRole, mechanicId }: { userRole: 'adm
         ))}
       </div>
 
-      {modalOpen && selected && (
+      {/* Modal only for admin */}
+      {modalOpen && selected && userRole === 'admin' && (
         <AttendanceModal
           mechanicId={selected.mechanicId}
           mechanicName={selected.mechanicName}
