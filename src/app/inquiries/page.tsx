@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { 
   Calendar, Search, Filter, ChevronLeft, ChevronRight, 
   RefreshCw, Eye, Trash2, Phone, Mail, User, MessageSquare,
-  CheckCircle, XCircle, Loader2
+  CheckCircle, XCircle, Loader2, Plus
 } from 'lucide-react';
 import InquiryModal from './components/InquiryModal';
 
@@ -189,7 +190,7 @@ export default function InquiriesPage() {
     <div className="min-h-screen bg-white text-gray-900 p-4 md:p-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
         
-        {/* Header */}
+        {/* ===== HEADER CARD ===== */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gray-50 p-6 md:p-8 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
           <div className="flex items-center gap-5">
             <div className="p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/20">
@@ -204,6 +205,12 @@ export default function InquiriesPage() {
               </p>
             </div>
           </div>
+          <Link 
+            href="/contact"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-extrabold flex items-center gap-2 transition-all shadow-md"
+          >
+            <Plus size={20} /> New Inquiry
+          </Link>
         </div>
 
         {/* Filter Bar */}
