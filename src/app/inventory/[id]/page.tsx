@@ -72,7 +72,7 @@ export default function ProductDetailPage() {
       setStockIn(stockInData || []);
       const totalIn = stockInData?.reduce((sum, s) => sum + s.quantity, 0) || 0;
 
-      // 3. Fetch stock-out from repair jobs
+      // 3. Fetch stock-out from repair jobs (transaction_products)
       const { data: jobItems } = await supabase
         .from('transaction_products')
         .select('qty, price, transaction_id')
@@ -83,11 +83,24 @@ export default function ProductDetailPage() {
         const transactionIds = jobItems.map(item => item.transaction_id);
         const { data: transactions } = await supabase
           .from('transaction_list')
-          .select('id, date_created, job_id, code, client_name, status')
+          .select('id, date_created, job_id, code, status, client_name')
           .in('id', transactionIds)
-          .neq('status', 4);
+          .neq('status', 4); // exclude cancelled
 
         if (transactions) {
+          // Get client IDs
+          const clientIds = [...new Set(transactions.map(t => Number(t.client_name)))];
+          // Fetch client names
+          const { data: clients } = await supabase
+            .from('client_list')
+            .select('id, firstname, middlename, lastname')
+            .in('id', clientIds);
+          const clientMap = new Map();
+          clients?.forEach(c => {
+            const fullName = [c.firstname, c.middlename, c.lastname].filter(Boolean).join(' ');
+            clientMap.set(c.id, fullName);
+          });
+
           const transMap = new Map(transactions.map(t => [t.id, t]));
           jobItems.forEach(item => {
             const trans = transMap.get(item.transaction_id);
@@ -97,7 +110,7 @@ export default function ProductDetailPage() {
                 date: trans.date_created,
                 reference: trans.job_id || trans.code,
                 type: 'Repair Job',
-                client_name: trans.client_name || 'N/A',
+                client_name: clientMap.get(Number(trans.client_name)) || 'N/A',
                 qty: item.qty,
                 price: item.price,
                 total: item.qty * item.price,
@@ -108,7 +121,7 @@ export default function ProductDetailPage() {
         }
       }
 
-      // 4. Fetch stock-out from direct sales
+      // 4. Fetch stock-out from direct sales (direct_sale_items)
       const { data: saleItems } = await supabase
         .from('direct_sale_items')
         .select('qty, price, sale_id')
@@ -119,22 +132,31 @@ export default function ProductDetailPage() {
         const saleIds = saleItems.map(item => item.sale_id);
         const { data: sales } = await supabase
           .from('direct_sales')
-          .select('id, date_created, sale_code, client_id, client:client_list(name)')
+          .select('id, date_created, sale_code, client_id')
           .in('id', saleIds);
 
         if (sales) {
+          const clientIds = [...new Set(sales.map(s => s.client_id).filter(id => id != null))];
+          const { data: clients } = await supabase
+            .from('client_list')
+            .select('id, firstname, middlename, lastname')
+            .in('id', clientIds);
+          const clientMap = new Map();
+          clients?.forEach(c => {
+            const fullName = [c.firstname, c.middlename, c.lastname].filter(Boolean).join(' ');
+            clientMap.set(c.id, fullName);
+          });
+
           const saleMap = new Map(sales.map(s => [s.id, s]));
           saleItems.forEach(item => {
             const sale = saleMap.get(item.sale_id);
             if (sale) {
-              // 🔥 FIX: Type assertion for client object
-              const client = sale.client as unknown as { name: string } | null;
               saleOut.push({
                 id: sale.id,
                 date: sale.date_created,
                 reference: sale.sale_code,
                 type: 'Direct Sale',
-                client_name: client?.name || 'N/A',
+                client_name: clientMap.get(sale.client_id) || 'N/A',
                 qty: item.qty,
                 price: item.price,
                 total: item.qty * item.price,
