@@ -225,9 +225,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </Link>
                 </li>
 
-                {/* JobSheet (Transactions) */}
+                {/* JobSheet (jobs) */}
                 <li className="nav-item">
-                  <Link href="/transactions" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/transactions' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
+                  <Link href="/jobs" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/jobs' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
                     <ClipboardList size={18} />
                     <span>JobSheet</span>
                   </Link>
