@@ -11,7 +11,7 @@ import {
   CalendarCheck, HelpCircle, ShoppingCart, ClipboardList,
   PieChart, TrendingUp, DollarSign, Truck, 
   CreditCard, Clock, Briefcase, Coins, 
-  Toolbox, FolderOpen, UsersRound, Database,  // 🔥 Tool → Toolbox
+  Toolbox, FolderOpen, UsersRound, Database,
   Settings2, ChevronDown, ChevronRight
 } from 'lucide-react';
 
@@ -47,7 +47,6 @@ function NavbarSearch() {
 function SubMenu({ title, icon, children, basePath }: { title: string; icon: React.ReactNode; children: React.ReactNode; basePath?: string }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(() => {
-    // Auto-open if any child is active
     if (basePath && pathname.startsWith(basePath)) return true;
     return false;
   });
@@ -83,13 +82,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // Logout Function
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
     router.push('/login');
   }, [router]);
 
-  // Auth & Profile Logic
   useEffect(() => {
     const getAuthAndProfile = async () => {
       try {
@@ -174,7 +171,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </div>
 
-            {/* Sidebar Navigation */}
             <nav className="flex-1 overflow-y-auto py-4 px-3">
               <ul className="nav nav-pills nav-sidebar flex-column space-y-1">
                 {/* Dashboard */}
@@ -185,23 +181,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </Link>
                 </li>
 
-                {/* Attendance (example) */}
                 <li className="nav-item">
                   <Link href="/attendance" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/attendance' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
                     <CalendarCheck size={18} />
-                    <span>Mark My Attendance</span>
+                    <span>Attendance</span>
                   </Link>
                 </li>
 
-                {/* Clients */}
                 <li className="nav-item">
                   <Link href="/clients" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/clients' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
                     <Users size={18} />
-                    <span>Clients List</span>
+                    <span>Clients</span>
                   </Link>
                 </li>
 
-                {/* Inquiries */}
                 <li className="nav-item">
                   <Link href="/inquiries" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/inquiries' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
                     <HelpCircle size={18} />
@@ -209,7 +202,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </Link>
                 </li>
 
-                {/* Direct Sales */}
                 <li className="nav-item">
                   <Link href="/direct-sales" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/direct-sales' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
                     <ShoppingCart size={18} />
@@ -217,7 +209,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </Link>
                 </li>
 
-                {/* Inventory */}
                 <li className="nav-item">
                   <Link href="/inventory" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/inventory' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
                     <Package size={18} />
@@ -225,7 +216,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </Link>
                 </li>
 
-                {/* JobSheet (jobs) */}
                 <li className="nav-item">
                   <Link href="/jobs" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/jobs' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
                     <ClipboardList size={18} />
@@ -235,7 +225,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
                 {isAdmin && (
                   <>
-                    {/* Reports Section (Collapsible) */}
                     <li className="nav-header text-[10px] font-black uppercase text-gray-500 tracking-widest px-4 pt-4 pb-1">Reports</li>
                     <SubMenu title="Reports" icon={<PieChart size={18} />} basePath="/reports">
                       <li>
@@ -275,7 +264,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       </li>
                     </SubMenu>
 
-                    {/* Back Office Section (Collapsible) */}
                     <li className="nav-header text-[10px] font-black uppercase text-gray-500 tracking-widest px-4 pt-4 pb-1">Back Office</li>
                     <SubMenu title="Back Office" icon={<Briefcase size={18} />} basePath="/backoffice">
                       <li>
@@ -295,7 +283,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       </li>
                       <li>
                         <Link href="/services" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <Toolbox size={14} /> Services  {/* 🔥 Fixed icon */}
+                          <Toolbox size={14} /> Services
                         </Link>
                       </li>
                       <li>
@@ -339,7 +327,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </ul>
             </nav>
 
-            {/* Sidebar Footer */}
             <div className="p-4 border-t border-gray-800 text-xs text-gray-500 text-center">
               V-TECH PRO v4.2
             </div>
@@ -349,7 +336,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Main Content Area */}
         <div className={`${!isMobile ? 'lg:ml-[280px]' : 'ml-0'} flex-1 min-h-screen flex flex-col`}>
           
-          {/* Header */}
           <header className="sticky top-0 z-40 h-16 bg-white/90 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 sm:px-8">
             <div className="flex items-center gap-2">
               {isMobile && (
@@ -360,7 +346,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <NavbarSearch />
             </div>
 
-            {/* User Dropdown */}
             <div className="relative">
               <button 
                 onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -403,19 +388,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </header>
 
-          {/* Page Content */}
           <main className={`flex-1 p-4 sm:p-8 ${isMobile ? 'pb-24' : ''}`}>
             {children}
           </main>
         </div>
 
-        {/* Mobile Bottom Navigation */}
+        {/* ===== MOBILE BOTTOM NAVIGATION – HORIZONTALLY SCROLLABLE ===== */}
         {isMobile && (
-          <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-gray-200 flex justify-around items-center z-50 px-2 pb-2">
-            <FooterLink href="/" icon={<LayoutDashboard size={20}/>} label="Home" active={pathname === '/'} />
-            <FooterLink href="/jobs" icon={<Wrench size={20}/>} label="Jobs" active={pathname === '/jobs'} />
-            <FooterLink href="/clients" icon={<Users size={20}/>} label="Clients" active={pathname === '/clients'} />
-            {isAdmin && <FooterLink href="/users" icon={<ShieldCheck size={20}/>} label="Staff" active={pathname === '/users'} />}
+          <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-gray-200 flex items-center overflow-x-auto z-50 px-2 pb-2 space-x-4 scrollbar-hide">
+            <FooterLink href="/" icon={<LayoutDashboard size={20}/>} label="Home" active={pathname === '/'} className="flex-none" />
+            <FooterLink href="/attendance" icon={<CalendarCheck size={20}/>} label="Attendance" active={pathname === '/attendance'} className="flex-none" />
+            <FooterLink href="/clients" icon={<Users size={20}/>} label="Clients" active={pathname === '/clients'} className="flex-none" />
+            <FooterLink href="/inquiries" icon={<HelpCircle size={20}/>} label="Inquiries" active={pathname === '/inquiries'} className="flex-none" />
+            <FooterLink href="/direct-sales" icon={<ShoppingCart size={20}/>} label="Sales" active={pathname === '/direct-sales'} className="flex-none" />
+            <FooterLink href="/inventory" icon={<Package size={20}/>} label="Inventory" active={pathname === '/inventory'} className="flex-none" />
+            <FooterLink href="/jobs" icon={<ClipboardList size={20}/>} label="Jobs" active={pathname === '/jobs'} className="flex-none" />
+            {isAdmin && (
+              <FooterLink href="/users" icon={<ShieldCheck size={20}/>} label="Staff" active={pathname === '/users'} className="flex-none" />
+            )}
           </nav>
         )}
       </body>
@@ -431,9 +421,11 @@ const NavLink = ({ href, icon, label, active }: any) => (
   </Link>
 );
 
-const FooterLink = ({ href, icon, label, active }: any) => (
-  <Link href={href} className={`flex flex-col items-center gap-1 flex-1 ${active ? 'text-blue-600' : 'text-gray-400'}`}>
-    <div className={`p-2 rounded-xl ${active ? 'bg-blue-50' : ''}`}>{icon}</div>
+const FooterLink = ({ href, icon, label, active, className = "" }: any) => (
+  <Link href={href} className={`flex flex-col items-center justify-center flex-1 no-underline transition-all duration-200 gap-0.5 ${active ? 'text-blue-600' : 'text-gray-400'} ${className}`}>
+    <div className={`p-2 rounded-xl transition-all ${active ? 'bg-blue-50 scale-110' : 'bg-transparent'}`}>
+      {icon}
+    </div>
     <span className="text-[9px] font-black uppercase tracking-tighter">{label}</span>
   </Link>
 );
