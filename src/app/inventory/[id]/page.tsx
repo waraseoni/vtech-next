@@ -60,48 +60,34 @@ export default function ProductDetailPage() {
         .select('*')
         .eq('id', productId)
         .single();
-      if (prodErr) {
-        console.error('Product fetch error:', prodErr);
-        throw prodErr;
-      }
+      if (prodErr) throw prodErr;
       setProduct(prod);
 
       // 2. Fetch stock-in entries
-      const { data: stockInData, error: stockInErr } = await supabase
+      const { data: stockInData } = await supabase
         .from('inventory_list')
         .select('*')
         .eq('product_id', productId)
         .order('stock_date', { ascending: false });
-      if (stockInErr) {
-        console.error('Stock-in error:', stockInErr);
-      }
       setStockIn(stockInData || []);
       const totalIn = stockInData?.reduce((sum, s) => sum + s.quantity, 0) || 0;
 
-      // 3. Fetch stock-out from repair jobs (transaction_products)
-      // Use a simpler approach: first get transaction IDs, then get details
-      const { data: jobItems, error: jobErr } = await supabase
+      // 3. Fetch stock-out from repair jobs
+      const { data: jobItems } = await supabase
         .from('transaction_products')
         .select('qty, price, transaction_id')
         .eq('product_id', productId);
 
-      if (jobErr) {
-        console.error('Job items error:', JSON.stringify(jobErr, null, 2));
-      }
-
       const jobOut: StockOut[] = [];
       if (jobItems && jobItems.length > 0) {
-        // Get transaction details for these IDs, excluding cancelled (status != 4)
         const transactionIds = jobItems.map(item => item.transaction_id);
-        const { data: transactions, error: transErr } = await supabase
+        const { data: transactions } = await supabase
           .from('transaction_list')
           .select('id, date_created, job_id, code, client_name, status')
           .in('id', transactionIds)
-          .neq('status', 4); // exclude cancelled
+          .neq('status', 4);
 
-        if (transErr) {
-          console.error('Transaction fetch error:', transErr);
-        } else if (transactions) {
+        if (transactions) {
           const transMap = new Map(transactions.map(t => [t.id, t]));
           jobItems.forEach(item => {
             const trans = transMap.get(item.transaction_id);
@@ -122,37 +108,33 @@ export default function ProductDetailPage() {
         }
       }
 
-      // 4. Fetch stock-out from direct sales (direct_sale_items)
-      const { data: saleItems, error: saleErr } = await supabase
+      // 4. Fetch stock-out from direct sales
+      const { data: saleItems } = await supabase
         .from('direct_sale_items')
         .select('qty, price, sale_id')
         .eq('product_id', productId);
 
-      if (saleErr) {
-        console.error('Sale items error:', JSON.stringify(saleErr, null, 2));
-      }
-
       const saleOut: StockOut[] = [];
       if (saleItems && saleItems.length > 0) {
         const saleIds = saleItems.map(item => item.sale_id);
-        const { data: sales, error: salesErr } = await supabase
+        const { data: sales } = await supabase
           .from('direct_sales')
           .select('id, date_created, sale_code, client_id, client:client_list(name)')
           .in('id', saleIds);
 
-        if (salesErr) {
-          console.error('Sales fetch error:', salesErr);
-        } else if (sales) {
+        if (sales) {
           const saleMap = new Map(sales.map(s => [s.id, s]));
           saleItems.forEach(item => {
             const sale = saleMap.get(item.sale_id);
             if (sale) {
+              // 🔥 FIX: Type assertion for client object
+              const client = sale.client as unknown as { name: string } | null;
               saleOut.push({
                 id: sale.id,
                 date: sale.date_created,
                 reference: sale.sale_code,
                 type: 'Direct Sale',
-                client_name: sale.client?.name || 'N/A',
+                client_name: client?.name || 'N/A',
                 qty: item.qty,
                 price: item.price,
                 total: item.qty * item.price,
@@ -163,7 +145,6 @@ export default function ProductDetailPage() {
         }
       }
 
-      // Combine and sort by date descending
       const allOut = [...jobOut, ...saleOut].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       );
