@@ -13,7 +13,6 @@ import {
   ArrowRight,
   AlertCircle,
   Zap,
-  Sparkles,
   Loader2,
   DollarSign,
   PieChart,
@@ -58,7 +57,7 @@ type StatusCount = number[];
 type RecentJob = {
   id: number;
   job_id: string | null;
-  client_name: string;
+  client_name: string;   // ← ab yahan full name aayega (PHP jaisa)
   item: string;
   amount: number;
   status: number;
@@ -115,6 +114,7 @@ export default function Dashboard() {
   const [revenueChartInstance, setRevenueChartInstance] = useState<Chart | null>(null);
   const [statusChartInstance, setStatusChartInstance] = useState<Chart | null>(null);
 
+  // ==================== DASHBOARD DATA (Stats + Charts + Tables) ====================
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -137,29 +137,23 @@ export default function Dashboard() {
           }
         }
 
-        // Stats – corrected count queries
+        // All active transactions (stats + monthly revenue + status)
+        const { data: allTransactionsData } = await supabase
+          .from('transaction_list')
+          .select('*')
+          .eq('del_status', 0);
+        const activeTransactions = allTransactionsData || [];
+
+        // Stats
         const { count: clientCount } = await supabase
           .from('client_list')
           .select('*', { count: 'exact', head: true })
           .eq('delete_flag', 0);
-        const totalClients = clientCount || 0;
-
-        const { data: allTransactions } = await supabase
-          .from('transaction_list')
-          .select('*')
-          .eq('del_status', 0);
-        const activeTransactions = allTransactions || [];
-
-        const pendingJobs = activeTransactions.filter((t: any) => t.status === 0).length;
-        const inProgressJobs = activeTransactions.filter((t: any) => t.status === 1).length;
-        const finishedJobs = activeTransactions.filter((t: any) => t.status === 2).length;
-        const deliveredJobs = activeTransactions.filter((t: any) => t.status === 5).length;
 
         const { count: mechanicCount } = await supabase
           .from('mechanic_list')
           .select('*', { count: 'exact', head: true })
           .eq('delete_flag', 0);
-        const totalMechanics = mechanicCount || 0;
 
         const { data: lowInventory } = await supabase
           .from('inventory_list')
@@ -179,24 +173,22 @@ export default function Dashboard() {
           ?.filter((d: any) => d.date_created.split('T')[0] === today)
           .reduce((sum: number, d: any) => sum + (d.total_amount || 0), 0) || 0;
 
-        const todayRevenue = repairRev + directRev;
-
         setStats({
-          totalClients,
-          pendingJobs,
-          inProgressJobs,
-          finishedJobs,
-          deliveredJobs,
-          totalMechanics,
+          totalClients: clientCount || 0,
+          pendingJobs: activeTransactions.filter((t: any) => t.status === 0).length,
+          inProgressJobs: activeTransactions.filter((t: any) => t.status === 1).length,
+          finishedJobs: activeTransactions.filter((t: any) => t.status === 2).length,
+          deliveredJobs: activeTransactions.filter((t: any) => t.status === 5).length,
+          totalMechanics: mechanicCount || 0,
           lowStock,
-          todayRevenue,
+          todayRevenue: repairRev + directRev,
         });
 
-        // Status Counts
+        // Status Counts (for doughnut chart)
         const counts = [0, 1, 2, 3, 4, 5].map(s => activeTransactions.filter((t: any) => t.status === s).length);
         setStatusCounts(counts);
 
-        // Monthly Revenue
+        // Monthly Revenue (Last 12 Months) – PHP jaisa exact logic
         const labels: string[] = [];
         const data: number[] = [];
         const now = new Date();
@@ -220,16 +212,35 @@ export default function Dashboard() {
         }
         setMonthlyRevenue({ labels, data });
 
-        // Recent Jobs
-        const { data: recentTrans } = await supabase
+        // ==================== RECENT JOBS – FIXED (PHP style client name) ====================
+        const { data: recentTransRaw } = await supabase
           .from('transaction_list')
-          .select('id, job_id, client_name, item, amount, status')
+          .select('id, job_id, client_name, item, amount, status')   // client_name = client_id (foreign key)
           .eq('del_status', 0)
           .order('id', { ascending: false })
           .limit(5);
-        setRecentJobs(recentTrans || []);
 
-        // Recent Payments (fixed join – fetch clients separately)
+        if (recentTransRaw && recentTransRaw.length > 0) {
+          const clientIds = [...new Set(recentTransRaw.map((t: any) => t.client_name).filter(Boolean))];
+          const { data: clients } = await supabase
+            .from('client_list')
+            .select('id, firstname, lastname')
+            .in('id', clientIds);
+
+          const clientMap = Object.fromEntries(
+            (clients || []).map((c: any) => [c.id, `${c.firstname || ''} ${c.lastname || ''}`.trim() || 'Walk-in'])
+          );
+
+          const formattedRecentJobs: RecentJob[] = recentTransRaw.map((job: any) => ({
+            ...job,
+            client_name: clientMap[job.client_name] || 'Walk-in',   // ← yahan actual naam aa raha hai
+          }));
+          setRecentJobs(formattedRecentJobs);
+        } else {
+          setRecentJobs([]);
+        }
+
+        // Recent Payments (already fixed in original)
         const { data: paymentsData } = await supabase
           .from('client_payments')
           .select('id, amount, payment_mode, payment_date, client_id')
@@ -243,20 +254,20 @@ export default function Dashboard() {
             .from('client_list')
             .select('id, firstname, lastname')
             .in('id', clientIds);
-          const clientMap = Object.fromEntries((clients || []).map(c => [c.id, c]));
+          const clientMap = Object.fromEntries((clients || []).map(c => [c.id, `${c.firstname} ${c.lastname}`.trim()]));
           const formattedPayments: RecentPayment[] = paymentsData.map(p => ({
             id: p.id,
             amount: p.amount,
             payment_mode: p.payment_mode,
             payment_date: p.payment_date,
-            client_name: clientMap[p.client_id] ? `${clientMap[p.client_id].firstname} ${clientMap[p.client_id].lastname}` : 'Unknown',
+            client_name: clientMap[p.client_id] || 'Unknown',
           }));
           setRecentPayments(formattedPayments);
         } else {
           setRecentPayments([]);
         }
 
-        // Low Stock Items (fixed join)
+        // Low Stock Items (already fixed)
         const { data: lowInvData } = await supabase
           .from('inventory_list')
           .select('quantity, place, product_id')
@@ -290,12 +301,13 @@ export default function Dashboard() {
     fetchDashboardData();
   }, []);
 
+  // ==================== FINANCIAL DATA (Admin only) – PHP jaisa + stale state fixed ====================
   useEffect(() => {
-    const fetchFinancialData = async () => {
-      if (!profile || profile.role !== 'admin') return;
+    if (!profile || profile.role !== 'admin') return;
 
+    const fetchFinancialData = async () => {
       try {
-        // 1. Repair income (transactions completed in range, status=5)
+        // 1. Repair income
         const { data: transData } = await supabase
           .from('transaction_list')
           .select('amount, date_completed')
@@ -303,20 +315,18 @@ export default function Dashboard() {
           .lte('date_completed', to)
           .eq('status', 5)
           .eq('del_status', 0);
-
         const repairInc = transData?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
 
-        // 2. Direct sales income in range
+        // 2. Direct sales
         const { data: directData } = await supabase
           .from('direct_sales')
           .select('total_amount, date_created')
           .gte('date_created', from)
           .lte('date_created', to);
-
         const directInc = directData?.reduce((sum, d) => sum + (d.total_amount || 0), 0) || 0;
         const totalSales = repairInc + directInc;
 
-        // 3. Parts cost from transaction_products (via completed transactions)
+        // 3. Parts cost – transaction_products
         const { data: completedTxIds } = await supabase
           .from('transaction_list')
           .select('id')
@@ -324,7 +334,6 @@ export default function Dashboard() {
           .lte('date_completed', to)
           .eq('status', 5)
           .eq('del_status', 0);
-
         const txIds = (completedTxIds || []).map(t => t.id);
         let partsTrans = 0;
         if (txIds.length > 0) {
@@ -335,13 +344,12 @@ export default function Dashboard() {
           partsTrans = transProdData?.reduce((sum, tp) => sum + (tp.qty * tp.price), 0) || 0;
         }
 
-        // 4. Parts cost from direct_sale_items (via direct sales in range)
+        // 4. Parts cost – direct_sale_items
         const { data: directIds } = await supabase
           .from('direct_sales')
           .select('id')
           .gte('date_created', from)
           .lte('date_created', to);
-
         const dIds = (directIds || []).map(d => d.id);
         let partsDirect = 0;
         if (dIds.length > 0) {
@@ -356,22 +364,22 @@ export default function Dashboard() {
         const partsCost = totalPartsSold * 0.9;
         const grossProfit = totalSales - partsCost;
 
-        // 5. Discounts from client_payments
+        // 5. Discounts
         const { data: paymentsData } = await supabase
           .from('client_payments')
           .select('discount')
           .gte('created_at', from)
           .lte('created_at', to);
-
         const discounts = paymentsData?.reduce((sum, p) => sum + (p.discount || 0), 0) || 0;
 
-        // 6. Staff salary from attendance
+        // 6. Staff salary
         const { data: attendanceData } = await supabase
           .from('attendance_list')
           .select('status, mechanic_id, curr_date')
           .gte('curr_date', from)
           .lte('curr_date', to);
 
+        let salary = 0;
         if (attendanceData && attendanceData.length > 0) {
           const mechanicIds = [...new Set(attendanceData.map(a => a.mechanic_id).filter(Boolean))];
           const { data: mechanics } = await supabase
@@ -380,13 +388,12 @@ export default function Dashboard() {
             .in('id', mechanicIds);
           const salaryMap = Object.fromEntries((mechanics || []).map(m => [m.id, m.salary_per_day || 0]));
 
-          const salary = attendanceData.reduce((sum, a) => {
+          salary = attendanceData.reduce((sum, a) => {
             const daily = salaryMap[a.mechanic_id] || 0;
             if (a.status === 1) return sum + daily;
             if (a.status === 3) return sum + daily / 2;
             return sum;
           }, 0);
-          setFinancial(prev => ({ ...prev, salary }));
         }
 
         // 7. Loan paid
@@ -395,7 +402,6 @@ export default function Dashboard() {
           .select('amount_paid')
           .gte('payment_date', from)
           .lte('payment_date', to);
-
         const loanPaid = loanPayData?.reduce((sum, lp) => sum + (lp.amount_paid || 0), 0) || 0;
 
         // 8. Other expenses
@@ -404,10 +410,9 @@ export default function Dashboard() {
           .select('amount')
           .gte('date_created', from)
           .lte('date_created', to);
-
         const expenses = expenseData?.reduce((sum, e) => sum + (e.amount || 0), 0) || 0;
 
-        const totalOutflow = discounts + (financial.salary || 0) + loanPaid + expenses;
+        const totalOutflow = discounts + salary + loanPaid + expenses;
         const netProfit = grossProfit - totalOutflow;
 
         setFinancial({
@@ -415,7 +420,7 @@ export default function Dashboard() {
           partsCost,
           grossProfit,
           discounts,
-          salary: financial.salary || 0,
+          salary,
           loanPaid,
           expenses,
           totalOutflow,
@@ -429,9 +434,9 @@ export default function Dashboard() {
     fetchFinancialData();
   }, [from, to, profile]);
 
-  // Chart effects remain unchanged (tooltip fixed already)
+  // ==================== CHARTS (PHP jaisa + Next.js friendly) ====================
   useEffect(() => {
-    if (revenueChartRef.current && monthlyRevenue.labels.length) {
+    if (revenueChartRef.current && monthlyRevenue.labels.length > 0) {
       if (revenueChartInstance) revenueChartInstance.destroy();
 
       const ctx = revenueChartRef.current.getContext('2d');
@@ -445,31 +450,24 @@ export default function Dashboard() {
               data: monthlyRevenue.data,
               backgroundColor: 'rgba(54, 162, 235, 0.7)',
               borderColor: 'rgba(54, 162, 235, 1)',
-              borderWidth: 1,
+              borderWidth: 3,
+              tension: 0.4,
             }],
           },
           options: {
             responsive: true,
-            maintainAspectRatio: true,
-            aspectRatio: 2.2,
+            maintainAspectRatio: false,   // ← yeh fix karta hai chart dikhne ka
             scales: {
               y: {
                 beginAtZero: true,
-                ticks: {
-                  callback: function(value) { return '₹' + value; },
-                },
+                ticks: { callback: (value) => '₹' + value },
               },
             },
             plugins: {
               legend: { display: false },
               tooltip: {
                 callbacks: {
-                  label: function(context) {
-                    if (context.parsed && context.parsed.y !== null) {
-                      return '₹' + context.parsed.y.toFixed(2);
-                    }
-                    return '₹0';
-                  },
+                  label: (context) => '₹' + (context.parsed.y ?? 0).toFixed(2),
                 },
               },
             },
@@ -481,7 +479,7 @@ export default function Dashboard() {
   }, [monthlyRevenue]);
 
   useEffect(() => {
-    if (statusChartRef.current && statusCounts.length) {
+    if (statusChartRef.current) {
       if (statusChartInstance) statusChartInstance.destroy();
 
       const ctx = statusChartRef.current.getContext('2d');
@@ -497,7 +495,7 @@ export default function Dashboard() {
           },
           options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
               legend: { position: 'bottom' },
             },
@@ -524,14 +522,13 @@ export default function Dashboard() {
 
   const handleFilterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // The useEffect will handle refetching on from/to change
   };
 
   return (
     <div className="min-h-screen bg-white text-gray-900 p-4 md:p-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
         
-        {/* ===== HEADER SECTION ===== */}
+        {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gray-50 p-6 md:p-8 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
           <div className="flex items-center gap-5">
             <div className="p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/20">
@@ -554,7 +551,7 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {/* ===== FILTER FORM ===== */}
+        {/* FILTER FORM */}
         <div className="bg-white p-6 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
           <form onSubmit={handleFilterSubmit} className="flex flex-wrap items-center justify-end gap-4">
             <label className="font-bold text-gray-700">From:</label>
@@ -590,20 +587,19 @@ export default function Dashboard() {
           </form>
         </div>
 
-        {/* ===== MAIN STATISTICS CARDS ===== */}
+        {/* MAIN STATISTICS CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard label="Total Clients" value={stats.totalClients} icon={<Users size={24} />} color="blue" href="/clients" />
           <StatCard label="Pending" value={stats.pendingJobs} icon={<Clock size={24} />} color="amber" href="/jobs?status=0" />
           <StatCard label="In Progress" value={stats.inProgressJobs} icon={<Loader2 size={24} className="animate-spin" />} color="blue" href="/jobs?status=1" />
           <StatCard label="Finished" value={stats.finishedJobs} icon={<CheckCircle size={24} />} color="emerald" href="/jobs?status=2" />
           <StatCard label="Delivered" value={stats.deliveredJobs} icon={<ArrowRight size={24} />} color="violet" href="/jobs?status=5" />
-          {/* To avoid 404 for /mechanics, remove the href or create the page */}
-          <StatCard label="Mechanics" value={stats.totalMechanics} icon={<Users size={24} />} color="pink" /* href="/mechanics" */ />
+          <StatCard label="Mechanics" value={stats.totalMechanics} icon={<Users size={24} />} color="pink" />
           <StatCard label="Low Stock" value={stats.lowStock} icon={<AlertCircle size={24} />} color="red" href="/inventory" />
           <StatCard label="Today's Revenue" value={`₹${stats.todayRevenue.toFixed(2)}`} icon={<IndianRupee size={24} strokeWidth={2.5} />} color="indigo" />
         </div>
 
-        {/* ===== FINANCIAL OVERVIEW (Admin only) ===== */}
+        {/* FINANCIAL OVERVIEW (Admin only) */}
         {isAdmin && (
           <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
             <h3 className="text-xl font-bold text-blue-600 mb-6">Financial Summary ({new Date(from).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} - {new Date(to).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })})</h3>
@@ -620,7 +616,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ===== CHARTS ROW ===== */}
+        {/* CHARTS ROW */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
             <h3 className="text-xl font-bold text-blue-600 mb-6">Monthly Revenue (Last 12 Months)</h3>
@@ -636,9 +632,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ===== RECENT ACTIVITY TABLES ===== */}
+        {/* RECENT ACTIVITY TABLES */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Jobs */}
+          {/* Recent Jobs – ab client naam sahi dikhega */}
           <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-blue-600">Recent Jobs</h3>
@@ -662,7 +658,7 @@ export default function Dashboard() {
                     return (
                       <tr key={job.id} className="border-b">
                         <td className="p-3"><Link href={`/jobs/${job.id}`} className="text-blue-600 hover:underline">{job.job_id || 'N/A'}</Link></td>
-                        <td className="p-3">{job.client_name || 'Walk-in'}</td>
+                        <td className="p-3">{job.client_name}</td>
                         <td className="p-3">{job.item.substring(0, 20)}..</td>
                         <td className="p-3">₹{job.amount.toFixed(2)}</td>
                         <td className="p-3"><span className={`${statusBadge} text-white px-2 py-1 rounded text-sm`}>{statusText}</span></td>
@@ -705,7 +701,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ===== LOW STOCK ITEMS TABLE ===== */}
+        {/* LOW STOCK ITEMS TABLE */}
         <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-blue-600">Low Stock Items (≤5)</h3>
