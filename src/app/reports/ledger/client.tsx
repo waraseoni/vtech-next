@@ -3,17 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
-import {
-  format,
-  subMonths,
-  addMonths,
-  parseISO,
-  startOfMonth,
-  endOfMonth,
-  startOfDay,
-  endOfDay,
-} from 'date-fns';
+import { format, subMonths, addMonths, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { FaPrint, FaEye, FaChevronLeft, FaChevronRight, FaRedo, FaInfoCircle } from 'react-icons/fa';
 import { Loader2 } from 'lucide-react';
 
@@ -111,50 +101,59 @@ type StockItem = {
   quantity: number;
 };
 
+type ApiResponse = {
+  repairJobs: Transaction[];
+  walkinSales: DirectSale[];
+  clientSales: DirectSale[];
+  clientPayments: ClientPayment[];
+  commissionData: Commission[];
+  salaryDetails: SalaryDetail[];
+  advancePayments: AdvancePayment[];
+  expenses: Expense[];
+  ledgerEntries: LedgerEntry[];
+  stockItems: StockItem[];
+  jobIncome: number;
+  walkinIncome: number;
+  clientSalesIncome: number;
+  clientPaymentsReceived: number;
+  totalDiscountGiven: number;
+  totalCommission: number;
+  totalAdvanceGiven: number;
+  totalOtherExpenses: number;
+  totalEmiPaid: number;
+  totalSalary: number;
+  stockValue: number;
+  staffLiability: number;
+  loanOutstanding: number;
+};
+
 type Props = {
   fromDate?: string;
   toDate?: string;
 };
 
+// Simple Modal Component
+function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-auto">
+        <div className="bg-gray-800 text-white px-4 py-2 flex justify-between items-center sticky top-0">
+          <h3 className="font-semibold">{title}</h3>
+          <button onClick={onClose} className="text-white hover:text-gray-300">✕</button>
+        </div>
+        <div className="p-4 overflow-x-auto">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function LedgerReportClient({ fromDate, toDate }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<ApiResponse | null>(null);
   const [from, setFrom] = useState(fromDate || format(new Date(), 'yyyy-MM-01'));
   const [to, setTo] = useState(toDate || format(new Date(), 'yyyy-MM-dd'));
   const [showStockDetail, setShowStockDetail] = useState(false);
-
-  // Data states
-  const [repairJobs, setRepairJobs] = useState<Transaction[]>([]);
-  const [walkinSales, setWalkinSales] = useState<DirectSale[]>([]);
-  const [clientSales, setClientSales] = useState<DirectSale[]>([]);
-  const [clientPayments, setClientPayments] = useState<ClientPayment[]>([]);
-  const [commissionData, setCommissionData] = useState<Commission[]>([]);
-  const [salaryDetails, setSalaryDetails] = useState<SalaryDetail[]>([]);
-  const [advancePayments, setAdvancePayments] = useState<AdvancePayment[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
-  const [stockItems, setStockItems] = useState<StockItem[]>([]);
-  const [loanOutstanding, setLoanOutstanding] = useState(0);
-  const [staffLiability, setStaffLiability] = useState(0);
-
-  // Summary totals
-  const [jobIncome, setJobIncome] = useState(0);
-  const [walkinIncome, setWalkinIncome] = useState(0);
-  const [clientSalesIncome, setClientSalesIncome] = useState(0);
-  const [clientPaymentsReceived, setClientPaymentsReceived] = useState(0);
-  const [totalDiscountGiven, setTotalDiscountGiven] = useState(0);
-  const [totalSalary, setTotalSalary] = useState(0);
-  const [totalCommission, setTotalCommission] = useState(0);
-  const [totalAdvanceGiven, setTotalAdvanceGiven] = useState(0);
-  const [totalOtherExpenses, setTotalOtherExpenses] = useState(0);
-  const [totalEmiPaid, setTotalEmiPaid] = useState(0);
-  const [stockValue, setStockValue] = useState(0);
-
-  const totalIncome = jobIncome + walkinIncome + clientSalesIncome;
-  const totalBusinessExpense = totalSalary + totalCommission + totalOtherExpenses + totalEmiPaid + totalDiscountGiven;
-  const netProfit = totalIncome - totalBusinessExpense;
-  const totalCashInflow = clientPaymentsReceived + walkinIncome;
-  const totalCashOutflow = totalAdvanceGiven + totalOtherExpenses + totalEmiPaid;
 
   // Modal states
   const [showRepairModal, setShowRepairModal] = useState(false);
@@ -167,453 +166,44 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
   const [showStaffAdvanceModal, setShowStaffAdvanceModal] = useState(false);
   const [showShopExpensesModal, setShowShopExpensesModal] = useState(false);
 
-  // Fetch all data
+  // Fetch data from API
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const fromDate = parseISO(from);
-        const toDate = parseISO(to);
-        const start = startOfDay(fromDate).toISOString();
-        const end = endOfDay(toDate).toISOString();
-
-        // Parallel fetch
-        const [
-          repairRes,
-          walkinRes,
-          clientSalesRes,
-          paymentsRes,
-          commissionRes,
-          salaryRes,
-          advanceRes,
-          expenseRes,
-          loanRes,
-          liabilityRes,
-          stockRes,
-        ] = await Promise.all([
-          // Repair jobs (status=5, completed in range)
-          supabase
-            .from('transaction_list')
-            .select(`
-              id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id,
-              client:client_name (firstname, middlename, lastname),
-              mechanic:mechanic_id (firstname, lastname)
-            `)
-            .eq('status', 5)
-            .eq('del_status', 0)
-            .gte('date_completed', start)
-            .lte('date_completed', end),
-
-          // Walk-in direct sales (no client)
-          supabase
-            .from('direct_sales')
-            .select(`
-              id, sale_code, total_amount, date_created,
-              items:direct_sale_items (product_id, qty, price, product:product_id (name))
-            `)
-            .is('client_id', null)
-            .gte('date_created', start)
-            .lte('date_created', end),
-
-          // Client direct sales
-          supabase
-            .from('direct_sales')
-            .select(`
-              id, sale_code, total_amount, date_created, client_id,
-              client:client_id (firstname, middlename, lastname),
-              items:direct_sale_items (product_id, qty, price, product:product_id (name))
-            `)
-            .not('client_id', 'is', null)
-            .gte('date_created', start)
-            .lte('date_created', end),
-
-          // Client payments
-          supabase
-            .from('client_payments')
-            .select(`
-              id, client_id, amount, discount, payment_date, remarks, payment_method,
-              client:client_id (firstname, lastname)
-            `)
-            .gte('payment_date', from)
-            .lte('payment_date', to),
-
-          // Commission (jobs completed in range)
-          supabase
-            .from('transaction_list')
-            .select(`
-              job_id, amount, mechanic_commission_amount, date_completed,
-              mechanic:mechanic_id (firstname, lastname)
-            `)
-            .eq('status', 5)
-            .gte('date_completed', start)
-            .lte('date_completed', end),
-
-          // Salary (attendance)
-          supabase
-            .from('attendance_list')
-            .select(`
-              mechanic_id, curr_date, status,
-              mechanic:mechanic_id (firstname, lastname, daily_salary)
-            `)
-            .in('status', [1, 3])
-            .gte('curr_date', from)
-            .lte('curr_date', to),
-
-          // Advance payments
-          supabase
-            .from('advance_payments')
-            .select(`
-              date_paid, amount, reason, payment_mode,
-              mechanic:mechanic_id (firstname, lastname)
-            `)
-            .gte('date_paid', from)
-            .lte('date_paid', to),
-
-          // Expenses
-          supabase
-            .from('expense_list')
-            .select('*')
-            .gte('date_created', start)
-            .lte('date_created', end),
-
-          // Loan payments (for EMI total)
-          supabase
-            .from('loan_payments')
-            .select('amount_paid')
-            .gte('payment_date', from)
-            .lte('payment_date', to),
-
-          // Staff liability (all-time)
-          supabase
-            .from('mechanic_list')
-            .select('id, firstname, lastname, daily_salary'),
-
-          // Stock value
-          supabase
-            .from('inventory_list')
-            .select('quantity, product:product_id (id, name, price)')
-            .gt('quantity', 0),
-        ]);
-
-        // Process repair jobs
-        if (!repairRes.error && repairRes.data) {
-          const jobs = repairRes.data.map((t: any) => ({
-            id: t.id,
-            job_id: t.job_id,
-            date_completed: t.date_completed,
-            item: t.item,
-            amount: t.amount || 0,
-            mechanic_commission_amount: t.mechanic_commission_amount || 0,
-            client_id: t.client_name,
-            mechanic_id: t.mechanic_id,
-            client_firstname: t.client?.firstname,
-            client_middlename: t.client?.middlename,
-            client_lastname: t.client?.lastname,
-            mechanic_firstname: t.mechanic?.firstname,
-            mechanic_lastname: t.mechanic?.lastname,
-          }));
-          setRepairJobs(jobs);
-          setJobIncome(jobs.reduce((sum, j) => sum + j.amount, 0));
-          setTotalCommission(jobs.reduce((sum, j) => sum + j.mechanic_commission_amount, 0));
-        }
-
-        // Process walk-in sales
-        if (!walkinRes.error && walkinRes.data) {
-          const sales = walkinRes.data.map((s: any) => ({
-            id: s.id,
-            sale_code: s.sale_code,
-            total_amount: s.total_amount || 0,
-            date_created: s.date_created,
-            client_id: null,
-            product_name: s.items?.[0]?.product?.name,
-            quantity: s.items?.[0]?.qty,
-            unit_price: s.items?.[0]?.price,
-          }));
-          setWalkinSales(sales);
-          setWalkinIncome(sales.reduce((sum, s) => sum + s.total_amount, 0));
-        }
-
-        // Process client sales
-        if (!clientSalesRes.error && clientSalesRes.data) {
-          const sales = clientSalesRes.data.map((s: any) => ({
-            id: s.id,
-            sale_code: s.sale_code,
-            total_amount: s.total_amount || 0,
-            date_created: s.date_created,
-            client_id: s.client_id,
-            client_firstname: s.client?.firstname,
-            client_lastname: s.client?.lastname,
-            product_name: s.items?.[0]?.product?.name,
-            quantity: s.items?.[0]?.qty,
-            unit_price: s.items?.[0]?.price,
-          }));
-          setClientSales(sales);
-          setClientSalesIncome(sales.reduce((sum, s) => sum + s.total_amount, 0));
-        }
-
-        // Process client payments
-        if (!paymentsRes.error && paymentsRes.data) {
-          const payments = paymentsRes.data.map((p: any) => ({
-            id: p.id,
-            client_id: p.client_id,
-            amount: p.amount || 0,
-            discount: p.discount || 0,
-            payment_date: p.payment_date,
-            remarks: p.remarks,
-            payment_method: p.payment_method,
-            client_firstname: p.client?.firstname,
-            client_lastname: p.client?.lastname,
-          }));
-          setClientPayments(payments);
-          setClientPaymentsReceived(payments.reduce((sum, p) => sum + p.amount, 0));
-          setTotalDiscountGiven(payments.reduce((sum, p) => sum + p.discount, 0));
-        }
-
-        // Process commission (already from repair jobs, but we need for modal)
-        if (!commissionRes.error && commissionRes.data) {
-          const commissions = commissionRes.data.map((c: any) => ({
-            job_id: c.job_id,
-            amount: c.amount || 0,
-            mechanic_commission_amount: c.mechanic_commission_amount || 0,
-            date_completed: c.date_completed,
-            mechanic_firstname: c.mechanic?.firstname,
-            mechanic_lastname: c.mechanic?.lastname,
-          }));
-          setCommissionData(commissions);
-        }
-
-        // Process salary
-        if (!salaryRes.error && salaryRes.data) {
-          const attendance = salaryRes.data;
-          const mechanicMap: Record<number, { name: string; daily: number; full: number; half: number }> = {};
-          attendance.forEach((a: any) => {
-            const mid = a.mechanic_id;
-            if (!mechanicMap[mid]) {
-              mechanicMap[mid] = {
-                name: `${a.mechanic?.firstname || ''} ${a.mechanic?.lastname || ''}`.trim(),
-                daily: a.mechanic?.daily_salary || 0,
-                full: 0,
-                half: 0,
-              };
-            }
-            if (a.status === 1) mechanicMap[mid].full++;
-            else if (a.status === 3) mechanicMap[mid].half++;
-          });
-          const salaries: SalaryDetail[] = Object.values(mechanicMap).map((m) => {
-            const totalDays = m.full + m.half * 0.5;
-            const earned = totalDays * m.daily;
-            return {
-              mechanic_name: m.name,
-              full_days: m.full,
-              half_days: m.half,
-              total_days: totalDays,
-              daily_salary: m.daily,
-              salary_earned: earned,
-            };
-          });
-          setSalaryDetails(salaries);
-          setTotalSalary(salaries.reduce((sum, s) => sum + s.salary_earned, 0));
-        }
-
-        // Process advance payments
-        if (!advanceRes.error && advanceRes.data) {
-          const advances = advanceRes.data.map((a: any) => ({
-            date_paid: a.date_paid,
-            mechanic_name: a.mechanic ? `${a.mechanic.firstname || ''} ${a.mechanic.lastname || ''}`.trim() : 'Unknown',
-            amount: a.amount || 0,
-            reason: a.reason,
-            payment_mode: a.payment_mode,
-          }));
-          setAdvancePayments(advances);
-          setTotalAdvanceGiven(advances.reduce((sum, a) => sum + a.amount, 0));
-        }
-
-        // Process expenses
-        if (!expenseRes.error && expenseRes.data) {
-          const exps = expenseRes.data.map((e: any) => ({
-            date_created: e.date_created,
-            category: e.category,
-            remarks: e.remarks,
-            amount: e.amount || 0,
-            payment_mode: e.payment_mode,
-            reference: e.reference,
-          }));
-          setExpenses(exps);
-          setTotalOtherExpenses(exps.reduce((sum, e) => sum + e.amount, 0));
-        }
-
-        // Loan EMI total
-        if (!loanRes.error && loanRes.data) {
-          const emiTotal = loanRes.data.reduce((sum: number, l: any) => sum + (l.amount_paid || 0), 0);
-          setTotalEmiPaid(emiTotal);
-        }
-
-        // Staff liability (all-time)
-        if (!liabilityRes.error && liabilityRes.data) {
-          let liability = 0;
-          const mechanics = liabilityRes.data;
-          for (const m of mechanics) {
-            const mid = m.id;
-            // Earned commission
-            const { data: commData } = await supabase
-              .from('transaction_list')
-              .select('mechanic_commission_amount')
-              .eq('mechanic_id', mid)
-              .eq('status', 5);
-            const earnedComm = commData?.reduce((sum, c) => sum + (c.mechanic_commission_amount || 0), 0) || 0;
-
-            // Earned salary
-            const { data: attData } = await supabase
-              .from('attendance_list')
-              .select('status, curr_date')
-              .eq('mechanic_id', mid)
-              .in('status', [1, 3]);
-            let earnedSal = 0;
-            if (attData) {
-              for (const a of attData) {
-                // Get salary rate at that date
-                const { data: rateData } = await supabase
-                  .from('mechanic_salary_history')
-                  .select('salary')
-                  .eq('mechanic_id', mid)
-                  .lte('effective_date', a.curr_date)
-                  .order('effective_date', { ascending: false })
-                  .limit(1);
-                const daily = rateData?.[0]?.salary || m.daily_salary || 0;
-                earnedSal += a.status === 3 ? daily / 2 : daily;
-              }
-            }
-
-            // Paid advances
-            const { data: advData } = await supabase
-              .from('advance_payments')
-              .select('amount')
-              .eq('mechanic_id', mid);
-            const paid = advData?.reduce((sum, a) => sum + (a.amount || 0), 0) || 0;
-
-            liability += earnedComm + earnedSal - paid;
-          }
-          setStaffLiability(liability);
-        }
-
-        // Stock value
-        if (!stockRes.error && stockRes.data) {
-          const items = stockRes.data.map((i: any) => ({
-            name: i.product?.name || 'Unknown',
-            price: i.product?.price || 0,
-            quantity: i.quantity || 0,
-          }));
-          setStockItems(items);
-          setStockValue(items.reduce((sum, i) => sum + i.price * i.quantity, 0));
-        }
-
-        // Build ledger entries
-        const ledger: LedgerEntry[] = [];
-
-        // Client payments (cash in)
-        clientPayments.forEach((p) => {
-          ledger.push({
-            date: p.payment_date,
-            category: 'Client Payment',
-            details: `${p.client_firstname || ''} ${p.client_lastname || ''}`.trim() + (p.discount > 0 ? ` (Discount: ₹${p.discount})` : ''),
-            type: 'Cash In',
-            net_amount: p.amount,
-            discount_amount: p.discount,
-            client_id: p.client_id,
-            client_fullname: `${p.client_firstname || ''} ${p.client_lastname || ''}`.trim(),
-          });
-        });
-
-        // Walk-in sales (cash in)
-        walkinSales.forEach((s) => {
-          ledger.push({
-            date: s.date_created,
-            category: 'Direct Sale (Walk-in)',
-            details: `Invoice: ${s.sale_code}`,
-            type: 'Cash In',
-            net_amount: s.total_amount,
-          });
-        });
-
-        // Expenses (cash out)
-        expenses.forEach((e) => {
-          ledger.push({
-            date: e.date_created,
-            category: 'Shop Expense',
-            details: `${e.category} - ${e.remarks}`,
-            type: 'Cash Out',
-            net_amount: e.amount,
-          });
-        });
-
-        // Loan payments (cash out)
-        const { data: loanPayments } = await supabase
-          .from('loan_payments')
-          .select('payment_date, amount_paid, remarks')
-          .gte('payment_date', from)
-          .lte('payment_date', to);
-        loanPayments?.forEach((lp) => {
-          ledger.push({
-            date: lp.payment_date,
-            category: 'Loan EMI',
-            details: lp.remarks || 'EMI Payment',
-            type: 'Cash Out',
-            net_amount: lp.amount_paid || 0,
-          });
-        });
-
-        // Advance payments (cash out)
-        advancePayments.forEach((a) => {
-          ledger.push({
-            date: a.date_paid,
-            category: 'Staff Advance',
-            details: `${a.mechanic_name} - ${a.reason || ''}`,
-            type: 'Cash Out',
-            net_amount: a.amount,
-          });
-        });
-
-        // Sort by date
-        ledger.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        setLedgerEntries(ledger);
-
+        const res = await fetch(`/api/reports/ledger?from=${from}&to=${to}`);
+        const result = await res.json();
+        if (result.error) throw new Error(result.error);
+        setData(result);
       } catch (err) {
-        console.error('Error fetching ledger data:', err);
+        console.error(err);
+        alert('Failed to load report');
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, [from, to]);
 
-  // Handle filter submit
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams();
-    params.set('from', from);
-    params.set('to', to);
-    router.push(`/reports/ledger?${params.toString()}`);
+    router.push(`/reports/ledger?from=${from}&to=${to}`);
   };
 
-  // Navigate to previous/next month
   const goToMonth = (direction: 'prev' | 'next') => {
     const currentFrom = parseISO(from);
     const newFrom = direction === 'prev' ? subMonths(currentFrom, 1) : addMonths(currentFrom, 1);
     const newTo = direction === 'prev' ? subMonths(parseISO(to), 1) : addMonths(parseISO(to), 1);
     setFrom(format(newFrom, 'yyyy-MM-dd'));
     setTo(format(newTo, 'yyyy-MM-dd'));
-    // Trigger re-fetch via useEffect
   };
 
-  // Reset to current month
   const resetToCurrentMonth = () => {
     const today = new Date();
     setFrom(format(startOfMonth(today), 'yyyy-MM-dd'));
     setTo(format(endOfMonth(today), 'yyyy-MM-dd'));
   };
 
-  // Helper: format date
   const formatDate = (dateStr: string) => format(parseISO(dateStr), 'dd MMM yyyy');
 
   if (loading) {
@@ -623,6 +213,40 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
       </div>
     );
   }
+
+  if (!data) return <div className="p-8 text-center text-red-600">No data available</div>;
+
+  const {
+    repairJobs,
+    walkinSales,
+    clientSales,
+    clientPayments,
+    commissionData,
+    salaryDetails,
+    advancePayments,
+    expenses,
+    ledgerEntries,
+    stockItems,
+    jobIncome,
+    walkinIncome,
+    clientSalesIncome,
+    clientPaymentsReceived,
+    totalDiscountGiven,
+    totalCommission,
+    totalAdvanceGiven,
+    totalOtherExpenses,
+    totalEmiPaid,
+    totalSalary,
+    stockValue,
+    staffLiability,
+    loanOutstanding,
+  } = data;
+
+  const totalIncome = jobIncome + walkinIncome + clientSalesIncome;
+  const totalBusinessExpense = totalSalary + totalCommission + totalOtherExpenses + totalEmiPaid + totalDiscountGiven;
+  const netProfit = totalIncome - totalBusinessExpense;
+  const totalCashInflow = clientPaymentsReceived + walkinIncome;
+  const totalCashOutflow = totalAdvanceGiven + totalOtherExpenses + totalEmiPaid;
 
   return (
     <div className="p-4 md:p-6 bg-white rounded-lg shadow">
@@ -1086,212 +710,234 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
         </div>
       )}
 
-      {/* Modals – similar to PHP popups */}
+      {/* ========== MODALS ========== */}
+
       {/* Repair Jobs Modal */}
       {showRepairModal && (
         <Modal title="Repair Jobs Details" onClose={() => setShowRepairModal(false)}>
-          <table className="w-full text-sm">
-            <thead><tr><th>Job Code</th><th>Client</th><th>Items</th><th>Mechanic</th><th className="text-right">Amount</th><th className="text-right">Commission</th><th>Completed</th></tr></thead>
-            <tbody>
-              {repairJobs.map((j) => (
-                <tr key={j.id}>
-                  <td>{j.job_id}</td>
-                  <td>{j.client_firstname} {j.client_lastname}</td>
-                  <td>{j.item}</td>
-                  <td>{j.mechanic_firstname} {j.mechanic_lastname}</td>
-                  <td className="text-right text-green-600">₹{j.amount.toFixed(2)}</td>
-                  <td className="text-right text-yellow-600">₹{j.mechanic_commission_amount.toFixed(2)}</td>
-                  <td>{formatDate(j.date_completed)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr><th>Job Code</th><th>Client</th><th>Items</th><th>Mechanic</th><th className="text-right">Amount</th><th className="text-right">Commission</th><th>Completed</th></tr>
+              </thead>
+              <tbody>
+                {repairJobs.map((j) => (
+                  <tr key={j.id} className="border-t">
+                    <td className="p-2">{j.job_id}</td>
+                    <td className="p-2">{j.client_firstname} {j.client_lastname}</td>
+                    <td className="p-2">{j.item}</td>
+                    <td className="p-2">{j.mechanic_firstname} {j.mechanic_lastname}</td>
+                    <td className="p-2 text-right text-green-600">₹{j.amount.toFixed(2)}</td>
+                    <td className="p-2 text-right text-yellow-600">₹{j.mechanic_commission_amount.toFixed(2)}</td>
+                    <td className="p-2">{formatDate(j.date_completed)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Modal>
       )}
 
       {/* Walk-in Sales Modal */}
       {showWalkinModal && (
         <Modal title="Walk-in Direct Sales Details" onClose={() => setShowWalkinModal(false)}>
-          <table className="w-full text-sm">
-            <thead><tr><th>Invoice</th><th>Product</th><th>Qty</th><th className="text-right">Unit Price</th><th className="text-right">Total</th><th>Date</th></tr></thead>
-            <tbody>
-              {walkinSales.map((s) => (
-                <tr key={s.id}>
-                  <td>{s.sale_code}</td>
-                  <td>{s.product_name || 'Multiple Items'}</td>
-                  <td>{s.quantity || '-'}</td>
-                  <td className="text-right">{s.unit_price ? `₹${s.unit_price.toFixed(2)}` : '-'}</td>
-                  <td className="text-right text-green-600">₹{s.total_amount.toFixed(2)}</td>
-                  <td>{formatDate(s.date_created)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr><th>Invoice</th><th>Product</th><th>Qty</th><th className="text-right">Unit Price</th><th className="text-right">Total</th><th>Date</th></tr>
+              </thead>
+              <tbody>
+                {walkinSales.map((s) => (
+                  <tr key={s.id} className="border-t">
+                    <td className="p-2">{s.sale_code}</td>
+                    <td className="p-2">{s.product_name || 'Multiple Items'}</td>
+                    <td className="p-2">{s.quantity || '-'}</td>
+                    <td className="p-2 text-right">{s.unit_price ? `₹${s.unit_price.toFixed(2)}` : '-'}</td>
+                    <td className="p-2 text-right text-green-600">₹{s.total_amount.toFixed(2)}</td>
+                    <td className="p-2">{formatDate(s.date_created)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Modal>
       )}
 
       {/* Client Sales Modal */}
       {showClientSalesModal && (
         <Modal title="Client Direct Sales Details" onClose={() => setShowClientSalesModal(false)}>
-          <table className="w-full text-sm">
-            <thead><tr><th>Invoice</th><th>Client</th><th>Product</th><th>Qty</th><th className="text-right">Unit Price</th><th className="text-right">Total</th><th>Date</th></tr></thead>
-            <tbody>
-              {clientSales.map((s) => (
-                <tr key={s.id}>
-                  <td>{s.sale_code}</td>
-                  <td>{s.client_firstname} {s.client_lastname}</td>
-                  <td>{s.product_name || 'Multiple Items'}</td>
-                  <td>{s.quantity || '-'}</td>
-                  <td className="text-right">{s.unit_price ? `₹${s.unit_price.toFixed(2)}` : '-'}</td>
-                  <td className="text-right text-green-600">₹{s.total_amount.toFixed(2)}</td>
-                  <td>{formatDate(s.date_created)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr><th>Invoice</th><th>Client</th><th>Product</th><th>Qty</th><th className="text-right">Unit Price</th><th className="text-right">Total</th><th>Date</th></tr>
+              </thead>
+              <tbody>
+                {clientSales.map((s) => (
+                  <tr key={s.id} className="border-t">
+                    <td className="p-2">{s.sale_code}</td>
+                    <td className="p-2">{s.client_firstname} {s.client_lastname}</td>
+                    <td className="p-2">{s.product_name || 'Multiple Items'}</td>
+                    <td className="p-2">{s.quantity || '-'}</td>
+                    <td className="p-2 text-right">{s.unit_price ? `₹${s.unit_price.toFixed(2)}` : '-'}</td>
+                    <td className="p-2 text-right text-green-600">₹{s.total_amount.toFixed(2)}</td>
+                    <td className="p-2">{formatDate(s.date_created)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Modal>
       )}
 
       {/* Client Payments Modal */}
       {showClientPaymentsModal && (
         <Modal title="Client Payments Details" onClose={() => setShowClientPaymentsModal(false)}>
-          <table className="w-full text-sm">
-            <thead><tr><th>Client</th><th>Date</th><th className="text-right">Net Received</th><th className="text-right">Discount</th><th className="text-right">Total Bill</th><th>Remarks</th><th>Method</th></tr></thead>
-            <tbody>
-              {clientPayments.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.client_firstname} {p.client_lastname}</td>
-                  <td>{formatDate(p.payment_date)}</td>
-                  <td className="text-right">₹{p.amount.toFixed(2)}</td>
-                  <td className="text-right text-red-600">₹{p.discount.toFixed(2)}</td>
-                  <td className="text-right text-green-600">₹{(p.amount + p.discount).toFixed(2)}</td>
-                  <td>{p.remarks || ''}</td>
-                  <td>{p.payment_method || 'Cash'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr><th>Client</th><th>Date</th><th className="text-right">Net Received</th><th className="text-right">Discount</th><th className="text-right">Total Bill</th><th>Remarks</th><th>Method</th></tr>
+              </thead>
+              <tbody>
+                {clientPayments.map((p) => (
+                  <tr key={p.id} className="border-t">
+                    <td className="p-2">{p.client_firstname} {p.client_lastname}</td>
+                    <td className="p-2">{formatDate(p.payment_date)}</td>
+                    <td className="p-2 text-right">₹{p.amount.toFixed(2)}</td>
+                    <td className="p-2 text-right text-red-600">₹{p.discount.toFixed(2)}</td>
+                    <td className="p-2 text-right text-green-600">₹{(p.amount + p.discount).toFixed(2)}</td>
+                    <td className="p-2">{p.remarks || ''}</td>
+                    <td className="p-2">{p.payment_method || 'Cash'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Modal>
       )}
 
       {/* Commission Modal */}
       {showCommissionModal && (
         <Modal title="Mechanic Commission Details" onClose={() => setShowCommissionModal(false)}>
-          <table className="w-full text-sm">
-            <thead><tr><th>Job Code</th><th>Mechanic</th><th className="text-right">Job Amount</th><th className="text-right">Commission</th><th className="text-right">Commission %</th><th>Completed</th></tr></thead>
-            <tbody>
-              {commissionData.map((c, idx) => (
-                <tr key={idx}>
-                  <td>{c.job_id}</td>
-                  <td>{c.mechanic_firstname} {c.mechanic_lastname}</td>
-                  <td className="text-right">₹{c.amount.toFixed(2)}</td>
-                  <td className="text-right text-yellow-600">₹{c.mechanic_commission_amount.toFixed(2)}</td>
-                  <td className="text-right">{c.amount > 0 ? ((c.mechanic_commission_amount / c.amount) * 100).toFixed(1) : 0}%</td>
-                  <td>{formatDate(c.date_completed)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr><th>Job Code</th><th>Mechanic</th><th className="text-right">Job Amount</th><th className="text-right">Commission</th><th className="text-right">Commission %</th><th>Completed</th></tr>
+              </thead>
+              <tbody>
+                {commissionData.map((c, idx) => (
+                  <tr key={idx} className="border-t">
+                    <td className="p-2">{c.job_id}</td>
+                    <td className="p-2">{c.mechanic_firstname} {c.mechanic_lastname}</td>
+                    <td className="p-2 text-right">₹{c.amount.toFixed(2)}</td>
+                    <td className="p-2 text-right text-yellow-600">₹{c.mechanic_commission_amount.toFixed(2)}</td>
+                    <td className="p-2 text-right">{c.amount > 0 ? ((c.mechanic_commission_amount / c.amount) * 100).toFixed(1) : 0}%</td>
+                    <td className="p-2">{formatDate(c.date_completed)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Modal>
       )}
 
       {/* Discount Modal */}
       {showDiscountModal && (
         <Modal title="Customer Discount Details" onClose={() => setShowDiscountModal(false)}>
-          <table className="w-full text-sm">
-            <thead><tr><th>Client</th><th>Date</th><th className="text-right">Original Amt</th><th className="text-right">Discount</th><th className="text-right">Discount %</th><th>Remarks</th></tr></thead>
-            <tbody>
-              {clientPayments.filter(p => p.discount > 0).map((p) => (
-                <tr key={p.id}>
-                  <td>{p.client_firstname} {p.client_lastname}</td>
-                  <td>{formatDate(p.payment_date)}</td>
-                  <td className="text-right">₹{p.amount.toFixed(2)}</td>
-                  <td className="text-right text-red-600">₹{p.discount.toFixed(2)}</td>
-                  <td className="text-right">{p.amount > 0 ? ((p.discount / p.amount) * 100).toFixed(1) : 0}%</td>
-                  <td>{p.remarks || ''}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr><th>Client</th><th>Date</th><th className="text-right">Original Amt</th><th className="text-right">Discount</th><th className="text-right">Discount %</th><th>Remarks</th></tr>
+              </thead>
+              <tbody>
+                {clientPayments.filter(p => p.discount > 0).map((p) => (
+                  <tr key={p.id} className="border-t">
+                    <td className="p-2">{p.client_firstname} {p.client_lastname}</td>
+                    <td className="p-2">{formatDate(p.payment_date)}</td>
+                    <td className="p-2 text-right">₹{p.amount.toFixed(2)}</td>
+                    <td className="p-2 text-right text-red-600">₹{p.discount.toFixed(2)}</td>
+                    <td className="p-2 text-right">{p.amount > 0 ? ((p.discount / p.amount) * 100).toFixed(1) : 0}%</td>
+                    <td className="p-2">{p.remarks || ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Modal>
       )}
 
       {/* Staff Salaries Modal */}
       {showStaffSalariesModal && (
         <Modal title="Staff Salaries Details" onClose={() => setShowStaffSalariesModal(false)}>
-          <table className="w-full text-sm">
-            <thead><tr><th>Mechanic</th><th className="text-center">Full Days</th><th className="text-center">Half Days</th><th className="text-center">Total Days</th><th className="text-right">Daily Rate</th><th className="text-right">Salary Earned</th></tr></thead>
-            <tbody>
-              {salaryDetails.map((s, idx) => (
-                <tr key={idx}>
-                  <td>{s.mechanic_name}</td>
-                  <td className="text-center">{s.full_days}</td>
-                  <td className="text-center">{s.half_days}</td>
-                  <td className="text-center">{s.total_days.toFixed(1)}</td>
-                  <td className="text-right">₹{s.daily_salary.toFixed(2)}</td>
-                  <td className="text-right text-yellow-600">₹{s.salary_earned.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr><th>Mechanic</th><th className="text-center">Full Days</th><th className="text-center">Half Days</th><th className="text-center">Total Days</th><th className="text-right">Daily Rate</th><th className="text-right">Salary Earned</th></tr>
+              </thead>
+              <tbody>
+                {salaryDetails.map((s, idx) => (
+                  <tr key={idx} className="border-t">
+                    <td className="p-2">{s.mechanic_name}</td>
+                    <td className="p-2 text-center">{s.full_days}</td>
+                    <td className="p-2 text-center">{s.half_days}</td>
+                    <td className="p-2 text-center">{s.total_days.toFixed(1)}</td>
+                    <td className="p-2 text-right">₹{s.daily_salary.toFixed(2)}</td>
+                    <td className="p-2 text-right text-yellow-600">₹{s.salary_earned.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Modal>
       )}
 
       {/* Staff Advance Modal */}
       {showStaffAdvanceModal && (
         <Modal title="Staff Advance Payments" onClose={() => setShowStaffAdvanceModal(false)}>
-          <table className="w-full text-sm">
-            <thead><tr><th>Date</th><th>Staff</th><th className="text-right">Amount</th><th>Reason</th><th>Mode</th></tr></thead>
-            <tbody>
-              {advancePayments.map((a, idx) => (
-                <tr key={idx}>
-                  <td>{formatDate(a.date_paid)}</td>
-                  <td>{a.mechanic_name}</td>
-                  <td className="text-right text-red-600">₹{a.amount.toFixed(2)}</td>
-                  <td>{a.reason || ''}</td>
-                  <td>{a.payment_mode || 'Cash'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr><th>Date</th><th>Staff</th><th className="text-right">Amount</th><th>Reason</th><th>Mode</th></tr>
+              </thead>
+              <tbody>
+                {advancePayments.map((a, idx) => (
+                  <tr key={idx} className="border-t">
+                    <td className="p-2">{formatDate(a.date_paid)}</td>
+                    <td className="p-2">{a.mechanic_name}</td>
+                    <td className="p-2 text-right text-red-600">₹{a.amount.toFixed(2)}</td>
+                    <td className="p-2">{a.reason || ''}</td>
+                    <td className="p-2">{a.payment_mode || 'Cash'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Modal>
       )}
 
       {/* Shop Expenses Modal */}
       {showShopExpensesModal && (
         <Modal title="Shop Expenses Details" onClose={() => setShowShopExpensesModal(false)}>
-          <table className="w-full text-sm">
-            <thead><tr><th>Date</th><th>Category</th><th>Description</th><th className="text-right">Amount</th><th>Mode</th><th>Reference</th></tr></thead>
-            <tbody>
-              {expenses.map((e, idx) => (
-                <tr key={idx}>
-                  <td>{formatDate(e.date_created)}</td>
-                  <td>{e.category}</td>
-                  <td>{e.remarks}</td>
-                  <td className="text-right text-red-600">₹{e.amount.toFixed(2)}</td>
-                  <td>{e.payment_mode || 'Cash'}</td>
-                  <td>{e.reference || '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr><th>Date</th><th>Category</th><th>Description</th><th className="text-right">Amount</th><th>Mode</th><th>Reference</th></tr>
+              </thead>
+              <tbody>
+                {expenses.map((e, idx) => (
+                  <tr key={idx} className="border-t">
+                    <td className="p-2">{formatDate(e.date_created)}</td>
+                    <td className="p-2">{e.category}</td>
+                    <td className="p-2">{e.remarks}</td>
+                    <td className="p-2 text-right text-red-600">₹{e.amount.toFixed(2)}</td>
+                    <td className="p-2">{e.payment_mode || 'Cash'}</td>
+                    <td className="p-2">{e.reference || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Modal>
       )}
-    </div>
-  );
-}
-
-// Simple Modal Component
-function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-auto">
-        <div className="bg-gray-800 text-white px-4 py-2 flex justify-between items-center sticky top-0">
-          <h3 className="font-semibold">{title}</h3>
-          <button onClick={onClose} className="text-white hover:text-gray-300">✕</button>
-        </div>
-        <div className="p-4 overflow-x-auto">{children}</div>
-      </div>
     </div>
   );
 }
