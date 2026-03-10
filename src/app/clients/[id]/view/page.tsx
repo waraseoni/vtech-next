@@ -1,33 +1,45 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
-import { 
-  ArrowLeft, Edit3, Smartphone, History, 
-  Phone, MapPin, Loader2, IndianRupee, User, Calendar,
-  CreditCard, X, CheckCircle, ShoppingCart, Plus, Filter
+import {
+  ArrowLeft, Edit3, Phone, MapPin, Loader2, User, Calendar,
+  CreditCard, Plus, Filter, ShoppingCart, Wrench, Receipt,
+  Banknote, TrendingUp, AlertTriangle, CheckCircle2, X,
+  Printer, MessageCircle, ChevronDown, ExternalLink, Trash2,
+  PencilLine, IndianRupee, RefreshCw
 } from 'lucide-react';
 
-// ========== TYPES ==========
+// ============================================================
+// TYPES
+// ============================================================
 type Client = {
   id: number;
-  name: string;
+  firstname: string;
+  middlename?: string;
+  lastname: string;
   contact: string;
-  address: string;
-  opening_balance?: number;
+  email?: string;
+  address?: string;
+  opening_balance: number;
   image_path?: string;
   date_created: string;
+  fullName: string;
 };
 
 type Job = {
   id: number;
-  job_id: string | null;
+  job_id?: string;
+  code?: string;
   item: string;
   fault?: string;
+  remark?: string;
+  uniq_id?: string;
   status: number;
   amount?: number;
   date_created: string;
+  date_completed?: string;
 };
 
 type DirectSale = {
@@ -44,519 +56,640 @@ type Payment = {
   payment_date: string;
   amount: number;
   discount: number;
+  net_amount?: number;
   payment_mode: string;
+  payment_type?: string;
   remarks?: string;
   job_id?: string | null;
   bill_no?: string | null;
+  loan_id?: number | null;
 };
 
-// ========== HELPER FUNCTIONS ==========
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return 'N/A';
-  return new Date(dateStr).toLocaleDateString('en-IN', {
-    day: '2-digit', month: 'short', year: 'numeric'
-  });
+type Loan = {
+  id: number;
+  client_id: number;
+  principal_amount: number;
+  interest_rate: number;
+  loan_period: number;
+  total_payable: number;
+  emi_amount: number;
+  remarks?: string;
+  loan_date: string;
+  status: number;
+  paid?: number;
+  balance?: number;
 };
 
-const getStatusText = (status: number) => {
-  switch (status) {
-    case 0: return 'Pending';
-    case 1: return 'In-Progress';
-    case 2: return 'Repaired';
-    case 3: return 'Paid';
-    case 4: return 'Cancelled';
-    case 5: return 'Delivered';
-    default: return 'Unknown';
-  }
+// ============================================================
+// HELPERS
+// ============================================================
+const fmt = (n: number) =>
+  new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
+const fmtDate = (d: string) => {
+  if (!d) return 'N/A';
+  return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'Pending': return 'bg-amber-50 text-amber-700 border-amber-200';
-    case 'In-Progress': return 'bg-blue-50 text-blue-700 border-blue-200';
-    case 'Repaired': return 'bg-purple-50 text-purple-700 border-purple-200';
-    case 'Delivered': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    case 'Cancelled': return 'bg-red-50 text-red-700 border-red-200';
-    case 'Paid': return 'bg-green-50 text-green-700 border-green-200';
-    default: return 'bg-gray-100 text-gray-600 border-gray-300';
-  }
+const STATUS_MAP: Record<number, { label: string; color: string }> = {
+  0: { label: 'Pending',     color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+  1: { label: 'In-Progress', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
+  2: { label: 'Repaired',    color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
+  3: { label: 'Paid',        color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
+  4: { label: 'Cancelled',   color: 'bg-red-500/20 text-red-300 border-red-500/30' },
+  5: { label: 'Delivered',   color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' },
 };
 
-// ========== MAIN COMPONENT ==========
+// ============================================================
+// STAT CARD
+// ============================================================
+function StatCard({
+  label, value, sub, color, icon
+}: {
+  label: string; value: string; sub?: string;
+  color: 'blue' | 'emerald' | 'red' | 'amber' | 'violet' | 'cyan';
+  icon: React.ReactNode;
+}) {
+  const colorMap = {
+    blue:   { bg: 'bg-blue-500/10',   border: 'border-blue-500/20',   icon: 'bg-blue-500/15 border-blue-500/25 text-blue-400' },
+    emerald:{ bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', icon: 'bg-emerald-500/15 border-emerald-500/25 text-emerald-400' },
+    red:    { bg: 'bg-red-500/10',     border: 'border-red-500/20',     icon: 'bg-red-500/15 border-red-500/25 text-red-400' },
+    amber:  { bg: 'bg-amber-500/10',   border: 'border-amber-500/20',   icon: 'bg-amber-500/15 border-amber-500/25 text-amber-400' },
+    violet: { bg: 'bg-violet-500/10',  border: 'border-violet-500/20',  icon: 'bg-violet-500/15 border-violet-500/25 text-violet-400' },
+    cyan:   { bg: 'bg-cyan-500/10',    border: 'border-cyan-500/20',    icon: 'bg-cyan-500/15 border-cyan-500/25 text-cyan-400' },
+  };
+  const c = colorMap[color];
+  return (
+    <div className={`${c.bg} border ${c.border} rounded-xl p-4 flex items-center gap-4`}>
+      <div className={`${c.icon} border rounded-xl p-3 flex-shrink-0`}>{icon}</div>
+      <div className="min-w-0 flex-1">
+        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider truncate">{label}</p>
+        <p className="text-white text-lg font-black truncate">{value}</p>
+        {sub && <p className="text-slate-500 text-[10px] mt-0.5 truncate">{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
 export default function ViewClientProfile() {
   const router = useRouter();
   const params = useParams();
   const clientId = parseInt(params.id as string);
 
   // State
-  const [client, setClient] = useState<Client | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [client, setClient]           = useState<Client | null>(null);
+  const [jobs, setJobs]               = useState<Job[]>([]);
   const [directSales, setDirectSales] = useState<DirectSale[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Financial totals
-  const [openingBalance, setOpeningBalance] = useState(0);
-  const [totalRepairBilled, setTotalRepairBilled] = useState(0);
-  const [totalDirectBilled, setTotalDirectBilled] = useState(0);
-  const [totalPaid, setTotalPaid] = useState(0);
-  const [finalBalance, setFinalBalance] = useState(0);
-
-  // Date filter state
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [activeTab, setActiveTab] = useState('repairs');
-
-  // ===== PAYMENT EDIT/DELETE STATE =====
+  const [payments, setPayments]       = useState<Payment[]>([]);
+  const [loans, setLoans]             = useState<Loan[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState<string | null>(null);
+  const [activeTab, setActiveTab]     = useState<'repairs' | 'direct' | 'payments' | 'loan_payments'>('repairs');
+  const [dateFrom, setDateFrom]       = useState('');
+  const [dateTo, setDateTo]           = useState('');
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
-  const [editFormData, setEditFormData] = useState({
-    amount: '',
-    payment_date: '',
-    discount: '',
-    payment_mode: '',
-    remarks: ''
-  });
+  const [editForm, setEditForm]       = useState({ amount: '', payment_date: '', discount: '', payment_mode: '', remarks: '' });
 
-  // ===== FETCH ALL DATA =====
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // Financials
+  const [repairBilled, setRepairBilled]       = useState(0);
+  const [directBilled, setDirectBilled]       = useState(0);
+  const [servicePaid, setServicePaid]         = useState(0);
+  const [loanGiven, setLoanGiven]             = useState(0);
+  const [loanRepaid, setLoanRepaid]           = useState(0);
+  const [monthlyEMI, setMonthlyEMI]           = useState(0);
 
-        // 1. Client details
-        const { data: clientData, error: clientError } = await supabase
-          .from('client_list')
-          .select('id, firstname, middlename, lastname, contact, address, opening_balance, image_path, date_created')
-          .eq('id', clientId)
-          .eq('delete_flag', 0)
-          .single();
+  // Derived
+  const openingBal   = client?.opening_balance ?? 0;
+  const totalBilled  = repairBilled + directBilled;
+  const finalBalance = openingBal + totalBilled - servicePaid;            // service balance
+  const loanBalance  = loanGiven - loanRepaid;                             // active loan balance
+  const netBalance   = openingBal + totalBilled + loanGiven - servicePaid - loanRepaid; // overall
 
-        if (clientError) throw clientError;
-        if (!clientData) throw new Error("Client not found");
+  // ============================================================
+  // FETCH
+  // ============================================================
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const fullName = [clientData.firstname, clientData.middlename, clientData.lastname].filter(Boolean).join(' ').trim();
+      // 1. Client
+      const { data: cd, error: ce } = await supabase
+        .from('client_list')
+        .select('id, firstname, middlename, lastname, contact, email, address, opening_balance, image_path, date_created')
+        .eq('id', clientId)
+        .eq('delete_flag', 0)
+        .single();
+      if (ce || !cd) throw ce || new Error('Client not found');
+      const fullName = [cd.firstname, cd.middlename, cd.lastname].filter(Boolean).join(' ').trim();
+      setClient({ ...cd, fullName });
 
-        setClient({
-          id: clientData.id,
-          name: fullName,
-          contact: clientData.contact,
-          address: clientData.address,
-          opening_balance: clientData.opening_balance,
-          image_path: clientData.image_path,
-          date_created: clientData.date_created
-        });
-        setOpeningBalance(clientData.opening_balance || 0);
+      // 2. Jobs — client_name stores id as text
+      const { data: jd } = await supabase
+        .from('transaction_list')
+        .select('id, job_id, code, item, fault, remark, uniq_id, status, amount, date_created, date_completed')
+        .eq('client_name', String(clientId))
+        .order('date_created', { ascending: false });
+      setJobs(jd || []);
 
-        // 2. Repair Jobs (transaction_list)
-        const { data: jobsData, error: jobsError } = await supabase
-          .from('transaction_list')
-          .select('id, job_id, item, fault, status, amount, date_created')
-          .eq('client_name', fullName)
-          .eq('del_status', 0)
-          .order('date_created', { ascending: false });
+      // 3. Direct Sales
+      const { data: sd } = await supabase
+        .from('direct_sales')
+        .select('id, sale_code, payment_mode, remarks, total_amount, date_created')
+        .eq('client_id', clientId)
+        .order('date_created', { ascending: false });
+      setDirectSales(sd || []);
 
-        if (jobsError) throw jobsError;
-        setJobs(jobsData || []);
+      // 4. All Payments
+      const { data: pd } = await supabase
+        .from('client_payments')
+        .select('id, payment_date, amount, discount, payment_mode, payment_type, remarks, job_id, bill_no, loan_id')
+        .eq('client_id', clientId)
+        .order('payment_date', { ascending: false });
+      setPayments(pd || []);
 
-        // 3. Direct Sales
-        const { data: salesData, error: salesError } = await supabase
-          .from('direct_sales')
-          .select('id, sale_code, payment_mode, remarks, total_amount, date_created')
-          .eq('client_id', clientId)
-          .order('date_created', { ascending: false });
+      // 5. Active Loans
+      const { data: ld } = await supabase
+        .from('client_loans')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('status', 1)
+        .order('loan_date', { ascending: false });
 
-        if (salesError) throw salesError;
-        setDirectSales(salesData || []);
+      // For each loan, fetch how much has been repaid
+      const enrichedLoans: Loan[] = await Promise.all(
+        (ld || []).map(async (loan: Loan) => {
+          const { data: lp } = await supabase
+            .from('client_payments')
+            .select('amount, discount')
+            .eq('loan_id', loan.id);
+          const paid = (lp || []).reduce((s: number, r: { amount: number; discount: number }) => s + (r.amount + r.discount), 0);
+          return { ...loan, paid, balance: loan.total_payable - paid };
+        })
+      );
+      setLoans(enrichedLoans);
 
-        // 4. Payments
-        const { data: paymentsData, error: paymentsError } = await supabase
-          .from('client_payments')
-          .select('id, payment_date, amount, discount, payment_mode, remarks, job_id, bill_no')
-          .eq('client_id', clientId)
-          .order('payment_date', { ascending: false });
+      // Calculate loan totals
+      const totalLoanGiven  = enrichedLoans.reduce((s, l) => s + (l.total_payable || 0), 0);
+      const totalLoanRepaid = enrichedLoans.reduce((s, l) => s + (l.paid || 0), 0);
+      const totalEMI        = enrichedLoans.reduce((s, l) => s + (l.emi_amount || 0), 0);
+      setLoanGiven(totalLoanGiven);
+      setLoanRepaid(totalLoanRepaid);
+      setMonthlyEMI(totalEMI);
 
-        if (paymentsError) throw paymentsError;
-        setPayments(paymentsData || []);
-
-      } catch (err: any) {
-        console.error("Error fetching client profile:", err);
-        setError(err.message || "Failed to load client data");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to load';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   }, [clientId]);
 
-  // ===== CALCULATE TOTALS =====
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Recalculate service financials
   useEffect(() => {
-    const repairTotal = jobs
-      .filter(job => job.status === 5)
-      .reduce((sum, job) => sum + (job.amount || 0), 0);
-    setTotalRepairBilled(repairTotal);
-
-    const directTotal = directSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
-    setTotalDirectBilled(directTotal);
-
-    const paidTotal = payments.reduce((sum, p) => sum + (p.amount + (p.discount || 0)), 0);
-    setTotalPaid(paidTotal);
+    setRepairBilled(jobs.filter(j => j.status === 5).reduce((s, j) => s + (j.amount || 0), 0));
+    setDirectBilled(directSales.reduce((s, d) => s + (d.total_amount || 0), 0));
+    // Service payments only (loan_id IS NULL)
+    setServicePaid(payments.filter(p => !p.loan_id).reduce((s, p) => s + (p.amount + (p.discount || 0)), 0));
   }, [jobs, directSales, payments]);
 
-  useEffect(() => {
-    const totalBilled = totalRepairBilled + totalDirectBilled;
-    const balance = openingBalance + totalBilled - totalPaid;
-    setFinalBalance(balance);
-  }, [openingBalance, totalRepairBilled, totalDirectBilled, totalPaid]);
-
-  // ===== FILTER FUNCTIONS =====
-  const filterByDate = (item: { date_created?: string; payment_date?: string }, dateField: 'date_created' | 'payment_date') => {
+  // ============================================================
+  // DATE FILTER
+  // ============================================================
+  const inRange = (dateStr: string) => {
     if (!dateFrom && !dateTo) return true;
-    const itemDateStr = item[dateField];
-    if (!itemDateStr) return false;
-    const itemDate = new Date(itemDateStr).getTime();
-    const fromTime = dateFrom ? new Date(dateFrom).getTime() : -Infinity;
-    const toTime = dateTo ? new Date(dateTo).getTime() + 86400000 : Infinity;
-    return itemDate >= fromTime && itemDate < toTime;
+    const d = new Date(dateStr).getTime();
+    const from = dateFrom ? new Date(dateFrom).getTime() : -Infinity;
+    const to   = dateTo   ? new Date(dateTo).getTime() + 86400000 : Infinity;
+    return d >= from && d < to;
   };
+  const filteredJobs     = jobs.filter(j => inRange(j.date_created));
+  const filteredSales    = directSales.filter(s => inRange(s.date_created));
+  const filteredPayments = payments.filter(p => !p.loan_id && inRange(p.payment_date));
+  const filteredLoanPay  = payments.filter(p => !!p.loan_id && inRange(p.payment_date));
 
-  const filteredJobs = jobs.filter(job => filterByDate(job, 'date_created'));
-  const filteredSales = directSales.filter(sale => filterByDate(sale, 'date_created'));
-  const filteredPayments = payments.filter(p => filterByDate(p, 'payment_date'));
-
-  // ===== PAYMENT HANDLERS =====
+  // ============================================================
+  // PAYMENT CRUD
+  // ============================================================
   const handleDeletePayment = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this payment?')) return;
-    try {
-      const { error } = await supabase.from('client_payments').delete().eq('id', id);
-      if (error) throw error;
-      setPayments(prev => prev.filter(p => p.id !== id));
-    } catch (err: any) {
-      alert('Error deleting payment: ' + err.message);
-    }
+    if (!confirm('Kya aap yeh payment delete karna chahte hain?')) return;
+    const { error } = await supabase.from('client_payments').delete().eq('id', id);
+    if (error) { alert('Error: ' + error.message); return; }
+    setPayments(prev => prev.filter(p => p.id !== id));
   };
 
-  const openEditModal = (payment: Payment) => {
-    setEditingPayment(payment);
-    setEditFormData({
-      amount: payment.amount.toString(),
-      payment_date: payment.payment_date.split('T')[0] || payment.payment_date,
-      discount: payment.discount.toString(),
-      payment_mode: payment.payment_mode,
-      remarks: payment.remarks || ''
+  const openEdit = (p: Payment) => {
+    setEditingPayment(p);
+    setEditForm({
+      amount: p.amount.toString(),
+      payment_date: p.payment_date?.split('T')[0] ?? '',
+      discount: p.discount.toString(),
+      payment_mode: p.payment_mode,
+      remarks: p.remarks || ''
     });
   };
 
   const handleUpdatePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingPayment) return;
-    try {
-      const updates = {
-        amount: parseFloat(editFormData.amount),
-        payment_date: editFormData.payment_date,
-        discount: parseFloat(editFormData.discount),
-        payment_mode: editFormData.payment_mode,
-        remarks: editFormData.remarks
-      };
-      const { error } = await supabase
-        .from('client_payments')
-        .update(updates)
-        .eq('id', editingPayment.id);
-      if (error) throw error;
-      setPayments(prev => prev.map(p => p.id === editingPayment.id ? { ...p, ...updates } : p));
-      setEditingPayment(null);
-    } catch (err: any) {
-      alert('Error updating payment: ' + err.message);
-    }
+    const updates = {
+      amount: parseFloat(editForm.amount),
+      payment_date: editForm.payment_date,
+      discount: parseFloat(editForm.discount),
+      payment_mode: editForm.payment_mode,
+      remarks: editForm.remarks
+    };
+    const { error } = await supabase.from('client_payments').update(updates).eq('id', editingPayment.id);
+    if (error) { alert('Error: ' + error.message); return; }
+    setPayments(prev => prev.map(p => p.id === editingPayment.id ? { ...p, ...updates } : p));
+    setEditingPayment(null);
   };
 
+  // ============================================================
+  // LOADING / ERROR
+  // ============================================================
   if (loading) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 bg-white">
-        <Loader2 className="animate-spin text-blue-600" size={48} />
-        <p className="text-gray-500 font-bold italic uppercase tracking-[0.25em] text-sm">
-          Loading Client Profile...
-        </p>
+      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4" style={{ background: '#0d1117' }}>
+        <Loader2 className="animate-spin text-blue-400" size={44} />
+        <p className="text-slate-400 font-bold italic uppercase tracking-[0.2em] text-sm">Loading Profile...</p>
       </div>
     );
   }
-
   if (error || !client) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 bg-white text-red-600">
-        <p>{error || "Client not found"}</p>
-        <button onClick={() => router.back()} className="text-blue-600">Go Back</button>
+      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4" style={{ background: '#0d1117' }}>
+        <p className="text-red-400 font-bold">{error || 'Client not found'}</p>
+        <button onClick={() => router.back()} className="text-blue-400 hover:underline">Go Back</button>
       </div>
     );
   }
 
+  // ============================================================
+  // TAB CONFIG
+  // ============================================================
+  const TABS = [
+    { key: 'repairs',       label: 'Repair History',  icon: <Wrench size={14} />,        count: filteredJobs.length },
+    { key: 'direct',        label: 'Direct Sales',    icon: <ShoppingCart size={14} />,  count: filteredSales.length },
+    { key: 'payments',      label: 'All Payments',    icon: <Receipt size={14} />,       count: filteredPayments.length },
+    { key: 'loan_payments', label: 'Loan Payments',   icon: <CreditCard size={14} />,    count: filteredLoanPay.length },
+  ] as const;
+
+  const thCls = "px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400";
+  const tdCls = "px-4 py-3 text-sm text-slate-300 align-top";
+  const trCls = "border-b border-[#21293d] hover:bg-white/[0.02] transition-colors";
+
+  // ============================================================
+  // RENDER
+  // ============================================================
   return (
-    <div className="min-h-screen bg-white text-gray-900 p-4 md:p-8 font-sans">
-      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-        
-        {/* ===== HEADER ===== */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gray-50 p-6 md:p-8 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
-          <div className="flex items-center gap-5">
-            <div className="p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/20">
-              <User className="text-white" size={32} />
+    <div className="min-h-screen font-sans" style={{ background: '#0d1117', color: '#e2e8f0' }}>
+      <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+
+        {/* ── HEADER ── */}
+        <div
+          className="rounded-2xl border p-5 flex flex-col md:flex-row md:items-center justify-between gap-5"
+          style={{ background: '#161b27', borderColor: '#21293d' }}
+        >
+          {/* Profile */}
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-xl overflow-hidden border-2 border-[#21293d] flex-shrink-0 bg-[#1e2637]">
+              {client.image_path ? (
+                <img src={client.image_path} alt={client.fullName} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <User className="text-slate-500" size={28} />
+                </div>
+              )}
             </div>
             <div>
-              <h1 className="text-3xl font-black text-gray-900 tracking-tighter m-0 uppercase leading-none">
-                {client.name}
+              <h1 className="text-2xl md:text-3xl font-black text-white uppercase leading-tight tracking-tight">
+                {client.fullName}
               </h1>
-              <p className="text-gray-600 text-[11px] font-extrabold uppercase tracking-[0.25em] mt-2">
-                Client ID: {client.id} | Since {formatDate(client.date_created)}
-              </p>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-400 font-medium">
+                <span className="flex items-center gap-1"><User size={11} /> ID: #{client.id}</span>
+                <span className="flex items-center gap-1"><Phone size={11} />{client.contact}</span>
+                {client.address && <span className="flex items-center gap-1"><MapPin size={11} />{client.address}</span>}
+                <span className="flex items-center gap-1"><Calendar size={11} />Since {fmtDate(client.date_created)}</span>
+              </div>
+              {/* Contact badges */}
+              <div className="flex flex-wrap gap-2 mt-2">
+                <a href={`tel:${client.contact}`} className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-300 hover:bg-blue-500/25 transition-colors no-underline">
+                  <Phone size={11} /> Call
+                </a>
+                <a href={`https://wa.me/91${client.contact}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-green-500/15 border border-green-500/25 text-green-300 hover:bg-green-500/25 transition-colors no-underline">
+                  <MessageCircle size={11} /> WhatsApp
+                </a>
+                {client.email && (
+                  <a href={`mailto:${client.email}`} className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/25 text-cyan-300 hover:bg-cyan-500/25 transition-colors no-underline">
+                    {client.email}
+                  </a>
+                )}
+              </div>
             </div>
           </div>
-          <div className="flex gap-4">
-            <Link 
-              href={`/clients/${client.id}/edit`} 
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-[2rem] font-extrabold flex items-center justify-center gap-2 transition-all active:scale-95 no-underline uppercase tracking-tight shadow-md shadow-blue-500/20 text-sm"
-            >
-              <Edit3 size={18} strokeWidth={2.5} /> Edit Profile
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/clients/${client.id}/edit`} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-all no-underline">
+              <Edit3 size={15} /> Edit
             </Link>
-            <button onClick={() => router.back()} className="bg-gray-300 hover:bg-gray-400 text-gray-900 px-8 py-4 rounded-[2rem] font-extrabold flex items-center justify-center gap-2 transition-all active:scale-95 uppercase tracking-tight shadow-md text-sm">
-              <ArrowLeft size={18} strokeWidth={2.5} /> Back
+            <Link href={`/transactions/manage?client_id=${client.id}`} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-violet-600 hover:bg-violet-700 text-white transition-all no-underline">
+              <Plus size={15} /> New Job
+            </Link>
+            <Link href={`/clients/${client.id}/add-payment`} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-700 text-white transition-all no-underline">
+              <CreditCard size={15} /> Add Payment
+            </Link>
+            <Link href={`/clients/${client.id}/give-loan`} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-amber-600 hover:bg-amber-700 text-white transition-all no-underline">
+              <Banknote size={15} /> Give Loan
+            </Link>
+            <Link href={`/clients/${client.id}/collect-emi`} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-orange-600 hover:bg-orange-700 text-white transition-all no-underline">
+              <TrendingUp size={15} /> Collect EMI
+            </Link>
+            <button onClick={() => window.print()} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all">
+              <Printer size={15} /> Print
+            </button>
+            <button onClick={() => router.back()} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all">
+              <ArrowLeft size={15} /> Back
             </button>
           </div>
         </div>
 
-        {/* ===== CLIENT INFO ===== */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
-            <h3 className="text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em] mb-4">Contact Info</h3>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Phone size={20} className="text-blue-600" />
-                <span className="font-bold">{client.contact}</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <MapPin size={20} className="text-blue-600 mt-1" />
-                <span className="font-bold">{client.address || 'N/A'}</span>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
-            <h3 className="text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em] mb-4">Financial Summary</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="font-bold text-gray-700">Opening Balance</span>
-                <span className="font-extrabold">₹{openingBalance.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-bold text-gray-700">Repair Billed</span>
-                <span className="font-extrabold">₹{totalRepairBilled.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-bold text-gray-700">Direct Billed</span>
-                <span className="font-extrabold">₹{totalDirectBilled.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between border-t pt-2">
-                <span className="font-bold text-gray-700">Total Paid (Eff.)</span>
-                <span className="font-extrabold text-emerald-600">₹{totalPaid.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between border-t pt-2">
-                <span className="font-bold text-gray-700">Final Balance</span>
-                <span className="font-extrabold text-red-600">₹{finalBalance.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-[2.5rem] border-2 border-gray-300 shadow-md">
-            <h3 className="text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em] mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <Link href="/jobs/new" className="flex items-center gap-2 p-4 bg-blue-50 rounded-xl border-2 border-blue-200 text-blue-700 font-bold text-sm hover:bg-blue-100 transition-all">
-                <Plus size={18} /> New Job
-              </Link>
-              <button className="flex items-center gap-2 p-4 bg-emerald-50 rounded-xl border-2 border-emerald-200 text-emerald-700 font-bold text-sm hover:bg-emerald-100 transition-all">
-                <CreditCard size={18} /> Add Payment
-              </button>
-              <button className="flex items-center gap-2 p-4 bg-purple-50 rounded-xl border-2 border-purple-200 text-purple-700 font-bold text-sm hover:bg-purple-100 transition-all">
-                <ShoppingCart size={18} /> New Sale
-              </button>
-              <button className="flex items-center gap-2 p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-gray-700 font-bold text-sm hover:bg-gray-100 transition-all">
-                <History size={18} /> Ledger
-              </button>
-            </div>
+        {/* ── SERVICE STAT CARDS ── */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Service Summary</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard label="Opening Balance" value={`₹${fmt(openingBal)}`} color="blue" icon={<IndianRupee size={18} />} />
+            <StatCard label="Total Billed" value={`₹${fmt(totalBilled)}`} sub="Repairs + Direct Sales" color="violet" icon={<Receipt size={18} />} />
+            <StatCard label="Total Received" value={`₹${fmt(servicePaid)}`} sub="Service payments only" color="emerald" icon={<CheckCircle2 size={18} />} />
+            <StatCard
+              label={finalBalance >= 0 ? 'Due (Service)' : 'Advance (Service)'}
+              value={`₹${fmt(Math.abs(finalBalance))}`}
+              color={finalBalance > 0 ? 'red' : 'emerald'}
+              icon={finalBalance > 0 ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}
+            />
           </div>
         </div>
 
-        {/* ===== DATE FILTER ===== */}
-        <div className="bg-gray-50 p-6 rounded-[2.5rem] border-2 border-gray-300 shadow-md flex flex-wrap items-center gap-4 justify-between">
-          <div className="flex items-center gap-2">
-            <Filter size={20} className="text-blue-600" />
-            <h3 className="text-[11px] font-extrabold uppercase text-gray-500 tracking-[0.15em]">Filter by Date</h3>
+        {/* ── LOAN STAT CARDS ── */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Loan / Advance Summary</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard label="Active Loan Balance" value={`₹${fmt(loanBalance)}`} color="amber" icon={<Banknote size={18} />} />
+            <StatCard label="Monthly EMI Due" value={`₹${fmt(monthlyEMI)}`} color="cyan" icon={<TrendingUp size={18} />} />
+            <StatCard label="Loan Repaid" value={`₹${fmt(loanRepaid)}`} color="emerald" icon={<CheckCircle2 size={18} />} />
+            <StatCard label="Net Balance (All)" value={`₹${fmt(Math.abs(netBalance))}`} sub={netBalance >= 0 ? 'Total Due' : 'Advance'} color={netBalance > 0 ? 'red' : 'emerald'} icon={<IndianRupee size={18} />} />
           </div>
-          <div className="flex flex-wrap gap-4">
-            <input 
-              type="date" 
-              value={dateFrom} 
-              onChange={(e) => setDateFrom(e.target.value)} 
-              className="px-4 py-2 border-2 border-gray-300 rounded-xl focus:border-blue-600 outline-none"
+        </div>
+
+        {/* ── ACTIVE LOANS TABLE ── */}
+        {loans.length > 0 && (
+          <div className="rounded-2xl border overflow-hidden" style={{ background: '#161b27', borderColor: '#21293d' }}>
+            <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: '#21293d', background: '#111520' }}>
+              <h2 className="text-sm font-bold text-white flex items-center gap-2"><Banknote size={16} className="text-amber-400" /> Active Loans</h2>
+              <span className="text-[11px] font-semibold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-0.5 rounded-full">{loans.length} Active</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead style={{ background: '#111520' }}>
+                  <tr>
+                    {['Loan Date','Total Payable','Paid','Balance','EMI/Month','Action'].map(h => (
+                      <th key={h} className={thCls}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {loans.map(loan => (
+                    <tr key={loan.id} className={trCls}>
+                      <td className={tdCls}>{fmtDate(loan.loan_date)}</td>
+                      <td className={tdCls}>₹{fmt(loan.total_payable)}</td>
+                      <td className={`${tdCls} text-emerald-400 font-semibold`}>₹{fmt(loan.paid || 0)}</td>
+                      <td className={`${tdCls} text-red-400 font-black`}>₹{fmt(loan.balance || 0)}</td>
+                      <td className={tdCls}>₹{fmt(loan.emi_amount)}</td>
+                      <td className={tdCls}>
+                        {(loan.balance ?? 0) <= 0 ? (
+                          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">✓ Cleared</span>
+                        ) : (
+                          <Link href={`/clients/${client.id}/collect-emi?loan_id=${loan.id}`} className="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-colors no-underline">
+                            Collect EMI
+                          </Link>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── DATE FILTER ── */}
+        <div className="rounded-2xl border p-4 flex flex-wrap items-center gap-3" style={{ background: '#161b27', borderColor: '#21293d' }}>
+          <Filter size={16} className="text-blue-400" />
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Filter by Date</span>
+          <div className="flex flex-wrap gap-3 ml-auto">
+            <input
+              type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              className="px-3 py-2 rounded-xl text-sm font-medium text-slate-200 border focus:outline-none focus:border-blue-500"
+              style={{ background: '#0d1117', borderColor: '#21293d' }}
             />
-            <input 
-              type="date" 
-              value={dateTo} 
-              onChange={(e) => setDateTo(e.target.value)} 
-              className="px-4 py-2 border-2 border-gray-300 rounded-xl focus:border-blue-600 outline-none"
+            <span className="text-slate-500 self-center text-xs">to</span>
+            <input
+              type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              className="px-3 py-2 rounded-xl text-sm font-medium text-slate-200 border focus:outline-none focus:border-blue-500"
+              style={{ background: '#0d1117', borderColor: '#21293d' }}
             />
-            <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="px-4 py-2 bg-gray-200 rounded-xl font-bold text-sm hover:bg-gray-300 transition-all">
-              Clear
+            <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-slate-300 border border-[#2a3550] bg-[#1e2637] hover:bg-[#252f42] transition-all">
+              <RefreshCw size={13} /> Reset
             </button>
           </div>
         </div>
 
-        {/* ===== TABS ===== */}
-        <div className="flex border-b-2 border-gray-300">
-          <button 
-            onClick={() => setActiveTab('repairs')} 
-            className={`px-6 py-3 font-extrabold uppercase text-sm ${activeTab === 'repairs' ? 'border-b-4 border-blue-600 text-blue-600' : 'text-gray-500'}`}
-          >
-            Repairs ({filteredJobs.length})
-          </button>
-          <button 
-            onClick={() => setActiveTab('direct')} 
-            className={`px-6 py-3 font-extrabold uppercase text-sm ${activeTab === 'direct' ? 'border-b-4 border-blue-600 text-blue-600' : 'text-gray-500'}`}
-          >
-            Direct Sales ({filteredSales.length})
-          </button>
-          <button 
-            onClick={() => setActiveTab('payments')} 
-            className={`px-6 py-3 font-extrabold uppercase text-sm ${activeTab === 'payments' ? 'border-b-4 border-blue-600 text-blue-600' : 'text-gray-500'}`}
-          >
-            Payments ({filteredPayments.length})
-          </button>
-        </div>
+        {/* ── TABS ── */}
+        <div className="rounded-2xl border overflow-hidden" style={{ background: '#161b27', borderColor: '#21293d' }}>
+          {/* Tab Nav */}
+          <div className="flex border-b overflow-x-auto" style={{ borderColor: '#21293d', background: '#111520' }}>
+            {TABS.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+                  activeTab === tab.key
+                    ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5'
+                    : 'text-slate-500 hover:text-slate-300 border-b-2 border-transparent hover:bg-white/[0.02]'
+                }`}
+              >
+                {tab.icon} {tab.label}
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${activeTab === tab.key ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-slate-500'}`}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
 
-        {/* ===== CONTENT ===== */}
-        <div className="bg-white rounded-[2.5rem] border-2 border-gray-300 shadow-md overflow-hidden">
+          {/* ── REPAIRS TAB ── */}
           {activeTab === 'repairs' && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-100 border-b-2 border-gray-300">
+                <thead style={{ background: '#111520' }}>
                   <tr>
-                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Job ID</th>
-                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Item</th>
-                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Fault</th>
-                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Status</th>
-                    <th className="p-3 text-right text-[10px] font-extrabold uppercase">Amount</th>
-                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Date</th>
-                    <th className="p-3 text-center text-[10px] font-extrabold uppercase">Action</th>
+                    {['Date','Job ID','Code','Item / Model','Remarks','Locate','Status','Amount'].map(h => (
+                      <th key={h} className={thCls}>{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredJobs.map(job => {
-                    const statusText = getStatusText(job.status);
+                    const st = STATUS_MAP[job.status] ?? { label: 'Unknown', color: 'bg-slate-500/20 text-slate-400' };
                     return (
-                      <tr key={job.id} className="border-b border-gray-200 hover:bg-blue-50/30">
-                        <td className="p-3">{job.job_id || job.id}</td>
-                        <td className="p-3">{job.item}</td>
-                        <td className="p-3">{job.fault || 'N/A'}</td>
-                        <td className="p-3">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(statusText)}`}>
-                            {statusText}
-                          </span>
-                        </td>
-                        <td className="p-3 text-right">₹{job.amount?.toFixed(2) || '0.00'}</td>
-                        <td className="p-3">{formatDate(job.date_created)}</td>
-                        <td className="p-3 text-center">
-                          <Link href={`/jobs/view?id=${job.id}`} className="text-blue-600 text-xs font-bold hover:underline">
-                            View
+                      <tr key={job.id} className={trCls}>
+                        <td className={`${tdCls} text-xs whitespace-nowrap`}>{fmtDate(job.date_created)}</td>
+                        <td className={tdCls}>
+                          <Link href={`/transactions/view?id=${job.id}`} className="text-blue-400 hover:underline font-semibold no-underline">
+                            {job.job_id || `#${job.id}`}
                           </Link>
                         </td>
+                        <td className={`${tdCls} text-xs text-slate-400`}>{job.code || '—'}</td>
+                        <td className={tdCls}>{job.item}</td>
+                        <td className={`${tdCls} text-xs text-slate-400 max-w-[160px] truncate`}>{job.remark || '—'}</td>
+                        <td className={`${tdCls} text-xs text-slate-400`}>{job.uniq_id || '—'}</td>
+                        <td className={tdCls}>
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${st.color}`}>{st.label}</span>
+                          {job.status === 5 && job.date_completed && (
+                            <p className="text-[9px] text-slate-500 mt-0.5">{fmtDate(job.date_completed)}</p>
+                          )}
+                        </td>
+                        <td className={`${tdCls} text-right font-semibold text-white`}>₹{fmt(job.amount || 0)}</td>
                       </tr>
                     );
                   })}
                   {filteredJobs.length === 0 && (
-                    <tr><td colSpan={7} className="p-6 text-center text-gray-400 italic">No repairs found</td></tr>
+                    <tr><td colSpan={8} className="p-8 text-center text-slate-500 italic">No repairs found</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
           )}
 
+          {/* ── DIRECT SALES TAB ── */}
           {activeTab === 'direct' && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-100 border-b-2 border-gray-300">
+                <thead style={{ background: '#111520' }}>
                   <tr>
-                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Sale Code</th>
-                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Mode</th>
-                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Remarks</th>
-                    <th className="p-3 text-right text-[10px] font-extrabold uppercase">Amount</th>
-                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Date</th>
-                    <th className="p-3 text-center text-[10px] font-extrabold uppercase">Action</th>
+                    {['Date','Sale Code','Payment Mode','Remarks','Total Amount','Action'].map(h => (
+                      <th key={h} className={thCls}>{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredSales.map(sale => (
-                    <tr key={sale.id} className="border-b border-gray-200 hover:bg-blue-50/30">
-                      <td className="p-3">{sale.sale_code}</td>
-                      <td className="p-3">{sale.payment_mode}</td>
-                      <td className="p-3">{sale.remarks || 'N/A'}</td>
-                      <td className="p-3 text-right">₹{sale.total_amount.toFixed(2)}</td>
-                      <td className="p-3">{formatDate(sale.date_created)}</td>
-                      <td className="p-3 text-center">
-                        <Link href={`/sales/view?id=${sale.id}`} className="text-blue-600 text-xs font-bold hover:underline">
-                          View
+                    <tr key={sale.id} className={trCls}>
+                      <td className={`${tdCls} text-xs whitespace-nowrap`}>{fmtDate(sale.date_created)}</td>
+                      <td className={`${tdCls} font-semibold`}>{sale.sale_code}</td>
+                      <td className={tdCls}>{sale.payment_mode}</td>
+                      <td className={`${tdCls} text-xs text-slate-400`}>{sale.remarks || '—'}</td>
+                      <td className={`${tdCls} text-right font-black text-emerald-400`}>₹{fmt(sale.total_amount)}</td>
+                      <td className={tdCls}>
+                        <Link href={`/sales/view?id=${sale.id}`} className="flex items-center gap-1 text-xs font-bold text-blue-400 hover:text-blue-300 no-underline">
+                          <ExternalLink size={12} /> View
                         </Link>
                       </td>
                     </tr>
                   ))}
                   {filteredSales.length === 0 && (
-                    <tr><td colSpan={6} className="p-6 text-center text-gray-400 italic">No direct sales found</td></tr>
+                    <tr><td colSpan={6} className="p-8 text-center text-slate-500 italic">No direct sales found</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
           )}
 
+          {/* ── ALL PAYMENTS TAB ── */}
           {activeTab === 'payments' && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-100 border-b-2 border-gray-300">
+                <thead style={{ background: '#111520' }}>
                   <tr>
-                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Date</th>
-                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Ref. ID</th>
-                    <th className="p-3 text-right text-[10px] font-extrabold uppercase">Amount</th>
-                    <th className="p-3 text-right text-[10px] font-extrabold uppercase">Discount</th>
-                    <th className="p-3 text-right text-[10px] font-extrabold uppercase">Net</th>
-                    <th className="p-3 text-left text-[10px] font-extrabold uppercase">Mode</th>
-                    <th className="p-3 text-center text-[10px] font-extrabold uppercase">Action</th>
+                    {['Date','Ref. ID','Type','Amount','Discount','Net Amount','Mode','Action'].map(h => (
+                      <th key={h} className={thCls}>{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredPayments.map(p => (
-                    <tr key={p.id} className="border-b border-gray-200 hover:bg-blue-50/30">
-                      <td className="p-3 text-xs">{formatDate(p.payment_date)}</td>
-                      <td className="p-3">
-                        {p.job_id && <div>Job: {p.job_id}</div>}
-                        {p.bill_no && <div>Bill: {p.bill_no}</div>}
-                        <div className="text-[9px] text-gray-500">PAY-{p.id}</div>
+                    <tr key={p.id} className={trCls}>
+                      <td className={`${tdCls} text-xs whitespace-nowrap`}>{fmtDate(p.payment_date)}</td>
+                      <td className={tdCls}>
+                        {p.job_id  && <div className="text-[11px] text-slate-400">Job: <span className="text-slate-200">{p.job_id}</span></div>}
+                        {p.bill_no && <div className="text-[11px] text-slate-400">Bill: <span className="text-slate-200">{p.bill_no}</span></div>}
+                        <div className="text-[10px] text-slate-600">PAY-{p.id}</div>
                       </td>
-                      <td className="p-3 text-right">₹{p.amount.toFixed(2)}</td>
-                      <td className="p-3 text-right">₹{p.discount.toFixed(2)}</td>
-                      <td className="p-3 text-right font-bold text-emerald-600">₹{(p.amount + p.discount).toFixed(2)}</td>
-                      <td className="p-3">{p.payment_mode}</td>
-                      <td className="p-3 text-center">
-                        <button 
-                          onClick={() => openEditModal(p)} 
-                          className="text-blue-600 text-xs font-bold hover:underline mr-2"
-                        >
-                          Edit
-                        </button>
-                        <button 
-                          onClick={() => handleDeletePayment(p.id)} 
-                          className="text-red-600 text-xs font-bold hover:underline"
-                        >
-                          Delete
-                        </button>
+                      <td className={tdCls}>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-400 border border-slate-500/20">
+                          Service Payment
+                        </span>
+                      </td>
+                      <td className={`${tdCls} text-right`}>₹{fmt(p.amount)}</td>
+                      <td className={`${tdCls} text-right text-slate-400`}>₹{fmt(p.discount)}</td>
+                      <td className={`${tdCls} text-right font-black text-emerald-400`}>₹{fmt(p.amount + p.discount)}</td>
+                      <td className={tdCls}>{p.payment_mode}</td>
+                      <td className={tdCls}>
+                        <div className="flex gap-2">
+                          <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-colors"><PencilLine size={13} /></button>
+                          <button onClick={() => handleDeletePayment(p.id)} className="p-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors"><Trash2 size={13} /></button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                   {filteredPayments.length === 0 && (
-                    <tr><td colSpan={7} className="p-6 text-center text-gray-400 italic">No payments found</td></tr>
+                    <tr><td colSpan={8} className="p-8 text-center text-slate-500 italic">No payments found</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* ── LOAN PAYMENTS TAB ── */}
+          {activeTab === 'loan_payments' && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead style={{ background: '#111520' }}>
+                  <tr>
+                    {['Date','Loan ID','Amount','Discount','Net Amount','Mode','Remarks','Action'].map(h => (
+                      <th key={h} className={thCls}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredLoanPay.map(p => (
+                    <tr key={p.id} className={trCls}>
+                      <td className={`${tdCls} text-xs whitespace-nowrap`}>{fmtDate(p.payment_date)}</td>
+                      <td className={tdCls}>
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
+                          LN-{String(p.loan_id).padStart(5, '0')}
+                        </span>
+                      </td>
+                      <td className={`${tdCls} text-right`}>₹{fmt(p.amount)}</td>
+                      <td className={`${tdCls} text-right text-slate-400`}>₹{fmt(p.discount)}</td>
+                      <td className={`${tdCls} text-right font-black text-emerald-400`}>₹{fmt(p.amount + p.discount)}</td>
+                      <td className={tdCls}>{p.payment_mode}</td>
+                      <td className={`${tdCls} text-xs text-slate-400`}>{p.remarks || '—'}</td>
+                      <td className={tdCls}>
+                        <div className="flex gap-2">
+                          <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-colors"><PencilLine size={13} /></button>
+                          <button onClick={() => handleDeletePayment(p.id)} className="p-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors"><Trash2 size={13} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredLoanPay.length === 0 && (
+                    <tr><td colSpan={8} className="p-8 text-center text-slate-500 italic">No loan payments found</td></tr>
                   )}
                 </tbody>
               </table>
@@ -564,84 +697,58 @@ export default function ViewClientProfile() {
           )}
         </div>
 
-        {/* ===== ACTION BUTTONS ===== */}
-        <div className="flex justify-end gap-3">
-          <Link 
-            href={`/clients/${client.id}/add-payment`} 
-            className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-extrabold uppercase text-sm hover:bg-emerald-700 transition-all shadow-lg"
-          >
-            <Plus size={18} /> Add Payment
-          </Link>
-          <Link 
-            href={`/clients/${client.id}/add-direct-sale`} 
-            className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl font-extrabold uppercase text-sm hover:bg-purple-700 transition-all shadow-lg"
-          >
-            <ShoppingCart size={18} /> New Direct Sale
-          </Link>
-        </div>
-
       </div>
 
-      {/* ===== EDIT PAYMENT MODAL ===== */}
+      {/* ── EDIT PAYMENT MODAL ── */}
       {editingPayment && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h3 className="text-lg font-bold mb-4">Edit Payment</h3>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border p-6 shadow-2xl" style={{ background: '#161b27', borderColor: '#21293d' }}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base font-bold text-white">Edit Payment</h3>
+              <button onClick={() => setEditingPayment(null)} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 transition-colors"><X size={18} /></button>
+            </div>
             <form onSubmit={handleUpdatePayment} className="space-y-4">
+              {[
+                { label: 'Amount', key: 'amount', type: 'number' },
+                { label: 'Payment Date', key: 'payment_date', type: 'date' },
+                { label: 'Discount', key: 'discount', type: 'number' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{f.label}</label>
+                  <input
+                    type={f.type} step="0.01" required={f.key !== 'discount'}
+                    value={editForm[f.key as keyof typeof editForm]}
+                    onChange={e => setEditForm({ ...editForm, [f.key]: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl border text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    style={{ background: '#0d1117', borderColor: '#21293d' }}
+                  />
+                </div>
+              ))}
               <div>
-                <label className="text-xs font-extrabold uppercase text-gray-500 block mb-1">Amount</label>
-                <input
-                  type="number" step="0.01" required
-                  value={editFormData.amount}
-                  onChange={(e) => setEditFormData({...editFormData, amount: e.target.value})}
-                  className="w-full p-3 border-2 border-gray-300 rounded-xl focus:border-blue-600 outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-extrabold uppercase text-gray-500 block mb-1">Payment Date</label>
-                <input
-                  type="date" required
-                  value={editFormData.payment_date}
-                  onChange={(e) => setEditFormData({...editFormData, payment_date: e.target.value})}
-                  className="w-full p-3 border-2 border-gray-300 rounded-xl focus:border-blue-600 outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-extrabold uppercase text-gray-500 block mb-1">Discount</label>
-                <input
-                  type="number" step="0.01"
-                  value={editFormData.discount}
-                  onChange={(e) => setEditFormData({...editFormData, discount: e.target.value})}
-                  className="w-full p-3 border-2 border-gray-300 rounded-xl focus:border-blue-600 outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-extrabold uppercase text-gray-500 block mb-1">Payment Mode</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Payment Mode</label>
                 <select
-                  value={editFormData.payment_mode}
-                  onChange={(e) => setEditFormData({...editFormData, payment_mode: e.target.value})}
-                  className="w-full p-3 border-2 border-gray-300 rounded-xl focus:border-blue-600 outline-none"
+                  value={editForm.payment_mode}
+                  onChange={e => setEditForm({ ...editForm, payment_mode: e.target.value })}
+                  className="w-full px-3 py-2.5 rounded-xl border text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  style={{ background: '#0d1117', borderColor: '#21293d' }}
                 >
-                  <option>Cash</option>
-                  <option>PhonePe/GPay</option>
-                  <option>Bank Transfer</option>
-                  <option>Credit Card</option>
+                  {['Cash','PhonePe/GPay','Bank Transfer','Credit Card'].map(m => <option key={m}>{m}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-extrabold uppercase text-gray-500 block mb-1">Remarks</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Remarks</label>
                 <textarea
-                  rows={2}
-                  value={editFormData.remarks}
-                  onChange={(e) => setEditFormData({...editFormData, remarks: e.target.value})}
-                  className="w-full p-3 border-2 border-gray-300 rounded-xl focus:border-blue-600 outline-none"
+                  rows={2} value={editForm.remarks}
+                  onChange={e => setEditForm({ ...editForm, remarks: e.target.value })}
+                  className="w-full px-3 py-2.5 rounded-xl border text-sm text-white focus:outline-none focus:border-blue-500 transition-colors resize-none"
+                  style={{ background: '#0d1117', borderColor: '#21293d' }}
                 />
               </div>
-              <div className="flex gap-3 pt-2">
-                <button type="submit" className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-extrabold uppercase text-sm hover:bg-blue-700 transition-all">
+              <div className="flex gap-3 pt-1">
+                <button type="submit" className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-all">
                   Update
                 </button>
-                <button type="button" onClick={() => setEditingPayment(null)} className="flex-1 bg-gray-200 py-3 rounded-xl font-extrabold uppercase text-sm hover:bg-gray-300 transition-all">
+                <button type="button" onClick={() => setEditingPayment(null)} className="flex-1 py-2.5 rounded-xl font-bold text-sm border border-[#2a3550] text-slate-300 hover:bg-white/5 transition-all">
                   Cancel
                 </button>
               </div>
