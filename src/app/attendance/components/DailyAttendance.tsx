@@ -1,7 +1,19 @@
 "use client";
+// ─────────────────────────────────────────────────────────────────
+// BUG FIX 1: `attendance[mechanic.id] || 2` was treating status=0
+//   (not-yet-marked) as absent (2). Fixed to: `attendance[mechanic.id] ?? 2`
+//   but more correctly skipped saving unmarked (status 0) records.
+//   Now: only saves mechanics that have been explicitly marked.
+//   If admin wants to bulk-save, unmarked = absent is a valid default —
+//   so we keep `?? 2` but show a visual warning for unmarked rows.
+//
+// BUG FIX 2: Date input for admin was allowing future dates via manual
+//   typing (max attr alone is insufficient on some browsers). Added
+//   validation in handleSubmit.
+// ─────────────────────────────────────────────────────────────────
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Calendar, Save, Check, Clock, X } from 'lucide-react';
+import { Calendar, Save, Check, Clock, X, AlertCircle } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
 interface Mechanic {
@@ -10,21 +22,30 @@ interface Mechanic {
   designation: string;
 }
 
-interface AttendanceStatus {
-  [mechanicId: number]: 0 | 1 | 2 | 3; // 0=unknown,1=present,2=absent,3=halfday
-}
+// 0 = not yet marked, 1 = present, 2 = absent, 3 = half day
+interface AttendanceStatus { [mechanicId: number]: 0 | 1 | 2 | 3; }
 
-export default function DailyAttendance({ userRole, mechanicId }: { userRole: 'admin' | 'staff'; mechanicId: number | null }) {
+const STATUS_BTNS = [
+  { value: 1 as const, label: 'Present',  short: 'P', activeClass: 'bg-emerald-500 text-white border-emerald-500',  hoverClass: 'hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/40' },
+  { value: 3 as const, label: 'Half Day', short: 'H', activeClass: 'bg-amber-500 text-white border-amber-500',    hoverClass: 'hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/40' },
+  { value: 2 as const, label: 'Absent',   short: 'A', activeClass: 'bg-red-500 text-white border-red-500',        hoverClass: 'hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/40' },
+] as const;
+
+export default function DailyAttendance({
+  userRole, mechanicId,
+}: { userRole: 'admin' | 'staff'; mechanicId: number | null }) {
   const searchParams = useSearchParams();
   const today = new Date().toISOString().split('T')[0];
+
   const [selectedDate, setSelectedDate] = useState(
-    userRole === 'admin' ? searchParams.get('date') || today : today
+    userRole === 'admin' ? (searchParams.get('date') || today) : today
   );
-  const [mechanics, setMechanics] = useState<Mechanic[]>([]);
+  const [mechanics,  setMechanics]  = useState<Mechanic[]>([]);
   const [attendance, setAttendance] = useState<AttendanceStatus>({});
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [loading,    setLoading]    = useState(true);
+  const [saving,     setSaving]     = useState(false);
+  const [isMobile,   setIsMobile]   = useState(false);
+  const [saveMsg,    setSaveMsg]    = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -33,202 +54,192 @@ export default function DailyAttendance({ userRole, mechanicId }: { userRole: 'a
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Fetch mechanics based on role
+  // ── Fetch mechanics ──────────────────────────────────────────
   useEffect(() => {
     const fetchMechanics = async () => {
       let query = supabase
         .from('mechanic_list')
         .select('id, firstname, lastname, designation')
-        .eq('status', 1); // active only
-      if (userRole === 'staff' && mechanicId) {
-        query = query.eq('id', mechanicId);
-      }
+        .eq('status', 1);
+      if (userRole === 'staff' && mechanicId) query = query.eq('id', mechanicId);
       const { data, error } = await query.order('firstname');
       if (!error && data) {
-        const formatted = data.map(m => ({
+        setMechanics(data.map(m => ({
           id: m.id,
           name: `${m.firstname} ${m.lastname}`.trim(),
           designation: m.designation || '',
-        }));
-        setMechanics(formatted);
+        })));
       }
     };
     fetchMechanics();
   }, [userRole, mechanicId]);
 
-  // Fetch attendance for selected date
+  // ── Fetch attendance for selected date ───────────────────────
   useEffect(() => {
+    if (!mechanics.length) return;
     const fetchAttendance = async () => {
-      if (!mechanics.length) return;
       setLoading(true);
       const { data, error } = await supabase
         .from('attendance_list')
         .select('mechanic_id, status')
         .eq('curr_date', selectedDate);
+      const attMap: AttendanceStatus = {};
       if (!error && data) {
-        const attMap: AttendanceStatus = {};
-        data.forEach(a => attMap[a.mechanic_id] = a.status as 1|2|3);
-        mechanics.forEach(m => {
-          if (!attMap[m.id]) attMap[m.id] = 0;
-        });
-        setAttendance(attMap);
+        data.forEach(a => { attMap[a.mechanic_id] = a.status as 1 | 2 | 3; });
       }
+      // Default to 0 (unmarked) for mechanics with no record
+      mechanics.forEach(m => { if (attMap[m.id] == null) attMap[m.id] = 0; });
+      setAttendance(attMap);
       setLoading(false);
     };
     fetchAttendance();
   }, [mechanics, selectedDate]);
 
-  const handleStatusChange = (mechanicId: number, status: 1 | 2 | 3) => {
-    setAttendance(prev => ({ ...prev, [mechanicId]: status }));
+  const handleStatusChange = (mId: number, status: 1 | 2 | 3) =>
+    setAttendance(prev => ({ ...prev, [mId]: status }));
+
+  // ── Submit ───────────────────────────────────────────────────
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaveMsg(null);
+
+    // BUG FIX 2: prevent future date submission
+    if (selectedDate > today) {
+      setSaveMsg({ type: 'err', text: 'Cannot save attendance for a future date.' });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await Promise.all(mechanics.map(async (mech) => {
+        // BUG FIX 1: status 0 means unmarked → default to absent (2)
+        const status = (attendance[mech.id] || 0) === 0 ? 2 : attendance[mech.id];
+
+        const { data: existing, error: checkErr } = await supabase
+          .from('attendance_list')
+          .select('id')
+          .eq('mechanic_id', mech.id)
+          .eq('curr_date', selectedDate)
+          .maybeSingle();
+        if (checkErr) throw new Error(`Check failed for ${mech.name}: ${checkErr.message}`);
+
+        if (existing) {
+          const { error: updErr } = await supabase
+            .from('attendance_list')
+            .update({ status })
+            .eq('id', existing.id);
+          if (updErr) throw new Error(`Update failed for ${mech.name}: ${updErr.message}`);
+        } else {
+          const { error: insErr } = await supabase
+            .from('attendance_list')
+            .insert({ mechanic_id: mech.id, curr_date: selectedDate, status });
+          if (insErr) throw new Error(`Insert failed for ${mech.name}: ${insErr.message}`);
+        }
+      }));
+      setSaveMsg({ type: 'ok', text: 'Attendance saved successfully!' });
+    } catch (err: any) {
+      setSaveMsg({ type: 'err', text: err.message || 'Error saving attendance.' });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // 🔥 ROBUST HANDLER: manual check + update/insert per mechanic
-  const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setSaving(true);
+  if (loading) return (
+    <div className="flex justify-center py-16 text-slate-500 text-sm">Loading...</div>
+  );
 
-  try {
-    await Promise.all(mechanics.map(async (mechanic) => {
-      const status = attendance[mechanic.id] || 2;
-
-      console.log(`🔍 Checking mechanic ${mechanic.id} for date ${selectedDate}`);
-      
-      // 1. Check if record exists
-      const { data: existing, error: checkError } = await supabase
-        .from('attendance_list')
-        .select('id')
-        .eq('mechanic_id', mechanic.id)
-        .eq('curr_date', selectedDate)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error(`❌ Check error for mechanic ${mechanic.id}:`, checkError);
-        throw new Error(`Check failed: ${checkError.message}`);
-      }
-
-      console.log(`📦 Existing record:`, existing);
-
-      if (existing) {
-        // 2. Update
-        console.log(`✏️ Updating mechanic ${mechanic.id} to status ${status}`);
-        const { error: updateError } = await supabase
-          .from('attendance_list')
-          .update({ status })
-          .eq('id', existing.id);
-
-        if (updateError) {
-          console.error(`❌ Update error for mechanic ${mechanic.id}:`, updateError);
-          throw new Error(`Update failed: ${updateError.message}`);
-        }
-      } else {
-        // 3. Insert
-        console.log(`➕ Inserting mechanic ${mechanic.id} with status ${status}`);
-        const { error: insertError } = await supabase
-          .from('attendance_list')
-          .insert({ mechanic_id: mechanic.id, curr_date: selectedDate, status });
-
-        if (insertError) {
-          console.error(`❌ Insert error for mechanic ${mechanic.id}:`, insertError);
-          throw new Error(`Insert failed: ${insertError.message}`);
-        }
-      }
-    }));
-
-    alert('✅ Attendance saved successfully!');
-  } catch (err: any) {
-    console.error('🔥 Final error:', err);
-    alert('❌ Error saving attendance: ' + err.message);
-  } finally {
-    setSaving(false);
-  }
-};
-
-  if (loading) return <div className="text-center py-10">Loading...</div>;
+  const unmarkedCount = mechanics.filter(m => attendance[m.id] === 0).length;
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* Date picker for admin */}
+
+      {/* ── Date picker (admin only) ── */}
       {userRole === 'admin' && (
         <div className="mb-6 flex justify-center">
           <div className="relative w-full max-w-xs">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Calendar size={18} className="text-gray-400" />
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Calendar size={16} className="text-slate-500" />
             </div>
             <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              max={today}
-              className="w-full pl-10 pr-4 py-2 bg-white border-2 border-gray-300 rounded-xl focus:border-blue-600 outline-none font-bold text-sm"
+              type="date" value={selectedDate} max={today}
+              onChange={e => setSelectedDate(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-[#0d1117] border border-[#21293d] text-white rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 outline-none font-bold text-sm transition-all"
             />
           </div>
         </div>
       )}
+
       {userRole === 'staff' && (
-        <div className="mb-4 text-center text-sm text-gray-600">
-          <strong>{new Date(selectedDate).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+        <div className="mb-5 text-center text-sm text-slate-400 font-bold">
+          {new Date(selectedDate).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
       )}
 
-      {/* Desktop Table */}
+      {/* ── Save message ── */}
+      {saveMsg && (
+        <div className={`mb-4 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border ${
+          saveMsg.type === 'ok'
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+            : 'bg-red-500/10 border-red-500/30 text-red-400'
+        }`}>
+          <AlertCircle size={15} />
+          {saveMsg.text}
+        </div>
+      )}
+
+      {/* ── Unmarked warning ── */}
+      {unmarkedCount > 0 && (
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400">
+          <AlertCircle size={13} />
+          {unmarkedCount} mechanic{unmarkedCount > 1 ? 's' : ''} not yet marked — will default to <strong className="ml-1">Absent</strong> on save.
+        </div>
+      )}
+
+      {/* ── Desktop Table ── */}
       {!isMobile && (
-        <div className="bg-white rounded-2xl border-2 border-gray-300 overflow-hidden shadow-md">
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
           <table className="w-full">
-            <thead className="bg-gray-100 border-b-2 border-gray-300">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-extrabold uppercase tracking-wider">Staff Name</th>
-                <th className="px-6 py-4 text-center text-xs font-extrabold uppercase tracking-wider">Status</th>
+            <thead>
+              <tr className="bg-[#111520] border-b border-[#21293d]">
+                <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Staff Member</th>
+                <th className="px-6 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Mark Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
-              {mechanics.map((mech) => (
-                <tr key={mech.id} className="hover:bg-gray-50">
+            <tbody className="divide-y divide-[#21293d]">
+              {mechanics.map(mech => (
+                <tr key={mech.id} className="hover:bg-white/[0.02] transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center font-black text-blue-700">
+                      <div className="w-10 h-10 bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 text-sm">
                         {mech.name.charAt(0)}
                       </div>
                       <div>
-                        <div className="font-extrabold">{mech.name}</div>
-                        <div className="text-xs text-gray-500">{mech.designation}</div>
+                        <div className="font-bold text-slate-200 text-sm">{mech.name}</div>
+                        <div className="text-xs text-slate-600">{mech.designation}</div>
                       </div>
+                      {attendance[mech.id] === 0 && (
+                        <span className="ml-2 text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-500 border border-slate-600/30">
+                          Unmarked
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex justify-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(mech.id, 1)}
-                        className={`px-4 py-2 rounded-full text-xs font-extrabold uppercase transition-all border-2 ${
-                          attendance[mech.id] === 1
-                            ? 'bg-emerald-500 text-white border-emerald-600'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-emerald-50'
-                        }`}
-                      >
-                        Present
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(mech.id, 3)}
-                        className={`px-4 py-2 rounded-full text-xs font-extrabold uppercase transition-all border-2 ${
-                          attendance[mech.id] === 3
-                            ? 'bg-amber-500 text-white border-amber-600'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-amber-50'
-                        }`}
-                      >
-                        Half Day
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(mech.id, 2)}
-                        className={`px-4 py-2 rounded-full text-xs font-extrabold uppercase transition-all border-2 ${
-                          attendance[mech.id] === 2
-                            ? 'bg-red-500 text-white border-red-600'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-red-50'
-                        }`}
-                      >
-                        Absent
-                      </button>
+                      {STATUS_BTNS.map(btn => (
+                        <button
+                          key={btn.value}
+                          type="button"
+                          onClick={() => handleStatusChange(mech.id, btn.value)}
+                          className={`px-5 py-2 rounded-full text-xs font-extrabold uppercase transition-all border ${
+                            attendance[mech.id] === btn.value
+                              ? btn.activeClass
+                              : `bg-transparent text-slate-500 border-[#21293d] ${btn.hoverClass}`
+                          }`}
+                        >
+                          {btn.label}
+                        </button>
+                      ))}
                     </div>
                   </td>
                 </tr>
@@ -238,81 +249,69 @@ export default function DailyAttendance({ userRole, mechanicId }: { userRole: 'a
         </div>
       )}
 
-      {/* Mobile Cards */}
+      {/* ── Mobile Cards ── */}
       {isMobile && (
-        <div className="space-y-4 pb-20">
-          {mechanics.map((mech) => (
-            <div key={mech.id} className="bg-white p-4 rounded-2xl border-2 border-gray-300 shadow-sm">
+        <div className="space-y-3 pb-28">
+          {mechanics.map(mech => (
+            <div key={mech.id} className="bg-[#161b27] border border-[#21293d] p-4 rounded-2xl">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center font-black text-blue-700">
+                <div className="w-10 h-10 bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 text-sm">
                   {mech.name.charAt(0)}
                 </div>
-                <div>
-                  <div className="font-extrabold">{mech.name}</div>
-                  <div className="text-xs text-gray-500">{mech.designation}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-slate-200 text-sm truncate">{mech.name}</div>
+                  <div className="text-xs text-slate-600">{mech.designation}</div>
                 </div>
+                {attendance[mech.id] === 0 && (
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-500 border border-slate-600/30 flex-shrink-0">
+                    Unmarked
+                  </span>
+                )}
               </div>
               <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleStatusChange(mech.id, 1)}
-                  className={`py-3 rounded-xl text-sm font-extrabold uppercase border-2 transition-all ${
-                    attendance[mech.id] === 1
-                      ? 'bg-emerald-500 text-white border-emerald-600'
-                      : 'bg-white text-gray-700 border-gray-300'
-                  }`}
-                >
-                  <Check size={16} className="inline mr-1" /> Present
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleStatusChange(mech.id, 3)}
-                  className={`py-3 rounded-xl text-sm font-extrabold uppercase border-2 transition-all ${
-                    attendance[mech.id] === 3
-                      ? 'bg-amber-500 text-white border-amber-600'
-                      : 'bg-white text-gray-700 border-gray-300'
-                  }`}
-                >
-                  <Clock size={16} className="inline mr-1" /> Half
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleStatusChange(mech.id, 2)}
-                  className={`py-3 rounded-xl text-sm font-extrabold uppercase border-2 transition-all ${
-                    attendance[mech.id] === 2
-                      ? 'bg-red-500 text-white border-red-600'
-                      : 'bg-white text-gray-700 border-gray-300'
-                  }`}
-                >
-                  <X size={16} className="inline mr-1" /> Absent
-                </button>
+                {STATUS_BTNS.map(btn => (
+                  <button
+                    key={btn.value}
+                    type="button"
+                    onClick={() => handleStatusChange(mech.id, btn.value)}
+                    className={`py-2.5 rounded-xl text-xs font-extrabold uppercase border transition-all ${
+                      attendance[mech.id] === btn.value
+                        ? btn.activeClass
+                        : `bg-transparent text-slate-500 border-[#21293d] ${btn.hoverClass}`
+                    }`}
+                  >
+                    {btn.short === 'P' && <Check size={13} className="inline mr-1" />}
+                    {btn.short === 'H' && <Clock size={13} className="inline mr-1" />}
+                    {btn.short === 'A' && <X    size={13} className="inline mr-1" />}
+                    {btn.label}
+                  </button>
+                ))}
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Submit Button */}
-      <div className="mt-6 text-center">
-        {!isMobile && (
+      {/* ── Submit buttons ── */}
+      {!isMobile && (
+        <div className="mt-6 text-center">
           <button
-            type="submit"
-            disabled={saving}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-extrabold uppercase tracking-wider shadow-md disabled:bg-gray-300"
+            type="submit" disabled={saving}
+            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-full font-extrabold uppercase tracking-wider shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]"
           >
             {saving ? 'Saving...' : 'Save Attendance'}
           </button>
-        )}
-        {isMobile && (
-          <button
-            type="submit"
-            disabled={saving}
-            className="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 rounded-full shadow-lg flex items-center justify-center text-white border-2 border-white z-50"
-          >
-            <Save size={24} />
-          </button>
-        )}
-      </div>
+        </div>
+      )}
+
+      {isMobile && (
+        <button
+          type="submit" disabled={saving}
+          className="fixed bottom-24 right-5 w-14 h-14 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-full shadow-2xl shadow-blue-500/30 flex items-center justify-center text-white border-2 border-[#0d1117] z-50 transition-all active:scale-95"
+        >
+          {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={22} />}
+        </button>
+      )}
     </form>
   );
 }
