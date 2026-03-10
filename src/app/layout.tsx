@@ -4,22 +4,24 @@ import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { 
-  LayoutDashboard, Users, Package, FileText, 
+import {
+  LayoutDashboard, Users, Package, FileText,
   Settings, Wrench, Search, User, LogOut,
   Sparkles, Loader2, ArrowLeft, ShieldCheck,
   CalendarCheck, HelpCircle, ShoppingCart, ClipboardList,
-  PieChart, TrendingUp, DollarSign, Truck, 
-  CreditCard, Clock, Briefcase, Coins, 
+  PieChart, TrendingUp, DollarSign, Truck,
+  CreditCard, Clock, Briefcase, Coins,
   Toolbox, FolderOpen, UsersRound, Database,
   Settings2, ChevronDown, ChevronRight
 } from 'lucide-react';
 
-// ========== SEARCH COMPONENT ==========
+// ============================================================
+// SEARCH
+// ============================================================
 function NavbarSearch() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   const handleSearch = (term: string) => {
     const params = new URLSearchParams(searchParams.toString());
     if (term) params.set('search', term);
@@ -30,12 +32,12 @@ function NavbarSearch() {
   return (
     <div className="relative max-w-md w-full hidden sm:block group">
       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-        <Search size={18} className="text-gray-500 group-focus-within:text-blue-600 transition-colors" />
+        <Search size={16} className="text-slate-500 group-focus-within:text-blue-400 transition-colors" />
       </div>
-      <input 
-        type="text" 
-        placeholder="Search jobs, clients or IDs..." 
-        className="w-full pl-10 pr-4 py-2.5 bg-white/90 backdrop-blur-sm border border-gray-300/50 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 focus:bg-white focus:border-blue-400 transition-all font-medium text-sm text-gray-900 placeholder:text-gray-500"
+      <input
+        type="text"
+        placeholder="Search jobs, clients or IDs..."
+        className="w-full pl-10 pr-4 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all font-medium text-sm text-slate-200 placeholder:text-slate-600"
         onChange={(e) => handleSearch(e.target.value)}
         defaultValue={searchParams.get('search')?.toString() || ""}
       />
@@ -43,28 +45,29 @@ function NavbarSearch() {
   );
 }
 
-// ========== SUBMENU COMPONENT ==========
-function SubMenu({ title, icon, children, basePath }: { title: string; icon: React.ReactNode; children: React.ReactNode; basePath?: string }) {
+// ============================================================
+// SUBMENU
+// ============================================================
+function SubMenu({ title, icon, children, basePath }: {
+  title: string; icon: React.ReactNode; children: React.ReactNode; basePath?: string;
+}) {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(() => {
-    if (basePath && pathname.startsWith(basePath)) return true;
-    return false;
-  });
+  const [isOpen, setIsOpen] = useState(() => !!(basePath && pathname.startsWith(basePath)));
 
   return (
     <li className="nav-item">
-      <div 
+      <div
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold text-gray-300 hover:bg-gray-800 hover:text-white cursor-pointer transition-all"
+        className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 cursor-pointer transition-all"
       >
         <div className="flex items-center gap-3">
-          <span className="text-gray-400">{icon}</span>
+          <span className="text-slate-500">{icon}</span>
           <span>{title}</span>
         </div>
-        {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        {isOpen ? <ChevronDown size={14} className="text-slate-600" /> : <ChevronRight size={14} className="text-slate-600" />}
       </div>
       {isOpen && (
-        <ul className="nav-treeview pl-4 mt-1 space-y-1">
+        <ul className="nav-treeview pl-4 mt-1 space-y-0.5">
           {children}
         </ul>
       )}
@@ -72,14 +75,16 @@ function SubMenu({ title, icon, children, basePath }: { title: string; icon: Rea
   );
 }
 
-// ========== MAIN LAYOUT ==========
+// ============================================================
+// MAIN LAYOUT
+// ============================================================
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isMobile, setIsMobile] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<{full_name: string, role: string} | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isMobile, setIsMobile]       = useState(false);
+  const [loading, setLoading]         = useState(true);
+  const [profile, setProfile]         = useState<{ full_name: string; role: string } | null>(null);
+  const [userEmail, setUserEmail]     = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const handleLogout = useCallback(async () => {
@@ -91,38 +96,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     const getAuthAndProfile = async () => {
       try {
         const { data: { user: authUser } } = await supabase.auth.getUser();
-        
         if (!authUser) {
           if (pathname !== '/login') router.push('/login');
           setLoading(false);
           return;
         }
-
         setUserEmail(authUser.email || null);
-
-        const { data: profileData, error } = await supabase
-          .from('profiles')
-          .select('full_name, role')
-          .eq('id', authUser.id)
-          .maybeSingle();
-        
+        const { data: profileData } = await supabase
+          .from('profiles').select('full_name, role').eq('id', authUser.id).maybeSingle();
         const finalName = profileData?.full_name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User';
         const finalRole = profileData?.role || (authUser.email === 'vtech.jbp@gmail.com' ? 'admin' : 'staff');
-
-        setProfile({
-          full_name: finalName,
-          role: finalRole
-        });
-
+        setProfile({ full_name: finalName, role: finalRole });
       } catch (err) {
         console.error("Auth Logic Error:", err);
       } finally {
         setLoading(false);
       }
     };
-
     getAuthAndProfile();
-
     const checkSize = () => setIsMobile(window.innerWidth < 1024);
     checkSize();
     window.addEventListener('resize', checkSize);
@@ -134,28 +125,44 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   if (loading) {
     return (
       <html lang="en">
-        <body className="h-screen flex items-center justify-center bg-white text-center">
+        <body className="h-screen flex items-center justify-center bg-[#0d1117] text-center">
           <div>
-            <Loader2 className="animate-spin text-blue-600 mx-auto" size={40} />
-            <p className="mt-4 text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">V-TECH SECURE BOOT</p>
+            <Loader2 className="animate-spin text-blue-500 mx-auto" size={40} />
+            <p className="mt-4 text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">V-TECH SECURE BOOT</p>
           </div>
         </body>
       </html>
     );
   }
 
-  const isAdmin = profile?.role === 'admin';
+  const isAdmin     = profile?.role === 'admin';
   const displayName = profile?.full_name || "User";
 
+  // ── SHARED NAV LINK STYLE ──────────────────────────────
+  const navLinkCls = (active: boolean) =>
+    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+      active
+        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-900/30'
+        : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
+    }`;
+
+  const subLinkCls = (active: boolean) =>
+    `flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold rounded-lg transition-all ${
+      active ? 'text-blue-400 bg-blue-500/10' : 'text-slate-500 hover:text-slate-200 hover:bg-white/[0.04]'
+    }`;
+
   return (
-    <html lang="en" className="h-full bg-gray-100">
-      <body className="h-full m-0 font-sans antialiased text-gray-900">
-        
-        {/* ===== DESKTOP SIDEBAR (AdminLTE Style – Dark) ===== */}
+    <html lang="en" className="h-full" style={{ backgroundColor: '#0d1117' }}>
+      <body className="h-full m-0 font-sans antialiased text-slate-200 bg-[#0d1117]">
+
+        {/* ══════════════════════════════════════════════════
+            DESKTOP SIDEBAR
+        ══════════════════════════════════════════════════ */}
         {!isMobile && (
-          <aside className="fixed top-0 left-0 h-full w-[280px] bg-gray-900 text-gray-300 border-r border-gray-800 shadow-2xl flex flex-col z-50">
-            {/* Brand Logo */}
-            <div className="bg-gradient-to-r from-blue-700 to-blue-800 p-5 border-b border-gray-800">
+          <aside className="fixed top-0 left-0 h-full w-[270px] bg-[#0d1117] border-r border-[#21293d] flex flex-col z-50">
+
+            {/* Brand */}
+            <div className="bg-gradient-to-r from-blue-700 to-blue-800 p-5 border-b border-[#21293d]">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
                   <Sparkles className="text-white" size={22} />
@@ -171,216 +178,153 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </div>
 
-            <nav className="flex-1 overflow-y-auto py-4 px-3">
-              <ul className="nav nav-pills nav-sidebar flex-column space-y-1">
-                {/* Dashboard */}
-                <li className="nav-item">
-                  <Link href="/" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-900/30' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
-                    <LayoutDashboard size={18} />
-                    <span>Dashboard</span>
+            {/* Nav */}
+            <nav className="flex-1 overflow-y-auto py-4 px-3 scrollbar-hide">
+              <ul className="space-y-0.5">
+
+                <li>
+                  <Link href="/" className={navLinkCls(pathname === '/')}>
+                    <LayoutDashboard size={17} /><span>Dashboard</span>
                   </Link>
                 </li>
-
-                <li className="nav-item">
-                  <Link href="/attendance" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/attendance' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
-                    <CalendarCheck size={18} />
-                    <span>Attendance</span>
+                <li>
+                  <Link href="/attendance" className={navLinkCls(pathname === '/attendance')}>
+                    <CalendarCheck size={17} /><span>Attendance</span>
                   </Link>
                 </li>
-
-                <li className="nav-item">
-                  <Link href="/clients" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/clients' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
-                    <Users size={18} />
-                    <span>Clients</span>
+                <li>
+                  <Link href="/clients" className={navLinkCls(pathname.startsWith('/clients'))}>
+                    <Users size={17} /><span>Clients</span>
                   </Link>
                 </li>
-
-                <li className="nav-item">
-                  <Link href="/inquiries" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/inquiries' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
-                    <HelpCircle size={18} />
-                    <span>Inquiries</span>
+                <li>
+                  <Link href="/inquiries" className={navLinkCls(pathname === '/inquiries')}>
+                    <HelpCircle size={17} /><span>Inquiries</span>
                   </Link>
                 </li>
-
-                <li className="nav-item">
-                  <Link href="/direct-sales" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/direct-sales' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
-                    <ShoppingCart size={18} />
-                    <span>Direct Sales</span>
+                <li>
+                  <Link href="/direct-sales" className={navLinkCls(pathname.startsWith('/direct-sales'))}>
+                    <ShoppingCart size={17} /><span>Direct Sales</span>
                   </Link>
                 </li>
-
-                <li className="nav-item">
-                  <Link href="/inventory" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/inventory' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
-                    <Package size={18} />
-                    <span>Inventory</span>
+                <li>
+                  <Link href="/inventory" className={navLinkCls(pathname.startsWith('/inventory'))}>
+                    <Package size={17} /><span>Inventory</span>
                   </Link>
                 </li>
-
-                <li className="nav-item">
-                  <Link href="/jobs" className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${pathname === '/jobs' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
-                    <ClipboardList size={18} />
-                    <span>JobSheet</span>
+                <li>
+                  <Link href="/jobs" className={navLinkCls(pathname.startsWith('/jobs'))}>
+                    <ClipboardList size={17} /><span>JobSheet</span>
                   </Link>
                 </li>
 
                 {isAdmin && (
                   <>
-                    <li className="nav-header text-[10px] font-black uppercase text-gray-500 tracking-widest px-4 pt-4 pb-1">Reports</li>
-                    <SubMenu title="Reports" icon={<PieChart size={18} />} basePath="/reports">
-                      <li>
-                        <Link href="/reports/delivered" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <Truck size={14} /> Delivered Report
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/reports/cash-flow" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <TrendingUp size={14} /> Cash Flow
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/reports/ledger" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <DollarSign size={14} /> Business Ledger
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/reports/yearly" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <Clock size={14} /> Yearly Report
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/reports/client-payment" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <CreditCard size={14} /> Clients Payment
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/reports/daily-sales" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <ShoppingCart size={14} /> Daily Sales
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/reports/daily-service" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <Wrench size={14} /> Daily Service
-                        </Link>
-                      </li>
+                    <li className="text-[9px] font-black uppercase text-slate-600 tracking-widest px-4 pt-5 pb-1">
+                      Reports
+                    </li>
+                    <SubMenu title="Reports" icon={<PieChart size={17} />} basePath="/reports">
+                      <li><Link href="/reports/delivered"      className={subLinkCls(pathname === '/reports/delivered')}><Truck size={13} /> Delivered Report</Link></li>
+                      <li><Link href="/reports/cash-flow"      className={subLinkCls(pathname === '/reports/cash-flow')}><TrendingUp size={13} /> Cash Flow</Link></li>
+                      <li><Link href="/reports/ledger"         className={subLinkCls(pathname === '/reports/ledger')}><DollarSign size={13} /> Business Ledger</Link></li>
+                      <li><Link href="/reports/yearly"         className={subLinkCls(pathname === '/reports/yearly')}><Clock size={13} /> Yearly Report</Link></li>
+                      <li><Link href="/reports/client-payment" className={subLinkCls(pathname === '/reports/client-payment')}><CreditCard size={13} /> Clients Payment</Link></li>
+                      <li><Link href="/reports/daily-sales"    className={subLinkCls(pathname === '/reports/daily-sales')}><ShoppingCart size={13} /> Daily Sales</Link></li>
+                      <li><Link href="/reports/daily-service"  className={subLinkCls(pathname === '/reports/daily-service')}><Wrench size={13} /> Daily Service</Link></li>
                     </SubMenu>
 
-                    <li className="nav-header text-[10px] font-black uppercase text-gray-500 tracking-widest px-4 pt-4 pb-1">Back Office</li>
-                    <SubMenu title="Back Office" icon={<Briefcase size={18} />} basePath="/backoffice">
-                      <li>
-                        <Link href="/expenses" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <DollarSign size={14} /> Pay Outs
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/salary" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <Coins size={14} /> Salary
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/commission" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <CreditCard size={14} /> Commission
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/services" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <Toolbox size={14} /> Services
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/products" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <Package size={14} /> Products
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/mechanics" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <UsersRound size={14} /> Mechanics
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/clients-admin" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <FolderOpen size={14} /> Client Amt
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/loans" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <CreditCard size={14} /> Loans
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/users" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <ShieldCheck size={14} /> Users
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/backup" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <Database size={14} /> Backup
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/settings" className="flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all">
-                          <Settings2 size={14} /> Settings
-                        </Link>
-                      </li>
+                    <li className="text-[9px] font-black uppercase text-slate-600 tracking-widest px-4 pt-5 pb-1">
+                      Back Office
+                    </li>
+                    <SubMenu title="Back Office" icon={<Briefcase size={17} />} basePath="/backoffice">
+                      <li><Link href="/expenses"      className={subLinkCls(pathname === '/expenses')}><DollarSign size={13} /> Pay Outs</Link></li>
+                      <li><Link href="/salary"        className={subLinkCls(pathname === '/salary')}><Coins size={13} /> Salary</Link></li>
+                      <li><Link href="/commission"    className={subLinkCls(pathname === '/commission')}><CreditCard size={13} /> Commission</Link></li>
+                      <li><Link href="/services"      className={subLinkCls(pathname === '/services')}><Toolbox size={13} /> Services</Link></li>
+                      <li><Link href="/products"      className={subLinkCls(pathname === '/products')}><Package size={13} /> Products</Link></li>
+                      <li><Link href="/mechanics"     className={subLinkCls(pathname === '/mechanics')}><UsersRound size={13} /> Mechanics</Link></li>
+                      <li><Link href="/clients-admin" className={subLinkCls(pathname === '/clients-admin')}><FolderOpen size={13} /> Client Amt</Link></li>
+                      <li><Link href="/loans"         className={subLinkCls(pathname === '/loans')}><CreditCard size={13} /> Loans</Link></li>
+                      <li><Link href="/users"         className={subLinkCls(pathname === '/users')}><ShieldCheck size={13} /> Users</Link></li>
+                      <li><Link href="/backup"        className={subLinkCls(pathname === '/backup')}><Database size={13} /> Backup</Link></li>
+                      <li><Link href="/settings"      className={subLinkCls(pathname === '/settings')}><Settings2 size={13} /> Settings</Link></li>
                     </SubMenu>
                   </>
                 )}
               </ul>
             </nav>
 
-            <div className="p-4 border-t border-gray-800 text-xs text-gray-500 text-center">
+            <div className="px-4 py-3 border-t border-[#21293d] text-[10px] text-slate-600 text-center font-bold tracking-wider">
               V-TECH PRO v4.2
             </div>
           </aside>
         )}
 
-        {/* Main Content Area */}
-        <div className={`${!isMobile ? 'lg:ml-[280px]' : 'ml-0'} flex-1 min-h-screen flex flex-col`}>
-          
-          <header className="sticky top-0 z-40 h-16 bg-white/90 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 sm:px-8">
-            <div className="flex items-center gap-2">
+        {/* ══════════════════════════════════════════════════
+            MAIN CONTENT AREA
+        ══════════════════════════════════════════════════ */}
+        <div className={`${!isMobile ? 'lg:ml-[270px]' : 'ml-0'} flex-1 min-h-screen flex flex-col bg-[#0d1117]`}>
+
+          {/* ── TOPBAR ── */}
+          <header className="sticky top-0 z-40 h-14 bg-[#0d1117]/90 backdrop-blur-md border-b border-[#21293d] flex items-center justify-between px-4 sm:px-6">
+            <div className="flex items-center gap-3">
               {isMobile && (
-                <button onClick={() => router.back()} className="p-2 bg-gray-100 rounded-lg">
-                  <ArrowLeft size={18} />
+                <button
+                  onClick={() => router.back()}
+                  className="p-2 bg-[#161b27] hover:bg-[#21293d] border border-[#21293d] rounded-lg transition-all"
+                >
+                  <ArrowLeft size={16} className="text-slate-400" />
                 </button>
               )}
-              <NavbarSearch />
+              <Suspense>
+                <NavbarSearch />
+              </Suspense>
             </div>
 
+            {/* User dropdown */}
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-3 hover:bg-gray-50 p-1.5 rounded-xl transition-all"
+                className="flex items-center gap-3 hover:bg-white/[0.04] p-1.5 rounded-xl transition-all"
               >
                 <div className="hidden sm:block text-right">
-                  <p className="text-xs font-black uppercase text-gray-900 m-0">{displayName}</p>
-                  <p className="text-[9px] font-bold text-blue-600 uppercase m-0">{profile?.role}</p>
+                  <p className="text-xs font-black uppercase text-slate-200 m-0 leading-none">{displayName}</p>
+                  <p className="text-[9px] font-bold text-blue-400 uppercase m-0 mt-0.5">{profile?.role}</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-md uppercase">
+                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-md uppercase text-sm">
                   {displayName.charAt(0)}
                 </div>
               </button>
 
               {dropdownOpen && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)}></div>
-                  <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50">
-                    <div className="px-4 py-3 border-b border-gray-50 mb-1">
-                      <p className="text-[10px] font-black text-gray-400 uppercase">Logged in as</p>
-                      <p className="text-xs font-bold text-gray-900 truncate">{userEmail}</p>
+                  <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-52 bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl p-1.5 z-50">
+                    <div className="px-3 py-2.5 border-b border-[#21293d] mb-1">
+                      <p className="text-[9px] font-black text-slate-600 uppercase tracking-wider">Logged in as</p>
+                      <p className="text-xs font-bold text-slate-300 truncate mt-0.5">{userEmail}</p>
                     </div>
-                    <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-100 rounded-xl transition-all">
-                      <User size={16} /> My Profile
+                    <Link
+                      href="/profile"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-300 hover:bg-white/[0.05] hover:text-white rounded-xl transition-all"
+                    >
+                      <User size={14} /> My Profile
                     </Link>
                     {isAdmin && (
-                      <Link href="/settings" className="flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-100 rounded-xl transition-all">
-                        <Settings size={16} /> Settings
+                      <Link
+                        href="/settings"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-300 hover:bg-white/[0.05] hover:text-white rounded-xl transition-all"
+                      >
+                        <Settings size={14} /> Settings
                       </Link>
                     )}
-                    <button 
+                    <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-400 hover:bg-red-500/10 rounded-xl transition-all mt-0.5"
                     >
-                      <LogOut size={16} /> Logout
+                      <LogOut size={14} /> Logout
                     </button>
                   </div>
                 </>
@@ -388,23 +332,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </header>
 
-          <main className={`flex-1 p-4 sm:p-8 ${isMobile ? 'pb-24' : ''}`}>
+          {/* ── PAGE CONTENT ── */}
+          <main className={`flex-1 p-4 sm:p-6 bg-[#0d1117] ${isMobile ? 'pb-24' : ''}`}>
             {children}
           </main>
         </div>
 
-        {/* ===== MOBILE BOTTOM NAVIGATION – HORIZONTALLY SCROLLABLE ===== */}
+        {/* ══════════════════════════════════════════════════
+            MOBILE BOTTOM NAV
+        ══════════════════════════════════════════════════ */}
         {isMobile && (
-          <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-gray-200 flex items-center overflow-x-auto z-50 px-2 pb-2 space-x-4 scrollbar-hide">
-            <FooterLink href="/" icon={<LayoutDashboard size={20}/>} label="Home" active={pathname === '/'} className="flex-none" />
-            <FooterLink href="/attendance" icon={<CalendarCheck size={20}/>} label="Attendance" active={pathname === '/attendance'} className="flex-none" />
-            <FooterLink href="/clients" icon={<Users size={20}/>} label="Clients" active={pathname === '/clients'} className="flex-none" />
-            <FooterLink href="/inquiries" icon={<HelpCircle size={20}/>} label="Inquiries" active={pathname === '/inquiries'} className="flex-none" />
-            <FooterLink href="/direct-sales" icon={<ShoppingCart size={20}/>} label="Sales" active={pathname === '/direct-sales'} className="flex-none" />
-            <FooterLink href="/inventory" icon={<Package size={20}/>} label="Inventory" active={pathname === '/inventory'} className="flex-none" />
-            <FooterLink href="/jobs" icon={<ClipboardList size={20}/>} label="Jobs" active={pathname === '/jobs'} className="flex-none" />
+          <nav className="fixed bottom-0 left-0 right-0 h-[64px] bg-[#0d1117] border-t border-[#21293d] flex items-center overflow-x-auto z-50 px-2 space-x-1 scrollbar-hide">
+            <MobileNavLink href="/"            icon={<LayoutDashboard size={19}/>} label="Home"      active={pathname === '/'} />
+            <MobileNavLink href="/attendance"  icon={<CalendarCheck size={19}/>}   label="Attend"    active={pathname === '/attendance'} />
+            <MobileNavLink href="/clients"     icon={<Users size={19}/>}           label="Clients"   active={pathname.startsWith('/clients')} />
+            <MobileNavLink href="/inquiries"   icon={<HelpCircle size={19}/>}      label="Inquiries" active={pathname === '/inquiries'} />
+            <MobileNavLink href="/direct-sales"icon={<ShoppingCart size={19}/>}    label="Sales"     active={pathname.startsWith('/direct-sales')} />
+            <MobileNavLink href="/inventory"   icon={<Package size={19}/>}         label="Inventory" active={pathname.startsWith('/inventory')} />
+            <MobileNavLink href="/jobs"        icon={<ClipboardList size={19}/>}   label="Jobs"      active={pathname.startsWith('/jobs')} />
             {isAdmin && (
-              <FooterLink href="/users" icon={<ShieldCheck size={20}/>} label="Staff" active={pathname === '/users'} className="flex-none" />
+              <MobileNavLink href="/users" icon={<ShieldCheck size={19}/>} label="Staff" active={pathname === '/users'} />
             )}
           </nav>
         )}
@@ -413,19 +360,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   );
 }
 
-// ========== HELPER COMPONENTS ==========
-const NavLink = ({ href, icon, label, active }: any) => (
-  <Link href={href} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${active ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-900/30' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
-    {icon}
-    <span>{label}</span>
-  </Link>
-);
-
-const FooterLink = ({ href, icon, label, active, className = "" }: any) => (
-  <Link href={href} className={`flex flex-col items-center justify-center flex-1 no-underline transition-all duration-200 gap-0.5 ${active ? 'text-blue-600' : 'text-gray-400'} ${className}`}>
-    <div className={`p-2 rounded-xl transition-all ${active ? 'bg-blue-50 scale-110' : 'bg-transparent'}`}>
+// ============================================================
+// HELPER COMPONENTS
+// ============================================================
+const MobileNavLink = ({ href, icon, label, active }: any) => (
+  <Link
+    href={href}
+    className={`flex flex-col items-center justify-center flex-none w-[58px] gap-0.5 no-underline transition-all duration-200 py-1 rounded-xl ${
+      active ? 'text-blue-400' : 'text-slate-600 hover:text-slate-400'
+    }`}
+  >
+    <div className={`p-1.5 rounded-lg transition-all ${active ? 'bg-blue-500/15' : ''}`}>
       {icon}
     </div>
-    <span className="text-[9px] font-black uppercase tracking-tighter">{label}</span>
+    <span className="text-[8px] font-black uppercase tracking-tight leading-none">{label}</span>
   </Link>
 );
