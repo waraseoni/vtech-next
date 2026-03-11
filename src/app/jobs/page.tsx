@@ -567,7 +567,7 @@ function JobsListContent() {
 
                         {/* Client with phone number text (PHP feature) */}
                         <td className="px-3 py-2.5">
-                          <Link href={`/clients/${txn.client_name}`}
+                          <Link href={`/clients/${txn.client_name}/view`}
                             className="font-bold text-slate-200 text-xs hover:text-blue-400 truncate block max-w-[160px] transition-colors"
                             title={clientName}>
                             {clientName}
