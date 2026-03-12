@@ -1,7 +1,10 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { X, User, Phone, Mail, Calendar, MessageSquare, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
+import {
+  X, User, Phone, Mail, Calendar, MessageSquare,
+  CheckCircle2, Clock, Send, Loader2, Inbox,
+} from "lucide-react";
 
 interface Inquiry {
   id: number;
@@ -13,45 +16,84 @@ interface Inquiry {
   date_created: string;
 }
 
-export default function InquiryModal({ inquiryId, onClose, onUpdate }: { inquiryId: number; onClose: () => void; onUpdate: () => void }) {
-  const [inquiry, setInquiry] = useState<Inquiry | null>(null);
-  const [loading, setLoading] = useState(true);
+interface Props {
+  inquiryId: number;
+  onClose: () => void;
+  onUpdate: () => void;
+}
+
+const fmtIST = (d: string) =>
+  new Date(d).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: true,
+  });
+
+export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
+  const [inquiry,  setInquiry]  = useState<Inquiry | null>(null);
+  const [loading,  setLoading]  = useState(true);
+  const [marking,  setMarking]  = useState(false);
+  // BUG FIX 1: Local status state so badge updates instantly without full refetch
+  const [isRead,   setIsRead]   = useState(false);
+
+  // BUG FIX 2: onClose was in useEffect deps but is recreated each render
+  // causing the effect to re-run on every parent render → infinite fetches
+  const fetchInquiry = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("message_list").select("*").eq("id", inquiryId).single();
+
+    if (error || !data) {
+      console.error(error);
+      onClose(); // only call if truly not found
+      return;
+    }
+    setInquiry(data);
+    setIsRead(data.status === 1);
+    setLoading(false);
+
+    // BUG FIX 3: Original auto-marked as read but never updated local state
+    // so badge still showed "Unread" until re-fetch. Fixed: update isRead immediately
+    if (data.status === 0) {
+      await supabase.from("message_list").update({ status: 1 }).eq("id", inquiryId);
+      setIsRead(true);
+      // Notify parent so list updates unread count — but don't close modal
+      onUpdate();
+    }
+  }, [inquiryId]); // BUG FIX 2: removed onClose from deps
 
   useEffect(() => {
-    const fetchInquiry = async () => {
-      const { data, error } = await supabase
-        .from('message_list')
-        .select('*')
-        .eq('id', inquiryId)
-        .single();
-      if (error) {
-        console.error(error);
-        onClose();
-        return;
-      }
-      setInquiry(data);
-      setLoading(false);
-
-      // Mark as read if unread
-      if (data.status === 0) {
-        await supabase
-          .from('message_list')
-          .update({ status: 1 })
-          .eq('id', inquiryId);
-      }
-    };
     fetchInquiry();
-  }, [inquiryId, onClose]);
+  }, [fetchInquiry]);
 
+  // BUG FIX 4: handleMarkRead did not update local state — badge stayed "Unread"
   const handleMarkRead = async () => {
-    await supabase.from('message_list').update({ status: 1 }).eq('id', inquiryId);
-    onUpdate();
+    if (isRead) return;
+    setMarking(true);
+    const { error } = await supabase
+      .from("message_list").update({ status: 1 }).eq("id", inquiryId);
+    if (!error) {
+      setIsRead(true);
+      onUpdate(); // refresh parent list
+    }
+    setMarking(false);
   };
 
+  // Escape key close
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl p-6 shadow-2xl">Loading...</div>
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-8 flex flex-col items-center gap-3">
+          <Loader2 size={24} className="animate-spin text-blue-400" />
+          <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -59,65 +101,143 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: { inquiry
   if (!inquiry) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-extrabold flex items-center gap-2">
-            <MessageSquare size={24} className="text-blue-600" />
-            Inquiry Details
-          </h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border-2 border-gray-200">
-            <User size={18} className="text-blue-600" />
+    <div
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* ── Top accent bar by status ── */}
+        <div className={`h-1 w-full ${isRead ? "bg-emerald-500" : "bg-blue-500"}`} />
+
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d] bg-[#111520]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center">
+              <MessageSquare size={14} className="text-blue-400" />
+            </div>
             <div>
-              <div className="text-xs font-extrabold text-gray-500 uppercase">Name</div>
-              <div className="font-bold">{inquiry.fullname}</div>
+              <h3 className="text-sm font-extrabold text-white">Inquiry Details</h3>
+              <p className="text-[9px] text-slate-600 font-bold uppercase tracking-wider">
+                ID #{inquiry.id}
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border-2 border-gray-200">
-            <Phone size={18} className="text-blue-600" />
-            <div>
-              <div className="text-xs font-extrabold text-gray-500 uppercase">Contact</div>
-              <div className="font-bold">{inquiry.contact}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border-2 border-gray-200">
-            <Mail size={18} className="text-blue-600" />
-            <div>
-              <div className="text-xs font-extrabold text-gray-500 uppercase">Email</div>
-              <div className="font-bold">{inquiry.email}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border-2 border-gray-200">
-            <Calendar size={18} className="text-blue-600" />
-            <div>
-              <div className="text-xs font-extrabold text-gray-500 uppercase">Date</div>
-              <div className="font-bold">{new Date(inquiry.date_created).toLocaleString()}</div>
-            </div>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-xl border-2 border-gray-200">
-            <div className="text-xs font-extrabold text-gray-500 uppercase mb-2">Message</div>
-            <div className="whitespace-pre-wrap bg-white p-3 rounded-lg border border-gray-200">{inquiry.message}</div>
-          </div>
-          <div className="flex items-center justify-between pt-2">
-            <span className={`px-3 py-1.5 rounded-full text-xs font-extrabold ${
-              inquiry.status === 1 ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+          <div className="flex items-center gap-2">
+            {/* Status badge */}
+            <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${
+              isRead
+                ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+                : "bg-blue-500/10 border-blue-500/25 text-blue-400"
             }`}>
-              {inquiry.status === 1 ? 'Read' : 'Unread'}
+              {isRead
+                ? <><CheckCircle2 size={9} /> Read</>
+                : <><Inbox size={9} /> Unread</>
+              }
             </span>
-            {inquiry.status === 0 && (
-              <button
-                onClick={handleMarkRead}
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 flex items-center gap-2"
-              >
-                <CheckCircle size={16} /> Mark as Read
-              </button>
-            )}
+            <button onClick={onClose}
+              className="w-8 h-8 bg-[#21293d] hover:bg-white/10 border border-[#21293d] rounded-xl flex items-center justify-center text-slate-500 hover:text-white transition-all">
+              <X size={14} />
+            </button>
           </div>
+        </div>
+
+        {/* ── Body ── */}
+        <div className="p-5 space-y-3">
+
+          {/* Name */}
+          <div className="flex items-center gap-3 bg-[#111520] border border-[#21293d] rounded-xl px-4 py-3">
+            <div className="w-8 h-8 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <User size={13} className="text-purple-400" />
+            </div>
+            <div>
+              <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">Name</div>
+              <div className="text-sm font-extrabold text-white">{inquiry.fullname}</div>
+            </div>
+          </div>
+
+          {/* Contact + Email side by side */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center gap-3 bg-[#111520] border border-[#21293d] rounded-xl px-4 py-3">
+              <div className="w-8 h-8 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Phone size={12} className="text-emerald-400" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">Phone</div>
+                <a href={`https://wa.me/91${inquiry.contact.replace(/\D/g, "")}`} target="_blank"
+                  className="text-xs font-extrabold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors truncate">
+                  <Send size={9} /> {inquiry.contact}
+                </a>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 bg-[#111520] border border-[#21293d] rounded-xl px-4 py-3">
+              <div className="w-8 h-8 bg-cyan-500/10 border border-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Mail size={12} className="text-cyan-400" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">Email</div>
+                <a href={`mailto:${inquiry.email}`}
+                  className="text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors truncate block">
+                  {inquiry.email}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Date */}
+          <div className="flex items-center gap-3 bg-[#111520] border border-[#21293d] rounded-xl px-4 py-3">
+            <div className="w-8 h-8 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Calendar size={12} className="text-amber-400" />
+            </div>
+            <div>
+              <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">Received</div>
+              <div className="text-xs font-semibold text-slate-300">{fmtIST(inquiry.date_created)}</div>
+            </div>
+            <div className="ml-auto flex items-center gap-1 text-[10px] text-slate-700">
+              <Clock size={9} />
+              {(() => {
+                const diff = Math.floor((Date.now() - new Date(inquiry.date_created).getTime()) / 86400000);
+                return diff === 0 ? "Today" : diff === 1 ? "Yesterday" : `${diff}d ago`;
+              })()}
+            </div>
+          </div>
+
+          {/* Message */}
+          <div className="bg-[#111520] border border-[#21293d] rounded-xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#21293d]">
+              <MessageSquare size={11} className="text-blue-400" />
+              <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600">Message</span>
+              <span className="ml-auto text-[9px] text-slate-700 font-bold">
+                {inquiry.message.length} chars
+              </span>
+            </div>
+            <div className="px-4 py-3.5 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">
+              {inquiry.message}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Footer ── */}
+        <div className="flex items-center justify-between px-5 py-4 border-t border-[#21293d] bg-[#111520]">
+          <button onClick={onClose}
+            className="px-4 py-2 bg-[#161b27] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-extrabold transition-all">
+            Close
+          </button>
+          {!isRead ? (
+            <button onClick={handleMarkRead} disabled={marking}
+              className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-extrabold shadow-lg shadow-blue-500/20 transition-all active:scale-95">
+              {marking
+                ? <><Loader2 size={12} className="animate-spin" /> Marking...</>
+                : <><CheckCircle2 size={13} /> Mark as Read</>
+              }
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 px-5 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-extrabold">
+              <CheckCircle2 size={13} /> Already Read
+            </div>
+          )}
         </div>
       </div>
     </div>

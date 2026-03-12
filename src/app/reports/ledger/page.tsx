@@ -1,31 +1,45 @@
-import { Suspense } from 'react';
-import LedgerReportClient from './client';
+import { Suspense } from "react";
+import { BarChart3 } from "lucide-react";
+import LedgerReportClient from "./client";
 
 export const metadata = {
-  title: 'Business Ledger & Cash Flow - V-TECH',
+  title: "Business Ledger & Cash Flow — V-TECH",
 };
 
-// Next.js 14+ mein searchParams ek Promise hai, isliye async/await zaroori hai
+// BUG FIX: Validate date params from URL — garbage values passed as ?from=abc
+// would crash parseISO silently downstream
+function isValidDate(s: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(new Date(s).getTime());
+}
+
 export default async function LedgerReportPage({
   searchParams,
 }: {
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-  // Next.js 14+ ke liye await karna zaroori hai
   const params = await searchParams;
-  const from = params.from || '';
-  const to = params.to || '';
+  const from = isValidDate(params.from || "") ? params.from! : "";
+  const to   = isValidDate(params.to   || "") ? params.to!   : "";
 
   return (
-    <Suspense fallback={
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-2"></div>
-          <p className="text-gray-500">Loading report...</p>
-        </div>
-      </div>
-    }>
-      <LedgerReportClient fromDate={from} toDate={to} />
-    </Suspense>
+    <div className="min-h-screen bg-[#0d1117]">
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <BarChart3 size={28} className="text-emerald-500/60" />
+              </div>
+              <div className="absolute inset-0 rounded-2xl border border-emerald-500/40 animate-ping" />
+            </div>
+            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-[0.3em]">
+              Loading Ledger Report...
+            </p>
+          </div>
+        }
+      >
+        <LedgerReportClient fromDate={from} toDate={to} />
+      </Suspense>
+    </div>
   );
 }
