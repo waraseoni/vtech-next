@@ -1,279 +1,361 @@
 "use client";
 import "./globals.css";
-import React, { useState, useEffect, Suspense, useCallback } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import React, { useState, useEffect, Suspense, useCallback } from "react";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import {
-  LayoutDashboard, Users, Package, FileText,
-  Settings, Wrench, Search, User, LogOut,
-  Sparkles, Loader2, ArrowLeft, ShieldCheck,
-  CalendarCheck, HelpCircle, ShoppingCart, ClipboardList,
-  PieChart, TrendingUp, DollarSign, Truck,
-  CreditCard, Clock, Briefcase, Coins,
-  Toolbox, FolderOpen, UsersRound, Database,
-  Settings2, ChevronDown, ChevronRight
-} from 'lucide-react';
+  LayoutDashboard, Users, Package, Settings, Wrench, Search,
+  User, LogOut, Sparkles, Loader2, ShieldCheck, CalendarCheck,
+  HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
+  DollarSign, Truck, CreditCard, Clock, Briefcase, Coins,
+  Toolbox, FolderOpen, UsersRound, Database, Settings2,
+  ChevronDown, ChevronRight, X, Menu, ArrowLeft, BarChart2,
+} from "lucide-react";
 
-// ============================================================
-// SEARCH
-// ============================================================
+// ─── Search ──────────────────────────────────────────────────────────────────
 function NavbarSearch() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  const handleSearch = (term: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (term) params.set('search', term);
-    else params.delete('search');
-    router.push(`/jobs?${params.toString()}`);
-  };
-
   return (
-    <div className="relative max-w-md w-full hidden sm:block group">
-      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-        <Search size={16} className="text-slate-500 group-focus-within:text-blue-400 transition-colors" />
-      </div>
+    <div className="relative max-w-sm w-full group">
+      <Search
+        size={14}
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-blue-400 transition-colors pointer-events-none"
+      />
       <input
         type="text"
-        placeholder="Search jobs, clients or IDs..."
-        className="w-full pl-10 pr-4 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all font-medium text-sm text-slate-200 placeholder:text-slate-600"
-        onChange={(e) => handleSearch(e.target.value)}
-        defaultValue={searchParams.get('search')?.toString() || ""}
+        placeholder="Search jobs, clients…"
+        className="w-full pl-9 pr-4 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-slate-300 placeholder:text-slate-700 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium"
+        onChange={e => {
+          const p = new URLSearchParams(searchParams.toString());
+          e.target.value ? p.set("search", e.target.value) : p.delete("search");
+          router.push(`/jobs?${p}`);
+        }}
+        defaultValue={searchParams.get("search") ?? ""}
       />
     </div>
   );
 }
 
-// ============================================================
-// SUBMENU
-// ============================================================
-function SubMenu({ title, icon, children, basePath }: {
+// ─── Accordion sub-menu ───────────────────────────────────────────────────────
+function SubMenu({
+  title, icon, children, basePath,
+}: {
   title: string; icon: React.ReactNode; children: React.ReactNode; basePath?: string;
 }) {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(() => !!(basePath && pathname.startsWith(basePath)));
-
+  const [open, setOpen] = useState(() => !!(basePath && pathname.startsWith(basePath)));
   return (
-    <li className="nav-item">
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 cursor-pointer transition-all"
+    <li>
+      <button
+        onClick={() => setOpen(p => !p)}
+        className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-white/[0.04] hover:text-slate-300 transition-all"
       >
-        <div className="flex items-center gap-3">
-          <span className="text-slate-500">{icon}</span>
-          <span>{title}</span>
-        </div>
-        {isOpen ? <ChevronDown size={14} className="text-slate-600" /> : <ChevronRight size={14} className="text-slate-600" />}
-      </div>
-      {isOpen && (
-        <ul className="nav-treeview pl-4 mt-1 space-y-0.5">
-          {children}
-        </ul>
-      )}
+        <div className="flex items-center gap-3"><span>{icon}</span><span>{title}</span></div>
+        {open
+          ? <ChevronDown size={13} className="text-slate-600" />
+          : <ChevronRight size={13} className="text-slate-600" />}
+      </button>
+      {open && <ul className="pl-3 mt-0.5 space-y-0.5">{children}</ul>}
     </li>
   );
 }
 
-// ============================================================
-// MAIN LAYOUT
-// ============================================================
+// ─── Shared link style builders ───────────────────────────────────────────────
+const navLinkCls = (active: boolean) =>
+  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-150 ${
+    active
+      ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
+      : "text-slate-500 hover:bg-white/[0.04] hover:text-slate-200"
+  }`;
+
+const subLinkCls = (active: boolean) =>
+  `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-bold transition-all duration-150 ${
+    active ? "text-blue-400 bg-blue-500/10" : "text-slate-600 hover:text-slate-200 hover:bg-white/[0.04]"
+  }`;
+
+// ─── Sidebar nav (shared by desktop + mobile drawer) ─────────────────────────
+function SidebarNav({
+  pathname, isAdmin, onNavClick,
+}: {
+  pathname: string; isAdmin: boolean; onNavClick?: () => void;
+}) {
+  const lk = (href: string, exact = false) =>
+    exact ? pathname === href : pathname.startsWith(href);
+
+  return (
+    <nav className="flex-1 overflow-y-auto py-3 px-2 scrollbar-hide">
+      <ul className="space-y-0.5">
+        <li>
+          <Link href="/" className={navLinkCls(pathname === "/")} onClick={onNavClick}>
+            <LayoutDashboard size={16} /><span>Dashboard</span>
+          </Link>
+        </li>
+        <li>
+          <Link href="/attendance" className={navLinkCls(lk("/attendance", true))} onClick={onNavClick}>
+            <CalendarCheck size={16} /><span>Attendance</span>
+          </Link>
+        </li>
+        <li>
+          <Link href="/clients" className={navLinkCls(lk("/clients"))} onClick={onNavClick}>
+            <Users size={16} /><span>Clients</span>
+          </Link>
+        </li>
+        <li>
+          <Link href="/inquiries" className={navLinkCls(lk("/inquiries", true))} onClick={onNavClick}>
+            <HelpCircle size={16} /><span>Inquiries</span>
+          </Link>
+        </li>
+        <li>
+          <Link href="/direct-sales" className={navLinkCls(lk("/direct-sales"))} onClick={onNavClick}>
+            <ShoppingCart size={16} /><span>Direct Sales</span>
+          </Link>
+        </li>
+        <li>
+          <Link href="/inventory" className={navLinkCls(lk("/inventory"))} onClick={onNavClick}>
+            <Package size={16} /><span>Inventory</span>
+          </Link>
+        </li>
+        <li>
+          <Link href="/jobs" className={navLinkCls(lk("/jobs"))} onClick={onNavClick}>
+            <ClipboardList size={16} /><span>JobSheet</span>
+          </Link>
+        </li>
+
+        {isAdmin && (
+          <>
+            <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+              Reports
+            </li>
+            <SubMenu title="Reports" icon={<PieChart size={15} />} basePath="/reports">
+              <li><Link href="/reports/delivered"      className={subLinkCls(pathname === "/reports/delivered")}      onClick={onNavClick}><Truck size={12} />Delivered Report</Link></li>
+              <li><Link href="/reports/cash-flow"      className={subLinkCls(pathname === "/reports/cash-flow")}      onClick={onNavClick}><TrendingUp size={12} />Cash Flow</Link></li>
+              <li><Link href="/reports/ledger"         className={subLinkCls(pathname === "/reports/ledger")}         onClick={onNavClick}><DollarSign size={12} />Business Ledger</Link></li>
+              <li><Link href="/reports/yearly"         className={subLinkCls(pathname === "/reports/yearly")}         onClick={onNavClick}><Clock size={12} />Yearly Report</Link></li>
+              <li><Link href="/reports/client-payment" className={subLinkCls(pathname === "/reports/client-payment")} onClick={onNavClick}><CreditCard size={12} />Clients Payment</Link></li>
+              <li><Link href="/reports/daily-sales"    className={subLinkCls(pathname === "/reports/daily-sales")}    onClick={onNavClick}><ShoppingCart size={12} />Daily Sales</Link></li>
+              <li><Link href="/reports/daily-service"  className={subLinkCls(pathname === "/reports/daily-service")}  onClick={onNavClick}><Wrench size={12} />Daily Service</Link></li>
+            </SubMenu>
+
+            <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+              Back Office
+            </li>
+            <SubMenu title="Back Office" icon={<Briefcase size={15} />} basePath="/backoffice">
+              <li><Link href="/expenses"      className={subLinkCls(pathname === "/expenses")}      onClick={onNavClick}><DollarSign size={12} />Pay Outs</Link></li>
+              <li><Link href="/salary"        className={subLinkCls(pathname === "/salary")}        onClick={onNavClick}><Coins size={12} />Salary</Link></li>
+              <li><Link href="/commission"    className={subLinkCls(pathname === "/commission")}    onClick={onNavClick}><BarChart2 size={12} />Commission</Link></li>
+              <li><Link href="/services"      className={subLinkCls(pathname === "/services")}      onClick={onNavClick}><Toolbox size={12} />Services</Link></li>
+              <li><Link href="/products"      className={subLinkCls(pathname === "/products")}      onClick={onNavClick}><Package size={12} />Products</Link></li>
+              <li><Link href="/mechanics"     className={subLinkCls(pathname === "/mechanics")}     onClick={onNavClick}><UsersRound size={12} />Mechanics</Link></li>
+              <li><Link href="/clients-admin" className={subLinkCls(pathname === "/clients-admin")} onClick={onNavClick}><FolderOpen size={12} />Client Amt</Link></li>
+              <li><Link href="/loans"         className={subLinkCls(pathname === "/loans")}         onClick={onNavClick}><CreditCard size={12} />Loans</Link></li>
+              <li><Link href="/users"         className={subLinkCls(pathname === "/users")}         onClick={onNavClick}><ShieldCheck size={12} />Users</Link></li>
+              <li><Link href="/backup"        className={subLinkCls(pathname === "/backup")}        onClick={onNavClick}><Database size={12} />Backup</Link></li>
+              <li><Link href="/settings"      className={subLinkCls(pathname === "/settings")}      onClick={onNavClick}><Settings2 size={12} />Settings</Link></li>
+            </SubMenu>
+          </>
+        )}
+      </ul>
+    </nav>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ROOT LAYOUT
+// ════════════════════════════════════════════════════════════════════════════
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const [isMobile, setIsMobile]       = useState(false);
-  const [loading, setLoading]         = useState(true);
-  const [profile, setProfile]         = useState<{ full_name: string; role: string } | null>(null);
-  const [userEmail, setUserEmail]     = useState<string | null>(null);
+  const router   = useRouter();
+
+  // BUG FIX 1: null prevents SSR↔client hydration mismatch.
+  // Server always renders null-state → no sidebar flicker.
+  const [isMobile,     setIsMobile]     = useState<boolean | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  const [profile,      setProfile]      = useState<{ full_name: string; role: string } | null>(null);
+  const [userEmail,    setUserEmail]    = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [drawerOpen,   setDrawerOpen]   = useState(false);
 
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
-    router.push('/login');
+    router.push("/login");
   }, [router]);
 
+  // BUG FIX 2: Auth runs ONCE on mount — NOT on pathname change.
+  // Original code: useEffect[pathname, router] → re-auth every navigation = slow + wasteful.
   useEffect(() => {
-    const getAuthAndProfile = async () => {
+    (async () => {
       try {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (!authUser) {
-          if (pathname !== '/login') router.push('/login');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          if (pathname !== "/login") router.push("/login");
           setLoading(false);
           return;
         }
-        setUserEmail(authUser.email || null);
-        const { data: profileData } = await supabase
-          .from('profiles').select('full_name, role').eq('id', authUser.id).maybeSingle();
-        const finalName = profileData?.full_name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User';
-        const finalRole = profileData?.role || (authUser.email === 'vtech.jbp@gmail.com' ? 'admin' : 'staff');
-        setProfile({ full_name: finalName, role: finalRole });
-      } catch (err) {
-        console.error("Auth Logic Error:", err);
+        setUserEmail(user.email ?? null);
+        const { data: pd } = await supabase
+          .from("profiles").select("full_name, role").eq("id", user.id).maybeSingle();
+        setProfile({
+          full_name: pd?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+          role:      pd?.role      || (user.email === "vtech.jbp@gmail.com" ? "admin" : "staff"),
+        });
+      } catch (e) {
+        console.error("Auth error:", e);
       } finally {
         setLoading(false);
       }
-    };
-    getAuthAndProfile();
-    const checkSize = () => setIsMobile(window.innerWidth < 1024);
-    checkSize();
-    window.addEventListener('resize', checkSize);
-    return () => window.removeEventListener('resize', checkSize);
-  }, [pathname, router]);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // ← empty deps: intentional, auth only on mount
 
-  if (pathname === '/login') return <html lang="en"><body>{children}</body></html>;
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Auto-close drawer on route change
+  useEffect(() => { setDrawerOpen(false); }, [pathname]);
+
+  if (pathname === "/login") return <html lang="en"><body>{children}</body></html>;
 
   if (loading) {
     return (
       <html lang="en">
-        <body className="h-screen flex items-center justify-center bg-[#0d1117] text-center">
-          <div>
-            <Loader2 className="animate-spin text-blue-500 mx-auto" size={40} />
-            <p className="mt-4 text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">V-TECH SECURE BOOT</p>
+        <body className="h-screen flex items-center justify-center bg-[#0d1117]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-900/60">
+                <Sparkles size={26} className="text-white" />
+              </div>
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-[#0d1117] animate-ping" />
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-[0.35em] text-slate-600">V-TECH Secure Boot</p>
           </div>
         </body>
       </html>
     );
   }
 
-  const isAdmin     = profile?.role === 'admin';
-  const displayName = profile?.full_name || "User";
-
-  // ── SHARED NAV LINK STYLE ──────────────────────────────
-  const navLinkCls = (active: boolean) =>
-    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-      active
-        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-900/30'
-        : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
-    }`;
-
-  const subLinkCls = (active: boolean) =>
-    `flex items-center gap-3 px-4 py-2.5 pl-10 text-xs font-bold rounded-lg transition-all ${
-      active ? 'text-blue-400 bg-blue-500/10' : 'text-slate-500 hover:text-slate-200 hover:bg-white/[0.04]'
-    }`;
+  const isAdmin     = profile?.role === "admin";
+  const displayName = profile?.full_name ?? "User";
+  const initials    = displayName.slice(0, 2).toUpperCase();
 
   return (
-    <html lang="en" className="h-full" style={{ backgroundColor: '#0d1117' }}>
-      <body className="h-full m-0 font-sans antialiased text-slate-200 bg-[#0d1117]">
+    <html lang="en" className="h-full">
+      <body className="h-full m-0 font-sans antialiased text-slate-200 bg-[#0d1117] overflow-x-hidden">
 
-        {/* ══════════════════════════════════════════════════
-            DESKTOP SIDEBAR
-        ══════════════════════════════════════════════════ */}
-        {!isMobile && (
-          <aside className="fixed top-0 left-0 h-full w-[270px] bg-[#0d1117] border-r border-[#21293d] flex flex-col z-50">
-
+        {/* ══════════════════════ DESKTOP SIDEBAR ══════════════════════ */}
+        {isMobile === false && (
+          <aside className="fixed top-0 left-0 h-full w-[260px] bg-[#080d14] border-r border-[#1a2234] flex flex-col z-50">
             {/* Brand */}
-            <div className="bg-gradient-to-r from-blue-700 to-blue-800 p-5 border-b border-[#21293d]">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
-                  <Sparkles className="text-white" size={22} />
+            <div className="relative overflow-hidden px-5 py-4 border-b border-[#1a2234]">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-700/15 to-transparent pointer-events-none" />
+              <div className="relative flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 flex-shrink-0">
+                  <Sparkles size={20} className="text-white" />
                 </div>
                 <div>
-                  <div className="text-xl font-black italic text-white tracking-tight">
-                    V-TECH <span className="font-normal not-italic">PRO</span>
+                  <div className="text-lg font-black tracking-tight text-white leading-none">
+                    V-TECH <span className="text-blue-400 font-light">PRO</span>
                   </div>
-                  <div className="text-[8px] text-blue-200 font-bold uppercase tracking-widest mt-0.5">
-                    Management System
-                  </div>
+                  <div className="text-[8px] text-slate-600 font-black uppercase tracking-widest mt-0.5">Management System</div>
                 </div>
               </div>
             </div>
 
-            {/* Nav */}
-            <nav className="flex-1 overflow-y-auto py-4 px-3 scrollbar-hide">
-              <ul className="space-y-0.5">
+            <SidebarNav pathname={pathname} isAdmin={isAdmin} />
 
-                <li>
-                  <Link href="/" className={navLinkCls(pathname === '/')}>
-                    <LayoutDashboard size={17} /><span>Dashboard</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/attendance" className={navLinkCls(pathname === '/attendance')}>
-                    <CalendarCheck size={17} /><span>Attendance</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/clients" className={navLinkCls(pathname.startsWith('/clients'))}>
-                    <Users size={17} /><span>Clients</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/inquiries" className={navLinkCls(pathname === '/inquiries')}>
-                    <HelpCircle size={17} /><span>Inquiries</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/direct-sales" className={navLinkCls(pathname.startsWith('/direct-sales'))}>
-                    <ShoppingCart size={17} /><span>Direct Sales</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/inventory" className={navLinkCls(pathname.startsWith('/inventory'))}>
-                    <Package size={17} /><span>Inventory</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/jobs" className={navLinkCls(pathname.startsWith('/jobs'))}>
-                    <ClipboardList size={17} /><span>JobSheet</span>
-                  </Link>
-                </li>
-
-                {isAdmin && (
-                  <>
-                    <li className="text-[9px] font-black uppercase text-slate-600 tracking-widest px-4 pt-5 pb-1">
-                      Reports
-                    </li>
-                    <SubMenu title="Reports" icon={<PieChart size={17} />} basePath="/reports">
-                      <li><Link href="/reports/delivered"      className={subLinkCls(pathname === '/reports/delivered')}><Truck size={13} /> Delivered Report</Link></li>
-                      <li><Link href="/reports/cash-flow"      className={subLinkCls(pathname === '/reports/cash-flow')}><TrendingUp size={13} /> Cash Flow</Link></li>
-                      <li><Link href="/reports/ledger"         className={subLinkCls(pathname === '/reports/ledger')}><DollarSign size={13} /> Business Ledger</Link></li>
-                      <li><Link href="/reports/yearly"         className={subLinkCls(pathname === '/reports/yearly')}><Clock size={13} /> Yearly Report</Link></li>
-                      <li><Link href="/reports/client-payment" className={subLinkCls(pathname === '/reports/client-payment')}><CreditCard size={13} /> Clients Payment</Link></li>
-                      <li><Link href="/reports/daily-sales"    className={subLinkCls(pathname === '/reports/daily-sales')}><ShoppingCart size={13} /> Daily Sales</Link></li>
-                      <li><Link href="/reports/daily-service"  className={subLinkCls(pathname === '/reports/daily-service')}><Wrench size={13} /> Daily Service</Link></li>
-                    </SubMenu>
-
-                    <li className="text-[9px] font-black uppercase text-slate-600 tracking-widest px-4 pt-5 pb-1">
-                      Back Office
-                    </li>
-                    <SubMenu title="Back Office" icon={<Briefcase size={17} />} basePath="/backoffice">
-                      <li><Link href="/expenses"      className={subLinkCls(pathname === '/expenses')}><DollarSign size={13} /> Pay Outs</Link></li>
-                      <li><Link href="/salary"        className={subLinkCls(pathname === '/salary')}><Coins size={13} /> Salary</Link></li>
-                      <li><Link href="/commission"    className={subLinkCls(pathname === '/commission')}><CreditCard size={13} /> Commission</Link></li>
-                      <li><Link href="/services"      className={subLinkCls(pathname === '/services')}><Toolbox size={13} /> Services</Link></li>
-                      <li><Link href="/products"      className={subLinkCls(pathname === '/products')}><Package size={13} /> Products</Link></li>
-                      <li><Link href="/mechanics"     className={subLinkCls(pathname === '/mechanics')}><UsersRound size={13} /> Mechanics</Link></li>
-                      <li><Link href="/clients-admin" className={subLinkCls(pathname === '/clients-admin')}><FolderOpen size={13} /> Client Amt</Link></li>
-                      <li><Link href="/loans"         className={subLinkCls(pathname === '/loans')}><CreditCard size={13} /> Loans</Link></li>
-                      <li><Link href="/users"         className={subLinkCls(pathname === '/users')}><ShieldCheck size={13} /> Users</Link></li>
-                      <li><Link href="/backup"        className={subLinkCls(pathname === '/backup')}><Database size={13} /> Backup</Link></li>
-                      <li><Link href="/settings"      className={subLinkCls(pathname === '/settings')}><Settings2 size={13} /> Settings</Link></li>
-                    </SubMenu>
-                  </>
-                )}
-              </ul>
-            </nav>
-
-            <div className="px-4 py-3 border-t border-[#21293d] text-[10px] text-slate-600 text-center font-bold tracking-wider">
-              V-TECH PRO v4.2
+            <div className="px-4 py-3 border-t border-[#1a2234] flex items-center justify-between">
+              <span className="text-[9px] text-slate-700 font-black tracking-widest uppercase">V-TECH PRO v4.2</span>
+              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
             </div>
           </aside>
         )}
 
-        {/* ══════════════════════════════════════════════════
-            MAIN CONTENT AREA
-        ══════════════════════════════════════════════════ */}
-        <div className={`${!isMobile ? 'lg:ml-[270px]' : 'ml-0'} flex-1 min-h-screen flex flex-col bg-[#0d1117]`}>
+        {/* ══════════════════════ MOBILE DRAWER ══════════════════════ */}
+        {isMobile === true && (
+          <>
+            {/* Backdrop */}
+            <div
+              className={`fixed inset-0 bg-black/75 backdrop-blur-sm z-50 transition-opacity duration-300 ${
+                drawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+              onClick={() => setDrawerOpen(false)}
+            />
+            {/* Full sidebar drawer — same content as desktop */}
+            <aside
+              className={`fixed top-0 left-0 h-full w-[280px] bg-[#080d14] border-r border-[#1a2234] flex flex-col z-50 transition-transform duration-300 ease-out ${
+                drawerOpen ? "translate-x-0" : "-translate-x-full"
+              }`}
+            >
+              {/* Drawer header */}
+              <div className="relative overflow-hidden px-4 py-4 border-b border-[#1a2234] flex items-center justify-between">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-700/15 to-transparent pointer-events-none" />
+                <div className="relative flex items-center gap-3">
+                  <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50">
+                    <Sparkles size={18} className="text-white" />
+                  </div>
+                  <div>
+                    <div className="text-base font-black tracking-tight text-white leading-none">
+                      V-TECH <span className="text-blue-400 font-light">PRO</span>
+                    </div>
+                    <div className="text-[8px] text-slate-600 font-black uppercase tracking-widest mt-0.5">Management System</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDrawerOpen(false)}
+                  className="relative w-8 h-8 flex items-center justify-center bg-[#1a2234] hover:bg-[#21293d] rounded-lg text-slate-500 hover:text-white transition-all"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              {/* Same full nav as desktop */}
+              <SidebarNav pathname={pathname} isAdmin={isAdmin} onNavClick={() => setDrawerOpen(false)} />
+
+              {/* User info at drawer bottom */}
+              <div className="px-3 py-3 border-t border-[#1a2234]">
+                <div className="flex items-center gap-3 px-3 py-2.5 bg-[#111520] rounded-xl">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center text-white font-black text-xs flex-shrink-0">
+                    {initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-black text-white truncate">{displayName}</p>
+                    <p className="text-[9px] text-blue-400 font-bold uppercase tracking-wider">{profile?.role}</p>
+                  </div>
+                  <button onClick={handleLogout} className="p-1.5 text-slate-600 hover:text-red-400 transition-colors" title="Logout">
+                    <LogOut size={14} />
+                  </button>
+                </div>
+              </div>
+            </aside>
+          </>
+        )}
+
+        {/* ══════════════════════ MAIN CONTENT ══════════════════════ */}
+        <div className={`${isMobile === false ? "lg:ml-[260px]" : "ml-0"} flex-1 min-h-screen flex flex-col`}>
 
           {/* ── TOPBAR ── */}
-          <header className="sticky top-0 z-40 h-14 bg-[#0d1117]/90 backdrop-blur-md border-b border-[#21293d] flex items-center justify-between px-4 sm:px-6">
-            <div className="flex items-center gap-3">
-              {isMobile && (
+          <header className="sticky top-0 z-40 h-14 bg-[#080d14]/90 backdrop-blur-md border-b border-[#1a2234] flex items-center justify-between px-4 gap-3">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {/* Mobile hamburger → opens full drawer */}
+              {isMobile === true && (
+                <button
+                  onClick={() => setDrawerOpen(true)}
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all"
+                >
+                  <Menu size={16} />
+                </button>
+              )}
+              {isMobile === true && (
                 <button
                   onClick={() => router.back()}
-                  className="p-2 bg-[#161b27] hover:bg-[#21293d] border border-[#21293d] rounded-lg transition-all"
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-xl text-slate-500 hover:text-white transition-all"
                 >
-                  <ArrowLeft size={16} className="text-slate-400" />
+                  <ArrowLeft size={15} />
                 </button>
               )}
               <Suspense>
@@ -282,50 +364,44 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
 
             {/* User dropdown */}
-            <div className="relative">
+            <div className="relative flex-shrink-0">
               <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-3 hover:bg-white/[0.04] p-1.5 rounded-xl transition-all"
+                onClick={() => setDropdownOpen(p => !p)}
+                className="flex items-center gap-2.5 hover:bg-white/[0.04] px-2 py-1.5 rounded-xl transition-all"
               >
-                <div className="hidden sm:block text-right">
-                  <p className="text-xs font-black uppercase text-slate-200 m-0 leading-none">{displayName}</p>
-                  <p className="text-[9px] font-bold text-blue-400 uppercase m-0 mt-0.5">{profile?.role}</p>
+                <div className="hidden sm:block text-right leading-none">
+                  <p className="text-[11px] font-black uppercase text-slate-200">{displayName}</p>
+                  <p className="text-[9px] font-bold text-blue-400 uppercase mt-0.5">{profile?.role}</p>
                 </div>
-                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-md uppercase text-sm">
-                  {displayName.charAt(0)}
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center font-black shadow-md text-xs">
+                  {initials}
                 </div>
               </button>
 
               {dropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-52 bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl p-1.5 z-50">
-                    <div className="px-3 py-2.5 border-b border-[#21293d] mb-1">
-                      <p className="text-[9px] font-black text-slate-600 uppercase tracking-wider">Logged in as</p>
-                      <p className="text-xs font-bold text-slate-300 truncate mt-0.5">{userEmail}</p>
+                  <div className="absolute right-0 mt-2 w-52 bg-[#111520] border border-[#1a2234] rounded-2xl shadow-2xl shadow-black/60 p-1.5 z-50">
+                    <div className="px-3 py-2.5 border-b border-[#1a2234] mb-1">
+                      <p className="text-[9px] font-black text-slate-700 uppercase tracking-wider">Logged in as</p>
+                      <p className="text-xs font-bold text-slate-400 truncate mt-0.5">{userEmail}</p>
                     </div>
-                    <Link
-                      href="/profile"
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-300 hover:bg-white/[0.05] hover:text-white rounded-xl transition-all"
-                    >
-                      <User size={14} /> My Profile
+                    <Link href="/profile" onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-400 hover:bg-white/[0.05] hover:text-white rounded-xl transition-all">
+                      <User size={13} /> My Profile
                     </Link>
                     {isAdmin && (
-                      <Link
-                        href="/settings"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-300 hover:bg-white/[0.05] hover:text-white rounded-xl transition-all"
-                      >
-                        <Settings size={14} /> Settings
+                      <Link href="/settings" onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-400 hover:bg-white/[0.05] hover:text-white rounded-xl transition-all">
+                        <Settings size={13} /> Settings
                       </Link>
                     )}
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-400 hover:bg-red-500/10 rounded-xl transition-all mt-0.5"
-                    >
-                      <LogOut size={14} /> Logout
-                    </button>
+                    <div className="border-t border-[#1a2234] mt-1 pt-1">
+                      <button onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-400 hover:bg-red-500/10 rounded-xl transition-all">
+                        <LogOut size={13} /> Logout
+                      </button>
+                    </div>
                   </div>
                 </>
               )}
@@ -333,46 +409,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </header>
 
           {/* ── PAGE CONTENT ── */}
-          <main className={`flex-1 p-4 sm:p-6 bg-[#0d1117] ${isMobile ? 'pb-24' : ''}`}>
+          <main className="flex-1 p-3 sm:p-5 bg-[#0d1117]">
             {children}
           </main>
         </div>
-
-        {/* ══════════════════════════════════════════════════
-            MOBILE BOTTOM NAV
-        ══════════════════════════════════════════════════ */}
-        {isMobile && (
-          <nav className="fixed bottom-0 left-0 right-0 h-[64px] bg-[#0d1117] border-t border-[#21293d] flex items-center overflow-x-auto z-50 px-2 space-x-1 scrollbar-hide">
-            <MobileNavLink href="/"            icon={<LayoutDashboard size={19}/>} label="Home"      active={pathname === '/'} />
-            <MobileNavLink href="/attendance"  icon={<CalendarCheck size={19}/>}   label="Attend"    active={pathname === '/attendance'} />
-            <MobileNavLink href="/clients"     icon={<Users size={19}/>}           label="Clients"   active={pathname.startsWith('/clients')} />
-            <MobileNavLink href="/inquiries"   icon={<HelpCircle size={19}/>}      label="Inquiries" active={pathname === '/inquiries'} />
-            <MobileNavLink href="/direct-sales"icon={<ShoppingCart size={19}/>}    label="Sales"     active={pathname.startsWith('/direct-sales')} />
-            <MobileNavLink href="/inventory"   icon={<Package size={19}/>}         label="Inventory" active={pathname.startsWith('/inventory')} />
-            <MobileNavLink href="/jobs"        icon={<ClipboardList size={19}/>}   label="Jobs"      active={pathname.startsWith('/jobs')} />
-            {isAdmin && (
-              <MobileNavLink href="/users" icon={<ShieldCheck size={19}/>} label="Staff" active={pathname === '/users'} />
-            )}
-          </nav>
-        )}
       </body>
     </html>
   );
 }
-
-// ============================================================
-// HELPER COMPONENTS
-// ============================================================
-const MobileNavLink = ({ href, icon, label, active }: any) => (
-  <Link
-    href={href}
-    className={`flex flex-col items-center justify-center flex-none w-[58px] gap-0.5 no-underline transition-all duration-200 py-1 rounded-xl ${
-      active ? 'text-blue-400' : 'text-slate-600 hover:text-slate-400'
-    }`}
-  >
-    <div className={`p-1.5 rounded-lg transition-all ${active ? 'bg-blue-500/15' : ''}`}>
-      {icon}
-    </div>
-    <span className="text-[8px] font-black uppercase tracking-tight leading-none">{label}</span>
-  </Link>
-);

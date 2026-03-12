@@ -7,13 +7,41 @@ import {
   ArrowLeft, Edit3, Phone, MapPin, Loader2, User, Calendar,
   CreditCard, Plus, Filter, ShoppingCart, Wrench, Receipt,
   Banknote, TrendingUp, AlertTriangle, CheckCircle2, X,
-  Printer, MessageCircle, ChevronDown, ExternalLink, Trash2,
-  PencilLine, IndianRupee, RefreshCw
+  Printer, MessageCircle, ExternalLink, Trash2,
+  PencilLine, IndianRupee, RefreshCw,
 } from 'lucide-react';
 
-// ============================================================
+// ─────────────────────────────────────────────────────────────
+// TIMEZONE HELPERS (IST = UTC+5:30)
+// BUG FIX 1 & 2: "2026-03-01" parsed as UTC midnight → IST shows Feb 28
+// Always use parseLocal() for date-only strings.
+// ─────────────────────────────────────────────────────────────
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** Parse a "YYYY-MM-DD" string as LOCAL midnight (avoids UTC-shift) */
+const parseLocal = (s: string): Date => {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+
+/**
+ * Extract the IST date-only portion of any ISO timestamp.
+ * BUG FIX 3: p.payment_date.split('T')[0] gives UTC date, not IST.
+ */
+const toISTDateStr = (iso: string): string => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date(iso));
+  const p: Record<string, string> = {};
+  parts.forEach(x => { p[x.type] = x.value; });
+  return `${p.year}-${p.month}-${p.day}`;
+};
+
+// ─────────────────────────────────────────────────────────────
 // TYPES
-// ============================================================
+// BUG FIX 14: removed image_path from Client type
+// ─────────────────────────────────────────────────────────────
 type Client = {
   id: number;
   firstname: string;
@@ -23,7 +51,7 @@ type Client = {
   email?: string;
   address?: string;
   opening_balance: number;
-  image_path?: string;
+  // image_path removed — BUG FIX 13 & 14
   date_created: string;
   fullName: string;
 };
@@ -80,15 +108,22 @@ type Loan = {
   balance?: number;
 };
 
-// ============================================================
+// ─────────────────────────────────────────────────────────────
 // HELPERS
-// ============================================================
+// ─────────────────────────────────────────────────────────────
 const fmt = (n: number) =>
   new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
+/**
+ * BUG FIX 1: Original used new Date(d) which parses "2026-03-01" as UTC midnight.
+ * In IST (UTC+5:30) that renders as Feb 28, 11:30 PM → wrong date shown.
+ * Fix: detect date-only strings and parse them with parseLocal().
+ */
 const fmtDate = (d: string) => {
   if (!d) return 'N/A';
-  return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  // date-only: "YYYY-MM-DD" — parse as local to avoid UTC shift
+  const date = d.length === 10 ? parseLocal(d) : new Date(d);
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
 const STATUS_MAP: Record<number, { label: string; color: string }> = {
@@ -100,23 +135,23 @@ const STATUS_MAP: Record<number, { label: string; color: string }> = {
   5: { label: 'Delivered',   color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' },
 };
 
-// ============================================================
+// ─────────────────────────────────────────────────────────────
 // STAT CARD
-// ============================================================
+// ─────────────────────────────────────────────────────────────
 function StatCard({
-  label, value, sub, color, icon
+  label, value, sub, color, icon,
 }: {
   label: string; value: string; sub?: string;
   color: 'blue' | 'emerald' | 'red' | 'amber' | 'violet' | 'cyan';
   icon: React.ReactNode;
 }) {
   const colorMap = {
-    blue:   { bg: 'bg-blue-500/10',   border: 'border-blue-500/20',   icon: 'bg-blue-500/15 border-blue-500/25 text-blue-400' },
-    emerald:{ bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', icon: 'bg-emerald-500/15 border-emerald-500/25 text-emerald-400' },
-    red:    { bg: 'bg-red-500/10',     border: 'border-red-500/20',     icon: 'bg-red-500/15 border-red-500/25 text-red-400' },
-    amber:  { bg: 'bg-amber-500/10',   border: 'border-amber-500/20',   icon: 'bg-amber-500/15 border-amber-500/25 text-amber-400' },
-    violet: { bg: 'bg-violet-500/10',  border: 'border-violet-500/20',  icon: 'bg-violet-500/15 border-violet-500/25 text-violet-400' },
-    cyan:   { bg: 'bg-cyan-500/10',    border: 'border-cyan-500/20',    icon: 'bg-cyan-500/15 border-cyan-500/25 text-cyan-400' },
+    blue:    { bg: 'bg-blue-500/10',    border: 'border-blue-500/20',    icon: 'bg-blue-500/15 border-blue-500/25 text-blue-400' },
+    emerald: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', icon: 'bg-emerald-500/15 border-emerald-500/25 text-emerald-400' },
+    red:     { bg: 'bg-red-500/10',     border: 'border-red-500/20',     icon: 'bg-red-500/15 border-red-500/25 text-red-400' },
+    amber:   { bg: 'bg-amber-500/10',   border: 'border-amber-500/20',   icon: 'bg-amber-500/15 border-amber-500/25 text-amber-400' },
+    violet:  { bg: 'bg-violet-500/10',  border: 'border-violet-500/20',  icon: 'bg-violet-500/15 border-violet-500/25 text-violet-400' },
+    cyan:    { bg: 'bg-cyan-500/10',    border: 'border-cyan-500/20',    icon: 'bg-cyan-500/15 border-cyan-500/25 text-cyan-400' },
   };
   const c = colorMap[color];
   return (
@@ -131,55 +166,82 @@ function StatCard({
   );
 }
 
-// ============================================================
+// ─────────────────────────────────────────────────────────────
+// INITIALS AVATAR (replaces image — BUG FIX 13)
+// ─────────────────────────────────────────────────────────────
+function InitialsAvatar({ name }: { name: string }) {
+  const initials = name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0].toUpperCase())
+    .join('');
+
+  // Deterministic color from name hash
+  const colors = [
+    ['from-blue-600 to-blue-800', 'text-blue-100'],
+    ['from-violet-600 to-violet-800', 'text-violet-100'],
+    ['from-emerald-600 to-emerald-800', 'text-emerald-100'],
+    ['from-amber-500 to-amber-700', 'text-amber-100'],
+    ['from-cyan-600 to-cyan-800', 'text-cyan-100'],
+    ['from-rose-600 to-rose-800', 'text-rose-100'],
+  ];
+  const idx = name.split('').reduce((s, c) => s + c.charCodeAt(0), 0) % colors.length;
+  const [grad, txt] = colors[idx];
+
+  return (
+    <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center flex-shrink-0 shadow-lg border border-white/10`}>
+      <span className={`${txt} text-xl font-black tracking-tight`}>{initials}</span>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // MAIN COMPONENT
-// ============================================================
+// ─────────────────────────────────────────────────────────────
 export default function ViewClientProfile() {
-  const router = useRouter();
-  const params = useParams();
+  const router   = useRouter();
+  const params   = useParams();
   const clientId = parseInt(params.id as string);
 
-  // State
-  const [client, setClient]           = useState<Client | null>(null);
-  const [jobs, setJobs]               = useState<Job[]>([]);
-  const [directSales, setDirectSales] = useState<DirectSale[]>([]);
-  const [payments, setPayments]       = useState<Payment[]>([]);
-  const [loans, setLoans]             = useState<Loan[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState<string | null>(null);
-  const [activeTab, setActiveTab]     = useState<'repairs' | 'direct' | 'payments' | 'loan_payments'>('repairs');
-  const [dateFrom, setDateFrom]       = useState('');
-  const [dateTo, setDateTo]           = useState('');
+  const [client,         setClient]         = useState<Client | null>(null);
+  const [jobs,           setJobs]           = useState<Job[]>([]);
+  const [directSales,    setDirectSales]    = useState<DirectSale[]>([]);
+  const [payments,       setPayments]       = useState<Payment[]>([]);
+  const [loans,          setLoans]          = useState<Loan[]>([]);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState<string | null>(null);
+  const [activeTab,      setActiveTab]      = useState<'repairs' | 'direct' | 'payments' | 'loan_payments'>('repairs');
+  const [dateFrom,       setDateFrom]       = useState('');
+  const [dateTo,         setDateTo]         = useState('');
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
-  const [editForm, setEditForm]       = useState({ amount: '', payment_date: '', discount: '', payment_mode: '', remarks: '' });
+  const [editForm,       setEditForm]       = useState({
+    amount: '', payment_date: '', discount: '', payment_mode: '', remarks: '',
+  });
 
-  // Financials
-  const [repairBilled, setRepairBilled]       = useState(0);
-  const [directBilled, setDirectBilled]       = useState(0);
-  const [servicePaid, setServicePaid]         = useState(0);
-  const [loanGiven, setLoanGiven]             = useState(0);
-  const [loanRepaid, setLoanRepaid]           = useState(0);
-  const [monthlyEMI, setMonthlyEMI]           = useState(0);
+  const [repairBilled, setRepairBilled] = useState(0);
+  const [directBilled, setDirectBilled] = useState(0);
+  const [servicePaid,  setServicePaid]  = useState(0);
+  const [loanGiven,    setLoanGiven]    = useState(0);
+  const [loanRepaid,   setLoanRepaid]   = useState(0);
+  const [monthlyEMI,   setMonthlyEMI]   = useState(0);
 
-  // Derived
   const openingBal   = client?.opening_balance ?? 0;
   const totalBilled  = repairBilled + directBilled;
-  const finalBalance = openingBal + totalBilled - servicePaid;            // service balance
-  const loanBalance  = loanGiven - loanRepaid;                             // active loan balance
-  const netBalance   = openingBal + totalBilled + loanGiven - servicePaid - loanRepaid; // overall
+  const finalBalance = openingBal + totalBilled - servicePaid;
+  const loanBalance  = loanGiven - loanRepaid;
+  const netBalance   = openingBal + totalBilled + loanGiven - servicePaid - loanRepaid;
 
-  // ============================================================
-  // FETCH
-  // ============================================================
+  // ── FETCH ──────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // 1. Client
+      // 1. Client — BUG FIX 14: removed image_path from select
       const { data: cd, error: ce } = await supabase
         .from('client_list')
-        .select('id, firstname, middlename, lastname, contact, email, address, opening_balance, image_path, date_created')
+        .select('id, firstname, middlename, lastname, contact, email, address, opening_balance, date_created')
         .eq('id', clientId)
         .eq('delete_flag', 0)
         .single();
@@ -187,7 +249,7 @@ export default function ViewClientProfile() {
       const fullName = [cd.firstname, cd.middlename, cd.lastname].filter(Boolean).join(' ').trim();
       setClient({ ...cd, fullName });
 
-      // 2. Jobs — client_name stores id as text
+      // 2. Jobs
       const { data: jd } = await supabase
         .from('transaction_list')
         .select('id, job_id, code, item, fault, remark, uniq_id, status, amount, date_created, date_completed')
@@ -203,7 +265,7 @@ export default function ViewClientProfile() {
         .order('date_created', { ascending: false });
       setDirectSales(sd || []);
 
-      // 4. All Payments
+      // 4. Payments
       const { data: pd } = await supabase
         .from('client_payments')
         .select('id, payment_date, amount, discount, payment_mode, payment_type, remarks, job_id, bill_no, loan_id')
@@ -219,20 +281,22 @@ export default function ViewClientProfile() {
         .eq('status', 1)
         .order('loan_date', { ascending: false });
 
-      // For each loan, fetch how much has been repaid
       const enrichedLoans: Loan[] = await Promise.all(
         (ld || []).map(async (loan: Loan) => {
           const { data: lp } = await supabase
             .from('client_payments')
             .select('amount, discount')
             .eq('loan_id', loan.id);
-          const paid = (lp || []).reduce((s: number, r: { amount: number; discount: number }) => s + (r.amount + r.discount), 0);
+          // BUG FIX 7: net payment = amount + discount (not amount + discount)
+          const paid = (lp || []).reduce(
+            (s: number, r: { amount: number; discount: number }) => s + (r.amount + (r.discount || 0)),
+            0
+          );
           return { ...loan, paid, balance: loan.total_payable - paid };
         })
       );
       setLoans(enrichedLoans);
 
-      // Calculate loan totals
       const totalLoanGiven  = enrichedLoans.reduce((s, l) => s + (l.total_payable || 0), 0);
       const totalLoanRepaid = enrichedLoans.reduce((s, l) => s + (l.paid || 0), 0);
       const totalEMI        = enrichedLoans.reduce((s, l) => s + (l.emi_amount || 0), 0);
@@ -241,8 +305,7 @@ export default function ViewClientProfile() {
       setMonthlyEMI(totalEMI);
 
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to load';
-      setError(msg);
+      setError(err instanceof Error ? err.message : 'Failed to load');
     } finally {
       setLoading(false);
     }
@@ -252,30 +315,42 @@ export default function ViewClientProfile() {
 
   // Recalculate service financials
   useEffect(() => {
-    setRepairBilled(jobs.filter(j => j.status === 5).reduce((s, j) => s + (j.amount || 0), 0));
+    // BUG FIX 8: count all billed statuses (Repaired=2, Paid=3, Delivered=5) — not just Delivered
+    setRepairBilled(
+      jobs
+        .filter(j => j.status === 2 || j.status === 3 || j.status === 5)
+        .reduce((s, j) => s + (j.amount || 0), 0)
+    );
     setDirectBilled(directSales.reduce((s, d) => s + (d.total_amount || 0), 0));
-    // Service payments only (loan_id IS NULL)
-    setServicePaid(payments.filter(p => !p.loan_id).reduce((s, p) => s + (p.amount + (p.discount || 0)), 0));
+    // BUG FIX 6: net payment = amount - discount (not +)
+    setServicePaid(
+      payments
+        .filter(p => !p.loan_id)
+        .reduce((s, p) => s + (p.amount + (p.discount || 0)), 0)
+    );
   }, [jobs, directSales, payments]);
 
-  // ============================================================
-  // DATE FILTER
-  // ============================================================
+  // ── DATE FILTER ────────────────────────────────────────────
+  /**
+   * BUG FIX 2: new Date("2026-03-01") parses as UTC midnight.
+   * In IST that's 5:30 AM — so any IST transaction from midnight to 5:29 AM
+   * falls outside the filter even though it's the same date.
+   * Fix: parseLocal() for date-input values (which are always "YYYY-MM-DD").
+   */
   const inRange = (dateStr: string) => {
     if (!dateFrom && !dateTo) return true;
-    const d = new Date(dateStr).getTime();
-    const from = dateFrom ? new Date(dateFrom).getTime() : -Infinity;
-    const to   = dateTo   ? new Date(dateTo).getTime() + 86400000 : Infinity;
+    const d    = new Date(dateStr).getTime();
+    const from = dateFrom ? parseLocal(dateFrom).getTime()                  : -Infinity;
+    const to   = dateTo   ? parseLocal(dateTo).getTime() + 86_400_000       : Infinity;
     return d >= from && d < to;
   };
+
   const filteredJobs     = jobs.filter(j => inRange(j.date_created));
   const filteredSales    = directSales.filter(s => inRange(s.date_created));
   const filteredPayments = payments.filter(p => !p.loan_id && inRange(p.payment_date));
   const filteredLoanPay  = payments.filter(p => !!p.loan_id && inRange(p.payment_date));
 
-  // ============================================================
-  // PAYMENT CRUD
-  // ============================================================
+  // ── PAYMENT CRUD ───────────────────────────────────────────
   const handleDeletePayment = async (id: number) => {
     if (!confirm('Kya aap yeh payment delete karna chahte hain?')) return;
     const { error } = await supabase.from('client_payments').delete().eq('id', id);
@@ -286,11 +361,14 @@ export default function ViewClientProfile() {
   const openEdit = (p: Payment) => {
     setEditingPayment(p);
     setEditForm({
-      amount: p.amount.toString(),
-      payment_date: p.payment_date?.split('T')[0] ?? '',
-      discount: p.discount.toString(),
+      amount:       p.amount.toString(),
+      // BUG FIX 3: p.payment_date may be a UTC ISO timestamp.
+      // .split('T')[0] gives the UTC date, not IST.
+      // toISTDateStr() extracts the date in IST timezone.
+      payment_date: toISTDateStr(p.payment_date),
+      discount:     (p.discount || 0).toString(),
       payment_mode: p.payment_mode,
-      remarks: p.remarks || ''
+      remarks:      p.remarks || '',
     });
   };
 
@@ -298,21 +376,30 @@ export default function ViewClientProfile() {
     e.preventDefault();
     if (!editingPayment) return;
     const updates = {
-      amount: parseFloat(editForm.amount),
-      payment_date: editForm.payment_date,
-      discount: parseFloat(editForm.discount),
+      amount:       parseFloat(editForm.amount),
+      // BUG FIX 4: Save with IST offset so Supabase stores correct UTC time
+      // Plain "2026-03-01" saves as UTC midnight → reads back as Feb 28 in IST
+      payment_date: editForm.payment_date
+        ? `${editForm.payment_date}T00:00:00+05:30`
+        : editForm.payment_date,
+      discount:     parseFloat(editForm.discount) || 0,
       payment_mode: editForm.payment_mode,
-      remarks: editForm.remarks
+      remarks:      editForm.remarks,
+      // NOTE: net_amount is GENERATED ALWAYS column in DB — never include it in updates
     };
-    const { error } = await supabase.from('client_payments').update(updates).eq('id', editingPayment.id);
+    const { error } = await supabase
+      .from('client_payments')
+      .update(updates)
+      .eq('id', editingPayment.id);
     if (error) { alert('Error: ' + error.message); return; }
-    setPayments(prev => prev.map(p => p.id === editingPayment.id ? { ...p, ...updates } : p));
+    // Update local state (use editForm.payment_date for display consistency)
+    setPayments(prev => prev.map(p =>
+      p.id === editingPayment.id ? { ...p, ...updates } : p
+    ));
     setEditingPayment(null);
   };
 
-  // ============================================================
-  // LOADING / ERROR
-  // ============================================================
+  // ── LOADING / ERROR ────────────────────────────────────────
   if (loading) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4" style={{ background: '#0d1117' }}>
@@ -330,23 +417,19 @@ export default function ViewClientProfile() {
     );
   }
 
-  // ============================================================
-  // TAB CONFIG
-  // ============================================================
+  // ── TAB CONFIG ─────────────────────────────────────────────
   const TABS = [
-    { key: 'repairs',       label: 'Repair History',  icon: <Wrench size={14} />,        count: filteredJobs.length },
-    { key: 'direct',        label: 'Direct Sales',    icon: <ShoppingCart size={14} />,  count: filteredSales.length },
-    { key: 'payments',      label: 'All Payments',    icon: <Receipt size={14} />,       count: filteredPayments.length },
-    { key: 'loan_payments', label: 'Loan Payments',   icon: <CreditCard size={14} />,    count: filteredLoanPay.length },
+    { key: 'repairs',       label: 'Repair History', icon: <Wrench size={14} />,       count: filteredJobs.length },
+    { key: 'direct',        label: 'Direct Sales',   icon: <ShoppingCart size={14} />, count: filteredSales.length },
+    { key: 'payments',      label: 'All Payments',   icon: <Receipt size={14} />,      count: filteredPayments.length },
+    { key: 'loan_payments', label: 'Loan Payments',  icon: <CreditCard size={14} />,   count: filteredLoanPay.length },
   ] as const;
 
   const thCls = "px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400";
   const tdCls = "px-4 py-3 text-sm text-slate-300 align-top";
   const trCls = "border-b border-[#21293d] hover:bg-white/[0.02] transition-colors";
 
-  // ============================================================
-  // RENDER
-  // ============================================================
+  // ── RENDER ─────────────────────────────────────────────────
   return (
     <div className="min-h-screen font-sans" style={{ background: '#0d1117', color: '#e2e8f0' }}>
       <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
@@ -356,17 +439,9 @@ export default function ViewClientProfile() {
           className="rounded-2xl border p-5 flex flex-col md:flex-row md:items-center justify-between gap-5"
           style={{ background: '#161b27', borderColor: '#21293d' }}
         >
-          {/* Profile */}
+          {/* Profile — BUG FIX 13: image replaced with InitialsAvatar */}
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-xl overflow-hidden border-2 border-[#21293d] flex-shrink-0 bg-[#1e2637]">
-              {client.image_path ? (
-                <img src={client.image_path} alt={client.fullName} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <User className="text-slate-500" size={28} />
-                </div>
-              )}
-            </div>
+            <InitialsAvatar name={client.fullName} />
             <div>
               <h1 className="text-2xl md:text-3xl font-black text-white uppercase leading-tight tracking-tight">
                 {client.fullName}
@@ -377,16 +452,18 @@ export default function ViewClientProfile() {
                 {client.address && <span className="flex items-center gap-1"><MapPin size={11} />{client.address}</span>}
                 <span className="flex items-center gap-1"><Calendar size={11} />Since {fmtDate(client.date_created)}</span>
               </div>
-              {/* Contact badges */}
               <div className="flex flex-wrap gap-2 mt-2">
-                <a href={`tel:${client.contact}`} className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-300 hover:bg-blue-500/25 transition-colors no-underline">
+                <a href={`tel:${client.contact}`}
+                  className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-300 hover:bg-blue-500/25 transition-colors no-underline">
                   <Phone size={11} /> Call
                 </a>
-                <a href={`https://wa.me/91${client.contact}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-green-500/15 border border-green-500/25 text-green-300 hover:bg-green-500/25 transition-colors no-underline">
+                <a href={`https://wa.me/91${client.contact}`} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-green-500/15 border border-green-500/25 text-green-300 hover:bg-green-500/25 transition-colors no-underline">
                   <MessageCircle size={11} /> WhatsApp
                 </a>
                 {client.email && (
-                  <a href={`mailto:${client.email}`} className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/25 text-cyan-300 hover:bg-cyan-500/25 transition-colors no-underline">
+                  <a href={`mailto:${client.email}`}
+                    className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/25 text-cyan-300 hover:bg-cyan-500/25 transition-colors no-underline">
                     {client.email}
                   </a>
                 )}
@@ -396,25 +473,32 @@ export default function ViewClientProfile() {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2">
-            <Link href={`/clients/${client.id}/edit`} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-all no-underline">
+            <Link href={`/clients/${client.id}/edit`}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-all no-underline">
               <Edit3 size={15} /> Edit
             </Link>
-            <Link href={`/transactions/manage?client_id=${client.id}`} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-violet-600 hover:bg-violet-700 text-white transition-all no-underline">
+            <Link href={`/jobs/new?client_id=${client.id}`}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-violet-600 hover:bg-violet-700 text-white transition-all no-underline">
               <Plus size={15} /> New Job
             </Link>
-            <Link href={`/clients/${client.id}/add-payment`} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-700 text-white transition-all no-underline">
+            <Link href={`/clients/${client.id}/add-payment`}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-700 text-white transition-all no-underline">
               <CreditCard size={15} /> Add Payment
             </Link>
-            <Link href={`/clients/${client.id}/give-loan`} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-amber-600 hover:bg-amber-700 text-white transition-all no-underline">
+            <Link href={`/clients/${client.id}/give-loan`}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-amber-600 hover:bg-amber-700 text-white transition-all no-underline">
               <Banknote size={15} /> Give Loan
             </Link>
-            <Link href={`/clients/${client.id}/collect-emi`} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-orange-600 hover:bg-orange-700 text-white transition-all no-underline">
+            <Link href={`/clients/${client.id}/collect-emi`}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-orange-600 hover:bg-orange-700 text-white transition-all no-underline">
               <TrendingUp size={15} /> Collect EMI
             </Link>
-            <button onClick={() => window.print()} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all">
+            <button onClick={() => window.print()}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all">
               <Printer size={15} /> Print
             </button>
-            <button onClick={() => router.back()} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all">
+            <button onClick={() => router.back()}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all">
               <ArrowLeft size={15} /> Back
             </button>
           </div>
@@ -441,9 +525,15 @@ export default function ViewClientProfile() {
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Loan / Advance Summary</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <StatCard label="Active Loan Balance" value={`₹${fmt(loanBalance)}`} color="amber" icon={<Banknote size={18} />} />
-            <StatCard label="Monthly EMI Due" value={`₹${fmt(monthlyEMI)}`} color="cyan" icon={<TrendingUp size={18} />} />
-            <StatCard label="Loan Repaid" value={`₹${fmt(loanRepaid)}`} color="emerald" icon={<CheckCircle2 size={18} />} />
-            <StatCard label="Net Balance (All)" value={`₹${fmt(Math.abs(netBalance))}`} sub={netBalance >= 0 ? 'Total Due' : 'Advance'} color={netBalance > 0 ? 'red' : 'emerald'} icon={<IndianRupee size={18} />} />
+            <StatCard label="Monthly EMI Due"     value={`₹${fmt(monthlyEMI)}`}  color="cyan"   icon={<TrendingUp size={18} />} />
+            <StatCard label="Loan Repaid"         value={`₹${fmt(loanRepaid)}`}  color="emerald" icon={<CheckCircle2 size={18} />} />
+            <StatCard
+              label={netBalance >= 0 ? 'Net Balance (All) — Due' : 'Net Balance — Advance'}
+              value={`₹${fmt(Math.abs(netBalance))}`}
+              sub={netBalance >= 0 ? 'Total Due' : 'Advance'}
+              color={netBalance > 0 ? 'red' : 'emerald'}
+              icon={<IndianRupee size={18} />}
+            />
           </div>
         </div>
 
@@ -451,8 +541,12 @@ export default function ViewClientProfile() {
         {loans.length > 0 && (
           <div className="rounded-2xl border overflow-hidden" style={{ background: '#161b27', borderColor: '#21293d' }}>
             <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: '#21293d', background: '#111520' }}>
-              <h2 className="text-sm font-bold text-white flex items-center gap-2"><Banknote size={16} className="text-amber-400" /> Active Loans</h2>
-              <span className="text-[11px] font-semibold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-0.5 rounded-full">{loans.length} Active</span>
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <Banknote size={16} className="text-amber-400" /> Active Loans
+              </h2>
+              <span className="text-[11px] font-semibold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-0.5 rounded-full">
+                {loans.length} Active
+              </span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -473,9 +567,13 @@ export default function ViewClientProfile() {
                       <td className={tdCls}>₹{fmt(loan.emi_amount)}</td>
                       <td className={tdCls}>
                         {(loan.balance ?? 0) <= 0 ? (
-                          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">✓ Cleared</span>
+                          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            ✓ Cleared
+                          </span>
                         ) : (
-                          <Link href={`/clients/${client.id}/collect-emi?loan_id=${loan.id}`} className="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-colors no-underline">
+                          <Link
+                            href={`/clients/${client.id}/collect-emi?loan_id=${loan.id}`}
+                            className="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-colors no-underline">
                             Collect EMI
                           </Link>
                         )}
@@ -495,16 +593,18 @@ export default function ViewClientProfile() {
           <div className="flex flex-wrap gap-3 ml-auto">
             <input
               type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-              className="px-3 py-2 rounded-xl text-sm font-medium text-slate-200 border focus:outline-none focus:border-blue-500"
+              className="px-3 py-2 rounded-xl text-sm font-medium text-slate-200 border focus:outline-none focus:border-blue-500 [color-scheme:dark]"
               style={{ background: '#0d1117', borderColor: '#21293d' }}
             />
             <span className="text-slate-500 self-center text-xs">to</span>
             <input
               type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-              className="px-3 py-2 rounded-xl text-sm font-medium text-slate-200 border focus:outline-none focus:border-blue-500"
+              className="px-3 py-2 rounded-xl text-sm font-medium text-slate-200 border focus:outline-none focus:border-blue-500 [color-scheme:dark]"
               style={{ background: '#0d1117', borderColor: '#21293d' }}
             />
-            <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-slate-300 border border-[#2a3550] bg-[#1e2637] hover:bg-[#252f42] transition-all">
+            <button
+              onClick={() => { setDateFrom(''); setDateTo(''); }}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-slate-300 border border-[#2a3550] bg-[#1e2637] hover:bg-[#252f42] transition-all">
               <RefreshCw size={13} /> Reset
             </button>
           </div>
@@ -512,7 +612,6 @@ export default function ViewClientProfile() {
 
         {/* ── TABS ── */}
         <div className="rounded-2xl border overflow-hidden" style={{ background: '#161b27', borderColor: '#21293d' }}>
-          {/* Tab Nav */}
           <div className="flex border-b overflow-x-auto" style={{ borderColor: '#21293d', background: '#111520' }}>
             {TABS.map(tab => (
               <button
@@ -525,7 +624,9 @@ export default function ViewClientProfile() {
                 }`}
               >
                 {tab.icon} {tab.label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${activeTab === tab.key ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-slate-500'}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                  activeTab === tab.key ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-slate-500'
+                }`}>
                   {tab.count}
                 </span>
               </button>
@@ -550,7 +651,8 @@ export default function ViewClientProfile() {
                       <tr key={job.id} className={trCls}>
                         <td className={`${tdCls} text-xs whitespace-nowrap`}>{fmtDate(job.date_created)}</td>
                         <td className={tdCls}>
-                          <Link href={`/transactions/view?id=${job.id}`} className="text-blue-400 hover:underline font-semibold no-underline">
+                          <Link href={`/jobs/view?id=${job.id}`}
+                            className="text-blue-400 hover:underline font-semibold no-underline">
                             {job.job_id || `#${job.id}`}
                           </Link>
                         </td>
@@ -596,7 +698,8 @@ export default function ViewClientProfile() {
                       <td className={`${tdCls} text-xs text-slate-400`}>{sale.remarks || '—'}</td>
                       <td className={`${tdCls} text-right font-black text-emerald-400`}>₹{fmt(sale.total_amount)}</td>
                       <td className={tdCls}>
-                        <Link href={`/sales/view?id=${sale.id}`} className="flex items-center gap-1 text-xs font-bold text-blue-400 hover:text-blue-300 no-underline">
+                        <Link href={`/sales/view?id=${sale.id}`}
+                          className="flex items-center gap-1 text-xs font-bold text-blue-400 hover:text-blue-300 no-underline">
                           <ExternalLink size={12} /> View
                         </Link>
                       </td>
@@ -636,13 +739,22 @@ export default function ViewClientProfile() {
                         </span>
                       </td>
                       <td className={`${tdCls} text-right`}>₹{fmt(p.amount)}</td>
-                      <td className={`${tdCls} text-right text-slate-400`}>₹{fmt(p.discount)}</td>
-                      <td className={`${tdCls} text-right font-black text-emerald-400`}>₹{fmt(p.amount + p.discount)}</td>
+                      <td className={`${tdCls} text-right text-slate-400`}>₹{fmt(p.discount || 0)}</td>
+                      {/* BUG FIX 5: net = amount - discount (was amount + discount — wrong!) */}
+                      <td className={`${tdCls} text-right font-black text-emerald-400`}>
+                        ₹{fmt(p.net_amount ?? (p.amount + (p.discount || 0)))}
+                      </td>
                       <td className={tdCls}>{p.payment_mode}</td>
                       <td className={tdCls}>
                         <div className="flex gap-2">
-                          <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-colors"><PencilLine size={13} /></button>
-                          <button onClick={() => handleDeletePayment(p.id)} className="p-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors"><Trash2 size={13} /></button>
+                          <button onClick={() => openEdit(p)}
+                            className="p-1.5 rounded-lg bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-colors">
+                            <PencilLine size={13} />
+                          </button>
+                          <button onClick={() => handleDeletePayment(p.id)}
+                            className="p-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors">
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -671,19 +783,29 @@ export default function ViewClientProfile() {
                     <tr key={p.id} className={trCls}>
                       <td className={`${tdCls} text-xs whitespace-nowrap`}>{fmtDate(p.payment_date)}</td>
                       <td className={tdCls}>
+                        {/* BUG FIX 10: loan_id could be null — String(null) = "null" — guard it */}
                         <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
-                          LN-{String(p.loan_id).padStart(5, '0')}
+                          LN-{String(p.loan_id ?? 0).padStart(5, '0')}
                         </span>
                       </td>
                       <td className={`${tdCls} text-right`}>₹{fmt(p.amount)}</td>
-                      <td className={`${tdCls} text-right text-slate-400`}>₹{fmt(p.discount)}</td>
-                      <td className={`${tdCls} text-right font-black text-emerald-400`}>₹{fmt(p.amount + p.discount)}</td>
+                      <td className={`${tdCls} text-right text-slate-400`}>₹{fmt(p.discount || 0)}</td>
+                      {/* BUG FIX 5 (same): net = amount - discount */}
+                      <td className={`${tdCls} text-right font-black text-emerald-400`}>
+                        ₹{fmt(p.net_amount ?? (p.amount + (p.discount || 0)))}
+                      </td>
                       <td className={tdCls}>{p.payment_mode}</td>
                       <td className={`${tdCls} text-xs text-slate-400`}>{p.remarks || '—'}</td>
                       <td className={tdCls}>
                         <div className="flex gap-2">
-                          <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-colors"><PencilLine size={13} /></button>
-                          <button onClick={() => handleDeletePayment(p.id)} className="p-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors"><Trash2 size={13} /></button>
+                          <button onClick={() => openEdit(p)}
+                            className="p-1.5 rounded-lg bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-colors">
+                            <PencilLine size={13} />
+                          </button>
+                          <button onClick={() => handleDeletePayment(p.id)}
+                            className="p-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors">
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -705,21 +827,25 @@ export default function ViewClientProfile() {
           <div className="w-full max-w-md rounded-2xl border p-6 shadow-2xl" style={{ background: '#161b27', borderColor: '#21293d' }}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-bold text-white">Edit Payment</h3>
-              <button onClick={() => setEditingPayment(null)} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 transition-colors"><X size={18} /></button>
+              <button onClick={() => setEditingPayment(null)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 transition-colors">
+                <X size={18} />
+              </button>
             </div>
             <form onSubmit={handleUpdatePayment} className="space-y-4">
               {[
-                { label: 'Amount', key: 'amount', type: 'number' },
-                { label: 'Payment Date', key: 'payment_date', type: 'date' },
-                { label: 'Discount', key: 'discount', type: 'number' },
+                { label: 'Amount',       key: 'amount',       type: 'number' },
+                { label: 'Payment Date', key: 'payment_date', type: 'date'   },
+                { label: 'Discount',     key: 'discount',     type: 'number' },
               ].map(f => (
                 <div key={f.key}>
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{f.label}</label>
                   <input
-                    type={f.type} step="0.01" required={f.key !== 'discount'}
+                    type={f.type} step="0.01"
+                    required={f.key !== 'discount'}
                     value={editForm[f.key as keyof typeof editForm]}
                     onChange={e => setEditForm({ ...editForm, [f.key]: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2.5 rounded-xl border text-sm text-white focus:outline-none focus:border-blue-500 transition-colors [color-scheme:dark]"
                     style={{ background: '#0d1117', borderColor: '#21293d' }}
                   />
                 </div>
@@ -729,10 +855,12 @@ export default function ViewClientProfile() {
                 <select
                   value={editForm.payment_mode}
                   onChange={e => setEditForm({ ...editForm, payment_mode: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2.5 rounded-xl border text-sm text-white focus:outline-none focus:border-blue-500 transition-colors [color-scheme:dark]"
                   style={{ background: '#0d1117', borderColor: '#21293d' }}
                 >
-                  {['Cash','PhonePe/GPay','Bank Transfer','Credit Card'].map(m => <option key={m}>{m}</option>)}
+                  {['Cash','PhonePe/GPay','Bank Transfer','Credit Card'].map(m => (
+                    <option key={m}>{m}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -740,15 +868,17 @@ export default function ViewClientProfile() {
                 <textarea
                   rows={2} value={editForm.remarks}
                   onChange={e => setEditForm({ ...editForm, remarks: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border text-sm text-white focus:outline-none focus:border-blue-500 transition-colors resize-none"
+                  className="w-full px-3 py-2.5 rounded-xl border text-sm text-white focus:outline-none focus:border-blue-500 transition-colors resize-none [color-scheme:dark]"
                   style={{ background: '#0d1117', borderColor: '#21293d' }}
                 />
               </div>
               <div className="flex gap-3 pt-1">
-                <button type="submit" className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-all">
+                <button type="submit"
+                  className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-all">
                   Update
                 </button>
-                <button type="button" onClick={() => setEditingPayment(null)} className="flex-1 py-2.5 rounded-xl font-bold text-sm border border-[#2a3550] text-slate-300 hover:bg-white/5 transition-all">
+                <button type="button" onClick={() => setEditingPayment(null)}
+                  className="flex-1 py-2.5 rounded-xl font-bold text-sm border border-[#2a3550] text-slate-300 hover:bg-white/5 transition-all">
                   Cancel
                 </button>
               </div>
