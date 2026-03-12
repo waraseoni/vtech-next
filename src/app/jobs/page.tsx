@@ -810,7 +810,7 @@ function JobsListContent() {
 
                 {/* Client Info */}
                 <div className="px-3 py-2.5 border-t border-[#21293d]">
-                  <Link href={`/clients/${txn.client_name}`}
+                  <Link href={`/clients/${txn.client_name}/view`}
                     className="font-bold text-sm text-slate-200 hover:text-blue-400 transition-colors block truncate">
                     {clientName}
                   </Link>
