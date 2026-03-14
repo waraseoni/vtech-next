@@ -353,11 +353,15 @@ export default function ManageJobPage({
       const dailySeq = String((todayCount || 0) + 1).padStart(2, "0");
       setTxnCode(`${datePrefix}${dailySeq}`);  // e.g. "2025102401"
 
-      // job_id = total job count + 1 (global sequence)
-      const { count: totalCount } = await supabase
-        .from("transaction_list")
-        .select("id", { count: "exact", head: true });
-      setJobCode(String((totalCount || 0) + 1));  // e.g. "27270"
+      // job_id = job_id_counter table se last_job_id + 1
+      // Single-row counter table (id=1) — DB ka authoritative source
+      const { data: counterRow } = await supabase
+        .from("job_id_counter")
+        .select("last_job_id")
+        .eq("id", 1)
+        .single();
+      const nextJobId = (counterRow?.last_job_id || 28101) + 1;
+      setJobCode(String(nextJobId));  // e.g. 28101 → "28102"
     };
     genCode();
   }, [isEdit]);
@@ -513,6 +517,14 @@ export default function ManageJobPage({
           }))
         );
         if (error) throw error;
+      }
+
+      // Increment job_id_counter after successful save (new job only)
+      if (!isEdit) {
+        await supabase
+          .from("job_id_counter")
+          .update({ last_job_id: parseInt(jobCode) })
+          .eq("id", 1);
       }
 
       setToast({ type: "success", msg: isEdit ? "Job update ho gaya! ✅" : "Naya job create ho gaya! ✅" });
@@ -891,11 +903,14 @@ export default function ManageJobPage({
                   className={inputCls}
                   placeholder="0.00"
                 />
-                {selectedMechanic && mechanics.find(m => m.id === parseInt(selectedMechanic))?.commission_percent > 0 && (
-                  <p className="text-[9px] text-slate-600 mt-1">
-                    Auto: {mechanics.find(m => m.id === parseInt(selectedMechanic))?.commission_percent}% of grand total
-                  </p>
-                )}
+                {(() => {
+                  const mech = mechanics.find(m => m.id === parseInt(selectedMechanic));
+                  return selectedMechanic && mech && mech.commission_percent > 0 ? (
+                    <p className="text-[9px] text-slate-600 mt-1">
+                      Auto: {mech.commission_percent}% of grand total
+                    </p>
+                  ) : null;
+                })()}
               </div>
             </div>
           </div>
