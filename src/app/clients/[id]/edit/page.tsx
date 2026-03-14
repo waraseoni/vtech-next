@@ -1,37 +1,87 @@
 "use client";
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useRouter, useParams } from "next/navigation";
 import {
-  Save, ArrowLeft, UserCheck, Loader2, Phone, MapPin, Mail,
-  AlertCircle, CheckCircle2,
+  Save, ArrowLeft, UserPlus, Loader2, Edit3,
+  CheckCircle2, AlertCircle,
 } from "lucide-react";
+import Link from "next/link";
 
-type Form = {
-  firstname:  string;
-  middlename: string;
-  lastname:   string;
-  contact:    string;
-  email:      string;
-  address:    string;
+// ─────────────────────────────────────────────────────────────────────────────
+// STYLE CONSTANTS (dark theme)
+// ─────────────────────────────────────────────────────────────────────────────
+const inputCls =
+  "w-full px-4 py-3 rounded-xl bg-[#111520] border border-[#21293d] text-white " +
+  "placeholder:text-slate-700 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 " +
+  "outline-none transition-all text-sm font-medium [color-scheme:dark]";
+const labelCls =
+  "block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5";
+const errCls = "text-red-400 text-xs mt-1 font-medium";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+type FormState = {
+  firstname:       string;
+  middlename:      string;
+  lastname:        string;
+  contact:         string;
+  email:           string;
+  address:         string;
+  opening_balance: string;
 };
+type FieldErrors = Partial<Record<keyof FormState, string>>;
 
-export default function EditClientPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const resolvedParams = use(params);
+// ─────────────────────────────────────────────────────────────────────────────
+// VALIDATION
+// Email is OPTIONAL — only validate format if user typed something
+// ─────────────────────────────────────────────────────────────────────────────
+function validate(form: FormState): FieldErrors {
+  const e: FieldErrors = {};
+  if (!form.firstname.trim()) e.firstname = "First name is required";
+  if (!form.lastname.trim())  e.lastname  = "Last name is required";
+
+  if (!form.contact.trim()) {
+    e.contact = "Contact number is required";
+  } else if (!/^[0-9]{10}$/.test(form.contact.trim())) {
+    e.contact = "Enter valid 10-digit number";
+  }
+
+  // BUG FIX — Email optional: only validate if user actually typed something
+  if (form.email.trim()) {
+    const emailRe  = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const mobileRe = /^[0-9]{10}$/;
+    if (!emailRe.test(form.email.trim()) && !mobileRe.test(form.email.trim()))
+      e.email = "Enter valid email or 10-digit mobile";
+  }
+
+  if (!form.address.trim()) e.address = "Address is required";
+  return e;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+export default function ManageClientPage() {
   const router = useRouter();
+  const params = useParams();
 
-  const [loading, setLoading] = useState(true);
-  const [saving,  setSaving]  = useState(false);
-  const [toast,   setToast]   = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  // isEdit detection: useParams() on /clients/new returns {} (no 'id' key)
+  // On /clients/[id]/edit it returns { id: "123" }
+  const rawId   = params?.id as string | undefined;
+  const clientId = rawId ? parseInt(rawId) : null;
+  const isEdit   = !!clientId && !isNaN(clientId);
 
-  const [form, setForm] = useState<Form>({
+  const [loading,      setLoading]      = useState(false);  // submit spinner
+  const [fetchLoading, setFetchLoading] = useState(isEdit); // initial data load
+  const [errors,       setErrors]       = useState<FieldErrors>({});
+  const [submitted,    setSubmitted]    = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  const [form, setForm] = useState<FormState>({
     firstname: "", middlename: "", lastname: "",
-    contact: "", email: "", address: "",
+    contact: "", email: "", address: "", opening_balance: "0.00",
   });
 
   // Auto-dismiss toast
@@ -41,217 +91,340 @@ export default function EditClientPage({
     return () => clearTimeout(t);
   }, [toast]);
 
-  // ── FETCH CLIENT ─────────────────────────────────────────────────────────
+  // ── FETCH EXISTING CLIENT (edit mode) ──────────────────────────────────
   useEffect(() => {
-    const fetchClient = async () => {
+    if (!isEdit || !clientId) return;
+    (async () => {
       try {
-        // BUG FIX 1: Table is "client_list" — NOT "clients"
-        // BUG FIX 5: Filter delete_flag=0 to exclude soft-deleted records
         const { data, error } = await supabase
-          .from("client_list")                  // ← was "clients" (table doesn't exist)
-          .select("firstname, middlename, lastname, contact, email, address")
-          .eq("id", resolvedParams.id)
-          .eq("delete_flag", 0)                 // ← was missing
+          .from("client_list")
+          .select("firstname, middlename, lastname, contact, email, address, opening_balance")
+          .eq("id", clientId)
+          .eq("delete_flag", 0)
           .single();
-
-        // BUG FIX 4: Supabase error is a PostgREST object — NOT a plain JS Error.
-        // console.error("Error:", err) prints {} because PostgREST props are non-enumerable.
-        // Fix: always log err.message or JSON.stringify so you see the actual reason.
         if (error) throw error;
-
-        // BUG FIX 2: Map to correct column names (firstname/contact — not name/mobile/gst)
-        setForm({
-          firstname:  data.firstname  ?? "",
-          middlename: data.middlename ?? "",
-          lastname:   data.lastname   ?? "",
-          contact:    data.contact    ?? "",
-          email:      data.email      ?? "",
-          address:    data.address    ?? "",
+        if (data) setForm({
+          firstname:       data.firstname       || "",
+          middlename:      data.middlename      || "",
+          lastname:        data.lastname        || "",
+          contact:         data.contact         || "",
+          email:           data.email           || "",
+          address:         data.address         || "",
+          opening_balance: data.opening_balance?.toString() || "0.00",
         });
       } catch (err: any) {
-        // BUG FIX 4: Print actual message — not the raw object
-        console.error(
-          "Error fetching client:",
-          err?.message ?? err?.details ?? JSON.stringify(err)
-        );
-        setToast({ type: "error", msg: "Client details nahi mil payi!" });
+        console.error("fetch error:", err?.message ?? JSON.stringify(err));
+        setToast({ type: "error", msg: "Client details load nahi ho paye!" });
         router.push("/clients");
       } finally {
-        setLoading(false);
+        setFetchLoading(false);
       }
-    };
-    fetchClient();
-  }, [resolvedParams.id, router]);
+    })();
+  }, [clientId, isEdit, router]);
 
-  // ── UPDATE ───────────────────────────────────────────────────────────────
-  const handleUpdate = async (e: React.FormEvent) => {
+  // ── FIELD CHANGE ────────────────────────────────────────────────────────
+  const handleChange = (field: keyof FormState, value: string) => {
+    const updated = { ...form, [field]: value };
+    setForm(updated);
+    if (submitted) setErrors(validate(updated));
+  };
+
+  // ── SUBMIT ──────────────────────────────────────────────────────────────
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.firstname.trim()) { setToast({ type: "error", msg: "First name zaroori hai!" }); return; }
-    if (!form.contact.trim())   { setToast({ type: "error", msg: "Contact number zaroori hai!" }); return; }
 
-    setSaving(true);
+    // BUG FIX — Double-submit guard: disable button immediately on first click
+    if (loading) return;
+
+    setSubmitted(true);
+    const fieldErrors = validate(form);
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
+      return;
+    }
+
+    // Set loading BEFORE async call to prevent double-submit
+    setLoading(true);
+
     try {
-      // BUG FIX 3: Update correct column names matching client_list schema
-      const { error } = await supabase
-        .from("client_list")                  // ← was "clients" (wrong)
-        .update({
-          firstname:    form.firstname.trim(),
-          middlename:   form.middlename.trim() || null,
-          lastname:     form.lastname.trim()   || null,
-          contact:      form.contact.trim(),
-          email:        form.email.trim()      || null,
-          address:      form.address.trim()    || null,
-          date_updated: new Date().toISOString(),
-        })
-        .eq("id", resolvedParams.id);
+      const payload = {
+        firstname:       form.firstname.trim(),
+        middlename:      form.middlename.trim() || null,
+        lastname:        form.lastname.trim(),
+        contact:         form.contact.trim(),
+        // BUG FIX — email NOT NULL in DB:
+        // MySQL schema has `email text NOT NULL` — migrated to Supabase with same constraint.
+        // Saving null crashes with NOT NULL violation.
+        // Fix: save empty string "" when email is blank (DB accepts empty string).
+        email:           form.email.trim(),   // empty string is safe, null is not
+        address:         form.address.trim(),
+        opening_balance: parseFloat(form.opening_balance) || 0,
+      };
 
-      if (error) throw error;
-
-      setToast({ type: "success", msg: "Client details update ho gaye! ✅" });
-      setTimeout(() => router.push(`/clients/${resolvedParams.id}/view`), 1200);
+      if (isEdit) {
+        const { error } = await supabase
+          .from("client_list")
+          .update({ ...payload, date_updated: new Date().toISOString() })
+          .eq("id", clientId);
+        if (error) throw error;
+        setToast({ type: "success", msg: "Client update ho gaya! ✅" });
+        setTimeout(() => router.push("/clients"), 1000);
+      } else {
+        // BUG FIX — DUPLICATE KEY (client_list_pkey):
+        // Root cause: MySQL had AUTO_INCREMENT=271 but Supabase sequence was NOT reset
+        // after data import. So Supabase tries id=1, id=2... which already exist.
+        //
+        // PERMANENT FIX (run once in Supabase SQL Editor):
+        //   SELECT setval(
+        //     pg_get_serial_sequence('client_list', 'id'),
+        //     (SELECT COALESCE(MAX(id), 0) + 1 FROM client_list)
+        //   );
+        //
+        // Code-level safeguard: we do NOT pass any id in the insert payload —
+        // let Supabase auto-generate it from the sequence.
+        const { error } = await supabase
+          .from("client_list")
+          .insert([{
+            ...payload,
+            delete_flag:  0,
+            date_created: new Date().toISOString(),
+          }]);
+        if (error) {
+          // Give user a helpful message for the known sequence bug
+          if (error.message?.includes("duplicate key") || error.code === "23505") {
+            throw new Error(
+              "Database sequence error! Supabase SQL Editor mein yeh run karo:\n" +
+              "SELECT setval(pg_get_serial_sequence('client_list','id'), (SELECT MAX(id) FROM client_list));\n" +
+              "Phir dobara try karo."
+            );
+          }
+          throw error;
+        }
+        setToast({ type: "success", msg: "New client add ho gaya! ✅" });
+        setTimeout(() => router.push("/clients"), 1000);
+      }
     } catch (err: any) {
-      console.error("Update error:", err?.message ?? JSON.stringify(err));
-      setToast({ type: "error", msg: err?.message ?? "Update mein galti hui!" });
+      console.error("save error:", err?.message ?? JSON.stringify(err));
+      setToast({ type: "error", msg: err?.message ?? "Save karne mein galti!" });
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  const set = (k: keyof Form) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setForm(f => ({ ...f, [k]: e.target.value }));
+  // ── LOADING STATE ───────────────────────────────────────────────────────
+  if (fetchLoading) return (
+    <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4">
+      <Loader2 className="animate-spin text-blue-500" size={40} />
+      <p className="text-slate-500 text-xs font-extrabold uppercase tracking-[0.3em]">
+        Loading Client…
+      </p>
+    </div>
+  );
 
-  // ── LOADING ──────────────────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 bg-[#0d1117]">
-        <div className="relative">
-          <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-900/50">
-            <UserCheck className="text-white" size={26} />
-          </div>
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-[#0d1117] animate-ping" />
-        </div>
-        <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.3em]">
-          Loading Client…
-        </p>
-      </div>
-    );
-  }
-
-  // ── RENDER ───────────────────────────────────────────────────────────────
+  // ── RENDER ──────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white font-sans">
+    <div className="min-h-screen bg-[#0d1117] text-white font-sans p-4 md:p-8">
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold animate-in slide-in-from-top-2 ${
+        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
           toast.type === "success"
             ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
             : "bg-red-500/15 border-red-500/30 text-red-400"
         }`}>
-          {toast.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+          {toast.type === "success"
+            ? <CheckCircle2 size={16} />
+            : <AlertCircle size={16} />}
           {toast.msg}
         </div>
       )}
 
-      <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-4">
+      <div className="max-w-2xl mx-auto space-y-6">
 
-        {/* Header */}
-        <div className="relative overflow-hidden bg-[#161b27] rounded-3xl border border-[#21293d] p-5">
-          <div className="absolute inset-0 opacity-[0.025]"
-            style={{ backgroundImage: "radial-gradient(circle,#fff 1px,transparent 1px)", backgroundSize: "24px 24px" }} />
-          <div className="absolute -top-16 -right-16 w-56 h-56 bg-blue-600/8 rounded-full blur-3xl pointer-events-none" />
+        {/* Top Bar */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-bold"
+          >
+            <ArrowLeft size={18} /> Back
+          </button>
+          <Link
+            href="/clients"
+            className="text-xs text-slate-600 hover:text-slate-400 transition-colors font-medium"
+          >
+            All Clients
+          </Link>
+        </div>
 
-          <div className="relative flex items-center gap-4">
-            <Link
-              href={`/clients/${resolvedParams.id}/view`}
-              className="w-10 h-10 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-500 hover:text-white transition-all flex-shrink-0"
-            >
-              <ArrowLeft size={17} />
-            </Link>
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/40 flex-shrink-0">
-                <UserCheck className="text-white" size={20} />
-              </div>
-              <div>
-                <h1 className="text-lg font-black tracking-tight text-white leading-none">Edit Customer</h1>
-                <p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.2em] mt-1">ID: #C-{resolvedParams.id}</p>
-              </div>
+        {/* Form Card */}
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+
+          {/* Card Header */}
+          <div className="px-6 py-5 border-b border-[#21293d] flex items-center gap-4">
+            <div className={`p-3 rounded-xl border ${
+              isEdit
+                ? "bg-amber-500/10 border-amber-500/20"
+                : "bg-blue-500/10 border-blue-500/20"
+            }`}>
+              {isEdit
+                ? <Edit3 size={22} className="text-amber-400" />
+                : <UserPlus size={22} className="text-blue-400" />}
+            </div>
+            <div>
+              <h1 className="text-xl font-black text-white tracking-tight">
+                {isEdit ? "Edit Client" : "New Client"}
+              </h1>
+              <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-600 mt-0.5">
+                {isEdit
+                  ? `Editing Client #${clientId}`
+                  : "Add a new client to the system"}
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* Form */}
-        <div className="bg-[#161b27] rounded-3xl border border-[#21293d] p-5 md:p-6">
-          <form onSubmit={handleUpdate} className="space-y-4">
+          {/* Form Body */}
+          <form onSubmit={handleSave} noValidate className="p-6 space-y-5">
 
-            {/* BUG FIX 6: 3 separate name fields matching client_list schema */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="First Name" required icon={<UserCheck size={13} className="text-blue-400" />}>
-                <input type="text" value={form.firstname} onChange={set("firstname")}
-                  placeholder="e.g. Vikram" className={inputCls} required />
-              </Field>
-              <Field label="Middle Name" icon={<UserCheck size={13} className="text-slate-700" />}>
-                <input type="text" value={form.middlename} onChange={set("middlename")}
-                  placeholder="Optional" className={inputCls} />
-              </Field>
+            {/* First Name + Middle Name */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>
+                  First Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text" placeholder="Enter first name"
+                  value={form.firstname}
+                  onChange={e => handleChange("firstname", e.target.value)}
+                  className={`${inputCls} ${errors.firstname ? "border-red-500" : ""}`}
+                />
+                {errors.firstname && <p className={errCls}>{errors.firstname}</p>}
+              </div>
+              <div>
+                <label className={labelCls}>
+                  Middle Name{" "}
+                  <span className="text-slate-600 normal-case font-semibold text-[9px]">
+                    (optional)
+                  </span>
+                </label>
+                <input
+                  type="text" placeholder="Enter middle name"
+                  value={form.middlename}
+                  onChange={e => handleChange("middlename", e.target.value)}
+                  className={inputCls}
+                />
+              </div>
             </div>
 
-            <Field label="Last Name" icon={<UserCheck size={13} className="text-slate-700" />}>
-              <input type="text" value={form.lastname} onChange={set("lastname")}
-                placeholder="e.g. Singh" className={inputCls} />
-            </Field>
+            {/* Last Name + Opening Balance */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>
+                  Last Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text" placeholder="Enter last name"
+                  value={form.lastname}
+                  onChange={e => handleChange("lastname", e.target.value)}
+                  className={`${inputCls} ${errors.lastname ? "border-red-500" : ""}`}
+                />
+                {errors.lastname && <p className={errCls}>{errors.lastname}</p>}
+              </div>
+              <div>
+                <label className={labelCls}>Opening Balance</label>
+                <input
+                  type="number" step="0.01" placeholder="0.00"
+                  value={form.opening_balance}
+                  onChange={e => handleChange("opening_balance", e.target.value)}
+                  className={`${inputCls} text-right`}
+                />
+                <p className="text-[9px] text-slate-600 mt-1">
+                  Positive = Due from client · Negative = Advance paid
+                </p>
+              </div>
+            </div>
 
-            <Field label="Contact Number" required icon={<Phone size={13} className="text-blue-400" />}>
-              <input type="tel" value={form.contact} onChange={set("contact")}
-                placeholder="e.g. 9876543210" className={inputCls} required />
-            </Field>
+            {/* Contact */}
+            <div>
+              <label className={labelCls}>
+                WhatsApp / Contact <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel" placeholder="10-digit mobile number" maxLength={10}
+                value={form.contact}
+                onChange={e => handleChange("contact", e.target.value.replace(/\D/g, ""))}
+                className={`${inputCls} ${errors.contact ? "border-red-500" : ""}`}
+              />
+              {errors.contact && <p className={errCls}>{errors.contact}</p>}
+            </div>
 
-            <Field label="Email Address" icon={<Mail size={13} className="text-slate-700" />}>
-              <input type="email" value={form.email} onChange={set("email")}
-                placeholder="e.g. vikram@example.com" className={inputCls} />
-            </Field>
+            {/* Email — OPTIONAL */}
+            <div>
+              <label className={labelCls}>
+                Email or Secondary Mobile{" "}
+                <span className="text-slate-600 normal-case font-semibold text-[9px]">
+                  (optional)
+                </span>
+              </label>
+              <input
+                type="text"
+                placeholder="example@gmail.com ya secondary mobile"
+                value={form.email}
+                onChange={e => handleChange("email", e.target.value)}
+                className={`${inputCls} ${errors.email ? "border-red-500" : ""}`}
+              />
+              {errors.email && <p className={errCls}>{errors.email}</p>}
+              {/* Hint that it's truly optional */}
+              {!errors.email && (
+                <p className="text-[9px] text-slate-700 mt-1">
+                  Khali chhod sakte hain — zaruri nahi
+                </p>
+              )}
+            </div>
 
-            <Field label="Full Address" icon={<MapPin size={13} className="text-slate-700" />}>
-              <textarea value={form.address} onChange={set("address")}
-                placeholder="Shop ya ghar ka address…" rows={3}
-                className={`${inputCls} resize-none`} />
-            </Field>
+            {/* Address */}
+            <div>
+              <label className={labelCls}>
+                Address <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                rows={3} placeholder="Complete address..."
+                value={form.address}
+                onChange={e => handleChange("address", e.target.value)}
+                className={`${inputCls} resize-none ${errors.address ? "border-red-500" : ""}`}
+              />
+              {errors.address && <p className={errCls}>{errors.address}</p>}
+            </div>
 
-            <div className="flex items-center gap-3 pt-2">
-              <button type="submit" disabled={saving}
-                className="flex-1 sm:flex-none sm:px-10 py-3 bg-blue-600 hover:bg-blue-500 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20 text-sm uppercase tracking-wide">
-                {saving
-                  ? <><Loader2 size={16} className="animate-spin" />Updating…</>
-                  : <><Save size={16} strokeWidth={2.5} />Save Changes</>}
+            <div className="border-t border-[#21293d]" />
+
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                type="submit"
+                disabled={loading}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg ${
+                  isEdit
+                    ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20"
+                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20"
+                }`}
+              >
+                {loading
+                  ? <><Loader2 className="animate-spin" size={16} />Saving…</>
+                  : <><Save size={16} />{isEdit ? "Update Client" : "Save Client"}</>}
               </button>
-              <Link href={`/clients/${resolvedParams.id}/view`}
-                className="px-6 py-3 bg-[#111520] border border-[#21293d] hover:border-slate-500 text-slate-400 hover:text-white rounded-2xl font-bold text-sm transition-all no-underline">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="flex-1 sm:flex-none sm:px-8 py-3 rounded-xl font-bold text-sm bg-[#21293d] hover:bg-[#2a3550] text-slate-300 transition-all"
+              >
                 Cancel
-              </Link>
+              </button>
             </div>
+
           </form>
         </div>
-
       </div>
     </div>
   );
 }
-
-// ── Field wrapper ──────────────────────────────────────────────────────────────
-function Field({ label, required, icon, children }: {
-  label: string; required?: boolean; icon?: React.ReactNode; children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
-        {icon}{label}
-        {required && <span className="text-red-400 ml-0.5">*</span>}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-const inputCls =
-  "w-full px-4 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-white font-bold text-sm placeholder:text-slate-700 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all [color-scheme:dark]";

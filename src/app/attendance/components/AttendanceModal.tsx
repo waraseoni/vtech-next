@@ -8,7 +8,7 @@ interface Props {
   mechanicName: string;
   date: string;
   onClose: () => void;
-  onUpdate: () => void;
+  onUpdate: (newStatus: 1 | 2 | 3) => void;  // 🔧 FIX: Now receives the new status
 }
 
 const STATUS_OPTIONS = [
@@ -34,7 +34,8 @@ export default function AttendanceModal({ mechanicId, mechanicName, date, onClos
       setError(err.message);
       setLoading(false);
     } else {
-      onUpdate();
+      // 🔧 FIX: Pass the new status to parent component for immediate UI update
+      onUpdate(status);
     }
   };
 

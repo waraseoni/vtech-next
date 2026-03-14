@@ -105,6 +105,32 @@ export default function MonthlyReport({
     setModalOpen(true);
   };
 
+  // 🔧 FIX: Immediate UI update when attendance changes
+  // यह function AttendanceModal से call होगा
+  const updateAttendanceInUI = (mechanicId: number, dateStr: string, newStatus: 0 | 1 | 2 | 3) => {
+    setMechanicsData(prev =>
+      prev.map(md => {
+        if (md.mechanic.id !== mechanicId) return md;
+
+        const updatedDays = md.days.map(day => {
+          const dayDateStr = `${month}-${day.day.toString().padStart(2, '0')}`;
+          if (dayDateStr !== dateStr) return day;
+          return { ...day, status: newStatus };
+        });
+
+        // Recalculate summary counts
+        let fullDays = 0, halfDays = 0, absentDays = 0;
+        updatedDays.forEach(d => {
+          if (d.status === 1) fullDays++;
+          else if (d.status === 3) halfDays++;
+          else if (d.status === 2) absentDays++;
+        });
+
+        return { ...md, days: updatedDays, fullDays, halfDays, absentDays };
+      })
+    );
+  };
+
   if (loading) return (
     <div className="flex justify-center py-16 text-slate-500 text-sm">Loading...</div>
   );
@@ -227,11 +253,17 @@ export default function MonthlyReport({
           mechanicId={selected.mechanicId}
           mechanicName={selected.mechanicName}
           date={selected.date}
-          onClose={() => setModalOpen(false)}
-          onUpdate={() => {
+          onClose={() => {
             setModalOpen(false);
-            // BUG FIX 3: soft refetch instead of window.location.reload()
-            setRefreshKey(k => k + 1);
+            setSelected(null);
+          }}
+          onUpdate={(newStatus) => {
+            // 🔧 FIX: Immediately update UI with new status
+            updateAttendanceInUI(selected.mechanicId, selected.date, newStatus);
+            setModalOpen(false);
+            setSelected(null);
+            // Background refetch as safety net
+            setTimeout(() => setRefreshKey(k => k + 1), 100);
           }}
         />
       )}
