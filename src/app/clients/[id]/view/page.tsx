@@ -315,10 +315,11 @@ export default function ViewClientProfile() {
 
   // Recalculate service financials
   useEffect(() => {
-    // BUG FIX 8: count all billed statuses (Repaired=2, Paid=3, Delivered=5) — not just Delivered
+    // PHP view_client.php: WHERE status = 5 (Delivered only)
+    // Only Delivered jobs are billed — matches list page calculation
     setRepairBilled(
       jobs
-        .filter(j => j.status === 2 || j.status === 3 || j.status === 5)
+        .filter(j => j.status === 5)
         .reduce((s, j) => s + (j.amount || 0), 0)
     );
     setDirectBilled(directSales.reduce((s, d) => s + (d.total_amount || 0), 0));
