@@ -10,7 +10,7 @@ import {
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
   DollarSign, Truck, CreditCard, Clock, Briefcase, Coins,
   Toolbox, FolderOpen, UsersRound, Database, Settings2,
-  ChevronDown, ChevronRight, X, Menu, ArrowLeft, BarChart2,
+  ChevronDown, ChevronRight, X, Menu, ArrowLeft, BarChart2, RefreshCw,
 } from "lucide-react";
 
 // ─── Search ──────────────────────────────────────────────────────────────────
@@ -358,10 +358,30 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <ArrowLeft size={15} />
                 </button>
               )}
+              {isMobile === true && (
+                <button
+                  onClick={() => router.refresh()}
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-xl text-slate-500 hover:text-emerald-400 transition-all"
+                  title="Refresh page"
+                >
+                  <RefreshCw size={15} />
+                </button>
+              )}
               <Suspense>
                 <NavbarSearch />
               </Suspense>
             </div>
+
+            {/* Refresh button — desktop */}
+            {isMobile === false && (
+              <button
+                onClick={() => router.refresh()}
+                className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-emerald-500/40 rounded-xl text-slate-500 hover:text-emerald-400 transition-all"
+                title="Refresh page"
+              >
+                <RefreshCw size={15} />
+              </button>
+            )}
 
             {/* User dropdown */}
             <div className="relative flex-shrink-0">
