@@ -483,7 +483,7 @@ export default function ClientsPage() {
 
         ):(
           /* ─── DESKTOP TABLE ─────────────────────────────────────────── */
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl">
 
             {/* Page-size bar */}
             <div className="flex items-center justify-between px-5 py-3 bg-[#111520] border-b border-[#21293d] flex-wrap gap-2">
@@ -626,13 +626,13 @@ export default function ClientsPage() {
               </tbody>
               <tfoot>
                 <tr className="bg-[#111520] border-t border-[#21293d]">
-                  <td colSpan={2} className="px-4 py-3 text-right text-[10px] font-extrabold text-slate-600 uppercase tracking-wide">This page:</td>
-                  <td className="px-4 py-3">
+                  <td colSpan={2} className="px-4 py-3 text-right text-[10px] font-extrabold text-slate-600 uppercase tracking-wide">This page due:</td>
+                  <td className="px-4 py-3 text-right">
                     <span className="text-sm font-black text-red-400">
                       {inr(paginatedClients.reduce((s,c)=>s+(c.balance>0?c.balance:0),0))}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right text-[10px] font-extrabold text-slate-600 uppercase tracking-wide">All clients:</td>
+                  <td className="px-4 py-3 text-right text-[10px] font-extrabold text-slate-600 uppercase tracking-wide">Total outstanding:</td>
                   <td colSpan={2} className="px-4 py-3">
                     <span className="text-sm font-black text-red-400">{inr(totalOutstanding)}</span>
                   </td>
@@ -739,34 +739,53 @@ export default function ClientsPage() {
 }
 
 // ─── ActionDropdown ───────────────────────────────────────────────────────────
+// Opens upward if near bottom of viewport to prevent clipping
 function ActionDropdown({clientId,clientName,userRole,onDelete,onWhatsApp,hasContact}:{
   clientId:number;clientName:string;userRole:string;
   onDelete:()=>void;onWhatsApp:()=>void;hasContact:boolean;
 }) {
   const [open,setOpen]=useState(false);
+  const [openUp,setOpenUp]=useState(false);
   const ref=useRef<HTMLDivElement>(null);
+  const btnRef=useRef<HTMLButtonElement>(null);
+
   useEffect(()=>{
     const h=(e:MouseEvent)=>{if(ref.current&&!ref.current.contains(e.target as Node)) setOpen(false);};
     document.addEventListener("mousedown",h);
     return()=>document.removeEventListener("mousedown",h);
   },[]);
+
+  const handleToggle=()=>{
+    if(!open&&btnRef.current){
+      // Detect if dropdown would overflow viewport bottom
+      const rect=btnRef.current.getBoundingClientRect();
+      const menuHeight=200; // approximate dropdown height
+      const spaceBelow=window.innerHeight-rect.bottom;
+      setOpenUp(spaceBelow<menuHeight);
+    }
+    setOpen(v=>!v);
+  };
+
   const items=[
     {icon:<Eye size={12}/>,         label:"View Details", href:`/clients/${clientId}/view`,    color:"text-slate-300"},
     {icon:<Edit3 size={12}/>,       label:"Edit Client",  href:`/clients/${clientId}/edit`,    color:"text-blue-400"},
-    {icon:<IndianRupee size={12}/>, label:"Add Payment",  href:`/clients/${clientId}/payment`, color:"text-emerald-400"},
+    {icon:<IndianRupee size={12}/>, label:"Add Payment",  href:`/clients/${clientId}/add-payment`, color:"text-emerald-400"},
     ...(hasContact?[{icon:<MessageCircle size={12}/>,label:"WhatsApp",href:null,color:"text-[#4ade80]",action:onWhatsApp}]:[]),
     ...(userRole==="admin"?[{icon:<Trash2 size={12}/>,label:"Delete",href:null,color:"text-red-400",action:onDelete}]:[]),
   ];
+
   return(
     <div ref={ref} className="relative inline-block">
-      <button onClick={()=>setOpen(!open)}
+      <button ref={btnRef} onClick={handleToggle}
         className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold border transition cursor-pointer select-none ${
           open?"bg-blue-600 border-blue-600 text-white":"bg-[#1e2637] border-[#2a3550] text-slate-300 hover:bg-[#253048]"
         }`}>
         Actions <ChevronDown size={10} className={`transition-transform duration-200 ${open?"rotate-180":""}`}/>
       </button>
       {open&&(
-        <div className="absolute right-0 z-50 mt-1 w-44 bg-[#161b27] border border-[#21293d] rounded-xl shadow-2xl overflow-hidden" style={{top:"100%"}}>
+        <div
+          className="absolute right-0 z-[999] w-44 bg-[#161b27] border border-[#21293d] rounded-xl shadow-2xl overflow-hidden"
+          style={openUp ? {bottom:"calc(100% + 4px)"} : {top:"calc(100% + 4px)"}}>
           {items.map((item,idx)=>
             item.href?(
               <Link key={idx} href={item.href} onClick={()=>setOpen(false)}
