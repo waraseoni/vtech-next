@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, use, useCallback } from "react";
+import React, { useEffect, useState, use, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -197,12 +197,15 @@ export default function LedgerPrintPage({
         supabase.from("client_payments").select("amount, discount").eq("client_id", clientId),
       ]);
 
-      const totalRepairs = (allJobs  || []).reduce((s, r) => s + (r.amount || 0), 0);
-      const totalSales   = (allSales || []).reduce((s, r) => s + (r.total_amount || 0), 0);
-      const totalLoans   = (allLoans || []).reduce((s, r) => s + (r.total_payable || 0), 0);
-      const totalPaid    = (allPays  || []).reduce((s, p) => s + (p.amount || 0), 0);
-      const totalDisc    = (allPays  || []).reduce((s, p) => s + (p.discount || 0), 0);
-      setTotals({ repairs: totalRepairs, sales: totalSales, loans: totalLoans, payments: totalPaid, discount: totalDisc });
+      const totalRepairs  = (allJobs  || []).reduce((s, r) => s + (r.amount || 0), 0);
+      const totalSales    = (allSales || []).reduce((s, r) => s + (r.total_amount || 0), 0);
+      const totalLoans    = (allLoans || []).reduce((s, r) => s + (r.total_payable || 0), 0);
+      // CORRECT: settled = cash received + discount given (both clear the balance)
+      // e.g. bill=1500, paid=1300, discount=200 → settled=1500 → balance=0
+      const totalPaid     = (allPays  || []).reduce((s, p) => s + (p.amount || 0), 0);
+      const totalDisc     = (allPays  || []).reduce((s, p) => s + (p.discount || 0), 0);
+      const totalSettled  = totalPaid + totalDisc;  // total that clears the balance
+      setTotals({ repairs: totalRepairs, sales: totalSales, loans: totalLoans, payments: totalSettled, discount: totalDisc });
 
       // ── Brought-forward (before date range) ──────────────────────────
       let broughtFwd = (cd?.opening_balance || 0);
@@ -300,7 +303,10 @@ export default function LedgerPrintPage({
         (pays || []).forEach(p => {
           const disc  = p.discount  || 0;
           const amt   = p.amount    || 0;
-          const effCr = (p.net_amount ?? (amt - disc));
+          // CORRECT: effectiveCr = cash paid + discount given
+          // DB net_amount = amount - discount — DO NOT use it (wrong formula)
+          // e.g. paid=1300, discount=200 → effectiveCr=1500 → clears bill of 1500
+          const effCr = amt + disc;
           ledger.push({
             date: p.payment_date, desc: "Payment Received",
             ref: p.bill_no ? `BILL-${p.bill_no}` : `PAY-${p.id}`,
@@ -339,13 +345,8 @@ export default function LedgerPrintPage({
 
   useEffect(() => { fetchLedger(); }, [fetchLedger]);
 
-  // Auto-print after data loads
-  useEffect(() => {
-    if (!loading && client) {
-      const t = setTimeout(() => window.print(), 600);
-      return () => clearTimeout(t);
-    }
-  }, [loading, client]);
+  // Auto-print removed — only manual Print button triggers print
+  // (auto-print + button = double print bug)
 
   // ── Apply filter ───────────────────────────────────────────────────────
   const applyFilter = () => {
@@ -396,6 +397,7 @@ export default function LedgerPrintPage({
     : `Client #${clientId}`;
 
   const openingBal  = client?.opening_balance || 0;
+  // totals.payments = totalSettled = SUM(cash + discount) — correct
   const currentOutstanding = openingBal + totals.repairs + totals.sales + totals.loans - totals.payments;
 
   const balanceType =
@@ -413,13 +415,59 @@ export default function LedgerPrintPage({
 
   const isFiltered = !!(fromDate || toDate || activeStatuses.length > 0);
 
-  // ── PRINT HANDLER (with custom filename) ──────────────────────────────
+  // ── PRINT HANDLER ─────────────────────────────────────────────────────
+  // Opens a clean popup window with ONLY the ledger content — no Next.js layout
+  // interference, no double-page, no blank page issues.
   const handlePrint = () => {
-    const orig = document.title;
+    const el = document.getElementById("ledger-statement");
+    if (!el) return;
+
     const cleanName = clientName.replace(/[^a-zA-Z0-9]/g, "_");
-    const dt = new Date().toISOString().slice(0,19).replace(/:/g,"-");
-    document.title = `Statement_${cleanName}_${dt}`;
-    setTimeout(() => { window.print(); setTimeout(() => { document.title = orig; }, 1000); }, 100);
+    const win = window.open("", `Statement_${cleanName}`,
+      "width=900,height=700,scrollbars=yes"
+    );
+    if (!win) { alert("Popup blocked! Browser settings mein popup allow karo."); return; }
+
+    win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Statement_${cleanName}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 13px; color: #333; background: #fff; padding: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th, td { padding: 6px 5px; border: 1px solid #ddd; }
+    thead tr { background: #001f3f !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    tfoot tr { background: #f0f0f0; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    tr:nth-child(even) { background: #fafafa; }
+    @page { margin: 0.8cm; size: A4 portrait; }
+    @media print {
+      table { page-break-inside: auto; }
+      tr    { page-break-inside: avoid; }
+      thead tr { background: #001f3f !important; color: #fff !important; }
+    }
+  </style>
+</head>
+<body>
+${el.innerHTML}
+</body>
+</html>`);
+
+    win.document.close();
+    win.focus();
+    // Wait for content to render before printing
+    win.onload = () => {
+      win.print();
+      win.onafterprint = () => win.close();
+    };
+    // Fallback if onload already fired
+    setTimeout(() => {
+      if (win && !win.closed) {
+        win.print();
+        win.onafterprint = () => win.close();
+      }
+    }, 800);
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -439,7 +487,7 @@ export default function LedgerPrintPage({
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div style={{ background:"#f4f6f9", minHeight:"100vh", fontFamily:"Arial,sans-serif", fontSize:13, color:"#333" }}>
+    <div className="ledger-outer-wrap" style={{ background:"#f4f6f9", minHeight:"100vh", fontFamily:"Arial,sans-serif", fontSize:13, color:"#333" }}>
 
       {/* ── FILTER PANEL (screen only) ────────────────────────────────── */}
       <div className="no-print" style={{ background:"#fff", borderBottom:"1px solid #ddd", padding:"12px 20px" }}>
@@ -657,8 +705,8 @@ export default function LedgerPrintPage({
               { label:"Total Repairs",   val: totals.repairs },
               { label:"Total Direct Sales", val: totals.sales },
               { label:"Total Loans",     val: totals.loans },
-              { label:"Total Payments",  val: totals.payments - totals.discount },
-              { label:"Total Discount",  val: totals.discount },
+              { label:"Total Payments",  val: totals.payments + totals.discount },
+              { label:"Total Discount Given",  val: totals.discount },
             ].map(item => (
               <div key={item.label} style={{ fontSize:10 }}>
                 <span style={{ color:"#6c757d" }}>{item.label}:</span>{" "}
@@ -764,8 +812,13 @@ export default function LedgerPrintPage({
                 <th colSpan={6} style={{ padding:"8px 10px", textAlign:"right", fontSize:11 }}>Period Totals:</th>
                 <th style={{ padding:"8px 6px", textAlign:"right", color:"#c62828", fontSize:11, border:"1px solid #ccc" }}>{inr(periodDebit)}</th>
                 <th style={{ padding:"8px 6px", textAlign:"right", color:"#2e7d32", fontSize:11, border:"1px solid #ccc" }}>
-                  <div>{inr(periodCredit)}</div>
-                  {periodDiscount > 0 && <div style={{ fontSize:9, color:"#0277bd", fontStyle:"italic" }}>Disc: {inr(periodDiscount)}</div>}
+                  {/* Show total settled = cash + discount */}
+                  <div>{inr(periodCredit + periodDiscount)}</div>
+                  {periodDiscount > 0 && (
+                    <div style={{ fontSize:9, color:"#0277bd", fontStyle:"italic" }}>
+                      Cash: {inr(periodCredit)} + Disc: {inr(periodDiscount)}
+                    </div>
+                  )}
                 </th>
                 <th style={{ padding:"8px 6px", textAlign:"right", border:"1px solid #ccc" }}>—</th>
               </tr>
@@ -806,47 +859,19 @@ export default function LedgerPrintPage({
         </div>
       </div>
 
-      {/* ── PRINT STYLES ─────────────────────────────────────────────── */}
+      {/* ── PRINT STYLES — fallback for Ctrl+P (button uses popup window) ── */}
       <style>{`
         @media print {
-          /* ── Hide everything on the page by default ── */
-          body * { visibility: hidden; }
-
-          /* ── Show only the statement container and its children ── */
-          #ledger-statement,
-          #ledger-statement * { visibility: visible !important; }
-
-          /* ── Position the statement to fill the page from top-left ── */
+          .no-print { display: none !important; }
           #ledger-statement {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 10px !important;
             box-shadow: none !important;
             border: none !important;
-            border-radius: 0 !important;
-            background: #fff !important;
+            margin: 0 !important;
           }
-
-          /* ── Hide screen-only UI inside the statement ── */
-          .no-print { display: none !important; }
-
-          /* ── Page settings ── */
-          @page {
-            margin: 0.5cm;
-            size: A4 portrait;
-          }
-
-          /* ── Table print rules ── */
           table { page-break-inside: auto; }
-          tr    { page-break-inside: avoid; page-break-after: auto; }
-
-          /* ── Force color printing for badges and headers ── */
-          thead tr,
-          tfoot tr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .status-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          tr    { page-break-inside: avoid; }
+          thead tr, tfoot tr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          @page { margin: 0.8cm; size: A4 portrait; }
         }
       `}</style>
     </div>

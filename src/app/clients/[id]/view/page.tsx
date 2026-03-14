@@ -6,7 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, Edit3, Phone, MapPin, Loader2, User, Calendar,
   CreditCard, Plus, Filter, ShoppingCart, Wrench, Receipt,
-  Banknote, TrendingUp, AlertTriangle, CheckCircle2, X,
+  Banknote, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, X,
   Printer, MessageCircle, ExternalLink, Trash2,
   PencilLine, IndianRupee, RefreshCw,
 } from 'lucide-react';
@@ -432,7 +432,12 @@ export default function ViewClientProfile() {
   // ── RENDER ─────────────────────────────────────────────────
   return (
     <div className="min-h-screen font-sans" style={{ background: '#0d1117', color: '#e2e8f0' }}>
-      <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+      {/* Global styles */}
+      <style>{`
+        .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+      `}</style>
+      <div id="vtech-client-statement" className="max-w-7xl mx-auto p-3 md:p-6 space-y-5">
 
         {/* ── HEADER ── */}
         <div
@@ -493,14 +498,47 @@ export default function ViewClientProfile() {
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-orange-600 hover:bg-orange-700 text-white transition-all no-underline">
               <TrendingUp size={15} /> Collect EMI
             </Link>
-            <button onClick={() => window.print()}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all">
-              <Printer size={15} /> Print
-            </button>
+            <Link
+              href={`/clients/${client.id}/ledger-print`}
+              target="_blank"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all no-underline">
+              <Printer size={15} /> Print Ledger
+            </Link>
             <button onClick={() => router.back()}
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all">
               <ArrowLeft size={15} /> Back
             </button>
+          </div>
+        </div>
+
+        {/* ── NET BALANCE BANNER ── */}
+        <div className={`rounded-2xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+          netBalance > 0 ? 'border-red-500/20' : netBalance < 0 ? 'border-emerald-500/20' : 'border-slate-500/20'
+        }`} style={{ background: netBalance > 0 ? 'rgba(239,68,68,0.06)' : netBalance < 0 ? 'rgba(16,185,129,0.06)' : 'rgba(100,116,139,0.06)' }}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl border ${netBalance > 0 ? 'bg-red-500/15 border-red-500/25 text-red-400' : netBalance < 0 ? 'bg-emerald-500/15 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/15 border-slate-500/25 text-slate-400'}`}>
+              {netBalance > 0 ? <TrendingDown size={18} /> : <TrendingUp size={18} />}
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                {netBalance > 0 ? 'Net Balance Due from Client' : netBalance < 0 ? 'Net Advance / Credit' : 'Account Fully Settled ✓'}
+              </p>
+              <p className={`text-2xl font-black ${netBalance > 0 ? 'text-red-400' : netBalance < 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                ₹{fmt(Math.abs(netBalance))}
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4 text-right">
+            {[
+              { label: 'Opening', val: openingBal, clr: 'text-slate-300' },
+              { label: 'Billed',  val: totalBilled, clr: 'text-red-300' },
+              { label: 'Paid',    val: servicePaid, clr: 'text-emerald-300' },
+            ].map(item => (
+              <div key={item.label}>
+                <p className="text-[9px] font-black uppercase tracking-wider text-slate-600">{item.label}</p>
+                <p className={`text-sm font-black ${item.clr}`}>₹{fmt(item.val)}</p>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -612,7 +650,7 @@ export default function ViewClientProfile() {
 
         {/* ── TABS ── */}
         <div className="rounded-2xl border overflow-hidden" style={{ background: '#161b27', borderColor: '#21293d' }}>
-          <div className="flex border-b overflow-x-auto" style={{ borderColor: '#21293d', background: '#111520' }}>
+          <div className="flex border-b overflow-x-auto scrollbar-none" style={{ borderColor: '#21293d', background: '#111520' }}>
             {TABS.map(tab => (
               <button
                 key={tab.key}
@@ -635,82 +673,140 @@ export default function ViewClientProfile() {
 
           {/* ── REPAIRS TAB ── */}
           {activeTab === 'repairs' && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead style={{ background: '#111520' }}>
-                  <tr>
-                    {['Date','Job ID','Code','Item / Model','Remarks','Locate','Status','Amount'].map(h => (
-                      <th key={h} className={thCls}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredJobs.map(job => {
-                    const st = STATUS_MAP[job.status] ?? { label: 'Unknown', color: 'bg-slate-500/20 text-slate-400' };
-                    return (
-                      <tr key={job.id} className={trCls}>
-                        <td className={`${tdCls} text-xs whitespace-nowrap`}>{fmtDate(job.date_created)}</td>
-                        <td className={tdCls}>
-                          <Link href={`/jobs/view?id=${job.id}`}
-                            className="text-blue-400 hover:underline font-semibold no-underline">
+            <>
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead style={{ background: '#111520' }}>
+                    <tr>
+                      {['Date','Job ID','Item / Model','Fault','Location','Status','Amount'].map(h => (
+                        <th key={h} className={thCls}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredJobs.map(job => {
+                      const st = STATUS_MAP[job.status] ?? { label: 'Unknown', color: 'bg-slate-500/20 text-slate-400 border-slate-500/20' };
+                      return (
+                        <tr key={job.id} className={`${trCls} group`}>
+                          <td className={`${tdCls} text-xs text-slate-400 whitespace-nowrap`}>{fmtDate(job.date_created)}</td>
+                          <td className={tdCls}>
+                            <Link href={`/jobs/${job.id}/view`}
+                              className="font-black text-blue-400 hover:text-blue-300 no-underline transition-colors hover:underline">
+                              {job.job_id || `#${job.id}`}
+                            </Link>
+                            {job.code && <p className="text-[10px] text-slate-600 font-mono mt-0.5">{job.code}</p>}
+                          </td>
+                          <td className={`${tdCls} font-semibold text-white max-w-[180px] truncate`}>{job.item}</td>
+                          <td className={`${tdCls} text-xs text-slate-400 max-w-[160px] truncate`}>{job.fault || '—'}</td>
+                          <td className={`${tdCls} text-xs text-slate-500`}>{job.uniq_id || '—'}</td>
+                          <td className={tdCls}>
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${st.color}`}>
+                              {st.label}
+                            </span>
+                            {job.status === 5 && job.date_completed && (
+                              <p className="text-[9px] text-slate-600 mt-0.5">{fmtDate(job.date_completed)}</p>
+                            )}
+                          </td>
+                          <td className={`${tdCls} text-right font-black text-white`}>₹{fmt(job.amount || 0)}</td>
+                        </tr>
+                      );
+                    })}
+                    {filteredJobs.length === 0 && (
+                      <tr><td colSpan={7} className="p-10 text-center text-slate-600 text-sm italic">No repairs found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-[#21293d]">
+                {filteredJobs.length === 0 && <p className="p-8 text-center text-slate-600 text-sm italic">No repairs found</p>}
+                {filteredJobs.map(job => {
+                  const st = STATUS_MAP[job.status] ?? { label: 'Unknown', color: 'bg-slate-500/20 text-slate-400 border-slate-500/20' };
+                  return (
+                    <div key={job.id} className="p-4 hover:bg-white/[0.02] transition-colors">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <Link href={`/jobs/${job.id}/view`} className="font-black text-blue-400 text-base no-underline hover:underline">
                             {job.job_id || `#${job.id}`}
                           </Link>
-                        </td>
-                        <td className={`${tdCls} text-xs text-slate-400`}>{job.code || '—'}</td>
-                        <td className={tdCls}>{job.item}</td>
-                        <td className={`${tdCls} text-xs text-slate-400 max-w-[160px] truncate`}>{job.remark || '—'}</td>
-                        <td className={`${tdCls} text-xs text-slate-400`}>{job.uniq_id || '—'}</td>
-                        <td className={tdCls}>
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${st.color}`}>{st.label}</span>
-                          {job.status === 5 && job.date_completed && (
-                            <p className="text-[9px] text-slate-500 mt-0.5">{fmtDate(job.date_completed)}</p>
-                          )}
-                        </td>
-                        <td className={`${tdCls} text-right font-semibold text-white`}>₹{fmt(job.amount || 0)}</td>
-                      </tr>
-                    );
-                  })}
-                  {filteredJobs.length === 0 && (
-                    <tr><td colSpan={8} className="p-8 text-center text-slate-500 italic">No repairs found</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                          <p className="text-sm font-semibold text-white mt-0.5 truncate">{job.item}</p>
+                          {job.fault && <p className="text-xs text-slate-500 mt-0.5 truncate">{job.fault}</p>}
+                        </div>
+                        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${st.color}`}>{st.label}</span>
+                          <span className="text-base font-black text-white">₹{fmt(job.amount || 0)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] text-slate-600">
+                        <span>{fmtDate(job.date_created)}</span>
+                        {job.uniq_id && <span>📍 {job.uniq_id}</span>}
+                        {job.code && <span className="font-mono">{job.code}</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
 
           {/* ── DIRECT SALES TAB ── */}
           {activeTab === 'direct' && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead style={{ background: '#111520' }}>
-                  <tr>
-                    {['Date','Sale Code','Payment Mode','Remarks','Total Amount','Action'].map(h => (
-                      <th key={h} className={thCls}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredSales.map(sale => (
-                    <tr key={sale.id} className={trCls}>
-                      <td className={`${tdCls} text-xs whitespace-nowrap`}>{fmtDate(sale.date_created)}</td>
-                      <td className={`${tdCls} font-semibold`}>{sale.sale_code}</td>
-                      <td className={tdCls}>{sale.payment_mode}</td>
-                      <td className={`${tdCls} text-xs text-slate-400`}>{sale.remarks || '—'}</td>
-                      <td className={`${tdCls} text-right font-black text-emerald-400`}>₹{fmt(sale.total_amount)}</td>
-                      <td className={tdCls}>
-                        <Link href={`/sales/view?id=${sale.id}`}
-                          className="flex items-center gap-1 text-xs font-bold text-blue-400 hover:text-blue-300 no-underline">
-                          <ExternalLink size={12} /> View
-                        </Link>
-                      </td>
+            <>
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead style={{ background: '#111520' }}>
+                    <tr>
+                      {['Date','Sale Code','Mode','Remarks','Amount','Action'].map(h => (
+                        <th key={h} className={thCls}>{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                  {filteredSales.length === 0 && (
-                    <tr><td colSpan={6} className="p-8 text-center text-slate-500 italic">No direct sales found</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredSales.map(sale => (
+                      <tr key={sale.id} className={trCls}>
+                        <td className={`${tdCls} text-xs whitespace-nowrap`}>{fmtDate(sale.date_created)}</td>
+                        <td className={`${tdCls} font-black font-mono text-xs text-white`}>{sale.sale_code}</td>
+                        <td className={`${tdCls} text-xs text-slate-400`}>{sale.payment_mode}</td>
+                        <td className={`${tdCls} text-xs text-slate-500 max-w-[180px] truncate`}>{sale.remarks || '—'}</td>
+                        <td className={`${tdCls} text-right font-black text-emerald-400`}>₹{fmt(sale.total_amount)}</td>
+                        <td className={tdCls}>
+                          <Link href={`/direct-sales/${sale.id}/view`}
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-400 hover:text-blue-300 no-underline transition-colors">
+                            <ExternalLink size={12} /> View
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredSales.length === 0 && (
+                      <tr><td colSpan={6} className="p-10 text-center text-slate-600 text-sm italic">No direct sales found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="md:hidden divide-y divide-[#21293d]">
+                {filteredSales.length === 0 && <p className="p-8 text-center text-slate-600 text-sm italic">No direct sales found</p>}
+                {filteredSales.map(sale => (
+                  <div key={sale.id} className="p-4 hover:bg-white/[0.02] transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-white font-mono text-sm">{sale.sale_code}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{sale.payment_mode}</p>
+                        {sale.remarks && <p className="text-xs text-slate-600 mt-0.5 truncate">{sale.remarks}</p>}
+                        <p className="text-[10px] text-slate-600 mt-1.5">{fmtDate(sale.date_created)}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                        <span className="text-base font-black text-emerald-400">₹{fmt(sale.total_amount)}</span>
+                        <Link href={`/direct-sales/${sale.id}/view`}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-400 hover:text-blue-300 no-underline">
+                          <ExternalLink size={11} /> View
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {/* ── ALL PAYMENTS TAB ── */}
@@ -820,6 +916,7 @@ export default function ViewClientProfile() {
         </div>
 
       </div>
+
 
       {/* ── EDIT PAYMENT MODAL ── */}
       {editingPayment && (
