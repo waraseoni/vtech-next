@@ -904,13 +904,13 @@ export default function ManageJobPage({
                   placeholder="0.00"
                 />
                 {(() => {
-                  const mech = mechanics.find(m => m.id === parseInt(selectedMechanic));
-                  return selectedMechanic && mech && mech.commission_percent > 0 ? (
-                    <p className="text-[9px] text-slate-600 mt-1">
-                      Auto: {mech.commission_percent}% of grand total
-                    </p>
-                  ) : null;
-                })()}
+  const mech = mechanics.find(m => m.id === parseInt(selectedMechanic));
+  return selectedMechanic && mech && mech.commission_percent > 0 ? (
+    <p className="text-[9px] text-slate-600 mt-1">
+      Auto: {mech.commission_percent}% of grand total
+    </p>
+  ) : null;
+})()}
               </div>
             </div>
           </div>
