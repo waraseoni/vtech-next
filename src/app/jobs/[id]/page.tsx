@@ -8,614 +8,824 @@ import {
   ArrowLeft, Wrench, User, Phone, MapPin, Calendar, Clock,
   Package, Settings2, Hash, AlertTriangle, CheckCircle2,
   IndianRupee, Printer, MessageSquare, Edit, Trash2,
-  Loader2, Box, Hammer, Tag, Locate, RefreshCw, ChevronRight,
-  ClipboardList, ShieldAlert, Banknote, UserCog, Send,
+  Loader2, Box, Hammer, Tag, Locate, ChevronRight,
+  ShieldAlert, Banknote, UserCog, Send,
+  Plus, X, CheckCircle, FileText,
+  RefreshCw, Image as ImageIcon,
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface JobDetail {
-  id: number;
-  job_id: string;
-  code: string;
-  client_name: string; // TEXT storing int
-  item: string;
-  fault: string;
-  remark: string;
-  uniq_id: string;
-  amount: number;
-  mechanic_amount: number;
-  mechanic_commission_amount: number;
-  mechanic_id: number | null;
-  user_id: number;
-  del_status: number;
-  status: number;
-  date_created: string;
-  date_updated: string;
-  date_completed: string | null;
+// ─── IST HELPERS ─────────────────────────────────────────────────────────────
+function fmtDate(d: string | null) {
+  if (!d) return "N/A";
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+  }).format(new Date(d));
 }
-
-interface Client {
-  id: number;
-  firstname: string;
-  middlename: string;
-  lastname: string;
-  contact: string;
-  email: string;
-  address: string;
-}
-
-interface Mechanic {
-  id: number;
-  firstname: string;
-  lastname: string;
-  designation: string;
-  contact: string;
-}
-
-interface TransactionProduct {
-  transaction_id: number;
-  product_id: number;
-  product_name: string | null;
-  qty: number;
-  price: number;
-}
-
-interface TransactionService {
-  transaction_id: number;
-  service_id: number;
-  service_name: string | null;
-  price: number;
-}
-
-// ─── Status Config ────────────────────────────────────────────────────────────
-const STATUS_MAP: Record<number, { label: string; color: string; bg: string; dot: string }> = {
-  0: { label: "Pending",     color: "text-slate-400",   bg: "bg-slate-500/15 border-slate-500/30",   dot: "bg-slate-400" },
-  1: { label: "On-Progress", color: "text-blue-400",    bg: "bg-blue-500/15 border-blue-500/30",     dot: "bg-blue-400" },
-  2: { label: "Done",        color: "text-teal-400",    bg: "bg-teal-500/15 border-teal-500/30",     dot: "bg-teal-400" },
-  3: { label: "Paid",        color: "text-emerald-400", bg: "bg-emerald-500/15 border-emerald-500/30", dot: "bg-emerald-400" },
-  4: { label: "Cancelled",   color: "text-red-400",     bg: "bg-red-500/15 border-red-500/30",       dot: "bg-red-400" },
-  5: { label: "Delivered",   color: "text-purple-400",  bg: "bg-purple-500/15 border-purple-500/30", dot: "bg-purple-400" },
-};
-
-const DEL_STATUS: Record<number, { label: string; color: string }> = {
-  0: { label: "In Shop",   color: "text-amber-400"  },
-  1: { label: "Delivered", color: "text-emerald-400" },
-};
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-const fmtDate = (d: string | null) => {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-IN", {
-    day: "2-digit", month: "short", year: "numeric",
-  });
-};
-
-const fmtDateTime = (d: string | null) => {
-  if (!d) return "—";
-  return new Date(d).toLocaleString("en-IN", {
-    day: "2-digit", month: "short", year: "numeric",
+function fmtDateTime(d: string | null) {
+  if (!d) return "N/A";
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
-  });
+  }).format(new Date(d));
+}
+function nowIST(): string { return new Date().toISOString(); }
+function todayISTStr(): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date());
+  const p: Record<string, string> = {};
+  parts.forEach(x => { p[x.type] = x.value; });
+  return `${p.year}-${p.month}-${p.day}`;
+}
+// Convert ISO/DB date to YYYY-MM-DD for <input type="date">
+function toDateInput(d: string | null): string {
+  if (!d) return todayISTStr();
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date(d));
+  const p: Record<string, string> = {};
+  parts.forEach(x => { p[x.type] = x.value; });
+  return `${p.year}-${p.month}-${p.day}`;
+}
+
+// ─── TYPES ───────────────────────────────────────────────────────────────────
+interface JobDetail {
+  id: number; job_id: string; code: string; client_name: string;
+  item: string; fault: string; remark: string; uniq_id: string;
+  amount: number; mechanic_amount: number; mechanic_commission_amount: number;
+  mechanic_id: number | null; user_id: number; del_status: number; status: number;
+  date_created: string; date_updated: string; date_completed: string | null;
+}
+interface Client {
+  id: number; firstname: string; middlename: string;
+  lastname: string; contact: string; email: string; address: string;
+}
+interface Mechanic {
+  id: number; firstname: string; middlename: string;
+  lastname: string; designation: string; contact: string;
+}
+interface TransactionProduct {
+  transaction_id: number; product_id: number;
+  product_name: string | null; qty: number; price: number;
+}
+interface TransactionService {
+  transaction_id: number; service_id: number;
+  service_name: string | null; price: number;
+}
+interface TransactionImage {
+  id: number; transaction_id: number; image_path: string; date_created: string;
+}
+type Toast = { type: "success" | "error" | "info"; msg: string };
+
+// ─── STATUS CONFIG ────────────────────────────────────────────────────────────
+const STATUS_MAP: Record<number, {
+  label: string; explanation: string;
+  badgeColor: string; // Bootstrap-like color name for PHP-style badge
+}> = {
+  0: { label: "Pending",     explanation: "Kaam shuru nahi hua hai",             badgeColor: "secondary" },
+  1: { label: "On-Progress", explanation: "Kaam chal raha hai, jald ready hoga", badgeColor: "primary"   },
+  2: { label: "Done",        explanation: "Kaam pura ho gaya hai",               badgeColor: "info"      },
+  3: { label: "Paid",        explanation: "Bill chuka diya gaya hai",            badgeColor: "success"   },
+  4: { label: "Cancelled",   explanation: "Transaction radd kar diya gaya hai",  badgeColor: "danger"    },
+  5: { label: "Delivered",   explanation: "Aapko item mil chuka hai",            badgeColor: "warning"   },
 };
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-function InfoRow({ label, value, icon: Icon, valueClass = "text-slate-300" }: {
-  label: string; value: React.ReactNode; icon?: React.ElementType; valueClass?: string;
+// PHP-style badge colors mapped to Tailwind
+const BADGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  secondary: { bg: "bg-slate-600",   text: "text-white", border: "border-slate-700"  },
+  primary:   { bg: "bg-blue-600",   text: "text-white", border: "border-blue-700"  },
+  info:      { bg: "bg-cyan-500",   text: "text-white", border: "border-cyan-600"  },
+  success:   { bg: "bg-green-600",  text: "text-white", border: "border-green-700" },
+  danger:    { bg: "bg-red-600",    text: "text-white", border: "border-red-700"   },
+  warning:   { bg: "bg-yellow-500", text: "text-gray-900", border: "border-yellow-600" },
+};
+
+const DEL_STATUS: Record<number, string> = { 0: "In Shop", 1: "Delivered" };
+const FIRM = { name: "V-Technologies", contact: "9179105875", address: "Jabalpur", owner: "Vikram Jain" };
+
+// ─── FIELDSET COMPONENT (PHP jaisi styling) ───────────────────────────────────
+function Fieldset({ title, icon: Icon, children, color = "primary" }: {
+  title: string; icon?: React.ElementType; children: React.ReactNode; color?: "primary" | "success" | "info" | "danger";
 }) {
+  const colors = {
+    primary: "text-blue-400 border-blue-500/30",
+    success: "text-emerald-400 border-emerald-500/30",
+    info:    "text-cyan-400 border-cyan-500/30",
+    danger:  "text-red-400 border-red-500/30",
+  };
   return (
-    <div className="flex items-start justify-between py-2.5 border-b border-[#21293d] last:border-0">
-      <div className="flex items-center gap-2 text-slate-600 text-xs font-bold uppercase tracking-wider min-w-[120px]">
-        {Icon && <Icon size={12} className="text-slate-700 flex-shrink-0" />}
-        {label}
-      </div>
-      <div className={`text-sm font-semibold text-right ${valueClass}`}>{value}</div>
-    </div>
+    <fieldset className={`border-2 ${colors[color].split(" ")[1]} rounded-lg bg-[#111520] mb-4`}>
+      <legend className={`px-3 py-1 text-sm font-bold ${colors[color].split(" ")[0]} ml-3 flex items-center gap-1.5`}>
+        {Icon && <Icon size={14}/>}
+        {title}
+      </legend>
+      <div className="px-4 pb-4 pt-1">{children}</div>
+    </fieldset>
   );
 }
 
-function SectionCard({ title, icon: Icon, children, accent = "blue" }: {
-  title: string; icon: React.ElementType; children: React.ReactNode; accent?: string;
-}) {
-  const accentMap: Record<string, string> = {
-    blue:    "from-blue-600/20 to-transparent border-blue-500/20",
-    emerald: "from-emerald-600/20 to-transparent border-emerald-500/20",
-    amber:   "from-amber-600/20 to-transparent border-amber-500/20",
-    purple:  "from-purple-600/20 to-transparent border-purple-500/20",
-    red:     "from-red-600/20 to-transparent border-red-500/20",
-  };
-  const iconMap: Record<string, string> = {
-    blue: "text-blue-400", emerald: "text-emerald-400", amber: "text-amber-400",
-    purple: "text-purple-400", red: "text-red-400",
-  };
+// ─── INFO ROW ─────────────────────────────────────────────────────────────────
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-      <div className={`flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r ${accentMap[accent]} border-b`}>
-        <Icon size={15} className={iconMap[accent]} />
-        <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">{title}</h3>
-      </div>
-      <div className="px-5 py-1">{children}</div>
-    </div>
+    <p className="mb-1.5 text-sm">
+      <span className="font-semibold text-slate-500">{label}:</span>{" "}
+      <span className="text-slate-200">{value}</span>
+    </p>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function JobDetailsPage() {
-  const params = useParams();
-  const router = useRouter();
-  const jobId  = params.id as string;
+  const params  = useParams();
+  const router  = useRouter();
+  const jobId   = params.id as string;
 
   const [job,      setJob]      = useState<JobDetail | null>(null);
   const [client,   setClient]   = useState<Client | null>(null);
   const [mechanic, setMechanic] = useState<Mechanic | null>(null);
   const [products, setProducts] = useState<TransactionProduct[]>([]);
   const [services, setServices] = useState<TransactionService[]>([]);
+  const [images,   setImages]   = useState<TransactionImage[]>([]);
   const [userRole, setUserRole] = useState<string>("staff");
   const [loading,  setLoading]  = useState(true);
   const [deleting, setDeleting] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [toast,    setToast]    = useState<Toast | null>(null);
+
+  // Status modal
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [newStatus,       setNewStatus]       = useState(0);
+  const [deliveryDate,    setDeliveryDate]    = useState("");  // for Delivered status
+  const [deliveryTime,    setDeliveryTime]    = useState("");  // HH:MM
+  const [updatingStatus,  setUpdatingStatus]  = useState(false);
+
+  // Payment modal
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payAmount,    setPayAmount]    = useState("");
+  const [payDiscount,  setPayDiscount]  = useState("0");
+  const [payMode,      setPayMode]      = useState("Cash");
+  const [payRemarks,   setPayRemarks]   = useState("");
+  const [savingPay,    setSavingPay]    = useState(false);
 
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 768px)");
-    const h = (e: MediaQueryList | MediaQueryListEvent) => setIsMobile(e.matches);
-    h(mq); mq.addEventListener("change", h);
-    return () => mq.removeEventListener("change", h);
-  }, []);
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
-  // ── Fetch all data ─────────────────────────────────────────────────────────
+  // ── FETCH ──────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // User role
+      const numId = Number(jobId?.trim());
+      if (!jobId || isNaN(numId) || numId <= 0) { router.push("/jobs"); return; }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: p } = await supabase.from("profiles").select("role").eq("id", user.id).single();
         setUserRole(p?.role || "staff");
       }
 
-      // Job details
       const { data: jobData, error: jobErr } = await supabase
-        .from("transaction_list")
-        .select("*")
-        .eq("id", jobId)
-        .eq("del_status", 0)
-        .single();
+        .from("transaction_list").select("*")
+        .eq("id", numId).eq("del_status", 0).single();
 
-      if (jobErr || !jobData) {
-        alert("Job not found.");
-        router.push("/jobs");
-        return;
-      }
+      if (jobErr || !jobData) { router.push("/jobs"); return; }
       setJob(jobData as JobDetail);
+      setNewStatus(jobData.status);
+      // Pre-fill delivery date
+      setDeliveryDate(toDateInput(jobData.date_completed));
+      setDeliveryTime(jobData.date_completed
+        ? new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(jobData.date_completed))
+        : new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date()));
 
-      // Parallel fetches
-      const clientId   = Number(jobData.client_name);
-      const mechanicId = jobData.mechanic_id;
-
-      const [clientRes, mechRes, prodRes, svcRes] = await Promise.all([
+      const clientId = Number(jobData.client_name);
+      const [clientRes, mechRes, prodRes, svcRes, imgRes] = await Promise.all([
         supabase.from("client_list")
           .select("id, firstname, middlename, lastname, contact, email, address")
           .eq("id", clientId).single(),
-        mechanicId
+        jobData.mechanic_id
           ? supabase.from("mechanic_list")
-              .select("id, firstname, lastname, designation, contact")
-              .eq("id", mechanicId).single()
+              .select("id, firstname, middlename, lastname, designation, contact")
+              .eq("id", jobData.mechanic_id).single()
           : Promise.resolve({ data: null }),
-        supabase.from("transaction_products")
-          .select("*")
-          .eq("transaction_id", jobData.id),
-        supabase.from("transaction_services")
-          .select("*")
-          .eq("transaction_id", jobData.id),
+        supabase.from("transaction_products").select("*").eq("transaction_id", numId),
+        supabase.from("transaction_services").select("*").eq("transaction_id", numId),
+        supabase.from("transaction_images").select("*").eq("transaction_id", numId)
+          .order("date_created", { ascending: false }),
       ]);
 
-      if (clientRes.data)  setClient(clientRes.data as Client);
-      if (mechRes.data)    setMechanic(mechRes.data as Mechanic);
-      setProducts((prodRes.data || []) as TransactionProduct[]);
-      setServices((svcRes.data  || []) as TransactionService[]);
-    } catch (err) {
-      console.error("fetchData error:", err);
-    } finally {
-      setLoading(false);
-    }
+      if (clientRes.data) setClient(clientRes.data as Client);
+      if (mechRes.data)   setMechanic(mechRes.data as Mechanic);
+      setImages((imgRes.data || []) as TransactionImage[]);
+
+      const prods = (prodRes.data || []) as TransactionProduct[];
+      const missingPIds = prods.filter(p => !p.product_name).map(p => p.product_id);
+      if (missingPIds.length > 0) {
+        const { data: pn } = await supabase.from("product_list").select("id, name").in("id", missingPIds);
+        const pm = Object.fromEntries((pn || []).map(p => [p.id, p.name]));
+        setProducts(prods.map(p => ({ ...p, product_name: p.product_name || pm[p.product_id] || null })));
+      } else { setProducts(prods); }
+
+      const svcs = (svcRes.data || []) as TransactionService[];
+      const missingSIds = svcs.filter(s => !s.service_name).map(s => s.service_id);
+      if (missingSIds.length > 0) {
+        const { data: sn } = await supabase.from("service_list").select("id, name").in("id", missingSIds);
+        const sm = Object.fromEntries((sn || []).map(s => [s.id, s.name]));
+        setServices(svcs.map(s => ({ ...s, service_name: s.service_name || sm[s.service_id] || null })));
+      } else { setServices(svcs); }
+
+    } catch (err) { console.error("fetchData:", err); }
+    finally { setLoading(false); }
   }, [jobId, router]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ── Actions ────────────────────────────────────────────────────────────────
-  const handleDelete = async () => {
-    if (userRole !== "admin") { alert("Sirf Admin delete kar sakta hai!"); return; }
-    if (!confirm("Kya aap is job ko delete karna chahte hain?")) return;
-    setDeleting(true);
-    const { error } = await supabase.from("transaction_list").update({ del_status: 1 }).eq("id", jobId);
-    if (!error) router.push("/jobs");
-    else { alert("Delete failed: " + error.message); setDeleting(false); }
-  };
-
+  // ── WHATSAPP ───────────────────────────────────────────────────────────────
   const sendWA = () => {
     if (!job || !client) return;
     const phone = client.contact?.replace(/\D/g, "");
-    if (!phone || phone.length < 10) { alert("Valid mobile number nahi mila!"); return; }
+    if (!phone || phone.length < 10) { setToast({ type: "error", msg: "Valid mobile number nahi mila!" }); return; }
     const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
     const amt  = (job.amount || 0).toLocaleString("en-IN");
-    const biz  = "Vikram Jain, V-Technologies, Jabalpur, Mob. 9179105875";
-
+    const biz  = `${FIRM.owner}, ${FIRM.name}, ${FIRM.address}, Mob.-${FIRM.contact}`;
     const msgs: Record<number, string> = {
-      0: `Namaste ${name} ji 🙏!\n\nAapka *${job.item}* repair ke liye register ho gaya hai. 📝\n\nJob ID: #${job.job_id}\nCode: #${job.code}\nStatus: *Received/Pending*\n\nHum jald hi update denge. Dhanyavaad! ❤️\n\n${biz}`,
-      1: `Namaste ${name} ji 🙏!\n\nAapke *${job.item}* (Job #${job.job_id}) par kaam shuru ho gaya hai. 🛠️\n\nStatus: *In-Progress/Repairing*\n\n${biz}`,
-      2: `Namaste ${name} ji 🙏!\n\nAapka *${job.item}* repair ho gaya hai. ✅\n\nJob #${job.job_id} | Code: ${job.code}\nBill Amount: *₹${amt}*\n\nWorkshop aakar collect karein. 🛍️\n\nDhanyavaad! ❤️\n\n${biz}`,
-      3: `Namaste ${name} ji 🙏!\n\nAapka *${job.item}* (Job #${job.job_id}) deliver ho gaya. 🏁\n\nTotal Paid: *₹${amt}*\nDhanyavaad! ⭐\n\n${biz}`,
-      4: `Namaste ${name} ji 🙏!\n\nAapka Job #${job.job_id} (*${job.item}*) cancel ho gaya. ❌\n\nAdhik jankari ke liye workshop par sampark karein. 🙏\n\n${biz}`,
-      5: `Namaste ${name} ji 🙏!\n\nAapka *${job.item}* (Job #${job.job_id}) deliver kar diya gaya. 🏁\n\nTotal Paid: *₹${amt}*\nDhanyavaad! ⭐\n\n${biz}`,
+      0: `Namaste ${name} ji!\n\nAapka *${job.item}* (Job ID: ${job.job_id}) repair ke liye prapt hua hai.\n\nStatus: *Pending (Queue mein hai)*\nHum jald hi check karke update denge.\n\nDhanyavaad\n${biz}`,
+      1: `Namaste ${name} ji!\n\nAapke *${job.item}* (Job ID: ${job.job_id}) par kaam shuru kar diya gaya hai.\n\nStatus: *On-Progress*\nKripya dhairya rakhein.\n\nDhanyavaad\n${biz}`,
+      2: `Namaste ${name} ji!\n\nKhushkhabri! Aapka *${job.item}* repair complete ho gaya hai.\n\nJob ID: ${job.job_id} | Code: ${job.code}\nTotal Bill: *Rs.${amt}*\nStatus: *Ready for Delivery*\n\nAap workshop aakar collect kar sakte hain.\n\nDhanyavaad\n${biz}`,
+      3: `Namaste ${name} ji!\n\nAapka *${job.item}* (Job ID: ${job.job_id}) deliver kar diya gaya hai.\n\nStatus: *Paid*\nPayment: *Rs.${amt}*\n\nV-Technologies par bharosa karne ke liye dhanyavaad!\n\n${biz}`,
+      4: `Namaste ${name} ji!\n\nAapka Job ID: ${job.job_id} (*${job.item}*) Cancel kar diya gaya hai.\n\nAdhik jankari ke liye sampark karein.\n\nDhanyavaad\n${biz}`,
+      5: `Namaste ${name} ji!\n\nAapka *${job.item}* (Job ID: ${job.job_id}) safaltapurvak deliver kar diya gaya hai.\n\nStatus: *Delivered*\nPayment: *Rs.${amt}*\n\nV-Technologies par bharosa karne ke liye dhanyavaad!\n\n${biz}`,
     };
     window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msgs[job.status] || msgs[0])}`, "_blank");
   };
 
-  // ── Loading ────────────────────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
-        <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.3em]">Loading Job Details...</p>
-      </div>
-    );
-  }
+  // ── UPDATE STATUS ──────────────────────────────────────────────────────────
+  const handleStatusUpdate = async () => {
+    if (!job) return;
+    setUpdatingStatus(true);
+    const updates: Record<string, unknown> = {
+      status: newStatus,
+      date_updated: nowIST(),
+    };
+    // Delivery date: use user-provided date+time when status = 5
+    if (newStatus === 5) {
+      const dateStr = deliveryDate || todayISTStr();
+      const timeStr = deliveryTime || "00:00";
+      // Combine date + time with IST offset
+      updates.date_completed = `${dateStr}T${timeStr}:00+05:30`;
+    }
+    const { error } = await supabase.from("transaction_list").update(updates).eq("id", job.id);
+    if (error) {
+      setToast({ type: "error", msg: "Status update failed: " + error.message });
+    } else {
+      setJob({ ...job, ...updates } as JobDetail);
+      setToast({ type: "success", msg: `Status "${STATUS_MAP[newStatus]?.label}" update ho gaya!` });
+      setShowStatusModal(false);
+    }
+    setUpdatingStatus(false);
+  };
 
+  // ── ADD PAYMENT ────────────────────────────────────────────────────────────
+  const handleAddPayment = async () => {
+    if (!client || !job) return;
+    const amt  = parseFloat(payAmount);
+    const disc = parseFloat(payDiscount) || 0;
+    if (isNaN(amt) || amt <= 0) { setToast({ type: "error", msg: "Valid amount enter karo!" }); return; }
+    setSavingPay(true);
+    const { error } = await supabase.from("client_payments").insert({
+      client_id: client.id, job_id: job.job_id,
+      amount: amt, discount: disc,
+      payment_mode: payMode,
+      remarks: payRemarks.trim() || null,
+      payment_date: `${todayISTStr()}T00:00:00+05:30`,
+    });
+    if (error) { setToast({ type: "error", msg: "Payment save nahi hua: " + error.message }); }
+    else {
+      setToast({ type: "success", msg: "Payment save ho gayi!" });
+      setShowPayModal(false);
+      setPayAmount(""); setPayDiscount("0"); setPayRemarks("");
+    }
+    setSavingPay(false);
+  };
+
+  // ── DELETE ─────────────────────────────────────────────────────────────────
+  const handleDelete = async () => {
+    if (userRole !== "admin") { setToast({ type: "error", msg: "Sirf Admin delete kar sakta hai!" }); return; }
+    if (!confirm("Kya aap pakka is job ko delete karna chahte hain?")) return;
+    setDeleting(true);
+    const { error } = await supabase.from("transaction_list").update({ del_status: 1 }).eq("id", jobId);
+    if (!error) router.push("/jobs");
+    else { setToast({ type: "error", msg: "Delete failed!" }); setDeleting(false); }
+  };
+
+  // ── PRINT ──────────────────────────────────────────────────────────────────
+  const handlePrint = () => {
+    if (!job) return;
+    const svcHtml = services.length > 0
+      ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Service</th><th style="padding:6px;text-align:right">Price</th></tr></thead><tbody>${services.map(s => `<tr><td style="padding:5px">${s.service_name || s.service_id}</td><td style="padding:5px;text-align:right">Rs.${s.price.toFixed(2)}</td></tr>`).join("")}</tbody></table>` : "";
+    const prodHtml = products.length > 0
+      ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Product</th><th style="padding:6px;text-align:center">Qty</th><th style="padding:6px;text-align:right">Price</th><th style="padding:6px;text-align:right">Total</th></tr></thead><tbody>${products.map(p => `<tr><td style="padding:5px">${p.product_name || p.product_id}</td><td style="padding:5px;text-align:center">${p.qty}</td><td style="padding:5px;text-align:right">Rs.${p.price.toFixed(2)}</td><td style="padding:5px;text-align:right">Rs.${(p.qty*p.price).toFixed(2)}</td></tr>`).join("")}</tbody></table>` : "";
+    const win = window.open("", `Bill_${job.job_id}`, "width=900,height=700");
+    if (!win) { alert("Popup blocked! Browser mein allow karo."); return; }
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Job Bill - ${job.job_id}</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#333;padding:20px}
+h1{font-size:18px;font-weight:900;color:#001f3f;margin-bottom:2px}h2{font-size:12px;color:#555;margin-bottom:10px}
+hr{border:1px solid #001f3f;margin:8px 0}.total{font-size:16px;font-weight:900;margin-top:12px;color:#155724}
+@page{margin:1cm;size:A4}</style></head><body>
+<h1>${FIRM.name}</h1><h2>${FIRM.owner} | ${FIRM.address} | ${FIRM.contact}</h2><hr/>
+<p><b>Job ID:</b> ${job.job_id}&nbsp;&nbsp;<b>Code:</b> ${job.code}&nbsp;&nbsp;<b>Status:</b> ${STATUS_MAP[job.status]?.label}</p>
+<p><b>Client:</b> ${[client?.firstname, client?.middlename, client?.lastname].filter(Boolean).join(" ")}&nbsp;&nbsp;<b>Contact:</b> ${client?.contact || ""}</p>
+<p><b>Item:</b> ${job.item}&nbsp;&nbsp;<b>Fault:</b> ${job.fault}</p>
+<p><b>Mechanic:</b> ${mechanic ? [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ") : "N/A"}&nbsp;&nbsp;<b>Date:</b> ${fmtDate(job.date_created)}</p>
+${job.date_completed ? `<p><b>Delivered:</b> ${fmtDateTime(job.date_completed)}</p>` : ""}
+${svcHtml}${prodHtml}
+<p class="total">Total Bill Amount: Rs.${job.amount.toLocaleString("en-IN", { minimumFractionDigits:2 })}</p>
+</body></html>`);
+    win.document.close();
+    win.onload = () => { win.print(); win.onafterprint = () => win.close(); };
+    setTimeout(() => { if (win && !win.closed) { win.print(); win.onafterprint = () => win.close(); } }, 800);
+  };
+
+  // ── LOADING ────────────────────────────────────────────────────────────────
+  if (loading) return (
+    <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-3">
+      <Loader2 className="animate-spin text-blue-700" size={40}/>
+      <p className="text-slate-500 font-medium uppercase tracking-widest text-sm animate-pulse">
+        Loading Transaction Details...
+      </p>
+    </div>
+  );
   if (!job) return null;
 
   const st         = STATUS_MAP[job.status] || STATUS_MAP[0];
+  const badge      = BADGE_COLORS[st.badgeColor];
   const clientName = client
     ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
     : `Client #${job.client_name}`;
   const mechName   = mechanic
-    ? `${mechanic.firstname} ${mechanic.lastname}`.trim()
+    ? [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ")
     : null;
-
   const productsTotal = products.reduce((s, p) => s + p.price * p.qty, 0);
   const servicesTotal = services.reduce((s, s2) => s + s2.price, 0);
 
-  // ════════════════════════════════════════════════════════════════
+  // ── RENDER ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white font-sans pb-16">
-      <div className="max-w-5xl mx-auto px-3 sm:px-5 pt-4 sm:pt-6 space-y-4">
+    <div className="min-h-screen bg-[#0d1117] font-sans">
 
-        {/* ── Top Bar ── */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <button onClick={() => router.back()}
-            className="flex items-center gap-1.5 text-slate-500 hover:text-slate-300 text-sm font-bold transition-colors">
-            <ArrowLeft size={16} /> Back
-          </button>
-          <div className="flex items-center gap-2">
-            <a href={`/api/print-bill?job_id=${job.job_id}`} target="_blank"
-              className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all">
-              <Printer size={13} /> Print Bill
-            </a>
-            <Link href={`/jobs/edit/${job.id}`}
-              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all">
-              <Edit size={13} /> Edit
-            </Link>
-            <Link href={`/jobs/old-edit/${job.id}`}
-              className="flex items-center gap-1.5 bg-[#21293d] hover:bg-[#2a3550] text-slate-400 px-3 py-1.5 rounded-lg text-xs font-bold transition-all">
-              <RefreshCw size={13} /> Old Edit
-            </Link>
-            {userRole === "admin" && (
-              <button onClick={handleDelete} disabled={deleting}
-                className="flex items-center gap-1.5 bg-red-700/30 hover:bg-red-700/50 text-red-400 border border-red-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50">
-                <Trash2 size={13} /> {deleting ? "Deleting..." : "Delete"}
-              </button>
-            )}
-          </div>
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-2xl border text-sm font-semibold ${
+          toast.type === "success" ? "bg-green-50 border-green-300 text-green-800"
+          : toast.type === "info"  ? "bg-blue-50 border-blue-300 text-blue-800"
+          : "bg-red-50 border-red-300 text-red-800"
+        }`}>
+          {toast.type === "success" ? <CheckCircle size={16}/> : <AlertTriangle size={16}/>}
+          {toast.msg}
         </div>
+      )}
 
-        {/* ── Hero Card: Job Header ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          {/* Status bar */}
-          <div className={`h-1 w-full ${
-            job.status === 0 ? "bg-slate-500" :
-            job.status === 1 ? "bg-gradient-to-r from-blue-500 to-blue-600" :
-            job.status === 2 ? "bg-gradient-to-r from-teal-500 to-teal-600" :
-            job.status === 3 ? "bg-gradient-to-r from-emerald-500 to-emerald-600" :
-            job.status === 4 ? "bg-gradient-to-r from-red-500 to-red-600" :
-            "bg-gradient-to-r from-purple-500 to-purple-600"
-          }`} />
+      {/* ── PAGE CONTENT ─────────────────────────────────────────────────────── */}
+      <div className="py-4 px-3 md:px-6 text-slate-200">
+        <div className="max-w-5xl mx-auto">
 
-          <div className="p-5 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              {/* Left: Job Identity */}
-              <div className="flex items-start gap-4">
-                <div className={`p-3 rounded-xl border ${st.bg} flex-shrink-0`}>
-                  <Wrench size={22} className={st.color} />
+          {/* Card */}
+          <div className="bg-[#161b27] rounded shadow-sm border border-[#21293d]">
+
+            {/* Card Header — PHP style navy */}
+            <div className="bg-[#0d1f35] text-white rounded-t px-4 py-3 flex items-center justify-between flex-wrap gap-2 border-b border-[#21293d]">
+              <h5 className="font-bold text-base flex items-center gap-2 m-0">
+                <FileText size={16}/>
+                Transaction Details — {job.job_id} ({job.code})
+              </h5>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Link href={`/clients/${job.client_name}/view`}
+                  className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
+                  <User size={12}/> View Client
+                </Link>
+                <Link href={`/jobs/${job.id}/gst-bill`} target="_blank"
+                  className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
+                  <FileText size={12}/> GST Bill
+                </Link>
+                <button onClick={handlePrint}
+                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+                  <Printer size={12}/> Print Bill
+                </button>
+                <button onClick={() => router.back()}
+                  className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+                  <ArrowLeft size={12}/> Back
+                </button>
+              </div>
+            </div>
+
+            {/* Card Body */}
+            <div className="p-4 text-slate-200">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+                {/* ── LEFT COLUMN (7/12) ─────────────────────────────────── */}
+                <div className="lg:col-span-7 lg:border-r lg:border-[#21293d] lg:pr-4">
+
+                  {/* Client + Job Info row */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+
+                    {/* Client Info */}
+                    <Fieldset title="Client Information" icon={User} color="primary">
+                      <InfoRow label="Name"
+                        value={
+                          <Link href={`/clients/${job.client_name}/view`}
+                            className="text-blue-400 font-semibold hover:underline">
+                            {clientName}
+                          </Link>
+                        }/>
+                      {client?.contact && (
+                        <InfoRow label="Contact"
+                          value={<a href={`tel:${client.contact}`} className="text-blue-400">{client.contact}</a>}/>
+                      )}
+                      {client?.address && <InfoRow label="Address" value={<span className="text-slate-400 text-xs">{client.address}</span>}/>}
+                      {client?.email && <InfoRow label="Email" value={<span className="text-slate-400 text-xs">{client.email}</span>}/>}
+                    </Fieldset>
+
+                    {/* Job Details */}
+                    <Fieldset title="Job Details" icon={Wrench} color="info">
+                      <InfoRow label="Mechanic" value={mechName || <em className="text-slate-600">Not Assigned</em>}/>
+                      <InfoRow label="Received" value={fmtDateTime(job.date_created)}/>
+                      <InfoRow label="Job No." value={<span className="font-bold">{job.job_id}</span>}/>
+                      <InfoRow label="Code"    value={<span className="font-bold font-mono">{job.code}</span>}/>
+                      <InfoRow label="Locate"  value={job.uniq_id || <em className="text-slate-600">N/A</em>}/>
+                      <InfoRow label="Del. Status" value={DEL_STATUS[job.del_status]}/>
+                    </Fieldset>
+                  </div>
+
+                  {/* Item Description */}
+                  <Fieldset title="Item Description" icon={Box} color="primary">
+                    <InfoRow label="Item / Model" value={<span className="font-semibold">{job.item}</span>}/>
+                    <div className="mb-1.5 text-sm">
+                      <span className="font-semibold text-slate-500">Fault Reported:</span>
+                      <p className="mt-0.5 text-slate-300 whitespace-pre-line">{job.fault}</p>
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-semibold text-slate-500">Remarks:</span>
+                      <p className="mt-0.5 text-slate-400 whitespace-pre-line">
+                        {job.remark?.trim() || <em className="text-slate-600">No remarks</em>}
+                      </p>
+                    </div>
+                  </Fieldset>
+
+                  {/* Services */}
+                  {services.length > 0 && (
+                    <Fieldset title="Services Availed" icon={Settings2} color="primary">
+                      <div className="overflow-x-auto">
+                        <table className="w-full border border-[#21293d] text-sm">
+                          <thead className="bg-[#0d1f35] text-slate-300">
+                            <tr>
+                              <th className="px-3 py-2 text-left">Service</th>
+                              <th className="px-3 py-2 text-right">Charge</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#21293d]">
+                            {services.map((s, i) => (
+                              <tr key={i} className={i % 2 === 0 ? "bg-[#111520]" : "bg-[#161b27]"}>
+                                <td className="px-3 py-2 text-slate-300">{s.service_name || `Service #${s.service_id}`}</td>
+                                <td className="px-3 py-2 text-right font-medium text-slate-200">Rs.{s.price.toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot className="bg-[#0d1117] font-bold border-t border-[#21293d]">
+                            <tr>
+                              <td className="px-3 py-2 text-right text-sm text-slate-500">Services Total:</td>
+                              <td className="px-3 py-2 text-right text-emerald-400">Rs.{servicesTotal.toFixed(2)}</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </Fieldset>
+                  )}
+
+                  {/* Products */}
+                  {products.length > 0 && (
+                    <Fieldset title="Products Used" icon={Package} color="success">
+                      <div className="overflow-x-auto">
+                        <table className="w-full border border-[#21293d] text-sm">
+                          <thead className="bg-emerald-900/50 text-emerald-300">
+                            <tr>
+                              <th className="px-3 py-2 text-left">Product</th>
+                              <th className="px-3 py-2 text-center">Qty</th>
+                              <th className="px-3 py-2 text-right">Price</th>
+                              <th className="px-3 py-2 text-right">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#21293d]">
+                            {products.map((p, i) => (
+                              <tr key={i} className={i % 2 === 0 ? "bg-[#111520]" : "bg-[#161b27]"}>
+                                <td className="px-3 py-2 text-slate-300">{p.product_name || `Product #${p.product_id}`}</td>
+                                <td className="px-3 py-2 text-center text-slate-400">{p.qty}</td>
+                                <td className="px-3 py-2 text-right text-slate-400">Rs.{p.price.toFixed(2)}</td>
+                                <td className="px-3 py-2 text-right font-medium text-slate-200">Rs.{(p.qty * p.price).toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot className="bg-[#0d1117] font-bold border-t border-[#21293d]">
+                            <tr>
+                              <td colSpan={3} className="px-3 py-2 text-right text-sm text-slate-500">Products Total:</td>
+                              <td className="px-3 py-2 text-right text-emerald-400">Rs.{productsTotal.toFixed(2)}</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </Fieldset>
+                  )}
                 </div>
-                <div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h1 className="text-2xl font-black text-white tracking-tight">
-                      Job #{job.job_id}
-                    </h1>
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold border ${st.bg} ${st.color}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+
+                {/* ── RIGHT COLUMN (5/12) ────────────────────────────────── */}
+                <div className="lg:col-span-5">
+
+                  {/* Current Status — PHP style big badge */}
+                  <div className="text-center mb-5">
+                    <p className="text-slate-400 font-semibold text-sm mb-2">Current Job Status</p>
+                    <span className={`inline-block px-8 py-4 rounded-sm shadow-sm font-black text-2xl ${badge.bg} ${badge.text} border ${badge.border}`}
+                      style={{ minWidth: "90%" }}>
                       {st.label}
                     </span>
+                    <p className="text-slate-500 text-sm mt-2 italic">{st.explanation}</p>
+                    {job.status === 5 && job.date_completed && (
+                      <div className="mt-3 text-emerald-400 border-t border-[#21293d] pt-3">
+                        <CheckCircle2 className="inline mr-1" size={16}/>
+                        <span className="font-semibold">Delivered On:</span><br/>
+                        <span className="text-lg font-bold">{fmtDateTime(job.date_completed)}</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex flex-wrap gap-3 mt-2">
-                    <span className="flex items-center gap-1.5 text-slate-500 text-xs">
-                      <Hash size={11} />
-                      Code: <span className="text-slate-300 font-bold">{job.code || "—"}</span>
-                    </span>
-                    <span className="flex items-center gap-1.5 text-slate-500 text-xs">
-                      <Locate size={11} />
-                      Loc: <span className="text-slate-300 font-bold">{job.uniq_id || "—"}</span>
-                    </span>
-                    <span className={`flex items-center gap-1.5 text-xs font-bold ${DEL_STATUS[job.del_status].color}`}>
-                      <Box size={11} />
-                      {DEL_STATUS[job.del_status].label}
-                    </span>
+
+                  {/* Item Photos */}
+                  {images.length > 0 && (
+                    <Fieldset title={`Item Photos (${images.length})`} icon={ImageIcon} color="primary">
+                      <div className="grid grid-cols-3 gap-2">
+                        {images.map((img) => (
+                          <a key={img.id} href={img.image_path} target="_blank" rel="noreferrer">
+                            <img src={img.image_path} alt="Item"
+                              className="w-full h-20 object-cover rounded border border-[#21293d] hover:opacity-80 transition-opacity cursor-pointer"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}/>
+                          </a>
+                        ))}
+                      </div>
+                    </Fieldset>
+                  )}
+
+                  {/* Billing Summary */}
+                  <div className="border border-emerald-500/25 rounded bg-emerald-500/5 p-4 mb-4">
+                    <h5 className="text-emerald-400 font-bold text-center mb-3">Billing Summary</h5>
+                    {(services.length > 0 || products.length > 0) && (
+                      <div className="mb-3 space-y-1">
+                        {services.length > 0 && (
+                          <div className="flex justify-between text-sm text-slate-500">
+                            <span>Services ({services.length})</span>
+                            <span>Rs.{servicesTotal.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {products.length > 0 && (
+                          <div className="flex justify-between text-sm text-slate-500">
+                            <span>Products ({products.length})</span>
+                            <span>Rs.{productsTotal.toFixed(2)}</span>
+                          </div>
+                        )}
+                        <hr className="border-emerald-500/20"/>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center border-b border-emerald-500/25 pb-2 mb-2">
+                      <span className="font-medium text-sm text-slate-400">Total Amount:</span>
+                      <span className="text-2xl font-black text-white">Rs.{job.amount.toFixed(2)}</span>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-3xl font-black text-emerald-400">Rs.{job.amount.toFixed(2)}</p>
+                      <p className="text-slate-500 text-xs mt-1">Final Payable Amount</p>
+                    </div>
+                    {(job.mechanic_amount > 0 || job.mechanic_commission_amount > 0) && (
+                      <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-1">
+                        {job.mechanic_amount > 0 && (
+                          <div className="flex justify-between text-xs text-slate-500">
+                            <span>Mechanic Amount:</span><span>Rs.{job.mechanic_amount.toFixed(0)}</span>
+                          </div>
+                        )}
+                        {job.mechanic_commission_amount > 0 && (
+                          <div className="flex justify-between text-xs text-slate-500">
+                            <span>Commission:</span><span>Rs.{job.mechanic_commission_amount.toFixed(0)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
+
+                  {/* WhatsApp Button */}
+                  <button onClick={sendWA}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 shadow-sm mb-4 transition-colors">
+                    <Send size={16}/> Send Status on WhatsApp
+                  </button>
                 </div>
               </div>
 
-              {/* Right: Amount */}
-              <div className="text-right">
-                <div className="text-3xl font-black text-white">
-                  ₹{(job.amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </div>
-                <div className="text-xs text-slate-600 mt-0.5">Bill Amount</div>
-                {(job.mechanic_amount > 0 || job.mechanic_commission_amount > 0) && (
-                  <div className="mt-1 text-xs text-slate-600">
-                    {job.mechanic_amount > 0 && (
-                      <span className="block">Mechanic: ₹{job.mechanic_amount.toFixed(0)}</span>
-                    )}
-                    {job.mechanic_commission_amount > 0 && (
-                      <span className="block">Commission: ₹{job.mechanic_commission_amount.toFixed(0)}</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Breadcrumb path */}
-            <div className="flex items-center gap-1 mt-4 text-[10px] text-slate-700">
-              <Link href="/jobs" className="hover:text-slate-500 transition-colors">Jobs</Link>
-              <ChevronRight size={10} />
-              <span className="text-slate-500">#{job.job_id}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Main Grid ── */}
-        <div className={`grid gap-4 ${isMobile ? "grid-cols-1" : "grid-cols-2"}`}>
-
-          {/* ── Device Information ── */}
-          <SectionCard title="Device Information" icon={Package} accent="blue">
-            <InfoRow label="Item / Model" icon={Box}       value={<span className="text-white font-bold">{job.item}</span>} />
-            <InfoRow label="Fault / Issue" icon={ShieldAlert} value={<span className="text-red-400">{job.fault}</span>} />
-            {job.remark && job.remark.trim() && (
-              <InfoRow label="Remark" icon={MessageSquare}
-                value={<span className="text-slate-400 text-xs max-w-[200px] text-right leading-relaxed">{job.remark}</span>} />
-            )}
-            <InfoRow label="Location ID" icon={Locate} value={job.uniq_id || "—"} />
-          </SectionCard>
-
-          {/* ── Client Information ── */}
-          <SectionCard title="Client Information" icon={User} accent="emerald">
-            <InfoRow label="Name" icon={User}
-              value={
-                <Link href={`/clients/${job.client_name}`}
-                  className="text-blue-400 hover:text-blue-300 font-bold transition-colors">
-                  {clientName}
+              {/* ── ACTION BUTTONS (bottom — PHP style) ───────────────────── */}
+              <hr className="my-4 border-[#21293d]"/>
+              <div className="flex flex-wrap gap-2 justify-center">
+                <button onClick={() => { setNewStatus(job.status); setShowStatusModal(true); }}
+                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
+                  <RefreshCw size={15}/> Update Status
+                </button>
+                <Link href={`/jobs/${job.id}/edit`}
+                  className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline">
+                  <Edit size={15}/> Edit Transaction
                 </Link>
-              }
-            />
-            {client?.contact && (
-              <InfoRow label="Contact" icon={Phone}
-                value={
-                  <div className="flex items-center gap-2">
-                    <a href={`tel:${client.contact}`} className="text-slate-300 hover:text-white text-sm transition-colors">
-                      {client.contact}
-                    </a>
-                    <a href={`https://wa.me/91${client.contact.replace(/\D/g, "")}`} target="_blank"
-                      className="text-emerald-400 hover:text-emerald-300 transition-colors" title="WhatsApp">
-                      <Phone size={13} />
-                    </a>
-                  </div>
-                }
-              />
-            )}
-            {client?.address && (
-              <InfoRow label="Address" icon={MapPin} value={<span className="text-xs text-right leading-relaxed max-w-[200px]">{client.address}</span>} />
-            )}
-            {client?.email && (
-              <InfoRow label="Email" icon={Tag} value={<span className="text-slate-400 text-xs">{client.email}</span>} />
-            )}
-            <InfoRow label="Client ID" icon={Hash} value={<span className="text-slate-500 text-xs">#{job.client_name}</span>} />
-          </SectionCard>
-
-          {/* ── Job Timeline ── */}
-          <SectionCard title="Timeline" icon={Calendar} accent="amber">
-            <InfoRow label="Created"      icon={Calendar} value={fmtDateTime(job.date_created)} />
-            <InfoRow label="Last Updated" icon={Clock}
-              value={<span className={job.date_updated !== job.date_created ? "text-amber-400" : ""}>
-                {fmtDateTime(job.date_updated)}
-              </span>}
-            />
-            <InfoRow label="Completed"    icon={CheckCircle2}
-              value={
-                job.date_completed
-                  ? <span className="text-emerald-400">{fmtDateTime(job.date_completed)}</span>
-                  : <span className="text-slate-600 text-xs">Not yet</span>
-              }
-            />
-          </SectionCard>
-
-          {/* ── Mechanic / Technician ── */}
-          <SectionCard title="Assigned Technician" icon={UserCog} accent="purple">
-            {mechanic ? (
-              <>
-                <InfoRow label="Name"        icon={User}
-                  value={<span className="text-white font-bold">{mechName}</span>} />
-                <InfoRow label="Designation" icon={Tag}
-                  value={<span className="text-purple-400 text-xs font-bold uppercase tracking-wider">{mechanic.designation}</span>} />
-                {mechanic.contact && (
-                  <InfoRow label="Contact" icon={Phone}
-                    value={
-                      <a href={`tel:${mechanic.contact}`} className="text-slate-300 hover:text-white transition-colors text-sm">
-                        {mechanic.contact}
-                      </a>
-                    }
-                  />
+                <button onClick={handlePrint}
+                  className="flex items-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
+                  <Printer size={15}/> Print Page
+                </button>
+                <button onClick={() => setShowPayModal(true)}
+                  className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
+                  <Plus size={15}/> Add Payment
+                </button>
+                {userRole === "admin" && (
+                  <button onClick={handleDelete} disabled={deleting}
+                    className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors disabled:opacity-50">
+                    <Trash2 size={15}/> {deleting ? "Deleting..." : "Delete Transaction"}
+                  </button>
                 )}
-                {job.mechanic_amount > 0 && (
-                  <InfoRow label="Mech. Amount" icon={IndianRupee}
-                    value={<span className="text-amber-400">₹{job.mechanic_amount.toFixed(0)}</span>} />
-                )}
-                {job.mechanic_commission_amount > 0 && (
-                  <InfoRow label="Commission" icon={Banknote}
-                    value={<span className="text-teal-400">₹{job.mechanic_commission_amount.toFixed(0)}</span>} />
-                )}
-              </>
-            ) : (
-              <div className="py-6 text-center text-slate-700 text-xs font-bold uppercase tracking-wider">
-                No technician assigned
               </div>
-            )}
-          </SectionCard>
+
+            </div>{/* /card-body */}
+          </div>{/* /card */}
         </div>
-
-        {/* ── Products Used ── */}
-        {products.length > 0 && (
-          <SectionCard title={`Products Used (${products.length})`} icon={Package} accent="blue">
-            <div className="-mx-5">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-[#111520]">
-                    <th className="px-5 py-2.5 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Product</th>
-                    <th className="px-5 py-2.5 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Qty</th>
-                    <th className="px-5 py-2.5 text-right text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Price</th>
-                    <th className="px-5 py-2.5 text-right text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#21293d]">
-                  {products.map((p, i) => (
-                    <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 bg-blue-500/10 border border-blue-500/20 rounded flex items-center justify-center flex-shrink-0">
-                            <Package size={10} className="text-blue-400" />
-                          </div>
-                          <span className="text-slate-200 font-medium text-xs">
-                            {p.product_name || `Product #${p.product_id}`}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3 text-center text-slate-400 text-xs font-bold">×{p.qty}</td>
-                      <td className="px-5 py-3 text-right text-slate-400 text-xs">₹{p.price.toFixed(2)}</td>
-                      <td className="px-5 py-3 text-right text-slate-200 font-bold text-xs">₹{(p.price * p.qty).toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-[#111520] border-t border-[#21293d]">
-                    <td colSpan={3} className="px-5 py-2.5 text-right text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Products Total</td>
-                    <td className="px-5 py-2.5 text-right font-black text-blue-400">₹{productsTotal.toFixed(2)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </SectionCard>
-        )}
-
-        {/* ── Services Performed ── */}
-        {services.length > 0 && (
-          <SectionCard title={`Services Performed (${services.length})`} icon={Hammer} accent="emerald">
-            <div className="-mx-5">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-[#111520]">
-                    <th className="px-5 py-2.5 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Service</th>
-                    <th className="px-5 py-2.5 text-right text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Price</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#21293d]">
-                  {services.map((s, i) => (
-                    <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 bg-emerald-500/10 border border-emerald-500/20 rounded flex items-center justify-center flex-shrink-0">
-                            <Settings2 size={10} className="text-emerald-400" />
-                          </div>
-                          <span className="text-slate-200 font-medium text-xs">
-                            {s.service_name || `Service #${s.service_id}`}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3 text-right text-slate-200 font-bold text-xs">₹{s.price.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-[#111520] border-t border-[#21293d]">
-                    <td className="px-5 py-2.5 text-right text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Services Total</td>
-                    <td className="px-5 py-2.5 text-right font-black text-emerald-400">₹{servicesTotal.toFixed(2)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </SectionCard>
-        )}
-
-        {/* ── Bill Summary ── */}
-        {(products.length > 0 || services.length > 0) && (
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="px-5 py-3.5 bg-gradient-to-r from-indigo-600/20 to-transparent border-b border-indigo-500/20 flex items-center gap-2">
-              <IndianRupee size={15} className="text-indigo-400" />
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Bill Summary</h3>
-            </div>
-            <div className="px-5 py-3 space-y-2">
-              {products.length > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-600">Products ({products.length} items)</span>
-                  <span className="text-slate-400">₹{productsTotal.toFixed(2)}</span>
-                </div>
-              )}
-              {services.length > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-600">Services ({services.length} items)</span>
-                  <span className="text-slate-400">₹{servicesTotal.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="border-t border-[#21293d] pt-2 flex justify-between items-center">
-                <span className="text-sm font-extrabold text-slate-300">Total Bill Amount</span>
-                <span className="text-xl font-black text-white">₹{job.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── WhatsApp Action Card ── */}
-        <div className="bg-[#161b27] border border-emerald-500/20 rounded-2xl p-5">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <h3 className="text-sm font-extrabold text-white">Send WhatsApp Update</h3>
-              <p className="text-xs text-slate-600 mt-0.5">
-                Current status: <span className={`font-bold ${st.color}`}>{st.label}</span> — message will be sent accordingly
-              </p>
-            </div>
-            <button onClick={sendWA}
-              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-extrabold transition-all active:scale-95 shadow-lg shadow-emerald-500/20">
-              <Send size={15} />
-              Send to {client?.contact ? client.contact.slice(-10) : "Client"}
-            </button>
-          </div>
-        </div>
-
-        {/* ── Full Status History Note ── */}
-        <div className="flex items-start gap-3 bg-amber-500/5 border border-amber-500/15 rounded-xl px-4 py-3">
-          <AlertTriangle size={14} className="text-amber-500/60 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-slate-700 leading-relaxed">
-            Status change history is not tracked. Last updated: <span className="text-slate-500">{fmtDateTime(job.date_updated)}</span>
-            {job.date_completed && <> · Completed: <span className="text-slate-500">{fmtDateTime(job.date_completed)}</span></>}
-          </p>
-        </div>
-
       </div>
+
+      {/* ══ UPDATE STATUS MODAL ══════════════════════════════════════════════ */}
+      {showStatusModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowStatusModal(false); }}>
+          <div className="bg-[#161b27] rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-[#21293d]">
+
+            {/* Modal Header */}
+            <div className="bg-[#001f3f] text-white px-5 py-3.5 flex items-center justify-between">
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <RefreshCw size={16}/> Update Transaction Status
+              </h3>
+              <button onClick={() => setShowStatusModal(false)} className="text-white/70 hover:text-white">
+                <X size={18}/>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-400 mb-1.5">New Status</label>
+                <select
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(parseInt(e.target.value))}
+                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 bg-[#0d1117]">
+                  {Object.entries(STATUS_MAP).map(([val, info]) => (
+                    <option key={val} value={val}>{info.label} — {info.explanation}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Status preview badge */}
+              <div className="text-center">
+                <span className={`inline-block px-5 py-2 rounded font-bold text-sm ${BADGE_COLORS[STATUS_MAP[newStatus]?.badgeColor]?.bg} ${BADGE_COLORS[STATUS_MAP[newStatus]?.badgeColor]?.text}`}>
+                  {STATUS_MAP[newStatus]?.label}
+                </span>
+                <p className="text-slate-500 text-xs mt-1">{STATUS_MAP[newStatus]?.explanation}</p>
+              </div>
+
+              {/* ── Delivery Date/Time — only when status = 5 (Delivered) ── */}
+              {newStatus === 5 && (
+                <div className="bg-emerald-500/5 border border-emerald-500/25 rounded-lg p-4 space-y-3">
+                  <p className="text-emerald-400 font-semibold text-sm flex items-center gap-1.5">
+                    <CheckCircle2 size={15}/> Delivery Date & Time
+                  </p>
+                  <p className="text-slate-500 text-xs">
+                    Agar delivery pehle ho gayi thi aur ab entry kar rahe hain, to sahi date aur time enter karein.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">Delivery Date</label>
+                      <input
+                        type="date"
+                        value={deliveryDate}
+                        onChange={(e) => setDeliveryDate(e.target.value)}
+                        max={todayISTStr()}
+                        className="w-full border border-[#2a3550] rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"/>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">Delivery Time</label>
+                      <input
+                        type="time"
+                        value={deliveryTime}
+                        onChange={(e) => setDeliveryTime(e.target.value)}
+                        className="w-full border border-[#2a3550] rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"/>
+                    </div>
+                  </div>
+                  {deliveryDate && deliveryTime && (
+                    <p className="text-emerald-400 text-xs font-medium text-center">
+                      Saved as: {fmtDateTime(`${deliveryDate}T${deliveryTime}:00`)}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-5 py-4 bg-[#111520] border-t border-[#21293d] flex gap-3 justify-end flex-wrap">
+              <button onClick={() => setShowStatusModal(false)}
+                className="px-5 py-2 bg-[#1e2637] border border-[#2a3550] text-slate-400 rounded font-medium text-sm hover:bg-[#252f45] transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleStatusUpdate} disabled={updatingStatus}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm disabled:opacity-50 flex items-center gap-2 transition-colors">
+                {updatingStatus ? <><Loader2 size={14} className="animate-spin"/>Updating...</> : <><RefreshCw size={14}/>Update Status</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ ADD PAYMENT MODAL ════════════════════════════════════════════════ */}
+      {showPayModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowPayModal(false); }}>
+          <div className="bg-[#161b27] rounded-t-2xl sm:rounded-lg shadow-2xl w-full sm:max-w-md overflow-hidden border border-[#21293d]">
+
+            <div className="bg-[#001f3f] text-white px-5 py-3.5 flex items-center justify-between">
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <IndianRupee size={16}/> Record New Payment
+              </h3>
+              <button onClick={() => setShowPayModal(false)} className="text-white/70 hover:text-white">
+                <X size={18}/>
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded px-3 py-2 text-sm">
+                <span className="font-semibold text-blue-400">{clientName}</span>
+                <span className="text-slate-600 mx-2">·</span>
+                <span className="text-slate-400">Job #{job.job_id}</span>
+                <span className="text-slate-600 mx-2">·</span>
+                <span className="text-slate-400">Bill: <span className="font-bold text-white">Rs.{job.amount.toFixed(2)}</span></span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Amount (Rs.) *</label>
+                  <input type="number" step="0.01" min="0.01"
+                    value={payAmount} onChange={(e) => setPayAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Discount (Rs.)</label>
+                  <input type="number" step="0.01" min="0"
+                    value={payDiscount} onChange={(e) => setPayDiscount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
+                </div>
+              </div>
+
+              {payAmount && (
+                <div className="bg-emerald-500/5 border border-emerald-500/20 rounded px-4 py-2.5 flex justify-between items-center">
+                  <span className="text-xs text-slate-500 font-semibold">Net Settled</span>
+                  <span className="text-emerald-400 font-black text-base">
+                    Rs.{((parseFloat(payAmount)||0) + (parseFloat(payDiscount)||0)).toLocaleString("en-IN", { minimumFractionDigits:2 })}
+                  </span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Payment Mode *</label>
+                <select value={payMode} onChange={(e) => setPayMode(e.target.value)}
+                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500">
+                  {["Cash","PhonePe/GPay","Bank Transfer","Credit Card"].map(m => (
+                    <option key={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Remarks</label>
+                <input type="text" value={payRemarks} onChange={(e) => setPayRemarks(e.target.value)}
+                  placeholder="Koi notes..."
+                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
+              </div>
+            </div>
+
+            <div className="px-5 py-4 bg-[#111520] border-t border-[#21293d] flex gap-3 flex-wrap">
+              <button onClick={() => setShowPayModal(false)}
+                className="flex-1 py-2.5 bg-[#1e2637] border border-[#2a3550] text-slate-400 rounded font-medium text-sm hover:bg-[#252f45] transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleAddPayment} disabled={savingPay}
+                className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
+                {savingPay ? <><Loader2 size={14} className="animate-spin"/>Saving...</> : <><Plus size={14}/>Save Payment</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
