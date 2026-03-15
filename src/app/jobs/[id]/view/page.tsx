@@ -59,6 +59,7 @@ interface JobDetail {
 interface Client {
   id: number; firstname: string; middlename: string;
   lastname: string; contact: string; email: string; address: string;
+  opening_balance?: number;
 }
 interface Mechanic {
   id: number; firstname: string; middlename: string;
@@ -147,9 +148,10 @@ export default function JobDetailsPage() {
   const [services, setServices] = useState<TransactionService[]>([]);
   const [images,   setImages]   = useState<TransactionImage[]>([]);
   const [userRole, setUserRole] = useState<string>("staff");
-  const [loading,  setLoading]  = useState(true);
-  const [deleting, setDeleting] = useState(false);
-  const [toast,    setToast]    = useState<Toast | null>(null);
+  const [loading,       setLoading]       = useState(true);
+  const [deleting,      setDeleting]      = useState(false);
+  const [toast,         setToast]         = useState<Toast | null>(null);
+  const [clientBalance, setClientBalance] = useState<number | null>(null);
 
   // Status modal
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -201,7 +203,7 @@ export default function JobDetailsPage() {
       const clientId = Number(jobData.client_name);
       const [clientRes, mechRes, prodRes, svcRes, imgRes] = await Promise.all([
         supabase.from("client_list")
-          .select("id, firstname, middlename, lastname, contact, email, address")
+          .select("id, firstname, middlename, lastname, contact, email, address, opening_balance")
           .eq("id", clientId).single(),
         jobData.mechanic_id
           ? supabase.from("mechanic_list")
@@ -216,6 +218,21 @@ export default function JobDetailsPage() {
 
       if (clientRes.data) setClient(clientRes.data as Client);
       if (mechRes.data)   setMechanic(mechRes.data as Mechanic);
+
+      // Client balance calculation (same as list page)
+      const ob = clientRes.data?.opening_balance || 0;
+      const [billedRes, paidRes, salesRes] = await Promise.all([
+        supabase.from("transaction_list")
+          .select("amount").eq("client_name", String(clientId)).eq("status", 5),
+        supabase.from("client_payments")
+          .select("amount, discount").eq("client_id", clientId),
+        supabase.from("direct_sales")
+          .select("total_amount").eq("client_id", clientId),
+      ]);
+      const totalBilled = (billedRes.data || []).reduce((s, r) => s + (r.amount || 0), 0);
+      const totalSales  = (salesRes.data  || []).reduce((s, r) => s + (r.total_amount || 0), 0);
+      const totalPaid   = (paidRes.data   || []).reduce((s, p) => s + (p.amount || 0) + (p.discount || 0), 0);
+      setClientBalance(ob + totalBilled + totalSales - totalPaid);
       setImages((imgRes.data || []) as TransactionImage[]);
 
       const prods = (prodRes.data || []) as TransactionProduct[];
@@ -405,10 +422,26 @@ export default function JobDetailsPage() {
                     <Fieldset title="Client Information" icon={User} color="primary">
                       <InfoRow label="Name"
                         value={
-                          <Link href={`/clients/${job.client_name}/view`}
-                            className="text-blue-400 font-semibold hover:underline">
-                            {clientName}
-                          </Link>
+                          <span className="inline-flex items-center flex-wrap gap-1.5">
+                            <Link href={`/clients/${job.client_name}/view`}
+                              className="text-blue-400 font-semibold hover:underline">
+                              {clientName}
+                            </Link>
+                            {clientBalance !== null && (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                                clientBalance > 0
+                                  ? "bg-red-500/15 text-red-400 border-red-500/30"
+                                  : clientBalance < 0
+                                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                  : "bg-slate-500/15 text-slate-400 border-slate-500/30"
+                              }`}>
+                                {clientBalance > 0 ? "Due" : clientBalance < 0 ? "Adv" : "✓"}
+                                {clientBalance !== 0 && (
+                                  <span> ₹{Math.abs(clientBalance).toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
+                                )}
+                              </span>
+                            )}
+                          </span>
                         }/>
                       {client?.contact && (
                         <InfoRow label="Contact"
