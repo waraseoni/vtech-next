@@ -1,822 +1,835 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import {
-  ArrowLeft,
-  Edit3,
-  Printer,
-  Smartphone,
-  User,
-  Clock,
-  MapPin,
-  Phone,
-  IndianRupee,
-  Loader2,
-  Wrench,
-  Cpu,
-  MessageSquare,
-  Calendar,
-  X,
-  Plus,
-  Trash2,
-  CheckCircle,
+  ArrowLeft, Wrench, User, Phone, MapPin, Calendar, Clock,
+  Package, Settings2, Hash, AlertTriangle, CheckCircle2,
+  IndianRupee, Printer, MessageSquare, Edit, Trash2,
+  Loader2, Box, Hammer, Tag, Locate, ChevronRight,
+  ShieldAlert, Banknote, UserCog, Send,
+  Plus, X, CheckCircle, FileText,
+  RefreshCw, Image as ImageIcon,
 } from "lucide-react";
 
-// ---------- Types ----------
-type Client = {
-  id: number;
-  firstname: string;
-  middlename: string | null;
-  lastname: string;
-  contact: string | null;
-  address: string | null;
-  email: string | null;
+// ─── IST HELPERS ─────────────────────────────────────────────────────────────
+function fmtDate(d: string | null) {
+  if (!d) return "N/A";
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+  }).format(new Date(d));
+}
+function fmtDateTime(d: string | null) {
+  if (!d) return "N/A";
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: true,
+  }).format(new Date(d));
+}
+function nowIST(): string { return new Date().toISOString(); }
+function todayISTStr(): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date());
+  const p: Record<string, string> = {};
+  parts.forEach(x => { p[x.type] = x.value; });
+  return `${p.year}-${p.month}-${p.day}`;
+}
+// Convert ISO/DB date to YYYY-MM-DD for <input type="date">
+function toDateInput(d: string | null): string {
+  if (!d) return todayISTStr();
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date(d));
+  const p: Record<string, string> = {};
+  parts.forEach(x => { p[x.type] = x.value; });
+  return `${p.year}-${p.month}-${p.day}`;
+}
+
+// ─── TYPES ───────────────────────────────────────────────────────────────────
+interface JobDetail {
+  id: number; job_id: string; code: string; client_name: string;
+  item: string; fault: string; remark: string; uniq_id: string;
+  amount: number; mechanic_amount: number; mechanic_commission_amount: number;
+  mechanic_id: number | null; user_id: number; del_status: number; status: number;
+  date_created: string; date_updated: string; date_completed: string | null;
+}
+interface Client {
+  id: number; firstname: string; middlename: string;
+  lastname: string; contact: string; email: string; address: string;
+}
+interface Mechanic {
+  id: number; firstname: string; middlename: string;
+  lastname: string; designation: string; contact: string;
+}
+interface TransactionProduct {
+  transaction_id: number; product_id: number;
+  product_name: string | null; qty: number; price: number;
+}
+interface TransactionService {
+  transaction_id: number; service_id: number;
+  service_name: string | null; price: number;
+}
+interface TransactionImage {
+  id: number; transaction_id: number; image_path: string; date_created: string;
+}
+type Toast = { type: "success" | "error" | "info"; msg: string };
+
+// ─── STATUS CONFIG ────────────────────────────────────────────────────────────
+const STATUS_MAP: Record<number, {
+  label: string; explanation: string;
+  badgeColor: string; // Bootstrap-like color name for PHP-style badge
+}> = {
+  0: { label: "Pending",     explanation: "Kaam shuru nahi hua hai",             badgeColor: "secondary" },
+  1: { label: "On-Progress", explanation: "Kaam chal raha hai, jald ready hoga", badgeColor: "primary"   },
+  2: { label: "Done",        explanation: "Kaam pura ho gaya hai",               badgeColor: "info"      },
+  3: { label: "Paid",        explanation: "Bill chuka diya gaya hai",            badgeColor: "success"   },
+  4: { label: "Cancelled",   explanation: "Transaction radd kar diya gaya hai",  badgeColor: "danger"    },
+  5: { label: "Delivered",   explanation: "Aapko item mil chuka hai",            badgeColor: "warning"   },
 };
 
-type Mechanic = {
-  id: number;
-  firstname: string;
-  middlename: string | null;
-  lastname: string;
+// PHP-style badge colors mapped to Tailwind
+const BADGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  secondary: { bg: "bg-slate-600",   text: "text-white", border: "border-slate-700"  },
+  primary:   { bg: "bg-blue-600",   text: "text-white", border: "border-blue-700"  },
+  info:      { bg: "bg-cyan-500",   text: "text-white", border: "border-cyan-600"  },
+  success:   { bg: "bg-green-600",  text: "text-white", border: "border-green-700" },
+  danger:    { bg: "bg-red-600",    text: "text-white", border: "border-red-700"   },
+  warning:   { bg: "bg-yellow-500", text: "text-gray-900", border: "border-yellow-600" },
 };
 
-type Transaction = {
-  id: number;
-  job_id: string;
-  code: string | null;
-  client_name: number;
-  mechanic_id: number | null;
-  item: string;
-  fault: string;
-  uniq_id: string | null;
-  amount: number;
-  status: number;
-  date_created: string;
-  date_updated: string;
-  date_completed: string | null;
-  remark: string | null;
-  del_status: number;
-};
+const DEL_STATUS: Record<number, string> = { 0: "In Shop", 1: "Delivered" };
+const FIRM = { name: "V-Technologies", contact: "9179105875", address: "Jabalpur", owner: "Vikram Jain" };
 
-type Service = {
-  id: number;
-  transaction_id: number;
-  service_id: number;
-  price: number;
-  service_name?: string;
-};
+// ─── FIELDSET COMPONENT (PHP jaisi styling) ───────────────────────────────────
+function Fieldset({ title, icon: Icon, children, color = "primary" }: {
+  title: string; icon?: React.ElementType; children: React.ReactNode; color?: "primary" | "success" | "info" | "danger";
+}) {
+  const colors = {
+    primary: "text-blue-400 border-blue-500/30",
+    success: "text-emerald-400 border-emerald-500/30",
+    info:    "text-cyan-400 border-cyan-500/30",
+    danger:  "text-red-400 border-red-500/30",
+  };
+  return (
+    <fieldset className={`border-2 ${colors[color].split(" ")[1]} rounded-lg bg-[#111520] mb-4`}>
+      <legend className={`px-3 py-1 text-sm font-bold ${colors[color].split(" ")[0]} ml-3 flex items-center gap-1.5`}>
+        {Icon && <Icon size={14}/>}
+        {title}
+      </legend>
+      <div className="px-4 pb-4 pt-1">{children}</div>
+    </fieldset>
+  );
+}
 
-type Product = {
-  id: number;
-  transaction_id: number;
-  product_id: number;
-  qty: number;
-  price: number;
-  product_name?: string;
-};
+// ─── INFO ROW ─────────────────────────────────────────────────────────────────
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <p className="mb-1.5 text-sm">
+      <span className="font-semibold text-slate-500">{label}:</span>{" "}
+      <span className="text-slate-200">{value}</span>
+    </p>
+  );
+}
 
-// ---------- Status Helpers ----------
-const statusMap: Record<number, { label: string; explanation: string; color: string }> = {
-  0: { label: "Pending", explanation: "Kaam shuru nahi hua hai", color: "bg-gray-100 text-gray-800 border-gray-300" },
-  1: { label: "On-Progress", explanation: "Kaam chal raha hai, Jald hi ready hoga", color: "bg-blue-100 text-blue-800 border-blue-300" },
-  2: { label: "Done", explanation: "Kaam pura ho gaya hai", color: "bg-green-100 text-green-800 border-green-300" },
-  3: { label: "Paid", explanation: "Bill chuka diya gaya hai", color: "bg-emerald-100 text-emerald-800 border-emerald-300" },
-  4: { label: "Cancelled", explanation: "Transaction radd kar diya gaya hai", color: "bg-red-100 text-red-800 border-red-300" },
-  5: { label: "Delivered", explanation: "Aapko item mil chuka hai", color: "bg-purple-100 text-purple-800 border-purple-300" },
-};
+// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
+export default function JobDetailsPage() {
+  const params  = useParams();
+  const router  = useRouter();
+  const jobId   = params.id as string;
 
-// ---------- Main Component ----------
-export default function ViewJobPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const router = useRouter();
-
-  const [job, setJob] = useState<Transaction | null>(null);
-  const [client, setClient] = useState<Client | null>(null);
+  const [job,      setJob]      = useState<JobDetail | null>(null);
+  const [client,   setClient]   = useState<Client | null>(null);
   const [mechanic, setMechanic] = useState<Mechanic | null>(null);
-  const [services, setServices] = useState<Service[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [updating, setUpdating] = useState(false);
-  const [showStatusModal, setShowStatusModal] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [newStatus, setNewStatus] = useState<number>(0);
-  const [paymentAmount, setPaymentAmount] = useState("");
-  const [paymentMode, setPaymentMode] = useState("Cash");
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [products, setProducts] = useState<TransactionProduct[]>([]);
+  const [services, setServices] = useState<TransactionService[]>([]);
+  const [images,   setImages]   = useState<TransactionImage[]>([]);
+  const [userRole, setUserRole] = useState<string>("staff");
+  const [loading,  setLoading]  = useState(true);
+  const [deleting, setDeleting] = useState(false);
+  const [toast,    setToast]    = useState<Toast | null>(null);
 
-  // Fetch user role
+  // Status modal
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [newStatus,       setNewStatus]       = useState(0);
+  const [deliveryDate,    setDeliveryDate]    = useState("");  // for Delivered status
+  const [deliveryTime,    setDeliveryTime]    = useState("");  // HH:MM
+  const [updatingStatus,  setUpdatingStatus]  = useState(false);
+
+  // Payment modal
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payAmount,    setPayAmount]    = useState("");
+  const [payDiscount,  setPayDiscount]  = useState("0");
+  const [payMode,      setPayMode]      = useState("Cash");
+  const [payRemarks,   setPayRemarks]   = useState("");
+  const [savingPay,    setSavingPay]    = useState(false);
+
   useEffect(() => {
-    const fetchUserRole = async () => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  // ── FETCH ──────────────────────────────────────────────────────────────────
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const numId = Number(jobId?.trim());
+      if (!jobId || isNaN(numId) || numId <= 0) { router.push("/jobs"); return; }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        setUserRole(profile?.role || "staff");
+        const { data: p } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+        setUserRole(p?.role || "staff");
       }
-    };
-    fetchUserRole();
-  }, []);
 
-  // Fetch all job-related data
-  useEffect(() => {
-    const fetchData = async () => {
-      // Validate and parse ID
-      const rawId = resolvedParams.id;
-      const trimmedId = rawId?.trim();
-      const numericId = Number(trimmedId);
-      if (!trimmedId || isNaN(numericId) || !Number.isInteger(numericId) || numericId <= 0) {
-        console.error("Invalid job ID:", rawId);
-        setError("Invalid job ID – Job not found");
-        setLoading(false);
-        return;
-      }
-      const jobId = numericId;
+      const { data: jobData, error: jobErr } = await supabase
+        .from("transaction_list").select("*")
+        .eq("id", numId).eq("del_status", 0).single();
 
-      try {
-        setLoading(true);
-        setError(null);
+      if (jobErr || !jobData) { router.push("/jobs"); return; }
+      setJob(jobData as JobDetail);
+      setNewStatus(jobData.status);
+      // Pre-fill delivery date
+      setDeliveryDate(toDateInput(jobData.date_completed));
+      setDeliveryTime(jobData.date_completed
+        ? new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(jobData.date_completed))
+        : new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date()));
 
-        // 1. Fetch transaction (only non-deleted)
-        const { data: txn, error: txnError } = await supabase
-          .from("transaction_list")
-          .select("*")
-          .eq("id", jobId)
-          .eq("del_status", 0)
-          .single();
+      const clientId = Number(jobData.client_name);
+      const [clientRes, mechRes, prodRes, svcRes, imgRes] = await Promise.all([
+        supabase.from("client_list")
+          .select("id, firstname, middlename, lastname, contact, email, address")
+          .eq("id", clientId).single(),
+        jobData.mechanic_id
+          ? supabase.from("mechanic_list")
+              .select("id, firstname, middlename, lastname, designation, contact")
+              .eq("id", jobData.mechanic_id).single()
+          : Promise.resolve({ data: null }),
+        supabase.from("transaction_products").select("*").eq("transaction_id", numId),
+        supabase.from("transaction_services").select("*").eq("transaction_id", numId),
+        supabase.from("transaction_images").select("*").eq("transaction_id", numId)
+          .order("date_created", { ascending: false }),
+      ]);
 
-        if (txnError) {
-          console.error("Transaction fetch error:", txnError);
-          setError("Transaction not found");
-          setLoading(false);
-          return;
-        }
-        setJob(txn);
+      if (clientRes.data) setClient(clientRes.data as Client);
+      if (mechRes.data)   setMechanic(mechRes.data as Mechanic);
+      setImages((imgRes.data || []) as TransactionImage[]);
 
-        // 2. Fetch client
-        const { data: clientData, error: clientError } = await supabase
-          .from("client_list")
-          .select("*")
-          .eq("id", txn.client_name)
-          .single();
+      const prods = (prodRes.data || []) as TransactionProduct[];
+      const missingPIds = prods.filter(p => !p.product_name).map(p => p.product_id);
+      if (missingPIds.length > 0) {
+        const { data: pn } = await supabase.from("product_list").select("id, name").in("id", missingPIds);
+        const pm = Object.fromEntries((pn || []).map(p => [p.id, p.name]));
+        setProducts(prods.map(p => ({ ...p, product_name: p.product_name || pm[p.product_id] || null })));
+      } else { setProducts(prods); }
 
-        if (clientError) {
-          console.error("Client fetch error:", clientError);
-          setError("Client not found");
-          setLoading(false);
-          return;
-        }
-        setClient(clientData);
+      const svcs = (svcRes.data || []) as TransactionService[];
+      const missingSIds = svcs.filter(s => !s.service_name).map(s => s.service_id);
+      if (missingSIds.length > 0) {
+        const { data: sn } = await supabase.from("service_list").select("id, name").in("id", missingSIds);
+        const sm = Object.fromEntries((sn || []).map(s => [s.id, s.name]));
+        setServices(svcs.map(s => ({ ...s, service_name: s.service_name || sm[s.service_id] || null })));
+      } else { setServices(svcs); }
 
-        // 3. Fetch mechanic if assigned
-        if (txn.mechanic_id) {
-          const { data: mechanicData, error: mechanicError } = await supabase
-            .from("mechanic_list")
-            .select("*")
-            .eq("id", txn.mechanic_id)
-            .single();
+    } catch (err) { console.error("fetchData:", err); }
+    finally { setLoading(false); }
+  }, [jobId, router]);
 
-          if (!mechanicError) setMechanic(mechanicData);
-          else console.error("Mechanic fetch error:", mechanicError);
-        }
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-        // 4. Fetch services (without join to avoid foreign key issues)
-        const { data: servicesData, error: servicesError } = await supabase
-          .from("transaction_services")
-          .select("*")
-          .eq("transaction_id", jobId);
-
-        if (servicesError) {
-          console.error("Services fetch error:", JSON.stringify(servicesError, null, 2));
-          setServices([]);
-        } else if (servicesData && servicesData.length > 0) {
-          // Get unique service IDs
-          const serviceIds = servicesData.map(s => s.service_id);
-          // Fetch service names from service_list
-          const { data: serviceNamesData, error: serviceNamesError } = await supabase
-            .from("service_list")
-            .select("id, name")
-            .in("id", serviceIds);
-
-          if (serviceNamesError) {
-            console.error("Service names fetch error:", JSON.stringify(serviceNamesError, null, 2));
-            // Still set services without names
-            setServices(servicesData.map(s => ({ ...s, service_name: null })));
-          } else {
-            const serviceNameMap = Object.fromEntries(
-              serviceNamesData.map(s => [s.id, s.name])
-            );
-            setServices(
-              servicesData.map(s => ({
-                ...s,
-                service_name: serviceNameMap[s.service_id] || null,
-              }))
-            );
-          }
-        } else {
-          setServices([]);
-        }
-
-        // 5. Fetch products (similar approach)
-        const { data: productsData, error: productsError } = await supabase
-          .from("transaction_products")
-          .select("*")
-          .eq("transaction_id", jobId);
-
-        if (productsError) {
-          console.error("Products fetch error:", JSON.stringify(productsError, null, 2));
-          setProducts([]);
-        } else if (productsData && productsData.length > 0) {
-          const productIds = productsData.map(p => p.product_id);
-          const { data: productNamesData, error: productNamesError } = await supabase
-            .from("product_list")
-            .select("id, name")
-            .in("id", productIds);
-
-          if (productNamesError) {
-            console.error("Product names fetch error:", JSON.stringify(productNamesError, null, 2));
-            setProducts(productsData.map(p => ({ ...p, product_name: null })));
-          } else {
-            const productNameMap = Object.fromEntries(
-              productNamesData.map(p => [p.id, p.name])
-            );
-            setProducts(
-              productsData.map(p => ({
-                ...p,
-                product_name: productNameMap[p.product_id] || null,
-              }))
-            );
-          }
-        } else {
-          setProducts([]);
-        }
-
-      } catch (err) {
-        console.error("Unexpected error:", err);
-        setError("An unexpected error occurred");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [resolvedParams.id]);
-
-  // Helper: format date
-  const formatDate = (dateStr?: string, includeTime = false) => {
-    if (!dateStr) return "N/A";
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      ...(includeTime && { hour: "2-digit", minute: "2-digit" }),
-    });
-  };
-
-  // Helper: get full client name
-  const getClientFullName = () => {
-    if (!client) return "Unknown Client";
-    const parts = [client.firstname, client.middlename, client.lastname].filter(Boolean);
-    return parts.join(" ").trim();
-  };
-
-  // Helper: get full mechanic name
-  const getMechanicFullName = () => {
-    if (!mechanic) return null;
-    const parts = [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean);
-    return parts.join(" ").trim();
-  };
-
-  // Calculate total of products
-  const calculateProductTotal = () => {
-    return products.reduce((sum, p) => sum + p.qty * p.price, 0);
-  };
-
-  // WhatsApp message (same as PHP)
+  // ── WHATSAPP ───────────────────────────────────────────────────────────────
   const sendWA = () => {
     if (!job || !client) return;
     const phone = client.contact?.replace(/\D/g, "");
-    if (!phone || phone.length < 10) {
-      alert("Valid mobile number nahi mila!");
-      return;
-    }
-    const clientName = getClientFullName();
-    const amount = job.amount || 0;
-    const formattedAmount = amount.toLocaleString("en-IN");
-    const businessName = "Vikram Jain, V-Technologies, Jabalpur, Mob. 9179105875";
-
-    let msg = "";
-    switch (job.status) {
-      case 0:
-        msg = `Namaste ${clientName} ji 🙏!\n\nAapka *${job.item}* repair ke liye register ho gaya hai. 📝\n\n📋 *Details:*\nJob ID: #${job.job_id}\nCode: #${job.code}\nStatus: *Received/Pending*\n\nHum jald hi aapke device ko check karke update denge. Dhanyavaad! ❤️\n\n${businessName}`;
-        break;
-      case 1:
-        msg = `Namaste ${clientName} ji 🙏!\n\nAapke *${job.item}* (Job ID: #${job.job_id}) (Code: #${job.code}) par kaam shuru kar diya gaya hai. 🛠️\n\nStatus: *In-Progress/Repairing*\n\nHamare technician isse jald se jald theek karne ki koshish kar rahe hain. ✨\n\n${businessName}`;
-        break;
-      case 2:
-        msg = `Namaste ${clientName} ji 🙏!\n\nKhushkhabri! Aapka *${job.item}* repair complete ho gaya hai. ✅\n\n📋 *Details:*\nJob ID: #${job.job_id}\nCode: #${job.code}\nBill Amount: *₹${formattedAmount}*\n\nAap workshop par aakar apna device collect kar sakte hain. 🛍️\n\nDhanyavaad! ❤️\n\n${businessName}`;
-        break;
-      case 3:
-      case 5:
-        msg = `Namaste ${clientName} ji 🙏!\n\nAapka *${job.item}* (Job ID: #${job.job_id}) (Code: #${job.code}) deliver kar diya gaya hai. 🏁\n\nTotal Paid: *₹${formattedAmount}*\n\nV-Technologies ki seva lene ke liye dhanyavaad. ⭐\n\n${businessName}`;
-        break;
-      case 4:
-        msg = `Namaste ${clientName} ji 🙏!\n\nAapka Job ID: #${job.job_id} (Code: #${job.code}) (*${job.item}*) cancel kar diya gaya hai. ❌\n\nKripya adhik jankari ke liye workshop par sampark karein. 🙏\n\n${businessName}`;
-        break;
-      default:
-        msg = `Namaste ${clientName} ji 🙏!\n\nAapka Job ID: #${job.job_id} (${job.item}) ka status update kar diya gaya hai. Dhanyavaad! ❤️`;
-    }
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+    if (!phone || phone.length < 10) { setToast({ type: "error", msg: "Valid mobile number nahi mila!" }); return; }
+    const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
+    const amt  = (job.amount || 0).toLocaleString("en-IN");
+    const biz  = `${FIRM.owner}, ${FIRM.name}, ${FIRM.address}, Mob.-${FIRM.contact}`;
+    const msgs: Record<number, string> = {
+      0: `Namaste ${name} ji!\n\nAapka *${job.item}* (Job ID: ${job.job_id}) repair ke liye prapt hua hai.\n\nStatus: *Pending (Queue mein hai)*\nHum jald hi check karke update denge.\n\nDhanyavaad\n${biz}`,
+      1: `Namaste ${name} ji!\n\nAapke *${job.item}* (Job ID: ${job.job_id}) par kaam shuru kar diya gaya hai.\n\nStatus: *On-Progress*\nKripya dhairya rakhein.\n\nDhanyavaad\n${biz}`,
+      2: `Namaste ${name} ji!\n\nKhushkhabri! Aapka *${job.item}* repair complete ho gaya hai.\n\nJob ID: ${job.job_id} | Code: ${job.code}\nTotal Bill: *Rs.${amt}*\nStatus: *Ready for Delivery*\n\nAap workshop aakar collect kar sakte hain.\n\nDhanyavaad\n${biz}`,
+      3: `Namaste ${name} ji!\n\nAapka *${job.item}* (Job ID: ${job.job_id}) deliver kar diya gaya hai.\n\nStatus: *Paid*\nPayment: *Rs.${amt}*\n\nV-Technologies par bharosa karne ke liye dhanyavaad!\n\n${biz}`,
+      4: `Namaste ${name} ji!\n\nAapka Job ID: ${job.job_id} (*${job.item}*) Cancel kar diya gaya hai.\n\nAdhik jankari ke liye sampark karein.\n\nDhanyavaad\n${biz}`,
+      5: `Namaste ${name} ji!\n\nAapka *${job.item}* (Job ID: ${job.job_id}) safaltapurvak deliver kar diya gaya hai.\n\nStatus: *Delivered*\nPayment: *Rs.${amt}*\n\nV-Technologies par bharosa karne ke liye dhanyavaad!\n\n${biz}`,
+    };
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msgs[job.status] || msgs[0])}`, "_blank");
   };
 
-  // Update status
+  // ── UPDATE STATUS ──────────────────────────────────────────────────────────
   const handleStatusUpdate = async () => {
     if (!job) return;
-    setUpdating(true);
-    const updates: any = { status: newStatus };
+    setUpdatingStatus(true);
+    const updates: Record<string, unknown> = {
+      status: newStatus,
+      date_updated: nowIST(),
+    };
+    // Delivery date: use user-provided date+time when status = 5
     if (newStatus === 5) {
-      updates.date_completed = new Date().toISOString();
+      const dateStr = deliveryDate || todayISTStr();
+      const timeStr = deliveryTime || "00:00";
+      // Combine date + time with IST offset
+      updates.date_completed = `${dateStr}T${timeStr}:00+05:30`;
     }
-    const { error } = await supabase
-      .from("transaction_list")
-      .update(updates)
-      .eq("id", job.id);
-
+    const { error } = await supabase.from("transaction_list").update(updates).eq("id", job.id);
     if (error) {
-      alert("Status update failed!");
+      setToast({ type: "error", msg: "Status update failed: " + error.message });
     } else {
-      setJob({ ...job, ...updates });
+      setJob({ ...job, ...updates } as JobDetail);
+      setToast({ type: "success", msg: `Status "${STATUS_MAP[newStatus]?.label}" update ho gaya!` });
       setShowStatusModal(false);
     }
-    setUpdating(false);
+    setUpdatingStatus(false);
   };
 
-  // Add payment (simple – record in client_payments)
+  // ── ADD PAYMENT ────────────────────────────────────────────────────────────
   const handleAddPayment = async () => {
     if (!client || !job) return;
-    const amount = parseFloat(paymentAmount);
-    if (isNaN(amount) || amount <= 0) {
-      alert("Enter a valid amount");
-      return;
-    }
+    const amt  = parseFloat(payAmount);
+    const disc = parseFloat(payDiscount) || 0;
+    if (isNaN(amt) || amt <= 0) { setToast({ type: "error", msg: "Valid amount enter karo!" }); return; }
+    setSavingPay(true);
     const { error } = await supabase.from("client_payments").insert({
-      client_id: client.id,
-      job_id: job.job_id,
-      amount: amount,
-      payment_mode: paymentMode,
-      payment_date: new Date().toISOString().split("T")[0],
+      client_id: client.id, job_id: job.job_id,
+      amount: amt, discount: disc,
+      payment_mode: payMode,
+      remarks: payRemarks.trim() || null,
+      payment_date: `${todayISTStr()}T00:00:00+05:30`,
     });
-    if (error) {
-      alert("Payment failed: " + error.message);
-    } else {
-      alert("Payment recorded successfully!");
-      setShowPaymentModal(false);
-      setPaymentAmount("");
-      // Optionally refresh or update balance
+    if (error) { setToast({ type: "error", msg: "Payment save nahi hua: " + error.message }); }
+    else {
+      setToast({ type: "success", msg: "Payment save ho gayi!" });
+      setShowPayModal(false);
+      setPayAmount(""); setPayDiscount("0"); setPayRemarks("");
     }
+    setSavingPay(false);
   };
 
-  // Soft delete (admin only)
+  // ── DELETE ─────────────────────────────────────────────────────────────────
   const handleDelete = async () => {
-    if (userRole !== "admin") {
-      alert("Permission Denied: Sirf Admin hi delete kar sakta hai!");
-      return;
-    }
+    if (userRole !== "admin") { setToast({ type: "error", msg: "Sirf Admin delete kar sakta hai!" }); return; }
     if (!confirm("Kya aap pakka is job ko delete karna chahte hain?")) return;
-    const { error } = await supabase
-      .from("transaction_list")
-      .update({ del_status: 1 })
-      .eq("id", job!.id);
-    if (!error) {
-      router.push("/jobs");
-    } else {
-      alert("Delete failed: " + error.message);
-    }
+    setDeleting(true);
+    const { error } = await supabase.from("transaction_list").update({ del_status: 1 }).eq("id", jobId);
+    if (!error) router.push("/jobs");
+    else { setToast({ type: "error", msg: "Delete failed!" }); setDeleting(false); }
   };
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
-        <Loader2 className="animate-spin text-blue-600" size={48} />
-        <p className="text-gray-500 font-black italic uppercase tracking-widest animate-pulse">
-          Loading Job Details...
-        </p>
-      </div>
-    );
-  }
+  // ── PRINT ──────────────────────────────────────────────────────────────────
+  const handlePrint = () => {
+    if (!job) return;
+    const svcHtml = services.length > 0
+      ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Service</th><th style="padding:6px;text-align:right">Price</th></tr></thead><tbody>${services.map(s => `<tr><td style="padding:5px">${s.service_name || s.service_id}</td><td style="padding:5px;text-align:right">Rs.${s.price.toFixed(2)}</td></tr>`).join("")}</tbody></table>` : "";
+    const prodHtml = products.length > 0
+      ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Product</th><th style="padding:6px;text-align:center">Qty</th><th style="padding:6px;text-align:right">Price</th><th style="padding:6px;text-align:right">Total</th></tr></thead><tbody>${products.map(p => `<tr><td style="padding:5px">${p.product_name || p.product_id}</td><td style="padding:5px;text-align:center">${p.qty}</td><td style="padding:5px;text-align:right">Rs.${p.price.toFixed(2)}</td><td style="padding:5px;text-align:right">Rs.${(p.qty*p.price).toFixed(2)}</td></tr>`).join("")}</tbody></table>` : "";
+    const win = window.open("", `Bill_${job.job_id}`, "width=900,height=700");
+    if (!win) { alert("Popup blocked! Browser mein allow karo."); return; }
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Job Bill - ${job.job_id}</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#333;padding:20px}
+h1{font-size:18px;font-weight:900;color:#001f3f;margin-bottom:2px}h2{font-size:12px;color:#555;margin-bottom:10px}
+hr{border:1px solid #001f3f;margin:8px 0}.total{font-size:16px;font-weight:900;margin-top:12px;color:#155724}
+@page{margin:1cm;size:A4}</style></head><body>
+<h1>${FIRM.name}</h1><h2>${FIRM.owner} | ${FIRM.address} | ${FIRM.contact}</h2><hr/>
+<p><b>Job ID:</b> ${job.job_id}&nbsp;&nbsp;<b>Code:</b> ${job.code}&nbsp;&nbsp;<b>Status:</b> ${STATUS_MAP[job.status]?.label}</p>
+<p><b>Client:</b> ${[client?.firstname, client?.middlename, client?.lastname].filter(Boolean).join(" ")}&nbsp;&nbsp;<b>Contact:</b> ${client?.contact || ""}</p>
+<p><b>Item:</b> ${job.item}&nbsp;&nbsp;<b>Fault:</b> ${job.fault}</p>
+<p><b>Mechanic:</b> ${mechanic ? [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ") : "N/A"}&nbsp;&nbsp;<b>Date:</b> ${fmtDate(job.date_created)}</p>
+${job.date_completed ? `<p><b>Delivered:</b> ${fmtDateTime(job.date_completed)}</p>` : ""}
+${svcHtml}${prodHtml}
+<p class="total">Total Bill Amount: Rs.${job.amount.toLocaleString("en-IN", { minimumFractionDigits:2 })}</p>
+</body></html>`);
+    win.document.close();
+    win.onload = () => { win.print(); win.onafterprint = () => win.close(); };
+    setTimeout(() => { if (win && !win.closed) { win.print(); win.onafterprint = () => win.close(); } }, 800);
+  };
 
-  // Error state (including invalid ID)
-  if (error) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
-        <h2 className="text-2xl font-black text-red-600">{error}</h2>
-        <Link href="/jobs" className="text-blue-600 font-bold underline">
-          ← Back to Jobs
-        </Link>
-      </div>
-    );
-  }
+  // ── LOADING ────────────────────────────────────────────────────────────────
+  if (loading) return (
+    <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-3">
+      <Loader2 className="animate-spin text-blue-700" size={40}/>
+      <p className="text-slate-500 font-medium uppercase tracking-widest text-sm animate-pulse">
+        Loading Transaction Details...
+      </p>
+    </div>
+  );
+  if (!job) return null;
 
-  // Not found (should be covered by error, but keep as fallback)
-  if (!job || !client) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
-        <h2 className="text-2xl font-black text-gray-900">Job Not Found!</h2>
-        <Link href="/jobs" className="text-blue-600 font-bold underline">
-          ← Back to Jobs
-        </Link>
-      </div>
-    );
-  }
+  const st         = STATUS_MAP[job.status] || STATUS_MAP[0];
+  const badge      = BADGE_COLORS[st.badgeColor];
+  const clientName = client
+    ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
+    : `Client #${job.client_name}`;
+  const mechName   = mechanic
+    ? [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ")
+    : null;
+  const productsTotal = products.reduce((s, p) => s + p.price * p.qty, 0);
+  const servicesTotal = services.reduce((s, s2) => s + s2.price, 0);
 
-  const statusInfo = statusMap[job.status] || statusMap[0];
-  const productTotal = calculateProductTotal();
-
+  // ── RENDER ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50 p-3 md:p-6 font-sans">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/jobs"
-              className="p-2 bg-white hover:bg-gray-100 rounded-lg text-gray-600 border border-gray-300 transition-all"
-            >
-              <ArrowLeft size={18} />
-            </Link>
-            <div>
-              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
-                Transaction Details
-              </p>
-              <h1 className="text-lg font-bold text-gray-800">
-                #{job.job_id} ({job.code})
-              </h1>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href={`/clients/${client.id}`}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1"
-            >
-              <User size={16} /> View Client
-            </Link>
-            <a
-              href={`/api/gst-bill?type=transaction&id=${job.id}`}
-              target="_blank"
-              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1"
-            >
-              <Printer size={16} /> GST Bill
-            </a>
-            <a
-              href={`/api/print-bill?job_id=${job.job_id}`}
-              target="_blank"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1"
-            >
-              <Printer size={16} /> Print Bill
-            </a>
-            <Link
-              href="/jobs"
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1"
-            >
-              <ArrowLeft size={16} /> Back
-            </Link>
-          </div>
+    <div className="min-h-screen bg-[#0d1117] font-sans">
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-2xl border text-sm font-semibold ${
+          toast.type === "success" ? "bg-green-50 border-green-300 text-green-800"
+          : toast.type === "info"  ? "bg-blue-50 border-blue-300 text-blue-800"
+          : "bg-red-50 border-red-300 text-red-800"
+        }`}>
+          {toast.type === "success" ? <CheckCircle size={16}/> : <AlertTriangle size={16}/>}
+          {toast.msg}
         </div>
+      )}
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Client Information (no avatar) */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <User size={16} className="text-blue-600" /> Client Information
-              </h3>
-              <div className="space-y-2">
-                <Link href={`/clients/${client.id}`} className="text-lg font-bold text-gray-800 hover:underline">
-                  {getClientFullName()}
+      {/* ── PAGE CONTENT ─────────────────────────────────────────────────────── */}
+      <div className="py-4 px-3 md:px-6 text-slate-200">
+        <div className="max-w-5xl mx-auto">
+
+          {/* Card */}
+          <div className="bg-[#161b27] rounded shadow-sm border border-[#21293d]">
+
+            {/* Card Header — PHP style navy */}
+            <div className="bg-[#0d1f35] text-white rounded-t px-4 py-3 flex items-center justify-between flex-wrap gap-2 border-b border-[#21293d]">
+              <h5 className="font-bold text-base flex items-center gap-2 m-0">
+                <FileText size={16}/>
+                Transaction Details — {job.job_id} ({job.code})
+              </h5>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Link href={`/clients/${job.client_name}/view`}
+                  className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
+                  <User size={12}/> View Client
                 </Link>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Phone size={14} className="text-blue-600" />
-                  <a href={`tel:${client.contact}`}>{client.contact || "—"}</a>
-                </div>
-                <div className="flex items-start gap-2 text-sm text-gray-600">
-                  <MapPin size={14} className="text-blue-600 mt-0.5" />
-                  <span>{client.address || "—"}</span>
-                </div>
+                <Link href={`/jobs/${job.id}/gst-bill`} target="_blank"
+                  className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
+                  <FileText size={12}/> GST Bill
+                </Link>
+                <Link href={`/jobs/${job.id}/edit`}
+                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
+                  <Edit size={12}/> Edit
+                </Link>
+                <button onClick={handlePrint}
+                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+                  <Printer size={12}/> Print Bill
+                </button>
+                <button onClick={() => router.back()}
+                  className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+                  <ArrowLeft size={12}/> Back
+                </button>
               </div>
             </div>
 
-            {/* Job Details */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Wrench size={16} className="text-blue-600" /> Job Details
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-gray-500">Mechanic</p>
-                  <p className="font-medium">{getMechanicFullName() || "Not Assigned"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Received</p>
-                  <p className="font-medium">{formatDate(job.date_created, true)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Job No.</p>
-                  <p className="font-mono text-blue-600">#{job.job_id}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Code</p>
-                  <p className="font-mono">{job.code || "—"}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-xs text-gray-500">Location</p>
-                  <p className="font-medium">{job.uniq_id || "—"}</p>
-                </div>
-              </div>
-            </div>
+            {/* Card Body */}
+            <div className="p-4 text-slate-200">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-            {/* Item Description */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Smartphone size={16} className="text-blue-600" /> Item Description
-              </h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-gray-500">Item/Model</p>
-                  <p className="font-medium">{job.item}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Fault Reported</p>
-                  <p className="text-red-600 bg-red-50 p-2 rounded-lg border border-red-200 text-sm">{job.fault}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Remarks</p>
-                  <p className="bg-gray-50 p-2 rounded-lg border border-gray-200 text-sm">
-                    {job.remark || "No remarks"}
-                  </p>
-                </div>
-              </div>
-            </div>
+                {/* ── LEFT COLUMN (7/12) ─────────────────────────────────── */}
+                <div className="lg:col-span-7 lg:border-r lg:border-[#21293d] lg:pr-4">
 
-            {/* Services Table */}
-            {services.length > 0 && (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-      <Wrench size={16} className="text-blue-600" /> Services Availed
-    </h3>
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-100 border-b border-gray-300">
-          <tr>
-            <th className="px-3 py-2 text-left font-medium text-gray-600">Service</th>
-            <th className="px-3 py-2 text-right font-medium text-gray-600">Charge</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {services.map((s, index) => (
-            <tr key={s.id || index}>
-              <td className="px-3 py-2">{s.service_name || `Service #${s.service_id}`}</td>
-              <td className="px-3 py-2 text-right font-medium">₹{s.price.toFixed(2)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-)}
+                  {/* Client + Job Info row */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
 
-            {/* Products Table */}
-            {products.length > 0 && (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-      <Cpu size={16} className="text-blue-600" /> Products Used
-    </h3>
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-100 border-b border-gray-300">
-          <tr>
-            <th className="px-3 py-2 text-left font-medium text-gray-600">Product</th>
-            <th className="px-3 py-2 text-center font-medium text-gray-600">Qty</th>
-            <th className="px-3 py-2 text-right font-medium text-gray-600">Price</th>
-            <th className="px-3 py-2 text-right font-medium text-gray-600">Total</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {products.map((p, index) => (
-            <tr key={p.id || index}>
-              <td className="px-3 py-2">{p.product_name || `Product #${p.product_id}`}</td>
-              <td className="px-3 py-2 text-center">{p.qty}</td>
-              <td className="px-3 py-2 text-right">₹{p.price.toFixed(2)}</td>
-              <td className="px-3 py-2 text-right font-medium">₹{(p.qty * p.price).toFixed(2)}</td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot className="bg-gray-50 border-t border-gray-300">
-          <tr>
-            <th colSpan={3} className="px-3 py-2 text-right font-bold">Products Total:</th>
-            <th className="px-3 py-2 text-right font-bold">₹{productTotal.toFixed(2)}</th>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  </div>
-)}
-          </div>
+                    {/* Client Info */}
+                    <Fieldset title="Client Information" icon={User} color="primary">
+                      <InfoRow label="Name"
+                        value={
+                          <Link href={`/clients/${job.client_name}/view`}
+                            className="text-blue-400 font-semibold hover:underline">
+                            {clientName}
+                          </Link>
+                        }/>
+                      {client?.contact && (
+                        <InfoRow label="Contact"
+                          value={<a href={`tel:${client.contact}`} className="text-blue-400">{client.contact}</a>}/>
+                      )}
+                      {client?.address && <InfoRow label="Address" value={<span className="text-slate-400 text-xs">{client.address}</span>}/>}
+                      {client?.email && <InfoRow label="Email" value={<span className="text-slate-400 text-xs">{client.email}</span>}/>}
+                    </Fieldset>
 
-          {/* Right Column */}
-          <div className="lg:col-span-5 space-y-6">
-            {/* Status Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Clock size={16} className="text-gray-500" /> Current Job Status
-              </h3>
-              <div className="text-center">
-                <span className={`inline-block px-6 py-3 rounded-full text-lg font-bold border-2 ${statusInfo.color}`}>
-                  {statusInfo.label}
-                </span>
-                <p className="text-sm text-gray-600 mt-2">{statusInfo.explanation}</p>
-                {job.status === 5 && job.date_completed && (
-                  <div className="mt-4 text-green-600 border-t pt-3">
-                    <CheckCircle size={20} className="inline mr-1" />
-                    <span className="font-bold">Delivered On:</span>
-                    <br />
-                    <span className="text-lg">{formatDate(job.date_completed, true)}</span>
+                    {/* Job Details */}
+                    <Fieldset title="Job Details" icon={Wrench} color="info">
+                      <InfoRow label="Mechanic" value={mechName || <em className="text-slate-600">Not Assigned</em>}/>
+                      <InfoRow label="Received" value={fmtDateTime(job.date_created)}/>
+                      <InfoRow label="Job No." value={<span className="font-bold">{job.job_id}</span>}/>
+                      <InfoRow label="Code"    value={<span className="font-bold font-mono">{job.code}</span>}/>
+                      <InfoRow label="Locate"  value={job.uniq_id || <em className="text-slate-600">N/A</em>}/>
+                      <InfoRow label="Del. Status" value={DEL_STATUS[job.del_status]}/>
+                    </Fieldset>
                   </div>
+
+                  {/* Item Description */}
+                  <Fieldset title="Item Description" icon={Box} color="primary">
+                    <InfoRow label="Item / Model" value={<span className="font-semibold">{job.item}</span>}/>
+                    <div className="mb-1.5 text-sm">
+                      <span className="font-semibold text-slate-500">Fault Reported:</span>
+                      <p className="mt-0.5 text-slate-300 whitespace-pre-line">{job.fault}</p>
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-semibold text-slate-500">Remarks:</span>
+                      <p className="mt-0.5 text-slate-400 whitespace-pre-line">
+                        {job.remark?.trim() || <em className="text-slate-600">No remarks</em>}
+                      </p>
+                    </div>
+                  </Fieldset>
+
+                  {/* Services */}
+                  {services.length > 0 && (
+                    <Fieldset title="Services Availed" icon={Settings2} color="primary">
+                      <div className="overflow-x-auto">
+                        <table className="w-full border border-[#21293d] text-sm">
+                          <thead className="bg-[#0d1f35] text-slate-300">
+                            <tr>
+                              <th className="px-3 py-2 text-left">Service</th>
+                              <th className="px-3 py-2 text-right">Charge</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#21293d]">
+                            {services.map((s, i) => (
+                              <tr key={i} className={i % 2 === 0 ? "bg-[#111520]" : "bg-[#161b27]"}>
+                                <td className="px-3 py-2 text-slate-300">{s.service_name || `Service #${s.service_id}`}</td>
+                                <td className="px-3 py-2 text-right font-medium text-slate-200">Rs.{s.price.toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot className="bg-[#0d1117] font-bold border-t border-[#21293d]">
+                            <tr>
+                              <td className="px-3 py-2 text-right text-sm text-slate-500">Services Total:</td>
+                              <td className="px-3 py-2 text-right text-emerald-400">Rs.{servicesTotal.toFixed(2)}</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </Fieldset>
+                  )}
+
+                  {/* Products */}
+                  {products.length > 0 && (
+                    <Fieldset title="Products Used" icon={Package} color="success">
+                      <div className="overflow-x-auto">
+                        <table className="w-full border border-[#21293d] text-sm">
+                          <thead className="bg-emerald-900/50 text-emerald-300">
+                            <tr>
+                              <th className="px-3 py-2 text-left">Product</th>
+                              <th className="px-3 py-2 text-center">Qty</th>
+                              <th className="px-3 py-2 text-right">Price</th>
+                              <th className="px-3 py-2 text-right">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#21293d]">
+                            {products.map((p, i) => (
+                              <tr key={i} className={i % 2 === 0 ? "bg-[#111520]" : "bg-[#161b27]"}>
+                                <td className="px-3 py-2 text-slate-300">{p.product_name || `Product #${p.product_id}`}</td>
+                                <td className="px-3 py-2 text-center text-slate-400">{p.qty}</td>
+                                <td className="px-3 py-2 text-right text-slate-400">Rs.{p.price.toFixed(2)}</td>
+                                <td className="px-3 py-2 text-right font-medium text-slate-200">Rs.{(p.qty * p.price).toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot className="bg-[#0d1117] font-bold border-t border-[#21293d]">
+                            <tr>
+                              <td colSpan={3} className="px-3 py-2 text-right text-sm text-slate-500">Products Total:</td>
+                              <td className="px-3 py-2 text-right text-emerald-400">Rs.{productsTotal.toFixed(2)}</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </Fieldset>
+                  )}
+                </div>
+
+                {/* ── RIGHT COLUMN (5/12) ────────────────────────────────── */}
+                <div className="lg:col-span-5">
+
+                  {/* Current Status — PHP style big badge */}
+                  <div className="text-center mb-5">
+                    <p className="text-slate-400 font-semibold text-sm mb-2">Current Job Status</p>
+                    <span className={`inline-block px-8 py-4 rounded-sm shadow-sm font-black text-2xl ${badge.bg} ${badge.text} border ${badge.border}`}
+                      style={{ minWidth: "90%" }}>
+                      {st.label}
+                    </span>
+                    <p className="text-slate-500 text-sm mt-2 italic">{st.explanation}</p>
+                    {job.status === 5 && job.date_completed && (
+                      <div className="mt-3 text-emerald-400 border-t border-[#21293d] pt-3">
+                        <CheckCircle2 className="inline mr-1" size={16}/>
+                        <span className="font-semibold">Delivered On:</span><br/>
+                        <span className="text-lg font-bold">{fmtDateTime(job.date_completed)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Item Photos */}
+                  {images.length > 0 && (
+                    <Fieldset title={`Item Photos (${images.length})`} icon={ImageIcon} color="primary">
+                      <div className="grid grid-cols-3 gap-2">
+                        {images.map((img) => (
+                          <a key={img.id} href={img.image_path} target="_blank" rel="noreferrer">
+                            <img src={img.image_path} alt="Item"
+                              className="w-full h-20 object-cover rounded border border-[#21293d] hover:opacity-80 transition-opacity cursor-pointer"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}/>
+                          </a>
+                        ))}
+                      </div>
+                    </Fieldset>
+                  )}
+
+                  {/* Billing Summary */}
+                  <div className="border border-emerald-500/25 rounded bg-emerald-500/5 p-4 mb-4">
+                    <h5 className="text-emerald-400 font-bold text-center mb-3">Billing Summary</h5>
+                    {(services.length > 0 || products.length > 0) && (
+                      <div className="mb-3 space-y-1">
+                        {services.length > 0 && (
+                          <div className="flex justify-between text-sm text-slate-500">
+                            <span>Services ({services.length})</span>
+                            <span>Rs.{servicesTotal.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {products.length > 0 && (
+                          <div className="flex justify-between text-sm text-slate-500">
+                            <span>Products ({products.length})</span>
+                            <span>Rs.{productsTotal.toFixed(2)}</span>
+                          </div>
+                        )}
+                        <hr className="border-emerald-500/20"/>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center border-b border-emerald-500/25 pb-2 mb-2">
+                      <span className="font-medium text-sm text-slate-400">Total Amount:</span>
+                      <span className="text-2xl font-black text-white">Rs.{job.amount.toFixed(2)}</span>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-3xl font-black text-emerald-400">Rs.{job.amount.toFixed(2)}</p>
+                      <p className="text-slate-500 text-xs mt-1">Final Payable Amount</p>
+                    </div>
+                    {(job.mechanic_amount > 0 || job.mechanic_commission_amount > 0) && (
+                      <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-1">
+                        {job.mechanic_amount > 0 && (
+                          <div className="flex justify-between text-xs text-slate-500">
+                            <span>Mechanic Amount:</span><span>Rs.{job.mechanic_amount.toFixed(0)}</span>
+                          </div>
+                        )}
+                        {job.mechanic_commission_amount > 0 && (
+                          <div className="flex justify-between text-xs text-slate-500">
+                            <span>Commission:</span><span>Rs.{job.mechanic_commission_amount.toFixed(0)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* WhatsApp Button */}
+                  <button onClick={sendWA}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 shadow-sm mb-4 transition-colors">
+                    <Send size={16}/> Send Status on WhatsApp
+                  </button>
+                </div>
+              </div>
+
+              {/* ── ACTION BUTTONS (bottom — PHP style) ───────────────────── */}
+              <hr className="my-4 border-[#21293d]"/>
+              <div className="flex flex-wrap gap-2 justify-center">
+                <button onClick={() => { setNewStatus(job.status); setShowStatusModal(true); }}
+                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
+                  <RefreshCw size={15}/> Update Status
+                </button>
+                <Link href={`/jobs/${job.id}/edit`}
+                  className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline">
+                  <Edit size={15}/> Edit Transaction
+                </Link>
+                <button onClick={handlePrint}
+                  className="flex items-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
+                  <Printer size={15}/> Print Page
+                </button>
+                <button onClick={() => setShowPayModal(true)}
+                  className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
+                  <Plus size={15}/> Add Payment
+                </button>
+                {userRole === "admin" && (
+                  <button onClick={handleDelete} disabled={deleting}
+                    className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors disabled:opacity-50">
+                    <Trash2 size={15}/> {deleting ? "Deleting..." : "Delete Transaction"}
+                  </button>
                 )}
               </div>
-            </div>
 
-            {/* Billing Summary */}
-            <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 text-white rounded-xl shadow-lg border border-emerald-500 p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wider opacity-90 mb-3 flex items-center gap-2">
-                <IndianRupee size={16} /> Billing Summary
+            </div>{/* /card-body */}
+          </div>{/* /card */}
+        </div>
+      </div>
+
+      {/* ══ UPDATE STATUS MODAL ══════════════════════════════════════════════ */}
+      {showStatusModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowStatusModal(false); }}>
+          <div className="bg-[#161b27] rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-[#21293d]">
+
+            {/* Modal Header */}
+            <div className="bg-[#001f3f] text-white px-5 py-3.5 flex items-center justify-between">
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <RefreshCw size={16}/> Update Transaction Status
               </h3>
-              <div className="flex justify-between items-center border-b border-white/20 pb-3 mb-3">
-                <span>Total Amount:</span>
-                <span className="text-2xl font-bold">₹{job.amount.toFixed(2)}</span>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-black">₹{job.amount.toFixed(2)}</div>
-                <p className="text-xs opacity-80 mt-1">Final Payable Amount</p>
-              </div>
+              <button onClick={() => setShowStatusModal(false)} className="text-white/70 hover:text-white">
+                <X size={18}/>
+              </button>
             </div>
 
-            {/* WhatsApp Button */}
-            <button
-              onClick={sendWA}
-              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md"
-            >
-              <Phone size={18} /> Send Status on WhatsApp
-            </button>
+            {/* Modal Body */}
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-400 mb-1.5">New Status</label>
+                <select
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(parseInt(e.target.value))}
+                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 bg-[#0d1117]">
+                  {Object.entries(STATUS_MAP).map(([val, info]) => (
+                    <option key={val} value={val}>{info.label} — {info.explanation}</option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => {
-                  setNewStatus(job.status);
-                  setShowStatusModal(true);
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"
-              >
-                <Clock size={18} /> Update Status
-              </button>
-              <Link
-                href={`/jobs/edit/${job.id}`}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"
-              >
-                <Edit3 size={18} /> Edit
-              </Link>
-              <button
-                onClick={() => window.print()}
-                className="bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"
-              >
-                <Printer size={18} /> Print Page
-              </button>
-              <button
-                onClick={() => setShowPaymentModal(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"
-              >
-                <Plus size={18} /> Add Payment
-              </button>
-              {userRole === "admin" && (
-                <button
-                  onClick={handleDelete}
-                  className="col-span-2 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"
-                >
-                  <Trash2 size={18} /> Delete Transaction
-                </button>
+              {/* Status preview badge */}
+              <div className="text-center">
+                <span className={`inline-block px-5 py-2 rounded font-bold text-sm ${BADGE_COLORS[STATUS_MAP[newStatus]?.badgeColor]?.bg} ${BADGE_COLORS[STATUS_MAP[newStatus]?.badgeColor]?.text}`}>
+                  {STATUS_MAP[newStatus]?.label}
+                </span>
+                <p className="text-slate-500 text-xs mt-1">{STATUS_MAP[newStatus]?.explanation}</p>
+              </div>
+
+              {/* ── Delivery Date/Time — only when status = 5 (Delivered) ── */}
+              {newStatus === 5 && (
+                <div className="bg-emerald-500/5 border border-emerald-500/25 rounded-lg p-4 space-y-3">
+                  <p className="text-emerald-400 font-semibold text-sm flex items-center gap-1.5">
+                    <CheckCircle2 size={15}/> Delivery Date & Time
+                  </p>
+                  <p className="text-slate-500 text-xs">
+                    Agar delivery pehle ho gayi thi aur ab entry kar rahe hain, to sahi date aur time enter karein.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">Delivery Date</label>
+                      <input
+                        type="date"
+                        value={deliveryDate}
+                        onChange={(e) => setDeliveryDate(e.target.value)}
+                        max={todayISTStr()}
+                        className="w-full border border-[#2a3550] rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"/>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">Delivery Time</label>
+                      <input
+                        type="time"
+                        value={deliveryTime}
+                        onChange={(e) => setDeliveryTime(e.target.value)}
+                        className="w-full border border-[#2a3550] rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"/>
+                    </div>
+                  </div>
+                  {deliveryDate && deliveryTime && (
+                    <p className="text-emerald-400 text-xs font-medium text-center">
+                      Saved as: {fmtDateTime(`${deliveryDate}T${deliveryTime}:00`)}
+                    </p>
+                  )}
+                </div>
               )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-5 py-4 bg-[#111520] border-t border-[#21293d] flex gap-3 justify-end flex-wrap">
+              <button onClick={() => setShowStatusModal(false)}
+                className="px-5 py-2 bg-[#1e2637] border border-[#2a3550] text-slate-400 rounded font-medium text-sm hover:bg-[#252f45] transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleStatusUpdate} disabled={updatingStatus}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm disabled:opacity-50 flex items-center gap-2 transition-colors">
+                {updatingStatus ? <><Loader2 size={14} className="animate-spin"/>Updating...</> : <><RefreshCw size={14}/>Update Status</>}
+              </button>
             </div>
           </div>
         </div>
+      )}
 
-        {/* Status Update Modal */}
-        {showStatusModal && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl max-w-md w-full p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Update Status</h3>
-                <button onClick={() => setShowStatusModal(false)}>
-                  <X size={24} />
-                </button>
+      {/* ══ ADD PAYMENT MODAL ════════════════════════════════════════════════ */}
+      {showPayModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowPayModal(false); }}>
+          <div className="bg-[#161b27] rounded-t-2xl sm:rounded-lg shadow-2xl w-full sm:max-w-md overflow-hidden border border-[#21293d]">
+
+            <div className="bg-[#001f3f] text-white px-5 py-3.5 flex items-center justify-between">
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <IndianRupee size={16}/> Record New Payment
+              </h3>
+              <button onClick={() => setShowPayModal(false)} className="text-white/70 hover:text-white">
+                <X size={18}/>
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded px-3 py-2 text-sm">
+                <span className="font-semibold text-blue-400">{clientName}</span>
+                <span className="text-slate-600 mx-2">·</span>
+                <span className="text-slate-400">Job #{job.job_id}</span>
+                <span className="text-slate-600 mx-2">·</span>
+                <span className="text-slate-400">Bill: <span className="font-bold text-white">Rs.{job.amount.toFixed(2)}</span></span>
               </div>
-              <div className="space-y-4">
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">New Status</label>
-                  <select
-                    value={newStatus}
-                    onChange={(e) => setNewStatus(parseInt(e.target.value))}
-                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-200 outline-none"
-                  >
-                    {Object.entries(statusMap).map(([value, info]) => (
-                      <option key={value} value={value}>
-                        {info.label} – {info.explanation}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Amount (Rs.) *</label>
+                  <input type="number" step="0.01" min="0.01"
+                    value={payAmount} onChange={(e) => setPayAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
                 </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowStatusModal(false)}
-                    className="flex-1 bg-gray-200 p-3 rounded-lg font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleStatusUpdate}
-                    disabled={updating}
-                    className="flex-1 bg-blue-600 text-white p-3 rounded-lg font-medium disabled:opacity-50"
-                  >
-                    {updating ? "Updating..." : "Update"}
-                  </button>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Discount (Rs.)</label>
+                  <input type="number" step="0.01" min="0"
+                    value={payDiscount} onChange={(e) => setPayDiscount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
                 </div>
+              </div>
+
+              {payAmount && (
+                <div className="bg-emerald-500/5 border border-emerald-500/20 rounded px-4 py-2.5 flex justify-between items-center">
+                  <span className="text-xs text-slate-500 font-semibold">Net Settled</span>
+                  <span className="text-emerald-400 font-black text-base">
+                    Rs.{((parseFloat(payAmount)||0) + (parseFloat(payDiscount)||0)).toLocaleString("en-IN", { minimumFractionDigits:2 })}
+                  </span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Payment Mode *</label>
+                <select value={payMode} onChange={(e) => setPayMode(e.target.value)}
+                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500">
+                  {["Cash","PhonePe/GPay","Bank Transfer","Credit Card"].map(m => (
+                    <option key={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Remarks</label>
+                <input type="text" value={payRemarks} onChange={(e) => setPayRemarks(e.target.value)}
+                  placeholder="Koi notes..."
+                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Add Payment Modal */}
-        {showPaymentModal && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl max-w-md w-full p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Add Payment</h3>
-                <button onClick={() => setShowPaymentModal(false)}>
-                  <X size={24} />
-                </button>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Amount (₹)</label>
-                  <input
-                    type="number"
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-200 outline-none"
-                    placeholder="Enter amount"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Payment Mode</label>
-                  <select
-                    value={paymentMode}
-                    onChange={(e) => setPaymentMode(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-200 outline-none"
-                  >
-                    <option value="Cash">Cash</option>
-                    <option value="UPI">UPI</option>
-                    <option value="Card">Card</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
-                  </select>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowPaymentModal(false)}
-                    className="flex-1 bg-gray-200 p-3 rounded-lg font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleAddPayment}
-                    className="flex-1 bg-emerald-600 text-white p-3 rounded-lg font-medium"
-                  >
-                    Add Payment
-                  </button>
-                </div>
-              </div>
+            <div className="px-5 py-4 bg-[#111520] border-t border-[#21293d] flex gap-3 flex-wrap">
+              <button onClick={() => setShowPayModal(false)}
+                className="flex-1 py-2.5 bg-[#1e2637] border border-[#2a3550] text-slate-400 rounded font-medium text-sm hover:bg-[#252f45] transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleAddPayment} disabled={savingPay}
+                className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
+                {savingPay ? <><Loader2 size={14} className="animate-spin"/>Saving...</> : <><Plus size={14}/>Save Payment</>}
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
     </div>
   );
 }

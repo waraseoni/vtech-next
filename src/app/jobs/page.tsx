@@ -612,8 +612,8 @@ function JobsListContent() {
                               className="absolute right-0 mt-1 w-44 bg-[#161b27] border border-[#21293d] rounded-xl shadow-2xl z-20 py-1 overflow-hidden">
                               {[
                                 { href: `/jobs/${txn.id}`,          icon: Eye,      label: "View",       cls: "text-blue-400" },
-                                { href: `/jobs/edit/${txn.id}`,     icon: Settings, label: "Edit",       cls: "text-indigo-400" },
-                                { href: `/jobs/old-edit/${txn.id}`, icon: History,  label: "Old Edit",   cls: "text-cyan-400" },
+                                { href: `/jobs/${txn.id}/edit`,     icon: Settings, label: "Edit",       cls: "text-indigo-400" },
+                                { href: `/jobs/${txn.id}/old`, icon: History,  label: "Old Edit",   cls: "text-cyan-400" },
                               ].map(({ href, icon: Icon, label, cls }) => (
                                 <Link key={label} href={href}
                                   className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-slate-400 hover:text-slate-200 transition-colors"
