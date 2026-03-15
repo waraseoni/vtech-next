@@ -561,8 +561,16 @@ function JobsListContent() {
                         </td>
 
                         <td className="px-3 py-2.5">
-                          <div className="font-bold text-blue-400 text-xs">#{txn.job_id}</div>
-                          {txn.code && <div className="text-slate-600 text-[10px] truncate">{txn.code}</div>}
+                          <Link href={`/jobs/${txn.id}/view`}
+                            className="font-bold text-blue-400 hover:text-blue-300 text-xs transition-colors no-underline">
+                            #{txn.job_id}
+                          </Link>
+                          {txn.code && (
+                            <Link href={`/jobs/${txn.id}/view`}
+                              className="block text-slate-600 hover:text-slate-400 text-[10px] truncate transition-colors no-underline mt-0.5">
+                              {txn.code}
+                            </Link>
+                          )}
                         </td>
 
                         {/* Client with phone number text (PHP feature) */}
@@ -790,9 +798,10 @@ function JobsListContent() {
                       #{txn.job_id}
                     </Link>
                     <div className="flex flex-wrap gap-1.5 mt-1">
-                      <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded-full text-[9px] font-bold">
+                      <Link href={`/jobs/${txn.id}/view`}
+                        className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded-full text-[9px] font-bold no-underline hover:bg-blue-500/20 transition-colors">
                         {txn.code || "No Code"}
-                      </span>
+                      </Link>
                       <span className="text-[10px] text-slate-600">
                         {fmtDate(txn.date_created)}
                       </span>

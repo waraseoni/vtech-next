@@ -319,32 +319,6 @@ export default function JobDetailsPage() {
   };
 
   // ── PRINT ──────────────────────────────────────────────────────────────────
-  const handlePrint = () => {
-    if (!job) return;
-    const svcHtml = services.length > 0
-      ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Service</th><th style="padding:6px;text-align:right">Price</th></tr></thead><tbody>${services.map(s => `<tr><td style="padding:5px">${s.service_name || s.service_id}</td><td style="padding:5px;text-align:right">Rs.${s.price.toFixed(2)}</td></tr>`).join("")}</tbody></table>` : "";
-    const prodHtml = products.length > 0
-      ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Product</th><th style="padding:6px;text-align:center">Qty</th><th style="padding:6px;text-align:right">Price</th><th style="padding:6px;text-align:right">Total</th></tr></thead><tbody>${products.map(p => `<tr><td style="padding:5px">${p.product_name || p.product_id}</td><td style="padding:5px;text-align:center">${p.qty}</td><td style="padding:5px;text-align:right">Rs.${p.price.toFixed(2)}</td><td style="padding:5px;text-align:right">Rs.${(p.qty*p.price).toFixed(2)}</td></tr>`).join("")}</tbody></table>` : "";
-    const win = window.open("", `Bill_${job.job_id}`, "width=900,height=700");
-    if (!win) { alert("Popup blocked! Browser mein allow karo."); return; }
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Job Bill - ${job.job_id}</title>
-<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#333;padding:20px}
-h1{font-size:18px;font-weight:900;color:#001f3f;margin-bottom:2px}h2{font-size:12px;color:#555;margin-bottom:10px}
-hr{border:1px solid #001f3f;margin:8px 0}.total{font-size:16px;font-weight:900;margin-top:12px;color:#155724}
-@page{margin:1cm;size:A4}</style></head><body>
-<h1>${FIRM.name}</h1><h2>${FIRM.owner} | ${FIRM.address} | ${FIRM.contact}</h2><hr/>
-<p><b>Job ID:</b> ${job.job_id}&nbsp;&nbsp;<b>Code:</b> ${job.code}&nbsp;&nbsp;<b>Status:</b> ${STATUS_MAP[job.status]?.label}</p>
-<p><b>Client:</b> ${[client?.firstname, client?.middlename, client?.lastname].filter(Boolean).join(" ")}&nbsp;&nbsp;<b>Contact:</b> ${client?.contact || ""}</p>
-<p><b>Item:</b> ${job.item}&nbsp;&nbsp;<b>Fault:</b> ${job.fault}</p>
-<p><b>Mechanic:</b> ${mechanic ? [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ") : "N/A"}&nbsp;&nbsp;<b>Date:</b> ${fmtDate(job.date_created)}</p>
-${job.date_completed ? `<p><b>Delivered:</b> ${fmtDateTime(job.date_completed)}</p>` : ""}
-${svcHtml}${prodHtml}
-<p class="total">Total Bill Amount: Rs.${job.amount.toLocaleString("en-IN", { minimumFractionDigits:2 })}</p>
-</body></html>`);
-    win.document.close();
-    win.onload = () => { win.print(); win.onafterprint = () => win.close(); };
-    setTimeout(() => { if (win && !win.closed) { win.print(); win.onafterprint = () => win.close(); } }, 800);
-  };
 
   // ── LOADING ────────────────────────────────────────────────────────────────
   if (loading) return (
@@ -410,14 +384,14 @@ ${svcHtml}${prodHtml}
                   className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
                   <Edit size={12}/> Edit
                 </Link>
-                <button onClick={handlePrint}
-                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+                <Link href={`/api/print-bill?job_id=${job.job_id}`} target="_blank"
+                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
                   <Printer size={12}/> Print Bill
-                </button>
-                <button onClick={() => router.back()}
-                  className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+                </Link>
+                <Link href="/jobs"
+                  className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
                   <ArrowLeft size={12}/> Back
-                </button>
+                </Link>
               </div>
             </div>
 
@@ -637,10 +611,7 @@ ${svcHtml}${prodHtml}
                   className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline">
                   <Edit size={15}/> Edit Transaction
                 </Link>
-                <button onClick={handlePrint}
-                  className="flex items-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
-                  <Printer size={15}/> Print Page
-                </button>
+
                 <button onClick={() => setShowPayModal(true)}
                   className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
                   <Plus size={15}/> Add Payment
