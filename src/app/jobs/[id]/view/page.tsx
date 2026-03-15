@@ -375,11 +375,7 @@ export default function JobDetailsPage() {
                 <Link href={`/clients/${job.client_name}/view`}
                   className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
                   <User size={12}/> View Client
-                </Link>
-                <Link href={`/jobs/${job.id}/gst-bill`} target="_blank"
-                  className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
-                  <FileText size={12}/> GST Bill
-                </Link>
+                </Link>                
                 <Link href={`/jobs/${job.id}/edit`}
                   className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
                   <Edit size={12}/> Edit
