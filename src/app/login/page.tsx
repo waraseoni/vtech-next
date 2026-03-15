@@ -1,22 +1,23 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
-import { LogIn, Mail, Lock, Loader2, ShieldCheck } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
+import { LogIn, Mail, Lock, Loader2, ShieldCheck, Eye, EyeOff, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email,      setEmail]      = useState("");
+  const [password,   setPassword]   = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [showPass,   setShowPass]   = useState(false);
+  const [loading,    setLoading]    = useState(false);
+  const [error,      setError]      = useState("");
   const router = useRouter();
 
-  // Page load hote hi check karein ki kya pehle se credentials saved hain
+  // ── Load saved credentials ─────────────────────────────────────────────
   useEffect(() => {
-    const savedEmail = localStorage.getItem("vtech_email");
+    const savedEmail    = localStorage.getItem("vtech_email");
     const savedPassword = localStorage.getItem("vtech_password");
     const savedRemember = localStorage.getItem("vtech_remember") === "true";
-
     if (savedRemember && savedEmail && savedPassword) {
       setEmail(savedEmail);
       setPassword(savedPassword);
@@ -24,103 +25,184 @@ export default function LoginPage() {
     }
   }, []);
 
+  // ── Login handler ──────────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
-    
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
 
-    if (error) {
-      alert("Error: " + error.message);
+    const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (authErr) {
+      setError(
+        authErr.message.includes("Invalid login")
+          ? "Email ya password galat hai!"
+          : authErr.message
+      );
       setLoading(false);
-    } else {
-      // Agar Remember Me checked hai toh credentials save karein, nahi toh delete karein
-      if (rememberMe) {
-        localStorage.setItem("vtech_email", email);
-        localStorage.setItem("vtech_password", password);
-        localStorage.setItem("vtech_remember", "true");
-      } else {
-        localStorage.removeItem("vtech_email");
-        localStorage.removeItem("vtech_password");
-        localStorage.removeItem("vtech_remember");
-      }
-
-      router.refresh();
-      router.push('/');
+      return;
     }
+
+    // Remember Me
+    if (rememberMe) {
+      localStorage.setItem("vtech_email",    email);
+      localStorage.setItem("vtech_password", password);
+      localStorage.setItem("vtech_remember", "true");
+    } else {
+      localStorage.removeItem("vtech_email");
+      localStorage.removeItem("vtech_password");
+      localStorage.removeItem("vtech_remember");
+    }
+
+    // ── CRITICAL: Fetch role BEFORE navigating ─────────────────────────
+    // Layout ka useEffect sirf mount pe chalta hai.
+    // Agar seedha push() karein toh layout stale state mein ho sakta hai.
+    // router.refresh() server ko signal karta hai ki session update hua hai
+    // aur layout dobara profile fetch karega.
+    if (data.user) {
+      // Ensure profile exists in DB — insert if missing
+      const { data: pd } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (!pd) {
+        // New user — create profile with staff role by default
+        await supabase.from("profiles").insert({
+          id:        data.user.id,
+          full_name: data.user.user_metadata?.full_name || email.split("@")[0],
+          role:      data.user.email === "vtech.jbp@gmail.com" ? "admin" : "staff",
+        });
+      }
+    }
+
+    // Refresh → layout remounts → fresh role fetch → correct sidebar
+    router.refresh();
+    router.push("/");
   };
 
   return (
-    <div style={containerStyle}>
-      <div style={loginCard}>
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <div style={iconCircle}><ShieldCheck size={32} color="#007bff" /></div>
-          <h2 style={{ margin: '10px 0 5px 0' }}>Welcome Back</h2>
-          <p style={{ color: '#666', fontSize: '14px' }}>Login to manage your shop</p>
+    <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-4">
+      {/* Background glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative w-full max-w-sm">
+
+        {/* Logo / Brand */}
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-900/50">
+            <ShieldCheck size={30} className="text-white" />
+          </div>
+          <h1 className="text-2xl font-black text-white tracking-tight">
+            V-TECH <span className="text-blue-400 font-light">PRO</span>
+          </h1>
+          <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.2em] mt-1">
+            Management System
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <div style={inputWrapper}>
-            <label style={labelStyle}>Email Address</label>
-            <div style={inputGroup}>
-              <Mail size={18} color="#888" />
-              <input 
-                type="email" 
-                placeholder="staff@vtech.com" 
-                style={inputStyle} 
-                value={email} // Value ko state se bind kiya
-                onChange={(e) => setEmail(e.target.value)} 
-                required 
-              />
+        {/* Card */}
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-7 shadow-2xl">
+          <div className="mb-6">
+            <h2 className="text-lg font-black text-white">Welcome Back</h2>
+            <p className="text-slate-600 text-sm mt-0.5">Login to manage your shop</p>
+          </div>
+
+          {/* Error message */}
+          {error && (
+            <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-semibold px-4 py-3 rounded-xl mb-5">
+              <AlertCircle size={15} className="flex-shrink-0" />
+              {error}
             </div>
-          </div>
+          )}
 
-          <div style={inputWrapper}>
-            <label style={labelStyle}>Password</label>
-            <div style={inputGroup}>
-              <Lock size={18} color="#888" />
-              <input 
-                type="password" 
-                placeholder="••••••••" 
-                style={inputStyle} 
-                value={password} // Value ko state se bind kiya
-                onChange={(e) => setPassword(e.target.value)} 
-                required 
-              />
+          <form onSubmit={handleLogin} className="space-y-4">
+
+            {/* Email */}
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+                <input
+                  type="email"
+                  placeholder="staff@vtech.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  className="w-full pl-10 pr-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                />
+              </div>
             </div>
-          </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-            <input 
-              type="checkbox" 
-              id="remember" 
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              style={{ cursor: 'pointer', width: '16px', height: '16px' }}
-            />
-            <label htmlFor="remember" style={{ fontSize: '13px', color: '#555', fontWeight: 'bold', cursor: 'pointer' }}>
-              Remember My Credentials
-            </label>
-          </div>
+            {/* Password */}
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+                <input
+                  type={showPass ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  className="w-full pl-10 pr-11 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(v => !v)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors"
+                >
+                  {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
 
-          <button type="submit" disabled={loading} style={loginBtn}>
-            {loading ? <Loader2 className="animate-spin" size={20} /> : <><LogIn size={20} /> Login</>}
-          </button>
-        </form>
+            {/* Remember Me */}
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setRememberMe(v => !v)}
+                className={`w-9 h-5 rounded-full transition-all duration-200 flex-shrink-0 relative ${
+                  rememberMe ? "bg-blue-600" : "bg-[#21293d]"
+                }`}
+              >
+                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
+                  rememberMe ? "left-[18px]" : "left-0.5"
+                }`} />
+              </button>
+              <label
+                onClick={() => setRememberMe(v => !v)}
+                className="text-xs font-bold text-slate-500 cursor-pointer select-none hover:text-slate-400 transition-colors"
+              >
+                Remember My Credentials
+              </label>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-900/30 mt-2"
+            >
+              {loading
+                ? <><Loader2 size={17} className="animate-spin" /> Logging in...</>
+                : <><LogIn size={17} /> Login to Dashboard</>}
+            </button>
+          </form>
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-slate-700 text-[11px] mt-5 font-medium">
+          V-Technologies · Jabalpur · 9179105875
+        </p>
       </div>
     </div>
   );
 }
-
-// Styles remains the same...
-const containerStyle: React.CSSProperties = { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f0f2f5', padding: '15px' };
-const loginCard: React.CSSProperties = { background: 'white', padding: '40px 30px', borderRadius: '20px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', width: '100%', maxWidth: '400px' };
-const iconCircle: React.CSSProperties = { width: '60px', height: '60px', background: '#eef6ff', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto' };
-const inputWrapper: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '5px' };
-const labelStyle: React.CSSProperties = { fontSize: '13px', fontWeight: 'bold', color: '#555' };
-const inputGroup: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid #ddd', padding: '12px', borderRadius: '10px', transition: '0.3s' };
-const inputStyle: React.CSSProperties = { border: 'none', outline: 'none', width: '100%', fontSize: '15px' };
-const loginBtn: React.CSSProperties = { background: '#007bff', color: 'white', padding: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', fontWeight: 'bold', fontSize: '16px', marginTop: '10px', boxShadow: '0 4px 12px rgba(0,123,255,0.2)' };

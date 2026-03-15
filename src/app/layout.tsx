@@ -393,6 +393,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         setProfile({
           full_name: pd?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
           role:      pd?.role      || (user.email === "vtech.jbp@gmail.com" ? "admin" : "staff"),
+          // ↑ pd?.role is fetched from profiles table.
+          // If null (profile not created yet), fallback: admin email → admin, else staff.
         });
       } catch (e) {
         console.error("Auth error:", e);
