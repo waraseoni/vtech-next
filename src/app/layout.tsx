@@ -1,11 +1,11 @@
 "use client";
 import "./globals.css";
-import React, { useState, useEffect, Suspense, useCallback } from "react";
+import React, { useState, useEffect, Suspense, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
-  LayoutDashboard, Users, Package, Settings, Wrench, Search,
+  LayoutDashboard, Users, Package, Settings, Wrench, Search, Phone,
   User, LogOut, Sparkles, Loader2, ShieldCheck, CalendarCheck,
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
   DollarSign, Truck, CreditCard, Clock, Briefcase, Coins,
@@ -13,27 +13,221 @@ import {
   ChevronDown, ChevronRight, X, Menu, ArrowLeft, BarChart2, RefreshCw,
 } from "lucide-react";
 
-// ─── Search ──────────────────────────────────────────────────────────────────
+// ─── Universal Search ────────────────────────────────────────────────────────
+type SearchResult = {
+  id: number | string;
+  title: string;
+  subtitle: string;
+  tag: string;
+  tagColor: string;
+  href: string;
+  icon: "client" | "job" | "product" | "mechanic" | "sale";
+};
+
 function NavbarSearch() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const router                = useRouter();
+  const [query,  setQuery]    = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [open,    setOpen]    = useState(false);
+  const wrapRef               = useRef<HTMLDivElement>(null);
+  const timerRef              = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node))
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  const runSearch = useCallback(async (q: string) => {
+    if (!q.trim()) { setResults([]); setOpen(false); return; }
+    setLoading(true);
+    setOpen(true);
+    const like = `%${q}%`;
+    const num  = parseInt(q);
+
+    try {
+      const [clientRes, jobRes, prodRes, mechRes, saleRes] = await Promise.all([
+        // Clients — name, contact, address
+        supabase.from("client_list")
+          .select("id, firstname, middlename, lastname, contact, address")
+          .eq("delete_flag", 0)
+          .or(`firstname.ilike.${like},middlename.ilike.${like},lastname.ilike.${like},contact.ilike.${like},address.ilike.${like}`)
+          .limit(5),
+
+        // Jobs — item, fault, job_id, code, uniq_id
+        supabase.from("transaction_list")
+          .select("id, job_id, item, fault, status, date_created")
+          .eq("del_status", 0)
+          .or(`item.ilike.${like},fault.ilike.${like},job_id.ilike.${like},code.ilike.${like},uniq_id.ilike.${like}${!isNaN(num) ? `,job_id.eq.${q}` : ""}`)
+          .limit(5),
+
+        // Products
+        supabase.from("product_list")
+          .select("id, name, price")
+          .eq("delete_flag", 0)
+          .ilike("name", like)
+          .limit(4),
+
+        // Mechanics
+        supabase.from("mechanic_list")
+          .select("id, firstname, lastname, designation, contact")
+          .eq("status", 1)
+          .or(`firstname.ilike.${like},lastname.ilike.${like},contact.ilike.${like}`)
+          .limit(3),
+
+        // Direct Sales — sale_code, remarks
+        supabase.from("direct_sales")
+          .select("id, sale_code, total_amount, remarks, date_created")
+          .or(`sale_code.ilike.${like},remarks.ilike.${like}`)
+          .limit(3),
+      ]);
+
+      const STATUS_LABELS: Record<number, string> = {
+        0:"Pending", 1:"In Progress", 2:"Done", 3:"Paid", 4:"Cancelled", 5:"Delivered",
+      };
+      const STATUS_COLORS: Record<number, string> = {
+        0:"bg-slate-500/20 text-slate-400", 1:"bg-blue-500/20 text-blue-400",
+        2:"bg-teal-500/20 text-teal-400",   3:"bg-emerald-500/20 text-emerald-400",
+        4:"bg-red-500/20 text-red-400",     5:"bg-purple-500/20 text-purple-400",
+      };
+
+      const out: SearchResult[] = [];
+
+      (clientRes.data || []).forEach(r => {
+        const name = [r.firstname, r.middlename, r.lastname].filter(Boolean).join(" ");
+        out.push({ id: r.id, title: name, subtitle: r.contact || r.address || "—",
+          tag: "Client", tagColor: "bg-blue-500/20 text-blue-400",
+          href: `/clients/${r.id}/view`, icon: "client" });
+      });
+
+      (jobRes.data || []).forEach(r => {
+        out.push({ id: r.id, title: `Job #${r.job_id} — ${r.item}`, subtitle: r.fault || "—",
+          tag: STATUS_LABELS[r.status] || "Job", tagColor: STATUS_COLORS[r.status] || "bg-slate-500/20 text-slate-400",
+          href: `/jobs/${r.id}/view`, icon: "job" });
+      });
+
+      (prodRes.data || []).forEach(r => {
+        out.push({ id: r.id, title: r.name, subtitle: `Rs.${r.price?.toFixed(2) || "0.00"}`,
+          tag: "Product", tagColor: "bg-amber-500/20 text-amber-400",
+          href: `/inventory`, icon: "product" });
+      });
+
+      (mechRes.data || []).forEach(r => {
+        const name = [r.firstname, r.lastname].filter(Boolean).join(" ");
+        out.push({ id: r.id, title: name, subtitle: `${r.designation || ""} ${r.contact ? "· " + r.contact : ""}`.trim(),
+          tag: "Mechanic", tagColor: "bg-purple-500/20 text-purple-400",
+          href: `/mechanics`, icon: "mechanic" });
+      });
+
+      (saleRes.data || []).forEach(r => {
+        out.push({ id: r.id, title: `Sale ${r.sale_code}`, subtitle: r.remarks || `Rs.${r.total_amount?.toFixed(2)}`,
+          tag: "Direct Sale", tagColor: "bg-pink-500/20 text-pink-400",
+          href: `/direct-sales/${r.id}/view`, icon: "sale" });
+      });
+
+      setResults(out);
+    } catch (e) {
+      console.error("Search error:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setQuery(val);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (!val.trim()) { setResults([]); setOpen(false); return; }
+    timerRef.current = setTimeout(() => runSearch(val), 300);
+  };
+
+  const handleSelect = (href: string) => {
+    setQuery(""); setResults([]); setOpen(false);
+    router.push(href);
+  };
+
+  const ICON_MAP = {
+    client:   <Users size={13} className="text-blue-400 flex-shrink-0"/>,
+    job:      <Wrench size={13} className="text-slate-400 flex-shrink-0"/>,
+    product:  <Package size={13} className="text-amber-400 flex-shrink-0"/>,
+    mechanic: <User size={13} className="text-purple-400 flex-shrink-0"/>,
+    sale:     <ShoppingCart size={13} className="text-pink-400 flex-shrink-0"/>,
+  };
+
   return (
-    <div className="relative max-w-sm w-full group">
-      <Search
-        size={14}
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-blue-400 transition-colors pointer-events-none"
-      />
+    <div ref={wrapRef} className="relative max-w-sm w-full group">
+      {/* Input */}
+      <Search size={14}
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-blue-400 transition-colors pointer-events-none z-10"/>
+      {loading && (
+        <Loader2 size={13}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 animate-spin pointer-events-none z-10"/>
+      )}
+      {query && !loading && (
+        <button onClick={() => { setQuery(""); setResults([]); setOpen(false); }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors z-10">
+          <X size={13}/>
+        </button>
+      )}
       <input
         type="text"
-        placeholder="Search jobs, clients…"
-        className="w-full pl-9 pr-4 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-slate-300 placeholder:text-slate-700 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium"
-        onChange={e => {
-          const p = new URLSearchParams(searchParams.toString());
-          e.target.value ? p.set("search", e.target.value) : p.delete("search");
-          router.push(`/jobs?${p}`);
-        }}
-        defaultValue={searchParams.get("search") ?? ""}
+        value={query}
+        onChange={handleChange}
+        onFocus={() => results.length > 0 && setOpen(true)}
+        placeholder="Search clients, jobs, products…"
+        className="w-full pl-9 pr-8 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-slate-300 placeholder:text-slate-700 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium"
       />
+
+      {/* Dropdown Results */}
+      {open && (
+        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-[#111520] border border-[#21293d] rounded-2xl shadow-2xl shadow-black/60 z-[200] overflow-hidden">
+          {results.length === 0 && !loading ? (
+            <div className="px-4 py-5 text-center text-slate-600 text-xs font-bold uppercase tracking-wider">
+              No results found
+            </div>
+          ) : (
+            <>
+              <div className="px-3 pt-2.5 pb-1 flex items-center justify-between">
+                <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">
+                  {results.length} result{results.length !== 1 ? "s" : ""}
+                </span>
+                <span className="text-[9px] text-slate-700">Clients · Jobs · Products · Mechanics · Sales</span>
+              </div>
+              <ul className="max-h-[400px] overflow-y-auto divide-y divide-[#1a2234]">
+                {results.map((r, i) => (
+                  <li key={i}>
+                    <button
+                      onClick={() => handleSelect(r.href)}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors text-left">
+                      <div className="w-7 h-7 rounded-lg bg-[#1a2234] flex items-center justify-center flex-shrink-0">
+                        {ICON_MAP[r.icon]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-slate-200 truncate">{r.title}</span>
+                          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wide ${r.tagColor}`}>
+                            {r.tag}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 truncate mt-0.5">{r.subtitle}</p>
+                      </div>
+                      <ChevronRight size={12} className="text-slate-700 flex-shrink-0"/>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="px-3 py-2 border-t border-[#1a2234] text-[9px] text-slate-700 text-center">
+                Press Enter ya click karo to navigate
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
