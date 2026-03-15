@@ -794,7 +794,7 @@ function JobsListContent() {
                 {/* Card Top */}
                 <div className="flex justify-between items-start p-3 bg-gradient-to-r from-white/[0.02] to-transparent">
                   <div className="flex-1 min-w-0">
-                    <Link href={`/jobs/${txn.id}`} className="font-black text-sm text-white hover:text-blue-400 transition-colors">
+                    <Link href={`/jobs/${txn.id}/view`} className="font-black text-sm text-white hover:text-blue-400 transition-colors">
                       #{txn.job_id}
                     </Link>
                     <div className="flex flex-wrap gap-1.5 mt-1">
