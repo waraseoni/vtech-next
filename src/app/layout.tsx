@@ -8,9 +8,9 @@ import {
   LayoutDashboard, Users, Package, Settings, Wrench, Search, Phone,
   User, LogOut, Sparkles, Loader2, ShieldCheck, CalendarCheck,
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
-  DollarSign, Truck, CreditCard, Clock, Briefcase, Coins,
+  DollarSign, Truck, CreditCard, Clock, Briefcase, Coins, Receipt,
   Toolbox, FolderOpen, UsersRound, Database, Settings2,
-  ChevronDown, ChevronRight, X, Menu, ArrowLeft, BarChart2, RefreshCw,
+  ChevronDown, ChevronRight, X, Menu, ArrowLeft, BarChart2, RefreshCw, Sun, Moon,
 } from "lucide-react";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
@@ -337,6 +337,7 @@ function SidebarNav({
             </li>
             <SubMenu title="Back Office" icon={<Briefcase size={15} />} basePath="/backoffice">
               <li><Link href="/expenses"      className={subLinkCls(pathname === "/expenses")}      onClick={onNavClick}><DollarSign size={12} />Pay Outs</Link></li>
+              <li><Link href="/payments"      className={subLinkCls(pathname === "/payments")}      onClick={onNavClick}><Receipt size={12} />Payments</Link></li>
               <li><Link href="/salary"        className={subLinkCls(pathname === "/salary")}        onClick={onNavClick}><Coins size={12} />Salary</Link></li>
               <li><Link href="/commission"    className={subLinkCls(pathname === "/commission")}    onClick={onNavClick}><BarChart2 size={12} />Commission</Link></li>
               <li><Link href="/services"      className={subLinkCls(pathname === "/services")}      onClick={onNavClick}><Toolbox size={12} />Services</Link></li>
@@ -370,6 +371,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const [userEmail,    setUserEmail]    = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [drawerOpen,   setDrawerOpen]   = useState(false);
+  const [theme,        setTheme]        = useState<"dark" | "light" | null>(null);
 
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
@@ -410,6 +412,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Theme init + persist (app-level override of prefers-color-scheme)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("vtech_theme") as "dark" | "light" | null;
+      const initial = saved || null;
+      setTheme(initial);
+      if (initial) document.documentElement.setAttribute("data-theme", initial);
+      else document.documentElement.removeAttribute("data-theme");
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = (prev || "dark") === "dark" ? "light" : "dark";
+      try {
+        localStorage.setItem("vtech_theme", next);
+      } catch {
+        // ignore
+      }
+      document.documentElement.setAttribute("data-theme", next);
+      return next;
+    });
   }, []);
 
   // Auto-close drawer on route change
@@ -578,6 +606,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <RefreshCw size={15} />
               </button>
             )}
+
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-500 hover:text-white transition-all"
+              title={theme === "light" ? "Switch to Dark" : "Switch to Light"}
+            >
+              {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
+            </button>
 
             {/* User dropdown */}
             <div className="relative flex-shrink-0">

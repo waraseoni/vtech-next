@@ -68,3 +68,5 @@ next-env.d.ts
 *.bak
 *.tmp
 .eslintcache
+
+php-ref/

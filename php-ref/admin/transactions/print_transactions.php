@@ -1,0 +1,171 @@
+<?php
+require_once('../../config.php');
+
+$from = isset($_GET['from']) ? $_GET['from'] : null;
+$to = isset($_GET['to']) ? $_GET['to'] : null;
+$export = isset($_GET['export']) ? $_GET['export'] : '';
+
+// Filter Query
+$where = " WHERE 1=1 ";
+if($from && $to){
+    $where .= " AND DATE(t.date_created) BETWEEN '{$from}' AND '{$to}' ";
+}
+
+// Status Styling Array
+$status_arr = [
+    0 => ['label' => "Pending", 'color' => '#f39c12'],
+    1 => ['label' => "In Progress", 'color' => '#007bff'],
+    2 => ['label' => "Done", 'color' => '#6f42c1'],
+    3 => ['label' => "Paid", 'color' => '#28a745'],
+    4 => ['label' => "Cancelled", 'color' => '#dc3545'],
+    5 => ['label' => "Delivered", 'color' => '#19692c']
+];
+
+if($export == 'excel'){
+    header("Content-Type: application/vnd.ms-excel");
+    header("Content-Disposition: attachment; filename=Transactions_Report_".date('Ymd').".xls");
+}
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Transaction Report - <?= $_settings->info('name') ?></title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <style>
+        body { font-family: 'Source Sans Pro', sans-serif; color: #333; margin: 0; padding: 20px; background-color: #f8f9fa; }
+        .report-container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 1100px; margin: auto; border: 1px solid #ddd; }
+        
+        /* Header Section with Logo */
+        .header-wrapper { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #001f3f; padding-bottom: 15px; margin-bottom: 20px; }
+        .logo-section { display: flex; align-items: center; gap: 20px; }
+        .company-logo { max-height: 80px; width: auto; object-fit: contain; }
+        .company-info h2 { margin: 0; color: #001f3f; text-transform: uppercase; letter-spacing: 1px; font-size: 24px; }
+        .company-info p { margin: 2px 0; color: #666; font-size: 14px; }
+        
+        .report-title-box { text-align: right; }
+        .report-title-box h1 { margin: 0; color: #999; font-size: 32px; font-weight: 800; opacity: 0.6; }
+        
+        /* Table Styling */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 1px solid #444; }
+        th { background-color: #001f3f; color: #ffffff; text-transform: uppercase; font-size: 12px; padding: 12px 8px; border: 1px solid #444; }
+        td { padding: 10px 8px; border: 1px solid #dee2e6; font-size: 13px; vertical-align: middle; border: 1px solid #ccc; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        
+        /* Badge */
+        .badge { padding: 4px 8px; border-radius: 4px; color: #fff; font-size: 11px; font-weight: bold; text-transform: uppercase; display: inline-block; min-width: 80px; text-align: center; }
+        
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .total-row { background-color: #001f3f !important; color: #fff !important; font-weight: bold; font-size: 16px; }
+        
+        @media print {
+            body { background-color: #fff; padding: 0; }
+            .report-container { box-shadow: none; border: none; max-width: 100%; padding: 10px; }
+            .no-print { display: none; }
+            th { background-color: #001f3f !important; color: #fff !important; -webkit-print-color-adjust: exact; }
+            .badge { -webkit-print-color-adjust: exact; border: 1px solid #999 !important; }
+            .total-row { background-color: #001f3f !important; color: #fff !important; -webkit-print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body onload="<?= ($export != 'excel') ? 'window.print()' : '' ?>">
+
+<div class="report-container">
+    <div class="header-wrapper">
+        <div class="logo-section">
+            <img src="<?= validate_image($_settings->info('logo')) ?>" alt="Logo" class="company-logo" onerror="this.src='../../dist/img/AdminLTELogo.png';">
+            
+            <div class="company-info">
+                <h2><?= $_settings->info('name') ?></h2>
+                <p><?= $_settings->info('address') ?></p>
+                <p><b>Contact:</b> <?= $_settings->info('phone') ?> | <b>Email:</b> <?= $_settings->info('email') ?></p>
+            </div>
+        </div>
+        <div class="report-title-box">
+            <h1>REPORT</h1>
+            <p><b>Date:</b> <?= date("d M, Y") ?></p>
+        </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px;">
+        <div>
+            <?php if($from): ?>
+                <span style="background: #eee; padding: 5px 10px; border-radius: 4px; font-size: 14px;">
+                    <b>Period:</b> <?= date("d-M-Y", strtotime($from)) ?> <b>to</b> <?= date("d-M-Y", strtotime($to)) ?>
+                </span>
+            <?php endif; ?>
+        </div>
+        <div class="text-muted small">Generated by: <?= $_settings->userdata('firstname') ?></div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="text-center">#</th>
+                <th>Date & Time</th>
+                <th>Job ID</th>
+                <th>Client Name</th>
+                <th>Item / Service</th>
+                <th class="text-center">Status</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php 
+            $i = 1;
+            $total = 0;
+            $qry = $conn->query("SELECT t.*, CONCAT(c.firstname,' ',c.lastname) as client_name 
+                                FROM transaction_list t 
+                                INNER JOIN client_list c ON t.client_name = c.id 
+                                {$where} ORDER BY t.date_created DESC");
+            if($qry->num_rows > 0):
+                while($row = $qry->fetch_assoc()):
+                    $total += $row['amount'];
+                    $st = $status_arr[$row['status']];
+            ?>
+            <tr>
+                <td class="text-center"><?= $i++ ?></td>
+                <td><?= date("d-M-Y h:i A", strtotime($row['date_created'])) ?></td>
+                <td style="font-family: monospace; font-weight: bold; color: #001f3f;"><?= $row['job_id'] ?></td>
+                <td><?= $row['client_name'] ?></td>
+                <td><?= $row['item'] ?></td>
+                <td class="text-center">
+                    <span class="badge" style="background-color: <?= $st['color'] ?>;">
+                        <?= $st['label'] ?>
+                    </span>
+                </td>
+                <td class="text-right"><b> <?= number_format($row['amount'], 2) ?></b></td>
+            </tr>
+            <?php endwhile; ?>
+            <?php else: ?>
+            <tr>
+                <td colspan="7" class="text-center">No transactions found for the selected period.</td>
+            </tr>
+            <?php endif; ?>
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="6" class="text-right" style="border: 1px solid #444;">GRAND TOTAL: Rs.</td>
+                <td class="text-right" style="border: 1px solid #444;"> <?= number_format($total, 2) ?></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div style="margin-top: 80px; display: flex; justify-content: space-between; text-align: center;">
+        <div style="width: 200px; border-top: 1px solid #333; padding-top: 5px;"><b>Verified By</b></div>
+        <div style="width: 200px; border-top: 1px solid #333; padding-top: 5px;"><b>Authorized Signatory</b></div>
+    </div>
+
+    <div class="text-center no-print mt-5" style="margin-top: 50px;">
+        <hr>
+        <button onclick="window.print()" style="padding: 12px 30px; cursor: pointer; background: #28a745; color: #fff; border: none; border-radius: 4px; font-weight: bold; font-size: 16px;">
+            <i class="fa fa-print"></i> PRINT REPORT
+        </button>
+        <button onclick="window.close()" style="padding: 12px 30px; cursor: pointer; background: #6c757d; color: #fff; border: none; border-radius: 4px; font-weight: bold; font-size: 16px; margin-left: 10px;">
+            CLOSE
+        </button>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,8 +1,44 @@
 @import "tailwindcss";
 
+/* App theme tokens (used by Tailwind overrides below) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light defaults */
+  --app-bg: #f6f7fb;
+  --app-panel: #ffffff;
+  --app-panel-2: #f1f5f9;
+  --app-topbar: rgba(255, 255, 255, 0.8);
+  --app-sidebar: #ffffff;
+  --app-border: #e2e8f0;
+  --app-border-2: #cbd5e1;
+  --app-text: #0f172a;
+  --app-text-2: #334155;
+  --app-muted: #64748b;
+  --app-muted-2: #94a3b8;
+
+  --background: var(--app-bg);
+  --foreground: var(--app-text);
+}
+
+/* Force via app toggle */
+html[data-theme="dark"] {
+  --app-bg: #0d1117;
+  --app-panel: #161b27;
+  --app-panel-2: #111520;
+  --app-topbar: rgba(8, 13, 20, 0.9);
+  --app-sidebar: #080d14;
+  --app-border: #21293d;
+  --app-border-2: #1a2234;
+  --app-text: #e2e8f0;
+  --app-text-2: #cbd5e1;
+  --app-muted: #64748b;
+  --app-muted-2: #475569;
+
+  --background: var(--app-bg);
+  --foreground: var(--app-text);
+}
+
+html[data-theme="light"] {
+  /* keep :root light values */
 }
 
 @theme inline {
@@ -14,8 +50,21 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* If user has not chosen a theme, browser preference le lo */
+    --app-bg: #0d1117;
+    --app-panel: #161b27;
+    --app-panel-2: #111520;
+    --app-topbar: rgba(8, 13, 20, 0.9);
+    --app-sidebar: #080d14;
+    --app-border: #21293d;
+    --app-border-2: #1a2234;
+    --app-text: #e2e8f0;
+    --app-text-2: #cbd5e1;
+    --app-muted: #64748b;
+    --app-muted-2: #475569;
+
+    --background: var(--app-bg);
+    --foreground: var(--app-text);
   }
 }
 
@@ -24,6 +73,32 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Minimal overrides so existing hard-coded classes become theme-aware.
+   (We migrate gradually; this makes Light theme usable immediately.)
+────────────────────────────────────────────────────────────────────────── */
+
+/* Core backgrounds used across app */
+.bg-\[\#0d1117\] { background-color: var(--app-bg) !important; }
+.bg-\[\#161b27\] { background-color: var(--app-panel) !important; }
+.bg-\[\#111520\] { background-color: var(--app-panel-2) !important; }
+.bg-\[\#080d14\] { background-color: var(--app-sidebar) !important; }
+.bg-\[\#080d14\]\/90 { background-color: var(--app-topbar) !important; }
+
+/* Core borders */
+.border-\[\#21293d\] { border-color: var(--app-border) !important; }
+.border-\[\#1a2234\] { border-color: var(--app-border-2) !important; }
+.border-r.border-\[\#1a2234\] { border-right-color: var(--app-border-2) !important; }
+.border-b.border-\[\#1a2234\] { border-bottom-color: var(--app-border-2) !important; }
+
+/* Common slate text colors (approx mapping) */
+.text-slate-200 { color: var(--app-text) !important; }
+.text-slate-300 { color: var(--app-text-2) !important; }
+.text-slate-400 { color: var(--app-muted) !important; }
+.text-slate-500 { color: var(--app-muted) !important; }
+.text-slate-600 { color: var(--app-muted-2) !important; }
+.text-slate-700 { color: var(--app-muted-2) !important; }
 
 @layer utilities {
   .scrollbar-hide::-webkit-scrollbar {
