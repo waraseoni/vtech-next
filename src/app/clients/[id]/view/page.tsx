@@ -8,7 +8,7 @@ import {
   CreditCard, Plus, Filter, ShoppingCart, Wrench, Receipt,
   Banknote, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, X,
   Printer, MessageCircle, ExternalLink, Trash2,
-  PencilLine, IndianRupee, RefreshCw,
+  PencilLine, IndianRupee, RefreshCw, MessageSquare,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
@@ -465,6 +465,10 @@ export default function ViewClientProfile() {
                 <a href={`https://wa.me/91${client.contact}`} target="_blank" rel="noreferrer"
                   className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-green-500/15 border border-green-500/25 text-green-300 hover:bg-green-500/25 transition-colors no-underline">
                   <MessageCircle size={11} /> WhatsApp
+                </a>
+                <a href={`sms:${client.contact}`}
+                  className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-300 hover:bg-violet-500/25 transition-colors no-underline">
+                  <MessageSquare size={11} /> SMS
                 </a>
                 {client.email && (
                   <a href={`mailto:${client.email}`}
