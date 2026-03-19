@@ -403,7 +403,7 @@ export default function ViewClientProfile() {
   // ── LOADING / ERROR ────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4" style={{ background: '#0d1117' }}>
+      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 theme-body">
         <Loader2 className="animate-spin text-blue-400" size={44} />
         <p className="text-slate-400 font-bold italic uppercase tracking-[0.2em] text-sm">Loading Profile...</p>
       </div>
@@ -411,7 +411,7 @@ export default function ViewClientProfile() {
   }
   if (error || !client) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4" style={{ background: '#0d1117' }}>
+      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 theme-body">
         <p className="text-red-400 font-bold">{error || 'Client not found'}</p>
         <button onClick={() => router.back()} className="text-blue-400 hover:underline">Go Back</button>
       </div>
@@ -432,7 +432,7 @@ export default function ViewClientProfile() {
 
   // ── RENDER ─────────────────────────────────────────────────
   return (
-    <div className="min-h-screen font-sans" style={{ background: '#0d1117', color: '#e2e8f0' }}>
+    <div className="min-h-screen font-sans theme-body">
       {/* Global styles */}
       <style>{`
         .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
@@ -442,8 +442,7 @@ export default function ViewClientProfile() {
 
         {/* ── HEADER ── */}
         <div
-          className="rounded-2xl border p-5 flex flex-col md:flex-row md:items-center justify-between gap-5"
-          style={{ background: '#161b27', borderColor: '#21293d' }}
+          className="rounded-2xl border p-5 flex flex-col md:flex-row md:items-center justify-between gap-5 theme-card"
         >
           {/* Profile — BUG FIX 13: image replaced with InitialsAvatar */}
           <div className="flex items-center gap-4">
@@ -514,7 +513,7 @@ export default function ViewClientProfile() {
 
         {/* ── NET BALANCE BANNER ── */}
         <div className={`rounded-2xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-          netBalance > 0 ? 'border-red-500/20' : netBalance < 0 ? 'border-emerald-500/20' : 'border-slate-500/20'
+          netBalance > 0 ? 'border-red-500/20 theme-card' : netBalance < 0 ? 'border-emerald-500/20 theme-card' : 'border-slate-500/20 theme-card'
         }`} style={{ background: netBalance > 0 ? 'rgba(239,68,68,0.06)' : netBalance < 0 ? 'rgba(16,185,129,0.06)' : 'rgba(100,116,139,0.06)' }}>
           <div className="flex items-center gap-3">
             <div className={`p-2.5 rounded-xl border ${netBalance > 0 ? 'bg-red-500/15 border-red-500/25 text-red-400' : netBalance < 0 ? 'bg-emerald-500/15 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/15 border-slate-500/25 text-slate-400'}`}>
@@ -578,8 +577,8 @@ export default function ViewClientProfile() {
 
         {/* ── ACTIVE LOANS TABLE ── */}
         {loans.length > 0 && (
-          <div className="rounded-2xl border overflow-hidden" style={{ background: '#161b27', borderColor: '#21293d' }}>
-            <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: '#21293d', background: '#111520' }}>
+          <div className="rounded-2xl border overflow-hidden theme-card">
+            <div className="px-5 py-4 border-b flex items-center justify-between theme-panel-2">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <Banknote size={16} className="text-amber-400" /> Active Loans
               </h2>
@@ -589,7 +588,7 @@ export default function ViewClientProfile() {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead style={{ background: '#111520' }}>
+                <thead className="theme-panel-2">
                   <tr>
                     {['Loan Date','Total Payable','Paid','Balance','EMI/Month','Action'].map(h => (
                       <th key={h} className={thCls}>{h}</th>
@@ -626,7 +625,7 @@ export default function ViewClientProfile() {
         )}
 
         {/* ── DATE FILTER ── */}
-        <div className="rounded-2xl border p-4 flex flex-wrap items-center gap-3" style={{ background: '#161b27', borderColor: '#21293d' }}>
+        <div className="rounded-2xl border p-4 flex flex-wrap items-center gap-3 theme-card">
           <Filter size={16} className="text-blue-400" />
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Filter by Date</span>
           <div className="flex flex-wrap gap-3 ml-auto">
@@ -650,8 +649,8 @@ export default function ViewClientProfile() {
         </div>
 
         {/* ── TABS ── */}
-        <div className="rounded-2xl border overflow-hidden" style={{ background: '#161b27', borderColor: '#21293d' }}>
-          <div className="flex border-b overflow-x-auto scrollbar-none" style={{ borderColor: '#21293d', background: '#111520' }}>
+        <div className="rounded-2xl border overflow-hidden theme-card">
+          <div className="flex border-b overflow-x-auto scrollbar-none theme-panel-2">
             {TABS.map(tab => (
               <button
                 key={tab.key}
@@ -678,7 +677,7 @@ export default function ViewClientProfile() {
               {/* Desktop table */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead style={{ background: '#111520' }}>
+                  <thead className="theme-panel-2">
                     <tr>
                       {['Date','Job ID','Item / Model','Fault','Location','Status','Amount'].map(h => (
                         <th key={h} className={thCls}>{h}</th>
@@ -756,7 +755,7 @@ export default function ViewClientProfile() {
             <>
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead style={{ background: '#111520' }}>
+                  <thead className="theme-panel-2">
                     <tr>
                       {['Date','Sale Code','Mode','Remarks','Amount','Action'].map(h => (
                         <th key={h} className={thCls}>{h}</th>
@@ -814,7 +813,7 @@ export default function ViewClientProfile() {
           {activeTab === 'payments' && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead style={{ background: '#111520' }}>
+                <thead className="theme-panel-2">
                   <tr>
                     {['Date','Ref. ID','Type','Amount','Discount','Net Amount','Mode','Action'].map(h => (
                       <th key={h} className={thCls}>{h}</th>
@@ -868,7 +867,7 @@ export default function ViewClientProfile() {
           {activeTab === 'loan_payments' && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead style={{ background: '#111520' }}>
+                <thead className="theme-panel-2">
                   <tr>
                     {['Date','Loan ID','Amount','Discount','Net Amount','Mode','Remarks','Action'].map(h => (
                       <th key={h} className={thCls}>{h}</th>
@@ -922,7 +921,7 @@ export default function ViewClientProfile() {
       {/* ── EDIT PAYMENT MODAL ── */}
       {editingPayment && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border p-6 shadow-2xl" style={{ background: '#161b27', borderColor: '#21293d' }}>
+          <div className="w-full max-w-md rounded-2xl border p-6 shadow-2xl theme-card">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-bold text-white">Edit Payment</h3>
               <button onClick={() => setEditingPayment(null)}
@@ -943,8 +942,7 @@ export default function ViewClientProfile() {
                     required={f.key !== 'discount'}
                     value={editForm[f.key as keyof typeof editForm]}
                     onChange={e => setEditForm({ ...editForm, [f.key]: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border text-sm text-white focus:outline-none focus:border-blue-500 transition-colors [color-scheme:dark]"
-                    style={{ background: '#0d1117', borderColor: '#21293d' }}
+                    className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
               ))}
@@ -953,8 +951,7 @@ export default function ViewClientProfile() {
                 <select
                   value={editForm.payment_mode}
                   onChange={e => setEditForm({ ...editForm, payment_mode: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border text-sm text-white focus:outline-none focus:border-blue-500 transition-colors [color-scheme:dark]"
-                  style={{ background: '#0d1117', borderColor: '#21293d' }}
+                  className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors"
                 >
                   {['Cash','PhonePe/GPay','Bank Transfer','Credit Card'].map(m => (
                     <option key={m}>{m}</option>
@@ -966,8 +963,7 @@ export default function ViewClientProfile() {
                 <textarea
                   rows={2} value={editForm.remarks}
                   onChange={e => setEditForm({ ...editForm, remarks: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border text-sm text-white focus:outline-none focus:border-blue-500 transition-colors resize-none [color-scheme:dark]"
-                  style={{ background: '#0d1117', borderColor: '#21293d' }}
+                  className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors resize-none"
                 />
               </div>
               <div className="flex gap-3 pt-1">

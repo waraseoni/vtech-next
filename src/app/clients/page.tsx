@@ -6,8 +6,9 @@ import {
   Users, UserPlus, Search, Phone, Mail,
   Eye, Edit3, Trash2, Loader2, ShieldCheck,
   MessageCircle, TrendingUp, AlertTriangle, CheckCircle,
-  RotateCcw, IndianRupee, Printer, FileSpreadsheet, X,
+  RotateCcw, IndianRupee, Printer, FileSpreadsheet, FileText, X,
   ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, SlidersHorizontal,
+  CheckSquare, Square, Send, MessageSquare,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -108,6 +109,12 @@ export default function ClientsPage() {
   const [waMsgType, setWaMsgType] = useState<"welcome"|"reminder"|"followup"|"offer"|"custom">("welcome");
   const [waText,    setWaText]    = useState("");
 
+  // Bulk WhatsApp
+  const [selectedClients, setSelectedClients] = useState<Set<number>>(new Set());
+  const [bulkWaModal, setBulkWaModal] = useState(false);
+  const [bulkWaMsgType, setBulkWaMsgType] = useState<"welcome"|"reminder"|"followup"|"offer"|"custom">("custom");
+  const [bulkWaText, setBulkWaText] = useState("");
+
   const [pageSize,    setPageSize]    = useState<number>(25);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
@@ -200,10 +207,63 @@ export default function ClientsPage() {
     setWaModal(false);
   };
 
+  // Bulk WhatsApp
+  const toggleSelectClient = (id: number) => {
+    setSelectedClients(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAll = () => {
+    if (selectedClients.size === filteredSortedClients.length) {
+      setSelectedClients(new Set());
+    } else {
+      setSelectedClients(new Set(filteredSortedClients.map(c => c.id)));
+    }
+  };
+  const openBulkWaModal = () => {
+    if (selectedClients.size === 0) { alert("Select clients pehle!"); return; }
+    setBulkWaText("");
+    setBulkWaMsgType("custom");
+    setBulkWaModal(true);
+  };
+  const handleBulkWaTypeChange = (type: typeof bulkWaMsgType) => {
+    setBulkWaMsgType(type);
+    const selected = clients.filter(c => selectedClients.has(c.id));
+    if (type === "custom") { setBulkWaText(""); return; }
+    if (type === "reminder") {
+      const totalBal = selected.reduce((s, c) => s + (c.balance > 0 ? c.balance : 0), 0);
+      setBulkWaText(`नमस्ते सर/मैडम! 🙏\n\nआपका बकाया बैलेंस ₹${totalBal.toLocaleString("en-IN", { minimumFractionDigits: 2 })} है।\n\nकृपया शीघ्र भुगतान करने का कष्ट करें।\n\n📞 ${FIRM.phone}\n\nधन्यवाद,\n${FIRM.owner}`);
+    } else if (type === "welcome") {
+      setBulkWaText(`नमस्ते! 🙏\n\n${FIRM.name} में आपका स्वागत है! 🛠️\n\n🔧 SMPS / Power Supply Repair\n🔧 Stage Light Repair\n🔧 DMX Controller Repair\n\n📞 ${FIRM.phone}\n📍 ${FIRM.address}\n\nधन्यवाद,\n${FIRM.owner}`);
+    } else if (type === "followup") {
+      setBulkWaText(`नमस्ते! 🙏\n\n${FIRM.name} से आपकी याद आई! 🤗\n\n🎁 पुराने ग्राहकों के लिए विशेष ऑफर: 15% छूट!\n\n📞 ${FIRM.phone}\n📍 ${FIRM.address}\n\nधन्यवाद,\n${FIRM.owner}`);
+    } else if (type === "offer") {
+      setBulkWaText(`नमस्ते! 🎉\n\n${FIRM.name} की तरफ से विशेष ऑफर!\n\n🔥 20% OFF — इस महीने तक!\n\n📞 ${FIRM.phone}\nधन्यवाद,\n${FIRM.owner}`);
+    }
+  };
+  const sendBulkWhatsApp = () => {
+    if (!bulkWaText.trim()) { alert("Message likho pehle!"); return; }
+    const selected = clients.filter(c => selectedClients.has(c.id));
+    selected.forEach(c => {
+      if (c.contact) {
+        window.open(`https://wa.me/91${c.contact.replace(/\D/g,"")}?text=${encodeURIComponent(bulkWaText)}`,"_blank");
+      }
+    });
+    setBulkWaModal(false);
+    setSelectedClients(new Set());
+  };
+
   const printReport = () => {
     const w=window.open("","_blank")!;
     w.document.write(`<html><head><title>Client List</title><style>body{font-family:Arial;margin:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px}th{background:#f2f2f2}.r{color:red;font-weight:bold}.g{color:green;font-weight:bold}</style></head><body><h2>Client List — ${new Date().toLocaleDateString("en-IN")}</h2><table><thead><tr><th>#</th><th>Name</th><th>Contact</th><th>Email</th><th>Address</th><th>Balance</th></tr></thead><tbody>${filteredSortedClients.map((c,i)=>`<tr><td>${i+1}</td><td>${c.name}</td><td>${c.contact}</td><td>${c.email}</td><td>${c.address}</td><td class="${c.balance>0?"r":"g"}">${inr(c.balance)}</td></tr>`).join("")}</tbody><tfoot><tr><td colspan="5"><b>Total Outstanding:</b></td><td class="r"><b>${inr(totalOutstanding)}</b></td></tr></tfoot></table></body></html>`);
     w.document.close(); w.print();
+  };
+  const exportPDF = () => {
+    alert("PDF Export: Use Print → Save as PDF option in the print dialog.\n\nअगर PDF में save करना है तो Print पर click करके printer dialog में 'Save as PDF' select करें।");
+    printReport();
   };
   const exportExcel = () => {
     const rows=[["#","Name","Contact","Email","Address","Opening","Repairs","Direct","Loans","Paid","Balance"],...filteredSortedClients.map((c,i)=>[i+1,c.name,c.contact,c.email,c.address,c.opening_balance,c.repair_billed,c.direct_sales_billed,c.total_loan_given,c.total_paid,c.balance])];
@@ -291,9 +351,19 @@ export default function ClientsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {selectedClients.size > 0 && (
+              <button onClick={openBulkWaModal}
+                className="flex items-center gap-1.5 px-4 py-2 bg-[#25D366] hover:bg-[#1DA851] text-white rounded-xl font-bold text-xs transition cursor-pointer shadow-lg shadow-green-500/20">
+                <MessageCircle size={13}/> Bulk WA ({selectedClients.size})
+              </button>
+            )}
             <button onClick={printReport}
               className="flex items-center gap-1.5 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-300 rounded-xl font-bold text-xs transition cursor-pointer">
               <Printer size={13}/> Print
+            </button>
+            <button onClick={exportPDF}
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-red-900/30 text-red-400 rounded-xl font-bold text-xs transition cursor-pointer">
+              <FileText size={13}/> PDF
             </button>
             <button onClick={exportExcel}
               className="flex items-center gap-1.5 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-emerald-900/30 text-emerald-400 rounded-xl font-bold text-xs transition cursor-pointer">
@@ -505,51 +575,68 @@ export default function ClientsPage() {
             {/* Table */}
             <table className="w-full border-collapse" style={{tableLayout:"fixed"}}>
               <colgroup>
-                <col style={{width:"4%"}}/>
-                <col style={{width:"30%"}}/>
-                <col style={{width:"22%"}}/>
-                <col style={{width:"20%"}}/>
-                <col style={{width:"12%"}}/>
-                <col style={{width:"12%"}}/>
+                <col style={{width:"36px"}}/>
+                <col style={{width:"40px"}}/>
+                <col style={{width:""}}/>
+                <col style={{width:"200px"}}/>
+                <col style={{width:"120px"}}/>
+                <col style={{width:"100px"}}/>
+                <col style={{width:"120px"}}/>
               </colgroup>
               <thead>
                 <tr className="bg-[#111520] border-b border-[#21293d]">
-                  {([
-                    {key:"#",       field:null},
-                    {key:"Client",  field:"name"},
-                    {key:"Address", field:null},
-                    {key:"Balance", field:"balance"},
-                    {key:"Last Txn",field:"date_created"},
-                    {key:"Actions", field:null},
-                  ] as {key:string;field:string|null}[]).map(({key,field})=>(
-                    <th key={key} onClick={()=>field&&toggleSort(field as SortField)}
-                      className={`px-4 py-3.5 text-left text-[10px] font-extrabold text-slate-600 uppercase tracking-widest ${field?"cursor-pointer hover:text-blue-400 transition select-none":""}`}>
-                      <div className="flex items-center">{key}{field&&<SortIcon field={field as SortField}/>}</div>
-                    </th>
-                  ))}
+                  <th className="px-2 py-3.5 text-left">
+                    <button onClick={toggleSelectAll} className="cursor-pointer text-blue-400 hover:text-blue-300 transition" title="Select All">
+                      {selectedClients.size === paginatedClients.length && paginatedClients.length > 0
+                        ? <CheckSquare size={14} className="text-blue-400" />
+                        : <Square size={14} className="text-slate-600" />}
+                    </button>
+                  </th>
+                  <th className="px-3 py-3.5 text-left text-[10px] font-extrabold text-slate-600 uppercase tracking-widest">#</th>
+                  <th onClick={()=>toggleSort("name")}
+                    className="px-3 py-3.5 text-left text-[10px] font-extrabold text-slate-600 uppercase tracking-widest cursor-pointer hover:text-blue-400 transition select-none">
+                    <div className="flex items-center">Client <SortIcon field="name"/></div>
+                  </th>
+                  <th className="px-3 py-3.5 text-left text-[10px] font-extrabold text-slate-600 uppercase tracking-widest">Address</th>
+                  <th onClick={()=>toggleSort("balance")}
+                    className="px-3 py-3.5 text-left text-[10px] font-extrabold text-slate-600 uppercase tracking-widest cursor-pointer hover:text-blue-400 transition select-none">
+                    <div className="flex items-center">Balance <SortIcon field="balance"/></div>
+                  </th>
+                  <th className="px-3 py-3.5 text-left text-[10px] font-extrabold text-slate-600 uppercase tracking-widest">Last Txn</th>
+                  <th className="px-3 py-3.5 text-left text-[10px] font-extrabold text-slate-600 uppercase tracking-widest">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedClients.map((client,i)=>{
                   const meta=getBalanceMeta(client.balance,client.last_txn_date);
                   const rowNum=pageSize===0?i+1:(currentPage-1)*pageSize+i+1;
+                  const isSelected=selectedClients.has(client.id);
                   return(
                     <tr key={client.id}
-                      className={`border-b border-[#1a2030] hover:bg-white/[0.02] transition-colors ${meta.rowCls}`}>
+                      className={`border-b border-[#1a2030] hover:bg-white/[0.02] transition-colors ${meta.rowCls} ${isSelected?"bg-blue-500/5":""}`}>
+
+                      {/* Checkbox */}
+                      <td className="px-2 py-3.5 align-middle">
+                        <button onClick={()=>toggleSelectClient(client.id)} className="cursor-pointer hover:opacity-80 transition">
+                          {isSelected
+                            ? <CheckSquare size={14} className="text-blue-400" />
+                            : <Square size={14} className="text-slate-600" />}
+                        </button>
+                      </td>
 
                       {/* # */}
-                      <td className="px-4 py-4 text-slate-700 text-xs font-bold align-top">{rowNum}</td>
+                      <td className="px-3 py-3.5 text-slate-700 text-xs font-bold align-middle">{rowNum}</td>
 
                       {/* Client — Name · ID · Mobile · WA */}
-                      <td className="px-4 py-4 align-top">
-                        <div className="flex items-start gap-2.5 min-w-0">
-                          <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-[5px] ${meta.dot}`}/>
+                      <td className="px-3 py-3.5 align-middle">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${meta.dot}`}/>
                           <div className="min-w-0 flex-1">
                             <Link href={`/clients/${client.id}/view`}
                               className="font-extrabold text-white hover:text-blue-400 no-underline transition text-[13px] block truncate leading-snug">
                               {client.name}
                             </Link>
-                            <div className="flex items-center gap-3 mt-1">
+                            <div className="flex items-center gap-3 mt-0.5">
                               <span className="text-slate-600 text-[10px] font-bold">#{client.id}</span>
                               {client.contact&&(
                                 <span className="text-slate-400 text-[10px] font-bold flex items-center gap-0.5">
@@ -557,7 +644,7 @@ export default function ClientsPage() {
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded border ${meta.badge}`}>{meta.label}</span>
                               {client.contact&&(
                                 <button onClick={()=>openWaModal(client)}
@@ -572,19 +659,19 @@ export default function ClientsPage() {
                       </td>
 
                       {/* Address + email */}
-                      <td className="px-4 py-4 align-top">
+                      <td className="px-3 py-3.5 align-middle">
                         <p className="text-slate-400 text-[12px] font-medium truncate leading-snug" title={client.address||""}>
                           {client.address||<span className="text-slate-700">—</span>}
                         </p>
                         {client.email&&(
-                          <p className="text-slate-700 text-[10px] mt-1 truncate flex items-center gap-1" title={client.email}>
+                          <p className="text-slate-700 text-[10px] mt-0.5 truncate flex items-center gap-1" title={client.email}>
                             <Mail size={9} className="flex-shrink-0"/>{client.email}
                           </p>
                         )}
                       </td>
 
                       {/* Balance + bar */}
-                      <td className="px-4 py-4 align-top">
+                      <td className="px-3 py-3.5 align-middle">
                         <div className={`text-[15px] font-black leading-none ${client.balance>0?"text-red-400":"text-emerald-400"}`}>
                           {client.balance<0?"−":""}{inr(client.balance)}
                         </div>
@@ -599,13 +686,13 @@ export default function ClientsPage() {
                       </td>
 
                       {/* Last Txn */}
-                      <td className="px-4 py-4 align-top whitespace-nowrap">
+                      <td className="px-3 py-3.5 align-middle whitespace-nowrap">
                         {client.last_txn_date?(
                           <>
                             <div className="text-slate-300 text-xs font-bold">
                               {new Date(client.last_txn_date).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"2-digit"})}
                             </div>
-                            <div className={`text-[10px] font-bold mt-1 ${daysSince(client.last_txn_date)>30?"text-teal-400":"text-slate-700"}`}>
+                            <div className={`text-[10px] font-bold mt-0.5 ${daysSince(client.last_txn_date)>30?"text-teal-400":"text-slate-700"}`}>
                               {daysSince(client.last_txn_date)}d ago
                             </div>
                           </>
@@ -613,7 +700,7 @@ export default function ClientsPage() {
                       </td>
 
                       {/* Actions */}
-                      <td className="px-4 py-4 align-top">
+                      <td className="px-3 py-3.5 align-middle">
                         <ActionDropdown
                           clientId={client.id} clientName={client.name}
                           userRole={userRole} onDelete={()=>handleDelete(client.id,client.name)}
@@ -626,14 +713,14 @@ export default function ClientsPage() {
               </tbody>
               <tfoot>
                 <tr className="bg-[#111520] border-t border-[#21293d]">
-                  <td colSpan={2} className="px-4 py-3 text-right text-[10px] font-extrabold text-slate-600 uppercase tracking-wide">This page due:</td>
-                  <td className="px-4 py-3 text-right">
+                  <td colSpan={3} className="px-3 py-3 text-right text-[10px] font-extrabold text-slate-600 uppercase tracking-wide">This page due:</td>
+                  <td className="px-3 py-3 text-right">
                     <span className="text-sm font-black text-red-400">
                       {inr(paginatedClients.reduce((s,c)=>s+(c.balance>0?c.balance:0),0))}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right text-[10px] font-extrabold text-slate-600 uppercase tracking-wide">Total outstanding:</td>
-                  <td colSpan={2} className="px-4 py-3">
+                  <td className="px-3 py-3 text-right text-[10px] font-extrabold text-slate-600 uppercase tracking-wide">Total:</td>
+                  <td className="px-3 py-3">
                     <span className="text-sm font-black text-red-400">{inr(totalOutstanding)}</span>
                   </td>
                 </tr>
@@ -730,6 +817,81 @@ export default function ClientsPage() {
                   <MessageCircle size={14}/> Open WhatsApp
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ━━━━━━ BULK WHATSAPP MODAL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {bulkWaModal&&(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 bg-[#25D366]">
+              <div className="flex items-center gap-2">
+                <Send className="text-white" size={18}/>
+                <span className="text-white font-black text-sm">Bulk WhatsApp — {selectedClients.size} Clients</span>
+              </div>
+              <button onClick={()=>setBulkWaModal(false)}
+                className="text-white/80 hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition cursor-pointer">
+                <X size={15}/>
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="bg-[#0d1117] border border-[#21293d] rounded-xl p-3.5">
+                <p className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest mb-1">Selected Clients</p>
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                  {Array.from(selectedClients).map(id => {
+                    const c = clients.find(x => x.id === id);
+                    return c ? (
+                      <span key={id} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded text-[10px] font-bold">
+                        {c.name} {c.contact && `(${c.contact})`}
+                      </span>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+              <div>
+                <label className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest block mb-1.5">Message Type</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {(["reminder","welcome","followup","offer","custom"] as const).map(type => (
+                    <button key={type} onClick={() => handleBulkWaTypeChange(type)}
+                      className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                        bulkWaMsgType === type
+                          ? type === "reminder" ? "bg-red-600 border-red-600 text-white"
+                          : type === "welcome" ? "bg-blue-600 border-blue-600 text-white"
+                          : type === "followup" ? "bg-teal-600 border-teal-600 text-white"
+                          : type === "offer" ? "bg-purple-600 border-purple-600 text-white"
+                          : "bg-slate-600 border-slate-600 text-white"
+                          : "bg-[#0d1117] border-[#21293d] text-slate-400 hover:bg-[#1e2637]"
+                      }`}>
+                      {type === "reminder" ? "🔔 Reminder" 
+                       : type === "welcome" ? "👋 Welcome"
+                       : type === "followup" ? "📞 Follow-up"
+                       : type === "offer" ? "🎉 Offer"
+                       : "✏️ Custom"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest block mb-1.5">Message</label>
+                <textarea value={bulkWaText} onChange={(e) => setBulkWaText(e.target.value)} rows={6}
+                  placeholder="Type your message or select a template above..."
+                  className="w-full bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-3 text-sm font-mono text-slate-200 focus:outline-none focus:border-green-500 transition resize-none"/>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => navigator.clipboard.writeText(bulkWaText)}
+                  className="flex-1 py-2.5 border border-[#21293d] rounded-xl font-extrabold text-xs text-slate-400 hover:bg-[#1e2637] transition cursor-pointer">
+                  Copy
+                </button>
+                <button onClick={sendBulkWhatsApp}
+                  className="flex-1 py-2.5 bg-[#25D366] hover:bg-[#1DA851] text-white rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition cursor-pointer active:scale-95">
+                  <Send size={14}/> Send to All ({selectedClients.size})
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-600 text-center">
+                ⚠️ WhatsApp windows will open for each client. Allow popups if asked.
+              </p>
             </div>
           </div>
         </div>

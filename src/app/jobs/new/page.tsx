@@ -90,6 +90,13 @@ export default function ManageJobPage({
   const [clientSearch, setClientSearch] = useState("");
   const clientDropRef = useRef<HTMLDivElement>(null);
 
+  // Add New Client Modal
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [newClientForm, setNewClientForm] = useState({
+    firstname: "", middlename: "", lastname: "", contact: "", email: "", address: ""
+  });
+  const [savingClient, setSavingClient] = useState(false);
+
   // Service / Product add selectors
   const [selService, setSelService] = useState("");
   const [selProduct, setSelProduct] = useState("");
@@ -328,6 +335,52 @@ export default function ManageJobPage({
                      { amount: 0,   label: "Settled",  type: "settled"  }
     );
   }, []);
+
+  // ── ADD NEW CLIENT ─────────────────────────────────────────────────────
+  const handleSaveNewClient = async () => {
+    const { firstname, lastname, contact, address } = newClientForm;
+    if (!firstname.trim()) { setToast({ type: "error", msg: "First name zaroori hai!" }); return; }
+    if (!lastname.trim())  { setToast({ type: "error", msg: "Last name zaroori hai!" });  return; }
+    if (!contact.trim())   { setToast({ type: "error", msg: "Contact number zaroori hai!" }); return; }
+
+    setSavingClient(true);
+    try {
+      const { data, error } = await supabase
+        .from("client_list")
+        .insert({
+          firstname: firstname.trim(),
+          middlename: newClientForm.middlename.trim() || null,
+          lastname: lastname.trim(),
+          contact: contact.trim(),
+          email: newClientForm.email.trim() || null,
+          address: address.trim() || "",
+          opening_balance: 0,
+          delete_flag: 0,
+        })
+        .select("id, firstname, middlename, lastname, contact")
+        .single();
+
+      if (error) throw error;
+
+      const newClient: Client = {
+        ...data,
+        fullname: [data.firstname, data.middlename, data.lastname].filter(Boolean).join(" "),
+      };
+
+      setClients(prev => [...prev, newClient]);
+      setSelectedClient(newClient);
+      fetchClientBalance(newClient.id);
+      setShowAddClientModal(false);
+      setNewClientForm({ firstname: "", middlename: "", lastname: "", contact: "", email: "", address: "" });
+      setToast({ type: "success", msg: "Naya client add ho gaya! ✅" });
+
+    } catch (err: any) {
+      console.error("save client error:", err?.message ?? err);
+      setToast({ type: "error", msg: "Client save nahi hua: " + (err?.message ?? "Unknown error") });
+    } finally {
+      setSavingClient(false);
+    }
+  };
 
   // ── AUTO JOB CODE (new mode) ──────────────────────────────────────────
   // PHP format: code = YYYYMMDD + 2-digit daily sequence (e.g. "2025102401")
@@ -572,6 +625,115 @@ export default function ManageJobPage({
         </div>
       )}
 
+      {/* Add New Client Modal */}
+      {showAddClientModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
+                  <User size={18} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">Add New Client</h3>
+                  <p className="text-xs text-slate-500">Create a new client for this job</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddClientModal(false)}
+                className="w-8 h-8 flex items-center justify-center bg-[#111520] hover:bg-[#21293d] rounded-lg text-slate-500 hover:text-white transition-all"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>First Name <span className="text-red-400">*</span></label>
+                  <input
+                    type="text"
+                    value={newClientForm.firstname}
+                    onChange={e => setNewClientForm(p => ({ ...p, firstname: e.target.value }))}
+                    placeholder="Vikram"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Middle Name</label>
+                  <input
+                    type="text"
+                    value={newClientForm.middlename}
+                    onChange={e => setNewClientForm(p => ({ ...p, middlename: e.target.value }))}
+                    placeholder="Jain"
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Last Name <span className="text-red-400">*</span></label>
+                <input
+                  type="text"
+                  value={newClientForm.lastname}
+                  onChange={e => setNewClientForm(p => ({ ...p, lastname: e.target.value }))}
+                  placeholder="Jain"
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Contact Number <span className="text-red-400">*</span></label>
+                <input
+                  type="tel"
+                  value={newClientForm.contact}
+                  onChange={e => setNewClientForm(p => ({ ...p, contact: e.target.value }))}
+                  placeholder="9876543210"
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Email</label>
+                <input
+                  type="email"
+                  value={newClientForm.email}
+                  onChange={e => setNewClientForm(p => ({ ...p, email: e.target.value }))}
+                  placeholder="client@email.com"
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Address</label>
+                <textarea
+                  value={newClientForm.address}
+                  onChange={e => setNewClientForm(p => ({ ...p, address: e.target.value }))}
+                  placeholder="Customer address..."
+                  rows={2}
+                  className={`${inputCls} resize-none`}
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center gap-3 p-5 border-t border-[#21293d]">
+              <button
+                onClick={handleSaveNewClient}
+                disabled={savingClient}
+                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
+              >
+                {savingClient ? <><Loader2 size={16} className="animate-spin" />Saving…</> : <><CheckCircle2 size={16} />Save Client</>}
+              </button>
+              <button
+                onClick={() => setShowAddClientModal(false)}
+                className="px-6 py-2.5 bg-[#111520] hover:bg-[#21293d] border border-[#21293d] text-slate-400 hover:text-white rounded-xl font-bold text-sm transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-4">
 
         {/* ── PAGE HEADER ─────────────────────────────────────────────── */}
@@ -622,7 +784,16 @@ export default function ManageJobPage({
 
             {/* Client dropdown — col 6 */}
             <div className="md:col-span-6 relative" ref={clientDropRef}>
-              <label className={labelCls}><User size={13} className="text-blue-400" />Client <span className="text-red-400">*</span></label>
+              <div className="flex items-center gap-2 mb-1.5">
+                <label className={labelCls}><User size={13} className="text-blue-400" />Client <span className="text-red-400">*</span></label>
+                <button
+                  type="button"
+                  onClick={() => setShowAddClientModal(true)}
+                  className="text-[10px] font-bold text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+                >
+                  + Add New Client
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => setClientOpen(v => !v)}

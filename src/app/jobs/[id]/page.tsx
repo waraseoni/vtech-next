@@ -619,6 +619,78 @@ ${svcHtml}${prodHtml}
                     className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 shadow-sm mb-4 transition-colors">
                     <Send size={16}/> Send Status on WhatsApp
                   </button>
+
+                  {/* Activity Timeline */}
+                  <Fieldset title="Activity Timeline" icon={Clock} color="info">
+                    <div className="space-y-0">
+                      {/* Job Created */}
+                      <div className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="w-8 h-8 rounded-full bg-blue-500/20 border-2 border-blue-500/50 flex items-center justify-center">
+                            <Plus size={14} className="text-blue-400" />
+                          </div>
+                          {true && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
+                        </div>
+                        <div className="flex-1 pb-4">
+                          <p className="text-sm text-slate-300 font-medium">Job Created</p>
+                          <p className="text-xs text-slate-500">{fmtDateTime(job.date_created)}</p>
+                        </div>
+                      </div>
+
+                      {/* Status based activities */}
+                      {[1, 2, 3, 4, 5].filter(s => s <= job.status).map((s, idx) => {
+                        const statusLabels: Record<number, { label: string; icon: React.ReactNode; color: string }> = {
+                          1: { label: "Marked On-Progress", icon: <Settings2 size={12} />, color: "blue" },
+                          2: { label: "Marked Done", icon: <CheckCircle size={12} />, color: "teal" },
+                          3: { label: "Marked Paid", icon: <Banknote size={12} />, color: "emerald" },
+                          4: { label: "Marked Cancelled", icon: <AlertTriangle size={12} />, color: "red" },
+                          5: { label: "Marked Delivered", icon: <CheckCircle2 size={12} />, color: "purple" },
+                        };
+                        const st = statusLabels[s];
+                        const colorClasses: Record<string, string> = {
+                          blue: "bg-blue-500/20 border-blue-500/50 text-blue-400",
+                          teal: "bg-teal-500/20 border-teal-500/50 text-teal-400",
+                          emerald: "bg-emerald-500/20 border-emerald-500/50 text-emerald-400",
+                          red: "bg-red-500/20 border-red-500/50 text-red-400",
+                          purple: "bg-purple-500/20 border-purple-500/50 text-purple-400",
+                        };
+                        return (
+                          <div key={s} className="flex gap-3">
+                            <div className="flex flex-col items-center">
+                              <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${colorClasses[st.color]}`}>
+                                {st.icon}
+                              </div>
+                              {idx < 4 && s < job.status && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
+                            </div>
+                            <div className={`flex-1 pb-4 ${s === job.status ? "" : "opacity-60"}`}>
+                              <p className="text-sm text-slate-300 font-medium">{st.label}</p>
+                              {s === 5 && job.date_completed && (
+                                <p className="text-xs text-slate-500">{fmtDateTime(job.date_completed)}</p>
+                              )}
+                              {s !== 5 && (
+                                <p className="text-xs text-slate-500">{fmtDateTime(job.date_updated)}</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* If delivered, show completion */}
+                      {job.status === 5 && (
+                        <div className="flex gap-3">
+                          <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 border-2 border-emerald-500/50 flex items-center justify-center">
+                              <CheckCircle2 size={14} className="text-emerald-400" />
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm text-slate-300 font-medium">Job Completed</p>
+                            <p className="text-xs text-slate-500">Delivered on {fmtDateTime(job.date_completed || job.date_updated)}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Fieldset>
                 </div>
               </div>
 

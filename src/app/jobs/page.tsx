@@ -29,6 +29,7 @@ import {
   Filter, Printer, FileSpreadsheet, History, Layers,
   ChevronLeft, ChevronRight, AlertCircle, ChevronDown, X,
   TrendingUp, Clock, CheckCircle2, IndianRupee, MessageSquare,
+  Square, CheckSquare, Zap, GitBranch, ArrowRight, User,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -129,6 +130,16 @@ function JobsListContent() {
 
   // FAB (mobile)
   const [fabOpen, setFabOpen] = useState(false);
+
+  // ── NEW: Quick Create Modal ───────────────────────────────
+  const [showQuickCreate, setShowQuickCreate] = useState(false);
+
+  // ── NEW: Bulk Status Update ──────────────────────────────
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+
+  // ── NEW: Quick Status Change ─────────────────────────────
+  const [statusChangeLoading, setStatusChangeLoading] = useState<number | null>(null);
 
   // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -320,6 +331,175 @@ function JobsListContent() {
     if (!error) setTransactions(prev => prev.filter(t => t.id !== id));
     else alert("Delete failed: " + error.message);
   }, [userRole]);
+
+  // ── Quick Status Change ────────────────────────────────────────────────────
+  const quickStatusChange = async (id: number, newStatus: number) => {
+    setStatusChangeLoading(id);
+    const updates: Record<string, unknown> = {
+      status: newStatus,
+      date_updated: new Date().toISOString(),
+    };
+    if (newStatus === 5) {
+      updates.date_completed = new Date().toISOString();
+    }
+    const { error } = await supabase
+      .from("transaction_list")
+      .update(updates)
+      .eq("id", id);
+    
+    if (!error) {
+      setTransactions(prev => prev.map(t => 
+        t.id === id ? { ...t, ...updates } as Transaction : t
+      ));
+    } else {
+      alert("Status update failed: " + error.message);
+    }
+    setStatusChangeLoading(null);
+  };
+
+  // ── Bulk Status Update ─────────────────────────────────────────────────────
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === paginatedTransactions.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginatedTransactions.map(t => t.id)));
+    }
+  };
+
+  const bulkUpdateStatus = async (newStatus: number) => {
+    if (selectedIds.size === 0) { alert("Select jobs first!"); return; }
+    if (!confirm(`${selectedIds.size} jobs ka status change karein?`)) return;
+    
+    setBulkActionLoading(true);
+    const updates: Record<string, unknown> = {
+      status: newStatus,
+      date_updated: new Date().toISOString(),
+    };
+    if (newStatus === 5) {
+      updates.date_completed = new Date().toISOString();
+    }
+    
+    const { error } = await supabase
+      .from("transaction_list")
+      .update(updates)
+      .in("id", [...selectedIds]);
+    
+    if (!error) {
+      setTransactions(prev => prev.map(t => 
+        selectedIds.has(t.id) ? { ...t, ...updates } as Transaction : t
+      ));
+      setSelectedIds(new Set());
+    } else {
+      alert("Bulk update failed: " + error.message);
+    }
+    setBulkActionLoading(false);
+  };
+
+  // ── Quick Create Job ───────────────────────────────────────────────────────
+  const [quickCreateLoading, setQuickCreateLoading] = useState(false);
+  const [quickForm, setQuickForm] = useState({
+    clientName: "", contact: "", item: "", fault: "", mechanicId: "",
+  });
+  const [quickClients, setQuickClients] = useState<Array<{
+    id: number; firstname: string; middlename?: string; lastname: string; contact: string
+  }>>([]);
+  const [quickClientSearch, setQuickClientSearch] = useState("");
+  const [quickClientOpen, setQuickClientOpen] = useState(false);
+  const [quickClientId, setQuickClientId] = useState<number | null>(null);
+  const [quickMechanics, setQuickMechanics] = useState<Array<{
+    id: number; firstname: string; middlename?: string; lastname: string
+  }>>([]);
+
+  useEffect(() => {
+    const loadClientsAndMechanics = async () => {
+      const [clientsRes, mechanicsRes] = await Promise.all([
+        supabase
+          .from("client_list")
+          .select("id, firstname, middlename, lastname, contact")
+          .eq("delete_flag", 0)
+          .order("firstname"),
+        supabase
+          .from("mechanic_list")
+          .select("id, firstname, middlename, lastname")
+          .eq("delete_flag", 0)
+          .eq("status", 1)
+          .order("firstname"),
+      ]);
+      if (clientsRes.data) setQuickClients(clientsRes.data as any[]);
+      if (mechanicsRes.data) setQuickMechanics(mechanicsRes.data as any[]);
+    };
+    if (showQuickCreate) loadClientsAndMechanics();
+  }, [showQuickCreate]);
+
+  const filteredQuickClients = quickClients.filter(c => {
+    const name = `${c.firstname} ${c.middlename || ""} ${c.lastname}`.toLowerCase();
+    return name.includes(quickClientSearch.toLowerCase()) || c.contact.includes(quickClientSearch);
+  });
+
+  const handleQuickCreate = async () => {
+    if (!quickForm.item.trim()) { alert("Item/Model zaroori hai!"); return; }
+    if (!quickForm.fault.trim()) { alert("Fault description zaroori hai!"); return; }
+    if (!quickForm.mechanicId) { alert("Mechanic select karo!"); return; }
+
+    setQuickCreateLoading(true);
+    try {
+      // Generate job code
+      const today = new Date();
+      const datePrefix = today.toISOString().slice(0, 10).replace(/-/g, "");
+      const { count: todayCount } = await supabase
+        .from("transaction_list")
+        .select("id", { count: "exact", head: true })
+        .gte("date_created", today.toISOString().slice(0, 10) + "T00:00:00");
+      const dailySeq = String((todayCount || 0) + 1).padStart(2, "0");
+
+      const { data: counterRow } = await supabase.from("job_id_counter").select("last_job_id").eq("id", 1).single();
+      const nextJobId = (counterRow?.last_job_id || 28101) + 1;
+
+      const { data, error } = await supabase
+        .from("transaction_list")
+        .insert({
+          user_id: 1,
+          client_name: quickClientId ? String(quickClientId) : null,
+          mechanic_id: parseInt(quickForm.mechanicId),
+          code: `${datePrefix}${dailySeq}`,
+          job_id: String(nextJobId),
+          item: quickForm.item.trim(),
+          fault: quickForm.fault.trim(),
+          remark: "",
+          uniq_id: "",
+          amount: 0,
+          status: 0,
+          del_status: 0,
+          date_created: new Date().toISOString(),
+          date_updated: new Date().toISOString(),
+        })
+        .select("id").single();
+
+      if (error) throw error;
+
+      // Update counter
+      await supabase.from("job_id_counter").update({ last_job_id: nextJobId }).eq("id", 1);
+
+      setShowQuickCreate(false);
+      setQuickForm({ clientName: "", contact: "", item: "", fault: "", mechanicId: "" });
+      setQuickClientId(null);
+      fetchTransactions();
+      router.push(`/jobs/${data.id}/edit`);
+    } catch (err: any) {
+      alert("Error: " + (err?.message || "Unknown error"));
+    } finally {
+      setQuickCreateLoading(false);
+    }
+  };
 
   const sendWA = (txn: Transaction) => {
     const phone = txn.client_contact?.replace(/\D/g, "");
@@ -789,32 +969,68 @@ function JobsListContent() {
 
             return (
               <div key={txn.id}
-                className={`bg-[#161b27] rounded-2xl border border-[#21293d] border-l-4 overflow-hidden ${STATUS_BORDER[txn.status] || "border-l-slate-600"}`}>
+                className={`bg-[#161b27] rounded-2xl border border-[#21293d] border-l-4 overflow-hidden ${STATUS_BORDER[txn.status] || "border-l-slate-600"} ${selectedIds.has(txn.id) ? "ring-2 ring-blue-500/50" : ""}`}>
 
                 {/* Card Top */}
                 <div className="flex justify-between items-start p-3 bg-gradient-to-r from-white/[0.02] to-transparent">
-                  <div className="flex-1 min-w-0">
-                    <Link href={`/jobs/${txn.id}/view`} className="font-black text-sm text-white hover:text-blue-400 transition-colors">
-                      #{txn.job_id}
-                    </Link>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      <Link href={`/jobs/${txn.id}/view`}
-                        className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded-full text-[9px] font-bold no-underline hover:bg-blue-500/20 transition-colors">
-                        {txn.code || "No Code"}
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    {/* Checkbox for bulk select */}
+                    <button onClick={() => toggleSelect(txn.id)}
+                      className={`mt-1 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                        selectedIds.has(txn.id)
+                          ? "bg-blue-600 border-blue-600 text-white"
+                          : "border-[#21293d] hover:border-slate-500"
+                      }`}>
+                      {selectedIds.has(txn.id) && <CheckCircle2 size={12} />}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <Link href={`/jobs/${txn.id}/view`} className="font-black text-sm text-white hover:text-blue-400 transition-colors">
+                        #{txn.job_id}
                       </Link>
-                      <span className="text-[10px] text-slate-600">
-                        {fmtDate(txn.date_created)}
-                      </span>
-                    </div>
-                    {/* PHP feature: Delivered datetime under status */}
-                    {txn.status === 5 && txn.date_completed && (
-                      <div className="flex items-center gap-1 mt-1 text-[9px] text-emerald-500">
-                        <CheckCircle2 size={9} />
-                        Delivered: {fmtDateTime(txn.date_completed)}
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        <Link href={`/jobs/${txn.id}/view`}
+                          className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded-full text-[9px] font-bold no-underline hover:bg-blue-500/20 transition-colors">
+                          {txn.code || "No Code"}
+                        </Link>
+                        <span className="text-[10px] text-slate-600">
+                          {fmtDate(txn.date_created)}
+                        </span>
                       </div>
-                    )}
+                      {txn.status === 5 && txn.date_completed && (
+                        <div className="flex items-center gap-1 mt-1 text-[9px] text-emerald-500">
+                          <CheckCircle2 size={9} />
+                          Delivered: {fmtDateTime(txn.date_completed)}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <span className={`${getStatusBadge(txn.status)} ml-2 flex-shrink-0`}>{STATUS_MAP[txn.status]}</span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className={`${getStatusBadge(txn.status)} flex-shrink-0`}>{STATUS_MAP[txn.status]}</span>
+                    {/* Quick Status Buttons */}
+                    <div className="flex gap-1 flex-wrap justify-end">
+                      {txn.status === 0 && (
+                        <button onClick={() => quickStatusChange(txn.id, 1)}
+                          disabled={statusChangeLoading === txn.id}
+                          className="px-1.5 py-0.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all">
+                          {statusChangeLoading === txn.id ? <Loader2 size={9} className="animate-spin" /> : <ArrowRight size={9} />} Progress
+                        </button>
+                      )}
+                      {txn.status === 1 && (
+                        <button onClick={() => quickStatusChange(txn.id, 2)}
+                          disabled={statusChangeLoading === txn.id}
+                          className="px-1.5 py-0.5 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/30 text-teal-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all">
+                          {statusChangeLoading === txn.id ? <Loader2 size={9} className="animate-spin" /> : <ArrowRight size={9} />} Done
+                        </button>
+                      )}
+                      {txn.status === 2 && (
+                        <button onClick={() => quickStatusChange(txn.id, 5)}
+                          disabled={statusChangeLoading === txn.id}
+                          className="px-1.5 py-0.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all">
+                          {statusChangeLoading === txn.id ? <Loader2 size={9} className="animate-spin" /> : <ArrowRight size={9} />} Deliver
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Client Info */}
@@ -917,15 +1133,23 @@ function JobsListContent() {
         {fabOpen && (
           <div className="absolute bottom-14 right-0 bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl py-1.5 w-44 text-sm overflow-hidden">
             {[
-              { href: "/jobs/new",  icon: Plus,          label: "Create New",   cls: "text-blue-400"    },
-              { href: "/jobs/old",  icon: History,       label: "Old Jobs",     cls: "text-amber-400"   },
-              { href: "/jobs/bulk", icon: Layers,        label: "Bulk Entry",   cls: "text-emerald-400" },
-            ].map(({ href, icon: Icon, label, cls }) => (
-              <Link key={label} href={href} onClick={() => setFabOpen(false)}
-                className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 hover:text-slate-200 transition-colors">
-                <Icon size={14} className={cls} /> {label}
-              </Link>
-            ))}
+              { action: () => setShowQuickCreate(true), icon: Zap, label: "Quick Create", cls: "text-blue-400"    },
+              { href: "/jobs/new",  icon: Plus,          label: "Create New",   cls: "text-blue-300"    },
+              { href: "/jobs/old",  icon: History,       label: "Old Jobs",    cls: "text-amber-400"   },
+              { href: "/jobs/bulk", icon: Layers,        label: "Bulk Entry",  cls: "text-emerald-400" },
+            ].map(({ href, action, icon: Icon, label, cls }) =>
+              href ? (
+                <Link key={label} href={href} onClick={() => setFabOpen(false)}
+                  className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 hover:text-slate-200 transition-colors">
+                  <Icon size={14} className={cls} /> {label}
+                </Link>
+              ) : (
+                <button key={label} onClick={() => { action?.(); setFabOpen(false); }}
+                  className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 hover:text-slate-200 transition-colors w-full">
+                  <Icon size={14} className={cls} /> {label}
+                </button>
+              )
+            )}
             <hr className="my-1 border-[#21293d]" />
             <button onClick={() => { printReport(); setFabOpen(false); }}
               className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 w-full transition-colors">
@@ -938,6 +1162,177 @@ function JobsListContent() {
           </div>
         )}
       </div>
+
+      {/* ── Quick Create Modal ── */}
+      {showQuickCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-[#161b27] border-b border-[#21293d] flex items-center justify-between p-4 z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
+                  <Zap size={18} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">Quick Create Job</h3>
+                  <p className="text-xs text-slate-500">Create job instantly</p>
+                </div>
+              </div>
+              <button onClick={() => setShowQuickCreate(false)} className="w-8 h-8 flex items-center justify-center bg-[#111520] hover:bg-[#21293d] rounded-lg text-slate-500 hover:text-white transition-all">
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 space-y-4">
+              {/* Client Selection */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-1.5">
+                  <User size={12} className="inline mr-1" />Client (Optional)
+                </label>
+                {quickClientId ? (
+                  <div className="flex items-center justify-between bg-[#111520] border border-[#21293d] rounded-xl px-3 py-2.5">
+                    <span className="text-sm text-white font-medium">
+                      {quickClients.find(c => c.id === quickClientId)?.firstname}{" "}
+                      {quickClients.find(c => c.id === quickClientId)?.lastname}
+                    </span>
+                    <button onClick={() => setQuickClientId(null)} className="text-slate-500 hover:text-red-400">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <button onClick={() => setQuickClientOpen(!quickClientOpen)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-left hover:border-slate-600 transition-all">
+                      <span className="text-slate-600">Search client...</span>
+                      <ChevronDown size={14} className="text-slate-500" />
+                    </button>
+                    {quickClientOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-[#161b27] border border-[#21293d] rounded-xl shadow-2xl z-20 p-2">
+                        <input
+                          autoFocus
+                          placeholder="Search by name or contact..."
+                          value={quickClientSearch}
+                          onChange={e => setQuickClientSearch(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#111520] border border-[#21293d] rounded-lg text-white text-sm outline-none mb-2"
+                        />
+                        <div className="max-h-40 overflow-y-auto space-y-0.5">
+                          {filteredQuickClients.length === 0 ? (
+                            <p className="text-slate-600 text-xs text-center py-4">Koi client nahi mila</p>
+                          ) : filteredQuickClients.map(c => (
+                            <div key={c.id}
+                              onClick={() => { setQuickClientId(c.id); setQuickClientOpen(false); setQuickClientSearch(""); }}
+                              className="px-3 py-2 rounded-lg hover:bg-white/5 cursor-pointer transition-all">
+                              <div className="text-sm font-bold text-white">{c.firstname} {c.lastname}</div>
+                              <div className="text-xs text-slate-600">{c.contact}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Item */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-1.5">
+                  Item / Model <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. iPhone 15, Samsung S24"
+                  value={quickForm.item}
+                  onChange={e => setQuickForm(p => ({ ...p, item: e.target.value }))}
+                  className="w-full px-3 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-white text-sm placeholder:text-slate-700 outline-none focus:border-blue-500/60"
+                />
+              </div>
+
+              {/* Fault */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-1.5">
+                  Fault Reported <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Screen broken, Battery drain"
+                  value={quickForm.fault}
+                  onChange={e => setQuickForm(p => ({ ...p, fault: e.target.value }))}
+                  className="w-full px-3 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-white text-sm placeholder:text-slate-700 outline-none focus:border-blue-500/60"
+                />
+              </div>
+
+              {/* Mechanic */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-1.5">
+                  Mechanic <span className="text-red-400">*</span>
+                </label>
+                <select
+                  value={quickForm.mechanicId}
+                  onChange={e => setQuickForm(p => ({ ...p, mechanicId: e.target.value }))}
+                  className="w-full px-3 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-white text-sm outline-none focus:border-blue-500/60"
+                >
+                  <option value="">Select Mechanic</option>
+                  {quickMechanics.map(m => (
+                    <option key={m.id} value={m.id}>
+                      {m.firstname} {m.lastname}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 bg-[#161b27] border-t border-[#21293d] p-4 flex gap-3">
+              <button
+                onClick={handleQuickCreate}
+                disabled={quickCreateLoading}
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
+              >
+                {quickCreateLoading ? (
+                  <><Loader2 size={16} className="animate-spin" />Creating...</>
+                ) : (
+                  <><Zap size={16} />Create Job</>
+                )}
+              </button>
+              <button onClick={() => setShowQuickCreate(false)}
+                className="px-6 py-3 bg-[#111520] hover:bg-[#21293d] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm transition-all">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Bulk Action Bar ── */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-20 left-4 right-4 z-30 bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl p-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <button onClick={() => setSelectedIds(new Set())}
+              className="w-8 h-8 flex items-center justify-center bg-[#111520] hover:bg-[#21293d] rounded-lg text-slate-500 hover:text-white transition-all">
+              <X size={14} />
+            </button>
+            <span className="text-sm font-bold text-white">{selectedIds.size} selected</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => bulkUpdateStatus(1)}
+              disabled={bulkActionLoading}
+              className="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all">
+              <ArrowRight size={12} /> On-Progress
+            </button>
+            <button onClick={() => bulkUpdateStatus(2)}
+              disabled={bulkActionLoading}
+              className="px-3 py-1.5 bg-teal-600/20 hover:bg-teal-600/30 border border-teal-500/30 text-teal-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all">
+              <ArrowRight size={12} /> Done
+            </button>
+            <button onClick={() => bulkUpdateStatus(5)}
+              disabled={bulkActionLoading}
+              className="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all">
+              <ArrowRight size={12} /> Delivered
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Filter Modal ── */}
       {showFilterModal && (

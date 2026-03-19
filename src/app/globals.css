@@ -1,30 +1,29 @@
 @import "tailwindcss";
 
-/* App theme tokens (used by Tailwind overrides below) */
 :root {
-  /* Light defaults */
-  --app-bg: #f6f7fb;
+  --app-bg: #f8f9fc;
   --app-panel: #ffffff;
   --app-panel-2: #f1f5f9;
-  --app-topbar: rgba(255, 255, 255, 0.8);
+  --app-topbar: rgba(255, 255, 255, 0.95);
   --app-sidebar: #ffffff;
   --app-border: #e2e8f0;
   --app-border-2: #cbd5e1;
   --app-text: #0f172a;
-  --app-text-2: #334155;
+  --app-text-2: #1e293b;
   --app-muted: #64748b;
   --app-muted-2: #94a3b8;
-
+  --app-input-bg: #f8fafc;
+  --app-card-bg: #ffffff;
+  --app-hover: #f1f5f9;
   --background: var(--app-bg);
   --foreground: var(--app-text);
 }
 
-/* Force via app toggle */
 html[data-theme="dark"] {
   --app-bg: #0d1117;
   --app-panel: #161b27;
   --app-panel-2: #111520;
-  --app-topbar: rgba(8, 13, 20, 0.9);
+  --app-topbar: rgba(8, 13, 20, 0.95);
   --app-sidebar: #080d14;
   --app-border: #21293d;
   --app-border-2: #1a2234;
@@ -32,29 +31,38 @@ html[data-theme="dark"] {
   --app-text-2: #cbd5e1;
   --app-muted: #64748b;
   --app-muted-2: #475569;
-
+  --app-input-bg: #0d1117;
+  --app-card-bg: #161b27;
+  --app-hover: #1a2234;
   --background: var(--app-bg);
   --foreground: var(--app-text);
 }
 
 html[data-theme="light"] {
-  /* keep :root light values */
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --app-bg: #f8f9fc;
+  --app-panel: #ffffff;
+  --app-panel-2: #f1f5f9;
+  --app-topbar: rgba(255, 255, 255, 0.95);
+  --app-sidebar: #ffffff;
+  --app-border: #e2e8f0;
+  --app-border-2: #cbd5e1;
+  --app-text: #0f172a;
+  --app-text-2: #1e293b;
+  --app-muted: #64748b;
+  --app-muted-2: #94a3b8;
+  --app-input-bg: #f8fafc;
+  --app-card-bg: #ffffff;
+  --app-hover: #f1f5f9;
+  --background: var(--app-bg);
+  --foreground: var(--app-text);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* If user has not chosen a theme, browser preference le lo */
     --app-bg: #0d1117;
     --app-panel: #161b27;
     --app-panel-2: #111520;
-    --app-topbar: rgba(8, 13, 20, 0.9);
+    --app-topbar: rgba(8, 13, 20, 0.95);
     --app-sidebar: #080d14;
     --app-border: #21293d;
     --app-border-2: #1a2234;
@@ -62,7 +70,9 @@ html[data-theme="light"] {
     --app-text-2: #cbd5e1;
     --app-muted: #64748b;
     --app-muted-2: #475569;
-
+    --app-input-bg: #0d1117;
+    --app-card-bg: #161b27;
+    --app-hover: #1a2234;
     --background: var(--app-bg);
     --foreground: var(--app-text);
   }
@@ -71,35 +81,137 @@ html[data-theme="light"] {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
-   Minimal overrides so existing hard-coded classes become theme-aware.
-   (We migrate gradually; this makes Light theme usable immediately.)
-────────────────────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, monospace;
+}
 
-/* Core backgrounds used across app */
-.bg-\[\#0d1117\] { background-color: var(--app-bg) !important; }
-.bg-\[\#161b27\] { background-color: var(--app-panel) !important; }
-.bg-\[\#111520\] { background-color: var(--app-panel-2) !important; }
-.bg-\[\#080d14\] { background-color: var(--app-sidebar) !important; }
-.bg-\[\#080d14\]\/90 { background-color: var(--app-topbar) !important; }
+/* ============================================
+   DARK THEME OVERRIDES (When data-theme="dark")
+   ============================================ */
+html[data-theme="dark"] {
+  /* Core backgrounds */
+  .bg-\[\#0d1117\] { background-color: #0d1117 !important; }
+  .bg-\[\#161b27\] { background-color: #161b27 !important; }
+  .bg-\[\#111520\] { background-color: #111520 !important; }
+  .bg-\[\#080d14\] { background-color: #080d14 !important; }
+  .bg-\[\#080d14\]\/90 { background-color: var(--app-topbar) !important; }
+  .bg-\[\#0d1117\]\/90 { background-color: var(--app-topbar) !important; }
+  .bg-\[\#0d1f35\] { background-color: #0d1f35 !important; }
+  .bg-\[\#0a1628\] { background-color: #0a1628 !important; }
+  
+  /* Card/Panel backgrounds */
+  .bg-\[\#1a2234\] { background-color: var(--app-border-2) !important; }
+  .bg-\[\#21293d\] { background-color: var(--app-border) !important; }
+  
+  /* Borders */
+  .border-\[\#21293d\] { border-color: var(--app-border) !important; }
+  .border-\[\#1a2234\] { border-color: var(--app-border-2) !important; }
+  .border-r.border-\[\#1a2234\] { border-right-color: var(--app-border-2) !important; }
+  .border-b.border-\[\#1a2234\] { border-bottom-color: var(--app-border-2) !important; }
+  .border-\[\#2a3550\] { border-color: #2a3550 !important; }
+  .border-\[\#334155\] { border-color: #334155 !important; }
+  
+  /* Text colors */
+  .text-white { color: #f1f5f9 !important; }
+  .text-slate-100 { color: #f1f5f9 !important; }
+  .text-slate-200 { color: #e2e8f0 !important; }
+  .text-slate-300 { color: #cbd5e1 !important; }
+  .text-slate-400 { color: #94a3b8 !important; }
+  .text-slate-500 { color: #64748b !important; }
+  .text-slate-600 { color: #475569 !important; }
+  .text-slate-700 { color: #334155 !important; }
+  .text-slate-800 { color: #1e293b !important; }
+  .text-slate-900 { color: #0f172a !important; }
+  
+  /* Input backgrounds */
+  input, select, textarea {
+    background-color: var(--app-input-bg) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+  }
+  input::placeholder, textarea::placeholder {
+    color: var(--app-muted-2) !important;
+  }
+  
+  /* Hover states */
+  .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(255,255,255,0.06) !important; }
+  .hover\:bg-white\/\[0\.05\]:hover { background-color: rgba(255,255,255,0.08) !important; }
+  .hover\:bg-white\/\[0\.07\]:hover { background-color: rgba(255,255,255,0.1) !important; }
+  .hover\:bg-white\/\[0\.10\]:hover { background-color: rgba(255,255,255,0.12) !important; }
+  
+  /* Loading screen */
+  .bg-\[\#0d1117\] { background-color: var(--app-bg) !important; }
+}
 
-/* Core borders */
-.border-\[\#21293d\] { border-color: var(--app-border) !important; }
-.border-\[\#1a2234\] { border-color: var(--app-border-2) !important; }
-.border-r.border-\[\#1a2234\] { border-right-color: var(--app-border-2) !important; }
-.border-b.border-\[\#1a2234\] { border-bottom-color: var(--app-border-2) !important; }
+/* ============================================
+   LIGHT THEME OVERRIDES (When data-theme="light")
+   ============================================ */
+html[data-theme="light"] {
+  /* Core backgrounds - exact colors for light theme */
+  .bg-\[\#0d1117\] { background-color: #f8f9fc !important; }
+  .bg-\[\#161b27\] { background-color: #ffffff !important; }
+  .bg-\[\#111520\] { background-color: #f1f5f9 !important; }
+  .bg-\[\#080d14\] { background-color: #ffffff !important; }
+  .bg-\[\#080d14\]\/90 { background-color: var(--app-topbar) !important; }
+  .bg-\[\#0d1117\]\/90 { background-color: var(--app-topbar) !important; }
+  .bg-\[\#0d1f35\] { background-color: #e0e7ef !important; }
+  .bg-\[\#0a1628\] { background-color: #e8eef5 !important; }
+  
+  /* Card/Panel backgrounds */
+  .bg-\[\#1a2234\] { background-color: var(--app-panel-2) !important; }
+  .bg-\[\#21293d\] { background-color: var(--app-panel-2) !important; }
+  
+  /* Borders */
+  .border-\[\#21293d\] { border-color: var(--app-border) !important; }
+  .border-\[\#1a2234\] { border-color: var(--app-border-2) !important; }
+  .border-r.border-\[\#1a2234\] { border-right-color: var(--app-border-2) !important; }
+  .border-b.border-\[\#1a2234\] { border-bottom-color: var(--app-border-2) !important; }
+  .border-\[\#2a3550\] { border-color: #cbd5e1 !important; }
+  .border-\[\#334155\] { border-color: #94a3b8 !important; }
+  
+  /* Text colors - ensure good contrast in light mode */
+  .text-white { color: #0f172a !important; }
+  .text-slate-100 { color: #1e293b !important; }
+  .text-slate-200 { color: #0f172a !important; }
+  .text-slate-300 { color: #0f172a !important; }
+  .text-slate-400 { color: #475569 !important; }
+  .text-slate-500 { color: #64748b !important; }
+  .text-slate-600 { color: #64748b !important; }
+  .text-slate-700 { color: #64748b !important; }
+  .text-slate-800 { color: #475569 !important; }
+  .text-slate-900 { color: #334155 !important; }
+  
+  /* Input backgrounds - light mode inputs */
+  input, select, textarea {
+    background-color: var(--app-input-bg) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+  }
+  input::placeholder, textarea::placeholder {
+    color: var(--app-muted-2) !important;
+  }
+  
+  /* Hover states */
+  .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(0,0,0,0.04) !important; }
+  .hover\:bg-white\/\[0\.05\]:hover { background-color: rgba(0,0,0,0.06) !important; }
+  .hover\:bg-white\/\[0\.07\]:hover { background-color: rgba(0,0,0,0.08) !important; }
+  .hover\:bg-white\/\[0\.10\]:hover { background-color: rgba(0,0,0,0.1) !important; }
+  .hover\:bg-white\/\[0\.12\]:hover { background-color: rgba(0,0,0,0.12) !important; }
+  .hover\:bg-white\/\[0\.15\]:hover { background-color: rgba(0,0,0,0.15) !important; }
+  
+  /* Loading screen */
+  .bg-\[\#0d1117\] { background-color: var(--app-bg) !important; }
+}
 
-/* Common slate text colors (approx mapping) */
-.text-slate-200 { color: var(--app-text) !important; }
-.text-slate-300 { color: var(--app-text-2) !important; }
-.text-slate-400 { color: var(--app-muted) !important; }
-.text-slate-500 { color: var(--app-muted) !important; }
-.text-slate-600 { color: var(--app-muted-2) !important; }
-.text-slate-700 { color: var(--app-muted-2) !important; }
-
+/* ============================================
+   SHARED UTILITIES
+   ============================================ */
 @layer utilities {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
@@ -108,4 +220,349 @@ body {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+}
+
+/* ============================================
+   FORM ELEMENTS - THEME AWARE
+   ============================================ */
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea {
+  color: #e2e8f0 !important;
+}
+
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea {
+  color: #0f172a !important;
+  background-color: #f8fafc !important;
+}
+
+/* ============================================
+   TABLE STYLES - THEME AWARE
+   ============================================ */
+html[data-theme="dark"] table {
+  color: #e2e8f0;
+}
+
+html[data-theme="light"] table {
+  color: #0f172a;
+}
+
+/* ============================================
+   BUTTON OVERRIDES FOR LIGHT THEME
+   ============================================ */
+html[data-theme="light"] .bg-blue-600 {
+  background-color: #2563eb !important;
+}
+
+html[data-theme="light"] .bg-emerald-600 {
+  background-color: #059669 !important;
+}
+
+html[data-theme="light"] .bg-amber-600 {
+  background-color: #d97706 !important;
+}
+
+html[data-theme="light"] .bg-red-600 {
+  background-color: #dc2626 !important;
+}
+
+/* ============================================
+   THEME-AWARE COMPONENT CLASSES
+   ============================================ */
+.theme-body {
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
+}
+
+.theme-sidebar {
+  background-color: var(--app-sidebar) !important;
+}
+
+.theme-topbar {
+  background-color: var(--app-topbar) !important;
+}
+
+.theme-panel {
+  background-color: var(--app-panel) !important;
+}
+
+.theme-panel-2 {
+  background-color: var(--app-panel-2) !important;
+}
+
+.theme-card {
+  background-color: var(--app-panel) !important;
+  border-color: var(--app-border) !important;
+}
+
+.theme-input {
+  background-color: var(--app-input-bg) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+/* ============================================
+   LIGHT THEME - COMPREHENSIVE FIXES
+   ============================================ */
+html[data-theme="light"] {
+  /* Fix for text that appears invisible */
+  .text-white, [class*="text-white"] {
+    color: #1e293b !important;
+  }
+  
+  /* Ensure all text is readable */
+  * {
+    border-color: var(--app-border);
+  }
+  
+  /* Card improvements */
+  .rounded-2xl, .rounded-xl, .rounded-lg {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  
+  /* Loading spinner bg */
+  .animate-ping {
+    background-color: #10b981;
+  }
+  
+  /* Better input contrast */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="date"],
+  select,
+  textarea {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+  
+  /* Select dropdown arrow */
+  select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  
+  /* All text elements - ensure readable contrast */
+  h1, h2, h3, h4, h5, h6, p, span, div, label, td, th {
+    color: var(--app-text);
+  }
+  
+  /* Override all dark text colors */
+  [class*="text-slate-"] {
+    color: var(--app-muted) !important;
+  }
+  
+  /* Links */
+  a {
+    color: #2563eb;
+  }
+  a:hover {
+    color: #1d4ed8;
+  }
+  
+  /* Table cells */
+  table td, table th {
+    color: var(--app-text);
+    border-color: var(--app-border);
+  }
+  
+  /* Tab/badges */
+  .bg-blue-500\/10 { background-color: rgba(37, 99, 235, 0.1) !important; }
+  .bg-emerald-500\/10 { background-color: rgba(5, 150, 105, 0.1) !important; }
+  .bg-amber-500\/10 { background-color: rgba(217, 119, 6, 0.1) !important; }
+  .bg-red-500\/10 { background-color: rgba(220, 38, 38, 0.1) !important; }
+  .bg-purple-500\/10 { background-color: rgba(147, 51, 234, 0.1) !important; }
+  .bg-pink-500\/10 { background-color: rgba(236, 72, 153, 0.1) !important; }
+  .bg-teal-500\/10 { background-color: rgba(20, 184, 166, 0.1) !important; }
+  
+  /* Backdrop overlay fix */
+  .bg-black\/75 { background-color: rgba(0, 0, 0, 0.5) !important; }
+  .backdrop-blur-sm { backdrop-filter: blur(4px); }
+  
+  /* Shadow overrides */
+  .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+  .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+  .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+  .shadow-blue-900\/50 { box-shadow: 0 10px 15px -3px rgba(30, 64, 175, 0.3); }
+}
+
+/* ============================================
+   OVERFLOW & SCROLLBAR - LIGHT THEME
+   ============================================ */
+html[data-theme="light"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #0d1117;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #21293d;
+  border-radius: 4px;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* ============================================
+   BODY BACKGROUND OVERRIDES (HIGHEST PRIORITY)
+   ============================================ */
+html[data-theme="light"] body {
+  background-color: #f8f9fc !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="dark"] body {
+  background-color: #0d1117 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Theme-aware body class for components */
+html[data-theme="light"] .theme-body {
+  background-color: #f8f9fc !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="dark"] .theme-body {
+  background-color: #0d1117 !important;
+  color: #e2e8f0 !important;
+}
+
+html[data-theme="light"] .theme-panel,
+html[data-theme="light"] .theme-card {
+  background-color: #ffffff !important;
+}
+
+html[data-theme="dark"] .theme-panel,
+html[data-theme="dark"] .theme-card {
+  background-color: #161b27 !important;
+}
+
+html[data-theme="light"] .theme-panel-2 {
+  background-color: #f1f5f9 !important;
+}
+
+html[data-theme="dark"] .theme-panel-2 {
+  background-color: #111520 !important;
+}
+
+html[data-theme="light"] .theme-topbar {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+html[data-theme="dark"] .theme-topbar {
+  background-color: rgba(8, 13, 20, 0.95) !important;
+}
+
+html[data-theme="light"] .theme-sidebar {
+  background-color: #ffffff !important;
+}
+
+/* VERY HIGH SPECIFICITY - Theme body classes */
+html[data-theme="light"] .theme-light body,
+html[data-theme="light"] body.theme-light {
+  background-color: #f8f9fc !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="dark"] .theme-dark body,
+html[data-theme="dark"] body.theme-dark {
+  background-color: #0d1117 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Theme body class variations */
+body.theme-light {
+  background-color: #f8f9fc !important;
+  color: #0f172a !important;
+}
+
+body.theme-dark {
+  background-color: #0d1117 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Body bg override for all theme variations */
+html[data-theme="light"] body,
+body.theme-light {
+  background-color: #f8f9fc !important;
+}
+
+html,
+html[data-theme="light"] {
+  background-color: #f8f9fc !important;
+}
+
+html,
+html[data-theme="dark"] {
+  background-color: #0d1117 !important;
+}
+
+/* Force background on html element */
+html:has([data-theme="light"]) {
+  background-color: #f8f9fc !important;
+}
+
+html:has([data-theme="dark"]) {
+  background-color: #0d1117 !important;
+}
+
+/* Text colors for theme classes in light mode */
+html[data-theme="light"] .theme-body,
+html[data-theme="light"] .theme-panel,
+html[data-theme="light"] .theme-card {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .theme-body a,
+html[data-theme="light"] .theme-panel a {
+  color: #2563eb !important;
+}
+
+html[data-theme="light"] .theme-body h1,
+html[data-theme="light"] .theme-panel h1,
+html[data-theme="light"] .theme-card h1,
+html[data-theme="light"] .theme-body h2,
+html[data-theme="light"] .theme-panel h2,
+html[data-theme="light"] .theme-card h2,
+html[data-theme="light"] .theme-body h3,
+html[data-theme="light"] .theme-panel h3,
+html[data-theme="light"] .theme-card h3 {
+  color: #0f172a !important;
+}
+
+html[data-theme="dark"] .theme-sidebar {
+  background-color: #080d14 !important;
 }

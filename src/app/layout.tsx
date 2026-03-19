@@ -414,14 +414,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Theme init + persist (app-level override of prefers-color-scheme)
+  // Theme init + persist + set body bg
   useEffect(() => {
     try {
       const saved = localStorage.getItem("vtech_theme") as "dark" | "light" | null;
       const initial = saved || null;
       setTheme(initial);
-      if (initial) document.documentElement.setAttribute("data-theme", initial);
-      else document.documentElement.removeAttribute("data-theme");
+      if (initial) {
+        document.documentElement.setAttribute("data-theme", initial);
+        document.body.style.backgroundColor = initial === "dark" ? "#0d1117" : "#f8f9fc";
+        document.body.style.color = initial === "dark" ? "#e2e8f0" : "#0f172a";
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+        document.body.style.backgroundColor = "#0d1117";
+        document.body.style.color = "#e2e8f0";
+      }
     } catch {
       // ignore
     }
@@ -436,6 +443,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         // ignore
       }
       document.documentElement.setAttribute("data-theme", next);
+      // Set body inline styles for guaranteed effect
+      document.body.style.backgroundColor = next === "dark" ? "#0d1117" : "#f8f9fc";
+      document.body.style.color = next === "dark" ? "#e2e8f0" : "#0f172a";
       return next;
     });
   }, []);
@@ -469,11 +479,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="en" className="h-full">
-      <body className="h-full m-0 font-sans antialiased text-slate-200 bg-[#0d1117] overflow-x-hidden">
+      <body className={`h-full m-0 font-sans antialiased text-slate-200 bg-[#0d1117] overflow-x-hidden theme-${theme || 'dark'}`}>
 
         {/* ══════════════════════ DESKTOP SIDEBAR ══════════════════════ */}
         {isMobile === false && (
-          <aside className="fixed top-0 left-0 h-full w-[260px] bg-[#080d14] border-r border-[#1a2234] flex flex-col z-50">
+          <aside className="fixed top-0 left-0 h-full w-[260px] theme-sidebar border-r border-[#21293d] flex flex-col z-50 theme-sidebar">
             {/* Brand */}
             <div className="relative overflow-hidden px-5 py-4 border-b border-[#1a2234]">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-700/15 to-transparent pointer-events-none" />
@@ -511,7 +521,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             />
             {/* Full sidebar drawer — same content as desktop */}
             <aside
-              className={`fixed top-0 left-0 h-full w-[280px] bg-[#080d14] border-r border-[#1a2234] flex flex-col z-50 transition-transform duration-300 ease-out ${
+              className={`fixed top-0 left-0 h-full w-[280px] theme-sidebar border-r border-[#21293d] flex flex-col z-50 transition-transform duration-300 ease-out ${
                 drawerOpen ? "translate-x-0" : "-translate-x-full"
               }`}
             >
@@ -563,7 +573,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className={`${isMobile === false ? "lg:ml-[260px]" : "ml-0"} flex-1 min-h-screen flex flex-col`}>
 
           {/* ── TOPBAR ── */}
-          <header className="sticky top-0 z-40 h-14 bg-[#080d14]/90 backdrop-blur-md border-b border-[#1a2234] flex items-center justify-between px-4 gap-3">
+          <header className="sticky top-0 z-40 h-14 theme-topbar backdrop-blur border-b border-[#21293d] flex items-center justify-between px-4 gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               {/* Mobile hamburger → opens full drawer */}
               {isMobile === true && (
@@ -662,7 +672,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </header>
 
           {/* ── PAGE CONTENT ── */}
-          <main className="flex-1 p-3 sm:p-5 bg-[#0d1117]">
+          <main className="flex-1 p-3 sm:p-5 theme-body">
             {children}
           </main>
         </div>

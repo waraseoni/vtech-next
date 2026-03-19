@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
-import { Save, ArrowLeft, UserPlus, Loader2, Edit3 } from 'lucide-react';
+import { Save, ArrowLeft, UserPlus, Loader2, Edit3, AlertTriangle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
 // ── DARK THEME CONSTANTS ──────────────────────────────────
@@ -53,6 +53,8 @@ export default function ManageClientPage() {
   const [fetchLoading, setFetchLoading] = useState(isEdit);
   const [errors,       setErrors]       = useState<FieldErrors>({});
   const [submitted,    setSubmitted]    = useState(false);
+  const [duplicateClients, setDuplicateClients] = useState<{id: number; name: string; contact: string}[]>([]);
+  const [checkingDup, setCheckingDup] = useState(false);
   const [form, setForm] = useState<FormState>({
     firstname: '', middlename: '', lastname: '',
     contact: '', email: '', address: '', opening_balance: '0.00',
@@ -91,6 +93,41 @@ export default function ManageClientPage() {
     const updated = { ...form, [field]: value };
     setForm(updated);
     if (submitted) setErrors(validate(updated));
+    
+    // Check for duplicate contact
+    if (field === 'contact' && value.length === 10 && !isEdit) {
+      checkDuplicateContact(value);
+    }
+    if (field === 'contact' && value.length < 10) {
+      setDuplicateClients([]);
+    }
+  };
+
+  // ── DUPLICATE CONTACT CHECK ───────────────────────────
+  const checkDuplicateContact = async (contact: string) => {
+    setCheckingDup(true);
+    try {
+      const { data, error } = await supabase
+        .from('client_list')
+        .select('id, firstname, middlename, lastname, contact')
+        .eq('contact', contact)
+        .eq('delete_flag', 0)
+        .limit(5);
+      if (!error && data && data.length > 0) {
+        setDuplicateClients(data.map(c => ({
+          id: c.id,
+          name: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(' ').trim(),
+          contact: c.contact || '',
+        })));
+      } else {
+        setDuplicateClients([]);
+      }
+    } catch (err) {
+      console.error('Duplicate check error:', err);
+      setDuplicateClients([]);
+    } finally {
+      setCheckingDup(false);
+    }
   };
 
   // ── SUBMIT ─────────────────────────────────────────────
@@ -231,13 +268,48 @@ export default function ManageClientPage() {
             {/* Contact */}
             <div>
               <label className={labelCls}>WhatsApp / Contact <span className="text-red-500">*</span></label>
-              <input
-                type="tel" placeholder="10-digit mobile number" maxLength={10}
-                value={form.contact}
-                onChange={e => handleChange('contact', e.target.value.replace(/\D/g, ''))}
-                className={`${inputCls} ${errors.contact ? 'border-red-500' : ''}`}
-              />
+              <div className="relative">
+                <input
+                  type="tel" placeholder="10-digit mobile number" maxLength={10}
+                  value={form.contact}
+                  onChange={e => handleChange('contact', e.target.value.replace(/\D/g, ''))}
+                  className={`${inputCls} ${errors.contact ? 'border-red-500' : duplicateClients.length > 0 ? 'border-amber-500' : ''}`}
+                />
+                {checkingDup && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 size={16} className="animate-spin text-slate-500" />
+                  </div>
+                )}
+              </div>
               {errors.contact && <p className={errCls}>{errors.contact}</p>}
+              {duplicateClients.length > 0 && (
+                <div className="mt-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2 text-amber-400 text-xs font-bold">
+                    <AlertTriangle size={14} />
+                    <span>⚠️ Duplicate contact found! These clients already exist:</span>
+                  </div>
+                  {duplicateClients.map(dup => (
+                    <div key={dup.id} className="flex items-center justify-between bg-[#0d1117] rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle size={12} className="text-amber-500" />
+                        <span className="text-white text-xs font-medium">{dup.name}</span>
+                        <span className="text-slate-500 text-[10px]">#{dup.id}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <a href={`/clients/${dup.id}/view`} target="_blank"
+                          className="text-blue-400 hover:text-blue-300 text-[10px] font-bold no-underline">
+                          View →
+                        </a>
+                        <a href={`/clients/${dup.id}/edit`} target="_blank"
+                          className="text-amber-400 hover:text-amber-300 text-[10px] font-bold no-underline">
+                          Edit →
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                  <p className="text-[10px] text-amber-500/70">Still want to add? This will create a duplicate entry.</p>
+                </div>
+              )}
             </div>
 
             {/* Email (optional) */}
