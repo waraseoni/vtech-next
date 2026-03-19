@@ -59,6 +59,7 @@ interface JobDetail {
 interface Client {
   id: number; firstname: string; middlename: string;
   lastname: string; contact: string; email: string; address: string;
+  opening_balance?: number;
 }
 interface Mechanic {
   id: number; firstname: string; middlename: string;
@@ -147,9 +148,10 @@ export default function JobDetailsPage() {
   const [services, setServices] = useState<TransactionService[]>([]);
   const [images,   setImages]   = useState<TransactionImage[]>([]);
   const [userRole, setUserRole] = useState<string>("staff");
-  const [loading,  setLoading]  = useState(true);
-  const [deleting, setDeleting] = useState(false);
-  const [toast,    setToast]    = useState<Toast | null>(null);
+  const [loading,       setLoading]       = useState(true);
+  const [deleting,      setDeleting]      = useState(false);
+  const [toast,         setToast]         = useState<Toast | null>(null);
+  const [clientBalance, setClientBalance] = useState<number | null>(null);
 
   // Status modal
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -201,7 +203,7 @@ export default function JobDetailsPage() {
       const clientId = Number(jobData.client_name);
       const [clientRes, mechRes, prodRes, svcRes, imgRes] = await Promise.all([
         supabase.from("client_list")
-          .select("id, firstname, middlename, lastname, contact, email, address")
+          .select("id, firstname, middlename, lastname, contact, email, address, opening_balance")
           .eq("id", clientId).single(),
         jobData.mechanic_id
           ? supabase.from("mechanic_list")
@@ -216,6 +218,21 @@ export default function JobDetailsPage() {
 
       if (clientRes.data) setClient(clientRes.data as Client);
       if (mechRes.data)   setMechanic(mechRes.data as Mechanic);
+
+      // Client balance calculation (same as list page)
+      const ob = clientRes.data?.opening_balance || 0;
+      const [billedRes, paidRes, salesRes] = await Promise.all([
+        supabase.from("transaction_list")
+          .select("amount").eq("client_name", String(clientId)).eq("status", 5),
+        supabase.from("client_payments")
+          .select("amount, discount").eq("client_id", clientId),
+        supabase.from("direct_sales")
+          .select("total_amount").eq("client_id", clientId),
+      ]);
+      const totalBilled = (billedRes.data || []).reduce((s, r) => s + (r.amount || 0), 0);
+      const totalSales  = (salesRes.data  || []).reduce((s, r) => s + (r.total_amount || 0), 0);
+      const totalPaid   = (paidRes.data   || []).reduce((s, p) => s + (p.amount || 0) + (p.discount || 0), 0);
+      setClientBalance(ob + totalBilled + totalSales - totalPaid);
       setImages((imgRes.data || []) as TransactionImage[]);
 
       const prods = (prodRes.data || []) as TransactionProduct[];
@@ -319,32 +336,6 @@ export default function JobDetailsPage() {
   };
 
   // ── PRINT ──────────────────────────────────────────────────────────────────
-  const handlePrint = () => {
-    if (!job) return;
-    const svcHtml = services.length > 0
-      ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Service</th><th style="padding:6px;text-align:right">Price</th></tr></thead><tbody>${services.map(s => `<tr><td style="padding:5px">${s.service_name || s.service_id}</td><td style="padding:5px;text-align:right">Rs.${s.price.toFixed(2)}</td></tr>`).join("")}</tbody></table>` : "";
-    const prodHtml = products.length > 0
-      ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Product</th><th style="padding:6px;text-align:center">Qty</th><th style="padding:6px;text-align:right">Price</th><th style="padding:6px;text-align:right">Total</th></tr></thead><tbody>${products.map(p => `<tr><td style="padding:5px">${p.product_name || p.product_id}</td><td style="padding:5px;text-align:center">${p.qty}</td><td style="padding:5px;text-align:right">Rs.${p.price.toFixed(2)}</td><td style="padding:5px;text-align:right">Rs.${(p.qty*p.price).toFixed(2)}</td></tr>`).join("")}</tbody></table>` : "";
-    const win = window.open("", `Bill_${job.job_id}`, "width=900,height=700");
-    if (!win) { alert("Popup blocked! Browser mein allow karo."); return; }
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Job Bill - ${job.job_id}</title>
-<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#333;padding:20px}
-h1{font-size:18px;font-weight:900;color:#001f3f;margin-bottom:2px}h2{font-size:12px;color:#555;margin-bottom:10px}
-hr{border:1px solid #001f3f;margin:8px 0}.total{font-size:16px;font-weight:900;margin-top:12px;color:#155724}
-@page{margin:1cm;size:A4}</style></head><body>
-<h1>${FIRM.name}</h1><h2>${FIRM.owner} | ${FIRM.address} | ${FIRM.contact}</h2><hr/>
-<p><b>Job ID:</b> ${job.job_id}&nbsp;&nbsp;<b>Code:</b> ${job.code}&nbsp;&nbsp;<b>Status:</b> ${STATUS_MAP[job.status]?.label}</p>
-<p><b>Client:</b> ${[client?.firstname, client?.middlename, client?.lastname].filter(Boolean).join(" ")}&nbsp;&nbsp;<b>Contact:</b> ${client?.contact || ""}</p>
-<p><b>Item:</b> ${job.item}&nbsp;&nbsp;<b>Fault:</b> ${job.fault}</p>
-<p><b>Mechanic:</b> ${mechanic ? [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ") : "N/A"}&nbsp;&nbsp;<b>Date:</b> ${fmtDate(job.date_created)}</p>
-${job.date_completed ? `<p><b>Delivered:</b> ${fmtDateTime(job.date_completed)}</p>` : ""}
-${svcHtml}${prodHtml}
-<p class="total">Total Bill Amount: Rs.${job.amount.toLocaleString("en-IN", { minimumFractionDigits:2 })}</p>
-</body></html>`);
-    win.document.close();
-    win.onload = () => { win.print(); win.onafterprint = () => win.close(); };
-    setTimeout(() => { if (win && !win.closed) { win.print(); win.onafterprint = () => win.close(); } }, 800);
-  };
 
   // ── LOADING ────────────────────────────────────────────────────────────────
   if (loading) return (
@@ -401,19 +392,19 @@ ${svcHtml}${prodHtml}
                 <Link href={`/clients/${job.client_name}/view`}
                   className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
                   <User size={12}/> View Client
+                </Link>                
+                <Link href={`/jobs/${job.id}/edit`}
+                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
+                  <Edit size={12}/> Edit
                 </Link>
-                <Link href={`/jobs/${job.id}/gst-bill`} target="_blank"
-                  className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
-                  <FileText size={12}/> GST Bill
-                </Link>
-                <button onClick={handlePrint}
-                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+                <Link href={`/api/print-bill?job_id=${job.job_id}`} target="_blank"
+                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
                   <Printer size={12}/> Print Bill
-                </button>
-                <button onClick={() => router.back()}
-                  className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+                </Link>
+                <Link href="/jobs"
+                  className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
                   <ArrowLeft size={12}/> Back
-                </button>
+                </Link>
               </div>
             </div>
 
@@ -431,10 +422,26 @@ ${svcHtml}${prodHtml}
                     <Fieldset title="Client Information" icon={User} color="primary">
                       <InfoRow label="Name"
                         value={
-                          <Link href={`/clients/${job.client_name}/view`}
-                            className="text-blue-400 font-semibold hover:underline">
-                            {clientName}
-                          </Link>
+                          <span className="inline-flex items-center flex-wrap gap-1.5">
+                            <Link href={`/clients/${job.client_name}/view`}
+                              className="text-blue-400 font-semibold hover:underline">
+                              {clientName}
+                            </Link>
+                            {clientBalance !== null && (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                                clientBalance > 0
+                                  ? "bg-red-500/15 text-red-400 border-red-500/30"
+                                  : clientBalance < 0
+                                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                  : "bg-slate-500/15 text-slate-400 border-slate-500/30"
+                              }`}>
+                                {clientBalance > 0 ? "Due" : clientBalance < 0 ? "Adv" : "✓"}
+                                {clientBalance !== 0 && (
+                                  <span> ₹{Math.abs(clientBalance).toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
+                                )}
+                              </span>
+                            )}
+                          </span>
                         }/>
                       {client?.contact && (
                         <InfoRow label="Contact"
@@ -619,78 +626,6 @@ ${svcHtml}${prodHtml}
                     className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 shadow-sm mb-4 transition-colors">
                     <Send size={16}/> Send Status on WhatsApp
                   </button>
-
-                  {/* Activity Timeline */}
-                  <Fieldset title="Activity Timeline" icon={Clock} color="info">
-                    <div className="space-y-0">
-                      {/* Job Created */}
-                      <div className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className="w-8 h-8 rounded-full bg-blue-500/20 border-2 border-blue-500/50 flex items-center justify-center">
-                            <Plus size={14} className="text-blue-400" />
-                          </div>
-                          {true && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
-                        </div>
-                        <div className="flex-1 pb-4">
-                          <p className="text-sm text-slate-300 font-medium">Job Created</p>
-                          <p className="text-xs text-slate-500">{fmtDateTime(job.date_created)}</p>
-                        </div>
-                      </div>
-
-                      {/* Status based activities */}
-                      {[1, 2, 3, 4, 5].filter(s => s <= job.status).map((s, idx) => {
-                        const statusLabels: Record<number, { label: string; icon: React.ReactNode; color: string }> = {
-                          1: { label: "Marked On-Progress", icon: <Settings2 size={12} />, color: "blue" },
-                          2: { label: "Marked Done", icon: <CheckCircle size={12} />, color: "teal" },
-                          3: { label: "Marked Paid", icon: <Banknote size={12} />, color: "emerald" },
-                          4: { label: "Marked Cancelled", icon: <AlertTriangle size={12} />, color: "red" },
-                          5: { label: "Marked Delivered", icon: <CheckCircle2 size={12} />, color: "purple" },
-                        };
-                        const st = statusLabels[s];
-                        const colorClasses: Record<string, string> = {
-                          blue: "bg-blue-500/20 border-blue-500/50 text-blue-400",
-                          teal: "bg-teal-500/20 border-teal-500/50 text-teal-400",
-                          emerald: "bg-emerald-500/20 border-emerald-500/50 text-emerald-400",
-                          red: "bg-red-500/20 border-red-500/50 text-red-400",
-                          purple: "bg-purple-500/20 border-purple-500/50 text-purple-400",
-                        };
-                        return (
-                          <div key={s} className="flex gap-3">
-                            <div className="flex flex-col items-center">
-                              <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${colorClasses[st.color]}`}>
-                                {st.icon}
-                              </div>
-                              {idx < 4 && s < job.status && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
-                            </div>
-                            <div className={`flex-1 pb-4 ${s === job.status ? "" : "opacity-60"}`}>
-                              <p className="text-sm text-slate-300 font-medium">{st.label}</p>
-                              {s === 5 && job.date_completed && (
-                                <p className="text-xs text-slate-500">{fmtDateTime(job.date_completed)}</p>
-                              )}
-                              {s !== 5 && (
-                                <p className="text-xs text-slate-500">{fmtDateTime(job.date_updated)}</p>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      {/* If delivered, show completion */}
-                      {job.status === 5 && (
-                        <div className="flex gap-3">
-                          <div className="flex flex-col items-center">
-                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 border-2 border-emerald-500/50 flex items-center justify-center">
-                              <CheckCircle2 size={14} className="text-emerald-400" />
-                            </div>
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm text-slate-300 font-medium">Job Completed</p>
-                            <p className="text-xs text-slate-500">Delivered on {fmtDateTime(job.date_completed || job.date_updated)}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </Fieldset>
                 </div>
               </div>
 
@@ -705,10 +640,7 @@ ${svcHtml}${prodHtml}
                   className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline">
                   <Edit size={15}/> Edit Transaction
                 </Link>
-                <button onClick={handlePrint}
-                  className="flex items-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
-                  <Printer size={15}/> Print Page
-                </button>
+
                 <button onClick={() => setShowPayModal(true)}
                   className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
                   <Plus size={15}/> Add Payment
