@@ -334,15 +334,15 @@ export default function ClientsPage() {
       <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-6 space-y-5">
 
         {/* ━━━━━━ HEADER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4
-          bg-[#161b27] border border-[#21293d] rounded-2xl px-6 py-5">
+        <div style={{backgroundColor: 'var(--app-panel)', borderColor: 'var(--app-border)'}} className="flex flex-col md:flex-row md:items-center justify-between gap-4
+          rounded-2xl px-6 py-5 border">
           <div className="flex items-center gap-4">
             <div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30 flex-shrink-0">
               <Users className="text-white" size={22}/>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black text-white tracking-tight leading-none">Customer Registry</h1>
+                <h1 style={{color: 'var(--app-text)'}} className="text-xl font-black tracking-tight leading-none">Customer Registry</h1>
                 {userRole==="admin"&&<ShieldCheck className="text-emerald-400" size={16}/>}
               </div>
               <p className="text-blue-400 text-[11px] font-bold uppercase tracking-[0.15em] mt-1">
@@ -370,7 +370,7 @@ export default function ClientsPage() {
               <FileSpreadsheet size={13}/> Excel
             </button>
             <Link href="/clients/new"
-              className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl font-extrabold flex items-center gap-1.5 transition-all active:scale-95 no-underline text-xs shadow-lg shadow-blue-600/20">
+              className="dark:bg-blue-600 bg-blue-500 hover:bg-blue-700 !text-white px-5 py-2 rounded-xl font-extrabold flex items-center gap-1.5 transition-all active:scale-95 no-underline text-xs shadow-lg dark:shadow-blue-600/20 shadow-blue-500/20">
               <UserPlus size={14} strokeWidth={2.5}/> Add Client
             </Link>
           </div>

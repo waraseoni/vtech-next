@@ -57,7 +57,7 @@ const label = "block text-[10px] font-black uppercase tracking-wider text-slate-
 const btn =
   "px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]";
 const btnPrimary = `${btn} bg-blue-600 hover:bg-blue-500 text-white`;
-const btnGhost = `${btn} bg-white/[0.04] hover:bg-white/[0.07] text-slate-300 border border-[#21293d]`;
+const btnGhost = `${btn} bg-white/[0.04] hover:bg-white/[0.07] dark:text-slate-300 text-slate-800 border border-[#21293d] dark:border-[#21293d]`;
 const btnDanger = `${btn} bg-red-600 hover:bg-red-500 text-white`;
 
 const blankForm: ClientForm = {
