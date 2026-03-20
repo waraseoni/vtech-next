@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>V-Tech — MySQL → Supabase JSON Converter v2</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#0d1117;color:#e2e8f0;min-height:100vh;padding:20px}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:20px;font-weight:900;color:#fff;margin-bottom:4px}
+.sub{font-size:11px;color:#4a5568;text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}
+.card{background:#161b27;border:1px solid #21293d;border-radius:16px;overflow:hidden;margin-bottom:16px}
+.card-hdr{padding:14px 20px;border-bottom:1px solid #21293d;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:8px}
+.card-body{padding:20px}
+label{display:block;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:#4a5568;margin-bottom:8px}
+.drop-zone{border:2px dashed #21293d;border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:.2s;position:relative}
+.drop-zone:hover,.drop-zone.over{border-color:#3b82f6;background:rgba(59,130,246,.05)}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-zone-icon{font-size:28px;margin-bottom:8px}
+.drop-zone p{color:#6b7280;font-size:12px;line-height:1.6}
+.btn{padding:12px 24px;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:900;display:inline-flex;align-items:center;gap:8px;transition:.2s}
+.btn:hover{transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-blue{background:#3b82f6;color:#fff}
+.btn-green{background:#10b981;color:#fff}
+.progress{background:#0d1117;border-radius:8px;padding:14px 16px;font-family:monospace;font-size:12px;color:#94a3b8;max-height:260px;overflow-y:auto;line-height:1.9}
+.ok{color:#10b981}.warn{color:#f59e0b}.err{color:#ef4444}.info{color:#60a5fa}.skip{color:#4a5568}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.stat{background:#0d1117;border:1px solid #21293d;border-radius:8px;padding:12px;text-align:center}
+.stat-num{font-size:22px;font-weight:900;color:#fff}
+.stat-label{font-size:10px;color:#4a5568;text-transform:uppercase;margin-top:2px}
+.table-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:6px;margin-top:12px}
+.tbl{background:#0d1117;border:1px solid #21293d;border-radius:8px;padding:8px 12px;font-size:11px;display:flex;justify-content:space-between;align-items:center}
+.tbl .n{color:#94a3b8;font-family:monospace}
+.badge{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:900}
+.bg{background:rgba(16,185,129,.12);color:#10b981}
+.by{background:rgba(245,158,11,.12);color:#f59e0b}
+.be{background:rgba(75,85,99,.2);color:#6b7280}
+.mode-tabs{display:flex;gap:8px;margin-bottom:14px}
+.mode-tab{padding:8px 16px;border-radius:8px;border:1px solid #21293d;cursor:pointer;font-size:12px;font-weight:700;transition:.2s;background:#0d1117;color:#6b7280}
+.mode-tab.active{background:#3b82f6;border-color:#3b82f6;color:#fff}
+.info-box{background:#0d1117;border:1px solid #21293d;border-radius:8px;padding:12px;font-size:12px;color:#6b7280;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔄 V-Tech MySQL → Supabase Converter <span style="font-size:13px;color:#3b82f6">v2</span></h1>
+  <p class="sub">MariaDB SQL Dump → Supabase-compatible JSON Backup</p>
+
+  <!-- MODE -->
+  <div class="card">
+    <div class="card-hdr" style="background:linear-gradient(to right,rgba(59,130,246,.15),transparent)">⚙️ Mode</div>
+    <div class="card-body">
+      <div class="mode-tabs">
+        <div class="mode-tab active" onclick="setMode('merge')"     id="tab-merge">🔀 Merge</div>
+        <div class="mode-tab"        onclick="setMode('replace')"   id="tab-replace">🔄 Replace</div>
+        <div class="mode-tab"        onclick="setMode('sqlonly')"   id="tab-sqlonly">📤 SQL Only</div>
+      </div>
+      <div class="info-box" id="mode-desc"></div>
+    </div>
+  </div>
+
+  <!-- FILES -->
+  <div class="card">
+    <div class="card-hdr" style="background:linear-gradient(to right,rgba(16,185,129,.15),transparent)">📁 Files</div>
+    <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <label>MySQL / MariaDB .sql file *</label>
+        <div class="drop-zone" id="sql-zone">
+          <input type="file" accept=".sql" onchange="loadSQL(this)"/>
+          <div class="drop-zone-icon">🗄️</div>
+          <p id="sql-label">Click ya drag karo<br><strong>.sql file</strong></p>
+        </div>
+      </div>
+      <div id="json-wrap">
+        <label>Supabase .json backup (Merge ke liye)</label>
+        <div class="drop-zone">
+          <input type="file" accept=".json" onchange="loadJSON(this)"/>
+          <div class="drop-zone-icon">💾</div>
+          <p id="json-label">Click ya drag karo<br><strong>.json file</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="card" id="preview-card" style="display:none">
+    <div class="card-hdr" style="background:linear-gradient(to right,rgba(245,158,11,.15),transparent)">🗺️ Table Preview</div>
+    <div class="card-body">
+      <div class="table-grid" id="table-grid"></div>
+    </div>
+  </div>
+
+  <!-- CONVERT -->
+  <div style="text-align:center;margin:16px 0">
+    <button class="btn btn-blue" onclick="doConvert()" id="convert-btn" disabled>
+      🚀 Convert &amp; Download JSON
+    </button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="card" id="prog-card" style="display:none">
+    <div class="card-hdr">📋 Log</div>
+    <div class="card-body">
+      <div class="progress" id="prog"></div>
+      <div class="stats-grid" id="stats" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const TABLES = [
+  'system_info','client_list','mechanic_list','product_list','service_list',
+  'inventory_list','job_id_counter','transaction_list','transaction_products',
+  'transaction_services','transaction_images','client_payments','client_loans',
+  'direct_sales','direct_sale_items','advance_payments','lender_list',
+  'loan_payments','expense_list','attendance_list','message_list',
+  'mechanic_commission_history','mechanic_salary_history'
+];
+
+// ── EXACT field types — verified from real Supabase backup ──────────────────
+// CRITICAL: 'str' fields are NEVER converted to int/float even if value looks numeric
+// e.g. client_name='5', job_id='27270', contact='07987953757', code='2025102401'
+const FIELD_TYPES = {
+  // id fields: always int
+  // amount/price/salary fields: float
+  // contact/code/job_id/client_name: MUST be str (TEXT/VARCHAR in Supabase)
+  'advance_payments':            {'id':'int','mechanic_id':'int','amount':'float','date_paid':'str','reason':'str','date_created':'str'},
+  'attendance_list':             {'id':'int','mechanic_id':'int','status':'int','curr_date':'str'},
+  'client_list':                 {'id':'int','firstname':'str','middlename':'str','lastname':'str','contact':'str','email':'str','address':'str','image_path':'str','opening_balance':'float','delete_flag':'int','date_created':'str','date_updated':'str'},
+  'client_loans':                {'id':'int','client_id':'int','principal_amount':'float','interest_rate':'float','loan_period':'int','total_payable':'float','emi_amount':'float','remarks':'str','loan_date':'str','status':'int','created_at':'str'},
+  'client_payments':             {'id':'int','client_id':'int','job_id':'str','loan_id':'int','bill_no':'str','payment_date':'str','amount':'float','discount':'float','net_amount':'float','payment_mode':'str','payment_type':'str','remarks':'str','created_at':'str'},
+  'direct_sale_items':           {'id':'int','sale_id':'int','product_id':'int','qty':'int','price':'float'},
+  'direct_sales':                {'id':'int','sale_code':'str','client_id':'int','mechanic_id':'int','total_amount':'float','payment_mode':'str','remarks':'str','last_edited_by':'int','last_edited_by_name':'str','last_edited_date':'str','date_created':'str'},
+  'expense_list':                {'id':'int','category':'str','amount':'float','remarks':'str','date_created':'str'},
+  'inventory_list':              {'id':'int','product_id':'int','quantity':'int','place':'str','stock_date':'str','date_created':'str','date_updated':'str'},
+  'job_id_counter':              {'id':'int','last_job_id':'int'},
+  'lender_list':                 {'id':'int','fullname':'str','contact':'str','loan_amount':'float','interest_rate':'float','tenure_months':'int','reason':'str','emi_amount':'float','start_date':'str','status':'int','date_created':'str'},
+  'loan_payments':               {'id':'int','lender_id':'int','amount_paid':'float','payment_date':'str','remarks':'str'},
+  'mechanic_commission_history': {'id':'int','mechanic_id':'int','commission_percent':'float','effective_date':'str','date_created':'str'},
+  'mechanic_list':               {'id':'int','firstname':'str','middlename':'str','lastname':'str','contact':'str','designation':'str','daily_salary':'float','avatar':'str','commission_percent':'float','status':'int','delete_flag':'int','date_added':'str','date_updated':'str','salary_per_day':'float'},
+  'mechanic_salary_history':     {'id':'int','mechanic_id':'int','salary':'float','effective_date':'str','date_created':'str'},
+  'message_list':                {'id':'int','fullname':'str','contact':'str','email':'str','message':'str','status':'int','date_created':'str'},
+  'product_list':                {'id':'int','name':'str','description':'str','cost_price':'float','price':'float','image_path':'str','status':'int','delete_flag':'int','date_created':'str','date_updated':'str'},
+  'service_list':                {'id':'int','name':'str','description':'str','price':'float','status':'int','delete_flag':'int','date_created':'str','date_updated':'str'},
+  'system_info':                 {'id':'int','meta_field':'str','meta_value':'str'},
+  'transaction_images':          {'id':'int','transaction_id':'int','image_path':'str','date_created':'str'},
+  'transaction_list':            {'id':'int','user_id':'int','mechanic_id':'int','code':'str','job_id':'str','client_name':'str','fault':'str','remark':'str','item':'str','uniq_id':'str','amount':'float','mechanic_amount':'float','mechanic_commission_amount':'float','del_status':'int','status':'int','date_created':'str','date_updated':'str','date_completed':'str'},
+  'transaction_products':        {'transaction_id':'int','product_id':'int','product_name':'str','qty':'int','price':'float'},
+  'transaction_services':        {'transaction_id':'int','service_id':'int','service_name':'str','price':'float'},
+};
+
+// ── State ────────────────────────────────────────────────────────────────────
+let sqlData={}, jsonData={}, mode='merge';
+
+const MODES = {
+  merge:   '🔀 <b style="color:#60a5fa">Merge:</b> MySQL + Supabase dono combine. MySQL data priority. Recommended for migration.',
+  replace: '🔄 <b style="color:#f59e0b">Replace:</b> Sirf MySQL ka data. Supabase data ignore.',
+  sqlonly: '📤 <b style="color:#10b981">SQL Only:</b> Sirf MySQL → JSON. Supabase file zaroorat nahi.',
+};
+
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+m).classList.add('active');
+  document.getElementById('mode-desc').innerHTML=MODES[m];
+  document.getElementById('json-wrap').style.opacity=m==='sqlonly'?'0.4':'1';
+}
+setMode('merge');
+
+// ── File loaders ─────────────────────────────────────────────────────────────
+function loadSQL(inp){
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    sqlData=parseSQL(e.target.result);
+    document.getElementById('sql-label').innerHTML=
+      '<strong style="color:#10b981">✓ '+f.name+'</strong><br>'+(f.size/1024/1024).toFixed(2)+' MB';
+    showPreview(); updateBtn();
+  };
+  r.readAsText(f);
+}
+function loadJSON(inp){
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      jsonData=JSON.parse(e.target.result);
+      document.getElementById('json-label').innerHTML=
+        '<strong style="color:#10b981">✓ '+f.name+'</strong><br>'+(f.size/1024).toFixed(0)+' KB';
+      showPreview(); updateBtn();
+    }catch(err){alert('Invalid JSON!');}
+  };
+  r.readAsText(f);
+}
+function updateBtn(){
+  document.getElementById('convert-btn').disabled=Object.keys(sqlData).length===0;
+}
+
+// ── MySQL Parser ──────────────────────────────────────────────────────────────
+function parseSQL(sql){
+  const res={};
+  const re=/INSERT INTO `(\w+)` \(([^)]+)\) VALUES\s*\n?([\s\S]*?);/g;
+  let m;
+  while((m=re.exec(sql))!==null){
+    const tbl=m[1];
+    if(['users','profiles'].includes(tbl)) continue;
+    const cols=m[2].split(',').map(c=>c.trim().replace(/`/g,''));
+    const rows=parseVals(m[3],cols);
+    if(!res[tbl]) res[tbl]=[];
+    res[tbl].push(...rows);
+  }
+  return res;
+}
+
+function parseVals(str,cols){
+  const rows=[]; let d=0,inS=false,sc='',st=0,i=0;
+  for(;i<str.length;i++){
+    const c=str[i];
+    if(inS){if(c==='\\'){i++;continue;}if(c===sc)inS=false;}
+    else{
+      if(c==="'"||c==='"'){inS=true;sc=c;}
+      else if(c==='('){if(d===0)st=i;d++;}
+      else if(c===')'){d--;if(d===0){
+        const vals=parseRow(str.slice(st+1,i));
+        if(vals.length){const o={};cols.forEach((c,j)=>{o[c]=vals[j]??null;});rows.push(o);}
+      }}
+    }
+  }
+  return rows;
+}
+
+function parseRow(str){
+  const vals=[]; let cur='',inS=false,sc='';
+  for(let i=0;i<str.length;i++){
+    const c=str[i];
+    if(inS){
+      if(c==='\\'&&i+1<str.length){
+        const n=str[i+1];
+        const esc={"'":"'",'"':'"','n':'\n','r':'\r','t':'\t','\\':'\\'};
+        cur+=esc[n]||c; i++; continue;
+      }
+      if(c===sc){inS=false;continue;}
+      cur+=c;
+    } else {
+      if(c==="'"||c==='"'){inS=true;sc=c;}
+      else if(c===','){vals.push(coerce(cur.trim()));cur='';}
+      else cur+=c;
+    }
+  }
+  if(cur.trim()!==''||vals.length>0) vals.push(coerce(cur.trim()));
+  return vals;
+}
+
+function coerce(v){
+  if(v==='NULL'||v===''||v===null) return null;
+  // Leading-zero number = phone/ID = must stay string e.g. "07987953757"
+  if(/^0\d+/.test(v)) return v;
+  // Plain integer
+  if(/^-?\d+$/.test(v)) return parseInt(v);
+  // Float
+  if(/^-?\d+\.\d+$/.test(v)) return parseFloat(v);
+  return v;
+}
+
+// ── Type coercion — match exact Supabase backup types ─────────────────────────
+function castRow(table, row){
+  const schema = FIELD_TYPES[table];
+  if(!schema) return row;
+  const out = {};
+  for(const [k,v] of Object.entries(row)){
+    if(v===null||v===undefined){out[k]=null;continue;}
+    const typ = schema[k];
+    if(typ==='int'){
+      if(v===''||v===null) out[k]=null;
+      else { const n=parseInt(v); out[k]=isNaN(n)?null:n; }
+    } else if(typ==='float'){
+      if(v===''||v===null) out[k]=null;
+      else { const n=parseFloat(v); out[k]=isNaN(n)?null:n; }
+    } else if(typ==='str'){
+      // CRITICAL: str fields always become string — never auto-convert to number
+      // This covers client_name, job_id, code, contact, uniq_id etc.
+      out[k] = (v===null||v===undefined) ? null : String(v);
+    } else {
+      out[k]=v;
+    }
+  }
+
+  // ── Special per-table fixes ──────────────────────────────────────────────
+  // client_payments: add net_amount (amount - discount) — Supabase generated col
+  if(table==='client_payments' && out.net_amount===undefined){
+    const a=parseFloat(out.amount)||0, d=parseFloat(out.discount)||0;
+    out.net_amount=parseFloat((a-d).toFixed(2));
+  }
+
+  // Dates: MySQL '2025-10-24 14:46:55' → 'YYYY-MM-DDTHH:mm:ss' (no TZ — match good backup)
+  const dtFields=['date_created','date_updated','date_completed','last_edited_date','created_at'];
+  dtFields.forEach(f=>{
+    if(out[f]&&typeof out[f]==='string'){
+      // Remove timezone offset if present (keep as-is like good backup)
+      let d=out[f];
+      if(d.includes(' ')&&!d.includes('T')) d=d.replace(' ','T');
+      // Truncate extra precision if needed
+      out[f]=d;
+    }
+  });
+
+  return out;
+}
+
+// ── Preview ───────────────────────────────────────────────────────────────────
+function showPreview(){
+  const card=document.getElementById('preview-card');
+  const grid=document.getElementById('table-grid');
+  card.style.display='block'; grid.innerHTML='';
+  TABLES.forEach(t=>{
+    const sc=sqlData[t]?.length||0;
+    const jc=jsonData[t]?.length||0;
+    const div=document.createElement('div');
+    div.className='tbl';
+    let badge='';
+    if(sc>0&&jc>0)      badge=`<span class="badge by">MySQL ${sc} + JSON ${jc}</span>`;
+    else if(sc>0)       badge=`<span class="badge bg">MySQL ${sc}</span>`;
+    else if(jc>0)       badge=`<span class="badge by">JSON ${jc}</span>`;
+    else                badge=`<span class="badge be">empty</span>`;
+    div.innerHTML=`<span class="n">${t}</span>${badge}`;
+    grid.appendChild(div);
+  });
+}
+
+// ── Convert ───────────────────────────────────────────────────────────────────
+function doConvert(){
+  const prog=document.getElementById('prog');
+  const card=document.getElementById('prog-card');
+  const stats=document.getElementById('stats');
+  card.style.display='block'; prog.innerHTML=''; stats.style.display='none';
+
+  const log=(msg,cls='')=>{prog.innerHTML+=`<div class="${cls}">${msg}</div>`;prog.scrollTop=9999;};
+
+  log(`🚀 Mode: <b>${mode}</b> | ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})}`, 'info');
+  log('─'.repeat(55));
+
+  const out={_meta:[{version:'1.0',created_at:new Date().toISOString(),
+    source:'V-Tech MySQL→Supabase Converter v2',mode,app:'V-Tech Management System',tables:TABLES}]};
+
+  let total=0;
+  TABLES.forEach(t=>{
+    const mRows=(sqlData[t]||[]).map(r=>castRow(t,r));
+    const jRows= jsonData[t]||[];
+    let final=[];
+
+    if(mode==='sqlonly'){
+      final=mRows;
+    } else if(mode==='replace'){
+      final=mRows.length>0 ? mRows : jRows;
+    } else { // merge
+      if(mRows.length>0&&jRows.length>0){
+        // transaction_products/services: no 'id' — use composite key
+        const hasId=mRows[0]&&'id' in mRows[0];
+        if(hasId){
+          const mIds=new Set(mRows.map(r=>r.id));
+          const jOnly=jRows.filter(r=>!mIds.has(r.id));
+          final=[...mRows,...jOnly];
+          if(jOnly.length>0) log(`  🔀 ${t}: MySQL ${mRows.length} + JSON unique ${jOnly.length} = ${final.length}`,'warn');
+          else log(`  ✓ ${t}: MySQL ${mRows.length}`,'ok');
+        } else {
+          // composite key tables — MySQL takes priority
+          final=mRows; log(`  ✓ ${t}: MySQL ${mRows.length} (composite key)`,'ok');
+        }
+      } else if(mRows.length>0){
+        final=mRows; log(`  ✓ ${t}: MySQL ${mRows.length}`,'ok');
+      } else if(jRows.length>0){
+        final=jRows; log(`  💾 ${t}: JSON ${jRows.length} (MySQL mein nahi)`,'info');
+      } else {
+        log(`  ⚪ ${t}: empty`,'skip');
+      }
+    }
+
+    out[t]=final; total+=final.length;
+  });
+
+  log('─'.repeat(55));
+  log(`✅ Total: ${total.toLocaleString()} rows | ${TABLES.length} tables`,'ok');
+
+  // Download
+  const json=JSON.stringify(out,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const now=new Date().toISOString().slice(0,19).replace(/:/g,'-');
+  a.href=url; a.download=`vtech_converted_${now}.json`; a.click();
+  URL.revokeObjectURL(url);
+  log(`📥 Download shuru!`,'ok');
+
+  stats.style.display='grid';
+  stats.innerHTML=[
+    {num:total.toLocaleString(),label:'Total Rows'},
+    {num:TABLES.filter(t=>(out[t]?.length||0)>0).length,label:'Tables with Data'},
+    {num:TABLES.filter(t=>(out[t]?.length||0)===0).length,label:'Empty Tables'},
+    {num:(json.length/1024/1024).toFixed(2)+' MB',label:'File Size'},
+  ].map(s=>`<div class="stat"><div class="stat-num">${s.num}</div><div class="stat-label">${s.label}</div></div>`).join('');
+}
+</script>
+</body>
+</html>

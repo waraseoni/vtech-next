@@ -36,7 +36,7 @@ export default function ClientPaymentReportPage() {
   }, []);
 
   const total = useMemo(
-    () => rows.reduce((s, r) => s + Number(r.amount || 0) - Number(r.discount || 0), 0),
+    () => rows.reduce((s, r) => s + Number(r.amount || 0) + Number(r.discount || 0), 0),
     [rows]
   );
 

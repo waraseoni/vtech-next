@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Settings2, Save, Loader2, CheckCircle, AlertCircle,
   Building2, Phone, Mail, MapPin, Tag, ShieldCheck,
+  Clock, Calendar,
 } from "lucide-react";
 
 // ─── system_info table: meta_field → meta_value (key-value store) ────────────
@@ -30,6 +31,7 @@ export default function SettingsPage() {
   const [contact,    setContact]    = useState("");
   const [address,    setAddress]    = useState("");
   const [gstin,      setGstin]      = useState("");  // extra for GST bills
+  const [bizHours,   setBizHours]   = useState({ open: "09:00", close: "19:00", days: "Mon-Sat" });
 
   useEffect(() => {
     if (!toast) return;
@@ -68,6 +70,10 @@ export default function SettingsPage() {
       setContact(info.contact || "");
       setAddress(info.address || "");
       setGstin(info.gstin    || "");
+      const bOpen = info.biz_open || "09:00";
+      const bClose = info.biz_close || "19:00";
+      const bDays = info.biz_days || "Mon-Sat";
+      setBizHours({ open: bOpen, close: bClose, days: bDays });
 
       setLoading(false);
     })();
@@ -110,6 +116,9 @@ export default function SettingsPage() {
         upsertField("contact",    contact.trim()),
         upsertField("address",    address.trim()),
         upsertField("gstin",      gstin.trim()),
+        upsertField("biz_open",   bizHours.open),
+        upsertField("biz_close",  bizHours.close),
+        upsertField("biz_days",   bizHours.days),
       ]);
       setToast({ type: "success", msg: "Settings save ho gayi! ✅" });
     } catch (err: unknown) {
@@ -237,6 +246,31 @@ export default function SettingsPage() {
                 <p className="text-[10px] text-slate-700 mt-1">
                   GST Invoice print hone par yeh number dikhega।
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Business Hours */}
+          <div className={fieldsets}>
+            <div className={`${fHdr} from-teal-600/20 to-transparent`}>
+              <Clock size={14} className="text-teal-400"/>
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Business Hours</h3>
+            </div>
+            <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className={labelCls}>Working Days</label>
+                <input type="text" value={bizHours.days} onChange={e => setBizHours(b => ({ ...b, days: e.target.value }))}
+                  placeholder="Mon-Sat" className={inputCls}/>
+              </div>
+              <div>
+                <label className={labelCls}>Open Time</label>
+                <input type="time" value={bizHours.open} onChange={e => setBizHours(b => ({ ...b, open: e.target.value }))}
+                  className={inputCls}/>
+              </div>
+              <div>
+                <label className={labelCls}>Close Time</label>
+                <input type="time" value={bizHours.close} onChange={e => setBizHours(b => ({ ...b, close: e.target.value }))}
+                  className={inputCls}/>
               </div>
             </div>
           </div>

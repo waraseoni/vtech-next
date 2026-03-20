@@ -327,7 +327,7 @@ export default function ManageJobPage({
     const ob  = cd?.opening_balance || 0;
     const dr  = (txns  || []).reduce((s, r) => s + (r.amount || 0), 0)
               + (sales || []).reduce((s, r) => s + (r.total_amount || 0), 0);
-    const cr  = (pays  || []).reduce((s, p) => s + (p.amount - (p.discount || 0)), 0);
+    const cr  = (pays  || []).reduce((s, p) => s + (p.amount || 0) + (p.discount || 0), 0);
     const bal = ob + dr - cr;
     setClientBalance(
       bal > 0.005  ? { amount: bal, label: "Due",     type: "due"      } :

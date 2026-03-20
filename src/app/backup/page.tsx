@@ -1,264 +1,358 @@
-﻿"use client";
-
-import { useEffect, useMemo, useState } from "react";
-import AdminPage from "@/app/components/AdminPage";
+"use client";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 import {
-  Calendar,
-  Database,
-  Download,
-  FileSpreadsheet,
-  FileText,
-  HardDriveDownload,
-  Loader2,
-  Printer,
-  RefreshCw,
+  Download, Upload, Database, CheckCircle, AlertCircle,
+  Loader2, ShieldAlert, FileJson, RefreshCw, Trash2,
 } from "lucide-react";
 
-type BackupFile = {
-  name: string;
-  relativePath: string;
-  size: number;
-  modifiedAt: string;
-  category: "mariadb-dump" | "schema-reference";
-};
+// ─── Sabhi tables jo backup mein shamil honge ─────────────────────────────────
+// NOTE: profiles aur users skip — ye auth tables hain, Supabase manage karta hai
+// NOTE: mechanic_commission_history aur mechanic_salary_history bhi include
+const BACKUP_TABLES = [
+  // System
+  "system_info",
+  // Masters
+  "client_list",
+  "mechanic_list",
+  "product_list",
+  "service_list",
+  // Inventory
+  "inventory_list",
+  // Jobs / Transactions
+  "job_id_counter",
+  "transaction_list",
+  "transaction_products",
+  "transaction_services",
+  "transaction_images",
+  // Payments
+  "client_payments",
+  "client_loans",
+  // Direct Sales
+  "direct_sales",
+  "direct_sale_items",
+  // Finance
+  "advance_payments",
+  "lender_list",
+  "loan_payments",
+  "expense_list",
+  // Attendance & Messages
+  "attendance_list",
+  "message_list",
+  // History logs
+  "mechanic_commission_history",
+  "mechanic_salary_history",
+];
 
-type BackupResponse = {
-  ok: boolean;
-  files: BackupFile[];
-  latestMariadbDump: BackupFile | null;
-  error?: string;
-};
-
-const card = "bg-[#161b27] border border-[#21293d] rounded-2xl";
-const input =
-  "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700 [color-scheme:dark]";
-const btn =
-  "px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]";
-const btnPrimary = `${btn} bg-blue-600 hover:bg-blue-500 text-white`;
-const btnGhost = `${btn} bg-white/[0.04] hover:bg-white/[0.07] text-slate-300 border border-[#21293d]`;
-
-function fmtDateTime(value: string) {
-  return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  }).format(new Date(value));
-}
-
-function fmtBytes(size: number) {
-  const units = ["B", "KB", "MB", "GB"];
-  let value = size;
-  let index = 0;
-  while (value >= 1024 && index < units.length - 1) {
-    value /= 1024;
-    index += 1;
-  }
-  return `${value.toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
-}
+type Toast = { type: "success" | "error" | "info"; msg: string };
+type BackupData = Record<string, unknown[]>;
 
 export default function BackupPage() {
-  const today = new Date().toISOString().slice(0, 10);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [files, setFiles] = useState<BackupFile[]>([]);
-  const [dateFrom, setDateFrom] = useState(today);
-  const [dateTo, setDateTo] = useState(today);
+  const router = useRouter();
+  const [taking,    setTaking]    = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [progress,  setProgress]  = useState("");
+  const [toast,     setToast]     = useState<Toast | null>(null);
+  const [dragOver,  setDragOver]  = useState(false);
 
-  const loadBackups = async () => {
-    setLoading(true);
-    setError("");
+  const showToast = (type: Toast["type"], msg: string) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  // ── BACKUP — sabhi tables ka data JSON mein export karo ──────────────────
+  const handleBackup = async () => {
+    setTaking(true);
+    setProgress("Supabase se data fetch ho raha hai...");
     try {
-      const res = await fetch("/api/backups", { cache: "no-store" });
-      const json = (await res.json()) as BackupResponse;
-      if (!res.ok || !json.ok) {
-        throw new Error(json.error || "Backup list load nahi hui.");
+      const backup: BackupData = {
+        _meta: [{
+          version: "1.0",
+          created_at: new Date().toISOString(),
+          tables: BACKUP_TABLES,
+          app: "V-Tech Management System",
+        }] as unknown[],
+      };
+
+      for (const table of BACKUP_TABLES) {
+        setProgress(`Fetching: ${table}...`);
+        const { data, error } = await supabase
+          .from(table)
+          .select("*")
+          .order("id", { ascending: true });
+
+        if (error) {
+          console.warn(`${table} skip (${error.message})`);
+          backup[table] = [];
+        } else {
+          backup[table] = data || [];
+        }
       }
-      setFiles(json.files || []);
-    } catch (err) {
-      console.error("backup page load error:", err);
-      setError(err instanceof Error ? err.message : "Backup data load nahi hui.");
+
+      // JSON file download karo
+      const json     = JSON.stringify(backup, null, 2);
+      const blob     = new Blob([json], { type: "application/json" });
+      const url      = URL.createObjectURL(blob);
+      const a        = document.createElement("a");
+      const now      = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
+      a.href         = url;
+      a.download     = `vtech_backup_${now}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      const totalRows = BACKUP_TABLES.reduce((s, t) => s + (backup[t]?.length || 0), 0);
+      setProgress("");
+      showToast("success", `Backup ready! ${totalRows.toLocaleString()} rows, ${BACKUP_TABLES.length} tables`);
+    } catch (err: unknown) {
+      setProgress("");
+      showToast("error", err instanceof Error ? err.message : "Backup failed!");
     } finally {
-      setLoading(false);
+      setTaking(false);
     }
   };
 
-  useEffect(() => {
-    loadBackups();
-  }, []);
+  // ── RESTORE — JSON file se data wapas Supabase mein daal do ─────────────
+  const handleRestore = async (file: File) => {
+    if (!file.name.endsWith(".json")) {
+      showToast("error", "Sirf .json backup file select karo!");
+      return;
+    }
 
-  const latestDump = useMemo(
-    () => files.find((file) => file.category === "mariadb-dump") || null,
-    [files]
-  );
+    const confirmed = window.confirm(
+      "⚠️ RESTORE se sabhi existing data replace ho jayega!\n\n" +
+      "Kya aap pakka restore karna chahte hain?\n\n" +
+      "File: " + file.name
+    );
+    if (!confirmed) return;
 
-  const schemaRef = useMemo(
-    () => files.find((file) => file.category === "schema-reference") || null,
-    [files]
-  );
+    setRestoring(true);
+    setProgress("Backup file parse ho rahi hai...");
+    try {
+      const text = await file.text();
+      const backup: BackupData = JSON.parse(text);
 
-  const openExport = (format: "excel" | "csv") => {
-    const params = new URLSearchParams({
-      date_from: dateFrom,
-      date_to: dateTo,
-    });
-    if (format === "csv") params.set("format", "csv");
-    window.open(`/api/export-transactions?${params.toString()}`, "_blank");
+      // Version check
+      const meta = backup._meta?.[0] as Record<string, unknown>;
+      if (!meta?.version) {
+        showToast("error", "Invalid backup file! V-Tech backup file use karo.");
+        setRestoring(false);
+        return;
+      }
+
+      let totalRestored = 0;
+
+      for (const table of BACKUP_TABLES) {
+        const rows = backup[table];
+        if (!rows || rows.length === 0) {
+          setProgress(`${table}: koi data nahi — skip`);
+          continue;
+        }
+
+        setProgress(`Restoring: ${table} (${rows.length} rows)...`);
+
+        // Pehle table clear karo
+        const { error: delErr } = await supabase
+          .from(table)
+          .delete()
+          .gte("id", 0);   // sabhi rows delete
+
+        if (delErr) {
+          console.warn(`${table} clear failed:`, delErr.message);
+        }
+
+        // Batch mein insert karo (100 rows at a time)
+        const batchSize = 100;
+        for (let i = 0; i < rows.length; i += batchSize) {
+          const batch = rows.slice(i, i + batchSize);
+          const { error: insErr } = await supabase
+            .from(table)
+            .insert(batch);
+          if (insErr) {
+            console.warn(`${table} batch insert failed:`, insErr.message);
+          } else {
+            totalRestored += batch.length;
+          }
+        }
+      }
+
+      setProgress("");
+      showToast("success", `Restore complete! ${totalRestored.toLocaleString()} rows restored`);
+    } catch (err: unknown) {
+      setProgress("");
+      showToast("error", err instanceof Error ? err.message : "Restore failed!");
+    } finally {
+      setRestoring(false);
+    }
   };
 
-  const openPrint = () => {
-    const params = new URLSearchParams({ date_from: dateFrom, date_to: dateTo });
-    window.open(`/api/print-transactions?${params.toString()}`, "_blank");
+  const onFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleRestore(file);
+    e.target.value = "";
   };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleRestore(file);
+  };
+
+  const busy = taking || restoring;
 
   return (
-    <AdminPage
-      title="Backup"
-      subtitle="Reference dumps browse karo aur Next.js app se transaction exports nikaalo."
-    >
-      <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
-        <section className={`${card} p-4 sm:p-5`}>
-          <div className="flex flex-col gap-3 pb-4 border-b border-[#21293d] sm:flex-row sm:items-center sm:justify-between">
+    <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold max-w-sm ${
+          toast.type === "success" ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+          : toast.type === "info"  ? "bg-blue-500/15 border-blue-500/30 text-blue-400"
+          : "bg-red-500/15 border-red-500/30 text-red-400"
+        }`}>
+          {toast.type === "success" ? <CheckCircle size={16}/> : <AlertCircle size={16}/>}
+          {toast.msg}
+        </div>
+      )}
+
+      <div className="max-w-2xl mx-auto px-4 pt-6 space-y-4">
+
+        {/* Header */}
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center">
+              <Database size={18} className="text-white"/>
+            </div>
             <div>
-              <h2 className="text-sm font-black uppercase tracking-wider text-white">Export Tools</h2>
-              <p className="mt-1 text-sm text-slate-500">Current Supabase data ko print ya Excel/CSV me nikaalo.</p>
+              <h1 className="text-lg font-black text-white">Database Backup & Restore</h1>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+                {BACKUP_TABLES.length} tables · JSON format
+              </p>
             </div>
-            <button onClick={loadBackups} className={btnGhost}>
-              <RefreshCw size={13} className="inline-block mr-1" />
-              Reload
-            </button>
           </div>
+        </div>
 
-          <div className="grid gap-4 mt-4 md:grid-cols-2">
-            <label className="block">
-              <span className="block mb-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500">From Date</span>
-              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={input} />
-            </label>
-            <label className="block">
-              <span className="block mb-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500">To Date</span>
-              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={input} />
-            </label>
+        {/* Progress bar */}
+        {progress && (
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl px-5 py-3.5 flex items-center gap-3">
+            <Loader2 size={16} className="animate-spin text-blue-400 flex-shrink-0"/>
+            <p className="text-blue-400 text-sm font-medium">{progress}</p>
           </div>
+        )}
 
-          <div className="grid gap-3 mt-4 sm:grid-cols-3">
-            <button onClick={() => openExport("excel")} className={btnPrimary}>
-              <FileSpreadsheet size={13} className="inline-block mr-1" />
-              Excel
-            </button>
-            <button onClick={() => openExport("csv")} className={btnGhost}>
-              <FileText size={13} className="inline-block mr-1" />
-              CSV
-            </button>
-            <button onClick={openPrint} className={btnGhost}>
-              <Printer size={13} className="inline-block mr-1" />
-              Print
-            </button>
+        {/* BACKUP card */}
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-emerald-600/20 to-transparent border-b border-[#21293d]">
+            <Download size={14} className="text-emerald-400"/>
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Backup Lena</h3>
           </div>
+          <div className="p-5 space-y-4">
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Supabase ke sabhi tables ka data ek <span className="text-emerald-400 font-bold">.json</span> file mein download hoga।
+              Yeh file aapke computer mein safe rahengi।
+            </p>
 
-          <div className="grid gap-3 mt-5 md:grid-cols-2">
-            <QuickInfo
-              icon={<Database size={16} />}
-              title="Latest MariaDB Dump"
-              value={latestDump ? latestDump.name : "Not found"}
-              meta={latestDump ? `${fmtBytes(latestDump.size)} | ${fmtDateTime(latestDump.modifiedAt)}` : "php-ref/db folder scan se file nahi mili."}
-            />
-            <QuickInfo
-              icon={<Calendar size={16} />}
-              title="Schema Reference"
-              value={schemaRef ? schemaRef.name : "Not found"}
-              meta={schemaRef ? `${fmtBytes(schemaRef.size)} | ${fmtDateTime(schemaRef.modifiedAt)}` : "Supabase schema text file missing hai."}
-            />
-          </div>
-        </section>
-
-        <section className={`${card} overflow-hidden`}>
-          <div className="px-4 py-4 border-b border-[#21293d] sm:px-5">
-            <h2 className="text-sm font-black uppercase tracking-wider text-white">Reference Backup Files</h2>
-            <p className="mt-1 text-sm text-slate-500">Workspace ke local dumps aur schema references yahan se directly download ho sakte hain.</p>
-          </div>
-
-          {loading ? (
-            <div className="flex min-h-[280px] items-center justify-center">
-              <Loader2 className="animate-spin text-blue-400" size={26} />
-            </div>
-          ) : error ? (
-            <div className="px-5 py-10 text-sm text-center text-red-400">{error}</div>
-          ) : files.length === 0 ? (
-            <div className="px-5 py-10 text-sm text-center text-slate-500">Koi local backup file detect nahi hui.</div>
-          ) : (
-            <div className="divide-y divide-[#1a2234]">
-              {files.map((file) => (
-                <div key={`${file.relativePath}-${file.modifiedAt}`} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
-                          file.category === "mariadb-dump"
-                            ? "bg-blue-500/15 text-blue-400"
-                            : "bg-amber-500/15 text-amber-400"
-                        }`}
-                      >
-                        {file.category === "mariadb-dump" ? "MariaDB Dump" : "Schema Ref"}
-                      </span>
-                      <span className="truncate text-sm font-bold text-white">{file.name}</span>
-                    </div>
-                    <p className="mt-1 text-xs text-slate-600">{fmtBytes(file.size)} | {fmtDateTime(file.modifiedAt)}</p>
-                    <p className="mt-1 truncate text-[11px] text-slate-700">{file.relativePath}</p>
-                  </div>
-                  <a
-                    href={`/api/backups/download?file=${encodeURIComponent(file.relativePath)}`}
-                    className={btnGhost}
-                  >
-                    <Download size={13} className="inline-block mr-1" />
-                    Download
-                  </a>
+            {/* Tables list */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              {BACKUP_TABLES.map(t => (
+                <div key={t} className="flex items-center gap-1.5 px-2 py-1 bg-[#0d1117] rounded-lg border border-[#21293d]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"/>
+                  <span className="text-[10px] text-slate-500 font-mono truncate">{t}</span>
                 </div>
               ))}
             </div>
-          )}
-        </section>
-      </div>
 
-      <section className={`${card} mt-4 p-4 sm:p-5`}>
-        <div className="flex items-start gap-3">
-          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-emerald-400">
-            <HardDriveDownload size={16} />
-          </div>
-          <div>
-            <h3 className="text-sm font-black text-white">What this page covers</h3>
-            <p className="mt-1 text-sm text-slate-500">
-              PHP reference jaisa local dump listing yahan aa gaya hai. Live Supabase full-database SQL dump create karna abhi wired nahi hai,
-              lekin transactions export, print report, latest MariaDB dump access aur schema reference download ab usable hain.
-            </p>
+            <button onClick={handleBackup} disabled={busy}
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-900/30">
+              {taking
+                ? <><Loader2 size={16} className="animate-spin"/>Backup ho raha hai...</>
+                : <><Download size={16}/> Download Backup (.json)</>}
+            </button>
           </div>
         </div>
-      </section>
-    </AdminPage>
-  );
-}
 
-function QuickInfo({
-  icon,
-  title,
-  value,
-  meta,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  value: string;
-  meta: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-[#21293d] bg-[#111520] p-4">
-      <div className="flex items-center gap-2 text-blue-400">
-        {icon}
-        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">{title}</span>
+        {/* RESTORE card */}
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-amber-600/20 to-transparent border-b border-[#21293d]">
+            <Upload size={14} className="text-amber-400"/>
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Restore Karna</h3>
+          </div>
+          <div className="p-5 space-y-4">
+            {/* Warning */}
+            <div className="flex items-start gap-3 bg-red-500/8 border border-red-500/20 rounded-xl px-4 py-3">
+              <ShieldAlert size={16} className="text-red-400 flex-shrink-0 mt-0.5"/>
+              <p className="text-red-400 text-xs font-semibold leading-relaxed">
+                <span className="font-black">Dhyan rakhein:</span> Restore se sab existing data
+                replace ho jaayega। Pehle ek fresh backup zaroor lein।
+              </p>
+            </div>
+
+            {/* Drag & Drop zone */}
+            <label
+              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={onDrop}
+              className={`flex flex-col items-center justify-center gap-3 p-8 rounded-xl border-2 border-dashed cursor-pointer transition-all ${
+                dragOver
+                  ? "border-amber-500/60 bg-amber-500/10"
+                  : busy
+                  ? "border-[#21293d] opacity-50 cursor-not-allowed"
+                  : "border-[#21293d] hover:border-amber-500/40 hover:bg-amber-500/5"
+              }`}>
+              <input type="file" accept=".json" onChange={onFileInput}
+                disabled={busy} className="hidden"/>
+              <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center">
+                <FileJson size={22} className="text-amber-400"/>
+              </div>
+              <div className="text-center">
+                <p className="text-slate-300 font-bold text-sm">
+                  {restoring ? "Restore ho raha hai..." : "Backup file drop karo"}
+                </p>
+                <p className="text-slate-600 text-xs mt-1">
+                  ya click karke select karo · sirf .json file
+                </p>
+              </div>
+              {restoring && (
+                <Loader2 size={20} className="animate-spin text-amber-400"/>
+              )}
+            </label>
+          </div>
+        </div>
+
+        {/* How it works */}
+        <div className="bg-[#0d1117] border border-[#21293d] rounded-2xl p-5 space-y-3">
+          <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">Yeh kaise kaam karta hai</p>
+          <div className="space-y-2.5">
+            {[
+              { icon: Download, color: "text-emerald-400", title: "Backup", desc: "Supabase se sabhi tables ka data fetch karke ek JSON file banata hai aur download karta hai" },
+              { icon: Upload,   color: "text-amber-400",  title: "Restore", desc: "JSON file padhta hai, pehle tables clear karta hai, phir data wapas insert karta hai" },
+              { icon: RefreshCw, color: "text-blue-400",  title: "Regular Backup", desc: "Har hafte backup lena zaroori hai — especially important data change hone ke baad" },
+            ].map(({ icon: Icon, color, title, desc }) => (
+              <div key={title} className="flex items-start gap-3">
+                <Icon size={14} className={`${color} flex-shrink-0 mt-0.5`}/>
+                <div>
+                  <span className="text-slate-400 text-xs font-bold">{title}: </span>
+                  <span className="text-slate-600 text-xs">{desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Supabase built-in backup note */}
+        <div className="bg-indigo-500/5 border border-indigo-500/15 rounded-xl px-4 py-3">
+          <p className="text-[10px] font-black text-slate-600 uppercase tracking-wider mb-1.5">
+            Supabase Built-in Backup (Pro Plan)
+          </p>
+          <p className="text-xs text-slate-700 leading-relaxed">
+            Supabase Pro plan mein automatic daily backups hote hain।
+            Dashboard → Project → Database → Backups mein ja kar restore kar sakte hain।
+            Free plan ke liye yeh page use karein।
+          </p>
+        </div>
+
       </div>
-      <p className="mt-2 text-sm font-black text-white truncate">{value}</p>
-      <p className="mt-1 text-xs text-slate-600">{meta}</p>
     </div>
   );
 }

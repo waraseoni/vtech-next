@@ -1,136 +1,317 @@
-﻿"use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import AdminPage from "@/app/components/AdminPage";
+"use client";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, History, IndianRupee, Loader2, Pencil, Save, Trash2, X } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Printer, Eye, X, Coins, User, Edit2, DollarSign } from "lucide-react";
 
-type Mechanic = { id: number; firstname: string; middlename: string | null; lastname: string; designation: string | null; daily_salary: number | null; salary_per_day: number | null; status: number; delete_flag: number };
-type Attendance = { mechanic_id: number; curr_date: string; status: number };
-type SalaryHist = { id: number; mechanic_id: number; salary: number; effective_date: string; date_created: string };
-type TxnComm = { mechanic_id: number | null; mechanic_commission_amount: number | null };
-type Advance = { id?: number; mechanic_id: number; amount: number; date_paid: string; reason?: string | null };
-type Toast = { type: "success" | "error"; msg: string };
-const card = "bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden";
-const input = "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700 [color-scheme:dark]";
-const label = "block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5";
-const btn = "px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]";
-const btnPrimary = `${btn} bg-blue-600 hover:bg-blue-500 text-white`;
-const btnGhost = `${btn} bg-white/[0.04] hover:bg-white/[0.07] text-slate-300 border border-[#21293d]`;
-const btnDanger = `${btn} bg-red-600 hover:bg-red-500 text-white`;
-const pad = (n: number) => String(n).padStart(2, "0");
-function todayIST() { const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date()); const bag: Record<string, string> = {}; parts.forEach((part) => { bag[part.type] = part.value; }); return `${bag.year}-${bag.month}-${bag.day}`; }
-const parseLocalDate = (value: string) => { const [y, m, d] = value.split("-").map(Number); return new Date(y, m - 1, d); };
-const toLocalDateString = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-const ymFromDate = (value: string) => value.slice(0, 7);
-const monthStart = (month: string) => `${month}-01`;
-const monthEnd = (month: string) => { const [y, m] = month.split("-").map(Number); return `${month}-${pad(new Date(y, m, 0).getDate())}`; };
-const addMonths = (month: string, diff: number) => { const [y, m] = month.split("-").map(Number); return `${new Date(y, m - 1 + diff, 1).getFullYear()}-${pad(new Date(y, m - 1 + diff, 1).getMonth() + 1)}`; };
-const money = (value: number) => `Rs.${Number(value || 0).toFixed(2)}`;
-const pickBaseRate = (mechanic: Mechanic) => { const a = Number(mechanic.salary_per_day ?? NaN); const b = Number(mechanic.daily_salary ?? NaN); if (!Number.isNaN(a) && a > 0) return a; if (!Number.isNaN(b) && b > 0) return b; return 0; };
-const rateForDate = (history: SalaryHist[], baseRate: number, date: string) => { for (const row of history) if (row.effective_date <= date) return Number(row.salary || 0); return baseRate; };
-const fmtDate = (value: string) => new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(parseLocalDate(String(value).slice(0, 10)));
-const nameOf = (mechanic: Mechanic) => [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ").trim();
-const istToday = todayIST();
+const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export default function SalaryPage() {
-  const router = useRouter();
+type SalaryRow = {
+  id: number; name: string; salary_per_day: number;
+  present_count: number; half_day_count: number;
+  current_fix: number; current_comm: number;
+  old_balance: number; current_adv: number; net_final: number;
+};
+
+type Mechanic = { id: number; firstname: string; middlename: string | null; lastname: string; salary_per_day: number; designation: string | null };
+
+function SalaryContent() {
   const searchParams = useSearchParams();
-  const currentQuery = searchParams.toString();
-  const [tab, setTab] = useState<"report" | "master">(searchParams.get("tab") === "master" ? "master" : "report");
-  const [month, setMonth] = useState(searchParams.get("month") || ymFromDate(istToday));
-  const [search, setSearch] = useState(searchParams.get("q") || "");
-  const [reloadKey, setReloadKey] = useState(0);
+
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [month, setMonth] = useState(searchParams.get("month") || currentMonth);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-  const [toast, setToast] = useState<Toast | null>(null);
-  const [mechs, setMechs] = useState<Mechanic[]>([]);
-  const [salaryHist, setSalaryHist] = useState<SalaryHist[]>([]);
-  const [prevAtt, setPrevAtt] = useState<Attendance[]>([]);
-  const [currAtt, setCurrAtt] = useState<Attendance[]>([]);
-  const [prevComm, setPrevComm] = useState<TxnComm[]>([]);
-  const [currComm, setCurrComm] = useState<TxnComm[]>([]);
-  const [prevAdv, setPrevAdv] = useState<Advance[]>([]);
-  const [currAdv, setCurrAdv] = useState<Advance[]>([]);
-  const [salaryModal, setSalaryModal] = useState<{ open: boolean; mechanic?: Mechanic }>({ open: false });
+  const [rows, setRows] = useState<SalaryRow[]>([]);
+  const [mechanics, setMechanics] = useState<Mechanic[]>([]);
+  const [activeTab, setActiveTab] = useState<"report" | "control">("report");
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payTarget, setPayTarget] = useState<{ id: number; name: string; amount: number } | null>(null);
+  const [showLedgerModal, setShowLedgerModal] = useState(false);
+  const [ledgerTarget, setLedgerTarget] = useState<{ id: number; name: string; salary: number } | null>(null);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [ledgerData, setLedgerData] = useState<any[]>([]);
+  const [ledgerFrom, setLedgerFrom] = useState("");
+  const [ledgerTo, setLedgerTo] = useState("");
+  const [salaryRateModal, setSalaryRateModal] = useState(false);
+  const [salaryTarget, setSalaryTarget] = useState<{ id: number; name: string; salary: number } | null>(null);
   const [newSalary, setNewSalary] = useState("");
-  const [effectiveDate, setEffectiveDate] = useState(istToday);
-  const [savingSalary, setSavingSalary] = useState(false);
-  const [payModal, setPayModal] = useState<{ open: boolean; mechanic?: Mechanic; amount?: number }>({ open: false });
-  const [payAmount, setPayAmount] = useState("");
-  const [payDate, setPayDate] = useState(istToday);
-  const [payReason, setPayReason] = useState("");
-  const [paying, setPaying] = useState(false);
-  const [historyModal, setHistoryModal] = useState<{ open: boolean; mechanic?: Mechanic }>({ open: false });
-  const [editingHistoryId, setEditingHistoryId] = useState<number | null>(null);
-  const [historySalary, setHistorySalary] = useState("");
-  const [historyDate, setHistoryDate] = useState("");
-  const [savingHistory, setSavingHistory] = useState(false);
-  useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(null), 3200); return () => clearTimeout(timer); }, [toast]);
-  useEffect(() => { const params = new URLSearchParams(currentQuery); params.set("tab", tab); params.set("month", month); if (search.trim()) params.set("q", search.trim()); else params.delete("q"); const next = params.toString(); if (next !== currentQuery) router.replace(next ? `?${next}` : "?", { scroll: false }); }, [router, currentQuery, tab, month, search]);
-  const from = useMemo(() => monthStart(month), [month]);
-  const to = useMemo(() => monthEnd(month), [month]);
-  const prevEnd = useMemo(() => toLocalDateString(new Date(parseLocalDate(from).getFullYear(), parseLocalDate(from).getMonth(), 0)), [from]);
-  const loadData = useCallback(async () => {
-    setLoading(true); setErr("");
+  const [newEffectiveDate, setNewEffectiveDate] = useState(new Date().toISOString().split("T")[0]);
+
+  const prevMonthEnd = new Date(new Date(month + "-01").getTime() - 86400000).toISOString().split("T")[0];
+
+  const fetchReport = useCallback(async () => {
+    setLoading(true);
     try {
-      const { data: mechanicData, error: mechanicError } = await supabase.from("mechanic_list").select("id, firstname, middlename, lastname, designation, daily_salary, salary_per_day, status, delete_flag").eq("status", 1).eq("delete_flag", 0).order("firstname", { ascending: true });
-      if (mechanicError) throw mechanicError; const mechanicList = (mechanicData || []) as Mechanic[]; setMechs(mechanicList); const ids = mechanicList.map((mechanic) => mechanic.id);
-      if (ids.length === 0) { setSalaryHist([]); setPrevAtt([]); setCurrAtt([]); setPrevComm([]); setCurrComm([]); setPrevAdv([]); setCurrAdv([]); return; }
-      const [histRes, prevAttRes, currAttRes, prevCommRes, currCommRes, prevAdvRes, currAdvRes] = await Promise.all([
-        supabase.from("mechanic_salary_history").select("id, mechanic_id, salary, effective_date, date_created").in("mechanic_id", ids).lte("effective_date", to).order("effective_date", { ascending: false }).order("id", { ascending: false }),
-        supabase.from("attendance_list").select("mechanic_id, curr_date, status").in("mechanic_id", ids).in("status", [1, 3]).lte("curr_date", prevEnd),
-        supabase.from("attendance_list").select("mechanic_id, curr_date, status").in("mechanic_id", ids).in("status", [1, 3]).gte("curr_date", from).lte("curr_date", to),
-        supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount").in("mechanic_id", ids as number[]).lte("date_created", `${prevEnd}T23:59:59+05:30`),
-        supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount").in("mechanic_id", ids as number[]).gte("date_created", `${from}T00:00:00+05:30`).lte("date_created", `${to}T23:59:59+05:30`),
-        supabase.from("advance_payments").select("id, mechanic_id, amount, date_paid, reason").in("mechanic_id", ids).lte("date_paid", prevEnd),
-        supabase.from("advance_payments").select("id, mechanic_id, amount, date_paid, reason").in("mechanic_id", ids).gte("date_paid", from).lte("date_paid", to),
-      ]);
-      if (histRes.error) throw histRes.error; if (prevAttRes.error) throw prevAttRes.error; if (currAttRes.error) throw currAttRes.error; if (prevCommRes.error) throw prevCommRes.error; if (currCommRes.error) throw currCommRes.error; if (prevAdvRes.error) throw prevAdvRes.error; if (currAdvRes.error) throw currAdvRes.error;
-      setSalaryHist((histRes.data || []) as SalaryHist[]); setPrevAtt((prevAttRes.data || []) as Attendance[]); setCurrAtt((currAttRes.data || []) as Attendance[]); setPrevComm((prevCommRes.data || []) as TxnComm[]); setCurrComm((currCommRes.data || []) as TxnComm[]); setPrevAdv((prevAdvRes.data || []) as Advance[]); setCurrAdv((currAdvRes.data || []) as Advance[]);
-    } catch (error) { console.error("salary load error:", error); setErr(error instanceof Error ? error.message : "Salary data load nahi hui."); } finally { setLoading(false); }
-  }, [from, prevEnd, to]);
-  useEffect(() => { loadData(); }, [loadData, reloadKey]);
-  const histByMech = useMemo(() => { const map = new Map<number, SalaryHist[]>(); salaryHist.forEach((row) => { const arr = map.get(row.mechanic_id) || []; arr.push(row); map.set(row.mechanic_id, arr); }); map.forEach((arr, key) => { arr.sort((a, b) => (a.effective_date < b.effective_date ? 1 : a.effective_date > b.effective_date ? -1 : b.id - a.id)); map.set(key, arr); }); return map; }, [salaryHist]);
-  const toNumberMap = <T extends { mechanic_id: number | null }>(rows: T[], getter: (row: T) => number) => { const map = new Map<number, number>(); rows.forEach((row) => { const id = Number(row.mechanic_id); if (!Number.isNaN(id) && id > 0) map.set(id, (map.get(id) || 0) + getter(row)); }); return map; };
-  const prevCommByMech = useMemo(() => toNumberMap(prevComm, (row) => Number(row.mechanic_commission_amount || 0)), [prevComm]);
-  const currCommByMech = useMemo(() => toNumberMap(currComm, (row) => Number(row.mechanic_commission_amount || 0)), [currComm]);
-  const advanceMap = (rows: Advance[]) => { const map = new Map<number, number>(); rows.forEach((row) => map.set(row.mechanic_id, (map.get(row.mechanic_id) || 0) + Number(row.amount || 0))); return map; };
-  const prevAdvByMech = useMemo(() => advanceMap(prevAdv), [prevAdv]);
-  const currAdvByMech = useMemo(() => advanceMap(currAdv), [currAdv]);
-  const attendanceMap = (rows: Attendance[]) => { const map = new Map<number, Attendance[]>(); rows.forEach((row) => { const arr = map.get(row.mechanic_id) || []; arr.push(row); map.set(row.mechanic_id, arr); }); return map; };
-  const prevAttByMech = useMemo(() => attendanceMap(prevAtt), [prevAtt]);
-  const currAttByMech = useMemo(() => attendanceMap(currAtt), [currAtt]);
-  const rows = useMemo(() => mechs.map((mechanic) => { const baseRate = pickBaseRate(mechanic); const history = histByMech.get(mechanic.id) || []; let oldEarned = 0; (prevAttByMech.get(mechanic.id) || []).forEach((row) => { const rate = rateForDate(history, baseRate, row.curr_date); oldEarned += row.status === 3 ? rate / 2 : rate; }); let currentEarned = 0; let present = 0; let half = 0; (currAttByMech.get(mechanic.id) || []).forEach((row) => { const rate = rateForDate(history, baseRate, row.curr_date); if (row.status === 3) { half += 1; currentEarned += rate / 2; } else { present += 1; currentEarned += rate; } }); const oldBalance = oldEarned + (prevCommByMech.get(mechanic.id) || 0) - (prevAdvByMech.get(mechanic.id) || 0); const currentCommission = currCommByMech.get(mechanic.id) || 0; const currentAdvance = currAdvByMech.get(mechanic.id) || 0; const net = oldBalance + currentEarned + currentCommission - currentAdvance; return { mechanic, name: nameOf(mechanic), present, half, oldBalance, currentEarned, currentCommission, currentAdvance, net }; }).filter((row) => row.name.toLowerCase().includes(search.toLowerCase().trim()) || (row.mechanic.designation || "").toLowerCase().includes(search.toLowerCase().trim())), [mechs, histByMech, prevAttByMech, currAttByMech, prevCommByMech, currCommByMech, prevAdvByMech, currAdvByMech, search]);
-  const totalNetPayable = useMemo(() => rows.reduce((sum, row) => sum + (row.net > 0 ? row.net : 0), 0), [rows]);
-  const lastUpdatedByMech = useMemo(() => { const map = new Map<number, string>(); salaryHist.forEach((row) => { if (!map.has(row.mechanic_id)) map.set(row.mechanic_id, row.date_created); }); return map; }, [salaryHist]);
-  const openSalaryModal = (mechanic: Mechanic) => { setSalaryModal({ open: true, mechanic }); setNewSalary(String(pickBaseRate(mechanic))); setEffectiveDate(istToday); };
-  const saveSalaryRate = async () => { if (!salaryModal.mechanic) return; const value = Number(newSalary); if (Number.isNaN(value) || value < 0) { setToast({ type: "error", msg: "Valid salary rate dalo." }); return; } setSavingSalary(true); try { const { error: insertError } = await supabase.from("mechanic_salary_history").insert({ mechanic_id: salaryModal.mechanic.id, salary: value, effective_date: effectiveDate }); if (insertError) throw insertError; const { error: updateError } = await supabase.from("mechanic_list").update({ daily_salary: value, salary_per_day: value }).eq("id", salaryModal.mechanic.id); if (updateError) throw updateError; setSalaryModal({ open: false }); setToast({ type: "success", msg: "Salary rate update ho gaya." }); setReloadKey((value) => value + 1); } catch (error) { console.error("salary rate save error:", error); setToast({ type: "error", msg: "Salary rate save nahi hui." }); } finally { setSavingSalary(false); } };
-  const openPayModal = (mechanic: Mechanic, amount: number) => { setPayModal({ open: true, mechanic, amount }); setPayAmount(amount.toFixed(2)); setPayDate(istToday); setPayReason(`Salary for ${month}`); };
-  const savePayment = async () => { if (!payModal.mechanic) return; const amount = Number(payAmount); if (Number.isNaN(amount) || amount <= 0) { setToast({ type: "error", msg: "Valid payout amount dalo." }); return; } setPaying(true); try { const { error } = await supabase.from("advance_payments").insert({ mechanic_id: payModal.mechanic.id, amount, date_paid: payDate, reason: payReason.trim() || null }); if (error) throw error; setPayModal({ open: false }); setToast({ type: "success", msg: "Salary payout save ho gaya." }); setReloadKey((value) => value + 1); } catch (error) { console.error("salary payment error:", error); setToast({ type: "error", msg: "Salary payout save nahi hua." }); } finally { setPaying(false); } };
-  const openHistoryModal = (mechanic: Mechanic) => { setHistoryModal({ open: true, mechanic }); setEditingHistoryId(null); setHistorySalary(""); setHistoryDate(""); };
-  const mechanicHistory = useMemo(() => !historyModal.mechanic ? [] : (histByMech.get(historyModal.mechanic.id) || []).slice(), [histByMech, historyModal]);
-  const startEditHistory = (row: SalaryHist) => { setEditingHistoryId(row.id); setHistorySalary(String(Number(row.salary || 0))); setHistoryDate(row.effective_date); };
-  const saveHistoryEdit = async () => { if (!editingHistoryId) return; const value = Number(historySalary); if (Number.isNaN(value) || value < 0 || !historyDate) { setToast({ type: "error", msg: "History row ke liye valid data dalo." }); return; } setSavingHistory(true); try { const { error } = await supabase.from("mechanic_salary_history").update({ salary: value, effective_date: historyDate }).eq("id", editingHistoryId); if (error) throw error; setToast({ type: "success", msg: "Salary history update ho gayi." }); setEditingHistoryId(null); setReloadKey((value) => value + 1); } catch (error) { console.error("history update error:", error); setToast({ type: "error", msg: "History update nahi hui." }); } finally { setSavingHistory(false); } };
-  const deleteHistory = async (id: number) => { if (!window.confirm("Is salary history row ko delete karna hai?")) return; try { const { error } = await supabase.from("mechanic_salary_history").delete().eq("id", id); if (error) throw error; setToast({ type: "success", msg: "Salary history delete ho gayi." }); setEditingHistoryId(null); setReloadKey((value) => value + 1); } catch (error) { console.error("history delete error:", error); setToast({ type: "error", msg: "History delete nahi hui." }); } };
+      const { data: mechData } = await supabase
+        .from("mechanic_list").select("id, firstname, middlename, lastname, salary_per_day, designation")
+        .eq("status", 1).eq("delete_flag", 0).order("firstname");
+      const typed = (mechData || []).map((m) => ({ ...m, designation: m.designation || null }));
+      setMechanics(typed);
+
+      const nextMonth = new Date(month + "-01");
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      const monthEnd = nextMonth.toISOString().split("T")[0];
+
+      const salaryRows: SalaryRow[] = [];
+      for (const m of mechData || []) {
+        const name = [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ");
+        const salary = m.salary_per_day || 0;
+
+        const { data: attPrev } = await supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", m.id).in("status", [1, 3]).lte("curr_date", prevMonthEnd);
+        const { data: commPrev } = await supabase.from("transaction_list").select("mechanic_commission_amount").eq("mechanic_id", m.id).lt("date_created", `${month}-01T00:00:00`);
+        const { data: advPrev } = await supabase.from("advance_payments").select("amount").eq("mechanic_id", m.id).lte("date_paid", prevMonthEnd);
+
+        const earnedPrev = attPrev?.reduce((s, r) => s + (r.status === 3 ? salary / 2 : salary), 0) || 0;
+        const commPrevSum = commPrev?.reduce((s, r) => s + (r.mechanic_commission_amount || 0), 0) || 0;
+        const advPrevSum = advPrev?.reduce((s, r) => s + (r.amount || 0), 0) || 0;
+        const oldBalance = earnedPrev + commPrevSum - advPrevSum;
+
+        const { data: attCurr } = await supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", m.id).in("status", [1, 3]).gte("curr_date", `${month}-01`).lte("curr_date", monthEnd);
+        const { data: commCurr } = await supabase.from("transaction_list").select("mechanic_commission_amount").eq("mechanic_id", m.id).gte("date_created", `${month}-01T00:00:00`).lt("date_created", `${monthEnd}T00:00:00`);
+        const { data: advCurr } = await supabase.from("advance_payments").select("amount").eq("mechanic_id", m.id).gte("date_paid", `${month}-01`).lte("date_paid", monthEnd);
+
+        const presentCount = attCurr?.filter((r) => r.status === 1).length || 0;
+        const halfDayCount = attCurr?.filter((r) => r.status === 3).length || 0;
+        const currentFix = attCurr?.reduce((s, r) => s + (r.status === 3 ? salary / 2 : salary), 0) || 0;
+        const currentComm = commCurr?.reduce((s, r) => s + (r.mechanic_commission_amount || 0), 0) || 0;
+        const currentAdv = advCurr?.reduce((s, r) => s + (r.amount || 0), 0) || 0;
+        const netFinal = oldBalance + currentFix + currentComm - currentAdv;
+
+        salaryRows.push({ id: m.id, name, salary_per_day: salary, present_count: presentCount, half_day_count: halfDayCount, current_fix: currentFix, current_comm: currentComm, old_balance: oldBalance, current_adv: currentAdv, net_final: netFinal });
+      }
+      setRows(salaryRows);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, [month, prevMonthEnd]);
+
+  useEffect(() => { fetchReport(); }, [fetchReport]);
+
+  const navigate = (dir: "prev" | "next") => {
+    const d = new Date(month + "-01");
+    if (dir === "prev") d.setMonth(d.getMonth() - 1);
+    else d.setMonth(d.getMonth() + 1);
+    setMonth(d.toISOString().slice(0, 7));
+  };
+
+  const openLedger = async (r: SalaryRow) => {
+    const from = `${month}-01`;
+    const nextMonth = new Date(month + "-01");
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    const to = nextMonth.toISOString().split("T")[0];
+    setLedgerTarget({ id: r.id, name: r.name, salary: r.salary_per_day });
+    setLedgerFrom(from); setLedgerTo(to);
+    setLedgerData([]); setShowLedgerModal(true); setLedgerLoading(true);
+
+    try {
+      const { data: attAll } = await supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", r.id).in("status", [1, 3]).gte("curr_date", from).lte("curr_date", to);
+      const { data: commAll } = await supabase.from("transaction_list").select("job_id, code, mechanic_commission_amount, date_created").eq("mechanic_id", r.id).gte("date_created", `${from}T00:00:00`).lte("date_created", `${to}T23:59:59`);
+      const { data: advAll } = await supabase.from("advance_payments").select("amount, date_paid").eq("mechanic_id", r.id).gte("date_paid", from).lte("date_paid", to);
+      const { data: attPrev } = await supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", r.id).in("status", [1, 3]).lt("curr_date", from);
+      const { data: commPrev } = await supabase.from("transaction_list").select("mechanic_commission_amount").eq("mechanic_id", r.id).lt("date_created", `${from}T00:00:00`);
+      const { data: advPrev } = await supabase.from("advance_payments").select("amount").eq("mechanic_id", r.id).lt("date_paid", from);
+
+      const ep = attPrev?.reduce((s, x) => s + (x.status === 3 ? r.salary_per_day / 2 : r.salary_per_day), 0) || 0;
+      const cp = commPrev?.reduce((s, x) => s + (x.mechanic_commission_amount || 0), 0) || 0;
+      const ap = advPrev?.reduce((s, x) => s + (x.amount || 0), 0) || 0;
+      let running = ep + cp - ap;
+      const entries: any[] = [];
+      if (running !== 0) entries.push({ date: "Opening", status: "—", wage: running, comm: 0, adv: 0, balance: running, type: "opening" });
+
+      const dates = new Set([...(attAll?.map((a) => a.curr_date) || []), ...(commAll?.map((c) => c.date_created.split("T")[0]) || []), ...(advAll?.map((a) => a.date_paid) || [])]);
+      for (const d of Array.from(dates).sort()) {
+        const att = attAll?.find((a) => a.curr_date === d);
+        let wage = 0, attStatus = "Absent";
+        if (att) { if (att.status === 1) { wage = r.salary_per_day; attStatus = "Present"; } else if (att.status === 3) { wage = r.salary_per_day / 2; attStatus = "Half Day"; } }
+        const comm = commAll?.filter((c) => c.date_created.startsWith(d)).reduce((s, c) => s + (c.mechanic_commission_amount || 0), 0) || 0;
+        const adv = advAll?.filter((a) => a.date_paid === d).reduce((s, a) => s + (a.amount || 0), 0) || 0;
+        running += wage + comm - adv;
+        entries.push({ date: new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }), status: attStatus, wage, comm, adv, balance: running });
+      }
+      setLedgerData(entries);
+    } catch (e) { console.error(e); }
+    finally { setLedgerLoading(false); }
+  };
+
+  const handlePaySalary = async () => {
+    if (!payTarget) return;
+    await supabase.from("advance_payments").insert({ mechanic_id: payTarget.id, amount: payTarget.amount, date_paid: new Date().toISOString().split("T")[0], reason: `Salary for ${month}` });
+    setShowPayModal(false); setPayTarget(null); fetchReport();
+  };
+
+  const handleUpdateSalary = async () => {
+    if (!salaryTarget || !newSalary || !newEffectiveDate) return;
+    await supabase.from("mechanic_salary_history").insert({ mechanic_id: salaryTarget.id, salary: parseFloat(newSalary), effective_date: newEffectiveDate });
+    await supabase.from("mechanic_list").update({ salary_per_day: parseFloat(newSalary) }).eq("id", salaryTarget.id);
+    setSalaryRateModal(false); setSalaryTarget(null); setNewSalary(""); fetchReport();
+  };
+
+  const monthLabel = new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+
   return (
-    <AdminPage title="Salary" subtitle="Salary report, payout recording, and salary rate history with mobile-friendly layout.">
-      {toast && <div className={`fixed top-4 right-4 z-[100] flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold shadow-2xl ${toast.type === "success" ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400" : "border-red-500/30 bg-red-500/15 text-red-400"}`}>{toast.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}<span>{toast.msg}</span></div>}
-      <div className="grid gap-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"><div className="flex flex-wrap gap-2"><button className={tab === "report" ? btnPrimary : btnGhost} onClick={() => setTab("report")}>Salary Report</button><button className={tab === "master" ? btnPrimary : btnGhost} onClick={() => setTab("master")}>Salary Rate Master</button></div><div className="w-full sm:w-[260px]"><label className={label}>Search Staff</label><input value={search} onChange={(e) => setSearch(e.target.value)} className={input} placeholder="Name or designation" /></div></div>
-        <div className={`${card} p-4 sm:p-5`}><div className="grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-end"><div className="flex flex-wrap items-center gap-2"><button className={btnGhost} onClick={() => setMonth(addMonths(month, -1))}><ChevronLeft size={16} /></button><input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className={input} style={{ maxWidth: 180 }} /><button className={btnGhost} onClick={() => setMonth(addMonths(month, 1))}><ChevronRight size={16} /></button></div><div className="text-[10px] font-black uppercase tracking-widest text-slate-600">Period {from} to {to}</div><div className="flex flex-wrap gap-2"><button className={btnGhost} onClick={() => setMonth(ymFromDate(istToday))}>Current Month</button><button className={btnGhost} onClick={() => setMonth(addMonths(month, -1))}>Last Month</button><button className={btnGhost} onClick={() => setMonth(addMonths(month, 1))}>Next Month</button></div></div></div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><SummaryCard title="Visible Staff" value={String(rows.length)} tone="blue" /><SummaryCard title="Net Payable" value={money(totalNetPayable)} tone="emerald" /><SummaryCard title="Month" value={month} tone="slate" /><SummaryCard title="Total Staff" value={String(mechs.length)} tone="amber" /></div>
-        {err && <div className={`${card} p-4 text-sm text-red-400`}>{err}</div>}
-        <div className={card}>{loading ? <div className="flex min-h-[260px] items-center justify-center"><Loader2 className="animate-spin text-blue-400" size={26} /></div> : tab === "report" ? <><div className="hidden overflow-x-auto lg:block"><table className="w-full min-w-[1100px] text-sm"><thead className="bg-[#111520] text-[10px] font-black uppercase tracking-widest text-slate-600"><tr><th className="px-4 py-3 text-left">Staff</th><th className="px-4 py-3 text-center">Attendance (P | HD)</th><th className="px-4 py-3 text-right">Earned Salary</th><th className="px-4 py-3 text-right">Commission</th><th className="px-4 py-3 text-right">Old Bal</th><th className="px-4 py-3 text-right">Advance</th><th className="px-4 py-3 text-right">Net Total</th><th className="px-4 py-3 text-right">Action</th></tr></thead><tbody className="divide-y divide-[#1a2234]">{rows.map((row) => <tr key={row.mechanic.id} className="hover:bg-white/[0.03]"><td className="px-4 py-3"><Link href={`/salary/${row.mechanic.id}/ledger?from=${from}&to=${to}`} className="font-black text-slate-100 hover:text-blue-400">{row.name}</Link><div className="mt-1 text-xs text-slate-600">{row.mechanic.designation || "Staff"}</div></td><td className="px-4 py-3 text-center"><span className="font-black text-emerald-300">{row.present}</span><span className="mx-2 text-slate-700">|</span><span className="inline-flex rounded-lg border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-xs font-black text-amber-300">{row.half}</span></td><td className="px-4 py-3 text-right font-black text-slate-100">{money(row.currentEarned)}</td><td className="px-4 py-3 text-right font-black text-blue-300">{money(row.currentCommission)}</td><td className={`px-4 py-3 text-right font-black ${row.oldBalance < 0 ? "text-red-300" : "text-slate-100"}`}>{money(row.oldBalance)}</td><td className="px-4 py-3 text-right font-black text-red-300">{money(row.currentAdvance)}</td><td className="px-4 py-3 text-right"><span className={`inline-flex rounded-xl border px-2.5 py-1 font-black ${row.net >= 0 ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300" : "border-red-500/25 bg-red-500/10 text-red-300"}`}>{money(Math.abs(row.net))}</span></td><td className="px-4 py-3 text-right">{row.net > 0 ? <button className={btnPrimary} onClick={() => openPayModal(row.mechanic, row.net)}><IndianRupee size={13} className="mr-1 inline-block" />Pay</button> : <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Settled</span>}</td></tr>)}</tbody></table></div><div className="grid gap-3 p-3 lg:hidden">{rows.length === 0 ? <div className="rounded-2xl border border-[#21293d] bg-[#111520] p-6 text-center text-sm text-slate-500">Koi staff record nahi mila.</div> : rows.map((row) => <div key={row.mechanic.id} className="rounded-2xl border border-[#21293d] bg-[#111520] p-4"><div className="flex items-start justify-between gap-3"><div><Link href={`/salary/${row.mechanic.id}/ledger?from=${from}&to=${to}`} className="text-sm font-black text-white">{row.name}</Link><div className="mt-1 text-xs text-slate-500">{row.mechanic.designation || "Staff"}</div></div><span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${row.net >= 0 ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300" : "border-red-500/25 bg-red-500/10 text-red-300"}`}>{money(Math.abs(row.net))}</span></div><div className="mt-3 grid grid-cols-2 gap-3 text-xs"><Metric label="Present" value={String(row.present)} valueClass="text-emerald-300" /><Metric label="Half Day" value={String(row.half)} valueClass="text-amber-300" /><Metric label="Earned" value={money(row.currentEarned)} /><Metric label="Commission" value={money(row.currentCommission)} valueClass="text-blue-300" /><Metric label="Old Bal" value={money(row.oldBalance)} valueClass={row.oldBalance < 0 ? "text-red-300" : undefined} /><Metric label="Advance" value={money(row.currentAdvance)} valueClass="text-red-300" /></div><div className="mt-4 flex flex-wrap gap-2">{row.net > 0 ? <button className={btnPrimary} onClick={() => openPayModal(row.mechanic, row.net)}><IndianRupee size={13} className="mr-1 inline-block" />Pay</button> : <div className="rounded-xl border border-[#21293d] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500">Settled</div>}<button className={btnGhost} onClick={() => openSalaryModal(row.mechanic)}><Pencil size={13} className="mr-1 inline-block" />Rate</button><button className={btnGhost} onClick={() => openHistoryModal(row.mechanic)}><History size={13} className="mr-1 inline-block" />History</button></div></div>)}</div></> : <><div className="hidden overflow-x-auto lg:block"><table className="w-full min-w-[900px] text-sm"><thead className="bg-[#111520] text-[10px] font-black uppercase tracking-widest text-slate-600"><tr><th className="px-4 py-3 text-left">Staff</th><th className="px-4 py-3 text-right">Current Daily Wage</th><th className="px-4 py-3 text-center">Last Updated</th><th className="px-4 py-3 text-right">Action</th></tr></thead><tbody className="divide-y divide-[#1a2234]">{rows.map((row) => { const last = lastUpdatedByMech.get(row.mechanic.id); return <tr key={row.mechanic.id} className="hover:bg-white/[0.03]"><td className="px-4 py-3"><div className="font-black text-slate-100">{row.name}</div><div className="mt-1 text-xs text-slate-600">{row.mechanic.designation || "Staff"}</div></td><td className="px-4 py-3 text-right font-black text-emerald-300">{money(pickBaseRate(row.mechanic))}</td><td className="px-4 py-3 text-center text-slate-500">{last ? fmtDate(last) : "-"}</td><td className="px-4 py-3 text-right"><div className="inline-flex gap-2"><button className={btnGhost} onClick={() => openSalaryModal(row.mechanic)}><Pencil size={13} className="mr-1 inline-block" />Update</button><button className={btnGhost} onClick={() => openHistoryModal(row.mechanic)}><History size={13} className="mr-1 inline-block" />History</button></div></td></tr>; })}</tbody></table></div><div className="grid gap-3 p-3 lg:hidden">{rows.length === 0 ? <div className="rounded-2xl border border-[#21293d] bg-[#111520] p-6 text-center text-sm text-slate-500">Koi staff record nahi mila.</div> : rows.map((row) => { const last = lastUpdatedByMech.get(row.mechanic.id); return <div key={row.mechanic.id} className="rounded-2xl border border-[#21293d] bg-[#111520] p-4"><div className="text-sm font-black text-white">{row.name}</div><div className="mt-1 text-xs text-slate-500">{row.mechanic.designation || "Staff"}</div><div className="mt-3 grid grid-cols-2 gap-3 text-xs"><Metric label="Daily Wage" value={money(pickBaseRate(row.mechanic))} valueClass="text-emerald-300" /><Metric label="Last Updated" value={last ? fmtDate(last) : "-"} /></div><div className="mt-4 flex flex-wrap gap-2"><button className={btnGhost} onClick={() => openSalaryModal(row.mechanic)}><Pencil size={13} className="mr-1 inline-block" />Update</button><button className={btnGhost} onClick={() => openHistoryModal(row.mechanic)}><History size={13} className="mr-1 inline-block" />History</button></div></div>; })}</div></>}</div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-black text-white flex items-center gap-2"><Coins size={18} className="text-blue-400" /> Salary Management</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Staff salary & commission report</p>
+        </div>
+        <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all"><Printer size={13} /> Print</button>
       </div>
-      {salaryModal.open && salaryModal.mechanic && <ModalShell title="Update Salary Rate" subtitle={nameOf(salaryModal.mechanic)} onClose={() => setSalaryModal({ open: false })}><div className="space-y-4"><Field title="New Daily Wage"><input type="number" step="0.01" value={newSalary} onChange={(e) => setNewSalary(e.target.value)} className={input} /></Field><Field title="Effective Date"><input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} className={input} /></Field><div className="flex flex-col-reverse gap-2 border-t border-[#21293d] pt-4 sm:flex-row sm:justify-end"><button className={btnGhost} onClick={() => setSalaryModal({ open: false })}>Cancel</button><button className={btnPrimary} onClick={saveSalaryRate} disabled={savingSalary}>{savingSalary ? <Loader2 size={13} className="mr-1 inline-block animate-spin" /> : <Save size={13} className="mr-1 inline-block" />}Save Rate</button></div></div></ModalShell>}
-      {payModal.open && payModal.mechanic && <ModalShell title="Pay Salary" subtitle={nameOf(payModal.mechanic)} onClose={() => setPayModal({ open: false })}><div className="space-y-4"><Field title="Payout Amount"><input type="number" step="0.01" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} className={input} /></Field><Field title="Payment Date"><input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} className={input} /></Field><Field title="Reason"><input value={payReason} onChange={(e) => setPayReason(e.target.value)} className={input} placeholder="Salary for ..." /></Field><div className="flex flex-col-reverse gap-2 border-t border-[#21293d] pt-4 sm:flex-row sm:justify-end"><button className={btnGhost} onClick={() => setPayModal({ open: false })}>Cancel</button><button className={btnPrimary} onClick={savePayment} disabled={paying}>{paying ? <Loader2 size={13} className="mr-1 inline-block animate-spin" /> : <IndianRupee size={13} className="mr-1 inline-block" />}Pay</button></div></div></ModalShell>}
-      {historyModal.open && historyModal.mechanic && <ModalShell title="Salary History" subtitle={nameOf(historyModal.mechanic)} onClose={() => setHistoryModal({ open: false })} wide><div className="space-y-4"><div className="overflow-x-auto rounded-2xl border border-[#21293d]"><table className="w-full min-w-[620px] text-sm"><thead className="bg-[#111520] text-[10px] font-black uppercase tracking-widest text-slate-600"><tr><th className="px-4 py-3 text-left">Effective Date</th><th className="px-4 py-3 text-right">Salary Rate</th><th className="px-4 py-3 text-right">Action</th></tr></thead><tbody className="divide-y divide-[#1a2234]">{mechanicHistory.length === 0 ? <tr><td colSpan={3} className="px-4 py-10 text-center text-sm text-slate-500">Koi history record nahi mila.</td></tr> : mechanicHistory.map((row) => <tr key={row.id} className="hover:bg-white/[0.03]"><td className="px-4 py-3 text-slate-200">{fmtDate(row.effective_date)}</td><td className="px-4 py-3 text-right font-black text-emerald-300">{money(row.salary)}</td><td className="px-4 py-3 text-right"><div className="inline-flex gap-2"><button className={btnGhost} onClick={() => startEditHistory(row)}><Pencil size={13} className="mr-1 inline-block" />Edit</button><button className={btnDanger} onClick={() => deleteHistory(row.id)}><Trash2 size={13} className="mr-1 inline-block" />Delete</button></div></td></tr>)}</tbody></table></div>{editingHistoryId && <div className="rounded-2xl border border-[#21293d] bg-[#111520] p-4"><div className="mb-3 text-sm font-black text-white">Edit Selected History Row</div><div className="grid gap-4 sm:grid-cols-2"><Field title="Salary Amount"><input type="number" step="0.01" value={historySalary} onChange={(e) => setHistorySalary(e.target.value)} className={input} /></Field><Field title="Effective Date"><input type="date" value={historyDate} onChange={(e) => setHistoryDate(e.target.value)} className={input} /></Field></div><div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button className={btnGhost} onClick={() => setEditingHistoryId(null)}>Cancel</button><button className={btnPrimary} onClick={saveHistoryEdit} disabled={savingHistory}>{savingHistory ? <Loader2 size={13} className="mr-1 inline-block animate-spin" /> : <Save size={13} className="mr-1 inline-block" />}Update</button></div></div>}</div></ModalShell>}
-    </AdminPage>
+
+      <div className="flex gap-2">
+        {(["report", "control"] as const).map((t) => (
+          <button key={t} onClick={() => setActiveTab(t)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === t ? "bg-blue-600 text-white" : "bg-[#161b27] border border-[#21293d] text-slate-400 hover:text-white"}`}>
+            {t === "report" ? "Salary Report" : "Salary Rate Master"}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "report" && (
+        <>
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+            <div className="flex items-center justify-center gap-3">
+              <button onClick={() => navigate("prev")} className="w-9 h-9 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-full text-slate-400 hover:text-white hover:border-blue-500/40 transition-all"><ChevronLeft size={14} /></button>
+              <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-black text-white outline-none focus:border-blue-500/50 text-center" />
+              <button onClick={() => navigate("next")} className="w-9 h-9 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-full text-slate-400 hover:text-white hover:border-blue-500/40 transition-all"><ChevronRight size={14} /></button>
+            </div>
+            <div className="text-center mt-2"><span className="text-sm font-black text-white">Salary Statement — {monthLabel}</span></div>
+          </div>
+
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-[#111520]">
+                    {["#", "Staff", "Attendance (P | HD)", "Earned Salary", "Commission", "Old Bal", "Advance", "Net Total", "Action"].map((h) => (
+                      <th key={h} className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan={9} className="text-center py-12"><Loader2 size={20} className="animate-spin text-blue-400 mx-auto" /></td></tr>
+                  ) : rows.length === 0 ? (
+                    <tr><td colSpan={9} className="text-center py-12 text-slate-600 text-xs font-bold">No staff found</td></tr>
+                  ) : rows.map((r, i) => (
+                    <tr key={r.id} className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors">
+                      <td className="px-3 py-2.5 text-xs text-slate-500 text-center">{i + 1}</td>
+                      <td className="px-3 py-2.5"><button onClick={() => openLedger(r)} className="text-xs font-black text-blue-400 hover:text-blue-300 transition-colors">{r.name}</button></td>
+                      <td className="px-3 py-2.5 text-xs text-center"><span className="text-emerald-400 font-bold">{r.present_count}</span><span className="text-slate-600 mx-1">|</span><span className="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded text-[10px] font-bold">{r.half_day_count}</span></td>
+                      <td className="px-3 py-2.5 text-xs text-right text-slate-300">{inr(r.current_fix)}</td>
+                      <td className="px-3 py-2.5 text-xs text-right text-blue-400">{inr(r.current_comm)}</td>
+                      <td className={`px-3 py-2.5 text-xs text-right font-bold ${r.old_balance < 0 ? "text-red-400" : "text-slate-300"}`}>{inr(r.old_balance)}</td>
+                      <td className="px-3 py-2.5 text-xs text-right text-red-400">{inr(r.current_adv)}</td>
+                      <td className="px-3 py-2.5 text-right"><span className={`text-xs font-black px-2 py-1 rounded-lg ${r.net_final >= 0 ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30"}`}>{inr(Math.abs(r.net_final))}</span></td>
+                      <td className="px-3 py-2.5">{r.net_final > 0 ? <button onClick={() => setPayTarget({ id: r.id, name: r.name, amount: r.net_final })} className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg text-[10px] font-bold hover:bg-emerald-500/30 transition-all"><DollarSign size={10} className="inline mr-1" /> Pay</button> : <span className="px-2 py-1 bg-slate-500/20 text-slate-500 rounded-lg text-[10px] font-bold">Settled</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === "control" && (
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#111520]">
+                  {["#", "Staff Name", "Daily Wage", "Last Updated", "Action"].map((h) => (
+                    <th key={h} className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {mechanics.map((m, i) => (
+                  <tr key={m.id} className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors">
+                    <td className="px-3 py-2.5 text-xs text-slate-500 text-center">{i + 1}</td>
+                    <td className="px-3 py-2.5"><div className="text-xs font-bold text-slate-200">{[m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ")}</div><div className="text-[10px] text-slate-600">{m.designation || "Staff"}</div></td>
+                    <td className="px-3 py-2.5 text-sm font-bold text-emerald-400">{inr(m.salary_per_day)}</td>
+                    <td className="px-3 py-2.5 text-xs text-slate-500">—</td>
+                    <td className="px-3 py-2.5"><button onClick={() => { setSalaryTarget({ id: m.id, name: [m.firstname, m.lastname].join(" "), salary: m.salary_per_day }); setNewSalary(String(m.salary_per_day)); setSalaryRateModal(true); }} className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg text-[10px] font-bold hover:bg-blue-500/30 transition-all"><Edit2 size={10} className="inline mr-1" /> Update</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {showPayModal && payTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl p-5">
+            <h3 className="font-black text-white mb-1">Pay Salary to {payTarget.name}</h3>
+            <p className="text-xs text-slate-500 mb-4">Amount: {inr(payTarget.amount)}</p>
+            <div className="flex gap-3">
+              <button onClick={handlePaySalary} className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-bold text-white">Confirm Payment</button>
+              <button onClick={() => { setShowPayModal(false); setPayTarget(null); }} className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl text-xs font-bold hover:text-white">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLedgerModal && ledgerTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-2xl shadow-2xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-[#21293d]">
+              <div><h3 className="font-black text-white text-sm">Daily Ledger: {ledgerTarget.name}</h3><p className="text-[10px] text-slate-500">{ledgerFrom} to {ledgerTo}</p></div>
+              <button onClick={() => setShowLedgerModal(false)} className="w-8 h-8 flex items-center justify-center bg-[#111520] hover:bg-[#21293d] rounded-lg text-slate-500 hover:text-white transition-all"><X size={14} /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-[#111520]">
+                    {["Date", "Status", "Wage", "Commission", "Advance", "Balance"].map((h) => (
+                      <th key={h} className="px-2 py-2 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {ledgerLoading ? <tr><td colSpan={6} className="text-center py-8"><Loader2 size={20} className="animate-spin text-blue-400 mx-auto" /></td></tr>
+                    : ledgerData.length === 0 ? <tr><td colSpan={6} className="text-center py-8 text-slate-600 text-xs font-bold">No entries</td></tr>
+                    : ledgerData.map((e, i) => (
+                      <tr key={i} className={`border-t border-[#21293d]/50 ${e.type === "opening" ? "bg-amber-500/10" : ""}`}>
+                        <td className="px-2 py-2 text-xs text-slate-400">{e.date}</td>
+                        <td className={`px-2 py-2 text-xs font-bold ${e.status === "Present" ? "text-emerald-400" : e.status === "Half Day" || e.status === "—" ? "text-amber-400" : "text-red-400"}`}>{e.status}</td>
+                        <td className="px-2 py-2 text-xs text-right text-slate-300">{e.wage > 0 ? inr(e.wage) : ""}</td>
+                        <td className="px-2 py-2 text-xs text-right text-blue-400">{e.comm > 0 ? inr(e.comm) : ""}</td>
+                        <td className="px-2 py-2 text-xs text-right text-red-400">{e.adv > 0 ? inr(e.adv) : ""}</td>
+                        <td className={`px-2 py-2 text-xs text-right font-bold ${e.balance >= 0 ? "text-blue-400" : "text-red-400"}`}>{inr(e.balance)}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {salaryRateModal && salaryTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl p-5">
+            <h3 className="font-black text-white mb-4">Update Salary Rate</h3>
+            <div className="space-y-3">
+              <div><label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">Staff Name</label><input value={salaryTarget.name} readOnly className="w-full px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300" /></div>
+              <div><label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">New Daily Wage</label><input type="number" value={newSalary} onChange={(e) => setNewSalary(e.target.value)} step="any" className="w-full px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50" /></div>
+              <div><label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">Effective Date</label><input type="date" value={newEffectiveDate} onChange={(e) => setNewEffectiveDate(e.target.value)} className="w-full px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50" /></div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={handleUpdateSalary} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white">Save Rate</button>
+                <button onClick={() => { setSalaryRateModal(false); setSalaryTarget(null); }} className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl text-xs font-bold hover:text-white">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
-function Field({ title, children }: { title: string; children: React.ReactNode }) { return <label className="block"><span className={label}>{title}</span>{children}</label>; }
-function SummaryCard({ title, value, tone }: { title: string; value: string; tone: "blue" | "emerald" | "slate" | "amber" }) { const tones = { blue: "text-blue-400 border-blue-500/20 bg-blue-500/8", emerald: "text-emerald-400 border-emerald-500/20 bg-emerald-500/8", slate: "text-slate-300 border-slate-500/20 bg-slate-500/8", amber: "text-amber-300 border-amber-500/20 bg-amber-500/8" }; return <div className={`${card} p-4`}><div className={`inline-flex rounded-xl border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${tones[tone]}`}>{title}</div><p className="mt-3 break-words text-lg font-black text-white">{value}</p></div>; }
-function Metric({ label: itemLabel, value, valueClass }: { label: string; value: string; valueClass?: string }) { return <div className="rounded-xl border border-[#21293d] bg-[#0d1117] px-3 py-2"><div className="text-[10px] font-black uppercase tracking-wider text-slate-600">{itemLabel}</div><div className={`mt-1 text-sm font-black text-slate-100 ${valueClass || ""}`}>{value}</div></div>; }
-function ModalShell({ title, subtitle, onClose, children, wide }: { title: string; subtitle?: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) { return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-4 backdrop-blur-sm"><div className={`max-h-[92vh] w-full overflow-y-auto rounded-3xl border border-[#21293d] bg-[#161b27] shadow-2xl ${wide ? "max-w-4xl" : "max-w-lg"}`}><div className="flex items-center justify-between border-b border-[#21293d] px-4 py-4 sm:px-5"><div><h3 className="text-base font-black text-white">{title}</h3>{subtitle && <p className="text-xs text-slate-600">{subtitle}</p>}</div><button onClick={onClose} className="rounded-xl p-2 text-slate-500 hover:bg-white/[0.05] hover:text-white"><X size={16} /></button></div><div className="px-4 py-5 sm:px-5">{children}</div></div></div>; }
+
+export default function SalaryPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-24"><Loader2 size={24} className="animate-spin text-blue-400" /></div>}>
+      <SalaryContent />
+    </Suspense>
+  );
+}

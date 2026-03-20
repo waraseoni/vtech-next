@@ -1,265 +1,182 @@
 "use client";
-
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import AdminPage from "@/app/components/AdminPage";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { Loader2, ChevronLeft, ChevronRight, Printer, Eye } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Printer, BarChart2, Wrench } from "lucide-react";
 
-type Mechanic = {
-  id: number;
-  firstname: string;
-  lastname: string;
-};
+const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-type Txn = {
+type CommRow = {
   id: number;
   job_id: string;
-  code: string;
-  mechanic_id: number | null;
-  mechanic_commission_amount: number | null;
+  code: string | null;
   date_created: string;
+  mechanic_id: number;
+  m_name: string;
+  service_amount: number;
+  mechanic_commission_amount: number;
 };
 
-const card = "bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden";
-const input =
-  "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700 [color-scheme:dark]";
-const label = "block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5";
-const btn =
-  "px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]";
-const btnGhost = `${btn} bg-white/[0.04] hover:bg-white/[0.07] text-slate-300 border border-[#21293d]`;
+function CommissionContent() {
+  const searchParams = useSearchParams();
 
-function ym(d = new Date()) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`;
-}
-function addMonths(month: string, diff: number) {
-  const [y, m] = month.split("-").map(Number);
-  const dt = new Date(y, m - 1 + diff, 1);
-  return ym(dt);
-}
-function monthRange(month: string) {
-  const from = `${month}-01`;
-  const [y, m] = month.split("-").map(Number);
-  const dt = new Date(y, m, 0);
-  const to = `${month}-${String(dt.getDate()).padStart(2, "0")}`;
-  return { from, to };
-}
-function money(n: number) {
-  return `Rs.${Number(n || 0).toFixed(2)}`;
-}
-function fmtDate(d: string) {
-  return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(d));
-}
-
-export default function CommissionPage() {
-  const [month, setMonth] = useState<string>(ym());
-  const [mechanicId, setMechanicId] = useState<"all" | string>("all");
-
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [month, setMonth] = useState(searchParams.get("month") || currentMonth);
+  const [mechanicId, setMechanicId] = useState(searchParams.get("mechanic_id") || "all");
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-  const [mechs, setMechs] = useState<Mechanic[]>([]);
-  const [txns, setTxns] = useState<Txn[]>([]);
-  const [svcTotals, setSvcTotals] = useState<Map<number, number>>(new Map());
+  const [rows, setRows] = useState<CommRow[]>([]);
+  const [mechanics, setMechanics] = useState<{ id: number; name: string }[]>([]);
 
-  const mechById = useMemo(() => {
-    const m = new Map<number, string>();
-    for (const x of mechs) m.set(x.id, `${x.firstname} ${x.lastname}`.trim());
-    return m;
-  }, [mechs]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const from = `${month}-01T00:00:00`;
+      const toDate = new Date(month + "-01");
+      toDate.setMonth(toDate.getMonth() + 1);
+      const to = toDate.toISOString().split("T")[0] + "T23:59:59";
 
-  const totalCommission = useMemo(
-    () => txns.reduce((s, t) => s + Number(t.mechanic_commission_amount || 0), 0),
-    [txns]
-  );
+      const { data: mechData } = await supabase
+        .from("mechanic_list").select("id, firstname, middlename, lastname")
+        .eq("delete_flag", 0).order("firstname");
+      setMechanics(
+        (mechData || []).map((m) => ({
+          id: m.id,
+          name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+        }))
+      );
 
-  useEffect(() => {
-    (async () => {
-      setErr("");
-      const { data, error } = await supabase
-        .from("mechanic_list")
-        .select("id, firstname, lastname")
-        .eq("delete_flag", 0)
-        .order("firstname", { ascending: true });
-      if (error) {
-        setErr(error.message);
-        return;
+      let q = supabase
+        .from("transaction_list").select("id, job_id, code, date_created, mechanic_id, mechanic_commission_amount")
+        .gte("date_created", from).lte("date_created", to);
+      if (mechanicId !== "all") q = q.eq("mechanic_id", parseInt(mechanicId));
+      const { data: txns } = await q;
+
+      const enriched: CommRow[] = [];
+      for (const t of txns || []) {
+        const mech = (mechData || []).find((m) => m.id === t.mechanic_id);
+        const mechName = mech ? [mech.firstname, mech.middlename, mech.lastname].filter(Boolean).join(" ") : "Unknown";
+        const { data: svcTotal } = await supabase.from("transaction_services").select("price").eq("transaction_id", t.id);
+        const svcAmt = svcTotal?.reduce((s, r) => s + (r.price || 0), 0) || 0;
+        enriched.push({
+          id: t.id, job_id: t.job_id || String(t.id), code: t.code,
+          date_created: t.date_created, mechanic_id: t.mechanic_id,
+          m_name: mechName, service_amount: svcAmt,
+          mechanic_commission_amount: t.mechanic_commission_amount || 0,
+        });
       }
-      setMechs((data || []) as Mechanic[]);
-    })();
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setErr("");
-      try {
-        const { from, to } = monthRange(month);
-        let q = supabase
-          .from("transaction_list")
-          .select("id, job_id, code, mechanic_id, mechanic_commission_amount, date_created")
-          .gte("date_created", `${from}T00:00:00+05:30`)
-          .lte("date_created", `${to}T23:59:59+05:30`)
-          .order("date_created", { ascending: false });
-
-        if (mechanicId !== "all") q = q.eq("mechanic_id", Number(mechanicId));
-
-        const { data: tData, error: tErr } = await q;
-        if (tErr) throw tErr;
-        const list = (tData || []) as Txn[];
-        setTxns(list);
-
-        const ids = list.map((t) => t.id);
-        if (ids.length === 0) {
-          setSvcTotals(new Map());
-          setLoading(false);
-          return;
-        }
-
-        const { data: sData, error: sErr } = await supabase
-          .from("transaction_services")
-          .select("transaction_id, price")
-          .in("transaction_id", ids);
-        if (sErr) throw sErr;
-
-        const m = new Map<number, number>();
-        for (const r of (sData || []) as Array<{ transaction_id: number; price: number }>) {
-          m.set(r.transaction_id, (m.get(r.transaction_id) || 0) + Number(r.price || 0));
-        }
-        setSvcTotals(m);
-      } catch (e: any) {
-        setErr(e?.message || "Failed to load commission history");
-      } finally {
-        setLoading(false);
-      }
-    })();
+      enriched.sort((a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime());
+      setRows(enriched);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   }, [month, mechanicId]);
 
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const navigate = (dir: "prev" | "next") => {
+    const d = new Date(month + "-01");
+    if (dir === "prev") d.setMonth(d.getMonth() - 1);
+    else d.setMonth(d.getMonth() + 1);
+    setMonth(d.toISOString().slice(0, 7));
+  };
+
+  const totalComm = rows.reduce((s, r) => s + (r.mechanic_commission_amount || 0), 0);
+  const monthLabel = new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+
   return (
-    <AdminPage title="Commission" subtitle="PHP parity: month-wise commission history">
-      <div className="flex flex-col gap-4">
-        <div className={`${card} p-4`}>
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-            <div className="md:col-span-4">
-              <div className={label}>Select Month</div>
-              <div className="flex items-center gap-2">
-                <button className={btnGhost} onClick={() => setMonth(addMonths(month, -1))} title="Last Month">
-                  <ChevronLeft size={16} />
-                </button>
-                <input className={input} type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
-                <button className={btnGhost} onClick={() => setMonth(addMonths(month, 1))} title="Next Month">
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-black text-white flex items-center gap-2">
+            <BarChart2 size={18} className="text-blue-400" /> Mechanic Commission History
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">Monthly commission breakdown</p>
+        </div>
+        <button onClick={() => window.print()}
+          className="flex items-center gap-2 px-4 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all">
+          <Printer size={13} /> Print
+        </button>
+      </div>
 
-            <div className="md:col-span-5">
-              <div className={label}>Select Staff/Mechanic</div>
-              <select className={input} value={mechanicId} onChange={(e) => setMechanicId(e.target.value as any)}>
-                <option value="all">All Staff</option>
-                {mechs.map((m) => (
-                  <option key={m.id} value={String(m.id)}>
-                    {m.firstname} {m.lastname}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="md:col-span-3 flex items-center justify-end gap-2">
-              <button className={btnGhost} onClick={() => window.print()}>
-                <span className="inline-flex items-center gap-2">
-                  <Printer size={14} /> Print
-                </span>
+      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">Month</label>
+            <div className="flex items-center gap-1">
+              <button onClick={() => navigate("prev")}
+                className="px-2 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-slate-400 hover:text-white hover:border-blue-500/40 transition-all">
+                <ChevronLeft size={14} />
+              </button>
+              <input type="month" value={month} onChange={(e) => setMonth(e.target.value)}
+                className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50" />
+              <button onClick={() => navigate("next")}
+                className="px-2 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-slate-400 hover:text-white hover:border-blue-500/40 transition-all">
+                <ChevronRight size={14} />
               </button>
             </div>
           </div>
+          <div>
+            <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">Staff</label>
+            <select value={mechanicId} onChange={(e) => setMechanicId(e.target.value)}
+              className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50">
+              <option value="all">All Staff</option>
+              {mechanics.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+          </div>
+          <div className="flex-1 text-center">
+            <span className="text-sm font-black text-white">Commission Statement — {monthLabel}</span>
+          </div>
         </div>
-
-        {err && <div className={`${card} p-4 text-red-400 text-sm`}>{err}</div>}
-
-        {loading ? (
-          <div className={`${card} p-10 flex items-center justify-center gap-2 text-slate-600 text-xs font-extrabold uppercase tracking-[0.3em]`}>
-            <Loader2 size={16} className="animate-spin" /> Loading...
-          </div>
-        ) : (
-          <div className={card}>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-[#111520] text-slate-600 text-[10px] font-black uppercase tracking-widest">
-                  <tr>
-                    <th className="text-left px-4 py-3">Date</th>
-                    <th className="text-left px-4 py-3">Job ID / Code</th>
-                    <th className="text-left px-4 py-3">Staff Name</th>
-                    <th className="text-right px-4 py-3">Service Amount</th>
-                    <th className="text-right px-4 py-3">Commission</th>
-                    <th className="text-right px-4 py-3">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#1a2234]">
-                  {txns.length === 0 ? (
-                    <tr>
-                      <td className="px-4 py-10 text-center text-slate-600" colSpan={6}>
-                        No commission records found for this period.
-                      </td>
-                    </tr>
-                  ) : (
-                    txns.map((t) => {
-                      const mName = t.mechanic_id ? mechById.get(t.mechanic_id) : "—";
-                      const sTotal = svcTotals.get(t.id) || 0;
-                      return (
-                        <tr key={t.id} className="hover:bg-white/[0.03]">
-                          <td className="px-4 py-3 text-slate-400">{fmtDate(t.date_created)}</td>
-                          <td className="px-4 py-3">
-                            <div className="text-slate-200 font-black">{t.job_id}</div>
-                            <div className="text-slate-600 text-xs">{t.code}</div>
-                          </td>
-                          <td className="px-4 py-3 text-slate-300 font-bold">{mName}</td>
-                          <td className="px-4 py-3 text-right text-slate-200 font-bold">{money(sTotal)}</td>
-                          <td className="px-4 py-3 text-right text-amber-300 font-black">
-                            {money(Number(t.mechanic_commission_amount || 0))}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <Link className={btnGhost} href={`/jobs/${t.id}/view`}>
-                              <span className="inline-flex items-center gap-2">
-                                <Eye size={14} /> View
-                              </span>
-                            </Link>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-white/[0.03]">
-                    <td className="px-4 py-3 text-right text-slate-600 font-black uppercase tracking-widest" colSpan={4}>
-                      Total Commission
-                    </td>
-                    <td className="px-4 py-3 text-right text-emerald-300 font-black text-base">
-                      {money(totalCommission)}
-                    </td>
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        )}
       </div>
 
-      <style jsx global>{`
-        @media print {
-          a, button, input, select { display: none !important; }
-          body { background: #fff !important; }
-        }
-      `}</style>
-    </AdminPage>
+      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-[#111520]">
+                {["#", "Date", "Job ID / Code", "Staff", "Service Amount", "Commission"].map((h) => (
+                  <th key={h} className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={6} className="text-center py-12"><Loader2 size={20} className="animate-spin text-blue-400 mx-auto" /></td></tr>
+              ) : rows.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-12 text-slate-600 text-xs font-bold">No commission records found</td></tr>
+              ) : rows.map((r, i) => (
+                <tr key={r.id} className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors">
+                  <td className="px-3 py-2.5 text-xs text-slate-500 text-center">{i + 1}</td>
+                  <td className="px-3 py-2.5 text-xs text-slate-400">
+                    {new Date(r.date_created).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <div className="text-xs font-bold text-blue-400">#{r.job_id}</div>
+                    <div className="text-[10px] text-slate-600">{r.code || "—"}</div>
+                  </td>
+                  <td className="px-3 py-2.5 text-xs font-bold text-slate-200">{r.m_name}</td>
+                  <td className="px-3 py-2.5 text-xs text-right text-slate-300">{inr(r.service_amount)}</td>
+                  <td className="px-3 py-2.5 text-xs text-right font-black text-emerald-400">{inr(r.mechanic_commission_amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-blue-500/30 bg-blue-500/5">
+                <td colSpan={4} className="px-3 py-3 text-xs font-black text-slate-400 text-right">Total Commission:</td>
+                <td className="px-3 py-3" />
+                <td className="px-3 py-3 text-sm text-right font-black text-emerald-400">{inr(totalComm)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 }
 
+export default function CommissionPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-24"><Loader2 size={24} className="animate-spin text-blue-400" /></div>}>
+      <CommissionContent />
+    </Suspense>
+  );
+}
