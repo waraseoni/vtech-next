@@ -383,8 +383,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
-    router.push("/login");
-  }, [router]);
+    window.location.href = "/login";
+  }, []);
 
   // BUG FIX 2: Auth runs ONCE on mount — NOT on pathname change.
   // Original code: useEffect[pathname, router] → re-auth every navigation = slow + wasteful.
@@ -402,9 +402,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .from("profiles").select("full_name, role").eq("id", user.id).maybeSingle();
         setProfile({
           full_name: pd?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
-          role:      pd?.role      || (user.email === "vtech.jbp@gmail.com" ? "admin" : "staff"),
-          // ↑ pd?.role is fetched from profiles table.
-          // If null (profile not created yet), fallback: admin email → admin, else staff.
+          role:      pd?.role || "staff",
         });
       } catch (e) {
         console.error("Auth error:", e);

@@ -69,17 +69,17 @@ export default function LoginPage() {
 
       if (!pd) {
         // New user — create profile with staff role by default
+        // Admin can change role later from /users page
         await supabase.from("profiles").insert({
           id:        data.user.id,
           full_name: data.user.user_metadata?.full_name || email.split("@")[0],
-          role:      data.user.email === "vtech.jbp@gmail.com" ? "admin" : "staff",
+          role:      "staff",
         });
       }
     }
 
-    // Refresh → layout remounts → fresh role fetch → correct sidebar
-    router.refresh();
-    router.push("/");
+    // Full reload → fresh auth state → correct sidebar
+    window.location.href = "/";
   };
 
   return (
