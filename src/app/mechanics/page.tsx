@@ -1,9 +1,14 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
-import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2,
+  Check, AlertCircle, User, Users, DollarSign, TrendingUp, Calendar,
+  Eye, Wrench, FileText, MessageSquare
+} from "lucide-react";
 
 type Mechanic = {
   id: number;
@@ -16,11 +21,43 @@ type Mechanic = {
   commission_percent: number;
   status: number;
   delete_flag: number;
+  date_added?: string;
 };
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
+function StatCard({ icon, label, value, sub, color }: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  sub?: string;
+  color: "blue" | "purple" | "emerald" | "teal" | "amber";
+}) {
+  const colors = {
+    blue: "text-blue-400 bg-blue-500/8",
+    purple: "text-purple-400 bg-purple-500/8",
+    emerald: "text-emerald-400 bg-emerald-500/8",
+    teal: "text-teal-400 bg-teal-500/8",
+    amber: "text-amber-400 bg-amber-500/8",
+  };
+  return (
+    <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors[color]}`}>
+          {icon}
+        </div>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</p>
+          <p className="text-lg font-black text-white">{value}</p>
+          {sub && <p className="text-xs text-slate-500">{sub}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MechanicsPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Mechanic[]>([]);
   const [search, setSearch] = useState("");
@@ -53,9 +90,9 @@ export default function MechanicsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("mechanic_list")
-      .select("id, firstname, middlename, lastname, contact, designation, daily_salary, commission_percent, status, delete_flag")
+      .select("id, firstname, middlename, lastname, contact, designation, daily_salary, commission_percent, status, delete_flag, date_added")
       .eq("delete_flag", 0)
-      .order("id", { ascending: false });
+      .order("firstname", { ascending: true });
     if (error) setErr(error.message);
     setRows((data || []) as Mechanic[]);
     setLoading(false);
@@ -71,6 +108,11 @@ export default function MechanicsPage() {
       m.designation?.toLowerCase().includes(search.toLowerCase())
     );
   });
+
+  const totalMechanics = rows.length;
+  const activeMechanics = rows.filter(m => m.status === 1).length;
+  const inactiveMechanics = rows.filter(m => m.status === 0).length;
+  const totalDailySalary = rows.filter(m => m.status === 1).reduce((s, m) => s + (m.daily_salary || 0), 0);
 
   const openAdd = () => {
     setEditing(null);
@@ -146,7 +188,39 @@ export default function MechanicsPage() {
   };
 
   return (
-    <AdminPage title="Mechanics" subtitle="Mechanic directory management">
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
+            <Users size={18} className="text-white"/>
+          </div>
+          <div>
+            <h1 className="text-lg font-black text-white">Mechanics Directory</h1>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Manage workshop mechanics</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link href="/mechanics/commission"
+            className="flex items-center gap-1.5 px-3 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 hover:text-white rounded-xl text-xs font-bold no-underline transition-all">
+            <FileText size={13}/> Commission
+          </Link>
+          <button onClick={openAdd}
+            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all">
+            <Plus size={14} /> Add Mechanic
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard icon={<Users size={18}/>} label="Total Mechanics" value={String(totalMechanics)} color="blue" />
+        <StatCard icon={<TrendingUp size={18}/>} label="Active" value={String(activeMechanics)} color="emerald" />
+        <StatCard icon={<ToggleLeft size={18}/>} label="Inactive" value={String(inactiveMechanics)} color="amber" />
+        <StatCard icon={<DollarSign size={18}/>} label="Daily Salary" value={inr(totalDailySalary)} sub="Active only" color="purple" />
+      </div>
+
+      {/* Table */}
       <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
         <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
@@ -163,10 +237,6 @@ export default function MechanicsPage() {
               {filtered.length} of {rows.length}
             </span>
           </div>
-          <button onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all">
-            <Plus size={14} /> Add Mechanic
-          </button>
         </div>
 
         {err && <div className="px-5 py-3 bg-red-500/10 border-b border-red-500/20 text-red-400 text-xs">{err}</div>}
@@ -177,17 +247,20 @@ export default function MechanicsPage() {
             <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">Loading...</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="px-5 py-12 text-center text-slate-600 text-sm">No mechanics found.</div>
+          <div className="px-5 py-12 text-center text-slate-600 text-sm">
+            <Users size={36} className="mx-auto mb-2 text-slate-700"/>
+            <p>No mechanics found.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-[#111520]">
                 <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                  <th className="text-left px-4 py-3">Name</th>
-                  <th className="text-left px-4 py-3">Contact</th>
+                  <th className="text-left px-4 py-3">Name / Contact</th>
                   <th className="text-left px-4 py-3">Designation</th>
                   <th className="text-right px-4 py-3">Daily Salary</th>
                   <th className="text-right px-4 py-3">Commission</th>
+                  <th className="text-left px-4 py-3">Joined</th>
                   <th className="text-center px-4 py-3">Status</th>
                   <th className="text-center px-4 py-3">Actions</th>
                 </tr>
@@ -199,19 +272,28 @@ export default function MechanicsPage() {
                     <tr key={m.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-[#1a2234] flex items-center justify-center">
-                            <User size={14} className="text-slate-500" />
+                          <div className="w-9 h-9 rounded-xl bg-[#1a2234] flex items-center justify-center text-slate-400 font-black text-sm">
+                            {name.slice(0, 2).toUpperCase()}
                           </div>
-                          <span className="font-bold text-slate-200">{name}</span>
+                          <div>
+                            <p className="font-bold text-slate-200">{name}</p>
+                            <p className="text-xs text-slate-500">{m.contact}</p>
+                          </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 text-slate-400">{m.contact}</td>
-                      <td className="px-4 py-3.5 text-slate-500">{m.designation || "Mechanic"}</td>
+                      <td className="px-4 py-3.5">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                          <Wrench size={9}/> {m.designation || "Mechanic"}
+                        </span>
+                      </td>
                       <td className="px-4 py-3.5 text-right">
                         <span className="font-black text-emerald-400">{inr(m.daily_salary)}</span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <span className="font-bold text-blue-400">{Number(m.commission_percent || 0).toFixed(1)}%</span>
+                        <span className="font-bold text-amber-400">{Number(m.commission_percent || 0).toFixed(1)}%</span>
+                      </td>
+                      <td className="px-4 py-3.5 text-slate-500 text-xs">
+                        {m.date_added ? new Date(m.date_added).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
                       </td>
                       <td className="px-4 py-3.5 text-center">
                         <button onClick={() => toggleStatus(m)}
@@ -225,14 +307,18 @@ export default function MechanicsPage() {
                         </button>
                       </td>
                       <td className="px-4 py-3.5">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Link href={`/mechanics/${m.id}`}
+                            className="p-2 rounded-lg bg-teal-500/10 text-teal-400 hover:bg-teal-500/20 transition no-underline">
+                            <Eye size={13}/>
+                          </Link>
                           <button onClick={() => openEdit(m)}
-                            className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition">
+                            className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition">
                             <Edit3 size={13} />
                           </button>
                           {userRole === "admin" && (
                             <button onClick={() => handleDelete(m.id, name)}
-                              className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition">
+                              className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition">
                               <Trash2 size={13} />
                             </button>
                           )}
@@ -247,8 +333,10 @@ export default function MechanicsPage() {
         )}
       </div>
 
+      {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
           <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl">
             <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
               <h3 className="font-bold text-white flex items-center gap-2">
@@ -330,6 +418,6 @@ export default function MechanicsPage() {
           </div>
         </div>
       )}
-    </AdminPage>
+    </div>
   );
 }

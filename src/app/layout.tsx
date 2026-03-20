@@ -346,10 +346,10 @@ function SidebarNav({
               <li><Link href="/payments"      className={subLinkCls(pathname === "/payments")}      onClick={onNavClick}><Receipt size={12} />Payments</Link></li>
               <li><Link href="/salary"        className={subLinkCls(pathname === "/salary")}        onClick={onNavClick}><Coins size={12} />Salary</Link></li>
               <li><Link href="/advance"       className={subLinkCls(pathname === "/advance")}       onClick={onNavClick}><DollarSign size={12} />Advance</Link></li>
-              <li><Link href="/commission"    className={subLinkCls(pathname === "/commission")}    onClick={onNavClick}><BarChart2 size={12} />Commission</Link></li>
               <li><Link href="/services"      className={subLinkCls(pathname === "/services")}      onClick={onNavClick}><Toolbox size={12} />Services</Link></li>
               <li><Link href="/products"      className={subLinkCls(pathname === "/products")}      onClick={onNavClick}><Package size={12} />Products</Link></li>
-              <li><Link href="/mechanics"     className={subLinkCls(pathname === "/mechanics")}     onClick={onNavClick}><UsersRound size={12} />Mechanics</Link></li>
+              <li><Link href="/mechanics"     className={subLinkCls(pathname.startsWith("/mechanics"))}     onClick={onNavClick}><UsersRound size={12} />Mechanics</Link></li>
+              <li><Link href="/mechanics/commission" className={subLinkCls(pathname === "/mechanics/commission")} onClick={onNavClick}><BarChart2 size={12} />Commission History</Link></li>
               <li><Link href="/clients-admin" className={subLinkCls(pathname === "/clients-admin")} onClick={onNavClick}><FolderOpen size={12} />Client Amt</Link></li>
               <li><Link href="/client-loans" className={subLinkCls(pathname === "/client-loans")} onClick={onNavClick}><CreditCard size={12} />Client Loans</Link></li>
               <li><Link href="/lenders"        className={subLinkCls(pathname === "/lenders")}        onClick={onNavClick}><History size={12} />Lenders</Link></li>
