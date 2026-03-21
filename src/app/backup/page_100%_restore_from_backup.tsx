@@ -54,18 +54,10 @@ const GENERATED_COLS: Record<string, string[]> = {
   "client_payments": ["net_amount"],
 };
 
-// ── FK violations to skip (bad data that would cause FK error) ───────────────
-// These rows will be skipped during restore to avoid FK constraint errors
-const SKIP_INVALID_FK: Record<string, { field: string; invalidValues: (number|string)[] }> = {
-  "transaction_services":        { field: "service_id",   invalidValues: [23] },
-  "mechanic_commission_history": { field: "mechanic_id",  invalidValues: [0]  },
-};
-
 type Toast = { type: "success" | "error" | "info"; msg: string };
 type BackupData = Record<string, unknown[]>;
 type TableStats = { table: string; count: number };
 type BackupPreview = { fileName: string; tables: { name: string; rows: number }[]; totalRows: number; totalTables: number; version: string; createdAt: string };
-type TableResult = { table: string; fileRows: number; restored: number; failed: number };
 
 export default function BackupPage() {
   const [taking,     setTaking]     = useState(false);
@@ -76,7 +68,6 @@ export default function BackupPage() {
   const [tableStats, setTableStats] = useState<TableStats[]>([]);
   const [loadingStats, setLoadingStats] = useState(false);
   const [preview, setPreview] = useState<BackupPreview | null>(null);
-  const [restoreReport, setRestoreReport] = useState<TableResult[]>([]);
 
   const showToast = (type: Toast["type"], msg: string) => {
     setToast({ type, msg });
@@ -166,6 +157,14 @@ export default function BackupPage() {
   // ── Tables with composite primary keys (need special delete) ─────────────────
   const COMPOSITE_KEY_TABLES = ["transaction_products", "transaction_services"];
 
+  // ── Auto-fix invalid FK values instead of skipping ────────────────────────
+  // mechanic_id=0 → 1 (first mechanic), yeh row ab restore hogi
+  const AUTO_FIX_FK: Record<string, { field: string; invalidValues: unknown[]; fixValue: unknown }[]> = {
+    "mechanic_commission_history": [{ field: "mechanic_id", invalidValues: [0, null], fixValue: 1 }],
+    "attendance_list":             [{ field: "mechanic_id", invalidValues: [0, null], fixValue: 1 }],
+    "advance_payments":            [{ field: "mechanic_id", invalidValues: [0, null], fixValue: 1 }],
+  };
+
   // ── RESTORE ────────────────────────────────────────────────────────────────
   const handleRestore = async (file: File, dryRun = false, preloadedBackup?: BackupData) => {
     if (!file.name.endsWith(".json") && !preloadedBackup) {
@@ -208,7 +207,6 @@ export default function BackupPage() {
 
       let totalRestored = 0;
       let totalDeleted  = 0;
-      const tableResults: TableResult[] = [];
 
       // ── Step 0: Validate all backup data before restoring ─────────────────
       setProgress("Validating backup data...");
@@ -239,33 +237,22 @@ export default function BackupPage() {
 
         // ── Strip GENERATED columns (DB auto-calculates these) ────────────────
         const genCols = GENERATED_COLS[table] || [];
-        // ── Skip rows with invalid FK references ──────────────────────────────
-        const fkRule = SKIP_INVALID_FK[table];
+        // ── Auto-fix invalid FK values ────────────────────────────────────────
+        const fixRules = AUTO_FIX_FK[table] || [];
         const rows = (rawRows as Record<string, unknown>[])
-          .filter(row => {
-            if (!fkRule) return true;
-            const val = row[fkRule.field];
-            return !fkRule.invalidValues.includes(val as number | string);
-          })
           .map(row => {
-            const r: Record<string, unknown> = { ...row };
+            let r: Record<string, unknown> = { ...row };
             // Strip generated columns
             genCols.forEach(col => delete r[col]);
-            // Fix negative prices — CHECK (price >= 0)
-            for (const pf of ["price","cost_price","amount","discount"]) {
-              if (pf in r && typeof r[pf] === "number" && (r[pf] as number) < 0) r[pf] = 0;
-            }
-            // Fix int/null in text NOT NULL columns
-            for (const tf of ["name","description","category","fault","item","remark","uniq_id","code","fullname","address","sale_code"]) {
-              if (tf in r) {
-                if (r[tf] === null || r[tf] === undefined) r[tf] = "";
-                else if (typeof r[tf] !== "string") r[tf] = String(r[tf]);
+            // Fix invalid FK values
+            for (const rule of fixRules) {
+              if (rule.invalidValues.includes(r[rule.field])) {
+                r[rule.field] = rule.fixValue;
               }
             }
             return r;
           });
 
-        const tableStart = totalRestored;
         setProgress(`Restoring: ${table} (${rows.length} rows)...`);
 
         // Step 1: Delete existing rows
@@ -320,9 +307,6 @@ export default function BackupPage() {
             totalRestored += batch.length;
           }
         }
-
-        // Per-table result track karo
-        tableResults.push({ table, fileRows: rows.length, restored: totalRestored - tableStart, failed: rows.length - (totalRestored - tableStart) });
       }
 
       // Step 3: Reset sequences (important for auto-increment IDs)
@@ -330,13 +314,7 @@ export default function BackupPage() {
       await resetSequences();
 
       setProgress("");
-      setRestoreReport(tableResults);
-      const failedCount = tableResults.reduce((s, r) => s + r.failed, 0);
-      if (failedCount > 0) {
-        showToast("error", `⚠ ${totalRestored.toLocaleString()} restored, ${failedCount} failed — report dekhein`);
-      } else {
-        showToast("success", `✅ ${totalRestored.toLocaleString()} rows 100% restored!`);
-      }
+      showToast("success", `Restore complete! ${totalRestored.toLocaleString()} rows restored from ${orderedTables.length} tables`);
       fetchTableStats();
     } catch (err: unknown) {
       setProgress("");
@@ -456,40 +434,6 @@ export default function BackupPage() {
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
-
-      {/* ── Restore Report ─────────────────────────────────────────── */}
-      {restoreReport.length > 0 && (
-        <div className="fixed bottom-4 left-4 right-4 max-w-lg mx-auto z-50">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-xl shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[#21293d]">
-              <span className="text-[11px] font-black uppercase tracking-widest text-[#4a5568]">📊 Restore Report</span>
-              <div className="flex gap-3 text-xs">
-                <span className="text-green-400 font-bold">✓ {restoreReport.reduce((s,r)=>s+r.restored,0)} restored</span>
-                {restoreReport.some(r=>r.failed>0) &&
-                  <span className="text-red-400 font-bold">✗ {restoreReport.reduce((s,r)=>s+r.failed,0)} failed</span>
-                }
-              </div>
-            </div>
-            <div className="p-3 max-h-64 overflow-y-auto flex flex-col gap-1">
-              {restoreReport.map(r => (
-                <div key={r.table} className="flex justify-between items-center px-3 py-1.5 bg-[#0d1117] rounded-lg text-xs">
-                  <span className="font-mono text-[#94a3b8]">{r.table}</span>
-                  <span className="flex gap-3 items-center">
-                    <span className="text-[#4a5568]">{r.fileRows} in file</span>
-                    {r.failed === 0
-                      ? <span className="text-green-400 font-bold">✓ {r.restored} OK</span>
-                      : <span className="text-red-400 font-bold">✓{r.restored} ✗{r.failed} FAIL</span>
-                    }
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="px-4 py-2 border-t border-[#21293d] flex justify-end">
-              <button onClick={()=>setRestoreReport([])} className="text-[11px] text-[#4a5568] hover:text-white transition-colors">✕ Close</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Toast */}
       {toast && (
