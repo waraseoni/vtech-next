@@ -391,9 +391,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     (async () => {
       try {
+        // Public routes — redirect mat karo
+        const PUBLIC_PAGES = ["/", "/about", "/contact", "/login", "/signup"];
+        const isPublicPage = PUBLIC_PAGES.some(p => pathname === p || pathname.startsWith(p + "/"));
+
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          if (pathname !== "/login") router.push("/login");
+          if (!isPublicPage) router.push("/login");
           setLoading(false);
           return;
         }
@@ -459,7 +463,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   // Auto-close drawer on route change
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
-  if (pathname === "/login") return <html lang="en"><body>{children}</body></html>;
+  // Public pages — no sidebar, no dashboard chrome
+  const PUBLIC_PAGES = ["/login", "/signup", "/about", "/contact"];
+  const isPublicPage = PUBLIC_PAGES.includes(pathname) || pathname === "/";
+  if (isPublicPage && !profile) return <html lang="en"><body>{children}</body></html>;
 
   if (loading) {
     return (
