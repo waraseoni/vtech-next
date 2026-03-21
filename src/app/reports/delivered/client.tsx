@@ -32,8 +32,6 @@ type Props = {
   clientId?: string;
 };
 
-import { todayIST, formatIST, parseISTDate } from '@/lib/dateUtils';
-
 export default function DeliveredReportClient({ fromDate, toDate, clientId }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
