@@ -29,16 +29,16 @@ const PAYMENT_CONFIG: Record<string, { icon: any; color: string; bg: string; bor
   UPI:  { icon: Smartphone, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/25" },
 };
 
-const getPaymentInfo = (mode: string) =>
+const getPayConfig = (mode: string) =>
   PAYMENT_CONFIG[mode] || { icon: Banknote, color: "text-slate-400", bg: "bg-slate-500/10", border: "border-slate-500/25" };
 
 const fmtDate     = (d: string) => formatIST(d, { day: "2-digit", month: "short", year: "numeric" });
-const fmtDateTime = (d: string) => format(new Date(d), "dd MMM yy, hh:mm a");
+const fmtDateTime = (d: string) => formatIST(d, { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit", hour12: true });
 const money       = (v: number) => "₹" + (v || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 // ─── Payment Badge ────────────────────────────────────────────────────────────
-const PaymentBadge = ({ mode }: { mode: string }) => {
-  const { icon: Icon, color, bg, border } = getPaymentInfo(mode);
+const PayBadge = ({ mode }: { mode: string }) => {
+  const { icon: Icon, color, bg, border } = getPayConfig(mode);
   return (
     <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border ${bg} ${border} ${color} text-[10px] font-bold`}>
       <Icon size={10} /> {mode}
@@ -192,20 +192,21 @@ export default function DirectSalesPage() {
     ];
     const csv  = rows.map(r => r.join(",")).join("\n");
     const url  = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    const a    = Object.assign(document.createElement("a"), { href: url, download: `sales_${format(new Date(), "yyyyMMdd")}.csv` });
+    const a    = Object.assign(document.createElement("a"), { href: url, download: `sales_${todayIST().replace(/-/g, "")}.csv` });
     a.click(); URL.revokeObjectURL(url);
   };
 
   const printReport = () => {
     const w = window.open("", "_blank");
     if (!w) return;
+    const generatedAt = formatIST(new Date(), { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
     w.document.write(`<html><head><title>Direct Sales</title><style>
       body{font-family:sans-serif;padding:20px}h1{margin-bottom:4px}p{color:#666;font-size:.85rem;margin-bottom:16px}
       table{width:100%;border-collapse:collapse;font-size:.85rem}th{background:#f1f5f9;padding:8px 12px;text-align:left;border:1px solid #e2e8f0}
       td{padding:8px 12px;border:1px solid #e2e8f0}tfoot td{font-weight:bold;background:#f8fafc}
     </style></head><body>
       <h1>Direct Sales Report — V-Technologies</h1>
-      <p>Period: ${dateFrom} → ${dateTo} | Generated: ${format(new Date(), "dd MMM yyyy, hh:mm a")}</p>
+      <p>Period: ${dateFrom} → ${dateTo} | Generated: ${generatedAt}</p>
       <table><thead><tr><th>#</th><th>Code</th><th>Date</th><th>Client</th><th>Staff</th><th>Amount</th><th>Payment</th></tr></thead>
       <tbody>${filteredSales.map((s, i) => `<tr>
         <td>${i + 1}</td><td>${s.sale_code}</td><td>${fmtDate(s.date_created)}</td>
@@ -432,7 +433,7 @@ export default function DirectSalesPage() {
                   </select>
                 </div>
                 <div className="flex gap-2.5 pt-1">
-                  <button onClick={() => { setDateFrom(format(startOfMonth(new Date()), "yyyy-MM-dd")); setDateTo(format(endOfMonth(new Date()), "yyyy-MM-dd")); setPaymentFilter("all"); }}
+                  <button onClick={() => { setDateFrom(startOfMonthIST()); setDateTo(endOfMonthIST()); setPaymentFilter("all"); }}
                     className="flex-1 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl text-sm font-extrabold">
                     Reset
                   </button>
@@ -700,7 +701,7 @@ export default function DirectSalesPage() {
               <tfoot>
                 <tr className="bg-[#111520] border-t border-[#21293d]">
                   <td colSpan={4} className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
-                    {sales.length} sales · {format(new Date(dateFrom), "dd MMM")} → {format(new Date(dateTo), "dd MMM yyyy")}
+                    {sales.length} sales · {formatIST(dateFrom, { day: "2-digit", month: "short" })} → {formatIST(dateTo, { day: "2-digit", month: "short", year: "numeric" })}
                   </td>
                   <td className="px-4 py-3 text-right font-black text-emerald-400 text-base">
                     ₹{stats.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}

@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { format, subDays, addDays, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { FaPrint, FaWhatsapp, FaEye, FaAngleLeft, FaAngleRight, FaRedo } from 'react-icons/fa';
 import { Loader2 } from 'lucide-react';
+import { todayIST, formatIST, parseISTDate } from '@/lib/dateUtils';
 
 type Transaction = {
   id: number;
@@ -253,9 +253,10 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
 
   // Navigation to previous/next day – update local state first, then URL
   const goToDay = (direction: 'prev' | 'next') => {
-    const current = parseISO(from);
-    const newDate = direction === 'prev' ? subDays(current, 1) : addDays(current, 1);
-    const newFrom = format(newDate, 'yyyy-MM-dd');
+    const current = parseISTDate(from);
+    const newDate = new Date(current);
+    newDate.setDate(direction === 'prev' ? current.getDate() - 1 : current.getDate() + 1);
+    const newFrom = newDate.toISOString().split('T')[0];
     // Update local state immediately
     setFrom(newFrom);
     setTo(newFrom);
@@ -269,7 +270,7 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
 
   // Reset filter – update local state then URL
   const resetFilter = () => {
-    const today = format(new Date(), 'yyyy-MM-dd');
+    const today = todayIST();
     setSelectedClientId('all');
     setFrom(today);
     setTo(today);
@@ -425,7 +426,7 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
         <div className="text-center mb-6 no-print:hidden">
           <h3 className="text-lg font-bold">Delivered Items Report</h3>
           <p className="text-gray-600">
-            {selectedClientName} | {format(parseISO(from), 'dd MMM yyyy')} {from !== to ? `- ${format(parseISO(to), 'dd MMM yyyy')}` : ''}
+            {selectedClientName} | {formatIST(from, { day: '2-digit', month: 'short', year: 'numeric' })} {from !== to ? `- ${formatIST(to, { day: '2-digit', month: 'short', year: 'numeric' })}` : ''}
           </p>
         </div>
 
@@ -460,7 +461,7 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
                       </Link>
                     </td>
                     <td className="px-4 py-2">
-                      {format(parseISO(tx.date_completed), 'dd-MM-yyyy hh:mm a')}
+                      {formatIST(tx.date_completed, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                     </td>
                     <td className="px-4 py-2">
                       <div className="font-semibold">
