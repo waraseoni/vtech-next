@@ -4,6 +4,8 @@ import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Loader2, Printer, Wrench } from "lucide-react";
 
+import { todayIST, formatIST, parseISTDate, startOfMonthIST } from "@/lib/dateUtils";
+
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 type ServiceRow = {
@@ -18,8 +20,8 @@ type ServiceRow = {
 function CustomServiceContent() {
   const searchParams = useSearchParams();
 
-  const [from, setFrom] = useState(searchParams.get("from") || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0]);
-  const [to, setTo] = useState(searchParams.get("to") || new Date().toISOString().split("T")[0]);
+  const [from, setFrom] = useState(searchParams.get("from") || startOfMonthIST());
+  const [to, setTo] = useState(searchParams.get("to") || todayIST());
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<ServiceRow[]>([]);
 
@@ -94,7 +96,7 @@ function CustomServiceContent() {
               className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50" />
           </div>
           <div className="text-sm font-black text-white">
-            {new Date(from).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} — {new Date(to).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+            {formatIST(from, { day: "2-digit", month: "short", year: "numeric" })} — {formatIST(to, { day: "2-digit", month: "short", year: "numeric" })}
           </div>
         </div>
       </div>

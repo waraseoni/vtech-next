@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { Loader2, Printer, ChevronLeft, ChevronRight, Calendar, TrendingUp, TrendingDown, DollarSign, ShoppingCart, Receipt } from "lucide-react";
 
+import { todayIST, parseISTDate } from "@/lib/dateUtils";
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 type YearlyStats = {
@@ -25,7 +27,7 @@ type YearlyStats = {
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0 });
 
 export default function YearlyReportPage() {
-  const currentYear = new Date().getFullYear();
+  const currentYear = parseInt(todayIST().slice(0, 4));
   const [year, setYear] = useState(currentYear);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<YearlyStats | null>(null);
@@ -78,19 +80,19 @@ export default function YearlyReportPage() {
       const monthlyExpenses: number[] = Array(12).fill(0);
 
       jobs.forEach(j => {
-        const m = new Date(j.date_created).getMonth();
+        const m = parseISTDate(j.date_created.slice(0, 10)).getMonth();
         monthlyJobs[m] += j.total || 0;
       });
       sales.forEach(s => {
-        const m = new Date(s.date_created).getMonth();
+        const m = parseISTDate(s.date_created.slice(0, 10)).getMonth();
         monthlySales[m] += s.total_amount || 0;
       });
       payments.forEach(p => {
-        const m = new Date(p.payment_date).getMonth();
+        const m = parseISTDate(p.payment_date).getMonth();
         monthlyPayments[m] += (p.amount || 0) + (p.discount || 0);
       });
       expenses.forEach(e => {
-        const m = new Date(e.expense_date).getMonth();
+        const m = parseISTDate(e.expense_date).getMonth();
         monthlyExpenses[m] += e.amount || 0;
       });
 

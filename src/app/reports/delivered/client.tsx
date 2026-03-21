@@ -32,6 +32,8 @@ type Props = {
   clientId?: string;
 };
 
+import { todayIST, formatIST, parseISTDate } from '@/lib/dateUtils';
+
 export default function DeliveredReportClient({ fromDate, toDate, clientId }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -39,14 +41,14 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
   const [clientsList, setClientsList] = useState<{ id: number; name: string }[]>([]);
 
   // Local state – initialized from props
-  const [from, setFrom] = useState(fromDate || format(new Date(), 'yyyy-MM-dd'));
-  const [to, setTo] = useState(toDate || format(new Date(), 'yyyy-MM-dd'));
+  const [from, setFrom] = useState(fromDate || todayIST());
+  const [to, setTo] = useState(toDate || todayIST());
   const [selectedClientId, setSelectedClientId] = useState<string>(clientId || 'all');
 
   // Sync local state when props change (after navigation)
   useEffect(() => {
-    setFrom(fromDate || format(new Date(), 'yyyy-MM-dd'));
-    setTo(toDate || format(new Date(), 'yyyy-MM-dd'));
+    setFrom(fromDate || todayIST());
+    setTo(toDate || todayIST());
     setSelectedClientId(clientId || 'all');
   }, [fromDate, toDate, clientId]);
 
@@ -84,14 +86,8 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
       setLoading(true);
 
       try {
-        // Parse dates and create proper range
-        const fromDateObj = parseISO(from);
-        const toDateObj = parseISO(to);
-        
-        // Start from beginning of 'from' day
-        const startDate = startOfDay(fromDateObj).toISOString();
-        // End at end of 'to' day (23:59:59.999)
-        const endDate = endOfDay(toDateObj).toISOString();
+        const startDate = `${from}T00:00:00`;
+        const endDate = `${to}T23:59:59`;
 
         // 1. Fetch delivered transactions (status=5, del_status=0) within date range
         let query = supabase

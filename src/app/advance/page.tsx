@@ -4,6 +4,8 @@ import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Loader2, ChevronLeft, ChevronRight, Printer, Plus, Edit2, Trash2, DollarSign, X, Filter } from "lucide-react";
 
+import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate } from "@/lib/dateUtils";
+
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 type AdvanceRow = {
@@ -20,15 +22,15 @@ type Mechanic = { id: number; firstname: string; middlename: string | null; last
 function AdvanceLedgerContent() {
   const searchParams = useSearchParams();
 
-  const [from, setFrom] = useState(searchParams.get("from") || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0]);
-  const [to, setTo] = useState(searchParams.get("to") || new Date().toISOString().split("T")[0]);
+  const [from, setFrom] = useState(searchParams.get("from") || startOfMonthIST());
+  const [to, setTo] = useState(searchParams.get("to") || todayIST());
   const [mechanicId, setMechanicId] = useState(searchParams.get("mechanic_id") || "all");
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<AdvanceRow[]>([]);
   const [mechanics, setMechanics] = useState<Mechanic[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editRow, setEditRow] = useState<AdvanceRow | null>(null);
-  const [formData, setFormData] = useState({ mechanic_id: "", amount: "", date_paid: new Date().toISOString().split("T")[0], reason: "" });
+  const [formData, setFormData] = useState({ mechanic_id: "", amount: "", date_paid: todayIST(), reason: "" });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
 
@@ -70,7 +72,7 @@ function AdvanceLedgerContent() {
         await supabase.from("advance_payments").insert(payload);
       }
       setShowModal(false); setEditRow(null);
-      setFormData({ mechanic_id: "", amount: "", date_paid: new Date().toISOString().split("T")[0], reason: "" });
+      setFormData({ mechanic_id: "", amount: "", date_paid: todayIST(), reason: "" });
       fetchData();
     } catch (e) { console.error(e); }
     finally { setSaving(false); }

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { todayIST, formatIST, parseISTDate, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
 import {
   Loader2, ChevronLeft, ChevronRight, Users, Wrench, Package,
   TrendingUp, TrendingDown, DollarSign, ShoppingCart, BarChart2,
@@ -99,18 +100,15 @@ type LedgerEntry = {
 function BalanceSheetContent() {
   const searchParams = useSearchParams();
 
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
+  const today = todayIST();
+  const currentYear = parseInt(today.slice(0, 4));
+  const currentMonth = parseInt(today.slice(5, 7));
 
   const [filterType, setFilterType] = useState<FilterType>("monthly");
   const [selYear, setSelYear] = useState(currentYear);
   const [selMonth, setSelMonth] = useState(currentMonth);
-  const [startDate, setStartDate] = useState(
-    new Date(currentYear, currentMonth - 1, 1).toISOString().split("T")[0]
-  );
-  const [endDate, setEndDate] = useState(
-    new Date(currentYear, currentMonth, 0).toISOString().split("T")[0]
-  );
+  const [startDate, setStartDate] = useState(() => startOfMonthIST());
+  const [endDate, setEndDate] = useState(() => endOfMonthIST());
   const [activeTab, setActiveTab] = useState("customer");
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -154,8 +152,9 @@ function BalanceSheetContent() {
         else { m++; if (m > 12) { m = 1; y++; } }
         setSelYear(y);
         setSelMonth(m);
-        const s = new Date(y, m - 1, 1).toISOString().split("T")[0];
-        const e = new Date(y, m, 0).toISOString().split("T")[0];
+        const d = new Date(y, m - 1, 1);
+        const s = startOfMonthIST(d);
+        const e = endOfMonthIST(d);
         setStartDate(s);
         setEndDate(e);
       } else if (filterType === "yearly") {
@@ -173,7 +172,7 @@ function BalanceSheetContent() {
     try {
       const from = `${startDate}T00:00:00`;
       const to = `${endDate}T23:59:59`;
-      const prevEnd = new Date(new Date(startDate).getTime() - 86400000).toISOString().split("T")[0];
+      const prevEnd = new Date(parseISTDate(startDate).getTime() - 86400000).toISOString().split("T")[0];
 
       // ── 1. Customer Ledger ───────────────────────────────────────────────
       const { data: clients } = await supabase
@@ -376,8 +375,9 @@ function BalanceSheetContent() {
 
   const applyFilter = () => {
     if (filterType === "monthly") {
-      const s = new Date(selYear, selMonth - 1, 1).toISOString().split("T")[0];
-      const e = new Date(selYear, selMonth, 0).toISOString().split("T")[0];
+      const d = new Date(selYear, selMonth - 1, 1);
+      const s = startOfMonthIST(d);
+      const e = endOfMonthIST(d);
       setStartDate(s); setEndDate(e);
     } else if (filterType === "yearly") {
       setStartDate(`${selYear}-01-01`); setEndDate(`${selYear}-12-31`);
@@ -390,8 +390,9 @@ function BalanceSheetContent() {
       if (dir === "prev") { m--; if (m < 1) { m = 12; y--; } }
       else { m++; if (m > 12) { m = 1; y++; } }
       setSelYear(y); setSelMonth(m);
-      setStartDate(new Date(y, m - 1, 1).toISOString().split("T")[0]);
-      setEndDate(new Date(y, m, 0).toISOString().split("T")[0]);
+      const d = new Date(y, m - 1, 1);
+      setStartDate(startOfMonthIST(d));
+      setEndDate(endOfMonthIST(d));
     } else if (filterType === "yearly") {
       y = dir === "prev" ? y - 1 : y + 1;
       setSelYear(y);

@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
+import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate, formatIST } from "@/lib/dateUtils";
 import {
   AlertCircle,
   CheckCircle2,
@@ -80,69 +81,36 @@ const btnPrimary = `${btn} bg-blue-600 hover:bg-blue-500 text-white`;
 const btnGhost = `${btn} bg-white/[0.04] hover:bg-white/[0.07] text-slate-300 border border-[#21293d]`;
 const btnDanger = `${btn} bg-red-600 hover:bg-red-500 text-white`;
 
-function pad(n: number) {
-  return String(n).padStart(2, "0");
-}
-
-function todayIST() {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-  const bag: Record<string, string> = {};
-  parts.forEach((part) => {
-    bag[part.type] = part.value;
-  });
-  return `${bag.year}-${bag.month}-${bag.day}`;
-}
-
-function parseLocalDate(value: string) {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function toLocalDateString(date: Date) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
 function monthRangeFrom(base: string, diff = 0) {
-  const date = parseLocalDate(base);
-  const first = new Date(date.getFullYear(), date.getMonth() + diff, 1);
-  const last = new Date(date.getFullYear(), date.getMonth() + diff + 1, 0);
-  return {
-    from: toLocalDateString(first),
-    to: toLocalDateString(last),
-  };
+  const date = parseISTDate(base);
+  const d = new Date(date.getFullYear(), date.getMonth() + diff, 1);
+  return { from: startOfMonthIST(d), to: endOfMonthIST(d) };
 }
 
 function lastSevenDaysRange(base: string) {
-  const end = parseLocalDate(base);
+  const end = parseISTDate(base);
   const start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 6);
   return {
-    from: toLocalDateString(start),
-    to: toLocalDateString(end),
+    from: formatIST(start),
+    to: formatIST(end),
   };
 }
 
-const istToday = todayIST();
-
-const emptyExpenseForm: ExpenseForm = {
+const emptyExpenseForm = (): ExpenseForm => ({
   id: null,
   category: "",
   amount: "",
   remarks: "",
-  date: istToday,
-};
+  date: todayIST(),
+});
 
-const emptyStaffForm: StaffPaymentForm = {
+const emptyStaffForm = (): StaffPaymentForm => ({
   id: null,
   mechanic_id: "",
   amount: "",
-  date_paid: istToday,
+  date_paid: todayIST(),
   reason: "",
-};
+});
 
 function money(value: number) {
   return `Rs.${Number(value || 0).toFixed(2)}`;
@@ -166,7 +134,7 @@ function fmtDate(value: string) {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(parseLocalDate(value));
+  }).format(parseISTDate(value));
 }
 
 function mechanicName(mechanic?: Mechanic | null) {
@@ -178,11 +146,10 @@ export default function ExpensesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentQuery = searchParams.toString();
-  const currentMonth = monthRangeFrom(istToday, 0);
   const urlTab = searchParams.get("tab") === "shop" ? "shop" : "staff";
   const urlSearch = searchParams.get("q") || "";
-  const urlFrom = searchParams.get("from") || currentMonth.from;
-  const urlTo = searchParams.get("to") || currentMonth.to;
+  const urlFrom = searchParams.get("from") || startOfMonthIST();
+  const urlTo = searchParams.get("to") || todayIST();
 
   const [tab, setTab] = useState<TabId>(urlTab);
   const [loading, setLoading] = useState(true);
@@ -200,8 +167,8 @@ export default function ExpensesPage() {
 
   const [staffModalOpen, setStaffModalOpen] = useState(false);
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
-  const [staffForm, setStaffForm] = useState<StaffPaymentForm>(emptyStaffForm);
-  const [expenseForm, setExpenseForm] = useState<ExpenseForm>(emptyExpenseForm);
+  const [staffForm, setStaffForm] = useState<StaffPaymentForm>(emptyStaffForm());
+  const [expenseForm, setExpenseForm] = useState<ExpenseForm>(emptyExpenseForm());
 
   useEffect(() => {
     if (!toast) return;
@@ -328,7 +295,7 @@ export default function ExpensesPage() {
   );
 
   const applyCurrentMonth = () => {
-    const range = monthRangeFrom(istToday, 0);
+    const range = monthRangeFrom(todayIST(), 0);
     setFromDate(range.from);
     setToDate(range.to);
   };
@@ -351,7 +318,7 @@ export default function ExpensesPage() {
   };
 
   const shiftMonth = (diff: number) => {
-    const anchor = fromDate || istToday;
+    const anchor = fromDate || todayIST();
     const range = monthRangeFrom(anchor, diff);
     setFromDate(range.from);
     setToDate(range.to);
@@ -361,12 +328,12 @@ export default function ExpensesPage() {
     if (saving) return;
     setStaffModalOpen(false);
     setExpenseModalOpen(false);
-    setStaffForm({ ...emptyStaffForm, date_paid: todayIST() });
-    setExpenseForm({ ...emptyExpenseForm, date: todayIST() });
+    setStaffForm(emptyStaffForm());
+    setExpenseForm(emptyExpenseForm());
   };
 
   const openCreateStaff = () => {
-    setStaffForm({ ...emptyStaffForm, date_paid: todayIST() });
+    setStaffForm(emptyStaffForm());
     setStaffModalOpen(true);
   };
 
@@ -382,7 +349,7 @@ export default function ExpensesPage() {
   };
 
   const openCreateExpense = () => {
-    setExpenseForm({ ...emptyExpenseForm, date: todayIST() });
+    setExpenseForm(emptyExpenseForm());
     setExpenseModalOpen(true);
   };
 

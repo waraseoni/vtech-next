@@ -10,50 +10,41 @@ import {
   Banknote, CreditCard, Smartphone, Building2, BarChart3,
   CalendarDays, Send, Hash, Clock, ChevronDown,
 } from "lucide-react";
-import { format, startOfMonth, endOfMonth, subMonths, addMonths } from "date-fns";
+import { todayIST, startOfMonthIST, endOfMonthIST, formatIST, parseISTDate } from "@/lib/dateUtils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DirectSale {
   id: number;
   sale_code: string;
-  client_id: number | null;
   client_name: string | null;
-  client_contact: string | null;
-  client_image: string | null;
-  mechanic_id: number;
   staff_name: string;
   total_amount: number;
   payment_mode: string;
-  remarks: string | null;
   date_created: string;
-  last_edited_by: number | null;
-  last_edited_date: string | null;
-  last_editor_name: string | null;
 }
 
-// ─── Payment config ───────────────────────────────────────────────────────────
-const PAYMENT_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string; border: string }> = {
-  "Cash":          { icon: Banknote,    color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/25" },
-  "Card":          { icon: CreditCard,  color: "text-blue-400",    bg: "bg-blue-500/10",    border: "border-blue-500/25"    },
-  "UPI":           { icon: Smartphone,  color: "text-cyan-400",    bg: "bg-cyan-500/10",    border: "border-cyan-500/25"    },
-  "Bank Transfer": { icon: Building2,   color: "text-amber-400",   bg: "bg-amber-500/10",   border: "border-amber-500/25"   },
+// ─── Configuration ────────────────────────────────────────────────────────────
+const PAYMENT_CONFIG: Record<string, { icon: any; color: string; bg: string; border: string }> = {
+  Cash: { icon: Banknote, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/25" },
+  UPI:  { icon: Smartphone, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/25" },
 };
-const getPayConfig = (mode: string) =>
+
+const getPaymentInfo = (mode: string) =>
   PAYMENT_CONFIG[mode] || { icon: Banknote, color: "text-slate-400", bg: "bg-slate-500/10", border: "border-slate-500/25" };
 
-const fmtDate     = (d: string) => format(new Date(d), "dd MMM yyyy");
+const fmtDate     = (d: string) => formatIST(d, { day: "2-digit", month: "short", year: "numeric" });
 const fmtDateTime = (d: string) => format(new Date(d), "dd MMM yy, hh:mm a");
+const money       = (v: number) => "₹" + (v || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 // ─── Payment Badge ────────────────────────────────────────────────────────────
-function PayBadge({ mode }: { mode: string }) {
-  const cfg  = getPayConfig(mode);
-  const Icon = cfg.icon;
+const PaymentBadge = ({ mode }: { mode: string }) => {
+  const { icon: Icon, color, bg, border } = getPaymentInfo(mode);
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${cfg.bg} ${cfg.border} ${cfg.color}`}>
-      <Icon size={9} /> {mode}
-    </span>
+    <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border ${bg} ${border} ${color} text-[10px] font-bold`}>
+      <Icon size={10} /> {mode}
+    </div>
   );
-}
+};
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function DirectSalesPage() {
@@ -67,8 +58,8 @@ export default function DirectSalesPage() {
   const [mobileSearch,  setMobileSearch]  = useState("");
   const [mobilePayFilter, setMobilePayFilter] = useState("all");
 
-  const [dateFrom,      setDateFrom]      = useState(searchParams.get("from") || format(startOfMonth(new Date()), "yyyy-MM-dd"));
-  const [dateTo,        setDateTo]        = useState(searchParams.get("to")   || format(endOfMonth(new Date()),   "yyyy-MM-dd"));
+  const [dateFrom,      setDateFrom]      = useState(searchParams.get("from") || startOfMonthIST());
+  const [dateTo,        setDateTo]        = useState(searchParams.get("to")   || todayIST());
   const [paymentFilter, setPaymentFilter] = useState(searchParams.get("payment_mode") || "all");
   const [stats,         setStats]         = useState({ totalSales: 0, totalAmount: 0, avgAmount: 0, cashTotal: 0, upiTotal: 0 });
 
@@ -172,15 +163,14 @@ export default function DirectSalesPage() {
   };
 
   const shiftMonth = (dir: -1 | 1) => {
-    const fn   = dir === -1 ? subMonths : addMonths;
-    const from = format(fn(new Date(dateFrom), 1), "yyyy-MM-dd");
-    const to   = format(endOfMonth(new Date(from)), "yyyy-MM-dd");
-    updateUrl(from, to, paymentFilter);
+    const cur = parseISTDate(dateFrom);
+    cur.setMonth(cur.getMonth() + dir);
+    updateUrl(startOfMonthIST(cur), endOfMonthIST(cur), paymentFilter);
   };
 
   const goCurrentMonth = () => updateUrl(
-    format(startOfMonth(new Date()), "yyyy-MM-dd"),
-    format(endOfMonth(new Date()),   "yyyy-MM-dd"),
+    startOfMonthIST(),
+    endOfMonthIST(),
     "all"
   );
 
@@ -243,7 +233,7 @@ export default function DirectSalesPage() {
     );
   }
 
-  const monthLabel = format(new Date(dateFrom), "MMMM yyyy");
+  const monthLabel = formatIST(dateFrom, { month: "long", year: "numeric" });
 
   // ══════════════════════════════════════════════════════════════════════════
   // ── MOBILE VIEW ──────────────────────────────────────────────────────────

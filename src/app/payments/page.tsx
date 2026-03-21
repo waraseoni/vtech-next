@@ -5,6 +5,8 @@ import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, IndianRupee, Loader2, Pencil, Plus, Printer, Receipt, RotateCcw, Save, Search, Trash2, X } from "lucide-react";
 
+import { todayIST, formatIST, parseISTDate, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+
 type Client = { id: number; firstname: string; middlename: string | null; lastname: string; contact: string | null; address: string | null; opening_balance?: number | null };
 type PaymentRow = { id: number; client_id: number; payment_date: string; amount: number; discount: number | null; payment_mode: string; remarks: string | null };
 type PaymentForm = { id: number | null; client_id: string; payment_date: string; amount: string; discount: string; payment_mode: string; remarks: string };
@@ -16,18 +18,23 @@ const btn = "px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest t
 const btnPrimary = `${btn} bg-blue-600 hover:bg-blue-500 text-white`;
 const btnGhost = `${btn} bg-white/[0.04] hover:bg-white/[0.07] dark:text-slate-300 text-slate-800 border border-[#21293d] dark:border-[#21293d]`;
 const btnDanger = `${btn} bg-red-600 hover:bg-red-500 text-white`;
-const pad = (n: number) => String(n).padStart(2, "0");
-function todayIST() { const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date()); const bag: Record<string, string> = {}; parts.forEach((part) => { bag[part.type] = part.value; }); return `${bag.year}-${bag.month}-${bag.day}`; }
-const parseLocalDate = (value: string) => { const [y, m, d] = value.split("-").map(Number); return new Date(y, m - 1, d); };
-const toLocalDateString = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-function monthRangeFrom(base: string, diff = 0) { const date = parseLocalDate(base); const first = new Date(date.getFullYear(), date.getMonth() + diff, 1); const last = new Date(date.getFullYear(), date.getMonth() + diff + 1, 0); return { from: toLocalDateString(first), to: toLocalDateString(last) }; }
-function lastSevenDaysRange(base: string) { const end = parseLocalDate(base); const start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 6); return { from: toLocalDateString(start), to: toLocalDateString(end) }; }
+
+function monthRangeFrom(base: string, diff = 0) { 
+  const date = parseISTDate(base); 
+  const d = new Date(date.getFullYear(), date.getMonth() + diff, 1); 
+  return { from: startOfMonthIST(d), to: endOfMonthIST(d) }; 
+}
+function lastSevenDaysRange(base: string) { 
+  const end = parseISTDate(base); 
+  const start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 6); 
+  return { from: start.toISOString().split("T")[0], to: base }; 
+}
 const istToday = todayIST();
 const emptyForm = (): PaymentForm => ({ id: null, client_id: "", payment_date: istToday, amount: "", discount: "0", payment_mode: "Cash", remarks: "" });
 const clientName = (client?: Client | null) => !client ? "-" : [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ").trim();
 const money = (value: number) => `Rs.${Number(value || 0).toFixed(2)}`;
 const paymentCode = (id: number) => `PY-${String(id).padStart(4, "0")}`;
-const fmtDate = (value: string) => new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(parseLocalDate(String(value).slice(0, 10)));
+const fmtDate = (value: string) => formatIST(String(value).slice(0, 10), { day: "2-digit", month: "short", year: "numeric" });
 
 export default function PaymentsPage() {
   const router = useRouter();

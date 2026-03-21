@@ -7,6 +7,8 @@ import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { Loader2, ArrowLeft, Printer, FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react";
 
+import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate } from "@/lib/dateUtils";
+
 type Mechanic = {
   id: number;
   firstname: string;
@@ -48,11 +50,9 @@ function rateForDate(history: SalaryHist[], baseRate: number, date: string) {
 }
 
 function addMonthToDate(dateStr: string, diff: number) {
-  const d = new Date(dateStr);
+  const d = parseISTDate(dateStr);
   const dt = new Date(d.getFullYear(), d.getMonth() + diff, 1);
-  const from = dt.toISOString().slice(0, 10);
-  const to = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).toISOString().slice(0, 10);
-  return { from, to };
+  return { from: startOfMonthIST(dt), to: endOfMonthIST(dt) };
 }
 
 export default function MechanicLedgerPage() {
@@ -61,8 +61,8 @@ export default function MechanicLedgerPage() {
   const router = useRouter();
 
   const mechId = Number(params.id);
-  const from0 = sp.get("from") || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-  const to0 = sp.get("to") || new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().slice(0, 10);
+  const from0 = sp.get("from") || startOfMonthIST();
+  const to0 = sp.get("to") || endOfMonthIST();
 
   const [from, setFrom] = useState(from0);
   const [to, setTo] = useState(to0);
@@ -79,9 +79,9 @@ export default function MechanicLedgerPage() {
   const [err, setErr] = useState("");
 
   const prevDateLimit = useMemo(() => {
-    const d = new Date(from);
+    const d = parseISTDate(from);
     d.setDate(d.getDate() - 1);
-    return d.toISOString().slice(0, 10);
+    return d.toISOString().split("T")[0];
   }, [from]);
 
   useEffect(() => {

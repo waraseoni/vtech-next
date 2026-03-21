@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 
+import { formatIST } from "@/lib/dateUtils";
+
 type Row = {
   id: number;
   payment_date: string;
@@ -84,7 +86,7 @@ export default function ClientPaymentReportPage() {
                   const net = Number(r.amount || 0) - Number(r.discount || 0);
                   return (
                     <tr key={r.id} className="hover:bg-white/[0.03]">
-                      <td className="px-4 py-3 text-slate-300">{String(r.payment_date).slice(0, 10)}</td>
+                      <td className="px-4 py-3 text-slate-300">{formatIST(r.payment_date, { day: "2-digit", month: "short", year: "numeric" })}</td>
                       <td className="px-4 py-3 text-slate-400">{r.client_id}</td>
                       <td className="px-4 py-3 text-slate-400">{r.payment_mode}</td>
                       <td className="px-4 py-3 text-right text-slate-200 font-bold">Rs.{Number(r.amount || 0).toFixed(2)}</td>

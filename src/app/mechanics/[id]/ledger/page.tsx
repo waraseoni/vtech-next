@@ -18,6 +18,8 @@ type Mechanic = {
   daily_salary: number;
 };
 
+import { todayIST, startOfMonthIST, endOfMonthIST, formatIST, parseISTDate } from "@/lib/dateUtils";
+
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 type LedgerEntry = {
@@ -35,11 +37,8 @@ export default function MechanicLedgerPage() {
   const router = useRouter();
   const id = Number(params.id);
 
-  const today = new Date();
-  const [fromDate, setFromDate] = useState(() => {
-    return new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
-  });
-  const [toDate, setToDate] = useState(() => today.toISOString().split("T")[0]);
+  const [fromDate, setFromDate] = useState(() => startOfMonthIST());
+  const [toDate, setToDate] = useState(() => todayIST());
 
   const [loading, setLoading] = useState(true);
   const [mechanic, setMechanic] = useState<Mechanic | null>(null);
@@ -66,9 +65,9 @@ export default function MechanicLedgerPage() {
     setLoading(true);
 
     // Calculate opening balance (before fromDate)
-    const prevDate = new Date(fromDate);
-    prevDate.setDate(prevDate.getDate() - 1);
-    const prevDateStr = prevDate.toISOString().split("T")[0];
+    const d = parseISTDate(fromDate);
+    d.setDate(d.getDate() - 1);
+    const prevDateStr = d.toISOString().split("T")[0];
 
     const { data: prevAtt } = await supabase
       .from("attendance_list")
@@ -101,8 +100,8 @@ export default function MechanicLedgerPage() {
     const entries: LedgerEntry[] = [];
     let runningBalance = opening;
     let totalEarned = 0, totalCommission = 0, totalAdvance = 0;
-    let currentDate = new Date(fromDate);
-    const endDate = new Date(toDate);
+    let currentDate = parseISTDate(fromDate);
+    const endDate = parseISTDate(toDate);
 
     while (currentDate <= endDate) {
       const dateStr = currentDate.toISOString().split("T")[0];
@@ -186,12 +185,10 @@ export default function MechanicLedgerPage() {
   useEffect(() => { if (mechanic) fetchLedger(); }, [mechanic, fetchLedger]);
 
   const shiftMonth = (dir: -1 | 1) => {
-    const cur = new Date(fromDate);
+    const cur = parseISTDate(fromDate);
     cur.setMonth(cur.getMonth() + dir);
-    const newFrom = new Date(cur.getFullYear(), cur.getMonth(), 1).toISOString().split("T")[0];
-    const newTo = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).toISOString().split("T")[0];
-    setFromDate(newFrom);
-    setToDate(newTo);
+    setFromDate(startOfMonthIST(cur));
+    setToDate(endOfMonthIST(cur));
   };
 
   const exportExcel = () => {

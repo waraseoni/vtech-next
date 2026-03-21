@@ -4,6 +4,8 @@ import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Loader2, Printer, CreditCard, TrendingUp } from "lucide-react";
 
+import { todayIST, currentMonthIST, formatIST, parseISTDate } from "@/lib/dateUtils";
+
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 type LoanRow = {
@@ -21,7 +23,7 @@ type LoanRow = {
 function LoanReportContent() {
   const searchParams = useSearchParams();
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = currentMonthIST();
   const [month, setMonth] = useState(searchParams.get("month") || currentMonth);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<LoanRow[]>([]);
@@ -77,7 +79,7 @@ function LoanReportContent() {
   const tTarget = rows.reduce((s, r) => s + r.emi_amount, 0);
   const tReceived = rows.reduce((s, r) => s + r.received, 0);
   const tPending = rows.reduce((s, r) => s + r.pending, 0);
-  const monthLabel = new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const monthLabel = formatIST(month + "-01", { month: "long", year: "numeric" });
 
   return (
     <div className="space-y-4">

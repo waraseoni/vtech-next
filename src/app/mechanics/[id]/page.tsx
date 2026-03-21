@@ -79,6 +79,8 @@ function StatCard({ icon, label, value, sub, color }: {
   );
 }
 
+import { todayIST, startOfMonthIST, endOfMonthIST, formatIST, parseISTDate } from "@/lib/dateUtils";
+
 export default function MechanicDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -89,11 +91,8 @@ export default function MechanicDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>("work");
 
   // Date filter state
-  const today = new Date();
-  const [fromDate, setFromDate] = useState(() => {
-    return new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
-  });
-  const [toDate, setToDate] = useState(() => today.toISOString().split("T")[0]);
+  const [fromDate, setFromDate] = useState(() => startOfMonthIST());
+  const [toDate, setToDate] = useState(() => todayIST());
 
   // Data states
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -221,19 +220,15 @@ export default function MechanicDetailPage() {
   const name = mechanic ? [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ") : "";
 
   const shiftMonth = (dir: -1 | 1) => {
-    const cur = new Date(fromDate);
+    const cur = parseISTDate(fromDate);
     cur.setMonth(cur.getMonth() + dir);
-    const newFrom = new Date(cur.getFullYear(), cur.getMonth(), 1).toISOString().split("T")[0];
-    const newTo = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).toISOString().split("T")[0];
-    setFromDate(newFrom);
-    setToDate(newTo);
+    setFromDate(startOfMonthIST(cur));
+    setToDate(endOfMonthIST(cur));
   };
 
   const setCurrentMonth = () => {
-    const from = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
-    const to = today.toISOString().split("T")[0];
-    setFromDate(from);
-    setToDate(to);
+    setFromDate(startOfMonthIST());
+    setToDate(todayIST());
   };
 
   const shareWhatsApp = () => {

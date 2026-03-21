@@ -7,6 +7,7 @@ import {
   Loader2, ChevronLeft, ChevronRight, Calendar, FileText, Eye,
   Printer, Users, DollarSign, TrendingUp
 } from "lucide-react";
+import { todayIST, currentMonthIST, formatIST, parseISTDate } from "@/lib/dateUtils";
 
 type Mechanic = {
   id: number;
@@ -29,8 +30,7 @@ type Commission = {
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 export default function CommissionHistoryPage() {
-  const today = new Date();
-  const [month, setMonth] = useState(today.toISOString().slice(0, 7));
+  const [month, setMonth] = useState(currentMonthIST());
   const [mechanicId, setMechanicId] = useState("all");
   const [mechanics, setMechanics] = useState<Mechanic[]>([]);
   const [commissions, setCommissions] = useState<Commission[]>([]);
@@ -94,12 +94,12 @@ export default function CommissionHistoryPage() {
   useEffect(() => { fetchCommission(); }, [fetchCommission]);
 
   const shiftMonth = (dir: -1 | 1) => {
-    const [y, m] = month.split("-").map(Number);
-    const newDate = new Date(y, m - 1 + dir, 1);
-    setMonth(newDate.toISOString().slice(0, 7));
+    const d = parseISTDate(month + "-01");
+    d.setMonth(d.getMonth() + dir);
+    setMonth(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" }).format(d));
   };
 
-  const monthDisplay = new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const monthDisplay = formatIST(month + "-01", { month: "long", year: "numeric" });
 
   return (
     <div className="space-y-4">

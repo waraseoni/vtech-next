@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import AttendanceModal from './AttendanceModal';
+import { todayIST, currentMonthIST, parseISTDate } from '@/lib/dateUtils';
 
 interface Mechanic { id: number; name: string; }
 interface DayData   { day: number; status: 0 | 1 | 2 | 3; isSunday: boolean; }
@@ -33,7 +34,7 @@ export default function MonthlyReport({
   const searchParams = useSearchParams();
   const router       = useRouter();
 
-  const [month, setMonth]             = useState(searchParams.get('month') || new Date().toISOString().slice(0, 7));
+  const [month, setMonth]             = useState(searchParams.get('month') || currentMonthIST());
   const [mechanicsData, setMechanicsData] = useState<MechanicMonthData[]>([]);
   const [loading, setLoading]         = useState(true);
   const [modalOpen, setModalOpen]     = useState(false);
@@ -54,7 +55,9 @@ export default function MonthlyReport({
       return;
     }
 
-    const [y, m]   = month.split('-').map(Number);
+    const d = parseISTDate(month + "-01");
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
     const daysInMonth = new Date(y, m, 0).getDate(); // BUG FIX 1: only compute here
     const startDate = `${month}-01`;
     const endDate   = `${month}-${daysInMonth.toString().padStart(2, '0')}`;
@@ -75,7 +78,7 @@ export default function MonthlyReport({
         if (status === 1) fullDays++;
         else if (status === 3) halfDays++;
         else if (status === 2) absentDays++;
-        days.push({ day: d, status, isSunday: new Date(dateStr).getDay() === 0 });
+        days.push({ day: d, status, isSunday: parseISTDate(dateStr).getDay() === 0 });
       }
       return {
         mechanic: { id: mech.id, name: `${mech.firstname} ${mech.lastname}`.trim() },
@@ -90,11 +93,9 @@ export default function MonthlyReport({
 
   // BUG FIX 2: use router.push instead of window.history.pushState
   const changeMonth = (delta: -1 | 1) => {
-    const [y, m] = month.split('-').map(Number);
-    let ny = y, nm = m + delta;
-    if (nm < 1)  { nm = 12; ny = y - 1; }
-    if (nm > 12) { nm = 1;  ny = y + 1; }
-    const newMonth = `${ny}-${nm.toString().padStart(2, '0')}`;
+    const d = parseISTDate(month + "-01");
+    d.setMonth(d.getMonth() + delta);
+    const newMonth = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" }).format(d);
     setMonth(newMonth);
     router.push(`/attendance?view=report&month=${newMonth}`);
   };

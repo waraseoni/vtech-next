@@ -31,11 +31,13 @@ const STATUS_BTNS = [
   { value: 2 as const, label: 'Absent',   short: 'A', activeClass: 'bg-red-500 text-white border-red-500',        hoverClass: 'hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/40' },
 ] as const;
 
+import { todayIST } from '@/lib/dateUtils';
+
 export default function DailyAttendance({
   userRole, mechanicId,
 }: { userRole: 'admin' | 'staff'; mechanicId: number | null }) {
   const searchParams = useSearchParams();
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayIST();
 
   const [selectedDate, setSelectedDate] = useState(
     userRole === 'admin' ? (searchParams.get('date') || today) : today

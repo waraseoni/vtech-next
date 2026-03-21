@@ -5,6 +5,8 @@ import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { Loader2, Printer, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 
+import { todayIST, formatIST, parseISTDate } from "@/lib/dateUtils";
+
 type SaleItem = {
   id: number;
   product_name: string;
@@ -16,9 +18,8 @@ type SaleItem = {
 };
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
-function todayIST() { return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date()); }
-const fmtDate = (v: string) => new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(new Date(String(v).slice(0, 10) + "T00:00:00"));
-const fmtDateTime = (v: string) => new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }).format(new Date(v));
+const fmtDate = (v: string) => formatIST(String(v).slice(0, 10) + "T00:00:00", { day: "2-digit", month: "short", year: "numeric" });
+const fmtDateTime = (v: string) => formatIST(v, { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
 
 export default function DailySalesReportPage() {
   const [loading, setLoading] = useState(true);
@@ -71,7 +72,7 @@ export default function DailySalesReportPage() {
   };
 
   const shiftDay = (diff: number) => {
-    const d = new Date(date);
+    const d = parseISTDate(date);
     d.setDate(d.getDate() + diff);
     setDate(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d));
   };

@@ -135,26 +135,9 @@ const STATUS_META = [
   { label: "Delivered",   color: "#3b82f6" },
 ];
 
+import { todayIST, formatIST, parseISTDate, toISTString, toLocalStr, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+
 // ─── Timezone-safe helpers ────────────────────────────────────────────────────
-// BUG FIX 1: NEVER use .toISOString().split('T')[0] for local dates.
-// new Date(y,m,1).toISOString() → UTC string → in IST, midnight local = UTC-5:30
-// → gives PREVIOUS day's date string. Fix: construct manually from local parts.
-const pad = (n: number) => String(n).padStart(2, "0");
-const toLocalStr = (d: Date) =>
-  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
-// BUG FIX 2: 'today' must be IST-aware, not UTC.
-// new Date().toISOString().split('T')[0] → UTC date → at 11:30 PM IST = next UTC day.
-function todayIST(): string {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata",
-    year: "numeric", month: "2-digit", day: "2-digit",
-  }).formatToParts(new Date());
-  const p: Record<string, string> = {};
-  parts.forEach(x => { p[x.type] = x.value; });
-  return `${p.year}-${p.month}-${p.day}`;
-}
-
 // BUG FIX 3: Financial filter timestamps need explicit IST offset.
 // from + 'T00:00:00' → server-local (likely UTC on Vercel) → wrong records.
 // Fix: always append +05:30 so Supabase understands IST.
@@ -164,12 +147,8 @@ const istEnd   = (d: string) => `${d}T23:59:59+05:30`;
 // BUG FIX 4: fmtDate — new Date('YYYY-MM-DD') parses as UTC midnight.
 // In IST, UTC midnight = 5:30 AM → date shifts back 1 day in display.
 // Fix: parse manually as local date.
-const parseLocal = (s: string) => {
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(y, m - 1, d);
-};
 const fmtDate = (d: string) =>
-  parseLocal(d).toLocaleDateString("en-IN", {
+  formatIST(d, {
     day: "2-digit", month: "short", year: "numeric",
   });
 
@@ -223,13 +202,8 @@ export default function Dashboard() {
   }, []);
 
   // BUG FIX 1 applied: use toLocalStr instead of .toISOString().split('T')[0]
-  const now0 = new Date();
-  const [from, setFrom] = useState(() =>
-    toLocalStr(new Date(now0.getFullYear(), now0.getMonth(), 1))
-  );
-  const [to, setTo] = useState(() =>
-    toLocalStr(new Date(now0.getFullYear(), now0.getMonth() + 1, 0))
-  );
+  const [from, setFrom] = useState(() => startOfMonthIST());
+  const [to, setTo] = useState(() => endOfMonthIST());
 
   // ── MAIN DATA FETCH ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -301,13 +275,14 @@ export default function Dashboard() {
         );
 
         // BUG FIX 5: Monthly revenue chart — use toLocalStr not toISOString.split
-        const now = new Date();
         const pts: RevenuePoint[] = [];
         for (let i = 11; i >= 0; i--) {
-          const md    = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          // FIX: construct date strings without UTC conversion
-          const start = toLocalStr(md);
-          const end   = toLocalStr(new Date(md.getFullYear(), md.getMonth() + 1, 0));
+          const md = new Date();
+          md.setDate(1); // Set to 1st first to avoid month skipping
+          md.setMonth(md.getMonth() - i);
+          
+          const start = startOfMonthIST(md);
+          const end   = endOfMonthIST(md);
           const rep = active
             .filter((t: any) => t.status === 5 && isoDate(t.date_completed ?? "") >= start && isoDate(t.date_completed ?? "") <= end)
             .reduce((s: number, t: any) => s + n(t.amount), 0);
@@ -441,9 +416,8 @@ export default function Dashboard() {
 
   // BUG FIX 1 applied in resetDates too
   const resetDates = () => {
-    const nw = new Date();
-    setFrom(toLocalStr(new Date(nw.getFullYear(), nw.getMonth(), 1)));
-    setTo(toLocalStr(new Date(nw.getFullYear(), nw.getMonth() + 1, 0)));
+    setFrom(startOfMonthIST());
+    setTo(endOfMonthIST());
   };
 
   // ── Loading ──────────────────────────────────────────────────────────────
@@ -774,7 +748,7 @@ export default function Dashboard() {
                     <span className="bg-[#111520] text-slate-500 text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider">{pay.payment_mode}</span>
                     <span className="text-slate-600 text-[10px] font-bold">
                       {/* BUG FIX 4 applied to payment date too */}
-                      {parseLocal(pay.payment_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                      {formatIST(pay.payment_date, { day: "2-digit", month: "short" })}
                     </span>
                   </div>
                 </div>

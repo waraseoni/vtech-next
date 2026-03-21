@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import InquiryModal from "./components/InquiryModal";
 
+import { todayIST, formatIST, parseISTDate, toISTString, toLocalStr, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Inquiry {
   id: number;
@@ -23,18 +25,11 @@ interface Inquiry {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 // ── Date helpers (timezone-safe) ──────────────────────────────────────────
-// NEVER use .toISOString() on local dates — in IST (UTC+5:30),
-// midnight local time = previous day in UTC → wrong date string.
-// Always format using local getFullYear/getMonth/getDate.
-const pad         = (n: number) => String(n).padStart(2, "0");
-const toLocalStr  = (d: Date)   => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const firstOfMon  = (d = new Date()) => toLocalStr(new Date(d.getFullYear(), d.getMonth(), 1));
-const lastOfMon   = (d = new Date()) => toLocalStr(new Date(d.getFullYear(), d.getMonth() + 1, 0));
-// Parse "yyyy-MM-dd" as LOCAL date (new Date("yyyy-MM-dd") parses as UTC → wrong in IST)
-const parseLocal  = (s: string) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
-const shiftMon    = (s: string, n: number) => { const d = parseLocal(s); return new Date(d.getFullYear(), d.getMonth() + n, 1); };
-const fmtDate    = (s: string) => parseLocal(s.split("T")[0]).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-const fmtTime    = (s: string) => new Date(s).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: true });
+const firstOfMon  = (d = new Date()) => startOfMonthIST(d);
+const lastOfMon   = (d = new Date()) => endOfMonthIST(d);
+const shiftMon    = (s: string, n: number) => { const d = parseISTDate(s); return new Date(d.getFullYear(), d.getMonth() + n, 1); };
+const fmtDate    = (s: string) => formatIST(s.split("T")[0], { day: "2-digit", month: "short", year: "numeric" });
+const fmtTime    = (s: string) => formatIST(s, { hour: "2-digit", minute: "2-digit", hour12: true });
 const daysAgo    = (s: string) => {
   const d = Math.floor((Date.now() - new Date(s).getTime()) / 86400000);
   return d === 0 ? "Today" : d === 1 ? "Yesterday" : `${d}d ago`;
@@ -141,7 +136,7 @@ export default function InquiriesPage() {
   const prevMonth    = () => { const d = shiftMon(fromDate, -1); applyFilter(firstOfMon(d), lastOfMon(d), statusFilter); };
   const nextMonth    = () => { const d = shiftMon(fromDate,  1); applyFilter(firstOfMon(d), lastOfMon(d), statusFilter); };
   const currMonth    = () => applyFilter(firstOfMon(), lastOfMon(), "all");
-  const monthLabel   = parseLocal(fromDate).toLocaleString("en-IN", { month: "long", year: "numeric" });
+  const monthLabel   = formatIST(fromDate, { month: "long", year: "numeric" });
 
   // ── Filtered for mobile ───────────────────────────────────────────────────
   const filteredMobile = useMemo(() => {

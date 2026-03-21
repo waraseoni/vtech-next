@@ -11,32 +11,7 @@ import {
   PencilLine, IndianRupee, RefreshCw, MessageSquare,
 } from 'lucide-react';
 
-// ─────────────────────────────────────────────────────────────
-// TIMEZONE HELPERS (IST = UTC+5:30)
-// BUG FIX 1 & 2: "2026-03-01" parsed as UTC midnight → IST shows Feb 28
-// Always use parseLocal() for date-only strings.
-// ─────────────────────────────────────────────────────────────
-const pad = (n: number) => String(n).padStart(2, '0');
-
-/** Parse a "YYYY-MM-DD" string as LOCAL midnight (avoids UTC-shift) */
-const parseLocal = (s: string): Date => {
-  const [y, m, d] = s.split('-').map(Number);
-  return new Date(y, m - 1, d);
-};
-
-/**
- * Extract the IST date-only portion of any ISO timestamp.
- * BUG FIX 3: p.payment_date.split('T')[0] gives UTC date, not IST.
- */
-const toISTDateStr = (iso: string): string => {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Kolkata',
-    year: 'numeric', month: '2-digit', day: '2-digit',
-  }).formatToParts(new Date(iso));
-  const p: Record<string, string> = {};
-  parts.forEach(x => { p[x.type] = x.value; });
-  return `${p.year}-${p.month}-${p.day}`;
-};
+import { todayIST, formatIST, parseISTDate, toISTString, toLocalStr } from "@/lib/dateUtils";
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -117,13 +92,13 @@ const fmt = (n: number) =>
 /**
  * BUG FIX 1: Original used new Date(d) which parses "2026-03-01" as UTC midnight.
  * In IST (UTC+5:30) that renders as Feb 28, 11:30 PM → wrong date shown.
- * Fix: detect date-only strings and parse them with parseLocal().
+ * Fix: detect date-only strings and parse them with parseISTDate().
  */
 const fmtDate = (d: string) => {
   if (!d) return 'N/A';
   // date-only: "YYYY-MM-DD" — parse as local to avoid UTC shift
-  const date = d.length === 10 ? parseLocal(d) : new Date(d);
-  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const date = d.length === 10 ? parseISTDate(d) : new Date(d);
+  return formatIST(date, { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
 const STATUS_MAP: Record<number, { label: string; color: string }> = {
@@ -336,13 +311,13 @@ export default function ViewClientProfile() {
    * BUG FIX 2: new Date("2026-03-01") parses as UTC midnight.
    * In IST that's 5:30 AM — so any IST transaction from midnight to 5:29 AM
    * falls outside the filter even though it's the same date.
-   * Fix: parseLocal() for date-input values (which are always "YYYY-MM-DD").
+   * Fix: parseISTDate() for date-input values (which are always "YYYY-MM-DD").
    */
   const inRange = (dateStr: string) => {
     if (!dateFrom && !dateTo) return true;
     const d    = new Date(dateStr).getTime();
-    const from = dateFrom ? parseLocal(dateFrom).getTime()                  : -Infinity;
-    const to   = dateTo   ? parseLocal(dateTo).getTime() + 86_400_000       : Infinity;
+    const from = dateFrom ? parseISTDate(dateFrom).getTime()                  : -Infinity;
+    const to   = dateTo   ? parseISTDate(dateTo).getTime() + 86_400_000       : Infinity;
     return d >= from && d < to;
   };
 
@@ -365,8 +340,8 @@ export default function ViewClientProfile() {
       amount:       p.amount.toString(),
       // BUG FIX 3: p.payment_date may be a UTC ISO timestamp.
       // .split('T')[0] gives the UTC date, not IST.
-      // toISTDateStr() extracts the date in IST timezone.
-      payment_date: toISTDateStr(p.payment_date),
+      // toLocalStr() extracts the date in IST timezone.
+      payment_date: toLocalStr(new Date(p.payment_date)),
       discount:     (p.discount || 0).toString(),
       payment_mode: p.payment_mode,
       remarks:      p.remarks || '',

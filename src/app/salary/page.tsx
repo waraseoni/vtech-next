@@ -15,10 +15,12 @@ type SalaryRow = {
 
 type Mechanic = { id: number; firstname: string; middlename: string | null; lastname: string; salary_per_day: number; designation: string | null };
 
+import { todayIST, currentMonthIST, parseISTDate } from "@/lib/dateUtils";
+
 function SalaryContent() {
   const searchParams = useSearchParams();
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = currentMonthIST();
   const [month, setMonth] = useState(searchParams.get("month") || currentMonth);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<SalaryRow[]>([]);
@@ -35,9 +37,9 @@ function SalaryContent() {
   const [salaryRateModal, setSalaryRateModal] = useState(false);
   const [salaryTarget, setSalaryTarget] = useState<{ id: number; name: string; salary: number } | null>(null);
   const [newSalary, setNewSalary] = useState("");
-  const [newEffectiveDate, setNewEffectiveDate] = useState(new Date().toISOString().split("T")[0]);
+  const [newEffectiveDate, setNewEffectiveDate] = useState(todayIST());
 
-  const prevMonthEnd = new Date(new Date(month + "-01").getTime() - 86400000).toISOString().split("T")[0];
+  const prevMonthEnd = new Date(parseISTDate(month + "-01").getTime() - 86400000).toISOString().split("T")[0];
 
   const fetchReport = useCallback(async () => {
     setLoading(true);
@@ -87,15 +89,15 @@ function SalaryContent() {
   useEffect(() => { fetchReport(); }, [fetchReport]);
 
   const navigate = (dir: "prev" | "next") => {
-    const d = new Date(month + "-01");
+    const d = parseISTDate(month + "-01");
     if (dir === "prev") d.setMonth(d.getMonth() - 1);
     else d.setMonth(d.getMonth() + 1);
-    setMonth(d.toISOString().slice(0, 7));
+    setMonth(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" }).format(d));
   };
 
   const openLedger = async (r: SalaryRow) => {
     const from = `${month}-01`;
-    const nextMonth = new Date(month + "-01");
+    const nextMonth = parseISTDate(month + "-01");
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     const to = nextMonth.toISOString().split("T")[0];
     setLedgerTarget({ id: r.id, name: r.name, salary: r.salary_per_day });

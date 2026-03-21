@@ -16,10 +16,12 @@ type SaleRow = {
   total: number;
 };
 
+import { currentMonthIST, parseISTDate } from "@/lib/dateUtils";
+
 function MonthlySalesContent() {
   const searchParams = useSearchParams();
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = currentMonthIST();
   const [month, setMonth] = useState(searchParams.get("month") || currentMonth);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<SaleRow[]>([]);
@@ -28,7 +30,7 @@ function MonthlySalesContent() {
     setLoading(true);
     try {
       const from = `${month}-01T00:00:00`;
-      const toDate = new Date(month + "-01");
+      const toDate = parseISTDate(month + "-01");
       toDate.setMonth(toDate.getMonth() + 1);
       const to = toDate.toISOString().split("T")[0] + "T23:59:59";
 

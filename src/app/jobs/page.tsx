@@ -24,6 +24,7 @@ import React, { useState, useEffect, useMemo, useCallback, Suspense, useRef } fr
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
+import { todayIST, toISTString, parseISTDate, formatIST } from "@/lib/dateUtils";
 import {
   Plus, Eye, Settings, Wrench, Search, Loader2, Trash2, Phone,
   Filter, Printer, FileSpreadsheet, History, Layers,
@@ -85,16 +86,16 @@ const getStatusBadge = (s: number) =>
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" });
+  formatIST(d, { day: "2-digit", month: "2-digit", year: "numeric" });
 
 const fmtDateTime = (d: string) =>
-  new Date(d).toLocaleString("en-IN", {
+  formatIST(d, {
     day: "2-digit", month: "short", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
   });
 
 const fmtTime = (d: string) =>
-  new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+  formatIST(d, { hour: "2-digit", minute: "2-digit", hour12: true });
 
 // ─── Main Content Component ───────────────────────────────────────────────────
 function JobsListContent() {
@@ -453,12 +454,12 @@ function JobsListContent() {
     setQuickCreateLoading(true);
     try {
       // Generate job code
-      const today = new Date();
-      const datePrefix = today.toISOString().slice(0, 10).replace(/-/g, "");
+      const todayStr = todayIST();
+      const datePrefix = todayStr.replace(/-/g, "");
       const { count: todayCount } = await supabase
         .from("transaction_list")
         .select("id", { count: "exact", head: true })
-        .gte("date_created", today.toISOString().slice(0, 10) + "T00:00:00");
+        .gte("date_created", todayStr + "T00:00:00");
       const dailySeq = String((todayCount || 0) + 1).padStart(2, "0");
 
       const { data: counterRow } = await supabase.from("job_id_counter").select("last_job_id").eq("id", 1).single();
@@ -479,8 +480,8 @@ function JobsListContent() {
           amount: 0,
           status: 0,
           del_status: 0,
-          date_created: new Date().toISOString(),
-          date_updated: new Date().toISOString(),
+          date_created: toISTString(),
+          date_updated: toISTString(),
         })
         .select("id").single();
 
@@ -538,7 +539,7 @@ function JobsListContent() {
 
   // BUG FIX 4: shiftDay preserves all existing URL params
   const shiftDay = (dir: number) => {
-    const base = dateFrom ? new Date(dateFrom) : new Date();
+    const base = dateFrom ? parseISTDate(dateFrom) : parseISTDate(todayIST());
     base.setDate(base.getDate() + dir);
     const nd = base.toISOString().split("T")[0];
     setDateFrom(nd);

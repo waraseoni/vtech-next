@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Loader2, Printer, Users, TrendingUp, Star, BarChart2 } from "lucide-react";
+import { todayIST, formatIST, parseISTDate, toISTString, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0 });
 
@@ -20,8 +21,9 @@ type TopCustomer = {
 function TopCustomersContent() {
   const searchParams = useSearchParams();
 
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
+  const today = todayIST();
+  const currentYear = parseInt(today.slice(0, 4));
+  const currentMonth = parseInt(today.slice(5, 7));
   const [filterType, setFilterType] = useState<"monthly" | "yearly" | "all">("yearly");
   const [selYear, setSelYear] = useState(currentYear);
   const [selMonth, setSelMonth] = useState(currentMonth);
@@ -33,15 +35,15 @@ function TopCustomersContent() {
     try {
       let from: string, to: string;
       if (filterType === "monthly") {
-        from = `${selYear}-${String(selMonth).padStart(2, "0")}-01T00:00:00`;
-        const lastDay = new Date(selYear, selMonth, 0).getDate();
-        to = `${selYear}-${String(selMonth).padStart(2, "0")}-${lastDay}T23:59:59`;
+        const d = new Date(selYear, selMonth - 1, 1);
+        from = startOfMonthIST(d) + "T00:00:00";
+        to = endOfMonthIST(d) + "T23:59:59";
       } else if (filterType === "yearly") {
         from = `${selYear}-01-01T00:00:00`;
         to = `${selYear}-12-31T23:59:59`;
       } else {
         from = "2000-01-01T00:00:00";
-        to = new Date().toISOString();
+        to = toISTString();
       }
 
       const { data: clients } = await supabase
@@ -88,7 +90,7 @@ function TopCustomersContent() {
   const grandBalance = rows.reduce((s, r) => s + r.current_balance, 0);
 
   const filterLabel = filterType === "monthly"
-    ? `${new Date(selYear, selMonth - 1, 1).toLocaleDateString("en-IN", { month: "long", year: "numeric" })}`
+    ? `${formatIST(`${selYear}-${String(selMonth).padStart(2, "0")}-01`, { month: "long", year: "numeric" })}`
     : filterType === "yearly" ? `${selYear}` : "All Time";
 
   return (

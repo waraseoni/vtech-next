@@ -5,6 +5,8 @@ import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { Search, Loader2, Printer, ChevronLeft, ChevronRight, Download, Calendar } from "lucide-react";
 
+import { todayIST, formatIST, parseISTDate } from "@/lib/dateUtils";
+
 type Job = {
   id: number;
   code: string;
@@ -17,9 +19,8 @@ type Job = {
 };
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
-function todayIST() { return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date()); }
-const fmtDate = (v: string) => new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(new Date(String(v).slice(0, 10) + "T00:00:00"));
-const fmtDateTime = (v: string) => new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }).format(new Date(v));
+const fmtDate = (v: string) => formatIST(String(v).slice(0, 10) + "T00:00:00", { day: "2-digit", month: "short", year: "numeric" });
+const fmtDateTime = (v: string) => formatIST(v, { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
 
 const STATUS_LABELS: Record<number, { label: string; color: string }> = {
   0: { label: "Pending", color: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
@@ -63,7 +64,7 @@ export default function DailyServiceReportPage() {
   };
 
   const shiftDay = (diff: number) => {
-    const d = new Date(date);
+    const d = parseISTDate(date);
     d.setDate(d.getDate() + diff);
     setDate(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d));
   };

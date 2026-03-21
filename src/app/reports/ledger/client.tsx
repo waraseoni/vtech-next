@@ -14,29 +14,16 @@ import {
   CreditCard, Award, Building2, Receipt, Tag, Landmark,
 } from "lucide-react";
 
+import { todayIST, formatIST, parseISTDate, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+
 // ── Timezone-safe helpers ─────────────────────────────────────────────────────
-// BUG FIX 1: Never use .toISOString() for local date strings — gives UTC date.
-// IST = UTC+5:30, so midnight IST = 18:30 prev day UTC → wrong month/day.
-const pad = (n: number) => String(n).padStart(2, "0");
-const toLocalStr = (d: Date) =>
-  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
-// BUG FIX 2: parseISO treats 'YYYY-MM-DD' as LOCAL in date-fns v2, but
-// to be explicit and safe across versions, parse manually.
-const parseLocal = (s: string): Date => {
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(y, m - 1, d);
-};
-
-const getMonthStart = (d: Date): string => toLocalStr(startOfMonth(d));
-const getMonthEnd   = (d: Date): string => toLocalStr(endOfMonth(d));
+const getMonthStart = (d: Date): string => startOfMonthIST(d);
+const getMonthEnd   = (d: Date): string => endOfMonthIST(d);
 
 const safeFormatDate = (s: string): string => {
   if (!s) return "—";
   try {
-    // Use parseLocal for date-only strings, parseISO for timestamps
-    const d = s.includes("T") ? parseISO(s) : parseLocal(s);
-    return isValid(d) ? format(d, "dd MMM yyyy") : s;
+    return formatIST(s, { day: "2-digit", month: "short", year: "numeric" });
   } catch { return s; }
 };
 
@@ -175,8 +162,8 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
 
   // BUG FIX 4: 'today' must be inside component to get fresh value per render
   // (was already inside, confirmed — keeping explicit)
-  const [from, setFrom] = useState(() => fromDate || getMonthStart(new Date()));
-  const [to,   setTo]   = useState(() => toDate   || getMonthEnd(new Date()));
+  const [from, setFrom] = useState(() => fromDate || getMonthStart(parseISTDate(todayIST())));
+  const [to,   setTo]   = useState(() => toDate   || getMonthEnd(parseISTDate(todayIST())));
 
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
@@ -215,9 +202,9 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // BUG FIX 6: goToMonth — original used parseISO which can shift date in IST.
-  // Fix: use parseLocal for 'YYYY-MM-DD' strings.
+  // Fix: use parseISTDate for 'YYYY-MM-DD' strings.
   const goToMonth = (dir: "prev" | "next") => {
-    const base = parseLocal(from);
+    const base = parseISTDate(from);
     if (!isValid(base)) return;
     const newBase = dir === "prev" ? subMonths(base, 1) : addMonths(base, 1);
     setFrom(getMonthStart(newBase));
@@ -225,8 +212,9 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
   };
 
   const resetMonth = () => {
-    setFrom(getMonthStart(new Date()));
-    setTo(getMonthEnd(new Date()));
+    const now = parseISTDate(todayIST());
+    setFrom(getMonthStart(now));
+    setTo(getMonthEnd(now));
   };
 
   const handleFilter = (e: React.FormEvent) => {
@@ -237,7 +225,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
 
   const displayFrom = safeFormatDate(from);
   const displayTo   = safeFormatDate(to);
-  const monthLabel  = parseLocal(from).toLocaleString("en-IN", { month: "long", year: "numeric" });
+  const monthLabel  = formatIST(from, { month: "long", year: "numeric" });
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
