@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>V-Tech MySQL → Supabase Converter v4</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#0d1117;color:#e2e8f0;min-height:100vh;padding:24px}
+.wrap{max-width:820px;margin:0 auto}
+h1{font-size:21px;font-weight:900;color:#fff;margin-bottom:4px}
+.sub{font-size:11px;color:#4a5568;text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}
+.card{background:#161b27;border:1px solid #21293d;border-radius:14px;overflow:hidden;margin-bottom:14px}
+.card-hdr{padding:12px 18px;border-bottom:1px solid #21293d;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:1px}
+.card-body{padding:18px}
+.drop{border:2px dashed #21293d;border-radius:10px;padding:36px;text-align:center;cursor:pointer;transition:.2s;position:relative;background:#0d1117}
+.drop:hover,.drop.over{border-color:#3b82f6;background:rgba(59,130,246,.05)}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop p{color:#6b7280;font-size:13px;line-height:1.8}
+.btn{padding:14px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s;width:100%}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-g{background:#10b981;color:#fff}
+.log{background:#0d1117;border-radius:8px;padding:12px 14px;font-family:monospace;font-size:12px;color:#94a3b8;max-height:280px;overflow-y:auto;line-height:2;border:1px solid #21293d}
+.ok{color:#10b981}.warn{color:#f59e0b}.info{color:#60a5fa}.dim{color:#4a5568}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.stat{background:#0d1117;border:1px solid #21293d;border-radius:8px;padding:10px;text-align:center}
+.sn{font-size:20px;font-weight:900;color:#fff}
+.sl{font-size:10px;color:#4a5568;text-transform:uppercase;margin-top:2px}
+.tbl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:5px;margin-top:10px}
+.ti{background:#0d1117;border:1px solid #21293d;border-radius:7px;padding:6px 10px;font-size:11px;display:flex;justify-content:space-between;font-family:monospace}
+.tn{color:#94a3b8}.tc{color:#10b981;font-weight:900}
+.step{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1a2030;font-size:12px;color:#6b7280}
+.step:last-child{border:none}
+.snum{width:22px;height:22px;border-radius:50%;background:#1e2637;border:1px solid #2a3550;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0;color:#94a3b8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔄 V-Tech MySQL → Supabase Converter <span style="color:#3b82f6;font-size:13px">v4</span></h1>
+  <p class="sub">MariaDB SQL Dump → Exact Supabase Backup JSON (v2.0)</p>
+
+  <div class="card">
+    <div class="card-hdr" style="background:linear-gradient(90deg,rgba(59,130,246,.08),transparent)">📖 Steps</div>
+    <div class="card-body">
+      <div class="step"><div class="snum">1</div><span>phpMyAdmin → Export → SQL format → .sql download karo</span></div>
+      <div class="step"><div class="snum">2</div><span><strong style="color:#fff">.sql file drop karo</strong> neeche</span></div>
+      <div class="step"><div class="snum">3</div><span><strong style="color:#fff">Convert &amp; Download</strong> — JSON ready hogi</span></div>
+      <div class="step"><div class="snum">4</div><span>V-Tech → Backup → Restore → JSON drop karo → Done ✅</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr" style="background:linear-gradient(90deg,rgba(16,185,129,.08),transparent)">📂 SQL File Select Karo</div>
+    <div class="card-body">
+      <div class="drop" id="dz">
+        <input type="file" accept=".sql" onchange="loadFile(this.files[0])"/>
+        <div style="font-size:32px;margin-bottom:8px">🗄️</div>
+        <p id="flabel"><strong style="color:#94a3b8">Click karo ya file drop karo</strong><br>MariaDB / MySQL .sql dump</p>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-g" id="cbtn" onclick="doConvert()" disabled>🚀 Convert &amp; Download JSON</button>
+
+  <div class="card" id="lcard" style="display:none;margin-top:14px">
+    <div class="card-hdr">📋 Progress</div>
+    <div class="card-body">
+      <div class="log" id="log"></div>
+      <div class="stats" id="stats" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="card" id="pcard" style="display:none;margin-top:14px">
+    <div class="card-hdr">🗺️ Tables</div>
+    <div class="card-body"><div class="tbl-grid" id="tgrid"></div></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// CONFIG — exact match with Supabase backup (verified field-by-field)
+// ════════════════════════════════════════════════════════════
+const TABLES=["system_info","job_id_counter","mechanic_list","client_list","product_list","service_list","inventory_list","lender_list","loan_payments","expense_list","transaction_list","transaction_products","transaction_services","transaction_images","client_loans","client_payments","direct_sales","direct_sale_items","attendance_list","advance_payments","mechanic_salary_history","mechanic_commission_history","message_list"];
+
+// INT fields — exact from schema + good backup
+const INT_F={
+  advance_payments:["id","mechanic_id"],
+  attendance_list:["id","mechanic_id","status"],
+  client_list:["id","delete_flag"],
+  client_loans:["id","client_id","loan_period","status"],
+  client_payments:["id","client_id","loan_id"],
+  direct_sale_items:["id","sale_id","product_id","qty"],
+  direct_sales:["id","mechanic_id","client_id","last_edited_by"],
+  expense_list:["id"],
+  inventory_list:["id","product_id","quantity"],
+  job_id_counter:["id","last_job_id"],
+  lender_list:["id","tenure_months","status"],
+  loan_payments:["id","lender_id"],
+  mechanic_commission_history:["id","mechanic_id"],
+  mechanic_list:["id","status","delete_flag"],
+  mechanic_salary_history:["id","mechanic_id"],
+  message_list:["id","status"],
+  product_list:["id","status","delete_flag"],
+  service_list:["id","status","delete_flag"],
+  system_info:["id"],
+  transaction_images:["id","transaction_id"],
+  transaction_list:["id","user_id","mechanic_id","del_status","status"],
+  transaction_products:["transaction_id","product_id","qty"],
+  transaction_services:["transaction_id","service_id"],
+};
+
+// FLOAT fields
+const FLOAT_F={
+  advance_payments:["amount"],
+  client_list:["opening_balance"],
+  client_loans:["principal_amount","interest_rate","total_payable","emi_amount"],
+  client_payments:["amount","discount"],
+  direct_sale_items:["price"],
+  direct_sales:["total_amount"],
+  expense_list:["amount"],
+  lender_list:["loan_amount","interest_rate","emi_amount"],
+  loan_payments:["amount_paid"],
+  mechanic_commission_history:["commission_percent"],
+  mechanic_list:["daily_salary","commission_percent","salary_per_day"],
+  mechanic_salary_history:["salary"],
+  product_list:["cost_price","price"],
+  service_list:["price"],
+  transaction_list:["amount","mechanic_amount","mechanic_commission_amount"],
+  transaction_products:["price"],
+  transaction_services:["price"],
+};
+
+// STRING force — must stay string even if numeric
+const STR_F={
+  client_list:["contact"],
+  client_payments:["job_id"],
+  lender_list:["contact"],
+  mechanic_list:["contact"],
+  message_list:["contact"],
+  transaction_list:["code","job_id","client_name","remark","uniq_id","fault","item"],
+};
+
+// ALWAYS '' (empty string, never null) — verified from good backup
+const EMPTY_STR={
+  advance_payments:["reason"],
+  client_list:["address","email","lastname","middlename"],
+  client_loans:["remarks"],
+  client_payments:["remarks"],
+  direct_sales:["remarks"],
+  expense_list:["category","remarks"],
+  inventory_list:["place"],
+  loan_payments:["remarks"],
+  mechanic_list:["contact","middlename"],
+  product_list:["image_path"],
+  transaction_list:["remark","uniq_id"],
+};
+
+// Datetime format — +00:00 for these tables, plain ISO for others
+const WITH_TZ=new Set(["mechanic_list","product_list","service_list","lender_list","mechanic_commission_history","transaction_list"]);
+const DATE_ONLY=new Set(["date_paid","payment_date","curr_date","stock_date","loan_date","start_date","effective_date"]);
+const DT_FIELDS=new Set(["date_created","date_updated","date_completed","date_added","last_edited_date","created_at"]);
+
+// Valid enums
+const VALID_PM=new Set(["Cash","PhonePe/GPay","UPI","Bank Transfer","Credit Card","Credit to Client"]);
+const VALID_PT=new Set(["Full","Partial"]);
+
+// ════════════════════════════════════════════════════════════
+// FILE HANDLING
+// ════════════════════════════════════════════════════════════
+let sqlContent=null;
+const dz=document.getElementById("dz");
+dz.addEventListener("dragover",e=>{e.preventDefault();dz.classList.add("over");});
+dz.addEventListener("dragleave",()=>dz.classList.remove("over"));
+dz.addEventListener("drop",e=>{e.preventDefault();dz.classList.remove("over");if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
+
+function loadFile(f){
+  if(!f||!f.name.endsWith(".sql")){alert("Sirf .sql file!"); return;}
+  const r=new FileReader();
+  r.onload=e=>{
+    sqlContent=e.target.result;
+    const p=parseSQL(sqlContent);
+    document.getElementById("flabel").innerHTML=`<strong style="color:#10b981">✓ ${f.name}</strong><br>${(f.size/1024/1024).toFixed(2)} MB`;
+    const card=document.getElementById("pcard"),grid=document.getElementById("tgrid");
+    card.style.display="block"; grid.innerHTML="";
+    TABLES.forEach(t=>{
+      const n=(p[t]||[]).length,d=document.createElement("div");
+      d.className="ti";
+      d.innerHTML=`<span class="tn">${t}</span><span class="tc">${n}</span>`;
+      grid.appendChild(d);
+    });
+    document.getElementById("cbtn").disabled=false;
+  };
+  r.readAsText(f);
+}
+
+// ════════════════════════════════════════════════════════════
+// MYSQL PARSER — handles escaped chars, nested quotes
+// ════════════════════════════════════════════════════════════
+function parseSQL(sql){
+  const res={};
+  const re=/INSERT INTO `(\w+)` \(([^)]+)\) VALUES\s*\n?([\s\S]*?);/g;
+  let m;
+  while((m=re.exec(sql))!==null){
+    const t=m[1];
+    if(t==="users"||t==="profiles") continue;
+    const cols=m[2].split(",").map(c=>c.trim().replace(/`/g,""));
+    const rows=parseRows(m[3],cols);
+    if(!res[t]) res[t]=[];
+    res[t].push(...rows);
+  }
+  return res;
+}
+function parseRows(data,cols){
+  const rows=[];let d=0,inS=false,sc="",st=0,i=0;
+  for(;i<data.length;i++){
+    const ch=data[i];
+    if(inS){if(ch==="\\"){i++;continue;}if(ch===sc)inS=false;}
+    else{
+      if(ch==="'"||ch==='"'){inS=true;sc=ch;}
+      else if(ch==="("){if(d===0)st=i;d++;}
+      else if(ch===")"){d--;if(d===0){
+        const v=parseVals(data.slice(st+1,i));
+        if(v){const o={};cols.forEach((c,j)=>o[c]=v[j]??null);rows.push(o);}
+      }}
+    }
+  }
+  return rows;
+}
+function parseVals(s){
+  const vals=[];let cur="",inS=false,sc="",i=0;
+  for(;i<s.length;i++){
+    const ch=s[i];
+    if(inS){
+      if(ch==="\\"&&i+1<s.length){
+        const esc={"'":"'",'"':'"',"n":"\n","r":"\r","t":"\t","\\":"\\"};
+        cur+=esc[s[i+1]]||ch;i++;continue;
+      }
+      if(ch===sc){inS=false;continue;}
+      cur+=ch;
+    }else{
+      if(ch==="'"||ch==='"'){inS=true;sc=ch;}
+      else if(ch===","){vals.push(cur.trim()==="NULL"||cur.trim()===""?null:cur.trim());cur="";}
+      else cur+=ch;
+    }
+  }
+  vals.push(cur.trim()==="NULL"||cur.trim()===""?null:cur.trim());
+  return vals;
+}
+
+// ════════════════════════════════════════════════════════════
+// TYPE CASTING — exact match with Supabase backup
+// ════════════════════════════════════════════════════════════
+function fmtDT(val,table,field){
+  if(val===null) return null;
+  let v=String(val).trim();
+  if(DATE_ONLY.has(field)){const m=v.match(/(\d{4}-\d{2}-\d{2})/);return m?m[1]:v;}
+  if(v.includes(" ")&&!v.includes("T")) v=v.replace(" ","T");
+  v=v.replace(/[+-]\d{2}:\d{2}$/,"").replace(/Z$/,"");
+  return WITH_TZ.has(table)?v+"+00:00":v;
+}
+function iWhole(v){return(typeof v==="number"&&v===Math.floor(v))?Math.floor(v):v;}
+
+function castRow(table,row){
+  const r={...row};
+  const intf=INT_F[table]||[];
+  const floatf=FLOAT_F[table]||[];
+  const strf=STR_F[table]||[];
+  const emptyf=EMPTY_STR[table]||[];
+
+  for(const field of Object.keys(r)){
+    const val=r[field];
+
+    // EMPTY_STR: null/undefined → ''
+    if(emptyf.includes(field)){
+      r[field]=(val===null||val===undefined||val==="NULL")?"":String(val);
+      continue;
+    }
+    if(val===null) continue;
+
+    // Force string
+    if(strf.includes(field)){r[field]=String(val).trim();continue;}
+    // INT
+    if(intf.includes(field)){const n=parseInt(val);r[field]=isNaN(n)?null:n;continue;}
+    // FLOAT
+    if(floatf.includes(field)){const n=parseFloat(val);r[field]=isNaN(n)?null:n;continue;}
+    // Datetime
+    if(DT_FIELDS.has(field)||DATE_ONLY.has(field)){r[field]=fmtDT(val,table,field);continue;}
+
+    const sv=String(val).trim();
+    if(/^0\d+/.test(sv)){r[field]=sv;continue;}  // leading-zero = phone
+    if(/^-?\d+$/.test(sv)){r[field]=parseInt(sv);continue;}
+    if(/^-?\d+\.\d+$/.test(sv)){r[field]=parseFloat(sv);continue;}
+    r[field]=sv;
+  }
+
+  // ── client_payments special ─────────────────────────────────────────────
+  if(table==="client_payments"){
+    const a=parseFloat(r.amount)||0,d=parseFloat(r.discount)||0;
+    r.net_amount=iWhole(Math.round((a-d)*100)/100);
+    if(!VALID_PM.has(r.payment_mode)) r.payment_mode="Cash";
+    if(!VALID_PT.has(r.payment_type)) r.payment_type="Full";
+  }
+
+  // ── Fix negative prices (CHECK price >= 0) ─────────────────────────────
+  for(const pf of ["price","cost_price","amount","discount"]){
+    if(pf in r&&typeof r[pf]==="number"&&r[pf]<0) r[pf]=0;
+  }
+
+  // ── Fix int/null in text NOT NULL columns ───────────────────────────────
+  for(const tf of ["name","description","category","fault","item","remark","uniq_id","code","fullname","address","sale_code"]){
+    if(tf in r){
+      if(r[tf]===null||r[tf]===undefined) r[tf]="";
+      else if(typeof r[tf]!=="string") r[tf]=String(r[tf]);
+    }
+  }
+
+  // ── Numeric → int if whole number ──────────────────────────────────────
+  for(const f of ["amount","discount","opening_balance","cost_price","price","total_amount","salary","daily_salary","salary_per_day","commission_percent","amount_paid","loan_amount","interest_rate","emi_amount","principal_amount","total_payable","mechanic_amount","mechanic_commission_amount","net_amount"]){
+    if(f in r&&r[f]!==null) r[f]=iWhole(r[f]);
+  }
+
+  // ── Fix mechanic_id=0 → 1 (invalid FK) ─────────────────────────────────
+  if(["attendance_list","advance_payments","mechanic_salary_history","mechanic_commission_history"].includes(table)){
+    if(r.mechanic_id===0||r.mechanic_id===null) r.mechanic_id=1;
+  }
+
+  return r;
+}
+
+// ════════════════════════════════════════════════════════════
+// CONVERT
+// ════════════════════════════════════════════════════════════
+async function doConvert(){
+  if(!sqlContent) return;
+  const logEl=document.getElementById("log"),lcard=document.getElementById("lcard"),statsEl=document.getElementById("stats");
+  lcard.style.display="block"; logEl.innerHTML=""; statsEl.style.display="none";
+  document.getElementById("cbtn").disabled=true;
+  const log=(msg,cls="")=>{logEl.innerHTML+=`<div class="${cls}">${msg}</div>`;logEl.scrollTop=9999;};
+
+  log("🚀 Shuru...","info"); await sleep(10);
+  log("📖 SQL parse ho rahi hai...","info"); await sleep(10);
+  const parsed=parseSQL(sqlContent);
+  log(`✓ Parse done`,"ok");
+
+  const output={_meta:[{version:"2.0",created_at:new Date().toISOString(),tables:TABLES,app:"V-Tech Management System",table_order:TABLES.map((t,i)=>({table:t,order:i+1}))}]};
+  let total=0,empty=0;
+
+  for(const table of TABLES){
+    await sleep(2);
+    const rawRows=parsed[table]||[];
+    let rows=rawRows.map(r=>castRow(table,r));
+
+    // ── transaction_services: dedup + service_name=null + skip price<0 ────
+    if(table==="transaction_services"){
+      const seen=new Map();
+      rows.forEach(r=>seen.set(`${r.transaction_id}_${r.service_id}`,r));
+      rows=Array.from(seen.values())
+        .map(r=>({...r,service_name:null}))
+        .filter(r=>r.price>=0);
+    }
+
+    // ── transaction_products: dedup + product_name=null ────────────────────
+    if(table==="transaction_products"){
+      const seen=new Map();
+      rows.forEach(r=>seen.set(`${r.transaction_id}_${r.product_id}`,r));
+      rows=Array.from(seen.values()).map(r=>({...r,product_name:null}));
+    }
+
+    output[table]=rows;
+    total+=rows.length;
+    if(rows.length===0){empty++;log(`  ⚪ ${table}: 0`,"dim");}
+    else log(`  ✓ ${table}: ${rows.length}`,"ok");
+  }
+
+  log(`\n✅ Total: ${total.toLocaleString()} rows`,"ok");
+
+  const json=JSON.stringify(output,null,2);
+  const blob=new Blob([json],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  const now=new Date().toISOString().slice(0,19).replace(/:/g,"-");
+  a.href=url; a.download=`vtech_backup_${now}.json`; a.click();
+  URL.revokeObjectURL(url);
+  log(`📥 vtech_backup_${now}.json`,"ok");
+
+  document.getElementById("cbtn").disabled=false;
+  statsEl.style.display="grid";
+  statsEl.innerHTML=[{n:total.toLocaleString(),l:"Total Rows"},{n:TABLES.length-empty,l:"Tables"},{n:(json.length/1024/1024).toFixed(2)+" MB",l:"File Size"},{n:"v2.0",l:"Format"}].map(s=>`<div class="stat"><div class="sn">${s.n}</div><div class="sl">${s.l}</div></div>`).join("");
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+</script>
+</body>
+</html>

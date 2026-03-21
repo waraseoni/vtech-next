@@ -746,6 +746,41 @@ export default function BackupPage() {
           </div>
         </div>
 
+        {/* MySQL Converter Tool */}
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-violet-600/20 to-transparent border-b border-[#21293d]">
+            <span className="text-base">🔄</span>
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">MySQL / MariaDB → JSON Converter</h3>
+          </div>
+          <div className="p-5 space-y-3">
+            <p className="text-xs text-slate-500 leading-relaxed">
+              MariaDB ya MySQL ka <span className="text-white font-bold">.sql dump</span> file ko seedha
+              Supabase backup format mein convert karo — phir restore karo.
+            </p>
+            <div className="flex items-center gap-2 bg-[#0d1117] border border-[#21293d] rounded-xl px-4 py-3">
+              <span className="text-lg">📁</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-slate-300">Converter Tool Location</p>
+                <p className="text-[11px] text-slate-500 font-mono truncate">/public/tools/vtech_mysql_converter.html</p>
+              </div>
+            </div>
+            <a
+              href="/tools/vtech_mysql_converter.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-sm transition-all"
+            >
+              🔄 Converter Tool Kholo
+            </a>
+            <div className="space-y-1.5 text-[10px] text-slate-600">
+              <div className="flex items-center gap-2"><span className="text-violet-400">①</span> phpMyAdmin → Export → SQL → download</div>
+              <div className="flex items-center gap-2"><span className="text-violet-400">②</span> Converter mein .sql drop karo</div>
+              <div className="flex items-center gap-2"><span className="text-violet-400">③</span> JSON download hogi</div>
+              <div className="flex items-center gap-2"><span className="text-violet-400">④</span> Upar Restore mein woh JSON use karo</div>
+            </div>
+          </div>
+        </div>
+
         {/* Manual sequence reset note */}
         <div className="bg-indigo-500/5 border border-indigo-500/15 rounded-xl px-4 py-3">
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">
