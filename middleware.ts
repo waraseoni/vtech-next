@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   // ✅ PUBLIC routes — no login required
-  const isPublic = ["/", "/about", "/contact", "/login", "/signup"].some(r =>
+  const isPublic = ["/", "/about", "/contact", "/job-status", "/login", "/signup"].some(r =>
     path === r || path.startsWith(r + "/")
   );
 
