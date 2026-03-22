@@ -1,10 +1,14 @@
 "use client";
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { Loader2, ChevronLeft, ChevronRight, Printer, Eye, X, Coins, User, Edit2, DollarSign } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Printer, X, Coins, Edit2, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Activity } from "lucide-react";
+import { todayIST, currentMonthIST, parseISTDate } from "@/lib/dateUtils";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+type SalaryHistory = { id: number; mechanic_id: number; salary: number; effective_date: string };
+type Mechanic = { id: number; firstname: string; middlename: string | null; lastname: string; salary_per_day: number; designation: string | null };
 
 type SalaryRow = {
   id: number; name: string; salary_per_day: number;
@@ -13,78 +17,141 @@ type SalaryRow = {
   old_balance: number; current_adv: number; net_final: number;
 };
 
-type Mechanic = { id: number; firstname: string; middlename: string | null; lastname: string; salary_per_day: number; designation: string | null };
-
-import { todayIST, currentMonthIST, parseISTDate } from "@/lib/dateUtils";
+// Helper to get the correct salary rate for a specific date based on history
+const getEffectiveRate = (mechanicId: number, dateStr: string, defaultRate: number, history: SalaryHistory[]) => {
+  const applicableRate = history.find(h => h.mechanic_id === mechanicId && h.effective_date <= dateStr);
+  return applicableRate ? applicableRate.salary : defaultRate;
+};
 
 function SalaryContent() {
   const searchParams = useSearchParams();
-
   const currentMonth = currentMonthIST();
   const [month, setMonth] = useState(searchParams.get("month") || currentMonth);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<SalaryRow[]>([]);
   const [mechanics, setMechanics] = useState<Mechanic[]>([]);
+  
+  // Modals & Tabs
   const [activeTab, setActiveTab] = useState<"report" | "control">("report");
   const [showPayModal, setShowPayModal] = useState(false);
   const [payTarget, setPayTarget] = useState<{ id: number; name: string; amount: number } | null>(null);
+  
   const [showLedgerModal, setShowLedgerModal] = useState(false);
-  const [ledgerTarget, setLedgerTarget] = useState<{ id: number; name: string; salary: number } | null>(null);
+  const [ledgerTarget, setLedgerTarget] = useState<{ id: number; name: string; default_salary: number } | null>(null);
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [ledgerData, setLedgerData] = useState<any[]>([]);
   const [ledgerFrom, setLedgerFrom] = useState("");
   const [ledgerTo, setLedgerTo] = useState("");
+  
   const [salaryRateModal, setSalaryRateModal] = useState(false);
   const [salaryTarget, setSalaryTarget] = useState<{ id: number; name: string; salary: number } | null>(null);
   const [newSalary, setNewSalary] = useState("");
   const [newEffectiveDate, setNewEffectiveDate] = useState(todayIST());
 
-  const prevMonthEnd = new Date(parseISTDate(month + "-01").getTime() - 86400000).toISOString().split("T")[0];
-
   const fetchReport = useCallback(async () => {
     setLoading(true);
     try {
+      // 1. Fetch Active Mechanics
       const { data: mechData } = await supabase
-        .from("mechanic_list").select("id, firstname, middlename, lastname, salary_per_day, designation")
-        .eq("status", 1).eq("delete_flag", 0).order("firstname");
-      const typed = (mechData || []).map((m) => ({ ...m, designation: m.designation || null }));
-      setMechanics(typed);
+        .from("mechanic_list")
+        .select("id, firstname, middlename, lastname, salary_per_day, designation")
+        .eq("status", 1)
+        .eq("delete_flag", 0)
+        .order("firstname");
+        
+      const typedMechs = (mechData || []).map((m) => ({ ...m, designation: m.designation || null }));
+      setMechanics(typedMechs);
+      const mechIds = typedMechs.map(m => m.id);
 
-      const nextMonth = new Date(month + "-01");
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      const monthEnd = nextMonth.toISOString().split("T")[0];
+      if (mechIds.length === 0) {
+        setRows([]);
+        setLoading(false);
+        return;
+      }
 
-      const salaryRows: SalaryRow[] = [];
-      for (const m of mechData || []) {
+      // Date Boundaries
+      const monthStart = `${month}-01`;
+      const nextMonthD = new Date(monthStart);
+      nextMonthD.setMonth(nextMonthD.getMonth() + 1);
+      const nextMonthStart = nextMonthD.toISOString().split("T")[0]; // Strictly less than this date
+
+      // 2. Bulk Fetch all related data to prevent N+1 queries (HUGE Performance Boost)
+      const [
+        { data: allAtt },
+        { data: allComm },
+        { data: allAdv },
+        { data: allHist }
+      ] = await Promise.all([
+        supabase.from("attendance_list").select("mechanic_id, curr_date, status").in("mechanic_id", mechIds).in("status", [1, 3]).lt("curr_date", nextMonthStart),
+        supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount, date_created").in("mechanic_id", mechIds).lt("date_created", `${nextMonthStart}T00:00:00`),
+        supabase.from("advance_payments").select("mechanic_id, amount, date_paid").in("mechanic_id", mechIds).lt("date_paid", nextMonthStart),
+        supabase.from("mechanic_salary_history").select("*").in("mechanic_id", mechIds).order("effective_date", { ascending: false }).order("id", { ascending: false })
+      ]);
+
+      const attList = allAtt || [];
+      const commList = allComm || [];
+      const advList = allAdv || [];
+      const histList = allHist || [];
+
+      // 3. Process Data Locally
+      const salaryRows: SalaryRow[] = typedMechs.map((m) => {
         const name = [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ");
-        const salary = m.salary_per_day || 0;
+        const defaultSal = m.salary_per_day || 0;
 
-        const { data: attPrev } = await supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", m.id).in("status", [1, 3]).lte("curr_date", prevMonthEnd);
-        const { data: commPrev } = await supabase.from("transaction_list").select("mechanic_commission_amount").eq("mechanic_id", m.id).lt("date_created", `${month}-01T00:00:00`);
-        const { data: advPrev } = await supabase.from("advance_payments").select("amount").eq("mechanic_id", m.id).lte("date_paid", prevMonthEnd);
+        // --- OLD BALANCE (Everything strictly before monthStart) ---
+        let earnedPrev = 0;
+        attList.filter(a => a.mechanic_id === m.id && a.curr_date < monthStart).forEach(a => {
+          const rate = getEffectiveRate(m.id, a.curr_date, defaultSal, histList);
+          earnedPrev += (a.status === 3 ? rate / 2 : rate);
+        });
 
-        const earnedPrev = attPrev?.reduce((s, r) => s + (r.status === 3 ? salary / 2 : salary), 0) || 0;
-        const commPrevSum = commPrev?.reduce((s, r) => s + (r.mechanic_commission_amount || 0), 0) || 0;
-        const advPrevSum = advPrev?.reduce((s, r) => s + (r.amount || 0), 0) || 0;
+        const commPrevSum = commList.filter(c => c.mechanic_id === m.id && c.date_created < `${monthStart}T00:00:00`)
+                                    .reduce((s, c) => s + (c.mechanic_commission_amount || 0), 0);
+        
+        const advPrevSum = advList.filter(a => a.mechanic_id === m.id && a.date_paid < monthStart)
+                                  .reduce((s, a) => s + (a.amount || 0), 0);
+                                  
         const oldBalance = earnedPrev + commPrevSum - advPrevSum;
 
-        const { data: attCurr } = await supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", m.id).in("status", [1, 3]).gte("curr_date", `${month}-01`).lte("curr_date", monthEnd);
-        const { data: commCurr } = await supabase.from("transaction_list").select("mechanic_commission_amount").eq("mechanic_id", m.id).gte("date_created", `${month}-01T00:00:00`).lt("date_created", `${monthEnd}T00:00:00`);
-        const { data: advCurr } = await supabase.from("advance_payments").select("amount").eq("mechanic_id", m.id).gte("date_paid", `${month}-01`).lte("date_paid", monthEnd);
+        // --- CURRENT MONTH (>= monthStart AND < nextMonthStart) ---
+        let currentFix = 0;
+        let presentCount = 0;
+        let halfDayCount = 0;
 
-        const presentCount = attCurr?.filter((r) => r.status === 1).length || 0;
-        const halfDayCount = attCurr?.filter((r) => r.status === 3).length || 0;
-        const currentFix = attCurr?.reduce((s, r) => s + (r.status === 3 ? salary / 2 : salary), 0) || 0;
-        const currentComm = commCurr?.reduce((s, r) => s + (r.mechanic_commission_amount || 0), 0) || 0;
-        const currentAdv = advCurr?.reduce((s, r) => s + (r.amount || 0), 0) || 0;
+        attList.filter(a => a.mechanic_id === m.id && a.curr_date >= monthStart && a.curr_date < nextMonthStart).forEach(a => {
+          const rate = getEffectiveRate(m.id, a.curr_date, defaultSal, histList);
+          if (a.status === 3) {
+            halfDayCount++;
+            currentFix += (rate / 2);
+          } else {
+            presentCount++;
+            currentFix += rate;
+          }
+        });
+
+        const currentComm = commList.filter(c => c.mechanic_id === m.id && c.date_created >= `${monthStart}T00:00:00` && c.date_created < `${nextMonthStart}T00:00:00`)
+                                    .reduce((s, c) => s + (c.mechanic_commission_amount || 0), 0);
+
+        const currentAdv = advList.filter(a => a.mechanic_id === m.id && a.date_paid >= monthStart && a.date_paid < nextMonthStart)
+                                  .reduce((s, a) => s + (a.amount || 0), 0);
+
         const netFinal = oldBalance + currentFix + currentComm - currentAdv;
 
-        salaryRows.push({ id: m.id, name, salary_per_day: salary, present_count: presentCount, half_day_count: halfDayCount, current_fix: currentFix, current_comm: currentComm, old_balance: oldBalance, current_adv: currentAdv, net_final: netFinal });
-      }
+        return {
+          id: m.id, name, salary_per_day: defaultSal,
+          present_count: presentCount, half_day_count: halfDayCount,
+          current_fix: currentFix, current_comm: currentComm,
+          old_balance: oldBalance, current_adv: currentAdv, net_final: netFinal
+        };
+      });
+
       setRows(salaryRows);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  }, [month, prevMonthEnd]);
+    } catch (e) { 
+      console.error(e); 
+    } finally { 
+      setLoading(false); 
+    }
+  }, [month]);
 
   useEffect(() => { fetchReport(); }, [fetchReport]);
 
@@ -97,35 +164,56 @@ function SalaryContent() {
 
   const openLedger = async (r: SalaryRow) => {
     const from = `${month}-01`;
-    const nextMonth = parseISTDate(month + "-01");
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    const to = nextMonth.toISOString().split("T")[0];
-    setLedgerTarget({ id: r.id, name: r.name, salary: r.salary_per_day });
+    const nextMonthD = parseISTDate(from);
+    nextMonthD.setMonth(nextMonthD.getMonth() + 1);
+    const nextMonthStart = nextMonthD.toISOString().split("T")[0];
+    const to = new Date(nextMonthD.getTime() - 86400000).toISOString().split("T")[0]; // Last day of current month
+
+    setLedgerTarget({ id: r.id, name: r.name, default_salary: r.salary_per_day });
     setLedgerFrom(from); setLedgerTo(to);
     setLedgerData([]); setShowLedgerModal(true); setLedgerLoading(true);
 
     try {
-      const { data: attAll } = await supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", r.id).in("status", [1, 3]).gte("curr_date", from).lte("curr_date", to);
-      const { data: commAll } = await supabase.from("transaction_list").select("job_id, code, mechanic_commission_amount, date_created").eq("mechanic_id", r.id).gte("date_created", `${from}T00:00:00`).lte("date_created", `${to}T23:59:59`);
-      const { data: advAll } = await supabase.from("advance_payments").select("amount, date_paid").eq("mechanic_id", r.id).gte("date_paid", from).lte("date_paid", to);
+      // Fetch historical rates for this specific mechanic to ensure ledger matches main report
+      const { data: histList } = await supabase.from("mechanic_salary_history").select("*").eq("mechanic_id", r.id).order("effective_date", { ascending: false });
+      const history = histList || [];
+
+      const { data: attAll } = await supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", r.id).in("status", [1, 3]).gte("curr_date", from).lt("curr_date", nextMonthStart);
+      const { data: commAll } = await supabase.from("transaction_list").select("job_id, code, mechanic_commission_amount, date_created").eq("mechanic_id", r.id).gte("date_created", `${from}T00:00:00`).lt("date_created", `${nextMonthStart}T00:00:00`);
+      const { data: advAll } = await supabase.from("advance_payments").select("amount, date_paid").eq("mechanic_id", r.id).gte("date_paid", from).lt("date_paid", nextMonthStart);
+      
       const { data: attPrev } = await supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", r.id).in("status", [1, 3]).lt("curr_date", from);
       const { data: commPrev } = await supabase.from("transaction_list").select("mechanic_commission_amount").eq("mechanic_id", r.id).lt("date_created", `${from}T00:00:00`);
       const { data: advPrev } = await supabase.from("advance_payments").select("amount").eq("mechanic_id", r.id).lt("date_paid", from);
 
-      const ep = attPrev?.reduce((s, x) => s + (x.status === 3 ? r.salary_per_day / 2 : r.salary_per_day), 0) || 0;
+      // Calc opening balance accurately with historical rates
+      let ep = 0;
+      (attPrev || []).forEach(a => {
+        const rate = getEffectiveRate(r.id, a.curr_date, r.salary_per_day, history);
+        ep += (a.status === 3 ? rate / 2 : rate);
+      });
       const cp = commPrev?.reduce((s, x) => s + (x.mechanic_commission_amount || 0), 0) || 0;
       const ap = advPrev?.reduce((s, x) => s + (x.amount || 0), 0) || 0;
+      
       let running = ep + cp - ap;
       const entries: any[] = [];
       if (running !== 0) entries.push({ date: "Opening", status: "—", wage: running, comm: 0, adv: 0, balance: running, type: "opening" });
 
       const dates = new Set([...(attAll?.map((a) => a.curr_date) || []), ...(commAll?.map((c) => c.date_created.split("T")[0]) || []), ...(advAll?.map((a) => a.date_paid) || [])]);
+      
       for (const d of Array.from(dates).sort()) {
         const att = attAll?.find((a) => a.curr_date === d);
         let wage = 0, attStatus = "Absent";
-        if (att) { if (att.status === 1) { wage = r.salary_per_day; attStatus = "Present"; } else if (att.status === 3) { wage = r.salary_per_day / 2; attStatus = "Half Day"; } }
+        
+        if (att) { 
+          const dayRate = getEffectiveRate(r.id, d, r.salary_per_day, history);
+          if (att.status === 1) { wage = dayRate; attStatus = "Present"; } 
+          else if (att.status === 3) { wage = dayRate / 2; attStatus = "Half Day"; } 
+        }
+        
         const comm = commAll?.filter((c) => c.date_created.startsWith(d)).reduce((s, c) => s + (c.mechanic_commission_amount || 0), 0) || 0;
         const adv = advAll?.filter((a) => a.date_paid === d).reduce((s, a) => s + (a.amount || 0), 0) || 0;
+        
         running += wage + comm - adv;
         entries.push({ date: new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }), status: attStatus, wage, comm, adv, balance: running });
       }
@@ -136,7 +224,7 @@ function SalaryContent() {
 
   const handlePaySalary = async () => {
     if (!payTarget) return;
-    await supabase.from("advance_payments").insert({ mechanic_id: payTarget.id, amount: payTarget.amount, date_paid: new Date().toISOString().split("T")[0], reason: `Salary for ${month}` });
+    await supabase.from("advance_payments").insert({ mechanic_id: payTarget.id, amount: payTarget.amount, date_paid: new Date().toISOString().split("T")[0], reason: `Salary Settlement for ${monthLabel}` });
     setShowPayModal(false); setPayTarget(null); fetchReport();
   };
 
@@ -149,69 +237,123 @@ function SalaryContent() {
 
   const monthLabel = new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 
+  // Summary Metrics
+  const summaryTotals = useMemo(() => {
+    return rows.reduce((acc, row) => ({
+      payout: acc.payout + (row.net_final > 0 ? row.net_final : 0),
+      advances: acc.advances + row.current_adv,
+      commissions: acc.commissions + row.current_comm
+    }), { payout: 0, advances: 0, commissions: 0 });
+  }, [rows]);
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5">
+      {/* Header (Hide on Print) */}
+      <div className="flex items-center justify-between print:hidden">
         <div>
-          <h1 className="text-lg font-black text-white flex items-center gap-2"><Coins size={18} className="text-blue-400" /> Salary Management</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Staff salary & commission report</p>
+          <h1 className="text-xl font-black text-white flex items-center gap-2"><Wallet size={22} className="text-blue-500" /> Salary Management</h1>
+          <p className="text-sm text-slate-500 mt-1">V-Tech Electronics Staff & Commission Reports</p>
         </div>
-        <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all"><Printer size={13} /> Print</button>
+        <button onClick={() => window.print()} className="flex items-center gap-2 px-5 py-2.5 bg-[#161b27] border border-[#21293d] rounded-xl text-sm font-bold text-slate-300 hover:text-white hover:border-blue-500/50 hover:bg-[#1c2231] transition-all shadow-sm"><Printer size={16} /> Print Report</button>
       </div>
 
-      <div className="flex gap-2">
+      {/* Print Only Header */}
+      <div className="hidden print:block text-center mb-6">
+        <h2 className="text-2xl font-black text-black">V-Tech Electronics</h2>
+        <p className="text-gray-600 font-bold">Salary Statement: {monthLabel}</p>
+      </div>
+
+      <div className="flex gap-2 print:hidden bg-[#161b27] p-1.5 rounded-2xl border border-[#21293d] w-max">
         {(["report", "control"] as const).map((t) => (
           <button key={t} onClick={() => setActiveTab(t)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === t ? "bg-blue-600 text-white" : "bg-[#161b27] border border-[#21293d] text-slate-400 hover:text-white"}`}>
+            className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === t ? "bg-blue-600 text-white shadow-md shadow-blue-900/20" : "text-slate-400 hover:text-slate-200"}`}>
             {t === "report" ? "Salary Report" : "Salary Rate Master"}
           </button>
         ))}
       </div>
 
       {activeTab === "report" && (
-        <>
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
-            <div className="flex items-center justify-center gap-3">
-              <button onClick={() => navigate("prev")} className="w-9 h-9 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-full text-slate-400 hover:text-white hover:border-blue-500/40 transition-all"><ChevronLeft size={14} /></button>
-              <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-black text-white outline-none focus:border-blue-500/50 text-center" />
-              <button onClick={() => navigate("next")} className="w-9 h-9 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-full text-slate-400 hover:text-white hover:border-blue-500/40 transition-all"><ChevronRight size={14} /></button>
+        <div className="space-y-4">
+          
+          {/* Top Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:hidden">
+            <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center justify-between">
+              <div><p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Payable</p><h3 className="text-xl font-black text-emerald-400">{inr(summaryTotals.payout)}</h3></div>
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500"><ArrowUpRight size={20} /></div>
             </div>
-            <div className="text-center mt-2"><span className="text-sm font-black text-white">Salary Statement — {monthLabel}</span></div>
+            <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center justify-between">
+              <div><p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Month Advances</p><h3 className="text-xl font-black text-red-400">{inr(summaryTotals.advances)}</h3></div>
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500"><ArrowDownRight size={20} /></div>
+            </div>
+            <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center justify-between">
+              <div><p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Commissions</p><h3 className="text-xl font-black text-blue-400">{inr(summaryTotals.commissions)}</h3></div>
+              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500"><Activity size={20} /></div>
+            </div>
           </div>
 
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+          {/* Month Navigator */}
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3 print:hidden">
+            <div className="flex items-center justify-center gap-4">
+              <button onClick={() => navigate("prev")} className="w-10 h-10 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-full text-slate-400 hover:text-white hover:border-blue-500/50 hover:bg-[#1c2231] transition-all"><ChevronLeft size={16} /></button>
+              <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-4 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-sm font-black text-white outline-none focus:border-blue-500/50 text-center" />
+              <button onClick={() => navigate("next")} className="w-10 h-10 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-full text-slate-400 hover:text-white hover:border-blue-500/50 hover:bg-[#1c2231] transition-all"><ChevronRight size={16} /></button>
+            </div>
+          </div>
+
+          {/* Main Table */}
+          <div className="bg-[#161b27] print:bg-white border border-[#21293d] print:border-gray-300 rounded-2xl overflow-hidden print:rounded-none">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full print:text-black">
                 <thead>
-                  <tr className="bg-[#111520]">
-                    {["#", "Staff", "Attendance (P | HD)", "Earned Salary", "Commission", "Old Bal", "Advance", "Net Total", "Action"].map((h) => (
-                      <th key={h} className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left">{h}</th>
+                  <tr className="bg-[#111520] print:bg-gray-100">
+                    {["#", "Staff Name", "Attendance", "Earned Salary", "Commission", "Old Bal", "Advance", "Net Total", "Action"].map((h, idx) => (
+                      <th key={h} className={`px-4 py-3 text-[10px] print:text-xs font-black uppercase text-slate-500 print:text-gray-800 tracking-widest text-left ${idx === 8 ? 'print:hidden' : ''}`}>{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-[#21293d]/50 print:divide-gray-300">
                   {loading ? (
-                    <tr><td colSpan={9} className="text-center py-12"><Loader2 size={20} className="animate-spin text-blue-400 mx-auto" /></td></tr>
+                    <tr><td colSpan={9} className="text-center py-16"><Loader2 size={24} className="animate-spin text-blue-500 mx-auto mb-2" /><p className="text-slate-500 text-xs font-bold">Crunching numbers...</p></td></tr>
                   ) : rows.length === 0 ? (
-                    <tr><td colSpan={9} className="text-center py-12 text-slate-600 text-xs font-bold">No staff found</td></tr>
+                    <tr><td colSpan={9} className="text-center py-12 text-slate-500 text-sm font-bold">No staff records found.</td></tr>
                   ) : rows.map((r, i) => (
-                    <tr key={r.id} className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors">
-                      <td className="px-3 py-2.5 text-xs text-slate-500 text-center">{i + 1}</td>
-                      <td className="px-3 py-2.5"><button onClick={() => openLedger(r)} className="text-xs font-black text-blue-400 hover:text-blue-300 transition-colors">{r.name}</button></td>
-                      <td className="px-3 py-2.5 text-xs text-center"><span className="text-emerald-400 font-bold">{r.present_count}</span><span className="text-slate-600 mx-1">|</span><span className="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded text-[10px] font-bold">{r.half_day_count}</span></td>
-                      <td className="px-3 py-2.5 text-xs text-right text-slate-300">{inr(r.current_fix)}</td>
-                      <td className="px-3 py-2.5 text-xs text-right text-blue-400">{inr(r.current_comm)}</td>
-                      <td className={`px-3 py-2.5 text-xs text-right font-bold ${r.old_balance < 0 ? "text-red-400" : "text-slate-300"}`}>{inr(r.old_balance)}</td>
-                      <td className="px-3 py-2.5 text-xs text-right text-red-400">{inr(r.current_adv)}</td>
-                      <td className="px-3 py-2.5 text-right"><span className={`text-xs font-black px-2 py-1 rounded-lg ${r.net_final >= 0 ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30"}`}>{inr(Math.abs(r.net_final))}</span></td>
-                      <td className="px-3 py-2.5">{r.net_final > 0 ? <button onClick={() => setPayTarget({ id: r.id, name: r.name, amount: r.net_final })} className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg text-[10px] font-bold hover:bg-emerald-500/30 transition-all"><DollarSign size={10} className="inline mr-1" /> Pay</button> : <span className="px-2 py-1 bg-slate-500/20 text-slate-500 rounded-lg text-[10px] font-bold">Settled</span>}</td>
+                    <tr key={r.id} className="hover:bg-white/[0.02] print:hover:bg-transparent transition-colors">
+                      <td className="px-4 py-3 text-xs text-slate-500 print:text-black text-center">{i + 1}</td>
+                      <td className="px-4 py-3">
+                        <button onClick={() => openLedger(r)} className="text-sm font-black text-blue-400 print:text-black hover:text-blue-300 print:pointer-events-none transition-colors">{r.name}</button>
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        <div className="flex items-center gap-1.5 bg-[#111520] print:bg-transparent w-max px-2 py-1 rounded-lg print:p-0">
+                          <span className="text-emerald-400 print:text-green-700 font-black">{r.present_count}</span>
+                          <span className="text-slate-600 print:text-black">|</span>
+                          <span className="text-amber-400 print:text-orange-600 font-black">{r.half_day_count}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-right text-slate-300 print:text-black">{inr(r.current_fix)}</td>
+                      <td className="px-4 py-3 text-xs text-right font-bold text-blue-400 print:text-black">{inr(r.current_comm)}</td>
+                      <td className={`px-4 py-3 text-xs text-right font-black ${r.old_balance < 0 ? "text-red-400 print:text-red-700" : "text-slate-400 print:text-black"}`}>{inr(r.old_balance)}</td>
+                      <td className="px-4 py-3 text-xs text-right font-bold text-red-400 print:text-red-700">{inr(r.current_adv)}</td>
+                      <td className="px-4 py-3 text-right">
+                        <span className={`text-xs font-black px-2.5 py-1.5 rounded-lg print:p-0 print:bg-transparent print:border-none ${r.net_final >= 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 print:text-green-700" : "bg-red-500/10 text-red-400 border border-red-500/20 print:text-red-700"}`}>
+                          {inr(Math.abs(r.net_final))}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right print:hidden">
+                        {r.net_final > 0 ? (
+                          <button onClick={() => setPayTarget({ id: r.id, name: r.name, amount: r.net_final })} className="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg text-xs font-bold hover:bg-emerald-500 hover:text-white transition-all shadow-sm">
+                            <DollarSign size={12} className="inline mr-1 -mt-0.5" />Pay
+                          </button>
+                        ) : (
+                          <span className="px-3 py-1.5 bg-[#111520] text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-wider">Settled</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {activeTab === "control" && (
@@ -220,19 +362,23 @@ function SalaryContent() {
             <table className="w-full">
               <thead>
                 <tr className="bg-[#111520]">
-                  {["#", "Staff Name", "Daily Wage", "Last Updated", "Action"].map((h) => (
-                    <th key={h} className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left">{h}</th>
+                  {["#", "Staff Name", "Role", "Current Daily Wage", "Action"].map((h) => (
+                    <th key={h} className="px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-widest text-left">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-[#21293d]/50">
                 {mechanics.map((m, i) => (
-                  <tr key={m.id} className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors">
-                    <td className="px-3 py-2.5 text-xs text-slate-500 text-center">{i + 1}</td>
-                    <td className="px-3 py-2.5"><div className="text-xs font-bold text-slate-200">{[m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ")}</div><div className="text-[10px] text-slate-600">{m.designation || "Staff"}</div></td>
-                    <td className="px-3 py-2.5 text-sm font-bold text-emerald-400">{inr(m.salary_per_day)}</td>
-                    <td className="px-3 py-2.5 text-xs text-slate-500">—</td>
-                    <td className="px-3 py-2.5"><button onClick={() => { setSalaryTarget({ id: m.id, name: [m.firstname, m.lastname].join(" "), salary: m.salary_per_day }); setNewSalary(String(m.salary_per_day)); setSalaryRateModal(true); }} className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg text-[10px] font-bold hover:bg-blue-500/30 transition-all"><Edit2 size={10} className="inline mr-1" /> Update</button></td>
+                  <tr key={m.id} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="px-4 py-3 text-xs text-slate-500 text-center">{i + 1}</td>
+                    <td className="px-4 py-3 font-bold text-slate-200">{[m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ")}</td>
+                    <td className="px-4 py-3 text-xs text-slate-400">{m.designation || "Technician"}</td>
+                    <td className="px-4 py-3 text-sm font-black text-emerald-400">{inr(m.salary_per_day)}</td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => { setSalaryTarget({ id: m.id, name: [m.firstname, m.lastname].join(" "), salary: m.salary_per_day }); setNewSalary(String(m.salary_per_day)); setSalaryRateModal(true); }} className="px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm">
+                        <Edit2 size={12} className="inline mr-1.5 -mt-0.5" /> Update Rate
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -241,46 +387,63 @@ function SalaryContent() {
         </div>
       )}
 
+      {/* Pay Modal */}
       {showPayModal && payTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl p-5">
-            <h3 className="font-black text-white mb-1">Pay Salary to {payTarget.name}</h3>
-            <p className="text-xs text-slate-500 mb-4">Amount: {inr(payTarget.amount)}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl p-6">
+            <h3 className="font-black text-lg text-white mb-2">Issue Salary Payment</h3>
+            <div className="bg-[#111520] border border-[#21293d] rounded-xl p-4 mb-5">
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Staff Member</p>
+              <p className="text-sm font-black text-slate-200 mb-3">{payTarget.name}</p>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Settlement Amount</p>
+              <p className="text-2xl font-black text-emerald-400">{inr(payTarget.amount)}</p>
+            </div>
             <div className="flex gap-3">
-              <button onClick={handlePaySalary} className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-bold text-white">Confirm Payment</button>
-              <button onClick={() => { setShowPayModal(false); setPayTarget(null); }} className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl text-xs font-bold hover:text-white">Cancel</button>
+              <button onClick={handlePaySalary} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-sm font-black text-white shadow-lg shadow-emerald-900/20 transition-all">Confirm Payout</button>
+              <button onClick={() => { setShowPayModal(false); setPayTarget(null); }} className="px-5 py-3 bg-[#111520] border border-[#21293d] text-slate-400 hover:text-white hover:bg-[#1c2231] rounded-xl text-sm font-bold transition-all">Cancel</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Ledger Modal */}
       {showLedgerModal && ledgerTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-2xl shadow-2xl max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-[#21293d]">
-              <div><h3 className="font-black text-white text-sm">Daily Ledger: {ledgerTarget.name}</h3><p className="text-[10px] text-slate-500">{ledgerFrom} to {ledgerTo}</p></div>
-              <button onClick={() => setShowLedgerModal(false)} className="w-8 h-8 flex items-center justify-center bg-[#111520] hover:bg-[#21293d] rounded-lg text-slate-500 hover:text-white transition-all"><X size={14} /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-3xl shadow-2xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-5 bg-[#111520] border-b border-[#21293d]">
+              <div>
+                <h3 className="font-black text-white text-lg flex items-center gap-2"><Wallet size={18} className="text-blue-500"/> Passbook: {ledgerTarget.name}</h3>
+                <p className="text-xs font-bold text-slate-500 mt-1">{new Date(ledgerFrom).toLocaleDateString('en-IN', {month:'short', year:'numeric'})}</p>
+              </div>
+              <button onClick={() => setShowLedgerModal(false)} className="w-9 h-9 flex items-center justify-center bg-[#161b27] border border-[#21293d] hover:border-slate-500 rounded-xl text-slate-400 hover:text-white transition-all"><X size={16} /></button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-0">
               <table className="w-full">
-                <thead>
-                  <tr className="bg-[#111520]">
-                    {["Date", "Status", "Wage", "Commission", "Advance", "Balance"].map((h) => (
-                      <th key={h} className="px-2 py-2 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left">{h}</th>
+                <thead className="sticky top-0 bg-[#161b27] shadow-sm z-10 border-b border-[#21293d]">
+                  <tr>
+                    {["Date", "Status", "Credit (Wage)", "Credit (Comm)", "Debit (Adv)", "Balance"].map((h) => (
+                      <th key={h} className="px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-widest text-left">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody>
-                  {ledgerLoading ? <tr><td colSpan={6} className="text-center py-8"><Loader2 size={20} className="animate-spin text-blue-400 mx-auto" /></td></tr>
-                    : ledgerData.length === 0 ? <tr><td colSpan={6} className="text-center py-8 text-slate-600 text-xs font-bold">No entries</td></tr>
-                    : ledgerData.map((e, i) => (
-                      <tr key={i} className={`border-t border-[#21293d]/50 ${e.type === "opening" ? "bg-amber-500/10" : ""}`}>
-                        <td className="px-2 py-2 text-xs text-slate-400">{e.date}</td>
-                        <td className={`px-2 py-2 text-xs font-bold ${e.status === "Present" ? "text-emerald-400" : e.status === "Half Day" || e.status === "—" ? "text-amber-400" : "text-red-400"}`}>{e.status}</td>
-                        <td className="px-2 py-2 text-xs text-right text-slate-300">{e.wage > 0 ? inr(e.wage) : ""}</td>
-                        <td className="px-2 py-2 text-xs text-right text-blue-400">{e.comm > 0 ? inr(e.comm) : ""}</td>
-                        <td className="px-2 py-2 text-xs text-right text-red-400">{e.adv > 0 ? inr(e.adv) : ""}</td>
-                        <td className={`px-2 py-2 text-xs text-right font-bold ${e.balance >= 0 ? "text-blue-400" : "text-red-400"}`}>{inr(e.balance)}</td>
+                <tbody className="divide-y divide-[#21293d]/50">
+                  {ledgerLoading ? (
+                    <tr><td colSpan={6} className="text-center py-16"><Loader2 size={24} className="animate-spin text-blue-500 mx-auto" /></td></tr>
+                  ) : ledgerData.length === 0 ? (
+                    <tr><td colSpan={6} className="text-center py-12 text-slate-500 text-sm font-bold">No transactions this month.</td></tr>
+                  ) : ledgerData.map((e, i) => (
+                      <tr key={i} className={`hover:bg-white/[0.02] transition-colors ${e.type === "opening" ? "bg-amber-500/5" : ""}`}>
+                        <td className="px-4 py-3 text-xs font-bold text-slate-400">{e.date}</td>
+                        <td className="px-4 py-3 text-xs font-black">
+                          {e.status === "Present" ? <span className="text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md">Present</span> : 
+                           e.status === "Half Day" ? <span className="text-amber-400 bg-amber-500/10 px-2 py-1 rounded-md">Half Day</span> : 
+                           e.status === "—" ? <span className="text-slate-500">—</span> : 
+                           <span className="text-red-400 bg-red-500/10 px-2 py-1 rounded-md">Absent</span>}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-right font-bold text-emerald-400/80">{e.wage > 0 ? "+ " + inr(e.wage) : "—"}</td>
+                        <td className="px-4 py-3 text-xs text-right font-bold text-blue-400/80">{e.comm > 0 ? "+ " + inr(e.comm) : "—"}</td>
+                        <td className="px-4 py-3 text-xs text-right font-bold text-red-400">{e.adv > 0 ? "- " + inr(e.adv) : "—"}</td>
+                        <td className={`px-4 py-3 text-sm text-right font-black ${e.balance >= 0 ? "text-emerald-400" : "text-red-400"}`}>{inr(e.balance)}</td>
                       </tr>
                     ))}
                 </tbody>
@@ -290,17 +453,31 @@ function SalaryContent() {
         </div>
       )}
 
+      {/* Salary Rate Master Modal */}
       {salaryRateModal && salaryTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl p-5">
-            <h3 className="font-black text-white mb-4">Update Salary Rate</h3>
-            <div className="space-y-3">
-              <div><label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">Staff Name</label><input value={salaryTarget.name} readOnly className="w-full px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300" /></div>
-              <div><label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">New Daily Wage</label><input type="number" value={newSalary} onChange={(e) => setNewSalary(e.target.value)} step="any" className="w-full px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50" /></div>
-              <div><label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">Effective Date</label><input type="date" value={newEffectiveDate} onChange={(e) => setNewEffectiveDate(e.target.value)} className="w-full px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50" /></div>
-              <div className="flex gap-3 pt-2">
-                <button onClick={handleUpdateSalary} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white">Save Rate</button>
-                <button onClick={() => { setSalaryRateModal(false); setSalaryTarget(null); }} className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl text-xs font-bold hover:text-white">Cancel</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl p-6">
+            <h3 className="font-black text-lg text-white mb-5 flex items-center gap-2"><Edit2 size={18} className="text-blue-500"/> Update Daily Rate</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-1.5">Staff Name</label>
+                <input value={salaryTarget.name} readOnly className="w-full px-4 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-sm font-bold text-slate-400 cursor-not-allowed" />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-1.5">New Daily Wage</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">₹</span>
+                  <input type="number" value={newSalary} onChange={(e) => setNewSalary(e.target.value)} step="any" className="w-full pl-8 pr-4 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-sm font-black text-white outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all" placeholder="0.00" />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-1.5">Effective Date (From when?)</label>
+                <input type="date" value={newEffectiveDate} onChange={(e) => setNewEffectiveDate(e.target.value)} className="w-full px-4 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-sm font-bold text-slate-300 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all style-calendar" />
+                <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">Select a past date if this raise was applicable from earlier this month.</p>
+              </div>
+              <div className="flex gap-3 pt-4 border-t border-[#21293d]">
+                <button onClick={handleUpdateSalary} className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-black text-white shadow-lg shadow-blue-900/20 transition-all">Save New Rate</button>
+                <button onClick={() => { setSalaryRateModal(false); setSalaryTarget(null); }} className="px-5 py-3 bg-[#111520] border border-[#21293d] text-slate-400 hover:text-white hover:bg-[#1c2231] rounded-xl text-sm font-bold transition-all">Cancel</button>
               </div>
             </div>
           </div>
@@ -312,7 +489,7 @@ function SalaryContent() {
 
 export default function SalaryPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center py-24"><Loader2 size={24} className="animate-spin text-blue-400" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center py-32"><Loader2 size={32} className="animate-spin text-blue-500" /></div>}>
       <SalaryContent />
     </Suspense>
   );
