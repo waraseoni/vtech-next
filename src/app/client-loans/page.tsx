@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Eye, CreditCard } from "lucide-react";
 
 type Client = { id: number; firstname: string; middlename: string | null; lastname: string; contact: string | null };
+type Payment = { id: number; loan_id: number; amount: number; discount: number };
 type Loan = {
   id: number;
   client_id: number;
@@ -16,6 +17,8 @@ type Loan = {
   total_payable: number;
   emi_amount: number;
   status: number;
+  paid: number;
+  balance: number;
 };
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -57,13 +60,25 @@ export default function ClientLoansPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [loanRes, clientRes] = await Promise.all([
+      const [loanRes, clientRes, paymentsRes] = await Promise.all([
         supabase.from("client_loans").select("*").order("loan_date", { ascending: false }).limit(500),
         supabase.from("client_list").select("id, firstname, middlename, lastname, contact").eq("delete_flag", 0).order("firstname"),
+        supabase.from("client_payments").select("id, loan_id, amount, discount").not("loan_id", "is", null),
       ]);
       if (loanRes.error) throw loanRes.error;
       if (clientRes.error) throw clientRes.error;
-      setRows((loanRes.data || []) as Loan[]);
+      const payments = paymentsRes.data || [];
+      const paymentByLoan = new Map<number, number>();
+      payments.forEach(p => {
+        const current = paymentByLoan.get(p.loan_id) || 0;
+        paymentByLoan.set(p.loan_id, current + p.amount + p.discount);
+      });
+      const loans = (loanRes.data || []).map(loan => ({
+        ...loan,
+        paid: paymentByLoan.get(loan.id) || 0,
+        balance: (loan.total_payable || 0) - (paymentByLoan.get(loan.id) || 0),
+      }));
+      setRows(loans as Loan[]);
       setClients((clientRes.data || []) as Client[]);
     } catch (e: any) {
       setErr(e.message);
@@ -189,6 +204,8 @@ export default function ClientLoansPage() {
   const totals = useMemo(() => ({
     principal: filtered.reduce((s, l) => s + (l.principal || 0), 0),
     payable: filtered.reduce((s, l) => s + (l.total_payable || 0), 0),
+    paid: filtered.reduce((s, l) => s + (l.paid || 0), 0),
+    balance: filtered.reduce((s, l) => s + (l.balance || 0), 0),
   }), [filtered]);
 
   return (
@@ -217,9 +234,11 @@ export default function ClientLoansPage() {
 
         {err && <div className="px-5 py-3 bg-red-500/10 border-b border-red-500/20 text-red-400 text-xs">{err}</div>}
 
-        <div className="px-5 py-2 border-b border-[#1a2234] bg-[#0d1117]/50 grid grid-cols-3 gap-4 text-[10px] font-black uppercase tracking-widest text-slate-600">
+        <div className="px-5 py-2 border-b border-[#1a2234] bg-[#0d1117]/50 grid grid-cols-4 gap-4 text-[10px] font-black uppercase tracking-widest text-slate-600">
           <div>Total Principal: <span className="text-slate-300 font-bold">{inr(totals.principal)}</span></div>
+          <div>Total Paid: <span className="text-amber-400 font-bold">{inr(totals.paid)}</span></div>
           <div>Total Payable: <span className="text-emerald-400 font-bold">{inr(totals.payable)}</span></div>
+          <div>Total Balance: <span className="text-red-400 font-bold">{inr(totals.balance)}</span></div>
         </div>
 
         {loading ? (
@@ -240,8 +259,9 @@ export default function ClientLoansPage() {
                   <th className="text-right px-4 py-3">Principal</th>
                   <th className="text-right px-4 py-3">Rate</th>
                   <th className="text-right px-4 py-3">Tenure</th>
-                  <th className="text-right px-4 py-3">Payable</th>
-                  <th className="text-right px-4 py-3">EMI</th>
+                  <th className="text-right px-4 py-3">Total</th>
+                  <th className="text-right px-4 py-3">Paid</th>
+                  <th className="text-right px-4 py-3">Balance</th>
                   <th className="text-center px-4 py-3">Status</th>
                   <th className="text-center px-4 py-3">Actions</th>
                 </tr>
@@ -260,7 +280,8 @@ export default function ClientLoansPage() {
                       <td className="px-4 py-3.5 text-right text-blue-400">{Number(loan.interest_rate || 0).toFixed(1)}%</td>
                       <td className="px-4 py-3.5 text-right text-slate-500">{loan.tenure_months} mo</td>
                       <td className="px-4 py-3.5 text-right font-black text-emerald-400">{inr(loan.total_payable)}</td>
-                      <td className="px-4 py-3.5 text-right font-black text-amber-400">{inr(loan.emi_amount)}</td>
+                      <td className="px-4 py-3.5 text-right font-black text-amber-400">{inr(loan.paid)}</td>
+                      <td className="px-4 py-3.5 text-right font-black text-red-400">{inr(loan.balance)}</td>
                       <td className="px-4 py-3.5 text-center">
                         <button onClick={() => toggleStatus(loan)}
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
@@ -415,6 +436,8 @@ export default function ClientLoansPage() {
                 <DetailItem label="Interest Rate" value={`${Number(viewing.interest_rate || 0).toFixed(1)}%`} />
                 <DetailItem label="Tenure" value={`${viewing.tenure_months} months`} />
                 <DetailItem label="Total Payable" value={inr(viewing.total_payable)} valueClass="text-emerald-400 font-bold" />
+                <DetailItem label="Paid" value={inr(viewing.paid)} valueClass="text-amber-400 font-bold" />
+                <DetailItem label="Balance" value={inr(viewing.balance)} valueClass="text-red-400 font-bold" />
                 <DetailItem label="EMI Amount" value={inr(viewing.emi_amount)} valueClass="text-amber-400 font-bold" />
               </div>
               <div className="flex gap-3 pt-2">
