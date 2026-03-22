@@ -1,5 +1,6 @@
 "use client";
 import "./globals.css";
+import PWAHead from "./components/PWAHead";
 import React, { useState, useEffect, Suspense, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -492,9 +493,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="en" className="h-full">
-      <body className={`h-full m-0 font-sans antialiased text-slate-200 bg-[#0d1117] overflow-x-hidden theme-${theme || 'dark'}`}>
+    <body className={`h-full m-0 font-sans antialiased text-slate-200 bg-[#0d1117] overflow-x-hidden theme-${theme || 'dark'}`}>
 
-        {/* ══════════════════════ DESKTOP SIDEBAR ══════════════════════ */}
+      <PWAHead />
+
+      {/* ══════════════════════ DESKTOP SIDEBAR ══════════════════════ */}
         {isMobile === false && (
           <aside className="fixed top-0 left-0 h-full w-[260px] theme-sidebar border-r border-[#21293d] flex flex-col z-50 theme-sidebar">
             {/* Brand */}

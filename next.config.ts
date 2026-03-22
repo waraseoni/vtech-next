@@ -1,12 +1,9 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  /* config options here */
+const nextConfig = {
   reactCompiler: true,
-  experimental: {
-    turbopack: false,
-  },
-};
+  turbopack: false,
+} as any;
 
 const withPWA = require('next-pwa')({
   dest: 'public',
