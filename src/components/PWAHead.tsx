@@ -15,6 +15,19 @@ export default function PWAHead() {
     meta.content = "#3b82f6";
     document.head.appendChild(meta);
 
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered: ', registration);
+          })
+          .catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+
     return () => {
       document.head.removeChild(link);
       document.head.removeChild(meta);

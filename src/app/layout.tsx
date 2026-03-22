@@ -1,6 +1,6 @@
 "use client";
 import "./globals.css";
-import PWAHead from "./components/PWAHead";
+import PWAHead from "../components/PWAHead";
 import React, { useState, useEffect, Suspense, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
