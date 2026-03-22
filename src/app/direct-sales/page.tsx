@@ -17,9 +17,12 @@ interface DirectSale {
   id: number;
   sale_code: string;
   client_name: string | null;
+  client_contact?: string | null;
   staff_name: string;
   total_amount: number;
   payment_mode: string;
+  remarks?: string | null;
+  last_editor_name?: string | null;
   date_created: string;
 }
 
