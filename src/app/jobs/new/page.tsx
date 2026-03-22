@@ -476,6 +476,8 @@ export default function ManageJobPage({
   const updateProductPrice = (tempId: number, val: string) =>
     setProductRows(prev => prev.map(r => r.tempId === tempId ? { ...r, price: parseFloat(val) || 0 } : r));
 
+  const handleSave = async () => {
+    if (!selectedClient) { setToast({ type: "error", msg: "Client select karo!" }); return; }
     if (!fault.trim())   { setToast({ type: "error", msg: "Fault description zaroori hai!" }); return; }
     if (!selectedMechanic) { setToast({ type: "error", msg: "Mechanic select karo!" }); return; }
 
@@ -581,6 +583,11 @@ export default function ManageJobPage({
     c.fullname.toLowerCase().includes(clientSearch.toLowerCase()) ||
     c.contact.includes(clientSearch)
   );
+
+  // ── COMPUTED TOTALS ───────────────────────────────────────────────────
+  const serviceTotal = serviceRows.reduce((sum, r) => sum + (r.price || 0), 0);
+  const productTotal = productRows.reduce((sum, r) => sum + ((r.price || 0) * r.qty), 0);
+  const grandTotal = serviceTotal + productTotal;
 
   // ─────────────────────────────────────────────────────────────────────────
   // LOADING STATE
