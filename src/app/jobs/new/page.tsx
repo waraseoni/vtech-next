@@ -476,24 +476,6 @@ export default function ManageJobPage({
   const updateProductPrice = (tempId: number, val: string) =>
     setProductRows(prev => prev.map(r => r.tempId === tempId ? { ...r, price: parseFloat(val) || 0 } : r));
 
-  // ── TOTALS ─────────────────────────────────────────────────────────────
-  const serviceTotal = serviceRows.reduce((s, r) => s + r.price, 0);
-  const productTotal = productRows.reduce((s, r) => s + r.qty * r.price, 0);
-  const grandTotal   = serviceTotal + productTotal;
-
-  // Auto-calculate mechanic commission when mechanic changes
-  useEffect(() => {
-    if (!selectedMechanic) return;
-    const mech = mechanics.find(m => m.id === parseInt(selectedMechanic));
-    if (mech && mech.commission_percent > 0) {
-      setCommissionAmt(((grandTotal * mech.commission_percent) / 100).toFixed(2));
-    }
-  }, [selectedMechanic, grandTotal]);
-
-  // ── SUBMIT ─────────────────────────────────────────────────────────────
-  const handleSave = async () => {
-    if (!selectedClient) { setToast({ type: "error", msg: "Client select karo!" }); return; }
-    if (!item.trim())    { setToast({ type: "error", msg: "Item/Model zaroori hai!" }); return; }
     if (!fault.trim())   { setToast({ type: "error", msg: "Fault description zaroori hai!" }); return; }
     if (!selectedMechanic) { setToast({ type: "error", msg: "Mechanic select karo!" }); return; }
 
@@ -1081,7 +1063,7 @@ export default function ManageJobPage({
   const mech = mechanics.find(m => m.id === parseInt(selectedMechanic));
   return selectedMechanic && mech && mech.commission_percent > 0 ? (
     <p className="text-[9px] text-slate-600 mt-1">
-      Auto: {mech.commission_percent}% of grand total
+      Auto: {mech.commission_percent}% of services total
     </p>
   ) : null;
 })()}

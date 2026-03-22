@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - V-Technologies | Jabalpur</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0d6efd;
+            --dark: #1a1a2e;
+            --light: #f8f9fa;
+        }
+        body { font-family: 'Poppins', sans-serif; line-height: 1.8; color: #333; overflow-x: hidden; }
+        .hero {
+            background: linear-gradient(135deg, rgba(13,110,253,0.95), rgba(102,16,242,0.9)), url('assets/img/hero-workshop.jpg') center/cover no-repeat;
+            color: white; padding: 180px 0 120px; text-align: center; position: relative;
+        }
+        .hero h1 { font-size: 4.5rem; font-weight: 800; text-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .hero .lead { font-size: 1.5rem; font-weight: 500; }
+        .floating { animation: float 6s ease-in-out infinite; }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        
+        .story { padding: 100px 0; background: var(--light); }
+        .story-img { border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        
+        .features { padding: 100px 0; }
+        .feature-card {
+            background: white; padding: 40px 25px; border-radius: 20px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; 
+            transition: all 0.4s ease; height: 100%; border: 2px solid transparent;
+        }
+        .feature-card:hover {
+            transform: translateY(-15px) scale(1.03);
+            border-color: var(--primary);
+            box-shadow: 0 25px 50px rgba(13,110,253,0.2);
+        }
+        .feature-icon {
+            width: 90px; height: 90px; background: linear-gradient(135deg, #0d6efd, #6610f2);
+            color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 2.5rem; margin: 0 auto 20px;
+        }
+        
+        .stats { padding: 100px 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .stats h2 { font-size: 4.5rem; font-weight: 800; }
+        .stats p { font-size: 1.3rem; font-weight: 500; }
+        
+        .team { padding: 100px 0; background: var(--light); }
+        .team-card {
+            background: white; border-radius: 20px; overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1); transition: 0.4s; text-align: center;
+        }
+        .team-card:hover { transform: translateY(-10px); }
+        .team-img {
+            width: 200px; height: 200px; border-radius: 50%; object-fit: cover;
+            border: 8px solid white; box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+            margin-top: -100px; position: relative; z-index: 2;
+        }
+        .team-info { padding: 60px 30px 30px; }
+        
+        .testimonial { padding: 100px 0; background: white; }
+        .testimonial-card {
+            background: #f8f9fa; padding: 40px; border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center;
+        }
+        .stars { color: #ffc107; font-size: 1.8rem; }
+        
+        footer { background: var(--dark); color: #ddd; padding: 80px 0 30px; }
+        .social-links a { color: #ddd; font-size: 1.8rem; margin: 0 15px; transition: 0.3s; }
+        .social-links a:hover { color: var(--primary); transform: translateY(-5px); }
+    </style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="container">
+        <h1 class="display-1 floating">V-Technologies</h1>
+        <p class="lead">Jabalpur's Most Trusted SMPS • DJ • Lighting • LED Wall Repair Experts</p>
+        <p class="fs-3 mt-4">17+ Years | 27,000+ Repairs | 24×7 Emergency Service</p>
+        <a href="tel:+919179105875" class="btn btn-light btn-lg mt-4 px-5 py-3">
+            <i class="fas fa-phone"></i> Call Now: 91791 05875
+        </a>
+    </div>
+</section>
+
+<!-- OUR STORY -->
+<section class="story">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h2 class="display-5 fw-bold mb-4">From One Table to Jabalpur's Biggest Repair Hub</h2>
+                <p class="lead">Hi, I'm <strong>Vikram Jain</strong>. In 2007, I started this journey with just one small table, a few tools, and a burning passion to fix things.</p>
+                <p>Today, we're proud to be the <strong>largest and most trusted</strong> repair center for DJ systems, moving heads, laser lights, LED walls, processors, and SMPS in Central India.</p>
+                <p>Whether it's a wedding emergency at 2 AM or a massive event tomorrow – <strong>we never say no</strong>.</p>
+                <p class="fw-bold fs-5 mt-4">"Your trust is our biggest reward. Your smile when your equipment works perfectly – that’s why we do this."</p>
+            </div>
+            <div class="col-lg-6 text-center">
+                <img src="assets/img/logo.png" class="img-fluid story-img" alt="Vikram Jain">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- WHY CHOOSE US -->
+<section class="features">
+    <div class="container">
+        <h2 class="text-center display-5 fw-bold mb-5">Why 5000+ Clients Choose Us</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+                    <h4>Lightning Fast Repairs</h4>
+                    <p>90% jobs done in 24 hours. Emergency? We fix in 2-6 hours!</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-certificate"></i></div>
+                    <h4>17 Years of Mastery</h4>
+                    <p>From basic SMPS to high-end LED wall processors – we’ve seen and fixed it all.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                    <h4>100% Transparent</h4>
+                    <p>Original parts. No hidden charges. You see everything.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STATS -->
+<section class="stats">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <h2 class="display-3">27,000+</h2>
+                <p class="fs-4">Repairs Completed</p>
+            </div>
+            <div class="col-md-3">
+                <h2 class="display-3">17+</h2>
+                <p class="fs-4">Years of Trust</p>
+            </div>
+            <div class="col-md-3">
+                <h2 class="display-3">5,000+</h2>
+                <p class="fs-4">Happy Clients</p>
+            </div>
+            <div class="col-md-3">
+                <h2 class="display-3">24×7</h2>
+                <p class="fs-4">Always Available</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TEAM - FULLY FIXED -->
+<section class="team">
+    <div class="container">
+        <h2 class="text-center display-5 fw-bold mb-5">The Faces Behind Your Trust</h2>
+        <div class="row justify-content-center">
+            <div class="col-md-5 mb-5">
+                <div class="team-card shadow-lg">
+                    <div class="text-center pt-4">
+                        <img src="assets/img/vikram.jpg" class="team-img" alt="Vikram Jain">
+                    </div>
+                    <div class="team-info bg-white text-dark">
+                        <h4 class="fw-bold mt-3">Vikram Jain</h4>
+                        <p class="text-primary fw-bold">Founder & Master Technician</p>
+                        <p class="px-3">"Every broken equipment has a story. I just help it work again."</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5 mb-5">
+                <div class="team-card shadow-lg">
+                    <div class="text-center pt-4">
+                        <img src="assets/img/preeti.png" class="team-img" alt="Preeti Jain">
+                    </div>
+                    <div class="team-info bg-white text-dark">
+                        <h4 class="fw-bold mt-3">Preeti Jain</h4>
+                        <p class="text-primary fw-bold">Customer Happiness Manager</p>
+                        <p class="px-3">"Your smile when you pick up your repaired item – that’s my biggest reward."</p>
+                    </div>
+                </div>
+            </div>
+			<div class="col-md-5 mb-5">
+                <div class="team-card shadow-lg">
+                    <div class="text-center pt-4">
+                        <img src="assets/img/hemant.png" class="team-img" alt="Preeti Jain">
+                    </div>
+                    <div class="team-info bg-white text-dark">
+                        <h4 class="fw-bold mt-3">Hemant Mehra</h4>
+                        <p class="text-primary fw-bold">Head Technician</p>
+                        <p class="px-3">"From dead circuits to perfect beats – I bring machines back to life."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CSS FIX - YE STYLE ADD KAR DO (head ke andar <style> mein) -->
+<style>
+    .team-card {
+        background: white; 
+        border-radius: 25px; 
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15); 
+        transition: 0.4s;
+    }
+    .team-card:hover { 
+        transform: translateY(-15px); 
+        box-shadow: 0 30px 60px rgba(0,0,0,0.25);
+    }
+    .team-img {
+        width: 220px; 
+        height: 220px; 
+        border-radius: 50%; 
+        object-fit: cover;
+        border: 10px solid white; 
+        box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        margin-top: 30px;   /* YE LINE CHANGE KI - AB PHOTO POORI DIKHEGI! */
+    }
+    .team-info {
+        padding: 40px 30px 30px;   /* Thoda zyada space diya */
+        border-top: 1px solid #eee;
+    }
+    @media (max-width: 768px) {
+        .team-img { 
+            width: 180px; 
+            height: 180px; 
+            margin-top: 20px;
+        }
+        .team-info { padding: 30px 20px; }
+    }
+</style>
+
+<!-- TESTIMONIAL -->
+<section class="testimonial">
+    <div class="container">
+        <h2 class="text-center display-5 fw-bold mb-5">What Our Clients Say</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="testimonial-card">
+                    <div class="stars mb-3">★★★★★</div>
+                    <p class="fs-5">"2 AM pe DJ kharab ho gaya tha – Vikram bhai 3 ghante mein fix kar ke de gaye. Life saver!"</p>
+                    <p class="fw-bold">- Rohit DJ, Jabalpur</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="testimonial-card">
+                    <div class="stars mb-3">★★★★★</div>
+                    <p class="fs-5">"LED wall ka processor jal gaya tha – market mein 15 din bol rahe the. Yahan 18 ghante mein ho gaya!"</p>
+                    <p class="fw-bold">- Shubham Events</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- FLOATING WHATSAPP + CALL BUTTONS -->
+<div class="floating-buttons">
+    
+    <!-- Call Button -->
+    <a href="tel:+919179105875" class="float-btn call-btn">
+        <i class="fas fa-phone"></i>
+    </a>
+	
+	<!-- WhatsApp Button -->
+    <a href="https://wa.me/919179105875?text=Namaste%20Vikram%20bhai" 
+       class="float-btn whatsapp-btn" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+    
+</div>
+
+<style>
+    .floating-buttons {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .float-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: white;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+        animation: float 3s ease-in-out infinite;
+    }
+    .whatsapp-btn {
+        background: #25D366;
+    }
+    .call-btn {
+        background: #0d6efd;
+    }
+    .float-btn:hover {
+        transform: scale(1.15);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.4);
+    }
+    .float-btn:active {
+        transform: scale(0.95);
+    }
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-12px); }
+    }
+
+    /* Mobile pe bhi perfect */
+    @media (max-width: 480px) {
+        .floating-buttons { bottom: 15px; right: 15px; gap: 12px; }
+        .float-btn { width: 55px; height: 55px; font-size: 24px; }
+    }
+</style>
+
+<!-- FOOTER -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <h3>V-Technologies</h3>
+                <p>F4 Hotel Plaza( Now Madhushala), Besides Jayanti Complex, Marhatal, Jabalpur, 482002, Madhya Pradesh</p>
+                <p><i class="fas fa-phone"></i> <a href="tel:+919179105875" style="color:#25D366;">+91 91791 05875</a></p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="https://wa.me/919179105875"><i class="fab fa-whatsapp"></i></a>
+                </div>
+            </div>
+        </div>
+        <hr>
+        <p class="text-center mb-0">© 2025 V-Technologies. Made with ❤️ in Jabalpur</p>
+    </div>
+</footer>
+
+</body>
+</html>

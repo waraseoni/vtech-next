@@ -1,0 +1,28 @@
+/* ===== CUSTOM CSS - VIKRAM REPAIR SYSTEM ===== */
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+.table-responsive { overflow-x: auto; }
+.low-stock { background-color: #ff00004d !important; border-left: 5px solid red; }
+.low-stock td { font-weight: bold; color: red; }
+.pending-job { background-color: #fff3cd !important; }
+.delivered-job { background-color: #d4edda !important; }
+.btn-whatsapp {
+    background: #25D366;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+}
+.btn-whatsapp:hover { background: #128C7E; color: white; }
+.dashboard-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+@media (max-width: 768px) {
+    .table td, .table th { font-size: 13px; padding: 8px; }
+    .btn { font-size: 12px; padding: 5px 8px; }
+}

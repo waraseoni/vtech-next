@@ -101,6 +101,14 @@ export default function ManageClientPage() {
     if (field === 'contact' && value.length < 10) {
       setDuplicateClients([]);
     }
+    
+    // Check for duplicate email
+    if (field === 'email' && value.trim().length > 0 && !isEdit) {
+      checkDuplicateEmail(value.trim());
+    }
+    if (field === 'email' && value.trim().length === 0) {
+      setDuplicateClients([]);
+    }
   };
 
   // ── DUPLICATE CONTACT CHECK ───────────────────────────
@@ -124,6 +132,33 @@ export default function ManageClientPage() {
       }
     } catch (err) {
       console.error('Duplicate check error:', err);
+      setDuplicateClients([]);
+    } finally {
+      setCheckingDup(false);
+    }
+  };
+
+  // ── DUPLICATE EMAIL CHECK ───────────────────────────
+  const checkDuplicateEmail = async (email: string) => {
+    setCheckingDup(true);
+    try {
+      const { data, error } = await supabase
+        .from('client_list')
+        .select('id, firstname, middlename, lastname, email')
+        .eq('email', email)
+        .eq('delete_flag', 0)
+        .limit(5);
+      if (!error && data && data.length > 0) {
+        setDuplicateClients(data.map(c => ({
+          id: c.id,
+          name: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(' ').trim(),
+          contact: c.email || '',
+        })));
+      } else {
+        setDuplicateClients([]);
+      }
+    } catch (err) {
+      console.error('Duplicate email check error:', err);
       setDuplicateClients([]);
     } finally {
       setCheckingDup(false);
