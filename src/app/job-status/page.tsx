@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Search, ChevronRight, Printer, Share2, ArrowLeft } from "lucide-react";
+import { Loader2, Search, ChevronRight, Printer, Share2, ArrowLeft, RotateCcw } from "lucide-react";
 import Navbar from "../components/Navbar";
 
 type JobData = {
@@ -17,6 +17,8 @@ type JobData = {
   client_name: string;
   date_created: string;
 };
+
+type RecentJob = { id: number; job_id: string; code: string; item: string; status: number; date_created: string };
 
 type Service = { service_name: string; price: number };
 type Product = { product_name: string; qty: number; price: number; total: number };
@@ -41,6 +43,19 @@ export default function JobStatusPage() {
   const [clientContact, setClientContact] = useState("");
   const [error, setError] = useState("");
   const [view, setView] = useState<"detailed" | "compact" | "timeline">("detailed");
+  const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
+  const [recentLoading, setRecentLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.from("transaction_list")
+      .select("id, job_id, code, item, status, date_created")
+      .order("id", { ascending: false })
+      .limit(10)
+      .then(({ data }) => {
+        setRecentJobs(data || []);
+        setRecentLoading(false);
+      });
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,10 +66,10 @@ export default function JobStatusPage() {
     setJob(null);
 
     try {
-      // Transaction search
+      // Transaction search - without join since relationship doesn't exist
       let query = supabase
         .from("transaction_list")
-        .select("*, client_list(firstname, middlename, lastname, contact)")
+        .select("id, job_id, code, item, fault, remark, status, amount, client_name, date_created")
         .limit(1);
 
       if (searchType === "job_id") {
@@ -65,14 +80,13 @@ export default function JobStatusPage() {
 
       const { data: txnData, error: txnErr } = await query;
 
-      if (txnErr || !txnData || txnData.length === 0) {
-        setError("Job nahi mila! Sahi Job ID ya Code daalo.");
+if (txnErr || !txnData || txnData.length === 0) {
+        setError(txnErr ? "Error: " + txnErr.message : "Job nahi mila! Sahi Job ID ya Code daalo.");
         setLoading(false);
         return;
       }
 
       const txn = txnData[0] as any;
-      const client = txn.client_list;
 
       setJob({
         id: txn.id,
@@ -87,28 +101,42 @@ export default function JobStatusPage() {
         date_created: txn.date_created,
       });
 
-      setClientName(client ? `${client.firstname} ${client.middlename || ""} ${client.lastname}`.trim() : txn.client_name);
-      setClientContact(client?.contact || "");
+      setClientName(txn.client_name || "");
+      setClientContact("");
 
       // Fetch services
       const { data: svcData } = await supabase
         .from("transaction_services")
-        .select("service_list(name), price")
+        .select("service_id, price")
         .eq("transaction_id", txn.id);
 
+      const serviceIds = (svcData || []).map((s: any) => s.service_id).filter(Boolean);
+      let serviceNames: Record<number, string> = {};
+      if (serviceIds.length > 0) {
+        const { data: services } = await supabase.from("service_list").select("id, name").in("id", serviceIds);
+        if (services) services.forEach((s: any) => { serviceNames[s.id] = s.name; });
+      }
+
       setServices((svcData || []).map((s: any) => ({
-        service_name: s.service_list?.name || "Unknown",
+        service_name: serviceNames[s.service_id] || "Unknown",
         price: s.price,
       })));
 
       // Fetch products
       const { data: prodData } = await supabase
         .from("transaction_products")
-        .select("product_list(name), qty, price")
+        .select("product_id, qty, price")
         .eq("transaction_id", txn.id);
 
+      const productIds = (prodData || []).map((p: any) => p.product_id).filter(Boolean);
+      let productNames: Record<number, string> = {};
+      if (productIds.length > 0) {
+        const { data: products } = await supabase.from("product_list").select("id, name").in("id", productIds);
+        if (products) products.forEach((p: any) => { productNames[p.id] = p.name; });
+      }
+
       setProducts((prodData || []).map((p: any) => ({
-        product_name: p.product_list?.name || "Unknown",
+        product_name: productNames[p.product_id] || "Unknown",
         qty: p.qty,
         price: p.price,
         total: p.qty * p.price,
@@ -128,7 +156,7 @@ export default function JobStatusPage() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-[#0f0f1a] text-white py-8 px-4">
+      <div className="min-h-screen bg-[#0f0f1a] text-white py-8 px-4 pt-20">
 
         {/* ══ SEARCH FORM (exact match PHP check_status.php) ════════════ */}
         {!job && (
@@ -187,6 +215,31 @@ export default function JobStatusPage() {
                 </button>
               </div>
             </form>
+
+            {/* Recent Jobs for reference */}
+            {!recentLoading && recentJobs.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-sm font-bold mb-3" style={{ color: "#94a3b8" }}>Recent Jobs (for reference)</h3>
+                <div style={{ background: "#1a1a2e", borderRadius: "15px", overflow: "hidden" }}>
+                  {recentJobs.map(job => (
+                    <button key={job.id} onClick={() => { setSearch(job.job_id); setSearchType("job_id"); }}
+                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition text-left"
+                      style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                      <div>
+                        <span className="font-bold text-blue-400">#{job.job_id}</span>
+                        <span className="text-xs ml-2 text-slate-500">{job.item}</span>
+                      </div>
+                      <span className="text-xs px-2 py-1 rounded-full" style={{ 
+                        background: STATUS_CONFIG[job.status]?.bg || "rgba(255,255,255,0.1)",
+                        color: STATUS_CONFIG[job.status]?.color || "#94a3b8"
+                      }}>
+                        {STATUS_CONFIG[job.status]?.label || "Unknown"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -196,9 +249,10 @@ export default function JobStatusPage() {
 
             {/* Back + Actions */}
             <div className="flex items-center justify-between mb-4">
-              <button onClick={() => { setJob(null); setSearch(""); setError(""); }}
-                className="flex items-center gap-2 text-sm" style={{ color: "#3b82f6", background: "none", border: "none", cursor: "pointer" }}>
-                <ArrowLeft size={16}/> Back to Search
+              <button onClick={() => { setJob(null); setSearch(""); setError(""); setServices([]); setProducts([]); }}
+                className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg"
+                style={{ color: "#3b82f6", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)", cursor: "pointer" }}>
+                <RotateCcw size={16}/> Search Again
               </button>
               <div className="flex gap-2">
                 <button onClick={() => window.print()} style={{

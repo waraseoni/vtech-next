@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { LogIn, Mail, Lock, Loader2, ShieldCheck, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { LogIn, Mail, Lock, Loader2, ShieldCheck, Eye, EyeOff, AlertCircle, Globe } from "lucide-react";
 
 export default function LoginPage() {
   const [email,      setEmail]      = useState("");
@@ -196,6 +196,17 @@ export default function LoginPage() {
                 : <><LogIn size={17} /> Login to Dashboard</>}
             </button>
           </form>
+        </div>
+
+        {/* Public Access Link */}
+        <div className="mt-6">
+          <a
+                        href="/job-status"
+            className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-slate-400 text-xs font-bold hover:bg-[#1a2234] hover:text-white transition-all"
+          >
+            <Globe size={14} />
+            Track Job Status (No Login Required)
+          </a>
         </div>
 
         {/* Footer */}
