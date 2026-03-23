@@ -142,33 +142,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
 
   // Print Full Ledger
   const printFullLedger = () => {
-    const w = window.open("", "_blank")!;
-    const name = client ? `${client.firstname} ${client.middlename || ""} ${client.lastname}`.trim() : "";
-    w.document.write(`<!DOCTYPE html><html><head><title>Ledger - ${name}</title>
-    <style>
-      body{font-family:Arial;margin:20px;font-size:13px}table{border-collapse:collapse;width:100%;margin-top:10px}
-      th,td{border:1px solid #333;padding:5px;font-size:12px}
-      th{background:#001f3f;color:#fff}.dr{color:#dc3545}.cr{color:#28a745}.total-row{background:#f0f0f0;font-weight:bold}
-      h2{color:#001f3f;margin-bottom:5px}h4{color:#555;margin-top:20px;margin-bottom:5px}
-      .summary{background:#f8f9fa;padding:10px;border:1px solid #ddd;margin:10px 0}
-    </style></head><body>
-    <h2>${FIRM.name}</h2>
-    <p>${FIRM.address} | Ph: ${FIRM.phone}<br>Owner: ${FIRM.owner}</p>
-    <h2>Client Ledger: ${name}</h2>
-    <p>Client ID: #${clientId} | Print Date: ${fmtDate(new Date().toISOString())}</p>
-    <div class="summary">
-      <strong>Summary:</strong> Opening: ${inr(toNum(client?.opening_balance))} | Billed: ${inr(totalBilled)} | Paid: ${inr(totalPaid)} | <strong>Net Balance: ${inr(netBalance)}</strong>
-    </div>
-    <h4>📋 Repair History</h4>
-    <table><thead><tr><th>Date</th><th>Job ID</th><th>Code</th><th>Item</th><th>Status</th><th class="dr">Amount</th></tr></thead><tbody>
-    ${filteredRepairs.map(r => `<tr><td>${fmtDate(r.date_created)}</td><td>${r.job_id}</td><td>${r.code}</td><td>${r.item}</td><td>${STATUS_MAP[r.status]}</td><td class="dr">${inr(toNum(r.amount))}</td></tr>`).join("")}
-    </tbody></table>
-    <h4>💳 Payments Received</h4>
-    <table><thead><tr><th>Date</th><th>Ref</th><th>Amount</th><th>Discount</th><th>Net</th><th>Mode</th></tr></thead><tbody>
-    ${payments.map(p => `<tr><td>${fmtDate(p.payment_date)}</td><td>${p.job_id || "Direct"}</td><td class="cr">${inr(toNum(p.amount))}</td><td>${inr(toNum(p.discount))}</td><td class="cr">${inr(toNum(p.amount) + toNum(p.discount))}</td><td>${p.payment_mode}</td></tr>`).join("")}
-    </tbody></table>
-    <script>window.onload=function(){window.print();}</script></body></html>`);
-    w.document.close();
+    window.open(`/api/print-client-ledger?id=${clientId}`, "_blank");
   };
 
   // Add Payment

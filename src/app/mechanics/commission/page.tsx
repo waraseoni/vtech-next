@@ -152,7 +152,7 @@ function CommissionContent() {
             <p className="text-[10px] text-slate-500 uppercase tracking-wider">Staff commission report</p>
           </div>
         </div>
-        <button onClick={() => window.print()}
+        <button onClick={() => window.open(`/api/print-mechanics-commission?month=${month}&mechanic_id=${mechanicId}`, "_blank")}
           className="flex items-center gap-1.5 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
           <Printer size={14} /> Print
         </button>

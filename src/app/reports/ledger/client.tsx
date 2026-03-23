@@ -326,7 +326,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
               </div>
             </div>
 
-            <button onClick={() => window.print()}
+            <button onClick={() => window.open(`/api/print-ledger?from=${from}&to=${to}`, "_blank")}
               className="no-print flex items-center gap-2 px-4 py-2.5 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] hover:border-emerald-500/30 text-slate-400 hover:text-emerald-400 rounded-xl text-xs font-extrabold transition-all">
               <Printer size={13} /> Print Report
             </button>

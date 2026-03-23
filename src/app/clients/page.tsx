@@ -257,9 +257,14 @@ export default function ClientsPage() {
   };
 
   const printReport = () => {
-    const w=window.open("","_blank")!;
-    w.document.write(`<html><head><title>Client List</title><style>body{font-family:Arial;margin:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px}th{background:#f2f2f2}.r{color:red;font-weight:bold}.g{color:green;font-weight:bold}</style></head><body><h2>Client List — ${new Date().toLocaleDateString("en-IN")}</h2><table><thead><tr><th>#</th><th>Name</th><th>Contact</th><th>Email</th><th>Address</th><th>Balance</th></tr></thead><tbody>${filteredSortedClients.map((c,i)=>`<tr><td>${i+1}</td><td>${c.name}</td><td>${c.contact}</td><td>${c.email}</td><td>${c.address}</td><td class="${c.balance>0?"r":"g"}">${inr(c.balance)}</td></tr>`).join("")}</tbody><tfoot><tr><td colspan="5"><b>Total Outstanding:</b></td><td class="r"><b>${inr(totalOutstanding)}</b></td></tr></tfoot></table></body></html>`);
-    w.document.close(); w.print();
+    const params = new URLSearchParams({
+      tab: tabFilter,
+      minBal: minBal || "",
+      maxBal: maxBal || "",
+      sortField,
+      sortDir,
+    });
+    window.open(`/api/print-clients?${params.toString()}`, "_blank");
   };
   const exportPDF = () => {
     alert("PDF Export: Use Print → Save as PDF option in the print dialog.\n\nअगर PDF में save करना है तो Print पर click करके printer dialog में 'Save as PDF' select करें।");

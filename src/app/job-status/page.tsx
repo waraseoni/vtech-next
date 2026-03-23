@@ -255,7 +255,7 @@ if (txnErr || !txnData || txnData.length === 0) {
                 <RotateCcw size={16}/> Search Again
               </button>
               <div className="flex gap-2">
-                <button onClick={() => window.print()} style={{
+                <button onClick={() => window.open(`/api/print-job-status?job_id=${job.job_id}`, "_blank")} style={{
                   background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.2)",
                   borderRadius: "10px", padding: "0.5rem 1rem", fontSize: "0.8rem", cursor: "pointer",
                 }}>

@@ -283,7 +283,7 @@ export default function MechanicDetailPage() {
               className="flex items-center gap-1.5 px-3 py-2 bg-[#25D366]/10 border border-[#25D366]/20 text-[#25D366] hover:bg-[#25D366]/20 rounded-xl text-xs font-bold transition">
               <MessageSquare size={13}/> WhatsApp
             </button>
-            <button onClick={() => window.print()}
+            <button onClick={() => window.open(`/api/print-mechanic-detail?id=${id}&from=${fromDate}&to=${toDate}`, "_blank")}
               className="flex items-center gap-1.5 px-3 py-2 bg-[#1e2637] border border-[#2a3550] text-slate-400 hover:bg-[#252f45] rounded-xl text-xs font-bold transition">
               <Printer size={13}/> Print
             </button>

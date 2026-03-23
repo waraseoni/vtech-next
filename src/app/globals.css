@@ -575,3 +575,47 @@ html[data-theme="light"] .theme-card h3 {
 html[data-theme="dark"] .theme-sidebar {
   background-color: #080d14 !important;
 }
+
+/* Print Styles - Hide UI, Show Only Table Content */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  /* Hide everything except the table container */
+  nav, header, footer, .no-print, .print\:hidden {
+    display: none !important;
+  }
+  
+  /* Show only the main content area */
+  main, [class*="space-y-"], [class*="bg-"], [class*="border-"] {
+    display: block !important;
+    background: white !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  
+  /* Make table look good for print */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+  
+  th, td {
+    border: 1px solid #ddd !important;
+    color: black !important;
+    background: white !important;
+    font-size: 12px !important;
+  }
+  
+  th {
+    background: #f3f3f3 !important;
+    font-weight: bold !important;
+  }
+  
+  /* Hide action buttons */
+  button, a[href], .action-column, td:last-child, th:last-child {
+    display: none !important;
+  }
+}

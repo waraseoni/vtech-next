@@ -90,7 +90,7 @@ function LoanReportContent() {
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">Client loans monthly performance</p>
         </div>
-        <button onClick={() => window.print()}
+        <button onClick={() => window.open(`/api/print-loan?month=${month}`, "_blank")}
           className="flex items-center gap-2 px-4 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all">
           <Printer size={13} /> Print
         </button>

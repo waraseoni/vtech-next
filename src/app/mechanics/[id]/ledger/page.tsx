@@ -232,7 +232,7 @@ export default function MechanicLedgerPage() {
             className="flex items-center gap-1.5 px-3 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition">
             <Download size={13}/> Excel
           </button>
-          <button onClick={() => window.print()}
+          <button onClick={() => window.open(`/api/print-mechanic-ledger?id=${id}&from=${fromDate}&to=${toDate}`, "_blank")}
             className="flex items-center gap-1.5 px-3 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition">
             <Printer size={13}/> Print
           </button>

@@ -187,7 +187,7 @@ function BalanceSheetContent() {
             className="flex items-center gap-2 px-3 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all">
             <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} /> Refresh
           </button>
-          <button onClick={() => window.print()}
+          <button onClick={() => window.open(`/api/print-balancesheet?from=${startDate}&to=${endDate}`, "_blank")}
             className="flex items-center gap-2 px-4 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all">
             <Printer size={13} /> Print
           </button>

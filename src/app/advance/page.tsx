@@ -94,23 +94,31 @@ function AdvanceLedgerContent() {
 
   const totalAdvance = rows.reduce((s, r) => s + (r.amount || 0), 0);
 
+  const printReport = () => {
+    const p = new URLSearchParams();
+    if (from) p.set("from", from);
+    if (to) p.set("to", to);
+    if (mechanicId !== "all") p.set("mechanic_id", mechanicId);
+    window.open(`/api/print-advance?${p}`, "_blank");
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between print:hidden">
         <div>
           <h1 className="text-lg font-black text-white flex items-center gap-2">
             <DollarSign size={18} className="text-amber-400" /> Advance & Part Payment Ledger
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">Mechanic advance payments</p>
         </div>
-        <button onClick={() => window.print()}
-          className="flex items-center gap-2 px-4 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all">
+        <button onClick={printReport}
+          className="flex items-center gap-2 px-4 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all print-btn">
           <Printer size={13} /> Print
         </button>
       </div>
 
-      {/* Filter */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+      {/* Filter - hidden on print */}
+      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 print:hidden">
         <div className="flex flex-wrap items-end gap-3">
           <div>
             <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">From</label>

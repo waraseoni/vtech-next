@@ -254,7 +254,7 @@ function SalaryContent() {
           <h1 className="text-xl font-black text-white flex items-center gap-2"><Wallet size={22} className="text-blue-500" /> Salary Management</h1>
           <p className="text-sm text-slate-500 mt-1">V-Tech Electronics Staff & Commission Reports</p>
         </div>
-        <button onClick={() => window.print()} className="flex items-center gap-2 px-5 py-2.5 bg-[#161b27] border border-[#21293d] rounded-xl text-sm font-bold text-slate-300 hover:text-white hover:border-blue-500/50 hover:bg-[#1c2231] transition-all shadow-sm"><Printer size={16} /> Print Report</button>
+        <button onClick={() => window.open(`/api/print-salary?month=${month}`, "_blank")} className="flex items-center gap-2 px-5 py-2.5 bg-[#161b27] border border-[#21293d] rounded-xl text-sm font-bold text-slate-300 hover:text-white hover:border-blue-500/50 hover:bg-[#1c2231] transition-all shadow-sm"><Printer size={16} /> Print Report</button>
       </div>
 
       {/* Print Only Header */}

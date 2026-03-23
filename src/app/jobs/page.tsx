@@ -541,7 +541,11 @@ function JobsListContent() {
   const shiftDay = (dir: number) => {
     const base = dateFrom ? parseISTDate(dateFrom) : parseISTDate(todayIST());
     base.setDate(base.getDate() + dir);
-    const nd = base.toISOString().split("T")[0];
+    // Use manual formatting instead of toISOString() to avoid UTC conversion issues
+    const y = base.getFullYear();
+    const m = String(base.getMonth() + 1).padStart(2, "0");
+    const d = String(base.getDate()).padStart(2, "0");
+    const nd = `${y}-${m}-${d}`;
     setDateFrom(nd);
     setDateTo(nd);
     const p = new URLSearchParams(searchParams.toString());
@@ -926,6 +930,14 @@ function JobsListContent() {
             </button>
           </div>
         </div>
+        {/* Selected Date Range Display */}
+        {(dateFrom || dateTo) && (
+          <div className="mt-2 text-center">
+            <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-1 rounded-lg">
+              {dateFrom === dateTo ? dateFrom : dateFrom && dateTo ? `${dateFrom} → ${dateTo}` : dateFrom || dateTo}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ── Quick Stats (PHP mobile-stats feature) ── */}
