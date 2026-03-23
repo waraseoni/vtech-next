@@ -156,7 +156,7 @@ if (txnErr || !txnData || txnData.length === 0) {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-[#0f0f1a] text-white py-8 px-4 pt-20">
+      <div className="min-h-screen bg-[#0f0f1a] text-white py-6 px-4">
 
         {/* ══ SEARCH FORM (exact match PHP check_status.php) ════════════ */}
         {!job && (
