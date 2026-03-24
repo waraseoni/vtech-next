@@ -200,26 +200,12 @@ export default function DirectSalesPage() {
   };
 
   const printReport = () => {
-    const w = window.open("", "_blank");
-    if (!w) return;
-    const generatedAt = formatIST(new Date(), { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
-    w.document.write(`<html><head><title>Direct Sales</title><style>
-      body{font-family:sans-serif;padding:20px}h1{margin-bottom:4px}p{color:#666;font-size:.85rem;margin-bottom:16px}
-      table{width:100%;border-collapse:collapse;font-size:.85rem}th{background:#f1f5f9;padding:8px 12px;text-align:left;border:1px solid #e2e8f0}
-      td{padding:8px 12px;border:1px solid #e2e8f0}tfoot td{font-weight:bold;background:#f8fafc}
-    </style></head><body>
-      <h1>Direct Sales Report — V-Technologies</h1>
-      <p>Period: ${dateFrom} → ${dateTo} | Generated: ${generatedAt}</p>
-      <table><thead><tr><th>#</th><th>Code</th><th>Date</th><th>Client</th><th>Staff</th><th>Amount</th><th>Payment</th></tr></thead>
-      <tbody>${filteredSales.map((s, i) => `<tr>
-        <td>${i + 1}</td><td>${s.sale_code}</td><td>${fmtDate(s.date_created)}</td>
-        <td>${s.client_name || "Walk-in"}</td><td>${s.staff_name}</td>
-        <td align="right">₹${s.total_amount.toFixed(2)}</td><td>${s.payment_mode}</td>
-      </tr>`).join("")}</tbody>
-      <tfoot><tr><td colspan="5" align="right">Total (${stats.totalSales} sales):</td>
-      <td align="right">₹${stats.totalAmount.toFixed(2)}</td><td></td></tr></tfoot>
-      </table></body></html>`);
-    w.document.close(); w.print();
+    const params = new URLSearchParams({
+      from: dateFrom,
+      to: dateTo,
+      payment_mode: paymentFilter,
+    });
+    window.open(`/api/print-direct-sales?${params.toString()}`, "_blank");
   };
 
   // ── Loading ────────────────────────────────────────────────────────────────

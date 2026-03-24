@@ -136,63 +136,7 @@ export default function ViewSalePage() {
 
   const printInvoice = () => {
     if (!sale) return;
-    const w = window.open("", "_blank");
-    if (!w) return;
-    w.document.write(`<html><head><title>Invoice ${sale.sale_code}</title>
-    <style>
-      *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:30px;max-width:800px;margin:0 auto;color:#1a1a1a}
-      .hdr{text-align:center;border-bottom:3px solid #2563eb;padding-bottom:16px;margin-bottom:20px}
-      .co-name{font-size:26px;font-weight:900;color:#2563eb;margin:0 0 4px}
-      .co-meta{font-size:12px;color:#666}
-      .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
-      .box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px}
-      .box h3{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin:0 0 8px}
-      .box p{font-size:12px;margin:2px 0;color:#334155}
-      table{width:100%;border-collapse:collapse;font-size:13px}
-      thead{background:#1e293b;color:#fff}
-      th{padding:10px 12px;text-align:left}th:nth-child(3){text-align:center}th:nth-child(4),th:nth-child(5){text-align:right}
-      td{padding:9px 12px;border-bottom:1px solid #e2e8f0}td:nth-child(3){text-align:center}td:nth-child(4),td:nth-child(5){text-align:right}
-      .total-box{display:flex;justify-content:flex-end;margin-top:16px}
-      .total-inner{width:220px;border-top:2px solid #1e293b;padding-top:8px}
-      .total-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
-      .grand{font-weight:900;font-size:18px;color:#2563eb}
-      .words{font-size:11px;color:#64748b;margin-top:6px;font-style:italic}
-      .remarks{background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px;margin-top:16px;font-size:12px}
-      .footer{text-align:center;margin-top:30px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8}
-      .badge{display:inline-block;background:#dcfce7;color:#16a34a;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
-    </style></head><body>
-    <div class="hdr">
-      <div class="co-name">${companyInfo.name}</div>
-      <div class="co-meta">${companyInfo.address ? companyInfo.address + " | " : ""}${companyInfo.contact ? "📞 " + companyInfo.contact : ""}</div>
-      <div style="margin-top:8px;font-size:13px;color:#475569">DIRECT SALE INVOICE</div>
-    </div>
-    <div class="grid">
-      <div class="box"><h3>Bill To</h3>
-        <p><b>${sale.client_name || "Walk-in Customer"}</b></p>
-        ${sale.client_contact ? `<p>📞 ${sale.client_contact}</p>` : ""}
-        ${sale.client_address ? `<p>📍 ${sale.client_address}</p>` : ""}
-      </div>
-      <div class="box"><h3>Invoice Details</h3>
-        <p><b>Invoice No:</b> ${sale.sale_code}</p>
-        <p><b>Date:</b> ${fmtIST(sale.date_created)}</p>
-        <p><b>Staff:</b> ${sale.staff_name}</p>
-        <p><b>Payment:</b> <span class="badge">${sale.payment_mode}</span></p>
-      </div>
-    </div>
-    <table><thead><tr><th>#</th><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
-    <tbody>${sale.items.map((it, i) => `<tr>
-      <td>${i + 1}</td><td>${it.product_name}</td><td style="text-align:center">${it.qty}</td>
-      <td style="text-align:right">₹${it.price.toFixed(2)}</td><td style="text-align:right">₹${it.total.toFixed(2)}</td>
-    </tr>`).join("")}</tbody></table>
-    <div class="total-box"><div class="total-inner">
-      <div class="total-row"><span>Subtotal</span><span>₹${sale.items.reduce((s, i) => s + i.total, 0).toFixed(2)}</span></div>
-      <div class="total-row grand"><span>Grand Total</span><span>₹${sale.total_amount.toFixed(2)}</span></div>
-      <div class="words">${numberToWords(sale.total_amount)} Rupees Only</div>
-    </div></div>
-    ${sale.remarks ? `<div class="remarks"><b>Remarks:</b> ${sale.remarks}</div>` : ""}
-    <div class="footer">Goods sold are not returnable. Thank you for your business! — ${companyInfo.name}</div>
-    </body></html>`);
-    w.document.close(); w.print();
+    window.open(`/api/print-direct-sale-invoice?id=${sale.id}`, "_blank");
   };
 
   // ── Loading ────────────────────────────────────────────────────────────────
