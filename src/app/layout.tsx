@@ -318,6 +318,15 @@ function SidebarNav({
           </Link>
         </li>
 
+        <li className="text-[9px] font-black uppercase text-purple-500 tracking-widest px-3 pt-5 pb-1.5 select-none">
+          AI Tools
+        </li>
+        <li>
+          <Link href="/ai" className={navLinkCls(pathname === "/ai")} onClick={onNavClick}>
+            <Sparkles size={16} /><span>AI Assistant</span>
+          </Link>
+        </li>
+
         {isAdmin && (
           <>
             <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
