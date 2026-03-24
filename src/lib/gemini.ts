@@ -1,61 +1,9 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-
 export interface ChatMessage {
-  role: "user" | "model";
+  role: "user" | "model" | "assistant";
   content: string;
 }
 
-export async function getGeminiResponse(
-  prompt: string,
-  systemInstruction?: string
-): Promise<string> {
-  try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-pro",
-      systemInstruction: systemInstruction || getSystemPrompt(),
-    });
-
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    return response.text() || "Sorry, I couldn't generate a response.";
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "Sorry, something went wrong. Please try again.";
-  }
-}
-
-export async function getChatResponse(
-  messages: ChatMessage[],
-  context?: string
-): Promise<string> {
-  try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-pro",
-      systemInstruction: getSystemPrompt(context),
-    });
-
-    const chat = model.startChat({
-      history: messages.map((msg) => ({
-        role: msg.role,
-        parts: [{ text: msg.content }],
-      })),
-    });
-
-    const lastMessage = messages[messages.length - 1];
-    const result = await chat.sendMessage(lastMessage.content);
-    return result.response.text() || "Sorry, I couldn't understand that.";
-  } catch (error) {
-    console.error("Gemini Chat Error:", error);
-    return "Sorry, something went wrong. Please try again.";
-  }
-}
-
-function getSystemPrompt(customContext?: string): string {
-  const baseContext = customContext || "";
-
-  return `You are a helpful assistant for V-Technologies, a repair shop in Jabalpur.
+const SHOP_CONTEXT = `You are a helpful assistant for V-Technologies, a repair shop in Jabalpur.
 
 Shop Details:
 - Name: V-Technologies
@@ -64,15 +12,97 @@ Shop Details:
 - Services: SMPS Repair, Power Supply Repair, Stage Light Repair, DMX Controller Repair
 - Owner: Vikram Jain
 
-${baseContext}
-
 Guidelines:
 1. Always be polite and professional
-2. Give brief and helpful responses
+2. Give brief and helpful responses in English or Hindi
 3. If customer asks about repair status, ask for their phone number or job ID
 4. If customer asks about payment, guide them to visit the shop or call
 5. Don't make up information about specific repairs or amounts
 6. Suggest visiting the shop for accurate information`;
+
+const DEEPSEEK_API_KEY = "sk-a1f3fc63e6124f3990ebcc97a31b39e8";
+
+async function callDeepSeek(prompt: string): Promise<string> {
+  try {
+    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [
+          { role: "system", content: SHOP_CONTEXT },
+          { role: "user", content: prompt },
+        ],
+        max_tokens: 500,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`DeepSeek error ${response.status}: ${error}`);
+    }
+
+    const data = await response.json();
+    return (
+      data.choices?.[0]?.message?.content ||
+      "Sorry, I couldn't generate a response."
+    );
+  } catch (error: any) {
+    console.error("DeepSeek API Error:", error?.message || error);
+    return `Error: ${error?.message || error}`;
+  }
+}
+
+export async function getGeminiResponse(
+  prompt: string,
+  systemInstruction?: string
+): Promise<string> {
+  return callDeepSeek(prompt);
+}
+
+export async function getChatResponse(
+  messages: ChatMessage[],
+  context?: string
+): Promise<string> {
+  try {
+    const formattedMessages = messages.map((msg) => ({
+      role: msg.role === "model" ? "assistant" : msg.role,
+      content: msg.content,
+    }));
+
+    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [
+          { role: "system", content: SHOP_CONTEXT },
+          ...formattedMessages,
+        ],
+        max_tokens: 500,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`DeepSeek error ${response.status}: ${error}`);
+    }
+
+    const data = await response.json();
+    return (
+      data.choices?.[0]?.message?.content ||
+      "Sorry, I couldn't understand that."
+    );
+  } catch (error: any) {
+    console.error("DeepSeek Chat Error:", error?.message || error);
+    return "Sorry, something went wrong. Please try again.";
+  }
 }
 
 export async function generateReportSummary(
@@ -87,7 +117,7 @@ export async function generateReportSummary(
     Give a concise summary in 2-3 sentences highlighting key insights.
   `;
 
-  return getGeminiResponse(prompt);
+  return callDeepSeek(prompt);
 }
 
 export async function generateWhatsAppReply(
@@ -119,5 +149,5 @@ export async function generateWhatsAppReply(
     Keep it brief and helpful.
   `;
 
-  return getGeminiResponse(prompt);
+  return callDeepSeek(prompt);
 }

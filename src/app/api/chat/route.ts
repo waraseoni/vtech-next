@@ -31,10 +31,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ response });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Chat API Error:", error);
     return NextResponse.json(
-      { error: "Failed to get response" },
+      { error: "Failed to get response", details: error?.message || String(error) },
       { status: 500 }
     );
   }
