@@ -13,7 +13,7 @@ export async function getGeminiResponse(
 ): Promise<string> {
   try {
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-8b",
+      model: "gemini-1.5-flash",
       systemInstruction: systemInstruction || getSystemPrompt(),
     });
 
@@ -32,7 +32,7 @@ export async function getChatResponse(
 ): Promise<string> {
   try {
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-8b",
+      model: "gemini-1.5-flash",
       systemInstruction: getSystemPrompt(context),
     });
 
