@@ -20,104 +20,58 @@ Guidelines:
 5. Don't make up information about specific repairs or amounts
 6. Suggest visiting the shop for accurate information`;
 
-const DEEPSEEK_API_KEY = "sk-a1f3fc63e6124f3990ebcc97a31b39e8";
+const FALLBACK_RESPONSES: Record<string, string> = {
+  "hello": "Hello! Welcome to V-Technologies! How can I help you today? We specialize in SMPS repair, power supply repair, stage light repair, and DMX controller repair.",
+  "hi": "Hi there! Welcome to V-Technologies, Jabalpur's trusted repair shop. What can I help you with?",
+  "services": "We offer:\n• SMPS Repair\n• Power Supply Repair\n• Stage Light Repair\n• DMX Controller Repair\n\nVisit us at F4, Hotel Plaza, Marhatal or call 9179105875",
+  "address": "We're located at:\nF4, Hotel Plaza (Now Madhushala)\nBeside Jayanti Complex\nMarhatal, Jabalpur - 482002",
+  "contact": "Call us at: 9179105875\nOwner: Vikram Jain",
+  "repair": "For repair inquiries, please visit our shop or call 9179105875. We'll need your phone number or job ID to check the status.",
+  "default": "Thank you for contacting V-Technologies! For repair services, please visit our shop at F4, Hotel Plaza, Marhatal or call us at 9179105875."
+};
 
-async function callDeepSeek(prompt: string): Promise<string> {
-  try {
-    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [
-          { role: "system", content: SHOP_CONTEXT },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 500,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`DeepSeek error ${response.status}: ${error}`);
+function getFallbackResponse(prompt: string): string {
+  const lowerPrompt = prompt.toLowerCase();
+  
+  for (const [keyword, response] of Object.entries(FALLBACK_RESPONSES)) {
+    if (lowerPrompt.includes(keyword)) {
+      return response;
     }
-
-    const data = await response.json();
-    return (
-      data.choices?.[0]?.message?.content ||
-      "Sorry, I couldn't generate a response."
-    );
-  } catch (error: any) {
-    console.error("DeepSeek API Error:", error?.message || error);
-    return `Error: ${error?.message || error}`;
   }
+  
+  if (lowerPrompt.includes("service") || lowerPrompt.includes("repair") || lowerPrompt.includes("smps") || lowerPrompt.includes("power supply")) {
+    return FALLBACK_RESPONSES.services;
+  }
+  if (lowerPrompt.includes("address") || lowerPrompt.includes("location") || lowerPrompt.includes("where")) {
+    return FALLBACK_RESPONSES.address;
+  }
+  if (lowerPrompt.includes("contact") || lowerPrompt.includes("call") || lowerPrompt.includes("phone") || lowerPrompt.includes("number")) {
+    return FALLBACK_RESPONSES.contact;
+  }
+  
+  return FALLBACK_RESPONSES.default;
 }
 
 export async function getGeminiResponse(
   prompt: string,
   systemInstruction?: string
 ): Promise<string> {
-  return callDeepSeek(prompt);
+  return getFallbackResponse(prompt);
 }
 
 export async function getChatResponse(
   messages: ChatMessage[],
   context?: string
 ): Promise<string> {
-  try {
-    const formattedMessages = messages.map((msg) => ({
-      role: msg.role === "model" ? "assistant" : msg.role,
-      content: msg.content,
-    }));
-
-    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [
-          { role: "system", content: SHOP_CONTEXT },
-          ...formattedMessages,
-        ],
-        max_tokens: 500,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`DeepSeek error ${response.status}: ${error}`);
-    }
-
-    const data = await response.json();
-    return (
-      data.choices?.[0]?.message?.content ||
-      "Sorry, I couldn't understand that."
-    );
-  } catch (error: any) {
-    console.error("DeepSeek Chat Error:", error?.message || error);
-    return "Sorry, something went wrong. Please try again.";
-  }
+  const lastMessage = messages[messages.length - 1]?.content || "";
+  return getFallbackResponse(lastMessage);
 }
 
 export async function generateReportSummary(
   reportType: string,
   data: Record<string, any>
 ): Promise<string> {
-  const prompt = `
-    Analyze this ${reportType} data and give a brief summary:
-    
-    ${JSON.stringify(data, null, 2)}
-    
-    Give a concise summary in 2-3 sentences highlighting key insights.
-  `;
-
-  return callDeepSeek(prompt);
+  return `This is a summary placeholder for ${reportType}. Please configure an AI API key to enable AI-powered summaries.`;
 }
 
 export async function generateWhatsAppReply(
@@ -129,25 +83,17 @@ export async function generateWhatsAppReply(
     jobStatus?: string;
   }
 ): Promise<string> {
-  let contextInfo = "";
-  if (context?.balance !== undefined) {
-    contextInfo += `Customer's current balance: ₹${context.balance}. `;
+  const msg = customerMessage.toLowerCase();
+  
+  if (msg.includes("status") || msg.includes("repair done")) {
+    return `Hello ${customerName || 'Customer'}, for repair status please provide your phone number or job ID. Call us at 9179105875`;
   }
-  if (context?.lastRepair) {
-    contextInfo += `Last repair: ${context.lastRepair}. `;
+  if (msg.includes("balance") || msg.includes("payment")) {
+    return `Hello ${customerName || 'Customer'}, please visit our shop or call 9179105875 for balance and payment details.`;
   }
-  if (context?.jobStatus) {
-    contextInfo += `Current job status: ${context.jobStatus}. `;
+  if (msg.includes("hello") || msg.includes("hi")) {
+    return `Hello ${customerName || 'Customer'}! Welcome to V-Technologies. How can we help you?`;
   }
-
-  const prompt = `
-    Customer (${customerName || "Customer"}) sent this message: "${customerMessage}"
-    
-    ${contextInfo}
-    
-    Generate a short, polite WhatsApp reply in Hindi/Hindi-English mix (like WhatsApp chats).
-    Keep it brief and helpful.
-  `;
-
-  return callDeepSeek(prompt);
+  
+  return `Thank you for your message! For assistance, please call us at 9179105875 or visit our shop.`;
 }
