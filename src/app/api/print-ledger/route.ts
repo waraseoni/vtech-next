@@ -3,10 +3,18 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
+const SHOP = {
+  name: "V-Technologies",
+  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
+  mobile: "9179105875",
+};
+
 const rupee = (n: number, decimals = 0) => "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 
-function formatDate(iso: string) {
-  return Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso));
+function fmtDate(iso: string): string {
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+  }).format(new Date(iso));
 }
 
 export async function GET(request: NextRequest) {
@@ -73,119 +81,135 @@ export async function GET(request: NextRequest) {
   const totalExpense = totalComm + totalSalary + totalAdvance + totalExpenses + totalEmi;
   const netProfit = totalIncome - totalExpense;
 
-  const monthLabel = `${formatDate(from)} - ${formatDate(to)}`;
+  const monthLabel = `${fmtDate(from)} - ${fmtDate(to)}`;
+
+  const repairRows = repairJobs.length > 0 ? repairJobs.slice(0, 20).map((t, i) => {
+    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+    return `<tr style="background:${rowBg}">
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:12px">${i + 1}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(t.date)}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${t.job_id}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${t.item || '-'}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${t.client}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${t.mechanic}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${rupee(Number(t.amount))}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${rupee(Number(t.comm))}</td>
+    </tr>`;
+  }).join("") + (repairJobs.length > 20 ? `<tr><td colspan="8" style="padding:8px;border:1px solid #dee2e6;text-align:center;font-size:12px;color:#666">... and ${repairJobs.length - 20} more</td></tr>` : '') : '<tr><td colspan="8" style="padding:16px;text-align:center;color:#666">No repair jobs</td></tr>';
+
+  const paymentRows = payments.length > 0 ? payments.slice(0, 20).map((p, i) => {
+    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+    return `<tr style="background:${rowBg}">
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:12px">${i + 1}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(p.date)}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${p.client}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${rupee(Number(p.amount))}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${rupee(Number(p.discount))}</td>
+    </tr>`;
+  }).join("") + (payments.length > 20 ? `<tr><td colspan="5" style="padding:8px;border:1px solid #dee2e6;text-align:center;font-size:12px;color:#666">... and ${payments.length - 20} more</td></tr>` : '') : '<tr><td colspan="5" style="padding:16px;text-align:center;color:#666">No payments</td></tr>';
 
   const html = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Business Ledger</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Business Ledger — ${monthLabel}</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: white; color: #1a1a2e; padding: 40px; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1a1a2e; padding-bottom: 20px; }
-    .shop-name { font-size: 28px; font-weight: 900; color: #1a1a2e; }
-    .shop-address { font-size: 12px; color: #666; margin-top: 4px; }
-    .shop-contact { font-size: 12px; color: #666; }
-    h1 { font-size: 20px; font-weight: 700; margin-top: 20px; }
-    .subtitle { font-size: 14px; color: #666; margin-top: 4px; }
-    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
-    .summary-card { background: #f8f9fa; border-radius: 10px; padding: 15px; text-align: center; }
-    .summary-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; }
-    .summary-value { font-size: 20px; font-weight: 900; color: #1a1a2e; margin-top: 5px; }
-    .positive { color: #059669; }
-    .negative { color: #dc2626; }
-    h2 { font-size: 14px; font-weight: 700; margin: 25px 0 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
-    th { background: #f8f9fa; padding: 8px 6px; text-align: left; font-weight: 700; font-size: 10px; text-transform: uppercase; color: #666; border-bottom: 2px solid #ddd; }
-    td { padding: 6px; border-bottom: 1px solid #eee; }
-    .text-right { text-align: right; }
-    .text-center { text-align: center; }
-    .btn-group { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px; }
-    button { padding: 10px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
-    .btn-print { background: #1a1a2e; color: white; }
-    .btn-close { background: #e5e7eb; color: #374151; }
-    @media print { body { padding: 20px; } .btn-group { display: none; } }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;font-size:13px;background:#f0f2f5;padding:20px;color:#212529}
+    .wrap{max-width:1000px;margin:0 auto}
+    .card{background:#fff;border-radius:6px;box-shadow:0 1px 8px rgba(0,0,0,.1);margin-bottom:16px;overflow:hidden}
+    .hdr{background:#001f3f;color:#fff;padding:16px 20px}
+    .hdr h1{font-size:18px;font-weight:900;margin-bottom:2px}
+    .hdr p{font-size:12px;opacity:.7}
+    .stats{display:flex;gap:12px;padding:14px 20px;background:#f8f9fa;border-bottom:1px solid #dee2e6;flex-wrap:wrap}
+    .stat{background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:10px 16px;text-align:center;flex:1;min-width:120px}
+    .stat-num{font-size:20px;font-weight:900;color:#001f3f}
+    .stat-label{font-size:11px;color:#666;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+    h2{font-size:14px;font-weight:700;color:#001f3f;padding:12px 20px 8px;border-bottom:2px solid #001f3f;background:#f8f9fa}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    thead tr{background:#001f3f}
+    th{padding:10px 8px;color:#fff;font-size:11px;font-weight:700;text-align:left}
+    .actions{text-align:center;padding:16px;background:#f8f9fa;border-top:1px solid #dee2e6}
+    .btn{padding:10px 22px;border:none;border-radius:4px;cursor:pointer;font-size:13px;font-weight:700;margin:4px;display:inline-flex;align-items:center;gap:6px}
+    .btn-print{background:#28a745;color:#fff}
+    .btn-close{background:#6c757d;color:#fff}
+    .footer{text-align:center;color:#666;font-size:11px;padding:10px}
+    @media print{
+      @page{margin:.8cm;size:A4 portrait}
+      body{background:#fff;padding:0}
+      .actions{display:none!important}
+      .card{box-shadow:none;border:1px solid #ddd}
+      .hdr{background:#001f3f!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+      thead tr{background:#001f3f!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="shop-name">V-Technologies</div>
-    <div class="shop-address">F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002</div>
-    <div class="shop-contact">Mobile: 9179105875</div>
-    <h1>Business Ledger</h1>
-    <div class="subtitle">${monthLabel} | Generated: ${formatDate(new Date().toISOString())}</div>
-  </div>
-
-  <div class="summary-grid">
-    <div class="summary-card">
-      <div class="summary-label">Net Revenue</div>
-      <div class="summary-value positive">${rupee(totalIncome)}</div>
+<div class="wrap">
+  <div class="card">
+    <div class="hdr">
+      <h1>📒 ${SHOP.name} — Business Ledger</h1>
+      <p>Period: ${monthLabel} | Generated: ${fmtDate(new Date().toISOString())} | ${SHOP.mobile}</p>
     </div>
-    <div class="summary-card">
-      <div class="summary-label">Total Expenses</div>
-      <div class="summary-value negative">${rupee(totalExpense)}</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">Cash Received</div>
-      <div class="summary-value">${rupee(totalPayments)}</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">${netProfit >= 0 ? 'Net Profit' : 'Net Loss'}</div>
-      <div class="summary-value ${netProfit >= 0 ? 'positive' : 'negative'}">${rupee(netProfit)}</div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num" style="color:#28a745">${rupee(totalIncome)}</div>
+        <div class="stat-label">Net Revenue</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:#c0392b">${rupee(totalExpense)}</div>
+        <div class="stat-label">Total Expenses</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">${rupee(totalPayments)}</div>
+        <div class="stat-label">Cash Received</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:${netProfit >= 0 ? '#28a745' : '#c0392b'}">${rupee(netProfit)}</div>
+        <div class="stat-label">${netProfit >= 0 ? 'Net Profit' : 'Net Loss'}</div>
+      </div>
     </div>
   </div>
 
   ${repairJobs.length > 0 ? `
-  <h2>Repair Jobs (${repairJobs.length})</h2>
-  <table>
-    <thead>
-      <tr><th>#</th><th>Date</th><th>Job ID</th><th>Item</th><th>Customer</th><th>Mechanic</th><th class="text-right">Amount</th><th class="text-right">Comm</th></tr>
-    </thead>
-    <tbody>
-      ${repairJobs.slice(0, 20).map((t, i) => `
-      <tr>
-        <td class="text-center">${i + 1}</td>
-        <td>${formatDate(t.date)}</td>
-        <td>${t.job_id}</td>
-        <td>${t.item || '-'}</td>
-        <td>${t.client}</td>
-        <td>${t.mechanic}</td>
-        <td class="text-right">${rupee(Number(t.amount))}</td>
-        <td class="text-right">${rupee(Number(t.comm))}</td>
-      </tr>`).join("")}
-      ${repairJobs.length > 20 ? `<tr><td colspan="8" class="text-center">... and ${repairJobs.length - 20} more</td></tr>` : ''}
-    </tbody>
-  </table>` : ""}
+  <div class="card">
+    <h2>Repair Jobs (${repairJobs.length})</h2>
+    <table>
+      <thead>
+        <tr><th style="width:4%">#</th><th style="width:12%">Date</th><th style="width:10%">Job ID</th><th style="width:22%">Item</th><th style="width:22%">Customer</th><th style="width:18%">Mechanic</th><th style="width:8%;text-align:right">Amount</th><th style="width:8%;text-align:right">Comm</th></tr>
+      </thead>
+      <tbody>${repairRows}</tbody>
+    </table>
+  </div>` : ''}
 
   ${payments.length > 0 ? `
-  <h2>Client Payments (${payments.length})</h2>
-  <table>
-    <thead>
-      <tr><th>#</th><th>Date</th><th>Customer</th><th class="text-right">Amount</th><th class="text-right">Discount</th></tr>
-    </thead>
-    <tbody>
-      ${payments.slice(0, 20).map((p, i) => `
-      <tr>
-        <td class="text-center">${i + 1}</td>
-        <td>${formatDate(p.date)}</td>
-        <td>${p.client}</td>
-        <td class="text-right">${rupee(Number(p.amount))}</td>
-        <td class="text-right">${rupee(Number(p.discount))}</td>
-      </tr>`).join("")}
-      ${payments.length > 20 ? `<tr><td colspan="5" class="text-center">... and ${payments.length - 20} more</td></tr>` : ''}
-    </tbody>
-  </table>` : ""}
+  <div class="card">
+    <h2>Client Payments (${payments.length})</h2>
+    <table>
+      <thead>
+        <tr><th style="width:4%">#</th><th style="width:15%">Date</th><th style="width:40%">Customer</th><th style="width:20%;text-align:right">Amount</th><th style="width:21%;text-align:right">Discount</th></tr>
+      </thead>
+      <tbody>${paymentRows}</tbody>
+    </table>
+  </div>` : ''}
 
-  <div class="btn-group">
-    <button class="btn-close" onclick="window.close()">Close</button>
-    <button class="btn-print" onclick="window.print()">Print (Ctrl+P)</button>
+  <div class="card">
+    <div class="actions">
+      <button onclick="window.print()" class="btn btn-print">🖨 Print</button>
+      <button onclick="window.close()" class="btn btn-close">✕ Close</button>
+    </div>
   </div>
-  <script>
-    document.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "p") { e.preventDefault(); window.print(); } });
-  </script>
+  <div class="footer">${SHOP.name} | ${SHOP.address} | ${SHOP.mobile}</div>
+</div>
+<script>
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.key === "p") { e.preventDefault(); window.print(); }
+  if (e.key === "Escape") window.close();
+});
+</script>
 </body>
 </html>`;
 
-  return new NextResponse(html, { headers: { "Content-Type": "text/html" } });
+  return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }

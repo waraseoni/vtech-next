@@ -3,11 +3,21 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
+const SHOP = {
+  name: "V-Technologies",
+  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
+  mobile: "9179105875",
+};
+
 const toNum = (v: unknown) => { const x = Number(v); return isNaN(x) ? 0 : x; };
 const inr = (v: number, sign = true) => `${sign && v < 0 ? "−" : ""}₹${Math.abs(v).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 
 function fmtDate(d: string | null) {
-  return d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "N/A";
+  return d ? new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(new Date(d)) : "N/A";
+}
+
+function fmtDateShort(d: string | null) {
+  return d ? new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short" }).format(new Date(d)) : "N/A";
 }
 
 const STATUS_MAP: Record<number, string> = { 0: "Pending", 1: "On-Progress", 2: "Done", 3: "Paid", 4: "Cancelled", 5: "Delivered" };
@@ -46,180 +56,216 @@ export async function GET(request: NextRequest) {
 
   const totalBilled = repairsList.reduce((s, r) => s + toNum(r.amount), 0);
   const totalPaid = paymentsList.reduce((s, p) => s + toNum(p.amount) + toNum(p.discount), 0);
-  const netBalance = (client.opening_balance || 0) + totalBilled + directSalesList.reduce((s, d) => s + toNum(d.total_amount), 0) - totalPaid;
+  const directSalesTotal = directSalesList.reduce((s, d) => s + toNum(d.total_amount), 0);
+  const netBalance = (client.opening_balance || 0) + totalBilled + directSalesTotal - totalPaid;
+
+  const repairRows = repairsList.length > 0 ? repairsList.map((r, i) => {
+    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+    return `<tr style="background:${rowBg}">
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(r.date_created)}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${r.job_id}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${r.code || '-'}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${r.item || '-'}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${STATUS_MAP[r.status] || '-'}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px;color:#c0392b">${inr(toNum(r.amount))}</td>
+    </tr>`;
+  }).join("") : '<tr><td colspan="6" style="padding:16px;text-align:center;color:#666">No repairs</td></tr>';
+
+  const salesRows = directSalesList.length > 0 ? directSalesList.map((s, i) => {
+    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+    return `<tr style="background:${rowBg}">
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(s.date_created)}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${s.sale_code}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px;color:#c0392b">${inr(toNum(s.total_amount))}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${s.payment_mode || '-'}</td>
+    </tr>`;
+  }).join("") : '<tr><td colspan="4" style="padding:16px;text-align:center;color:#666">No direct sales</td></tr>';
+
+  const paymentRows = paymentsList.length > 0 ? paymentsList.map((p, i) => {
+    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+    return `<tr style="background:${rowBg}">
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(p.payment_date)}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${p.job_id || "Direct"}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px;color:#28a745">${inr(toNum(p.amount))}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${inr(toNum(p.discount))}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px;color:#28a745">${inr(toNum(p.amount) + toNum(p.discount))}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${p.payment_mode || '-'}</td>
+    </tr>`;
+  }).join("") : '<tr><td colspan="6" style="padding:16px;text-align:center;color:#666">No payments</td></tr>';
+
+  const loanRows = loansList.length > 0 ? loansList.map((l, i) => {
+    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+    return `<tr style="background:${rowBg}">
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(l.loan_date)}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${inr(toNum(l.principal_amount))}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${l.interest_rate}%</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${inr(toNum(l.total_payable))}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${inr(toNum(l.emi_amount))}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${l.status === 1 ? "Active" : "Closed"}</td>
+    </tr>`;
+  }).join("") : '<tr><td colspan="6" style="padding:16px;text-align:center;color:#666">No loans</td></tr>';
 
   const html = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Ledger - ${name}</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Client Ledger — ${name}</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: white; color: #1a1a2e; padding: 40px; font-size: 13px; }
-    .header { margin-bottom: 20px; border-bottom: 2px solid #001f3f; padding-bottom: 15px; }
-    .shop-name { font-size: 24px; font-weight: 900; color: #001f3f; }
-    .shop-address { font-size: 12px; color: #666; margin-top: 4px; }
-    h1 { font-size: 18px; font-weight: 700; margin-top: 15px; color: #001f3f; }
-    .subtitle { font-size: 12px; color: #666; margin-top: 4px; }
-    .summary { background: #f8f9fa; padding: 12px; border: 1px solid #ddd; margin: 15px 0; border-radius: 8px; }
-    .summary-row { display: flex; justify-content: space-between; padding: 5px 0; }
-    .summary-label { font-weight: 600; }
-    .summary-value { font-weight: 700; }
-    .positive { color: #28a745; }
-    .negative { color: #dc3545; }
-    h2 { font-size: 14px; font-weight: 700; margin: 25px 0 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; color: #001f3f; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-    th { background: #001f3f; color: #fff; padding: 8px 6px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; }
-    td { border: 1px solid #333; padding: 6px; }
-    .text-right { text-align: right; }
-    .text-center { text-align: center; }
-    .btn-group { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px; }
-    button { padding: 10px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
-    .btn-print { background: #001f3f; color: white; }
-    .btn-close { background: #e5e7eb; color: #374151; }
-    @media print { body { padding: 20px; } .btn-group { display: none; } }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;font-size:13px;background:#f0f2f5;padding:20px;color:#212529}
+    .wrap{max-width:900px;margin:0 auto}
+    .card{background:#fff;border-radius:6px;box-shadow:0 1px 8px rgba(0,0,0,.1);margin-bottom:16px;overflow:hidden}
+    .hdr{background:#001f3f;color:#fff;padding:16px 20px}
+    .hdr h1{font-size:18px;font-weight:900;margin-bottom:2px}
+    .hdr p{font-size:12px;opacity:.7}
+    .stats{display:flex;gap:12px;padding:14px 20px;background:#f8f9fa;border-bottom:1px solid #dee2e6;flex-wrap:wrap}
+    .stat{background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:10px 16px;text-align:center;flex:1;min-width:100px}
+    .stat-num{font-size:20px;font-weight:900;color:#001f3f}
+    .stat-label{font-size:11px;color:#666;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+    .client-info{background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:12px 20px;margin:14px 20px}
+    .client-name{font-size:16px;font-weight:700;color:#001f3f}
+    .client-detail{font-size:12px;color:#666;margin-top:4px}
+    h2{font-size:14px;font-weight:700;color:#001f3f;padding:12px 20px 8px;border-bottom:2px solid #001f3f;background:#f8f9fa}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    thead tr{background:#001f3f}
+    th{padding:10px 8px;color:#fff;font-size:11px;font-weight:700;text-align:left}
+    .actions{text-align:center;padding:16px;background:#f8f9fa;border-top:1px solid #dee2e6}
+    .btn{padding:10px 22px;border:none;border-radius:4px;cursor:pointer;font-size:13px;font-weight:700;margin:4px;display:inline-flex;align-items:center;gap:6px}
+    .btn-print{background:#28a745;color:#fff}
+    .btn-close{background:#6c757d;color:#fff}
+    .footer{text-align:center;color:#666;font-size:11px;padding:10px}
+    @media print{
+      @page{margin:.8cm;size:A4 portrait}
+      body{background:#fff;padding:0}
+      .actions{display:none!important}
+      .card{box-shadow:none;border:1px solid #ddd}
+      .hdr{background:#001f3f!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+      thead tr{background:#001f3f!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="shop-name">V-Technologies</div>
-    <div class="shop-address">F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002 | Ph: 9179105875</div>
-    <h1>Client Ledger: ${name}</h1>
-    <div class="subtitle">Client ID: #${clientId} | Print Date: ${fmtDate(new Date().toISOString())}</div>
-  </div>
-
-  <div class="summary">
-    <div class="summary-row">
-      <span class="summary-label">Opening Balance:</span>
-      <span class="summary-value">${inr(toNum(client.opening_balance))}</span>
+<div class="wrap">
+  <div class="card">
+    <div class="hdr">
+      <h1>📋 ${SHOP.name} — Client Ledger</h1>
+      <p>Client: ${name} | ID: #${clientId} | Generated: ${fmtDate(new Date().toISOString())} | ${SHOP.mobile}</p>
     </div>
-    <div class="summary-row">
-      <span class="summary-label">Total Billed:</span>
-      <span class="summary-value negative">${inr(totalBilled)}</span>
+    <div class="client-info">
+      <div class="client-name">${name}</div>
+      <div class="client-detail">Contact: ${client.contact || '-'} | Email: ${client.email || '-'} | Address: ${client.address || '-'}</div>
     </div>
-    <div class="summary-row">
-      <span class="summary-label">Direct Sales:</span>
-      <span class="summary-value negative">${inr(directSalesList.reduce((s, d) => s + toNum(d.total_amount), 0))}</span>
-    </div>
-    <div class="summary-row">
-      <span class="summary-label">Total Paid:</span>
-      <span class="summary-value positive">${inr(totalPaid)}</span>
-    </div>
-    <div class="summary-row" style="border-top: 2px solid #ddd; margin-top: 5px; padding-top: 8px;">
-      <span class="summary-label"><strong>Net Balance:</strong></span>
-      <span class="summary-value ${netBalance >= 0 ? 'negative' : 'positive'}"><strong>${inr(netBalance)}</strong></span>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num">${inr(toNum(client.opening_balance))}</div>
+        <div class="stat-label">Opening</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:#c0392b">${inr(totalBilled)}</div>
+        <div class="stat-label">Total Billed</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:#c0392b">${inr(directSalesTotal)}</div>
+        <div class="stat-label">Direct Sales</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:#28a745">${inr(totalPaid)}</div>
+        <div class="stat-label">Total Paid</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:${netBalance >= 0 ? '#c0392b' : '#28a745'}">${inr(netBalance)}</div>
+        <div class="stat-label">Net Balance</div>
+      </div>
     </div>
   </div>
 
   ${repairsList.length > 0 ? `
-  <h2>Repair History (${repairsList.length})</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Job ID</th>
-        <th>Code</th>
-        <th>Item</th>
-        <th>Status</th>
-        <th class="text-right">Amount</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${repairsList.map(r => `
-      <tr>
-        <td>${fmtDate(r.date_created)}</td>
-        <td>${r.job_id}</td>
-        <td>${r.code || '-'}</td>
-        <td>${r.item || '-'}</td>
-        <td>${STATUS_MAP[r.status] || '-'}</td>
-        <td class="text-right negative">${inr(toNum(r.amount))}</td>
-      </tr>`).join("")}
-    </tbody>
-  </table>` : ""}
+  <div class="card">
+    <h2>Repair History (${repairsList.length})</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:15%">Date</th>
+          <th style="width:12%">Job ID</th>
+          <th style="width:10%">Code</th>
+          <th style="width:23%">Item</th>
+          <th style="width:15%">Status</th>
+          <th style="width:25%">Amount</th>
+        </tr>
+      </thead>
+      <tbody>${repairRows}</tbody>
+    </table>
+  </div>` : ''}
 
   ${directSalesList.length > 0 ? `
-  <h2>Direct Sales (${directSalesList.length})</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Sale Code</th>
-        <th class="text-right">Amount</th>
-        <th>Payment Mode</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${directSalesList.map(s => `
-      <tr>
-        <td>${fmtDate(s.date_created)}</td>
-        <td>${s.sale_code}</td>
-        <td class="text-right negative">${inr(toNum(s.total_amount))}</td>
-        <td>${s.payment_mode || '-'}</td>
-      </tr>`).join("")}
-    </tbody>
-  </table>` : ""}
+  <div class="card">
+    <h2>Direct Sales (${directSalesList.length})</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:20%">Date</th>
+          <th style="width:20%">Sale Code</th>
+          <th style="width:25%">Amount</th>
+          <th style="width:35%">Payment Mode</th>
+        </tr>
+      </thead>
+      <tbody>${salesRows}</tbody>
+    </table>
+  </div>` : ''}
 
   ${paymentsList.length > 0 ? `
-  <h2>Payments Received (${paymentsList.length})</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Ref</th>
-        <th class="text-right">Amount</th>
-        <th class="text-right">Discount</th>
-        <th class="text-right">Net</th>
-        <th>Mode</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${paymentsList.map(p => `
-      <tr>
-        <td>${fmtDate(p.payment_date)}</td>
-        <td>${p.job_id || "Direct"}</td>
-        <td class="text-right positive">${inr(toNum(p.amount))}</td>
-        <td class="text-right">${inr(toNum(p.discount))}</td>
-        <td class="text-right positive">${inr(toNum(p.amount) + toNum(p.discount))}</td>
-        <td>${p.payment_mode}</td>
-      </tr>`).join("")}
-    </tbody>
-  </table>` : ""}
+  <div class="card">
+    <h2>Payments Received (${paymentsList.length})</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:15%">Date</th>
+          <th style="width:12%">Ref</th>
+          <th style="width:15%;text-align:right">Amount</th>
+          <th style="width:13%;text-align:right">Discount</th>
+          <th style="width:15%;text-align:right">Net</th>
+          <th style="width:30%">Mode</th>
+        </tr>
+      </thead>
+      <tbody>${paymentRows}</tbody>
+    </table>
+  </div>` : ''}
 
   ${loansList.length > 0 ? `
-  <h2>Loans (${loansList.length})</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th class="text-right">Principal</th>
-        <th class="text-right">Interest %</th>
-        <th class="text-right">Total</th>
-        <th class="text-right">EMI</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${loansList.map(l => `
-      <tr>
-        <td>${fmtDate(l.loan_date)}</td>
-        <td class="text-right">${inr(toNum(l.principal_amount))}</td>
-        <td class="text-right">${l.interest_rate}%</td>
-        <td class="text-right">${inr(toNum(l.total_payable))}</td>
-        <td class="text-right">${inr(toNum(l.emi_amount))}</td>
-        <td>${l.status === 1 ? "Active" : "Closed"}</td>
-      </tr>`).join("")}
-    </tbody>
-  </table>` : ""}
+  <div class="card">
+    <h2>Loans (${loansList.length})</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:15%">Date</th>
+          <th style="width:18%;text-align:right">Principal</th>
+          <th style="width:12%;text-align:right">Interest %</th>
+          <th style="width:18%;text-align:right">Total</th>
+          <th style="width:17%;text-align:right">EMI</th>
+          <th style="width:20%">Status</th>
+        </tr>
+      </thead>
+      <tbody>${loanRows}</tbody>
+    </table>
+  </div>` : ''}
 
-  <div class="btn-group">
-    <button class="btn-close" onclick="window.close()">Close</button>
-    <button class="btn-print" onclick="window.print()">Print (Ctrl+P)</button>
+  <div class="card">
+    <div class="actions">
+      <button onclick="window.print()" class="btn btn-print">🖨 Print</button>
+      <button onclick="window.close()" class="btn btn-close">✕ Close</button>
+    </div>
   </div>
-  <script>
-    document.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "p") { e.preventDefault(); window.print(); } });
-  </script>
+  <div class="footer">${SHOP.name} | ${SHOP.address} | ${SHOP.mobile}</div>
+</div>
+<script>
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.key === "p") { e.preventDefault(); window.print(); }
+  if (e.key === "Escape") window.close();
+});
+</script>
 </body>
 </html>`;
 
-  return new NextResponse(html, { headers: { "Content-Type": "text/html" } });
+  return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }

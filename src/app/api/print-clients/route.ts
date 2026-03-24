@@ -3,10 +3,18 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
+const SHOP = {
+  name: "V-Technologies",
+  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
+  mobile: "9179105875",
+};
+
 const inr = (v: number) => "₹" + Math.abs(v).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
-function formatDate(iso: string) {
-  return Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso));
+function fmtDate(iso: string): string {
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+  }).format(new Date(iso));
 }
 
 export async function GET(request: NextRequest) {
@@ -23,7 +31,14 @@ export async function GET(request: NextRequest) {
     .eq("delete_flag", 0);
 
   if (!cls?.length) {
-    return new NextResponse("<html><body><h1>No clients found</h1></body></html>", { headers: { "Content-Type": "text/html" } });
+    return new NextResponse(
+      `<!DOCTYPE html><html><body style="font-family:Arial;padding:40px;text-align:center">
+        <h2>Koi clients nahi mili</h2>
+        <p style="color:#666">Database mein koi client record nahi hai.</p>
+        <button onclick="window.close()" style="margin-top:20px;padding:10px 24px;background:#6c757d;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px">Close</button>
+      </body></html>`,
+      { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
+    );
   }
 
   const ids = cls.map((c) => c.id);
@@ -88,101 +103,115 @@ export async function GET(request: NextRequest) {
 
   const tabLabel = tabFilter === "all" ? "All Clients" : tabFilter === "due" ? "Due" : tabFilter === "high" ? "High Risk" : tabFilter === "clear" ? "Clear" : "Follow-up";
 
+  const clientRows = filtered.map((c, i) => {
+    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+    return `<tr style="background:${rowBg}">
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:12px">${i + 1}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px;font-weight:600">${c.name}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${c.contact}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${c.email || '-'}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${c.address || '-'}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px;font-weight:700;color:${c.balance > 0 ? '#c0392b' : '#28a745'}">${inr(c.balance)}</td>
+    </tr>`;
+  }).join("");
+
   const html = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Client List</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Client List — ${tabLabel}</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: white; color: #1a1a2e; padding: 40px; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1a1a2e; padding-bottom: 20px; }
-    .shop-name { font-size: 28px; font-weight: 900; color: #1a1a2e; }
-    .shop-address { font-size: 12px; color: #666; margin-top: 4px; }
-    .shop-contact { font-size: 12px; color: #666; }
-    h1 { font-size: 20px; font-weight: 700; margin-top: 20px; }
-    .subtitle { font-size: 14px; color: #666; margin-top: 4px; }
-    .summary-cards { display: flex; gap: 20px; margin: 20px 0; }
-    .summary-card { flex: 1; background: #f8f9fa; border-radius: 10px; padding: 15px; text-align: center; }
-    .summary-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; }
-    .summary-value { font-size: 20px; font-weight: 900; color: #1a1a2e; margin-top: 5px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px; }
-    th { background: #f8f9fa; padding: 10px 8px; text-align: left; font-weight: 700; font-size: 10px; text-transform: uppercase; color: #666; border-bottom: 2px solid #ddd; }
-    td { padding: 8px; border-bottom: 1px solid #eee; }
-    .text-right { text-align: right; }
-    .text-center { text-align: center; }
-    .positive { color: #059669; }
-    .negative { color: #dc2626; }
-    .btn-group { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px; }
-    button { padding: 10px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
-    .btn-print { background: #1a1a2e; color: white; }
-    .btn-close { background: #e5e7eb; color: #374151; }
-    @media print { body { padding: 20px; } .btn-group { display: none; } }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;font-size:13px;background:#f0f2f5;padding:20px;color:#212529}
+    .wrap{max-width:1000px;margin:0 auto}
+    .card{background:#fff;border-radius:6px;box-shadow:0 1px 8px rgba(0,0,0,.1);margin-bottom:16px;overflow:hidden}
+    .hdr{background:#001f3f;color:#fff;padding:16px 20px}
+    .hdr h1{font-size:18px;font-weight:900;margin-bottom:2px}
+    .hdr p{font-size:12px;opacity:.7}
+    .stats{display:flex;gap:12px;padding:14px 20px;background:#f8f9fa;border-bottom:1px solid #dee2e6}
+    .stat{background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:10px 16px;text-align:center;flex:1}
+    .stat-num{font-size:22px;font-weight:900;color:#001f3f}
+    .stat-label{font-size:11px;color:#666;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    thead tr{background:#001f3f}
+    th{padding:10px 8px;color:#fff;font-size:11px;font-weight:700;text-align:left}
+    .actions{text-align:center;padding:16px;background:#f8f9fa;border-top:1px solid #dee2e6}
+    .btn{padding:10px 22px;border:none;border-radius:4px;cursor:pointer;font-size:13px;font-weight:700;margin:4px;display:inline-flex;align-items:center;gap:6px}
+    .btn-print{background:#28a745;color:#fff}
+    .btn-close{background:#6c757d;color:#fff}
+    .footer{text-align:center;color:#666;font-size:11px;padding:10px}
+    @media print{
+      @page{margin:.8cm;size:A4 portrait}
+      body{background:#fff;padding:0}
+      .actions{display:none!important}
+      .card{box-shadow:none;border:1px solid #ddd}
+      .hdr{background:#001f3f!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+      thead tr{background:#001f3f!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="shop-name">V-Technologies</div>
-    <div class="shop-address">F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002</div>
-    <div class="shop-contact">Mobile: 9179105875</div>
-    <h1>Client List</h1>
-    <div class="subtitle">${tabLabel} | ${filtered.length} clients | Generated: ${formatDate(new Date().toISOString())}</div>
+<div class="wrap">
+  <div class="card">
+    <div class="hdr">
+      <h1>👥 ${SHOP.name} — Client List</h1>
+      <p>${tabLabel} | ${filtered.length} clients | Generated: ${fmtDate(new Date().toISOString())} | ${SHOP.mobile}</p>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num">${clients.length}</div>
+        <div class="stat-label">Total Clients</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:#c0392b">${clients.filter(c => c.balance > 0).length}</div>
+        <div class="stat-label">With Due</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:#c0392b">${inr(totalOutstanding)}</div>
+        <div class="stat-label">Total Outstanding</div>
+      </div>
+    </div>
   </div>
 
-  <div class="summary-cards">
-    <div class="summary-card">
-      <div class="summary-label">Total Clients</div>
-      <div class="summary-value">${clients.length}</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">With Due</div>
-      <div class="summary-value negative">${clients.filter(c => c.balance > 0).length}</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">Total Outstanding</div>
-      <div class="summary-value negative">${inr(totalOutstanding)}</div>
-    </div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:5%">#</th>
+          <th style="width:20%">Name</th>
+          <th style="width:12%">Contact</th>
+          <th style="width:18%">Email</th>
+          <th style="width:25%">Address</th>
+          <th style="width:20%">Balance</th>
+        </tr>
+      </thead>
+      <tbody>${clientRows}</tbody>
+      <tfoot>
+        <tr style="background:#f0f4ff;font-weight:700">
+          <td colspan="5" style="padding:10px 8px;border:1px solid #dee2e6;text-align:right;font-size:12px">Total Outstanding:</td>
+          <td style="padding:10px 8px;border:1px solid #dee2e6;text-align:right;font-size:13px;color:#c0392b">${inr(totalOutstanding)}</td>
+        </tr>
+      </tfoot>
+    </table>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Name</th>
-        <th>Contact</th>
-        <th>Email</th>
-        <th>Address</th>
-        <th class="text-right">Balance</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${filtered.map((c, i) => `
-      <tr>
-        <td class="text-center">${i + 1}</td>
-        <td><strong>${c.name}</strong></td>
-        <td>${c.contact}</td>
-        <td>${c.email}</td>
-        <td>${c.address || '-'}</td>
-        <td class="text-right ${c.balance > 0 ? 'negative' : 'positive'}"><strong>${inr(c.balance)}</strong></td>
-      </tr>`).join("")}
-    </tbody>
-    <tfoot>
-      <tr>
-        <td colspan="5" class="text-right"><strong>Total Outstanding:</strong></td>
-        <td class="text-right negative"><strong>${inr(totalOutstanding)}</strong></td>
-      </tr>
-    </tfoot>
-  </table>
-
-  <div class="btn-group">
-    <button class="btn-close" onclick="window.close()">Close</button>
-    <button class="btn-print" onclick="window.print()">Print (Ctrl+P)</button>
+  <div class="card">
+    <div class="actions">
+      <button onclick="window.print()" class="btn btn-print">🖨 Print</button>
+      <button onclick="window.close()" class="btn btn-close">✕ Close</button>
+    </div>
   </div>
-  <script>
-    document.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "p") { e.preventDefault(); window.print(); } });
-  </script>
+  <div class="footer">${SHOP.name} | ${SHOP.address} | ${SHOP.mobile}</div>
+</div>
+<script>
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.key === "p") { e.preventDefault(); window.print(); }
+  if (e.key === "Escape") window.close();
+});
+</script>
 </body>
 </html>`;
 
-  return new NextResponse(html, { headers: { "Content-Type": "text/html" } });
+  return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }

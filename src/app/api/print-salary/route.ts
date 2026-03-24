@@ -1,12 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const SHOP = {
+  name: "V-Technologies",
+  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
+  mobile: "9179105875",
+};
 
-function formatDate(iso: string) {
-  return Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso));
+function fmtDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+  }).format(new Date(iso));
+}
+
+function inr(n: number) {
+  return "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: 2 });
 }
 
 function getEffectiveRate(mechanicId: number, dateStr: string, defaultRate: number, history: { mechanic_id: number; salary: number; effective_date: string }[]) {
@@ -15,8 +29,8 @@ function getEffectiveRate(mechanicId: number, dateStr: string, defaultRate: numb
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const month = searchParams.get("month") || new Date().toISOString().slice(0, 7);
+  const url = new URL(request.url);
+  const month = url.searchParams.get("month") || "";
 
   const monthStart = `${month}-01`;
   const nextMonthD = new Date(monthStart);
@@ -34,15 +48,17 @@ export async function GET(request: NextRequest) {
   const mechIds = typedMechs.map(m => m.id);
 
   if (mechIds.length === 0) {
-    return new NextResponse("<html><body>No mechanics found</body></html>", { headers: { "Content-Type": "text/html" } });
+    return new NextResponse(
+      `<!DOCTYPE html><html><body style="font-family:Arial;padding:40px;text-align:center">
+        <h2>Koi staff nahi mila</h2>
+        <p style="color:#666">No active mechanics found.</p>
+        <button onclick="window.close()" style="margin-top:20px;padding:10px 24px;background:#6c757d;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px">Close</button>
+      </body></html>`,
+      { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
+    );
   }
 
-  const [
-    { data: allAtt },
-    { data: allComm },
-    { data: allAdv },
-    { data: allHist }
-  ] = await Promise.all([
+  const [{ data: allAtt }, { data: allComm }, { data: allAdv }, { data: allHist }] = await Promise.all([
     supabase.from("attendance_list").select("mechanic_id, curr_date, status").in("mechanic_id", mechIds).in("status", [1, 3]).lt("curr_date", nextMonthStart),
     supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount, date_created").in("mechanic_id", mechIds).lt("date_created", `${nextMonthStart}T00:00:00`),
     supabase.from("advance_payments").select("mechanic_id, amount, date_paid").in("mechanic_id", mechIds).lt("date_paid", nextMonthStart),
@@ -64,43 +80,22 @@ export async function GET(request: NextRequest) {
       earnedPrev += (a.status === 3 ? rate / 2 : rate);
     });
 
-    const commPrevSum = commList.filter((c: any) => c.mechanic_id === m.id && c.date_created < `${monthStart}T00:00:00`)
-                                .reduce((s: number, c: any) => s + (c.mechanic_commission_amount || 0), 0);
-
-    const advPrevSum = advList.filter((a: any) => a.mechanic_id === m.id && a.date_paid < monthStart)
-                              .reduce((s: number, a: any) => s + (a.amount || 0), 0);
-
+    const commPrevSum = commList.filter((c: any) => c.mechanic_id === m.id && c.date_created < `${monthStart}T00:00:00`).reduce((s: number, c: any) => s + (c.mechanic_commission_amount || 0), 0);
+    const advPrevSum = advList.filter((a: any) => a.mechanic_id === m.id && a.date_paid < monthStart).reduce((s: number, a: any) => s + (a.amount || 0), 0);
     const oldBalance = earnedPrev + commPrevSum - advPrevSum;
 
-    let currentFix = 0;
-    let presentCount = 0;
-    let halfDayCount = 0;
-
+    let currentFix = 0, presentCount = 0, halfDayCount = 0;
     attList.filter((a: any) => a.mechanic_id === m.id && a.curr_date >= monthStart && a.curr_date < nextMonthStart).forEach((a: any) => {
       const rate = getEffectiveRate(m.id, a.curr_date, defaultSal, histList);
-      if (a.status === 3) {
-        halfDayCount++;
-        currentFix += (rate / 2);
-      } else {
-        presentCount++;
-        currentFix += rate;
-      }
+      if (a.status === 3) { halfDayCount++; currentFix += (rate / 2); }
+      else { presentCount++; currentFix += rate; }
     });
 
-    const currentComm = commList.filter((c: any) => c.mechanic_id === m.id && c.date_created >= `${monthStart}T00:00:00` && c.date_created < `${nextMonthStart}T00:00:00`)
-                                .reduce((s: number, c: any) => s + (c.mechanic_commission_amount || 0), 0);
-
-    const currentAdv = advList.filter((a: any) => a.mechanic_id === m.id && a.date_paid >= monthStart && a.date_paid < nextMonthStart)
-                              .reduce((s: number, a: any) => s + (a.amount || 0), 0);
-
+    const currentComm = commList.filter((c: any) => c.mechanic_id === m.id && c.date_created >= `${monthStart}T00:00:00` && c.date_created < `${nextMonthStart}T00:00:00`).reduce((s: number, c: any) => s + (c.mechanic_commission_amount || 0), 0);
+    const currentAdv = advList.filter((a: any) => a.mechanic_id === m.id && a.date_paid >= monthStart && a.date_paid < nextMonthStart).reduce((s: number, a: any) => s + (a.amount || 0), 0);
     const netFinal = oldBalance + currentFix + currentComm - currentAdv;
 
-    return {
-      id: m.id, name, salary_per_day: defaultSal,
-      present_count: presentCount, half_day_count: halfDayCount,
-      current_fix: currentFix, current_comm: currentComm,
-      old_balance: oldBalance, current_adv: currentAdv, net_final: netFinal
-    };
+    return { id: m.id, name, salary_per_day: defaultSal, present_count: presentCount, half_day_count: halfDayCount, current_fix: currentFix, current_comm: currentComm, old_balance: oldBalance, current_adv: currentAdv, net_final: netFinal };
   });
 
   const summaryTotals = salaryRows.reduce((acc, row) => ({
@@ -109,114 +104,124 @@ export async function GET(request: NextRequest) {
     commissions: acc.commissions + row.current_comm
   }), { payout: 0, advances: 0, commissions: 0 });
 
-  const monthLabel = new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const monthLabel = month ? new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" }) : "All Records";
+
+  const rowsHtml = salaryRows.map((r, i) => {
+    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+    return `<tr style="background:${rowBg}">
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:11px">${i + 1}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;font-weight:600;font-size:11px">${r.name}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:center;font-size:11px">${r.present_count}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:center;font-size:11px">${r.half_day_count}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px">${inr(r.current_fix)}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px">${inr(r.current_comm)}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:${r.old_balance >= 0 ? '#28a745' : '#dc3545'}">${inr(r.old_balance)}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:#dc3545">${inr(r.current_adv)}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-weight:700;font-size:11px;color:${r.net_final >= 0 ? '#28a745' : '#dc3545'}">${inr(r.net_final)}</td>
+    </tr>`;
+  }).join("");
 
   const html = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Salary Report - ${monthLabel}</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Salary Report — ${monthLabel}</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: white; color: #1a1a2e; padding: 40px; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1a1a2e; padding-bottom: 20px; }
-    .shop-name { font-size: 28px; font-weight: 900; color: #1a1a2e; }
-    .shop-address { font-size: 12px; color: #666; margin-top: 4px; }
-    .shop-contact { font-size: 12px; color: #666; }
-    h1 { font-size: 20px; font-weight: 700; margin-top: 20px; }
-    .subtitle { font-size: 14px; color: #666; margin-top: 4px; }
-    .summary-cards { display: flex; gap: 20px; margin: 20px 0; }
-    .summary-card { flex: 1; background: #f8f9fa; border-radius: 10px; padding: 15px; text-align: center; }
-    .summary-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; }
-    .summary-value { font-size: 20px; font-weight: 900; color: #1a1a2e; margin-top: 5px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px; }
-    th { background: #f8f9fa; padding: 10px 6px; text-align: left; font-weight: 700; font-size: 10px; text-transform: uppercase; color: #666; border-bottom: 2px solid #ddd; }
-    td { padding: 8px 6px; border-bottom: 1px solid #eee; }
-    .text-right { text-align: right; }
-    .text-center { text-align: center; }
-    tfoot td { border-top: 2px solid #ddd; background: #f8f9fa; font-weight: 700; }
-    .positive { color: #059669; }
-    .negative { color: #dc2626; }
-    .btn-group { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px; }
-    button { padding: 10px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
-    .btn-print { background: #1a1a2e; color: white; }
-    .btn-close { background: #e5e7eb; color: #374151; }
-    @media print { body { padding: 20px; } .btn-group { display: none; } }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;font-size:13px;background:#f0f2f5;padding:20px;color:#212529}
+    .wrap{max-width:1200px;margin:0 auto}
+    .card{background:#fff;border-radius:6px;box-shadow:0 1px 8px rgba(0,0,0,.1);margin-bottom:16px;overflow:hidden}
+    .hdr{background:#001f3f;color:#fff;padding:16px 20px}
+    .hdr h1{font-size:20px;font-weight:900;margin-bottom:2px}
+    .hdr p{font-size:12px;opacity:.7}
+    .stats{display:flex;gap:12px;padding:14px 20px;background:#f8f9fa;border-bottom:1px solid #dee2e6;flex-wrap:wrap}
+    .stat{background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:10px 16px;text-align:center;min-width:120px}
+    .stat-num{font-size:22px;font-weight:900;color:#001f3f}
+    .stat-label{font-size:11px;color:#666;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+    table{width:100%;border-collapse:collapse;font-size:11px}
+    thead tr{background:#001f3f}
+    th{padding:8px 6px;color:#fff;font-size:10px;font-weight:700;text-align:left}
+    .actions{text-align:center;padding:16px;background:#f8f9fa;border-top:1px solid #dee2e6}
+    .btn{padding:10px 22px;border:none;border-radius:4px;cursor:pointer;font-size:13px;font-weight:700;margin:4px}
+    .btn-print{background:#28a745;color:#fff}
+    .btn-close{background:#6c757d;color:#fff}
+    .footer{text-align:center;color:#666;font-size:11px;padding:10px}
+    @media print{
+      @page{margin:.8cm;size:A4 landscape}
+      body{background:#fff;padding:0}
+      .actions{display:none!important}
+      .card{box-shadow:none;border:1px solid #ddd}
+      .hdr{background:#001f3f!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+      thead tr{background:#001f3f!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="shop-name">V-Technologies</div>
-    <div class="shop-address">F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002</div>
-    <div class="shop-contact">Mobile: 9179105875</div>
-    <h1>Salary Report</h1>
-    <div class="subtitle">${monthLabel} | Date: ${formatDate(new Date().toISOString())}</div>
-  </div>
-
-  <div class="summary-cards">
-    <div class="summary-card">
-      <div class="summary-label">Total Payable</div>
-      <div class="summary-value positive">${inr(summaryTotals.payout)}</div>
+<div class="wrap">
+  <div class="card">
+    <div class="hdr">
+      <h1>💰 ${SHOP.name} — Salary Report</h1>
+      <p>Month: ${monthLabel} | Generated: ${fmtDate(new Date().toISOString())} | ${SHOP.mobile}</p>
     </div>
-    <div class="summary-card">
-      <div class="summary-label">Month Advances</div>
-      <div class="summary-value negative">${inr(summaryTotals.advances)}</div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num" style="color:#28a745">${inr(summaryTotals.payout)}</div>
+        <div class="stat-label">Total Payable</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:#dc3545">${inr(summaryTotals.advances)}</div>
+        <div class="stat-label">Month Advances</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">${inr(summaryTotals.commissions)}</div>
+        <div class="stat-label">Total Commissions</div>
+      </div>
     </div>
-    <div class="summary-card">
-      <div class="summary-label">Total Commissions</div>
-      <div class="summary-value">${inr(summaryTotals.commissions)}</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:4%">#</th>
+          <th style="width:18%">Staff Name</th>
+          <th style="width:7%">Present</th>
+          <th style="width:6%">Half</th>
+          <th style="width:10%">Fixed</th>
+          <th style="width:10%">Commission</th>
+          <th style="width:10%">Old Bal</th>
+          <th style="width:10%">Advance</th>
+          <th style="width:10%">Net Final</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot>
+        <tr style="background:#f0f4ff;font-weight:700">
+          <td colspan="4" style="padding:8px 6px;border:1px solid #dee2e6;text-align:right;font-size:11px">Total:</td>
+          <td style="padding:8px 6px;border:1px solid #dee2e6;text-align:right;font-size:11px">${inr(salaryRows.reduce((s, r) => s + r.current_fix, 0))}</td>
+          <td style="padding:8px 6px;border:1px solid #dee2e6;text-align:right;font-size:11px">${inr(summaryTotals.commissions)}</td>
+          <td style="padding:8px 6px;border:1px solid #dee2e6;text-align:right;font-size:11px">${inr(salaryRows.reduce((s, r) => s + r.old_balance, 0))}</td>
+          <td style="padding:8px 6px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:#dc3545">${inr(summaryTotals.advances)}</td>
+          <td style="padding:8px 6px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:#28a745">${inr(summaryTotals.payout)}</td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="actions">
+      <button onclick="window.print()" class="btn btn-print">🖨 Print</button>
+      <button onclick="window.close()" class="btn btn-close">✕ Close</button>
     </div>
   </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Staff Name</th>
-        <th class="text-center">Present</th>
-        <th class="text-center">Half</th>
-        <th class="text-right">Fixed</th>
-        <th class="text-right">Commission</th>
-        <th class="text-right">Old Balance</th>
-        <th class="text-right">Advance</th>
-        <th class="text-right">Net Final</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${salaryRows.map((r, i) => `
-      <tr>
-        <td class="text-center">${i + 1}</td>
-        <td><strong>${r.name}</strong></td>
-        <td class="text-center">${r.present_count}</td>
-        <td class="text-center">${r.half_day_count}</td>
-        <td class="text-right">${inr(r.current_fix)}</td>
-        <td class="text-right">${inr(r.current_comm)}</td>
-        <td class="text-right ${r.old_balance >= 0 ? 'positive' : 'negative'}">${inr(r.old_balance)}</td>
-        <td class="text-right negative">${inr(r.current_adv)}</td>
-        <td class="text-right ${r.net_final >= 0 ? 'positive' : 'negative'}"><strong>${inr(r.net_final)}</strong></td>
-      </tr>`).join("")}
-    </tbody>
-    <tfoot>
-      <tr>
-        <td colspan="4" class="text-right">Total:</td>
-        <td class="text-right">${inr(salaryRows.reduce((s, r) => s + r.current_fix, 0))}</td>
-        <td class="text-right">${inr(summaryTotals.commissions)}</td>
-        <td class="text-right">${inr(salaryRows.reduce((s, r) => s + r.old_balance, 0))}</td>
-        <td class="text-right negative">${inr(summaryTotals.advances)}</td>
-        <td class="text-right positive"><strong>${inr(summaryTotals.payout)}</strong></td>
-      </tr>
-    </tfoot>
-  </table>
-
-  <div class="btn-group">
-    <button class="btn-close" onclick="window.close()">Close</button>
-    <button class="btn-print" onclick="window.print()">Print (Ctrl+P)</button>
-  </div>
-  <script>
-    document.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "p") { e.preventDefault(); window.print(); } });
-  </script>
+  <div class="footer">${SHOP.name} | ${SHOP.address} | ${SHOP.mobile}</div>
+</div>
+<script>
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.key === "p") { e.preventDefault(); window.print(); }
+  if (e.key === "Escape") window.close();
+});
+</script>
 </body>
 </html>`;
 
-  return new NextResponse(html, { headers: { "Content-Type": "text/html" } });
+  return new NextResponse(html, {
+    status: 200,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
 }

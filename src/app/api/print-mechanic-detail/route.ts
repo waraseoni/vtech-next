@@ -3,10 +3,18 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
+const SHOP = {
+  name: "V-Technologies",
+  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
+  mobile: "9179105875",
+};
+
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
-function formatDate(iso: string) {
-  return Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso));
+function fmtDate(iso: string): string {
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+  }).format(new Date(iso));
 }
 
 export async function GET(request: NextRequest) {
@@ -71,108 +79,124 @@ export async function GET(request: NextRequest) {
   const halfDays = attendance.filter(a => a.status === 3).length;
   const salaryDue = (presentDays + halfDays * 0.5) * (mechanic.salary_per_day || 0);
 
-  const periodLabel = from && to ? `${formatDate(from)} - ${formatDate(to)}` : "All Time";
+  const periodLabel = from && to ? `${fmtDate(from)} - ${fmtDate(to)}` : "All Time";
+  const statusLabel = mechanic.status === 1 ? 'Active' : 'Inactive';
+  const statusLabels = ['', 'In Progress', 'Done', 'Paid', 'Cancelled', 'Delivered'];
+
+  const jobRows = jobs.length > 0 ? jobs.map((j, i) => {
+    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+    return `<tr style="background:${rowBg}">
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:12px">${i + 1}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(j.date_updated)}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${j.job_id}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${j.item || '-'}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${statusLabels[j.status] || '-'}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px;color:#c0392b">${inr(j.mechanic_commission_amount)}</td>
+    </tr>`;
+  }).join("") : '<tr><td colspan="6" style="padding:16px;text-align:center;color:#666">No jobs in this period</td></tr>';
 
   const html = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Mechanic Detail - ${name}</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Mechanic Detail — ${name}</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: white; color: #1a1a2e; padding: 40px; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1a1a2e; padding-bottom: 20px; }
-    .shop-name { font-size: 28px; font-weight: 900; color: #1a1a2e; }
-    .shop-address { font-size: 12px; color: #666; margin-top: 4px; }
-    .shop-contact { font-size: 12px; color: #666; }
-    h1 { font-size: 20px; font-weight: 700; margin-top: 20px; }
-    .subtitle { font-size: 14px; color: #666; margin-top: 4px; }
-    .mechanic-info { background: #f8f9fa; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 20px; }
-    .mechanic-name { font-size: 18px; font-weight: 700; }
-    .mechanic-detail { font-size: 12px; color: #666; }
-    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
-    .summary-card { background: #f8f9fa; border-radius: 10px; padding: 15px; text-align: center; }
-    .summary-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; }
-    .summary-value { font-size: 18px; font-weight: 900; color: #1a1a2e; margin-top: 5px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
-    th { background: #f8f9fa; padding: 10px 8px; text-align: left; font-weight: 700; font-size: 10px; text-transform: uppercase; color: #666; border-bottom: 2px solid #ddd; }
-    td { padding: 8px; border-bottom: 1px solid #eee; }
-    .text-right { text-align: right; }
-    .text-center { text-align: center; }
-    .btn-group { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px; }
-    button { padding: 10px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
-    .btn-print { background: #1a1a2e; color: white; }
-    .btn-close { background: #e5e7eb; color: #374151; }
-    @media print { body { padding: 20px; } .btn-group { display: none; } }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;font-size:13px;background:#f0f2f5;padding:20px;color:#212529}
+    .wrap{max-width:900px;margin:0 auto}
+    .card{background:#fff;border-radius:6px;box-shadow:0 1px 8px rgba(0,0,0,.1);margin-bottom:16px;overflow:hidden}
+    .hdr{background:#001f3f;color:#fff;padding:16px 20px}
+    .hdr h1{font-size:18px;font-weight:900;margin-bottom:2px}
+    .hdr p{font-size:12px;opacity:.7}
+    .stats{display:flex;gap:12px;padding:14px 20px;background:#f8f9fa;border-bottom:1px solid #dee2e6;flex-wrap:wrap}
+    .stat{background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:10px 16px;text-align:center;flex:1;min-width:100px}
+    .stat-num{font-size:22px;font-weight:900;color:#001f3f}
+    .stat-label{font-size:11px;color:#666;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+    .mechanic-info{background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:12px 20px;margin:14px 20px}
+    .mechanic-name{font-size:16px;font-weight:700;color:#001f3f}
+    .mechanic-detail{font-size:12px;color:#666;margin-top:4px}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    thead tr{background:#001f3f}
+    th{padding:10px 8px;color:#fff;font-size:11px;font-weight:700;text-align:left}
+    .actions{text-align:center;padding:16px;background:#f8f9fa;border-top:1px solid #dee2e6}
+    .btn{padding:10px 22px;border:none;border-radius:4px;cursor:pointer;font-size:13px;font-weight:700;margin:4px;display:inline-flex;align-items:center;gap:6px}
+    .btn-print{background:#28a745;color:#fff}
+    .btn-close{background:#6c757d;color:#fff}
+    .footer{text-align:center;color:#666;font-size:11px;padding:10px}
+    @media print{
+      @page{margin:.8cm;size:A4 portrait}
+      body{background:#fff;padding:0}
+      .actions{display:none!important}
+      .card{box-shadow:none;border:1px solid #ddd}
+      .hdr{background:#001f3f!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+      thead tr{background:#001f3f!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="shop-name">V-Technologies</div>
-    <div class="shop-address">F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002</div>
-    <div class="shop-contact">Mobile: 9179105875</div>
-    <h1>Mechanic Performance Report</h1>
-    <div class="subtitle">${periodLabel} | Generated: ${formatDate(new Date().toISOString())}</div>
-  </div>
-
-  <div class="mechanic-info">
-    <div class="mechanic-name">${name}</div>
-    <div class="mechanic-detail">${mechanic.designation || 'Mechanic'} | ${mechanic.contact || '-'} | Salary: ${inr(mechanic.salary_per_day)}/day | Status: ${mechanic.status === 1 ? 'Active' : 'Inactive'}</div>
-  </div>
-
-  <div class="summary-grid">
-    <div class="summary-card">
-      <div class="summary-label">Total Jobs</div>
-      <div class="summary-value">${jobs.length}</div>
+<div class="wrap">
+  <div class="card">
+    <div class="hdr">
+      <h1>🔧 ${SHOP.name} — Mechanic Performance Report</h1>
+      <p>Period: ${periodLabel} | Generated: ${fmtDate(new Date().toISOString())} | ${SHOP.mobile}</p>
     </div>
-    <div class="summary-card">
-      <div class="summary-label">Commission</div>
-      <div class="summary-value">${inr(totalComm)}</div>
+    <div class="mechanic-info">
+      <div class="mechanic-name">${name}</div>
+      <div class="mechanic-detail">${mechanic.designation || 'Mechanic'} | ${mechanic.contact || '-'} | Salary: ${inr(mechanic.salary_per_day)}/day | Status: ${statusLabel}</div>
     </div>
-    <div class="summary-card">
-      <div class="summary-label">Advances</div>
-      <div class="summary-value">${inr(totalAdv)}</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">Present/Half</div>
-      <div class="summary-value">${presentDays}/${halfDays}</div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num">${jobs.length}</div>
+        <div class="stat-label">Total Jobs</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:#28a745">${inr(totalComm)}</div>
+        <div class="stat-label">Commission</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:#c0392b">${inr(totalAdv)}</div>
+        <div class="stat-label">Advances</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">${presentDays}/${halfDays}</div>
+        <div class="stat-label">Present/Half</div>
+      </div>
     </div>
   </div>
 
-  ${jobs.length > 0 ? `
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Date</th>
-        <th>Job ID</th>
-        <th>Item</th>
-        <th>Status</th>
-        <th class="text-right">Commission</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${jobs.map((j, i) => `
-      <tr>
-        <td class="text-center">${i + 1}</td>
-        <td>${formatDate(j.date_updated)}</td>
-        <td>${j.job_id}</td>
-        <td>${j.item || '-'}</td>
-        <td>${['', 'In Progress', 'Done', 'Paid', 'Cancelled', 'Delivered'][j.status] || '-'}</td>
-        <td class="text-right">${inr(j.mechanic_commission_amount)}</td>
-      </tr>`).join("")}
-    </tbody>
-  </table>` : "<p style='text-align:center;color:#666;margin:20px'>No jobs in this period</p>"}
-
-  <div class="btn-group">
-    <button class="btn-close" onclick="window.close()">Close</button>
-    <button class="btn-print" onclick="window.print()">Print (Ctrl+P)</button>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:5%">#</th>
+          <th style="width:15%">Date</th>
+          <th style="width:12%">Job ID</th>
+          <th style="width:28%">Item</th>
+          <th style="width:22%">Status</th>
+          <th style="width:18%">Commission</th>
+        </tr>
+      </thead>
+      <tbody>${jobRows}</tbody>
+    </table>
   </div>
-  <script>
-    document.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "p") { e.preventDefault(); window.print(); } });
-  </script>
+
+  <div class="card">
+    <div class="actions">
+      <button onclick="window.print()" class="btn btn-print">🖨 Print</button>
+      <button onclick="window.close()" class="btn btn-close">✕ Close</button>
+    </div>
+  </div>
+  <div class="footer">${SHOP.name} | ${SHOP.address} | ${SHOP.mobile}</div>
+</div>
+<script>
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.key === "p") { e.preventDefault(); window.print(); }
+  if (e.key === "Escape") window.close();
+});
+</script>
 </body>
 </html>`;
 
-  return new NextResponse(html, { headers: { "Content-Type": "text/html" } });
+  return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }

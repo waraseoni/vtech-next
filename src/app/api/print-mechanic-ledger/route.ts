@@ -3,10 +3,18 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
+const SHOP = {
+  name: "V-Technologies",
+  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
+  mobile: "9179105875",
+};
+
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
-function formatDate(iso: string) {
-  return Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso));
+function fmtDate(iso: string): string {
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+  }).format(new Date(iso));
 }
 
 export async function GET(request: NextRequest) {
@@ -33,7 +41,13 @@ export async function GET(request: NextRequest) {
   const dailyRate = mechanic.daily_salary || 0;
 
   if (!from || !to) {
-    return new NextResponse("<html><body><h1>Please specify from and to dates</h1></body></html>", { headers: { "Content-Type": "text/html" } });
+    return new NextResponse(
+      `<!DOCTYPE html><html><body style="font-family:Arial;padding:40px;text-align:center">
+        <h2>Please specify from and to dates</h2>
+        <button onclick="window.close()" style="margin-top:20px;padding:10px 24px;background:#6c757d;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px">Close</button>
+      </body></html>`,
+      { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
+    );
   }
 
   const d = new Date(from);
@@ -99,106 +113,119 @@ export async function GET(request: NextRequest) {
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
-  const periodLabel = `${formatDate(from)} - ${formatDate(to)}`;
+  const periodLabel = `${fmtDate(from)} - ${fmtDate(to)}`;
+
+  const ledgerRows = entries.map((e, i) => {
+    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+    return `<tr style="background:${rowBg}">
+      <td style="padding:6px 8px;border:1px solid #dee2e6;font-size:11px">${fmtDate(e.date)}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;font-size:11px">${e.dayName}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;font-size:11px">${e.status}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px">${inr(e.earned)}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:#28a745">${inr(e.commission)}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:#c0392b">${inr(e.advance)}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:${e.running >= 0 ? '#001f3f' : '#c0392b'}">${inr(e.running)}</td>
+    </tr>`;
+  }).join("");
 
   const html = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Mechanic Ledger - ${name}</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Mechanic Ledger — ${name}</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: white; color: #1a1a2e; padding: 40px; }
-    .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #1a1a2e; padding-bottom: 15px; }
-    .shop-name { font-size: 28px; font-weight: 900; color: #1a1a2e; }
-    .shop-address { font-size: 12px; color: #666; margin-top: 4px; }
-    .shop-contact { font-size: 12px; color: #666; }
-    h1 { font-size: 18px; font-weight: 700; margin-top: 15px; }
-    .subtitle { font-size: 12px; color: #666; margin-top: 4px; }
-    .mechanic-info { font-size: 14px; font-weight: 600; margin-bottom: 15px; }
-    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
-    .summary-card { background: #f8f9fa; border-radius: 8px; padding: 12px; text-align: center; }
-    .summary-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #666; }
-    .summary-value { font-size: 16px; font-weight: 900; color: #1a1a2e; margin-top: 3px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10px; }
-    th { background: #f8f9fa; padding: 8px 6px; text-align: left; font-weight: 700; font-size: 9px; text-transform: uppercase; color: #666; border-bottom: 2px solid #ddd; }
-    td { padding: 6px; border-bottom: 1px solid #eee; }
-    .text-right { text-align: right; }
-    .text-center { text-align: center; }
-    .positive { color: #059669; }
-    .negative { color: #dc2626; }
-    .btn-group { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px; }
-    button { padding: 10px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
-    .btn-print { background: #1a1a2e; color: white; }
-    .btn-close { background: #e5e7eb; color: #374151; }
-    @media print { body { padding: 20px; } .btn-group { display: none; } }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;font-size:13px;background:#f0f2f5;padding:20px;color:#212529}
+    .wrap{max-width:900px;margin:0 auto}
+    .card{background:#fff;border-radius:6px;box-shadow:0 1px 8px rgba(0,0,0,.1);margin-bottom:16px;overflow:hidden}
+    .hdr{background:#001f3f;color:#fff;padding:16px 20px}
+    .hdr h1{font-size:18px;font-weight:900;margin-bottom:2px}
+    .hdr p{font-size:12px;opacity:.7}
+    .stats{display:flex;gap:12px;padding:14px 20px;background:#f8f9fa;border-bottom:1px solid #dee2e6;flex-wrap:wrap}
+    .stat{background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:10px 16px;text-align:center;flex:1;min-width:100px}
+    .stat-num{font-size:20px;font-weight:900;color:#001f3f}
+    .stat-label{font-size:11px;color:#666;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+    .mechanic-info{background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:10px 20px;margin:14px 20px;font-size:13px;font-weight:600}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    thead tr{background:#001f3f}
+    th{padding:8px 6px;color:#fff;font-size:10px;font-weight:700;text-align:left}
+    .actions{text-align:center;padding:16px;background:#f8f9fa;border-top:1px solid #dee2e6}
+    .btn{padding:10px 22px;border:none;border-radius:4px;cursor:pointer;font-size:13px;font-weight:700;margin:4px;display:inline-flex;align-items:center;gap:6px}
+    .btn-print{background:#28a745;color:#fff}
+    .btn-close{background:#6c757d;color:#fff}
+    .footer{text-align:center;color:#666;font-size:11px;padding:10px}
+    @media print{
+      @page{margin:.8cm;size:A4 portrait}
+      body{background:#fff;padding:0}
+      .actions{display:none!important}
+      .card{box-shadow:none;border:1px solid #ddd}
+      .hdr{background:#001f3f!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+      thead tr{background:#001f3f!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="shop-name">V-Technologies</div>
-    <div class="shop-address">F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002</div>
-    <div class="shop-contact">Mobile: 9179105875</div>
-    <h1>Mechanic Daily Ledger</h1>
-    <div class="subtitle">${periodLabel} | Generated: ${formatDate(new Date().toISOString())}</div>
-  </div>
-
-  <div class="mechanic-info">${name} | Daily Rate: ${inr(dailyRate)}</div>
-
-  <div class="summary-grid">
-    <div class="summary-card">
-      <div class="summary-label">Opening</div>
-      <div class="summary-value ${opening >= 0 ? '' : 'negative'}">${inr(opening)}</div>
+<div class="wrap">
+  <div class="card">
+    <div class="hdr">
+      <h1>📔 ${SHOP.name} — Mechanic Daily Ledger</h1>
+      <p>Period: ${periodLabel} | Generated: ${fmtDate(new Date().toISOString())} | ${SHOP.mobile}</p>
     </div>
-    <div class="summary-card">
-      <div class="summary-label">Total Earned</div>
-      <div class="summary-value">${inr(totalEarned)}</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">Commission</div>
-      <div class="summary-value positive">${inr(totalComm)}</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">Advances</div>
-      <div class="summary-value negative">${inr(totalAdv)}</div>
+    <div class="mechanic-info">${name} | Daily Rate: ${inr(dailyRate)}</div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num" style="color:${opening >= 0 ? '#001f3f' : '#c0392b'}">${inr(opening)}</div>
+        <div class="stat-label">Opening</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">${inr(totalEarned)}</div>
+        <div class="stat-label">Total Earned</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:#28a745">${inr(totalComm)}</div>
+        <div class="stat-label">Commission</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:#c0392b">${inr(totalAdv)}</div>
+        <div class="stat-label">Advances</div>
+      </div>
     </div>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Day</th>
-        <th>Status</th>
-        <th class="text-right">Earned</th>
-        <th class="text-right">Comm</th>
-        <th class="text-right">Advance</th>
-        <th class="text-right">Balance</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${entries.map(e => `
-      <tr>
-        <td>${formatDate(e.date)}</td>
-        <td>${e.dayName}</td>
-        <td>${e.status}</td>
-        <td class="text-right">${inr(e.earned)}</td>
-        <td class="text-right positive">${inr(e.commission)}</td>
-        <td class="text-right negative">${inr(e.advance)}</td>
-        <td class="text-right ${e.running >= 0 ? '' : 'negative'}">${inr(e.running)}</td>
-      </tr>`).join("")}
-    </tbody>
-  </table>
-
-  <div class="btn-group">
-    <button class="btn-close" onclick="window.close()">Close</button>
-    <button class="btn-print" onclick="window.print()">Print (Ctrl+P)</button>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:15%">Date</th>
+          <th style="width:15%">Day</th>
+          <th style="width:14%">Status</th>
+          <th style="width:14%;text-align:right">Earned</th>
+          <th style="width:14%;text-align:right">Comm</th>
+          <th style="width:14%;text-align:right">Advance</th>
+          <th style="width:14%;text-align:right">Balance</th>
+        </tr>
+      </thead>
+      <tbody>${ledgerRows}</tbody>
+    </table>
   </div>
-  <script>
-    document.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "p") { e.preventDefault(); window.print(); } });
-  </script>
+
+  <div class="card">
+    <div class="actions">
+      <button onclick="window.print()" class="btn btn-print">🖨 Print</button>
+      <button onclick="window.close()" class="btn btn-close">✕ Close</button>
+    </div>
+  </div>
+  <div class="footer">${SHOP.name} | ${SHOP.address} | ${SHOP.mobile}</div>
+</div>
+<script>
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.key === "p") { e.preventDefault(); window.print(); }
+  if (e.key === "Escape") window.close();
+});
+</script>
 </body>
 </html>`;
 
-  return new NextResponse(html, { headers: { "Content-Type": "text/html" } });
+  return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
