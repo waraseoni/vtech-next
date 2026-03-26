@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 // Import paths ko check karein, ye @/lib/gemini hona chahiye
 import { getChatResponse, generateWhatsAppReply } from "@/lib/gemini";
+import { getGroqChatResponse } from "@/lib/groq";
 import type { ChatMessage } from "@/lib/gemini";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, messages, type, context } = body;
+    const { message, messages, type, context, provider } = body;
 
     if (!message && (!messages || messages.length === 0)) {
       return NextResponse.json(
@@ -18,7 +19,11 @@ export async function POST(request: NextRequest) {
     let responseText: string;
 
     if (type === "chat" && messages) {
-      responseText = await getChatResponse(messages as ChatMessage[]);
+      if (provider === "groq") {
+         responseText = await getGroqChatResponse(messages);
+      } else {
+         responseText = await getChatResponse(messages as ChatMessage[]);
+      }
     } else if (type === "whatsapp") {
       responseText = await generateWhatsAppReply(
         message,

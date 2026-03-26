@@ -84,6 +84,20 @@ export const geminiTools: FunctionDeclaration[] = [
       },
       required: ["customer_name"],
     } as any,
+  },
+  {
+    name: "get_job_details_by_id",
+    description: "Searches the database for a specific job/transaction by its Exact Job ID and returns its full details including status, client name, item, fault, and amount.",
+    parameters: {
+      type: "object",
+      properties: {
+        job_id: {
+          type: "string",
+          description: "The exact Job ID to search for (e.g., '12' or '45')",
+        },
+      },
+      required: ["job_id"],
+    } as any,
   }
 ];
 
@@ -132,7 +146,19 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
             }
             
             const { data } = await query;
-            return { recent_jobs: data || [] };
+            const jobs = data || [];
+            
+            // Map IDs to original names dynamically
+            for (const job of jobs) {
+                if (job.client_name) {
+                    const { data: clientInfo } = await supabase.from("client_list").select("firstname, lastname").eq("id", job.client_name).maybeSingle();
+                    if (clientInfo) {
+                        (job as any).actual_client_name = `${clientInfo.firstname || ''} ${clientInfo.lastname || ''}`.trim();
+                    }
+                }
+            }
+            
+            return { recent_jobs: jobs };
         }
 
         if (name === "get_job_statistics") {
@@ -196,10 +222,11 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
             // If we found a customer, fetch some of their recent jobs
             const customerDetails = [];
             for (const cust of customers) {
+               // The client_name column in transaction_list actually stores the client_list.id
                const { data: jobs } = await supabase.from("transaction_list")
                   .select("job_id, client_name, item, fault, status, amount, date_created")
                   .eq("del_status", 0)
-                  .ilike("client_name", `%${cust.firstname}%`)
+                  .eq("client_name", cust.id)
                   .order("date_created", { ascending: false })
                   .limit(5);
                
@@ -210,6 +237,42 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
             }
 
             return { customers_found: customerDetails };
+        }
+
+        if (name === "get_job_details_by_id") {
+            const jobId = args?.job_id;
+            if (!jobId) return { error: "Job ID is required" };
+
+            // Find the job with the exact job_id
+            const { data: jobs, error } = await supabase.from("transaction_list")
+                .select("*")
+                .eq("del_status", 0)
+                .eq("job_id", jobId);
+            
+            if (error) {
+                return { error: `Database error while searching for Job ID ${jobId}: ${error.message}` };
+            }
+
+            if (!jobs || jobs.length === 0) {
+                return { result: `Koi bhi job, jiska id '${jobId}' ho, wo nahi mila.` };
+            }
+
+            const job = jobs[0];
+            if (job.client_name) {
+                // Fetch the actual client name based on ID
+                const { data: clientInfo } = await supabase.from("client_list")
+                    .select("firstname, lastname")
+                    .eq("id", job.client_name)
+                    .maybeSingle();
+
+                if (clientInfo) {
+                    (job as any).actual_client_name = `${clientInfo.firstname || ''} ${clientInfo.lastname || ''}`.trim();
+                } else {
+                    (job as any).actual_client_name = "Unknown Client";
+                }
+            }
+
+            return { job_details: job };
         }
 
         return { error: "Unknown function call" };

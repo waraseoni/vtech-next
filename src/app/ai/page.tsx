@@ -21,6 +21,7 @@ export default function AIChatPage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [aiProvider, setAiProvider] = useState("gemini");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -51,7 +52,7 @@ export default function AIChatPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Use type "chat" to pass full history properly
-        body: JSON.stringify({ message: input.trim(), messages: allMessages, type: "chat" }),
+        body: JSON.stringify({ message: input.trim(), messages: allMessages, type: "chat", provider: aiProvider }),
       });
 
       const data = await response.json();
@@ -106,7 +107,17 @@ export default function AIChatPage() {
             </div>
             <div>
               <h1 className="text-lg font-black text-white">AI Assistant</h1>
-              <p className="text-xs text-slate-400">Powered by Gemini AI</p>
+              <div className="flex items-center mt-1">
+                <select 
+                  value={aiProvider}
+                  onChange={(e) => setAiProvider(e.target.value)}
+                  className="text-xs bg-[#0d1117] text-slate-300 border border-[#21293d] rounded px-2 py-1 outline-none appearance-none cursor-pointer"
+                  title="Select AI Provider"
+                >
+                  <option value="gemini">Gemini AI</option>
+                  <option value="groq">Groq (Llama-3)</option>
+                </select>
+              </div>
             </div>
           </div>
           <button

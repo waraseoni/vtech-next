@@ -28,7 +28,7 @@ Be concise with your outputs. Do not return markdown that cannot be read well. U
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       tools: [{ functionDeclarations: geminiTools }],
       systemInstruction: systemInstruction
     });
