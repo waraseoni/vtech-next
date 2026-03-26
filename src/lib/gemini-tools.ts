@@ -70,6 +70,20 @@ export const geminiTools: FunctionDeclaration[] = [
       type: "object",
       properties: {},
     } as any,
+  },
+  {
+    name: "get_customer_details_by_name",
+    description: "Searches the database for a customer by their name and returns their details like balance, phone, address, and recent jobs.",
+    parameters: {
+      type: "object",
+      properties: {
+        customer_name: {
+          type: "string",
+          description: "The name of the customer to search for (e.g., 'Siddhi')",
+        },
+      },
+      required: ["customer_name"],
+    } as any,
   }
 ];
 
@@ -152,6 +166,50 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
                 .select("firstname, lastname, designation, contact, status")
                 .eq("delete_flag", 0);
             return { mechanics: data || [] };
+        }
+
+        if (name === "get_customer_details_by_name") {
+            const customerName = args?.customer_name;
+            if (!customerName) return { error: "Customer name is required" };
+
+            // 1. Search in client_list (assuming firstname or lastname matches)
+            const { data: customers } = await supabase.from("client_list")
+                .select("*")
+                .eq("delete_flag", 0)
+                .or(`firstname.ilike.%${customerName}%,lastname.ilike.%${customerName}%`);
+            
+            if (!customers || customers.length === 0) {
+                // If not found in client_list, try searching directly in transaction_list for jobs
+                const { data: jobsObj } = await supabase.from("transaction_list")
+                    .select("job_id, client_name, item, fault, status, amount, date_created")
+                    .eq("del_status", 0)
+                    .ilike("client_name", `%${customerName}%`)
+                    .order("date_created", { ascending: false })
+                    .limit(5);
+
+                if (!jobsObj || jobsObj.length === 0) {
+                    return { result: `No customer or jobs found matching the name '${customerName}'` };
+                }
+                return { result: `Customer not found in client list, but found these recent jobs for '${customerName}'`, recent_jobs: jobsObj };
+            }
+
+            // If we found a customer, fetch some of their recent jobs
+            const customerDetails = [];
+            for (const cust of customers) {
+               const { data: jobs } = await supabase.from("transaction_list")
+                  .select("job_id, client_name, item, fault, status, amount, date_created")
+                  .eq("del_status", 0)
+                  .ilike("client_name", `%${cust.firstname}%`)
+                  .order("date_created", { ascending: false })
+                  .limit(5);
+               
+               customerDetails.push({
+                   customer_info: cust,
+                   recent_jobs: jobs || []
+               });
+            }
+
+            return { customers_found: customerDetails };
         }
 
         return { error: "Unknown function call" };

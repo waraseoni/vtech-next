@@ -86,8 +86,21 @@ Be concise with your outputs. Do not return markdown that cannot be read well. U
   } catch (error: any) {
     console.error("Gemini Execution Error:", error);
     
+    const errorMessage = error.message || JSON.stringify(error);
+    
+    // Rate limit hit / quota exceeded
+    if (errorMessage.includes("429") || errorMessage.includes("Too Many Requests") || errorMessage.includes("quota")) {
+      // Try to extract the retry time
+      const match = errorMessage.match(/retry in ([\d\.]+)s/);
+      if (match && match[1]) {
+        const seconds = Math.ceil(parseFloat(match[1]));
+        return `Aapki request limit poori ho gayi hai. Kripya ${seconds} seconds ke baad dobara sawaal poochein. ⏳`;
+      }
+      return "Aapki request limit poori ho gayi hai. Kripya thodi der (1-2 minute) baad dobara try karein. ⏳";
+    }
+
     // Return the actual raw error message so the user can debug what exactly failed.
-    return `API Error: ${error.message || JSON.stringify(error)}`;
+    return `API Error: ${errorMessage}`;
   }
 }
 
