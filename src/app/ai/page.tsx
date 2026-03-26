@@ -46,10 +46,12 @@ export default function AIChatPage() {
     setLoading(true);
 
     try {
+      const allMessages = [...messages, userMessage];
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input.trim() }),
+        // Use type "chat" to pass full history properly
+        body: JSON.stringify({ message: input.trim(), messages: allMessages, type: "chat" }),
       });
 
       const data = await response.json();

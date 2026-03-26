@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getChatResponse, getGeminiResponse, ChatMessage } from "@/lib/gemini";
+// Import paths ko check karein, ye @/lib/gemini hona chahiye
+import { getChatResponse, generateWhatsAppReply } from "@/lib/gemini";
+import type { ChatMessage } from "@/lib/gemini";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,33 +15,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let response: string;
+    let responseText: string;
 
     if (type === "chat" && messages) {
-      response = await getChatResponse(messages as ChatMessage[], context);
+      responseText = await getChatResponse(messages as ChatMessage[]);
     } else if (type === "whatsapp") {
-      const { generateWhatsAppReply } = await import("@/lib/gemini");
-      response = await generateWhatsAppReply(
+      responseText = await generateWhatsAppReply(
         message,
         context?.customerName,
         context
       );
-    } else if (type === "summary") {
-      response = await getGeminiResponse(message, context);
     } else {
-      response = await getGeminiResponse(message);
+      const prompt = message || (messages && messages[messages.length - 1]?.content) || "";
+      responseText = await getChatResponse([{ role: "user", content: prompt }]);
     }
 
-    return NextResponse.json({ response });
+    return NextResponse.json({ response: responseText });
+
   } catch (error: any) {
     console.error("Chat API Error:", error);
     return NextResponse.json(
-      { error: "Failed to get response", details: error?.message || String(error) },
+      { 
+        error: "Failed to get response", 
+        details: error?.message || String(error) 
+      },
       { status: 500 }
     );
   }
 }
 
+// GET function ko alag se define kiya gaya hai
 export async function GET() {
   return NextResponse.json({
     status: "ok",
