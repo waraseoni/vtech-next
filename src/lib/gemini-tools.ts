@@ -14,8 +14,8 @@ const STATUS_MAP: Record<number, string> = {
     5: "Delivered",
 };
 
-// 1. Definition of Tools (Functions) that Gemini can call
-export const geminiTools: FunctionDeclaration[] = [
+// 1. Definition of Tools (Functions) that Gemini/Groq can call
+export const geminiTools: any[] = [
   {
     name: "get_business_summary",
     description: "Fetches a quick high-level summary of the business including total clients, total jobs, and total revenue.",
@@ -36,6 +36,7 @@ export const geminiTools: FunctionDeclaration[] = [
           description: "Number of customers to return (default 5)",
         },
       },
+      required: [],
     } as any,
   },
   {
@@ -53,24 +54,20 @@ export const geminiTools: FunctionDeclaration[] = [
           description: "Optional job status to filter by (0-5).",
         },
       },
+      required: [],
     } as any,
   },
   {
     name: "get_job_statistics",
-    description: "Fetches accurate aggregated statistics about jobs (count and total revenue) optionally filtered by a date range (start_date and end_date). Use this when asked 'how many jobs this month' or 'what is the revenue between dates'.",
+    description: "Returns statistics about service/repair jobs within a date range. For a single day, use same date for both start and end.",
     parameters: {
       type: "object",
       properties: {
-        start_date: {
-          type: "string",
-          description: "Start date in YYYY-MM-DD format (e.g., '2026-03-01')",
-        },
-        end_date: {
-          type: "string",
-          description: "End date in YYYY-MM-DD format (e.g., '2026-03-31')",
-        },
+        start_date: { type: "string", description: "Start date (YYYY-MM-DD). For single day, same as end_date." },
+        end_date: { type: "string", description: "End date (YYYY-MM-DD). For single day, same as start_date." }
       },
-    } as any,
+      required: ["start_date", "end_date"],
+    },
   },
   {
     name: "get_mechanic_performance",
@@ -78,6 +75,7 @@ export const geminiTools: FunctionDeclaration[] = [
     parameters: {
       type: "object",
       properties: {},
+      required: [],
     } as any,
   },
   {
@@ -110,21 +108,21 @@ export const geminiTools: FunctionDeclaration[] = [
   },
   {
     name: "get_financial_report",
-    description: "Fetches a comprehensive financial report for a specific date range. Includes Total Revenue (from delivered/paid jobs) and Total Cash In (actual payments received).",
+    description: "Fetches a comprehensive financial report for a specific date range. Includes Total Revenue (Repairs + Direct Sales), Total Cash In, Expenses, and Net Profit. For a single day, use the same date for both 'from' and 'to'.",
     parameters: {
       type: "object",
       properties: {
-        start_date: {
+        from: {
           type: "string",
-          description: "Start date in YYYY-MM-DD format (e.g., '2026-03-24')",
+          description: "Start date (YYYY-MM-DD). If user asks for a single specific day (e.g. '23 March'), use that same date for both 'from' and 'to'.",
         },
-        end_date: {
+        to: {
           type: "string",
-          description: "End date in YYYY-MM-DD format (e.g., '2026-03-24')",
+          description: "End date (YYYY-MM-DD). If user asks for a single specific day, MUST be same as 'from'.",
         },
       },
-      required: ["start_date", "end_date"],
-    } as any,
+      required: ["from", "to"],
+    },
   }
 ];
 
@@ -202,73 +200,119 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
             
             const { count: jobsCount } = await countQuery;
 
-            // Revenue calculation - filter by date_completed (status 5) or date_updated (status 3)
-            let revQuery = supabase.from("transaction_list").select("amount, status, date_completed, date_updated").in("status", [3, 5]).eq("del_status", 0);
+            // Revenue calculation - filter by completion date (status 5 ONLY for Ledger revenue)
+            const { data: revData } = await supabase.from("transaction_list")
+                .select("amount, status, date_completed, date_updated")
+                .eq("status", 5)
+                .eq("del_status", 0)
+                .gte("date_completed", `${args.start_date}T00:00:00+05:30`)
+                .lte("date_completed", `${args.end_date}T23:59:59+05:30`);
             
-            if (args?.start_date) {
-                revQuery = revQuery.or(`date_completed.gte.${args.start_date}T00:00:00.000Z,date_updated.gte.${args.start_date}T00:00:00.000Z`);
-            }
-            if (args?.end_date) {
-                revQuery = revQuery.or(`date_completed.lte.${args.end_date}T23:59:59.999Z,date_updated.lte.${args.end_date}T23:59:59.999Z`);
-            }
-
-            const { data: revData } = await revQuery;
             const totalRevenue = revData?.reduce((sum, job) => sum + (Number(job.amount) || 0), 0) || 0;
             
             return {
                 start_date_filtered: args?.start_date || "beginning of time",
                 end_date_filtered: args?.end_date || "today",
-                total_jobs_created: jobsCount,
-                total_revenue_from_paid_delivered_jobs: totalRevenue
+                total_jobs_created_in_period: jobsCount,
+                revenue_from_delivered_paid_jobs: totalRevenue
             };
         }
 
         if (name === "get_financial_report") {
-            const start = args?.start_date;
-            const end = args?.end_date;
-            if (!start || !end) return { error: "Start date and end date are required." };
+            const from = args.from || args.start_date;
+            const to = args.to || args.end_date;
+            if (!from || !to) return { error: "From and To dates are required." };
 
-            // 1. Revenue: Delivered or Paid jobs during this period
-            // Status 5 is Delivered, Status 3 is Paid.
-            const { data: revData } = await supabase.from("transaction_list")
-                .select("amount, status, date_completed, date_updated")
-                .in("status", [3, 5])
-                .eq("del_status", 0)
-                .or(`date_completed.gte.${start}T00:00:00,date_updated.gte.${start}T00:00:00`)
-                .or(`date_completed.lte.${end}T23:59:59,date_updated.lte.${end}T23:59:59`);
-                // Note: .or in Supabase JS is tricky for complex logic. 
-                // We'll filter precisely in JS to be safe.
-            
-            const filteredRev = revData?.filter(job => {
-                const checkDate = job.status === 5 ? job.date_completed : job.date_updated;
-                if (!checkDate) return false;
-                const d = checkDate.split("T")[0];
-                return d >= start && d <= end;
-            }) || [];
+            const [
+                repairRes,
+                directRes,
+                paymentRes,
+                expenseRes,
+                loanRes,
+                attendanceRes,
+                mechanicRes
+            ] = await Promise.all([
+                supabase.from("transaction_list")
+                    .select("id, amount, status, date_completed, mechanic_commission_amount")
+                    .eq("status", 5)
+                    .eq("del_status", 0)
+                    .gte("date_completed", `${from}T00:00:00+05:30`)
+                    .lte("date_completed", `${to}T23:59:59+05:30`),
+                supabase.from("direct_sales")
+                    .select("id, total_amount, date_created, client_id")
+                    .gte("date_created", `${from}T00:00:00+05:30`)
+                    .lte("date_created", `${to}T23:59:59+05:30`),
+                supabase.from("client_payments")
+                    .select("id, amount, discount, payment_date")
+                    .gte("payment_date", `${from}T00:00:00+05:30`)
+                    .lte("payment_date", `${to}T23:59:59+05:30`),
+                supabase.from("expense_list")
+                    .select("amount, date_created")
+                    .gte("date_created", `${from}T00:00:00+05:30`)
+                    .lte("date_created", `${to}T23:59:59+05:30`),
+                supabase.from("loan_payments")
+                    .select("amount_paid")
+                    .gte("payment_date", `${from}T00:00:00+05:30`)
+                    .lte("payment_date", `${to}T23:59:59+05:30`),
+                supabase.from("attendance_list")
+                    .select("mechanic_id, status")
+                    .in("status", [1, 3])
+                    .gte("curr_date", from)
+                    .lte("curr_date", to),
+                supabase.from("mechanic_list")
+                    .select("id, salary_per_day, daily_salary")
+            ]);
 
-            const totalRevenue = filteredRev.reduce((sum, job) => sum + (Number(job.amount) || 0), 0);
+            // Revenue: Job Income + Walk-in Sales + Client Sales
+            const jobIncome = (repairRes.data || []).reduce((sum, j) => sum + (Number(j.amount) || 0), 0);
+            const directSalesRevenue = (directRes.data || []).reduce((sum, s) => sum + (Number(s.total_amount) || 0), 0);
+            const totalRevenue = jobIncome + directSalesRevenue;
 
-            // 2. Cash In: Actual payments received during this period
-            const { data: payData } = await supabase.from("client_payments")
-                .select("amount")
-                .gte("payment_date", start)
-                .lte("payment_date", end);
-            
-            const totalCashIn = payData?.reduce((sum, pay) => sum + (Number(pay.amount) || 0), 0) || 0;
+            // Expenses: Salaries + Commissions + Shop Expenses + EMI + Discounts
+            const mechanicMap: Record<number, number> = {};
+            (mechanicRes.data || []).forEach(m => {
+                mechanicMap[m.id] = Number(m.salary_per_day) || Number(m.daily_salary) || 0;
+            });
 
-            // 3. Jobs Created
-            const { count: newJobs } = await supabase.from("transaction_list")
-                .select("*", { count: "exact", head: true })
-                .eq("del_status", 0)
-                .gte("date_created", `${start}T00:00:00`)
-                .lte("date_created", `${end}T23:59:59`);
+            const salaries = (attendanceRes.data || []).reduce((sum, a) => {
+                const daily = mechanicMap[a.mechanic_id] || 0;
+                return sum + (a.status === 3 ? daily / 2 : daily);
+            }, 0);
+
+            const commissions = (repairRes.data || []).reduce((sum, j) => sum + (Number(j.mechanic_commission_amount) || 0), 0);
+            const shopExpenses = (expenseRes.data || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+            const emiPayments = (loanRes.data || []).reduce((sum, l) => sum + (Number(l.amount_paid) || 0), 0);
+            const totalDiscounts = (paymentRes.data || []).reduce((sum, p) => sum + (Number(p.discount) || 0), 0);
+            const totalBusinessExpenses = salaries + commissions + shopExpenses + emiPayments + totalDiscounts;
+
+            // Cash Inflow: Payments Received + Walk-in Cash Sales
+            const walkinCash = (directRes.data || [])
+                .filter(s => !s.client_id || s.client_id === 0)
+                .reduce((sum, s) => sum + (Number(s.total_amount) || 0), 0);
+            const paymentsReceived = (paymentRes.data || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+            const totalCashIn = paymentsReceived + walkinCash;
 
             return {
-                period: `${start} to ${end}`,
-                total_revenue_amount: totalRevenue,
-                total_cash_in_amount: totalCashIn,
-                new_jobs_created: newJobs,
-                note: "Revenue is the total bill value of jobs marked Delivered/Paid today. Cash In is the actual money collected today."
+                period: { from, to },
+                summary_ledger_matched: {
+                    job_revenue: jobIncome,
+                    direct_sales_revenue: directSalesRevenue,
+                    total_revenue: totalRevenue,
+                    expenses_breakdown: {
+                        staff_salaries: salaries,
+                        mechanic_commissions: commissions,
+                        shop_expenses: shopExpenses,
+                        emi_loan_payments: emiPayments,
+                        customer_discounts: totalDiscounts
+                    },
+                    total_expenses: totalBusinessExpenses,
+                    net_profit: totalRevenue - totalBusinessExpenses,
+                    cash_in_breakdown: {
+                        payments_from_clients: paymentsReceived,
+                        walkin_cash_sales: walkinCash
+                    },
+                    total_cash_in: totalCashIn
+                }
             };
         }
 

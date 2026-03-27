@@ -25,11 +25,16 @@ Always greet the user politely and answer their questions precisely.
 Today's date is: ${new Date().toLocaleDateString("en-GB")} (YYYY-MM-DD for tool usage: ${new Date().toISOString().split("T")[0]}).
 You have access to their Supabase database via tools to check total profit, customers, recent jobs, and mechanic performance.
 Whenever the user asks about profit, revenue, or cash in, ALWAYS use the function calling tools.
-- **Revenue**: Use get_financial_report. It means the total bill amount of jobs delivered/paid today.
-- **Cash In**: Use get_financial_report. It means actual money collected today (payments).
-- **Monthly stats**: Use get_job_statistics or get_financial_report with a date range.
+- **Revenue**: Use get_financial_report. It includes BOTH Repairs and Direct Product Sales.
+- **Cash In**: Use get_financial_report.  - Revenue (कमाई): Sum of Job Amounts (for jobs with Status 5 ONLY) + All Direct Sales.
+  - Cash In (नकद आय): Sum of Received Payments + Walk-in Cash Sales (where client_id is 0/null).
+  - Profit (लाभ): Total Revenue minus (Salaries + Commission + Shop Expenses + EMI + Discounts).
+  - Single Day Logic: If the user asks for data for a specific day (e.g., '23 March'), you MUST call tools with start_date and end_date BOTH set to that exact date (e.g., '2026-03-23'). Do NOT include previous days unless a range is asked.
+  - Context: User's business is V-TECH. Dates are in YYYY-MM-DD format. Offset is IST (+05:30).
+- **Monthly stats**: Always use a full month range (e.g., 2024-03-01 to 2024-03-31) when asked about "this month".
 - **Job Status**: Always use the "status_label" (e.g., 'Delivered') instead of the number (e.g., 5) when replying.
 - **Tool Usage**: When calling tools like get_recent_jobs, ALWAYS provide "limit" and "status" as INTEGERS (e.g., 5), not as strings (e.g., "5").
+- **STRICT**: Do NOT use pseudo-tags like "<function=...>" or mention function names in text. Use the provided tools interface.
 If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). Otherwise, reply in English.
 `;
 
@@ -47,7 +52,7 @@ If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). O
         formattedHistory = [...formattedHistory, ...pastMessages, { role: "user", content: initialPrompt }];
 
         const response = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile", // Fast and generous Llama-3.3 model
+            model: "llama-3.3-70b-versatile", // Reverted to 3.3 with improved schema/fallback
             messages: formattedHistory,
             // @ts-ignore
             tools: groqTools,
@@ -55,16 +60,41 @@ If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). O
         });
 
         const responseMessage = response.choices[0]?.message;
-        const toolCalls = responseMessage?.tool_calls;
+        let content = responseMessage?.content || "";
+        let toolCalls = responseMessage?.tool_calls;
+
+        // --- FALLBACK: Handle Textual Tool Calls (<function=...>) ---
+        if (!toolCalls && content.includes("<function=")) {
+            const funcMatch = content.match(/<function=(\w+)\s*([\s\S]*?)<\/function>/);
+            if (funcMatch) {
+                const name = funcMatch[1];
+                let args = {};
+                try {
+                    args = JSON.parse(funcMatch[2].trim());
+                } catch (e) {
+                    console.error("Failed to parse textual tool args:", e);
+                }
+                toolCalls = [{
+                    id: "text_call_" + Date.now(),
+                    type: "function",
+                    function: { name, arguments: JSON.stringify(args) }
+                }];
+            }
+        }
 
         if (toolCalls && toolCalls.length > 0) {
             // Add the assistant's message with tool_calls to the conversation
-            formattedHistory.push(responseMessage);
+            formattedHistory.push(responseMessage || { role: "assistant", content: content });
 
             // Execute all requested tools
             for (const toolCall of toolCalls) {
                 console.log(`Groq requested tool: ${toolCall.function.name}`);
-                const functionArgs = JSON.parse(toolCall.function.arguments);
+                let functionArgs = {};
+                try {
+                    functionArgs = JSON.parse(toolCall.function.arguments);
+                } catch(e) {
+                    console.error("Arg parse error:", e);
+                }
                 
                 const apiResponse = await executeGeminiTool({
                     name: toolCall.function.name,
@@ -74,7 +104,7 @@ If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). O
                 // Send back the tool result
                 formattedHistory.push({
                     role: "tool",
-                    tool_call_id: toolCall.id,
+                    tool_call_id: (toolCall as any).id,
                     content: JSON.stringify(apiResponse),
                 });
             }
@@ -88,7 +118,7 @@ If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). O
             return finalResponse.choices[0]?.message?.content || "No response generated.";
         }
 
-        return responseMessage?.content || "No response generated.";
+        return content || "No response generated.";
 
     } catch (error: any) {
         console.error("Groq Execution Error:", error);
