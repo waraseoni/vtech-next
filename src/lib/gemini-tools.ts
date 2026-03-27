@@ -5,6 +5,15 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+const STATUS_MAP: Record<number, string> = {
+    0: "Pending",
+    1: "On-Progress",
+    2: "Done",
+    3: "Paid",
+    4: "Cancelled",
+    5: "Delivered",
+};
+
 // 1. Definition of Tools (Functions) that Gemini can call
 export const geminiTools: FunctionDeclaration[] = [
   {
@@ -37,11 +46,11 @@ export const geminiTools: FunctionDeclaration[] = [
       properties: {
         limit: {
           type: "integer",
-          description: "Number of jobs to return",
+          description: "Number of jobs to return (e.g., 5 or 10)",
         },
         status: {
           type: "integer",
-          description: "Optional job status to filter by.",
+          description: "Optional job status to filter by (0-5).",
         },
       },
     } as any,
@@ -98,6 +107,24 @@ export const geminiTools: FunctionDeclaration[] = [
       },
       required: ["job_id"],
     } as any,
+  },
+  {
+    name: "get_financial_report",
+    description: "Fetches a comprehensive financial report for a specific date range. Includes Total Revenue (from delivered/paid jobs) and Total Cash In (actual payments received).",
+    parameters: {
+      type: "object",
+      properties: {
+        start_date: {
+          type: "string",
+          description: "Start date in YYYY-MM-DD format (e.g., '2026-03-24')",
+        },
+        end_date: {
+          type: "string",
+          description: "End date in YYYY-MM-DD format (e.g., '2026-03-24')",
+        },
+      },
+      required: ["start_date", "end_date"],
+    } as any,
   }
 ];
 
@@ -134,15 +161,15 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
         }
 
         if (name === "get_recent_jobs") {
-            const limit = args?.limit || 5;
+            const limit = parseInt(args?.limit) || 5;
             let query = supabase.from("transaction_list")
                 .select("job_id, client_name, item, fault, status, amount, date_created")
                 .eq("del_status", 0)
                 .order("date_created", { ascending: false })
                 .limit(limit);
                 
-            if (args?.status !== undefined) {
-                query = query.eq("status", args.status);
+            if (args?.status !== undefined && args?.status !== "") {
+                query = query.eq("status", parseInt(args.status));
             }
             
             const { data } = await query;
@@ -156,6 +183,8 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
                         (job as any).actual_client_name = `${clientInfo.firstname || ''} ${clientInfo.lastname || ''}`.trim();
                     }
                 }
+                // Add status label
+                (job as any).status_label = STATUS_MAP[job.status] || "Unknown";
             }
             
             return { recent_jobs: jobs };
@@ -163,27 +192,83 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
 
         if (name === "get_job_statistics") {
             let countQuery = supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0);
-            let revenueQuery = supabase.from("transaction_list").select("amount").in("status", [3, 5]).eq("del_status", 0);
             
             if (args?.start_date) {
                 countQuery = countQuery.gte("date_created", `${args.start_date}T00:00:00.000Z`);
-                revenueQuery = revenueQuery.gte("date_created", `${args.start_date}T00:00:00.000Z`);
             }
             if (args?.end_date) {
                 countQuery = countQuery.lte("date_created", `${args.end_date}T23:59:59.999Z`);
-                revenueQuery = revenueQuery.lte("date_created", `${args.end_date}T23:59:59.999Z`);
             }
             
             const { count: jobsCount } = await countQuery;
-            const { data: revenueData } = await revenueQuery;
+
+            // Revenue calculation - filter by date_completed (status 5) or date_updated (status 3)
+            let revQuery = supabase.from("transaction_list").select("amount, status, date_completed, date_updated").in("status", [3, 5]).eq("del_status", 0);
             
-            const totalRevenue = revenueData?.reduce((sum, job) => sum + (Number(job.amount) || 0), 0) || 0;
+            if (args?.start_date) {
+                revQuery = revQuery.or(`date_completed.gte.${args.start_date}T00:00:00.000Z,date_updated.gte.${args.start_date}T00:00:00.000Z`);
+            }
+            if (args?.end_date) {
+                revQuery = revQuery.or(`date_completed.lte.${args.end_date}T23:59:59.999Z,date_updated.lte.${args.end_date}T23:59:59.999Z`);
+            }
+
+            const { data: revData } = await revQuery;
+            const totalRevenue = revData?.reduce((sum, job) => sum + (Number(job.amount) || 0), 0) || 0;
             
             return {
                 start_date_filtered: args?.start_date || "beginning of time",
                 end_date_filtered: args?.end_date || "today",
                 total_jobs_created: jobsCount,
                 total_revenue_from_paid_delivered_jobs: totalRevenue
+            };
+        }
+
+        if (name === "get_financial_report") {
+            const start = args?.start_date;
+            const end = args?.end_date;
+            if (!start || !end) return { error: "Start date and end date are required." };
+
+            // 1. Revenue: Delivered or Paid jobs during this period
+            // Status 5 is Delivered, Status 3 is Paid.
+            const { data: revData } = await supabase.from("transaction_list")
+                .select("amount, status, date_completed, date_updated")
+                .in("status", [3, 5])
+                .eq("del_status", 0)
+                .or(`date_completed.gte.${start}T00:00:00,date_updated.gte.${start}T00:00:00`)
+                .or(`date_completed.lte.${end}T23:59:59,date_updated.lte.${end}T23:59:59`);
+                // Note: .or in Supabase JS is tricky for complex logic. 
+                // We'll filter precisely in JS to be safe.
+            
+            const filteredRev = revData?.filter(job => {
+                const checkDate = job.status === 5 ? job.date_completed : job.date_updated;
+                if (!checkDate) return false;
+                const d = checkDate.split("T")[0];
+                return d >= start && d <= end;
+            }) || [];
+
+            const totalRevenue = filteredRev.reduce((sum, job) => sum + (Number(job.amount) || 0), 0);
+
+            // 2. Cash In: Actual payments received during this period
+            const { data: payData } = await supabase.from("client_payments")
+                .select("amount")
+                .gte("payment_date", start)
+                .lte("payment_date", end);
+            
+            const totalCashIn = payData?.reduce((sum, pay) => sum + (Number(pay.amount) || 0), 0) || 0;
+
+            // 3. Jobs Created
+            const { count: newJobs } = await supabase.from("transaction_list")
+                .select("*", { count: "exact", head: true })
+                .eq("del_status", 0)
+                .gte("date_created", `${start}T00:00:00`)
+                .lte("date_created", `${end}T23:59:59`);
+
+            return {
+                period: `${start} to ${end}`,
+                total_revenue_amount: totalRevenue,
+                total_cash_in_amount: totalCashIn,
+                new_jobs_created: newJobs,
+                note: "Revenue is the total bill value of jobs marked Delivered/Paid today. Cash In is the actual money collected today."
             };
         }
 
@@ -271,6 +356,9 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
                     (job as any).actual_client_name = "Unknown Client";
                 }
             }
+            
+            // Add status label
+            (job as any).status_label = STATUS_MAP[job.status] || "Unknown";
 
             return { job_details: job };
         }
