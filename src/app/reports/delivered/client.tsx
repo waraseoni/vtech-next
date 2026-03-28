@@ -194,10 +194,15 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
   };
 
   const goToDay = (direction: 'prev' | 'next') => {
-    const current = parseISTDate(from);
-    const newDate = new Date(current);
-    newDate.setDate(direction === 'prev' ? current.getDate() - 1 : current.getDate() + 1);
-    const newFrom = newDate.toISOString().split('T')[0];
+    // Fix: YYYY-MM-DD string ko direct parse karo — parseISTDate + getDate() UTC timezone se galat date deta hai
+    const [year, month, day] = from.split('-').map(Number);
+    const current = new Date(year, month - 1, day); // local date, no timezone shift
+    current.setDate(current.getDate() + (direction === 'prev' ? -1 : 1));
+    const newFrom = [
+      current.getFullYear(),
+      String(current.getMonth() + 1).padStart(2, '0'),
+      String(current.getDate()).padStart(2, '0'),
+    ].join('-');
     setFrom(newFrom);
     setTo(newFrom);
     const params = new URLSearchParams();

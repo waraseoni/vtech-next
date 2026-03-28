@@ -4,12 +4,16 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const from = searchParams.get('from');
-  const to = searchParams.get('to');
+  const fromParam = searchParams.get('from');
+  const toParam = searchParams.get('to');
 
-  if (!from || !to) {
+  if (!fromParam || !toParam) {
     return NextResponse.json({ error: 'Missing from or to date' }, { status: 400 });
   }
+
+  // PHP-style date handling (local time)
+  const from = `${fromParam} 00:00:00`;
+  const to = `${toParam} 23:59:59`;
 
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -46,25 +50,42 @@ export async function GET(request: Request) {
       allAdvancesRes,
       periodAdvancesRes,
       inventoryRes,
-      directSalesRes,
+      walkinSalesRes,
+      clientSalesRes,
       directSaleItemsRes,
       allExpensesRes,
       periodExpensesRes,
       loanPaymentsRes,
     ] = await Promise.all([
-      supabase.from('transaction_list').select('id, client_name, amount, date_created, status'),
-      supabase.from('transaction_list').select('id, client_name, amount, date_created, status').in('status', [3, 5]).gte('date_created', `${from}T00:00:00`).lte('date_created', `${to}T23:59:59`),
+      // All repairs (for opening balance) - matching PHP (no del_status filter)
+      supabase.from('transaction_list').select('id, client_name, amount, date_completed, status').eq('status', 5),
+      // Period repairs - matching PHP (no del_status filter)
+      supabase.from('transaction_list').select('id, client_name, amount, date_completed, status').eq('status', 5).gte('date_completed', from).lte('date_completed', to),
+      // All payments (for opening balance)
       supabase.from('client_payments').select('id, client_id, amount, discount, payment_date'),
+      // Period payments
       supabase.from('client_payments').select('id, client_id, amount, discount, payment_date').gte('payment_date', from).lte('payment_date', to),
+      // All attendance
       supabase.from('attendance_list').select('mechanic_id, curr_date, status'),
+      // Period attendance
       supabase.from('attendance_list').select('mechanic_id, curr_date, status').in('status', [1, 3]).gte('curr_date', from).lte('curr_date', to),
+      // All advances
       supabase.from('advance_payments').select('mechanic_id, amount, date_paid'),
+      // Period advances
       supabase.from('advance_payments').select('mechanic_id, amount, date_paid').gte('date_paid', from).lte('date_paid', to),
+      // Inventory
       supabase.from('inventory_list').select('product_id, quantity'),
-      supabase.from('direct_sales').select('id, total_amount, date_created'),
+      // Walk-in sales (no client_id or client_id = 0)
+      supabase.from('direct_sales').select('id, total_amount, date_created').or('client_id.is.null,client_id.eq.0'),
+      // Client sales (has client_id and not 0)
+      supabase.from('direct_sales').select('id, total_amount, date_created, client_id').not('client_id', 'is', null).neq('client_id', 0),
+      // Sale items
       supabase.from('direct_sale_items').select('product_id, qty, sale_id'),
+      // All expenses
       supabase.from('expense_list').select('category, amount, date_created'),
-      supabase.from('expense_list').select('category, amount, date_created').gte('date_created', `${from}T00:00:00`).lte('date_created', `${to}T23:59:59`),
+      // Period expenses
+      supabase.from('expense_list').select('category, amount, date_created').gte('date_created', from).lte('date_created', to),
+      // Loan payments
       supabase.from('loan_payments').select('lender_id, amount_paid, payment_date'),
     ]);
 
@@ -77,7 +98,8 @@ export async function GET(request: Request) {
     const allAdvances = allAdvancesRes.data || [];
     const periodAdvances = periodAdvancesRes.data || [];
     const inventory = inventoryRes.data || [];
-    const directSales = directSalesRes.data || [];
+    const walkinSales = walkinSalesRes.data || [];
+    const clientSales = clientSalesRes.data || [];
     const directSaleItems = directSaleItemsRes.data || [];
     const allExpenses = allExpensesRes.data || [];
     const periodExpenses = periodExpensesRes.data || [];
@@ -104,8 +126,8 @@ export async function GET(request: Request) {
     });
 
     const prevTxnsMap: Record<number, number> = {};
-    (allTxns || []).filter((t: any) => t.status === 3 || t.status === 5).forEach((t: any) => {
-      if (t.date_created < `${from}T00:00:00`) {
+    (allTxns || []).forEach((t: any) => {
+      if (t.date_completed && t.date_completed < from) {
         const cid = parseInt(t.client_name);
         if (!isNaN(cid)) {
           prevTxnsMap[cid] = (prevTxnsMap[cid] || 0) + (Number(t.amount) || 0);
@@ -216,9 +238,10 @@ export async function GET(request: Request) {
     });
 
     const directSaleByProduct: Record<number, number> = {};
+    const allDirectSales = [...(walkinSales || []), ...(clientSales || [])];
     (directSaleItems || []).forEach((item: any) => {
-      const sale = (directSales || []).find((s: any) => s.id === item.sale_id);
-      if (sale && sale.date_created >= `${from}T00:00:00` && sale.date_created <= `${to}T23:59:59`) {
+      const sale = allDirectSales.find((s: any) => s.id === item.sale_id);
+      if (sale && sale.date_created >= from && sale.date_created <= to) {
         directSaleByProduct[item.product_id] = (directSaleByProduct[item.product_id] || 0) + (Number(item.qty) || 0);
       }
     });
@@ -242,11 +265,15 @@ export async function GET(request: Request) {
       .filter((p: any) => p.total_stock_in > 0 || p.sold_quantity > 0);
 
     const repairIncome = (periodTxns || []).reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0);
-    const directSalesIncome = (directSales || []).filter((s: any) => s.date_created >= `${from}T00:00:00` && s.date_created <= `${to}T23:59:59`).reduce((s: number, t: any) => s + (Number(t.total_amount) || 0), 0);
+    const walkinIncome = (walkinSales || []).filter((s: any) => s.date_created >= from && s.date_created <= to).reduce((s: number, t: any) => s + (Number(t.total_amount) || 0), 0);
+    const clientSalesIncome = (clientSales || []).filter((s: any) => s.date_created >= from && s.date_created <= to).reduce((s: number, t: any) => s + (Number(t.total_amount) || 0), 0);
+    const directSalesIncome = walkinIncome + clientSalesIncome;
 
     const incomeSummary = [
       { description: 'रिपेयर आय (Repair Income)', amount: repairIncome },
-      { description: 'सीधी बिक्री (Direct Sales)', amount: directSalesIncome },
+      { description: 'वॉक-इन बिक्री (Walk-in Sales)', amount: walkinIncome },
+      { description: 'ग्राहक बिक्री (Client Sales)', amount: clientSalesIncome },
+      { description: 'कुल सीधी बिक्री (Total Direct Sales)', amount: directSalesIncome },
     ];
 
     const expMap: Record<string, number> = {};

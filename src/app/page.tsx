@@ -346,10 +346,9 @@ export default function Dashboard() {
     if (!profile || profile.role !== "admin") return;
     setFinLoading(true);
     try {
-      // BUG FIX 3: Use +05:30 suffix for IST-aware filtering.
-      // Original: from + 'T00:00:00' → server local (UTC on Vercel) → wrong IST records.
-      const f0 = istStart(from);
-      const t0 = istEnd(to);
+      // PHP-style date handling (matching Ledger/PHP)
+      const f0 = `${from} 00:00:00`;
+      const t0 = `${to} 23:59:59`;
 
       const [
         { data: tD }, { data: dD },
@@ -675,6 +674,17 @@ export default function Dashboard() {
                   <span className={financial.netProfit >= 0 ? "text-emerald-400" : "text-red-400"}>
                     Net {inr(financial.netProfit)}
                   </span>
+                </div>
+              </div>
+
+              {/* Calculation Note */}
+              <div className="mt-3 bg-slate-900/50 border border-slate-800 rounded-xl p-3">
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-wider mb-2">Calculation Summary</p>
+                <div className="space-y-1 text-[10px] text-slate-500 font-mono">
+                  <div><span className="text-emerald-400">Total Sales</span> = Repair Jobs Income + Direct Sales Income</div>
+                  <div><span className="text-cyan-400">Gross Profit</span> = Total Sales − Parts Cost (90%)</div>
+                  <div><span className="text-red-400">Total Outflow</span> = Discounts + Staff Salary + Loan Repaid + Other Expenses</div>
+                  <div><span className="text-blue-400">Net Profit</span> = Gross Profit − Total Outflow</div>
                 </div>
               </div>
             </>

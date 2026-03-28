@@ -389,6 +389,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const [userEmail,    setUserEmail]    = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [drawerOpen,   setDrawerOpen]   = useState(false);
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const [theme,        setTheme]        = useState<"dark" | "light" | null>(null);
 
   const handleLogout = useCallback(async () => {
@@ -626,6 +627,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <RefreshCw size={15} />
                 </button>
               )}
+              {isMobile === true && (
+                <Link
+                  href="/ai"
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 rounded-xl text-purple-400"
+                  title="AI Assistant"
+                >
+                  <Sparkles size={15} />
+                </Link>
+              )}
               <Suspense>
                 <NavbarSearch />
               </Suspense>
@@ -640,6 +650,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               >
                 <RefreshCw size={15} />
               </button>
+            )}
+
+            {/* AI Assistant - Desktop */}
+            {isMobile === false && (
+              <Link
+                href="/ai"
+                className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 hover:border-purple-500/50 rounded-xl text-purple-400 hover:text-purple-300 transition-all"
+                title="AI Assistant"
+              >
+                <Sparkles size={15} />
+              </Link>
             )}
 
             {/* Theme toggle */}
@@ -701,6 +722,58 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
         </div>
+
+        {/* ── AI ASSISTANT RIGHT DRAWER ── */}
+        {isAdmin && (
+          <>
+            {/* Toggle Button - Fixed at bottom right */}
+            <button
+              onClick={() => setAiDrawerOpen(true)}
+              className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg shadow-purple-500/30 flex items-center justify-center text-white hover:scale-110 transition-transform"
+              title="AI Assistant"
+            >
+              <Sparkles size={24} />
+            </button>
+
+            {/* Right Drawer */}
+            <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-[#0d1117] border-l border-[#21293d] z-[100] transition-transform duration-300 ease-out ${aiDrawerOpen ? "translate-x-0" : "translate-x-full"}`}>
+              <div className="flex flex-col h-full">
+                {/* Drawer Header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#21293d] bg-[#161b27]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                      <Sparkles size={16} className="text-white" />
+                    </div>
+                    <span className="text-sm font-bold text-white">AI Assistant</span>
+                  </div>
+                  <button
+                    onClick={() => setAiDrawerOpen(false)}
+                    className="w-8 h-8 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-lg text-slate-500 hover:text-white hover:border-red-500/40 transition-all"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                {/* Iframe for AI Page */}
+                <div className="flex-1">
+                  <iframe
+                    src="/ai"
+                    className="w-full h-full border-0"
+                    title="AI Assistant"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Backdrop */}
+            {aiDrawerOpen && (
+              <div 
+                className="fixed inset-0 bg-black/50 z-[90]"
+                onClick={() => setAiDrawerOpen(false)}
+              />
+            )}
+          </>
+        )}
       </body>
     </html>
   );

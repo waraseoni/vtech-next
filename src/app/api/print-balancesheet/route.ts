@@ -45,8 +45,8 @@ export async function GET(request: NextRequest) {
     supabase.from('mechanic_list').select('id, firstname, middlename, lastname, salary_per_day, commission_percent').eq('delete_flag', 0),
     supabase.from('product_list').select('id, name, description, price').eq('delete_flag', 0),
     supabase.from('lender_list').select('*').eq('delete_flag', 0),
-    supabase.from('transaction_list').select('id, client_name, amount, date_created, status'),
-    supabase.from('transaction_list').select('id, client_name, amount, date_created, status').in('status', [3, 5]).gte('date_created', `${from}T00:00:00`).lte('date_created', `${to}T23:59:59`),
+    supabase.from('transaction_list').select('id, client_name, amount, date_completed, status').eq('status', 5),
+    supabase.from('transaction_list').select('id, client_name, amount, date_completed, status').eq('status', 5).eq('del_status', 0).gte('date_completed', `${from} 00:00:00`).lte('date_completed', `${to} 23:59:59`),
     supabase.from('client_payments').select('id, client_id, amount, discount, payment_date'),
     supabase.from('client_payments').select('id, client_id, amount, discount, payment_date').gte('payment_date', from).lte('payment_date', to),
     supabase.from('attendance_list').select('mechanic_id, curr_date, status'),
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     supabase.from('inventory_list').select('product_id, quantity'),
     supabase.from('direct_sales').select('id, total_amount, date_created'),
     supabase.from('expense_list').select('category, amount, date_created'),
-    supabase.from('expense_list').select('category, amount, date_created').gte('date_created', `${from}T00:00:00`).lte('date_created', `${to}T23:59:59`),
+    supabase.from('expense_list').select('category, amount, date_created').gte('date_created', `${from} 00:00:00`).lte('date_created', `${to} 23:59:59`),
     supabase.from('loan_payments').select('lender_id, amount_paid, payment_date'),
   ]);
 

@@ -1,7 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { startOfDay, endOfDay, parseISO } from 'date-fns';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -24,8 +23,9 @@ export async function GET(request: Request) {
     }
   );
 
-  const start = startOfDay(parseISO(from)).toISOString();
-  const end   = endOfDay(parseISO(to)).toISOString();
+  // PHP-style date handling (local time)
+  const start = `${from} 00:00:00`;
+  const end   = `${to} 23:59:59`;
 
   try {
 
@@ -84,10 +84,10 @@ export async function GET(request: Request) {
       { data: allAttRaw },
       { data: allAdvRaw },
     ] = await Promise.all([
-      // 1. Repair jobs
+      // 1. Repair jobs (matching PHP - no del_status filter)
       supabase.from('transaction_list')
         .select('id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id')
-        .eq('status', 5).eq('del_status', 0)
+        .eq('status', 5)
         .gte('date_completed', start).lte('date_completed', end),
 
       // 2. Walk-in sales
@@ -372,6 +372,17 @@ export async function GET(request: Request) {
       details:    `Invoice: ${s.sale_code}`,
       type:       'Cash In',
       net_amount: s.total_amount,
+      client_id:  s.client_id || null,
+    }));
+
+    clientSales.forEach(s => ledgerEntries.push({
+      date:       s.date_created,
+      category:   'Direct Sale (Client)',
+      details:    `Invoice: ${s.sale_code} - ${s.client_firstname} ${s.client_lastname}`.trim(),
+      type:       'Cash In',
+      net_amount: s.total_amount,
+      client_id:  s.client_id,
+      client_fullname: `${s.client_firstname} ${s.client_lastname}`.trim(),
     }));
 
     expenses.forEach(e => ledgerEntries.push({

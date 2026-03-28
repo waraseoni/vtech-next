@@ -21,7 +21,7 @@ export default function AIChatPage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [aiProvider, setAiProvider] = useState("gemini");
+  const [aiProvider, setAiProvider] = useState("groq");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {

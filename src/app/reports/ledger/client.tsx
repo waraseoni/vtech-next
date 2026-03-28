@@ -3,9 +3,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  format, subMonths, addMonths, startOfMonth, endOfMonth, isValid, parseISO,
-} from "date-fns";
+import { isValid } from "date-fns";
+import { addMonths, subMonths } from "date-fns";
 import {
   BarChart3, TrendingUp, TrendingDown, Wallet, PiggyBank,
   ChevronLeft, ChevronRight, RefreshCw, Eye, Printer,
@@ -204,7 +203,9 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
   // BUG FIX 6: goToMonth — original used parseISO which can shift date in IST.
   // Fix: use parseISTDate for 'YYYY-MM-DD' strings.
   const goToMonth = (dir: "prev" | "next") => {
-    const base = parseISTDate(from);
+    // Fix: Parse date string directly to avoid UTC timezone shift (parseISTDate issue)
+    const [year, month] = from.split('-').map(Number);
+    const base = new Date(year, month - 1, 1);
     if (!isValid(base)) return;
     const newBase = dir === "prev" ? subMonths(base, 1) : addMonths(base, 1);
     setFrom(getMonthStart(newBase));
@@ -212,7 +213,9 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
   };
 
   const resetMonth = () => {
-    const now = parseISTDate(todayIST());
+    const todayStr = todayIST(); // "YYYY-MM-DD" — no timezone shift
+    const [y, m] = todayStr.split('-').map(Number);
+    const now = new Date(y, m - 1, 1);
     setFrom(getMonthStart(now));
     setTo(getMonthEnd(now));
   };
@@ -706,6 +709,32 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
             <li>Client Payments नकद आवक है, नई आय नहीं।</li>
             <li>ग्राहक को दी गई छूट व्यवसायिक खर्च में जोड़ी गई है।</li>
           </ul>
+        </div>
+
+        {/* ═══════════════════════════════════════════ CALCULATION SUMMARY */}
+        <div className="bg-[#161b27] border border-blue-500/15 rounded-2xl p-4 mt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Info size={12} className="text-blue-400" />
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-400">Calculation Summary</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[10px] font-mono">
+            <div className="bg-slate-900/50 rounded-lg p-2">
+              <p className="text-blue-400 font-bold mb-1">P&L (Profit & Loss)</p>
+              <div className="text-slate-500 space-y-0.5">
+                <div><span className="text-emerald-400">Net Revenue</span> = Repair Jobs + Walk-in Sales + Client Sales</div>
+                <div><span className="text-red-400">Total Expenses</span> = Staff Salary + Mechanic Commission + Shop Expenses + Loan EMI + Discount</div>
+                <div><span className="text-cyan-400">Net Profit</span> = Net Revenue − Total Expenses</div>
+              </div>
+            </div>
+            <div className="bg-slate-900/50 rounded-lg p-2">
+              <p className="text-blue-400 font-bold mb-1">Cash Flow</p>
+              <div className="text-slate-500 space-y-0.5">
+                <div><span className="text-emerald-400">Total Cash In</span> = Client Payments + Walk-in Sales</div>
+                <div><span className="text-red-400">Total Cash Out</span> = Staff Advance + Shop Expenses + Loan EMI</div>
+                <div><span className="text-amber-400">Net Cash Flow</span> = Total Cash In − Total Cash Out</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ═══════════════════════════════════════════ STOCK TOGGLE */}

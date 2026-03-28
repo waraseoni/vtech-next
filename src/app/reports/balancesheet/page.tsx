@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import {
   Loader2, ChevronLeft, ChevronRight, Users, Wrench, Package,
   TrendingUp, TrendingDown, BarChart2, Banknote, Printer,
-  X, Eye, RefreshCw, TrendingUp as Up, TrendingDown as Down
+  X, Eye, RefreshCw, TrendingUp as Up, TrendingDown as Down, Info
 } from "lucide-react";
 import { todayIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
 
@@ -306,6 +306,37 @@ function BalanceSheetContent() {
             </>
           )}
         </div>
+
+        {/* ═══════════════════════════════════════════ CALCULATION SUMMARY */}
+        <div className="bg-[#161b27] border border-blue-500/15 rounded-2xl p-4 mt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Info size={12} className="text-blue-400" />
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-400">Calculation Summary</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[10px] font-mono">
+            <div className="bg-slate-900/50 rounded-lg p-2">
+              <p className="text-blue-400 font-bold mb-1">Income</p>
+              <div className="text-slate-500 space-y-0.5">
+                <div><span className="text-emerald-400">Total Income</span> = Repair Income + Walk-in Sales + Client Sales</div>
+              </div>
+            </div>
+            <div className="bg-slate-900/50 rounded-lg p-2">
+              <p className="text-blue-400 font-bold mb-1">Expenses</p>
+              <div className="text-slate-500 space-y-0.5">
+                <div><span className="text-red-400">Total Expenses</span> = Sum of all expense categories</div>
+                <div><span className="text-cyan-400">Net Profit</span> = Total Income − Total Expenses</div>
+              </div>
+            </div>
+            <div className="bg-slate-900/50 rounded-lg p-2">
+              <p className="text-blue-400 font-bold mb-1">Balance Sheet</p>
+              <div className="text-slate-500 space-y-0.5">
+                <div><span className="text-blue-400">Total Assets</span> = Stock Value + Cash Balance</div>
+                <div><span className="text-red-400">Total Liabilities</span> = Staff Payable + Loan Outstanding</div>
+                <div><span className="text-purple-400">Capital</span> = Total Assets − Total Liabilities</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {showLedgerModal && selectedClient && (
@@ -357,7 +388,9 @@ function CustomerTab({ data, totals }: { data: CLRow[]; totals: { totOB: number;
               {data.map((c) => (
                 <tr key={c.client_id} className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors">
                   <td className="px-3 py-2.5">
-                    <span className="text-sm font-bold text-slate-200">{c.customer_name}</span>
+                    <a href={`/clients/${c.client_id}/view`} target="_blank" className="text-sm font-bold text-blue-400 hover:text-blue-300 hover:underline">
+                      {c.customer_name}
+                    </a>
                     <div className="text-[10px] text-slate-600 mt-0.5">{c.total_jobs} job(s)</div>
                   </td>
                   <td className="px-3 py-2.5 text-xs text-slate-400">{c.contact || "—"}</td>
@@ -366,9 +399,9 @@ function CustomerTab({ data, totals }: { data: CLRow[]; totals: { totOB: number;
                   <td className="px-3 py-2.5 text-xs text-right font-bold text-teal-400">{inr(c.total_payment)}</td>
                   <td className={`px-3 py-2.5 text-xs text-right font-bold ${c.current_balance >= 0 ? "text-blue-400" : "text-red-400"}`}>{inr(c.current_balance)}</td>
                   <td className="px-3 py-2.5">
-                    <button className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg text-[10px] font-bold hover:bg-blue-500/30 transition-all">
+                    <a href={`/clients/${c.client_id}/view`} target="_blank" className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg text-[10px] font-bold hover:bg-blue-500/30 transition-all">
                       <Eye size={10} className="inline mr-1" /> विवरण
-                    </button>
+                    </a>
                   </td>
                 </tr>
               ))}

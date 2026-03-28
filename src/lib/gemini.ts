@@ -92,11 +92,9 @@ Be concise with your outputs. Do not return markdown that cannot be read well. U
     if (errorMessage.includes("429") || errorMessage.includes("Too Many Requests") || errorMessage.includes("quota")) {
       // Try to extract the retry time
       const match = errorMessage.match(/retry in ([\d\.]+)s/);
-      if (match && match[1]) {
-        const seconds = Math.ceil(parseFloat(match[1]));
-        return `Aapki request limit poori ho gayi hai. Kripya ${seconds} seconds ke baad dobara sawaal poochein. ⏳`;
-      }
-      return "Aapki request limit poori ho gayi hai. Kripya thodi der (1-2 minute) baad dobara try karein. ⏳";
+      const retryHint = match ? `${Math.ceil(parseFloat(match[1]))} seconds` : "1-2 minute";
+      
+      return `Gemini system abhi busy hai (Rate Limit). Kripya ${retryHint} baad try karein ya Model Selector se 'Groq' choose karein. ⏳\n\nNote: Gemini 2.0 free tier is currently overloaded.`;
     }
 
     // Return the actual raw error message so the user can debug what exactly failed.
