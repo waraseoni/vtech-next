@@ -1138,9 +1138,9 @@ function JobsListContent() {
       </div>
 
       {/* ── FAB ── */}
-      <div className="fixed bottom-20 right-4 z-20">
+      <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-3 items-end">
         <button onClick={() => setFabOpen(!fabOpen)}
-          className="w-13 h-13 w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center text-white border border-blue-500/30 transition-all active:scale-95">
+          className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center text-white border border-blue-500/30 transition-all active:scale-95">
           <Plus size={22} className={`transition-transform ${fabOpen ? "rotate-45" : ""}`} />
         </button>
         {fabOpen && (

@@ -726,14 +726,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* ── AI ASSISTANT RIGHT DRAWER ── */}
         {isAdmin && (
           <>
-            {/* Toggle Button - Fixed at bottom right */}
-            <button
-              onClick={() => setAiDrawerOpen(true)}
-              className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg shadow-purple-500/30 flex items-center justify-center text-white hover:scale-110 transition-transform"
-              title="AI Assistant"
-            >
-              <Sparkles size={24} />
-            </button>
+            {/* Floating Button Group - Bottom Right */}
+            <div className="fixed bottom-20 right-4 z-40 flex flex-col gap-3">
+              {/* AI Assistant Button - positioned above Jobs FAB */}
+              <button
+                onClick={() => setAiDrawerOpen(true)}
+                className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg shadow-purple-500/30 flex items-center justify-center text-white hover:scale-110 transition-transform"
+                title="AI Assistant"
+              >
+                <Sparkles size={20} />
+              </button>
+            </div>
 
             {/* Right Drawer */}
             <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-[#0d1117] border-l border-[#21293d] z-[100] transition-transform duration-300 ease-out ${aiDrawerOpen ? "translate-x-0" : "translate-x-full"}`}>
