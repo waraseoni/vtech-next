@@ -27,10 +27,10 @@ function PublicWebsite() {
         }}>
           <div className="max-w-5xl mx-auto px-4">
             <h1 style={{ fontSize: "3.5rem", fontWeight: 700, lineHeight: 1.2, marginBottom: "20px" }}>
-              Expert Stage Lighting &amp;<br/>Power Supply Repair Center
+              Expert Stage Lighting &amp;<br />Power Supply Repair Center
             </h1>
             <p style={{ fontSize: "1.2rem", maxWidth: "900px", margin: "0 auto 40px", lineHeight: 1.6, color: "#94a3b8" }}>
-              SMPS | Sharpy | Moving Head | Par Lights | DMX | Laser | LED Wall | Fog Machine<br/>
+              SMPS | Sharpy | Moving Head | Par Lights | DMX | Laser | LED Wall | Fog Machine<br />
               Fast Repair • Genuine Parts • Same Day Service
             </p>
             <div className="flex flex-wrap justify-center gap-3">
@@ -94,7 +94,7 @@ function PublicWebsite() {
           <div className="max-w-3xl mx-auto">
             <h2 style={{ fontSize: "2.2rem", marginBottom: "1.5rem" }}>Need Urgent Repair? Contact Us Now!</h2>
             <p style={{ fontSize: "1.2rem" }}>
-              📞 +91 91791 05875<br/>📍 Marhatal, Jabalpur, MP
+              📞 +91 91791 05875<br />📍 Marhatal, Jabalpur, MP
             </p>
           </div>
         </section>
@@ -117,22 +117,22 @@ function PublicWebsite() {
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Profile      = { full_name: string; role: string };
-type Stat         = { totalClients: number; pendingJobs: number; inProgressJobs: number; finishedJobs: number; deliveredJobs: number; totalMechanics: number; lowStock: number; todayRevenue: number; };
-type Financial    = { totalSales: number; partsCost: number; grossProfit: number; discounts: number; salary: number; loanPaid: number; expenses: number; totalOutflow: number; netProfit: number; };
-type RecentJob    = { id: number; job_id: string | null; client_name: string; item: string; amount: number; status: number; };
+type Profile = { full_name: string; role: string };
+type Stat = { totalClients: number; pendingJobs: number; inProgressJobs: number; finishedJobs: number; deliveredJobs: number; totalMechanics: number; lowStock: number; todayRevenue: number; };
+type Financial = { totalSales: number; partsCost: number; grossProfit: number; discounts: number; salary: number; loanPaid: number; expenses: number; totalOutflow: number; netProfit: number; };
+type RecentJob = { id: number; job_id: string | null; client_name: string; item: string; amount: number; status: number; };
 type RecentPayment = { id: number; amount: number; payment_mode: string; payment_date: string; client_name: string; };
 type LowStockItem = { name: string; quantity: number; place: string };
 type RevenuePoint = { month: string; revenue: number };
-type StatusPoint  = { name: string; value: number; color: string };
+type StatusPoint = { name: string; value: number; color: string };
 
 const STATUS_META = [
-  { label: "Pending",     color: "#94a3b8" },
+  { label: "Pending", color: "#94a3b8" },
   { label: "In Progress", color: "#f59e0b" },
-  { label: "Finished",    color: "#06b6d4" },
-  { label: "Paid",        color: "#10b981" },
-  { label: "Cancelled",   color: "#ef4444" },
-  { label: "Delivered",   color: "#3b82f6" },
+  { label: "Finished", color: "#06b6d4" },
+  { label: "Paid", color: "#10b981" },
+  { label: "Cancelled", color: "#ef4444" },
+  { label: "Delivered", color: "#3b82f6" },
 ];
 
 import { todayIST, formatIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
@@ -175,17 +175,17 @@ const StatusTooltip = ({ active, payload }: any) => {
 // ══════════════════════════════════════════════════════════════════════════════
 export default function Dashboard() {
   const [authChecked, setAuthChecked] = useState(false);
-  const [isLoggedIn,  setIsLoggedIn]  = useState<boolean | null>(null);
-  const [profile,        setProfile]        = useState<Profile | null>(null);
-  const [stats,          setStats]          = useState<Stat>({ totalClients: 0, pendingJobs: 0, inProgressJobs: 0, finishedJobs: 0, deliveredJobs: 0, totalMechanics: 0, lowStock: 0, todayRevenue: 0 });
-  const [financial,      setFinancial]      = useState<Financial>({ totalSales: 0, partsCost: 0, grossProfit: 0, discounts: 0, salary: 0, loanPaid: 0, expenses: 0, totalOutflow: 0, netProfit: 0 });
-  const [revenueData,    setRevenueData]    = useState<RevenuePoint[]>([]);
-  const [statusData,     setStatusData]     = useState<StatusPoint[]>([]);
-  const [recentJobs,     setRecentJobs]     = useState<RecentJob[]>([]);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [stats, setStats] = useState<Stat>({ totalClients: 0, pendingJobs: 0, inProgressJobs: 0, finishedJobs: 0, deliveredJobs: 0, totalMechanics: 0, lowStock: 0, todayRevenue: 0 });
+  const [financial, setFinancial] = useState<Financial>({ totalSales: 0, partsCost: 0, grossProfit: 0, discounts: 0, salary: 0, loanPaid: 0, expenses: 0, totalOutflow: 0, netProfit: 0 });
+  const [revenueData, setRevenueData] = useState<RevenuePoint[]>([]);
+  const [statusData, setStatusData] = useState<StatusPoint[]>([]);
+  const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
   const [recentPayments, setRecentPayments] = useState<RecentPayment[]>([]);
-  const [lowStockItems,  setLowStockItems]  = useState<LowStockItem[]>([]);
-  const [loading,        setLoading]        = useState(true);
-  const [finLoading,     setFinLoading]     = useState(false);
+  const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [finLoading, setFinLoading] = useState(false);
 
   // ── AUTH CHECK ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -237,7 +237,7 @@ export default function Dashboard() {
           supabase.from("inventory_list").select("quantity, place, product_id").lte("quantity", 5).order("quantity", { ascending: true }).limit(10),
         ]);
 
-        const active   = allTrans    ?? [];
+        const active = allTrans ?? [];
         const dirSales = dirSalesAll ?? [];
 
         const lowStock = lowInv
@@ -251,14 +251,14 @@ export default function Dashboard() {
           .reduce((s: number, d: any) => s + n(d.total_amount), 0);
 
         setStats({
-          totalClients:   clientCount ?? 0,
-          totalMechanics: mechCount   ?? 0,
+          totalClients: clientCount ?? 0,
+          totalMechanics: mechCount ?? 0,
           lowStock,
-          todayRevenue:   todayR + todayD,
-          pendingJobs:    active.filter((t: any) => t.status === 0).length,
+          todayRevenue: todayR + todayD,
+          pendingJobs: active.filter((t: any) => t.status === 0).length,
           inProgressJobs: active.filter((t: any) => t.status === 1).length,
-          finishedJobs:   active.filter((t: any) => t.status === 2).length,
-          deliveredJobs:  active.filter((t: any) => t.status === 5).length,
+          finishedJobs: active.filter((t: any) => t.status === 2).length,
+          deliveredJobs: active.filter((t: any) => t.status === 5).length,
         });
 
         setStatusData(
@@ -274,9 +274,9 @@ export default function Dashboard() {
           const md = new Date();
           md.setDate(1); // Set to 1st first to avoid month skipping
           md.setMonth(md.getMonth() - i);
-          
+
           const start = startOfMonthIST(md);
-          const end   = endOfMonthIST(md);
+          const end = endOfMonthIST(md);
           const rep = active
             .filter((t: any) => t.status === 5 && isoDate(t.date_completed ?? "") >= start && isoDate(t.date_completed ?? "") <= end)
             .reduce((s: number, t: any) => s + n(t.amount), 0);
@@ -284,7 +284,7 @@ export default function Dashboard() {
             .filter((d: any) => isoDate(d.date_created ?? "") >= start && isoDate(d.date_created ?? "") <= end)
             .reduce((s: number, d: any) => s + n(d.total_amount), 0);
           pts.push({
-            month:   md.toLocaleString("default", { month: "short", year: "2-digit" }),
+            month: md.toLocaleString("default", { month: "short", year: "2-digit" }),
             revenue: rep + dir,
           });
         }
@@ -360,8 +360,8 @@ export default function Dashboard() {
         supabase.from("expense_list").select("amount").gte("date_created", f0).lte("date_created", t0),
       ]);
 
-      const repairInc  = (tD ?? []).reduce((s: number, t: any) => s + n(t.amount), 0);
-      const directInc  = (dD ?? []).reduce((s: number, d: any) => s + n(d.total_amount), 0);
+      const repairInc = (tD ?? []).reduce((s: number, t: any) => s + n(t.amount), 0);
+      const directInc = (dD ?? []).reduce((s: number, d: any) => s + n(d.total_amount), 0);
       const totalSales = repairInc + directInc;
 
       const txList = (txIds ?? []).map((t: any) => t.id);
@@ -377,9 +377,9 @@ export default function Dashboard() {
         partsDirect = (di ?? []).reduce((s: number, r: any) => s + n(r.qty) * n(r.price), 0);
       }
 
-      const partsCost   = (partsTrans + partsDirect) * 0.9;
+      const partsCost = (partsTrans + partsDirect) * 0.9;
       const grossProfit = totalSales - partsCost;
-      const discounts   = (discD ?? []).reduce((s: number, p: any) => s + n(p.discount), 0);
+      const discounts = (discD ?? []).reduce((s: number, p: any) => s + n(p.discount), 0);
 
       let salary = 0;
       if (attD?.length) {
@@ -392,10 +392,10 @@ export default function Dashboard() {
         }, 0);
       }
 
-      const loanPaid     = (loanD ?? []).reduce((s: number, l: any) => s + n(l.amount_paid), 0);
-      const expenses     = (expD  ?? []).reduce((s: number, e: any) => s + n(e.amount), 0);
+      const loanPaid = (loanD ?? []).reduce((s: number, l: any) => s + n(l.amount_paid), 0);
+      const expenses = (expD ?? []).reduce((s: number, e: any) => s + n(e.amount), 0);
       const totalOutflow = discounts + salary + loanPaid + expenses;
-      const netProfit    = grossProfit - totalOutflow;
+      const netProfit = grossProfit - totalOutflow;
 
       setFinancial({ totalSales, partsCost, grossProfit, discounts, salary, loanPaid, expenses, totalOutflow, netProfit });
     } catch (e) {
@@ -434,9 +434,9 @@ export default function Dashboard() {
   }
 
   const displayName = profile?.full_name ?? "User";
-  const isAdmin     = profile?.role === "admin";
-  const totalJobs   = statusData.reduce((s, d) => s + d.value, 0);
-  const profitPct   = financial.totalSales > 0 ? ((financial.netProfit / financial.totalSales) * 100).toFixed(1) : "0";
+  const isAdmin = profile?.role === "admin";
+  const totalJobs = statusData.reduce((s, d) => s + d.value, 0);
+  const profitPct = financial.totalSales > 0 ? ((financial.netProfit / financial.totalSales) * 100).toFixed(1) : "0";
 
   // ═══════════════════════════════════════════════════════════════════════
   return (
@@ -500,14 +500,14 @@ export default function Dashboard() {
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ STAT CARDS */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Total Clients"  value={stats.totalClients}      icon={<Users size={18}/>}         color="blue"    href="/clients" />
-        <StatCard label="Pending"        value={stats.pendingJobs}        icon={<Clock size={18}/>}         color="amber"   href="/jobs?status=0" />
-        <StatCard label="In Progress"    value={stats.inProgressJobs}     icon={<Activity size={18}/>}     color="cyan"    href="/jobs?status=1" />
-        <StatCard label="Finished"       value={stats.finishedJobs}       icon={<CheckCircle size={18}/>}  color="emerald" href="/jobs?status=2" />
-        <StatCard label="Delivered"      value={stats.deliveredJobs}      icon={<ArrowRight size={18}/>}   color="violet"  href="/jobs?status=5" />
-        <StatCard label="Mechanics"      value={stats.totalMechanics}     icon={<Users size={18}/>}        color="pink"    href="/mechanics" />
-        <StatCard label="Low Stock"      value={stats.lowStock}           icon={<AlertCircle size={18}/>}  color="red"     href="/inventory" />
-        <StatCard label="Today Revenue"  value={inr(stats.todayRevenue, 2)} icon={<IndianRupee size={18} strokeWidth={2.5}/>} color="indigo" />
+        <StatCard label="Total Clients" value={stats.totalClients} icon={<Users size={18} />} color="blue" href="/clients" />
+        <StatCard label="Pending" value={stats.pendingJobs} icon={<Clock size={18} />} color="amber" href="/jobs?status=0" />
+        <StatCard label="In Progress" value={stats.inProgressJobs} icon={<Activity size={18} />} color="cyan" href="/jobs?status=1" />
+        <StatCard label="Finished" value={stats.finishedJobs} icon={<CheckCircle size={18} />} color="emerald" href="/jobs?status=2" />
+        <StatCard label="Delivered" value={stats.deliveredJobs} icon={<ArrowRight size={18} />} color="violet" href="/jobs?status=5" />
+        <StatCard label="Mechanics" value={stats.totalMechanics} icon={<Users size={18} />} color="pink" href="/mechanics" />
+        <StatCard label="Low Stock" value={stats.lowStock} icon={<AlertCircle size={18} />} color="red" href="/inventory" />
+        <StatCard label="Today Revenue" value={inr(stats.todayRevenue, 2)} icon={<IndianRupee size={18} strokeWidth={2.5} />} color="indigo" />
       </section>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ CHARTS */}
@@ -529,14 +529,14 @@ export default function Dashboard() {
               <BarChart data={revenueData} margin={{ top: 4, right: 4, left: -10, bottom: 0 }} barCategoryGap="25%">
                 <defs>
                   <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"   stopColor="#3b82f6" stopOpacity={0.95} />
-                    <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.5}  />
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.5} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1a2234" vertical={false} />
                 <XAxis dataKey="month" tick={{ fill: "#475569", fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis
-                  tickFormatter={v => v >= 100000 ? `₹${(v/100000).toFixed(1)}L` : v >= 1000 ? `₹${(v/1000).toFixed(0)}k` : `₹${v}`}
+                  tickFormatter={v => v >= 100000 ? `₹${(v / 100000).toFixed(1)}L` : v >= 1000 ? `₹${(v / 1000).toFixed(0)}k` : `₹${v}`}
                   tick={{ fill: "#475569", fontSize: 10 }} axisLine={false} tickLine={false} width={50}
                 />
                 <Tooltip content={<RevTooltip />} cursor={{ fill: "rgba(59,130,246,0.05)" }} />
@@ -598,11 +598,10 @@ export default function Dashboard() {
               </p>
             </div>
             {!finLoading && (
-              <span className={`inline-flex items-center gap-1.5 text-xs font-black px-4 py-1.5 rounded-2xl border ${
-                financial.netProfit >= 0
+              <span className={`inline-flex items-center gap-1.5 text-xs font-black px-4 py-1.5 rounded-2xl border ${financial.netProfit >= 0
                   ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/25"
                   : "text-red-400 bg-red-500/10 border-red-500/25"
-              }`}>
+                }`}>
                 {financial.netProfit >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
                 {profitPct}% {financial.netProfit >= 0 ? "Profit Margin" : "Loss"}
               </span>
@@ -616,19 +615,18 @@ export default function Dashboard() {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <FinCard icon={<DollarSign size={18}/>}  label="Total Sales"      value={financial.totalSales}  color="blue" />
-                <FinCard icon={<Wrench size={18}/>}      label="Parts Cost (90%)" value={financial.partsCost}   color="amber" isExpense />
-                <FinCard icon={<Activity size={18}/>}    label="Gross Profit"     value={financial.grossProfit} color="cyan" />
-                <FinCard icon={<AlertCircle size={18}/>} label="Discounts"        value={financial.discounts}   color="red"  isExpense />
-                <FinCard icon={<Users size={18}/>}       label="Staff Salary"     value={financial.salary}      color="slate" isExpense />
-                <FinCard icon={<CreditCard size={18}/>}  label="Loan Repaid"      value={financial.loanPaid}    color="violet" isExpense />
-                <FinCard icon={<IndianRupee size={18}/>} label="Other Expenses"   value={financial.expenses}    color="rose" isExpense />
+                <FinCard icon={<DollarSign size={18} />} label="Total Sales" value={financial.totalSales} color="blue" />
+                <FinCard icon={<Wrench size={18} />} label="Parts Cost (90%)" value={financial.partsCost} color="amber" isExpense />
+                <FinCard icon={<Activity size={18} />} label="Gross Profit" value={financial.grossProfit} color="cyan" />
+                <FinCard icon={<AlertCircle size={18} />} label="Discounts" value={financial.discounts} color="red" isExpense />
+                <FinCard icon={<Users size={18} />} label="Staff Salary" value={financial.salary} color="slate" isExpense />
+                <FinCard icon={<CreditCard size={18} />} label="Loan Repaid" value={financial.loanPaid} color="violet" isExpense />
+                <FinCard icon={<IndianRupee size={18} />} label="Other Expenses" value={financial.expenses} color="rose" isExpense />
                 {/* Net profit card */}
-                <div className={`rounded-2xl border p-4 flex items-center gap-3 ${
-                  financial.netProfit >= 0
+                <div className={`rounded-2xl border p-4 flex items-center gap-3 ${financial.netProfit >= 0
                     ? "bg-emerald-500/8 border-emerald-500/20"
                     : "bg-red-500/8 border-red-500/20"
-                }`}>
+                  }`}>
                   <div className={`p-2.5 rounded-xl flex-shrink-0 ${financial.netProfit >= 0 ? "bg-emerald-500/15" : "bg-red-500/15"}`}>
                     {financial.netProfit >= 0
                       ? <TrendingUp size={18} className="text-emerald-400" />
@@ -651,11 +649,10 @@ export default function Dashboard() {
                 </div>
                 <div className="h-2 bg-[#21293d] rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-700 ${
-                      financial.netProfit >= 0
+                    className={`h-full rounded-full transition-all duration-700 ${financial.netProfit >= 0
                         ? "bg-gradient-to-r from-blue-500 to-emerald-500"
                         : "bg-gradient-to-r from-red-600 to-orange-500"
-                    }`}
+                      }`}
                     style={{
                       width: financial.totalSales > 0
                         ? `${Math.min(100, Math.max(0, (financial.grossProfit / financial.totalSales) * 100))}%`
@@ -785,10 +782,10 @@ export default function Dashboard() {
           <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
             {lowStockItems.map((item, i) => {
               const u = item.quantity === 0
-                ? { bg: "bg-red-500/8",    border: "border-red-500/20",    text: "text-red-400"    }
+                ? { bg: "bg-red-500/8", border: "border-red-500/20", text: "text-red-400" }
                 : item.quantity <= 2
-                ? { bg: "bg-orange-500/8", border: "border-orange-500/20", text: "text-orange-400" }
-                : { bg: "bg-amber-500/8",  border: "border-amber-500/15",  text: "text-amber-400"  };
+                  ? { bg: "bg-orange-500/8", border: "border-orange-500/20", text: "text-orange-400" }
+                  : { bg: "bg-amber-500/8", border: "border-amber-500/15", text: "text-amber-400" };
               return (
                 <div key={i} className={`${u.bg} border ${u.border} rounded-2xl p-3.5 flex items-center gap-3 hover:brightness-110 transition`}>
                   <div className={`w-10 h-10 rounded-xl border ${u.border} flex items-center justify-center flex-shrink-0 font-black text-sm ${u.text}`}>
@@ -828,14 +825,14 @@ function EmptyRow({ icon, label }: { icon: React.ReactNode; label: string }) {
 }
 
 const STAT_C: Record<string, { border: string; icon: string }> = {
-  blue:    { border: "border-blue-500/20",    icon: "text-blue-400    bg-blue-500/10"    },
-  amber:   { border: "border-amber-500/20",   icon: "text-amber-400   bg-amber-500/10"   },
-  cyan:    { border: "border-cyan-500/20",    icon: "text-cyan-400    bg-cyan-500/10"    },
+  blue: { border: "border-blue-500/20", icon: "text-blue-400    bg-blue-500/10" },
+  amber: { border: "border-amber-500/20", icon: "text-amber-400   bg-amber-500/10" },
+  cyan: { border: "border-cyan-500/20", icon: "text-cyan-400    bg-cyan-500/10" },
   emerald: { border: "border-emerald-500/20", icon: "text-emerald-400 bg-emerald-500/10" },
-  violet:  { border: "border-violet-500/20",  icon: "text-violet-400  bg-violet-500/10"  },
-  pink:    { border: "border-pink-500/20",    icon: "text-pink-400    bg-pink-500/10"    },
-  red:     { border: "border-red-500/20",     icon: "text-red-400     bg-red-500/10"     },
-  indigo:  { border: "border-indigo-500/20",  icon: "text-indigo-400  bg-indigo-500/10"  },
+  violet: { border: "border-violet-500/20", icon: "text-violet-400  bg-violet-500/10" },
+  pink: { border: "border-pink-500/20", icon: "text-pink-400    bg-pink-500/10" },
+  red: { border: "border-red-500/20", icon: "text-red-400     bg-red-500/10" },
+  indigo: { border: "border-indigo-500/20", icon: "text-indigo-400  bg-indigo-500/10" },
 };
 
 function StatCard({ label, value, icon, color, href }: {
@@ -856,13 +853,13 @@ function StatCard({ label, value, icon, color, href }: {
 }
 
 const FIN_C: Record<string, { bg: string; icon: string }> = {
-  blue:   { bg: "bg-blue-500/10",   icon: "text-blue-400"   },
-  amber:  { bg: "bg-amber-500/10",  icon: "text-amber-400"  },
-  cyan:   { bg: "bg-cyan-500/10",   icon: "text-cyan-400"   },
-  red:    { bg: "bg-red-500/10",    icon: "text-red-400"    },
-  slate:  { bg: "bg-slate-700/30",  icon: "text-slate-400"  },
+  blue: { bg: "bg-blue-500/10", icon: "text-blue-400" },
+  amber: { bg: "bg-amber-500/10", icon: "text-amber-400" },
+  cyan: { bg: "bg-cyan-500/10", icon: "text-cyan-400" },
+  red: { bg: "bg-red-500/10", icon: "text-red-400" },
+  slate: { bg: "bg-slate-700/30", icon: "text-slate-400" },
   violet: { bg: "bg-violet-500/10", icon: "text-violet-400" },
-  rose:   { bg: "bg-rose-500/10",   icon: "text-rose-400"   },
+  rose: { bg: "bg-rose-500/10", icon: "text-rose-400" },
 };
 
 function FinCard({ icon, label, value, color, isExpense }: {
