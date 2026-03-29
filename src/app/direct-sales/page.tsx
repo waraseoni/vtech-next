@@ -327,7 +327,7 @@ export default function DirectSalesPage() {
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <Link href={`/direct-sales/${s.id}`}
+                      <Link href={`/direct-sales/${s.id}/view`}
                         className="text-blue-400 hover:text-blue-300 font-extrabold text-sm transition-colors">
                         {s.sale_code}
                       </Link>
@@ -364,7 +364,7 @@ export default function DirectSalesPage() {
 
                   {/* Actions */}
                   <div className="flex gap-2 mt-3 pt-3 border-t border-[#21293d]">
-                    <Link href={`/direct-sales/${s.id}`}
+                    <Link href={`/direct-sales/${s.id}/view`}
                       className="flex-1 flex items-center justify-center gap-1 py-2 bg-[#111520] border border-[#21293d] hover:border-blue-500/30 text-slate-400 hover:text-blue-400 rounded-xl text-[11px] font-extrabold transition-all">
                       <Eye size={12} /> View
                     </Link>
@@ -599,8 +599,8 @@ export default function DirectSalesPage() {
 
                   {/* Date & Code */}
                   <td className="px-4 py-3.5">
-                    <Link href={`/direct-sales/${s.id}`}
-                      className="text-blue-400 hover:text-blue-300 font-extrabold text-sm transition-colors leading-none">
+                    <Link href={`/direct-sales/${s.id}/view`}
+                        className="text-blue-400 hover:text-blue-300 font-extrabold text-sm transition-colors leading-none">
                       {s.sale_code}
                     </Link>
                     <div className="flex items-center gap-1 mt-1">
@@ -657,7 +657,7 @@ export default function DirectSalesPage() {
                   {/* Actions */}
                   <td className="px-4 py-3.5">
                     <div className="flex justify-center gap-1.5">
-                      <Link href={`/direct-sales/${s.id}`}
+                      <Link href={`/direct-sales/${s.id}/view`}
                         className="p-1.5 bg-[#21293d] hover:bg-blue-600/30 border border-[#21293d] hover:border-blue-500/40 rounded-lg text-slate-600 hover:text-blue-400 transition-all" title="View">
                         <Eye size={13} />
                       </Link>

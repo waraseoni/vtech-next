@@ -146,7 +146,7 @@ export default function BulkJobPage() {
 
       // Get fresh job counter
       const { data: ctr } = await supabase.from("job_id_counter").select("last_job_id").single();
-      let nextJobId = (ctr?.last_job_id || 0) + 1;
+      const nextJobId = (ctr?.last_job_id || 0) + 1;
       const today = todayISTStr();
 
       let savedCount = 0;

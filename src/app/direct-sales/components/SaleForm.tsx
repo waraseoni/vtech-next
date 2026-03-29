@@ -206,7 +206,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
     setRemarks(sale.remarks || "");
 
     const productIds = (sale.items || []).map((i: any) => i.product_id);
-    let pMap = new Map<number, string>();
+    const pMap = new Map<number, string>();
     if (productIds.length) {
       const { data: pData } = await supabase
         .from("product_list").select("id, name").in("id", productIds);
@@ -382,7 +382,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
       );
       if (ie) throw ie;
 
-      router.push(`/direct-sales/${resultId}`);
+      router.push(`/direct-sales/${resultId}/view`);
     } catch (err: any) {
       setFormError("Save failed: " + (err?.message || "Unknown error"));
     } finally {

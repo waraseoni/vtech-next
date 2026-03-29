@@ -10,7 +10,7 @@ import {
 import {
   Wrench, Clock, CheckCircle, IndianRupee, TrendingUp, TrendingDown,
   Users, ArrowRight, AlertCircle, Zap, Loader2, DollarSign, CreditCard,
-  Filter, RotateCcw, Package, Activity, ChevronRight, ShieldCheck,
+  Filter, RotateCcw, Package, Activity, ChevronRight,
 } from "lucide-react";
 import Navbar from "./components/Navbar";
 
@@ -135,15 +135,9 @@ const STATUS_META = [
   { label: "Delivered",   color: "#3b82f6" },
 ];
 
-import { todayIST, formatIST, parseISTDate, toISTString, toLocalStr, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+import { todayIST, formatIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
 
 // ─── Timezone-safe helpers ────────────────────────────────────────────────────
-// BUG FIX 3: Financial filter timestamps need explicit IST offset.
-// from + 'T00:00:00' → server-local (likely UTC on Vercel) → wrong records.
-// Fix: always append +05:30 so Supabase understands IST.
-const istStart = (d: string) => `${d}T00:00:00+05:30`;
-const istEnd   = (d: string) => `${d}T23:59:59+05:30`;
-
 // BUG FIX 4: fmtDate — new Date('YYYY-MM-DD') parses as UTC midnight.
 // In IST, UTC midnight = 5:30 AM → date shifts back 1 day in display.
 // Fix: parse manually as local date.

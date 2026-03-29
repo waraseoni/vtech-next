@@ -44,7 +44,7 @@ Be concise with your outputs. Do not return markdown that cannot be read well. U
     // Convert past string history to content array (optional depending on how complex)
     // For simplicity and to avoid functionCall prompt injection mismatch, we pass the user's latest query
     // and rely on System Instruction for personality.
-    let formattedHistory = messages.slice(0, -1).map(msg => ({
+    const formattedHistory = messages.slice(0, -1).map(msg => ({
         role: msg.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: msg.content }]
     }));

@@ -100,7 +100,7 @@ export default function MechanicLedgerPage() {
     const entries: LedgerEntry[] = [];
     let runningBalance = opening;
     let totalEarned = 0, totalCommission = 0, totalAdvance = 0;
-    let currentDate = parseISTDate(fromDate);
+    const currentDate = parseISTDate(fromDate);
     const endDate = parseISTDate(toDate);
 
     while (currentDate <= endDate) {
@@ -194,7 +194,7 @@ export default function MechanicLedgerPage() {
   const exportExcel = () => {
     if (!mechanic) return;
     const name = [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ");
-    let html = `<table border="1">
+    const html = `<table border="1">
       <tr><th colspan="6" style="text-align:center">${name} - Daily Ledger</th></tr>
       <tr><th colspan="6" style="text-align:center">${fromDate} to ${toDate}</th></tr>
       <tr><th>Date</th><th>Status</th><th>Earned</th><th>Commission</th><th>Advance</th><th>Running Balance</th></tr>

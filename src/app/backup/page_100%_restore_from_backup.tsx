@@ -241,7 +241,7 @@ export default function BackupPage() {
         const fixRules = AUTO_FIX_FK[table] || [];
         const rows = (rawRows as Record<string, unknown>[])
           .map(row => {
-            let r: Record<string, unknown> = { ...row };
+            const r: Record<string, unknown> = { ...row };
             // Strip generated columns
             genCols.forEach(col => delete r[col]);
             // Fix invalid FK values

@@ -60,7 +60,7 @@ If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). O
         });
 
         const responseMessage = response.choices[0]?.message;
-        let content = responseMessage?.content || "";
+        const content = responseMessage?.content || "";
         let toolCalls = responseMessage?.tool_calls;
 
         // --- FALLBACK: Handle Textual Tool Calls (<function=...>) ---

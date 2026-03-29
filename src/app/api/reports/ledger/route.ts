@@ -161,7 +161,7 @@ export async function GET(request: Request) {
       ...(clientSalesRaw || []).map((s: any) => s.id),
     ];
 
-    let saleItemsMap: Record<number, any[]> = {};
+    const saleItemsMap: Record<number, any[]> = {};
     if (allSaleIds.length > 0) {
       const { data: saleItems } = await supabase
         .from('direct_sale_items')

@@ -188,7 +188,7 @@ export default function ProductDetailPage() {
               reference: s.sale_code, type: "Direct Sale",
               client_name: cMap.get(s.client_id) || "Walk-in",
               qty: item.qty, price: item.price, total: item.qty * item.price,
-              link: `/direct-sales/${s.id}`,
+              link: `/direct-sales/${s.id}/view`,
             });
           });
         }

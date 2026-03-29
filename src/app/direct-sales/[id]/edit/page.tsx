@@ -27,7 +27,7 @@ export default function EditSalePage() {
               Direct Sales
             </Link>
             <span className="text-slate-800">›</span>
-            <Link href={`/direct-sales/${saleId}`} className="hover:text-slate-500 transition-colors">
+            <Link href={`/direct-sales/${saleId}/view`} className="hover:text-slate-500 transition-colors">
               #{saleId}
             </Link>
             <span className="text-slate-800">›</span>
@@ -38,7 +38,7 @@ export default function EditSalePage() {
             <div className="flex items-start gap-4">
               {/* Back button */}
               <Link
-                href={`/direct-sales/${saleId}`}
+                href={`/direct-sales/${saleId}/view`}
                 className="mt-1 p-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] rounded-xl text-slate-500 hover:text-slate-300 transition-all flex-shrink-0"
               >
                 <ArrowLeft size={16} />
@@ -62,7 +62,7 @@ export default function EditSalePage() {
 
             {/* View Invoice shortcut */}
             <Link
-              href={`/direct-sales/${saleId}`}
+              href={`/direct-sales/${saleId}/view`}
               className="flex items-center gap-1.5 px-4 py-2.5 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-extrabold transition-all"
             >
               <ShoppingBag size={13} /> View Invoice

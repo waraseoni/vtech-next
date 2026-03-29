@@ -111,7 +111,7 @@ if (txnErr || !txnData || txnData.length === 0) {
         .eq("transaction_id", txn.id);
 
       const serviceIds = (svcData || []).map((s: any) => s.service_id).filter(Boolean);
-      let serviceNames: Record<number, string> = {};
+      const serviceNames: Record<number, string> = {};
       if (serviceIds.length > 0) {
         const { data: services } = await supabase.from("service_list").select("id, name").in("id", serviceIds);
         if (services) services.forEach((s: any) => { serviceNames[s.id] = s.name; });
@@ -129,7 +129,7 @@ if (txnErr || !txnData || txnData.length === 0) {
         .eq("transaction_id", txn.id);
 
       const productIds = (prodData || []).map((p: any) => p.product_id).filter(Boolean);
-      let productNames: Record<number, string> = {};
+      const productNames: Record<number, string> = {};
       if (productIds.length > 0) {
         const { data: products } = await supabase.from("product_list").select("id, name").in("id", productIds);
         if (products) products.forEach((p: any) => { productNames[p.id] = p.name; });

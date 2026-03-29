@@ -35,7 +35,7 @@ function numberToWords(num: number): string {
   let numStr = Math.floor(num).toString();
   
   while (numStr.length > 0) {
-    let chunk = parseInt(numStr.slice(-3));
+    const chunk = parseInt(numStr.slice(-3));
     const numStrLen = numStr.length;
     
     if (chunk < 20) {

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
-import { Search, Loader2, Printer, ChevronLeft, ChevronRight, Download, Calendar } from "lucide-react";
+import { Loader2, Printer, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 
 import { todayIST, formatIST, parseISTDate } from "@/lib/dateUtils";
 
@@ -50,8 +50,8 @@ export default function DailyServiceReportPage() {
         .order("date_created", { ascending: true });
       if (error) throw error;
       setJobs((data || []) as Job[]);
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
     }
     setLoading(false);
   }, [date]);
