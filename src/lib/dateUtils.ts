@@ -47,19 +47,21 @@ export const toLocalStr = (date: Date): string => {
   }).format(date);
 };
 
-export const startOfMonthIST = (date: Date = new Date()): string => {
-  const istDate = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-  const y = istDate.getFullYear();
-  const m = istDate.getMonth();
-  return `${y}-${String(m + 1).padStart(2, "0")}-01`;
+export const startOfMonthIST = (date?: Date): string => {
+  const todayStr = date 
+    ? new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(date)
+    : todayIST();
+  const [y, m] = todayStr.split("-");
+  return `${y}-${m}-01`;
 };
 
-export const endOfMonthIST = (date: Date = new Date()): string => {
-  const istDate = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-  const y = istDate.getFullYear();
-  const m = istDate.getMonth();
-  const lastDay = new Date(y, m + 1, 0).getDate();
-  return `${y}-${String(m + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+export const endOfMonthIST = (date?: Date): string => {
+  const todayStr = date 
+    ? new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(date)
+    : todayIST();
+  const [y, m] = todayStr.split("-");
+  const lastDay = new Date(Number(y), Number(m), 0).getDate();
+  return `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
 };
 
 export const parseISTDate = (dateStr: string): Date => {
