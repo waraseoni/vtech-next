@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Printer, ChevronLeft, ChevronRight, Calendar, TrendingUp, TrendingDown, DollarSign, ShoppingCart, Receipt } from "lucide-react";
-
+import {
+  Loader2, Printer, ChevronLeft, ChevronRight, Calendar,
+  TrendingUp, TrendingDown, DollarSign, ShoppingCart, Receipt
+} from "lucide-react";
 import { todayIST, parseISTDate } from "@/lib/dateUtils";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -39,19 +41,18 @@ export default function YearlyReportPage() {
     try {
       const startDate = `${year}-01-01`;
       const endDate = `${year}-12-31`;
-
       const from = `${year}-01-01T00:00:00`;
       const to = `${year}-12-31T23:59:59`;
 
       const [jobsRes, salesRes, paymentsRes, expensesRes] = await Promise.all([
-        supabase.from("transaction_list").select("id, total, date_created")
-          .eq("delete_flag", 0).in("status", [3, 5]).gte("date_created", from).lte("date_created", to),
+        supabase.from("transaction_list").select("id, amount, date_created")
+          .eq("del_status", 0).in("status", [3, 5]).gte("date_created", from).lte("date_created", to),
         supabase.from("direct_sales").select("id, total_amount, date_created")
           .gte("date_created", from).lte("date_created", to),
         supabase.from("client_payments").select("amount, discount, payment_date")
           .gte("payment_date", startDate).lte("payment_date", endDate),
-        supabase.from("expense_list").select("amount, expense_date")
-          .gte("expense_date", startDate).lte("expense_date", endDate),
+        supabase.from("expense_list").select("amount, date_created")
+          .gte("date_created", from).lte("date_created", to),
       ]);
 
       if (jobsRes.error) throw jobsRes.error;
@@ -65,7 +66,7 @@ export default function YearlyReportPage() {
       const expenses = expensesRes.data || [];
 
       const jobsCount = jobs.length;
-      const jobsAmount = jobs.reduce((s, j) => s + (j.total || 0), 0);
+      const jobsAmount = jobs.reduce((s, j) => s + (j.amount || 0), 0);
       const salesCount = sales.length;
       const salesAmount = sales.reduce((s, s_) => s + (s_.total_amount || 0), 0);
       const paymentsReceived = payments.reduce((s, p) => s + (p.amount || 0), 0);
@@ -80,20 +81,31 @@ export default function YearlyReportPage() {
       const monthlyExpenses: number[] = Array(12).fill(0);
 
       jobs.forEach(j => {
-        const m = parseISTDate(j.date_created.slice(0, 10)).getMonth();
-        monthlyJobs[m] += j.total || 0;
+        const d = j.date_created?.slice(0, 10);
+        if (d) {
+          const m = parseISTDate(d).getMonth();
+          monthlyJobs[m] += j.amount || 0;
+        }
       });
       sales.forEach(s => {
-        const m = parseISTDate(s.date_created.slice(0, 10)).getMonth();
-        monthlySales[m] += s.total_amount || 0;
+        const d = s.date_created?.slice(0, 10);
+        if (d) {
+          const m = parseISTDate(d).getMonth();
+          monthlySales[m] += s.total_amount || 0;
+        }
       });
       payments.forEach(p => {
-        const m = parseISTDate(p.payment_date).getMonth();
-        monthlyPayments[m] += (p.amount || 0) + (p.discount || 0);
+        if (p.payment_date) {
+          const m = parseISTDate(p.payment_date).getMonth();
+          monthlyPayments[m] += (p.amount || 0) + (p.discount || 0);
+        }
       });
       expenses.forEach(e => {
-        const m = parseISTDate(e.expense_date).getMonth();
-        monthlyExpenses[m] += e.amount || 0;
+        if (e.date_created) {
+          const d = e.date_created.slice(0, 10);
+          const m = parseISTDate(d).getMonth();
+          monthlyExpenses[m] += e.amount || 0;
+        }
       });
 
       setStats({
@@ -169,36 +181,31 @@ export default function YearlyReportPage() {
     setTimeout(() => { popup.print(); setTimeout(() => popup.close(), 300); }, 300);
   };
 
-  const maxMonthly = stats ? Math.max(
-    ...stats.monthlyJobs.map((v, i) => v + stats.monthlySales[i]),
-    ...stats.monthlyExpenses,
-    1
-  ) : 1;
-
   return (
-    <div className="space-y-4">
+    <div className="min-h-screen bg-[#161b27] text-slate-200 p-4 md:p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-black text-white">Yearly Report</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Financial summary for {year}</p>
+          <h1 className="text-2xl md:text-3xl font-black text-white">Yearly Report</h1>
+          <p className="text-sm text-slate-400 mt-1">Financial summary for {year}</p>
         </div>
       </div>
+      
       <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
+        <div className="px-5 py-4 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2">
             <button onClick={() => shiftYear(-1)} className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition">
-              <ChevronLeft size={16} />
+              <ChevronLeft size={18} />
             </button>
-            <div className="flex items-center gap-2 bg-[#0d1117] border border-[#21293d] rounded-xl px-5 py-2">
-              <Calendar size={14} className="text-slate-600" />
-              <span className="text-sm font-black text-slate-200">{year}</span>
+            <div className="flex items-center gap-2 bg-[#0d1117] border border-[#21293d] rounded-xl px-4 py-2">
+              <Calendar size={16} className="text-slate-500" />
+              <span className="text-sm font-bold text-white">{year}</span>
             </div>
             <button onClick={() => shiftYear(1)} disabled={year >= currentYear}
-              className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition disabled:opacity-30 disabled:cursor-not-allowed">
-              <ChevronRight size={16} />
+              className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition disabled:opacity-40 disabled:cursor-not-allowed">
+              <ChevronRight size={18} />
             </button>
             <button onClick={() => setYear(currentYear)} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:bg-[#1a2234] transition">
-              Current Year
+              This Year
             </button>
           </div>
           <button onClick={handlePrint} disabled={!stats}
@@ -207,38 +214,38 @@ export default function YearlyReportPage() {
           </button>
         </div>
 
-        {err && <div className="px-5 py-3 bg-red-500/10 border-b border-red-500/20 text-red-400 text-xs">{err}</div>}
+        {err && <div className="px-5 py-3 bg-red-500/10 border-b border-red-500/20 text-red-400 text-sm">{err}</div>}
 
         {loading ? (
-          <div className="px-5 py-12 text-center">
-            <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">Loading...</p>
+          <div className="px-5 py-16 text-center">
+            <Loader2 size={32} className="animate-spin text-blue-500 mx-auto mb-3" />
+            <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Loading...</p>
           </div>
         ) : stats ? (
           <>
-            <div className="px-5 py-4 grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
-              <StatCard icon={<Receipt size={14} />} label="Jobs" value={`${stats.jobsCount}`} sub={inr(stats.jobsAmount)} color="blue" />
-              <StatCard icon={<ShoppingCart size={14} />} label="Sales" value={`${stats.salesCount}`} sub={inr(stats.salesAmount)} color="purple" />
-              <StatCard icon={<DollarSign size={14} />} label="Income" value="" sub={inr(stats.jobsAmount + stats.salesAmount)} color="emerald" />
-              <StatCard icon={<TrendingUp size={14} />} label="Payments" value="" sub={inr(stats.paymentsReceived)} color="teal" />
-              <StatCard icon={<TrendingDown size={14} />} label="Discounts" value="" sub={inr(stats.discountsGiven)} color="red" />
-              <StatCard icon={<TrendingDown size={14} />} label="Expenses" value="" sub={inr(stats.expenses)} color="red" />
-              <StatCard icon={stats.profit >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />} label="Net Profit" value="" sub={inr(stats.profit)} color={stats.profit >= 0 ? "emerald" : "red"} />
+            <div className="p-5 grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
+              <StatCard icon={<Receipt size={16} />} label="Jobs" value={`${stats.jobsCount}`} sub={inr(stats.jobsAmount)} color="blue" />
+              <StatCard icon={<ShoppingCart size={16} />} label="Sales" value={`${stats.salesCount}`} sub={inr(stats.salesAmount)} color="purple" />
+              <StatCard icon={<DollarSign size={16} />} label="Income" value="" sub={inr(stats.jobsAmount + stats.salesAmount)} color="emerald" />
+              <StatCard icon={<TrendingUp size={16} />} label="Payments" value="" sub={inr(stats.paymentsReceived)} color="teal" />
+              <StatCard icon={<TrendingDown size={16} />} label="Discounts" value="" sub={inr(stats.discountsGiven)} color="amber" />
+              <StatCard icon={<TrendingDown size={16} />} label="Expenses" value="" sub={inr(stats.expenses)} color="rose" />
+              <StatCard icon={stats.profit >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />} label="Net Profit" value="" sub={inr(stats.profit)} color={stats.profit >= 0 ? "emerald" : "rose"} />
             </div>
 
             <div className="px-5 pb-5">
-              <div className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-3">Monthly Breakdown</div>
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Monthly Breakdown</div>
               <div className="overflow-x-auto">
-                <table className="w-full text-xs">
+                <table className="w-full text-sm">
                   <thead className="bg-[#111520]">
-                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                      <th className="text-left px-3 py-2">Month</th>
-                      <th className="text-right px-3 py-2">Jobs</th>
-                      <th className="text-right px-3 py-2">Sales</th>
-                      <th className="text-right px-3 py-2">Income</th>
-                      <th className="text-right px-3 py-2">Payments</th>
-                      <th className="text-right px-3 py-2">Expenses</th>
-                      <th className="text-right px-3 py-2">Profit</th>
+                    <tr className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      <th className="text-left px-4 py-3">Month</th>
+                      <th className="text-right px-4 py-3">Jobs</th>
+                      <th className="text-right px-4 py-3">Sales</th>
+                      <th className="text-right px-4 py-3">Income</th>
+                      <th className="text-right px-4 py-3">Payments</th>
+                      <th className="text-right px-4 py-3">Expenses</th>
+                      <th className="text-right px-4 py-3">Profit</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#1a2234]">
@@ -247,26 +254,26 @@ export default function YearlyReportPage() {
                       const profit = income - stats.monthlyExpenses[i];
                       return (
                         <tr key={m} className="hover:bg-white/[0.02]">
-                          <td className="px-3 py-2 font-bold text-slate-300">{m} {year}</td>
-                          <td className="px-3 py-2 text-right text-blue-400">{inr(stats.monthlyJobs[i])}</td>
-                          <td className="px-3 py-2 text-right text-purple-400">{inr(stats.monthlySales[i])}</td>
-                          <td className="px-3 py-2 text-right font-black text-emerald-400">{inr(income)}</td>
-                          <td className="px-3 py-2 text-right text-teal-400">{inr(stats.monthlyPayments[i])}</td>
-                          <td className="px-3 py-2 text-right text-red-400">{inr(stats.monthlyExpenses[i])}</td>
-                          <td className={`px-3 py-2 text-right font-black ${profit >= 0 ? "text-emerald-400" : "text-red-400"}`}>{inr(profit)}</td>
+                          <td className="px-4 py-3 font-bold text-slate-300">{m} {year}</td>
+                          <td className="px-4 py-3 text-right text-blue-400">{inr(stats.monthlyJobs[i])}</td>
+                          <td className="px-4 py-3 text-right text-purple-400">{inr(stats.monthlySales[i])}</td>
+                          <td className="px-4 py-3 text-right font-bold text-emerald-400">{inr(income)}</td>
+                          <td className="px-4 py-3 text-right text-teal-400">{inr(stats.monthlyPayments[i])}</td>
+                          <td className="px-4 py-3 text-right text-rose-400">{inr(stats.monthlyExpenses[i])}</td>
+                          <td className={`px-4 py-3 text-right font-bold ${profit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{inr(profit)}</td>
                         </tr>
                       );
                     })}
                   </tbody>
                   <tfoot className="bg-[#111520]">
-                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                      <td className="px-3 py-2">Total</td>
-                      <td className="px-3 py-2 text-right text-blue-400">{inr(stats.monthlyJobs.reduce((s, v) => s + v, 0))}</td>
-                      <td className="px-3 py-2 text-right text-purple-400">{inr(stats.monthlySales.reduce((s, v) => s + v, 0))}</td>
-                      <td className="px-3 py-2 text-right font-black text-emerald-400">{inr(stats.jobsAmount + stats.salesAmount)}</td>
-                      <td className="px-3 py-2 text-right text-teal-400">{inr(stats.paymentsReceived)}</td>
-                      <td className="px-3 py-2 text-right text-red-400">{inr(stats.expenses)}</td>
-                      <td className={`px-3 py-2 text-right font-black ${stats.profit >= 0 ? "text-emerald-400" : "text-red-400"}`}>{inr(stats.profit)}</td>
+                    <tr className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      <td className="px-4 py-3">Total</td>
+                      <td className="px-4 py-3 text-right text-blue-400">{inr(stats.monthlyJobs.reduce((s, v) => s + v, 0))}</td>
+                      <td className="px-4 py-3 text-right text-purple-400">{inr(stats.monthlySales.reduce((s, v) => s + v, 0))}</td>
+                      <td className="px-4 py-3 text-right font-bold text-emerald-400">{inr(stats.jobsAmount + stats.salesAmount)}</td>
+                      <td className="px-4 py-3 text-right text-teal-400">{inr(stats.paymentsReceived)}</td>
+                      <td className="px-4 py-3 text-right text-rose-400">{inr(stats.expenses)}</td>
+                      <td className={`px-4 py-3 text-right font-bold ${stats.profit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{inr(stats.profit)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -274,7 +281,7 @@ export default function YearlyReportPage() {
             </div>
           </>
         ) : (
-          <div className="px-5 py-12 text-center text-slate-600 text-sm">No data available.</div>
+          <div className="px-5 py-16 text-center text-slate-500 text-sm">No data available.</div>
         )}
       </div>
     </div>
@@ -286,20 +293,29 @@ function StatCard({ icon, label, value, sub, color }: {
   label: string;
   value: string;
   sub: string;
-  color: "blue" | "purple" | "emerald" | "teal" | "red";
+  color: "blue" | "purple" | "emerald" | "teal" | "amber" | "rose";
 }) {
   const colors = {
-    blue: "text-blue-400 bg-blue-500/8",
-    purple: "text-purple-400 bg-purple-500/8",
-    emerald: "text-emerald-400 bg-emerald-500/8",
-    teal: "text-teal-400 bg-teal-500/8",
-    red: "text-red-400 bg-red-500/8",
+    blue: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+    purple: "text-purple-400 bg-purple-500/10 border-purple-500/20",
+    emerald: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+    teal: "text-teal-400 bg-teal-500/10 border-teal-500/20",
+    amber: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+    rose: "text-rose-400 bg-rose-500/10 border-rose-500/20",
+  };
+  const textColors = {
+    blue: "text-blue-400",
+    purple: "text-purple-400",
+    emerald: "text-emerald-400",
+    teal: "text-teal-400",
+    amber: "text-amber-400",
+    rose: "text-rose-400",
   };
   return (
     <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
-      <div className={`inline-flex rounded-xl border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${colors[color]}`}>{label}</div>
-      <p className="mt-3 break-words text-lg font-black text-white">{value}</p>
-      {sub && <p className={`mt-1 text-sm font-bold ${color === "red" ? "text-red-400" : color === "emerald" ? "text-emerald-400" : color === "teal" ? "text-teal-400" : color === "purple" ? "text-purple-400" : "text-blue-400"}`}>{sub}</p>}
+      <div className={`inline-flex rounded-xl border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${colors[color]}`}>{label}</div>
+      <p className="mt-3 text-lg font-bold text-white">{value}</p>
+      {sub && <p className={`mt-1 text-sm font-semibold ${textColors[color]}`}>{sub}</p>}
     </div>
   );
 }

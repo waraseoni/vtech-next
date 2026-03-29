@@ -148,27 +148,27 @@ export default function CashFlowPage() {
     <div className="min-h-screen bg-[#161b27] text-slate-200 selection:bg-blue-500/30">
 
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden border-b border-[#21293d] dark:bg-gradient-to-b dark:from-[#111520] dark:to-[#0d1117] bg-gradient-to-b from-[#f1f5f9] to-[#e2e8f0]">
-        <div className="absolute -top-24 -left-20 w-64 h-64 dark:bg-blue-600/10 bg-blue-500/20 blur-[100px] rounded-full" />
-        <div className="absolute top-40 -right-20 w-80 h-80 dark:bg-emerald-600/5 bg-emerald-500/10 blur-[120px] rounded-full" />
+      <div className="relative overflow-hidden border-b border-[#21293d] bg-gradient-to-b from-[#111520] to-[#0d1117]">
+        <div className="absolute -top-24 -left-20 w-64 h-64 bg-blue-600/10 blur-[100px] rounded-full" />
+        <div className="absolute top-40 -right-20 w-80 h-80 bg-emerald-600/5 blur-[120px] rounded-full" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 relative z-10">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
               <div className="relative">
                 <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 animate-pulse" />
-                <div className="w-14 h-14 rounded-2xl dark:bg-[#111520] bg-white dark:border-[#21293d] border-[#cbd5e1] flex items-center justify-center shadow-2xl relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-[#111520] border border-[#21293d] flex items-center justify-center shadow-2xl relative z-10">
                   <Activity size={28} className="text-blue-400" />
                 </div>
               </div>
               <div>
-                <h1 className="text-3xl font-black dark:text-white text-slate-800 tracking-tight flex items-center gap-3">
+                <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
                   Cash Flow Insights
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full dark:bg-emerald-500/10 bg-emerald-100 dark:text-emerald-400 text-emerald-700 border dark:border-emerald-500/20 border-emerald-200 uppercase tracking-widest">Live</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-widest">Live</span>
                 </h1>
                 <div className="flex items-center gap-2 mt-1.5">
                   <Calendar size={13} className="text-slate-500 shrink-0" />
-                  <p className="dark:text-slate-400 text-slate-600 text-sm font-semibold truncate">{dateLabel}</p>
+                  <p className="text-slate-400 text-sm font-semibold truncate">{dateLabel}</p>
                 </div>
               </div>
             </div>
