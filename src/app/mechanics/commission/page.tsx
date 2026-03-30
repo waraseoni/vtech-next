@@ -31,6 +31,8 @@ function CommissionContent() {
   const [loading,    setLoading]    = useState(true);
   const [rows,       setRows]       = useState<CommRow[]>([]);
   const [mechanics,  setMechanics]  = useState<{ id: number; name: string }[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
 
   // URL sync helpers
   const setMonth = (m: string) => {
@@ -50,65 +52,77 @@ function CommissionContent() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Date range — exact same calculation as 9KB file
       const from = `${month}-01T00:00:00`;
       const toDate = new Date(month + "-01");
       toDate.setMonth(toDate.getMonth() + 1);
       const to = toDate.toISOString().split("T")[0] + "T23:59:59";
 
-      // Fetch mechanics
-      const { data: mechData } = await supabase
-        .from("mechanic_list")
-        .select("id, firstname, middlename, lastname")
-        .eq("delete_flag", 0)
-        .order("firstname");
+      // 1. Parallel fetch: Mechanics and Transactions
+      const [mechRes, txnRes] = await Promise.all([
+        supabase
+          .from("mechanic_list")
+          .select("id, firstname, middlename, lastname")
+          .eq("delete_flag", 0)
+          .order("firstname"),
+        (() => {
+          let q = supabase
+            .from("transaction_list")
+            .select("id, job_id, code, date_created, mechanic_id, mechanic_commission_amount")
+            .gte("date_created", from)
+            .lte("date_created", to);
+          if (mechanicId !== "all") q = q.eq("mechanic_id", parseInt(mechanicId));
+          return q;
+        })()
+      ]);
+
+      const mechData = mechRes.data || [];
+      const txns = txnRes.data || [];
 
       setMechanics(
-        (mechData || []).map((m) => ({
+        mechData.map((m) => ({
           id: m.id,
           name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
         }))
       );
 
-      // Fetch transactions — NO server-side commission filter (exact 9KB logic)
-      let q = supabase
-        .from("transaction_list")
-        .select("id, job_id, code, date_created, mechanic_id, mechanic_commission_amount")
-        .gte("date_created", from)
-        .lte("date_created", to);
-      if (mechanicId !== "all") q = q.eq("mechanic_id", parseInt(mechanicId));
-      const { data: txns } = await q;
+      // 2. Batch fetch ALL services for these transactions
+      const txnIds = txns.map(t => t.id);
+      const svcMap: Record<number, number> = {};
+      if (txnIds.length > 0) {
+        // PostgREST limits IN clause, but for a month's worth of jobs, it's usually fine (<1000)
+        const { data: svcs } = await supabase
+          .from("transaction_services")
+          .select("transaction_id, price")
+          .in("transaction_id", txnIds);
+        
+        svcs?.forEach(s => {
+          svcMap[s.transaction_id] = (svcMap[s.transaction_id] || 0) + (s.price || 0);
+        });
+      }
 
-      // Sequential enrichment — exact 9KB logic (parallel/Promise.all had issues)
-      const enriched: CommRow[] = [];
-      for (const t of txns || []) {
-        const mech = (mechData || []).find((m) => m.id === t.mechanic_id);
+      // 3. Map everything in memory — NO more awaits in loop
+      const enriched: CommRow[] = txns.map((t) => {
+        const mech = mechData.find((m) => m.id === t.mechanic_id);
         const mechName = mech
           ? [mech.firstname, mech.middlename, mech.lastname].filter(Boolean).join(" ")
           : "Unknown";
 
-        const { data: svcData } = await supabase
-          .from("transaction_services")
-          .select("price")
-          .eq("transaction_id", t.id);
-
-        const svcAmt = svcData?.reduce((s, r) => s + (r.price || 0), 0) || 0;
-
-        enriched.push({
+        return {
           id:                         t.id,
           job_id:                     t.job_id || String(t.id),
           code:                       t.code || null,
           date_created:               t.date_created,
           mechanic_id:                t.mechanic_id,
           m_name:                     mechName,
-          service_amount:             svcAmt,
+          service_amount:             svcMap[t.id] || 0,
           mechanic_commission_amount: t.mechanic_commission_amount || 0,
-        });
-      }
+        };
+      });
 
-      // Sort newest first + client-side zero filter (safe — no Supabase type issues)
+      // Sort newest first + filter zero commission (as per original logic)
       enriched.sort((a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime());
       setRows(enriched.filter((r) => r.mechanic_commission_amount > 0));
+      setCurrentPage(1); // Reset to first page on new data
     } catch (e) {
       console.error(e);
     } finally {
@@ -187,6 +201,15 @@ function CommissionContent() {
             ))}
           </select>
 
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Rows:</span>
+          <select value={rowsPerPage} onChange={(e) => { setRowsPerPage(parseInt(e.target.value)); setCurrentPage(1); }}
+            className="px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500 transition-all">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+
           <span className="ml-auto text-sm font-black text-white hidden sm:block">{monthLabel}</span>
         </div>
       </div>
@@ -225,51 +248,75 @@ function CommissionContent() {
             <p className="text-sm font-bold">No commission records for this period</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-[#111520]">
-                  {["#", "Date", "Job ID / Code", "Staff", "Service Amt", "Commission", ""].map((h) => (
-                    <th key={h} className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left last:text-center">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r, i) => (
-                  <tr key={r.id} className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors">
-                    <td className="px-3 py-2.5 text-xs text-slate-500">{i + 1}</td>
-                    <td className="px-3 py-2.5 text-xs text-slate-400 whitespace-nowrap">
-                      {new Date(r.date_created).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div className="text-xs font-bold text-blue-400">#{r.job_id}</div>
-                      {r.code && <div className="text-[10px] text-slate-600">{r.code}</div>}
-                    </td>
-                    <td className="px-3 py-2.5 text-xs font-bold text-slate-200">{r.m_name}</td>
-                    <td className="px-3 py-2.5 text-xs text-right text-slate-300">{inr(r.service_amount)}</td>
-                    <td className="px-3 py-2.5 text-xs text-right font-black text-emerald-400">{inr(r.mechanic_commission_amount)}</td>
-                    <td className="px-3 py-2.5 text-center">
-                      <a href={`/jobs/${r.id}/view`}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 rounded-lg text-xs font-bold transition-all">
-                        <Eye size={11} /> View
-                      </a>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-[#111520]">
+                    {["#", "Date", "Job ID / Code", "Staff", "Service Amt", "Commission", ""].map((h) => (
+                      <th key={h} className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left last:text-center">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-blue-500/30 bg-blue-500/5">
-                  <td colSpan={5} className="px-3 py-3 text-xs font-black text-slate-400 text-right">
-                    Total Commission ({rows.length} jobs):
-                  </td>
-                  <td className="px-3 py-3 text-sm text-right font-black text-emerald-400">{inr(totalComm)}</td>
-                  <td />
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {rows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((r, i) => (
+                    <tr key={r.id} className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors">
+                      <td className="px-3 py-2.5 text-xs text-slate-500">{i + 1}</td>
+                      <td className="px-3 py-2.5 text-xs text-slate-400 whitespace-nowrap">
+                        {new Date(r.date_created).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <div className="text-xs font-bold text-blue-400">#{r.job_id}</div>
+                        {r.code && <div className="text-[10px] text-slate-600">{r.code}</div>}
+                      </td>
+                      <td className="px-3 py-2.5 text-xs font-bold text-slate-200">{r.m_name}</td>
+                      <td className="px-3 py-2.5 text-xs text-right text-slate-300">{inr(r.service_amount)}</td>
+                      <td className="px-3 py-2.5 text-xs text-right font-black text-emerald-400">{inr(r.mechanic_commission_amount)}</td>
+                      <td className="px-3 py-2.5 text-center">
+                        <a href={`/jobs/${r.id}/view`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 rounded-lg text-xs font-bold transition-all">
+                          <Eye size={11} /> View
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-blue-500/30 bg-blue-500/5">
+                    <td colSpan={5} className="px-3 py-3 text-xs font-black text-slate-400 text-right">
+                      Total Commission ({rows.length} jobs):
+                    </td>
+                    <td className="px-3 py-3 text-sm text-right font-black text-emerald-400">{inr(totalComm)}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            {/* Pagination Footer */}
+            {rows.length > rowsPerPage && (
+              <div className="bg-[#111520] px-5 py-3 flex items-center justify-between border-t border-[#21293d] flex-wrap gap-3">
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Showing {(currentPage - 1) * rowsPerPage + 1} to {Math.min(currentPage * rowsPerPage, rows.length)} of {rows.length} records
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}
+                    className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                    <ChevronLeft size={16} />
+                  </button>
+                  <div className="text-xs font-black text-slate-400 uppercase tracking-widest px-3 border-x border-[#21293d] min-w-[120px] text-center">
+                    Page {currentPage} of {Math.ceil(rows.length / rowsPerPage)}
+                  </div>
+                  <button onClick={() => setCurrentPage(prev => Math.min(Math.ceil(rows.length / rowsPerPage), prev + 1))} disabled={currentPage === Math.ceil(rows.length / rowsPerPage)}
+                    className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

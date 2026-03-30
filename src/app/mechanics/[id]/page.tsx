@@ -26,6 +26,7 @@ type Job = {
   id: number;
   job_id: string;
   item: string;
+  amount: number;
   mechanic_commission_amount: number;
   date_updated: string;
   status: number;
@@ -98,6 +99,10 @@ export default function MechanicDetailPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [advances, setAdvances] = useState<Advance[]>([]);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
+  
+  // Pagination
+  const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Stats
   const [stats, setStats] = useState({
@@ -137,7 +142,7 @@ export default function MechanicDetailPage() {
     // Fetch jobs for this mechanic
     const { data: jobsData } = await supabase
       .from("transaction_list")
-      .select("id, job_id, item, mechanic_commission_amount, date_updated, status")
+      .select("id, job_id, item, amount, mechanic_commission_amount, date_updated, status")
       .eq("mechanic_id", id)
       .in("status", [3, 5])
       .gte("date_updated", fromTs)
@@ -380,49 +385,90 @@ export default function MechanicDetailPage() {
           ) : (
             <>
               {/* Work History Tab */}
-              {activeTab === "work" && (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-[#111520]">
-                      <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                        <th className="text-left px-4 py-3">Date</th>
-                        <th className="text-left px-4 py-3">Job ID</th>
-                        <th className="text-left px-4 py-3">Item/Service</th>
-                        <th className="text-right px-4 py-3">Commission</th>
-                        <th className="text-center px-4 py-3">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#1a2234]">
-                      {jobs.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="px-4 py-12 text-center text-slate-600">
-                            <Wrench size={32} className="mx-auto mb-2 text-slate-700"/>
-                            <p>No work history found</p>
-                          </td>
+              {activeTab === "work" && (() => {
+                const totalJobPages = Math.ceil(jobs.length / itemsPerPage);
+                const paginatedJobs = itemsPerPage === -1 ? jobs : jobs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+                return (
+                <div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-[#111520]">
+                        <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                          <th className="text-left px-4 py-3">Date</th>
+                          <th className="text-left px-4 py-3">Job ID</th>
+                          <th className="text-left px-4 py-3">Item/Service</th>
+                          <th className="text-right px-4 py-3">Total Amount</th>
+                          <th className="text-right px-4 py-3">Commission</th>
+                          <th className="text-center px-4 py-3">Status</th>
                         </tr>
-                      ) : jobs.map(job => (
-                        <tr key={job.id} className="hover:bg-white/[0.02]">
-                          <td className="px-4 py-3 text-slate-400 text-xs">
-                            {new Date(job.date_updated).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                          </td>
-                          <td className="px-4 py-3">
-                            <Link href={`/jobs/${job.id}`} className="font-bold text-blue-400 hover:text-blue-300 no-underline">
-                              {job.job_id}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3 text-slate-400">{job.item}</td>
-                          <td className="px-4 py-3 text-right font-bold text-emerald-400">{inr(job.mechanic_commission_amount)}</td>
-                          <td className="px-4 py-3 text-center">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400">
-                              <CheckCircle size={9}/> Completed
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-[#1a2234]">
+                        {paginatedJobs.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="px-4 py-12 text-center text-slate-600">
+                              <Wrench size={32} className="mx-auto mb-2 text-slate-700"/>
+                              <p>No work history found</p>
+                            </td>
+                          </tr>
+                        ) : paginatedJobs.map(job => (
+                          <tr key={job.id} className="hover:bg-white/[0.02]">
+                            <td className="px-4 py-3 text-slate-400 text-xs">
+                              {new Date(job.date_updated).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Link href={`/jobs/${job.id}`} className="font-bold text-blue-400 hover:text-blue-300 no-underline">
+                                {job.job_id}
+                              </Link>
+                            </td>
+                            <td className="px-4 py-3 text-slate-400">{job.item}</td>
+                            <td className="px-4 py-3 text-right font-bold text-white">{inr(job.amount || 0)}</td>
+                            <td className="px-4 py-3 text-right font-bold text-emerald-400">{inr(job.mechanic_commission_amount)}</td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400">
+                                <CheckCircle size={9}/> Completed
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {totalJobPages > 1 && (
+                    <div className="flex items-center justify-between px-4 py-4 border-t border-[#21293d]">
+                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <span>Show</span>
+                        <select value={itemsPerPage} onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }} className="bg-[#0d1117] border border-[#21293d] rounded-lg px-2 py-1.5 text-white text-xs font-bold">
+                          <option value={10}>10</option>
+                          <option value={25}>25</option>
+                          <option value={50}>50</option>
+                          <option value={-1}>All</option>
+                        </select>
+                        <span>of {jobs.length} entries</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs font-bold text-slate-400 hover:bg-[#1a2234] disabled:opacity-40 disabled:cursor-not-allowed">
+                          <ChevronLeft size={14} />
+                        </button>
+                        {Array.from({ length: Math.min(5, totalJobPages) }, (_, i) => {
+                          let pageNum: number;
+                          if (totalJobPages <= 5) pageNum = i + 1;
+                          else if (currentPage <= 3) pageNum = i + 1;
+                          else if (currentPage >= totalJobPages - 2) pageNum = totalJobPages - 4 + i;
+                          else pageNum = currentPage - 2 + i;
+                          return (
+                            <button key={pageNum} onClick={() => setCurrentPage(pageNum)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${currentPage === pageNum ? 'bg-blue-600 text-white' : 'bg-[#0d1117] border border-[#21293d] text-slate-400 hover:bg-[#1a2234]'}`}>
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                        <button onClick={() => setCurrentPage(p => Math.min(totalJobPages, p + 1))} disabled={currentPage === totalJobPages} className="px-3 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs font-bold text-slate-400 hover:bg-[#1a2234] disabled:opacity-40 disabled:cursor-not-allowed">
+                          <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              )})()}
 
               {/* Payment Ledger Tab */}
               {activeTab === "ledger" && (
