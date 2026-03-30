@@ -248,12 +248,10 @@ export default function ViewClientProfile() {
         .order('payment_date', { ascending: false });
       setPayments(pd || []);
 
-      // 5. Active Loans
       const { data: ld } = await supabase
         .from('client_loans')
         .select('*')
         .eq('client_id', clientId)
-        .eq('status', 1)
         .order('loan_date', { ascending: false });
 
       const enrichedLoans: Loan[] = await Promise.all(
@@ -559,10 +557,10 @@ export default function ViewClientProfile() {
           <div className="rounded-2xl border overflow-hidden theme-card">
             <div className="px-5 py-4 border-b flex items-center justify-between theme-panel-2">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <Banknote size={16} className="text-amber-400" /> Active Loans
+                <Banknote size={16} className="text-amber-400" /> Loan History
               </h2>
               <span className="text-[11px] font-semibold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-0.5 rounded-full">
-                {loans.length} Active
+                {loans.filter(l => l.status === 1).length} Active · {loans.filter(l => l.status === 0).length} Closed
               </span>
             </div>
             <div className="overflow-x-auto">
@@ -583,7 +581,11 @@ export default function ViewClientProfile() {
                       <td className={`${tdCls} text-red-400 font-black`}>₹{fmt(loan.balance || 0)}</td>
                       <td className={tdCls}>₹{fmt(loan.emi_amount)}</td>
                       <td className={tdCls}>
-                        {(loan.balance ?? 0) <= 0 ? (
+                        {loan.status === 0 ? (
+                          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-slate-500/20 text-slate-400 border border-slate-500/30">
+                            Closed
+                          </span>
+                        ) : (loan.balance ?? 0) <= 0 ? (
                           <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                             ✓ Cleared
                           </span>

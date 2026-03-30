@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     supabase.from("transaction_list").select("client_name, amount").eq("status", 5),
     supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids),
     supabase.from("client_payments").select("client_id, amount, discount").in("client_id", ids),
-    supabase.from("client_loans").select("client_id, total_payable").eq("status", 1).in("client_id", ids),
+    supabase.from("client_loans").select("client_id, total_payable").in("client_id", ids),
   ]);
 
   const toNum = (v: unknown) => { const x = Number(v); return isNaN(x) ? 0 : x; };

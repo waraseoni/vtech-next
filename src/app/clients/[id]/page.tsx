@@ -101,8 +101,8 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
       const { data: r } = await supabase.from("transaction_list").select("*").eq("client_name", String(clientId)).order("date_created", { ascending: false });
       setRepairs((r || []) as Repair[]);
 
-      // Payments (non-loan)
-      const { data: p } = await supabase.from("client_payments").select("*").eq("client_id", clientId).is("loan_id", null).order("payment_date", { ascending: false });
+      // Payments (all)
+      const { data: p } = await supabase.from("client_payments").select("*").eq("client_id", clientId).order("payment_date", { ascending: false });
       setPayments((p || []) as Payment[]);
 
       // Loans
@@ -125,10 +125,13 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
   const totalBilled = repairBilled + saleBilled;
   const totalPaid = payments.reduce((s, p) => s + toNum(p.amount) + toNum(p.discount), 0);
   const serviceBalance = (toNum(client?.opening_balance) || 0) + repairBilled - totalPaid;
-  const loanGiven = loans.filter(l => l.status === 1).reduce((s, l) => s + toNum(l.total_payable), 0);
+  const loanGiven = loans.reduce((s, l) => s + toNum(l.total_payable), 0);
   const loanPaid = payments.filter(p => p.loan_id).reduce((s, p) => s + toNum(p.amount) + toNum(p.discount), 0);
-  const loanBalance = loanGiven - loanPaid;
-  const netBalance = (toNum(client?.opening_balance) || 0) + repairBilled + saleBilled + loanGiven - totalPaid - loanPaid;
+  const loanBalance = loans.filter(l => l.status === 1).reduce((s, l) => {
+    const p = payments.filter(pay => pay.loan_id === l.id).reduce((acc, pay) => acc + toNum(pay.amount) + toNum(pay.discount), 0);
+    return s + (toNum(l.total_payable) - p);
+  }, 0);
+  const netBalance = (toNum(client?.opening_balance) || 0) + repairBilled + saleBilled + loanGiven - totalPaid;
   const monthlyEmi = loans.filter(l => l.status === 1).reduce((s, l) => s + toNum(l.emi_amount), 0);
 
   // Filtered repairs by date
