@@ -609,6 +609,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <p className="text-xs font-black text-white truncate">{displayName}</p>
                     <p className="text-[9px] text-blue-400 font-bold uppercase tracking-wider">{profile?.role}</p>
                   </div>
+                  <button onClick={toggleTheme} className="p-1.5 text-slate-600 hover:text-amber-400 transition-colors" title="Toggle Theme">
+                    {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+                  </button>
                   <button onClick={handleLogout} className="p-1.5 text-slate-600 hover:text-red-400 transition-colors" title="Logout">
                     <LogOut size={14} />
                   </button>
@@ -624,7 +627,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* ── TOPBAR ── */}
           <header className="sticky top-0 z-40 h-14 theme-topbar backdrop-blur border-b border-[#21293d] flex items-center justify-between px-4 gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              {/* Mobile hamburger → opens full drawer */}
+              {/* Mobile: hamburger menu */}
               {isMobile === true && (
                 <button
                   onClick={() => setDrawerOpen(true)}
@@ -633,24 +636,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <Menu size={16} />
                 </button>
               )}
-              {isMobile === true && (
+              {/* Desktop: sidebar toggle */}
+              {isMobile === false && (
                 <button
-                  onClick={() => router.back()}
-                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-xl text-slate-500 hover:text-white transition-all"
+                  onClick={() => setDrawerOpen(true)}
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all hidden lg:flex"
                 >
-                  <ArrowLeft size={15} />
+                  <Menu size={16} />
                 </button>
               )}
-              {isMobile === true && (
-                <button
-                  onClick={() => router.refresh()}
-                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-xl text-slate-500 hover:text-emerald-400 transition-all"
-                  title="Refresh page"
-                >
-                  <RefreshCw size={15} />
-                </button>
-              )}
-              <div className="flex-1 min-w-0">
+              <div className={isMobile === true ? "w-full px-2" : "flex-1 min-w-0"}>
                 <NavbarSearch />
               </div>
             </div>
@@ -677,14 +672,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </Link>
             )}
 
-            {/* Theme toggle */}
-            <button
-              onClick={toggleTheme}
-              className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-500 hover:text-white transition-all"
-              title={theme === "light" ? "Switch to Dark" : "Switch to Light"}
-            >
-              {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
-            </button>
+            {/* Theme toggle - desktop only */}
+            {isMobile === false && (
+              <button
+                onClick={toggleTheme}
+                className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-500 hover:text-white transition-all"
+                title={theme === "light" ? "Switch to Dark" : "Switch to Light"}
+              >
+                {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
+              </button>
+            )}
 
             {/* User dropdown */}
             <div className="relative flex-shrink-0">
