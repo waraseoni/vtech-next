@@ -9,14 +9,13 @@ import {
   Loader2, Pencil, Plus, Receipt, RotateCcw, Search, Trash2, X,
   Calendar, Filter, Users, DollarSign, CreditCard
 } from "lucide-react";
-import { todayIST, formatIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+import { todayIST, formatIST, startOfMonthIST, endOfMonthIST, parseISTDate } from "@/lib/dateUtils";
 
 type Client = { id: number; firstname: string; middlename: string | null; lastname: string; contact: string | null };
 type PaymentRow = { id: number; client_id: number; payment_date: string; amount: number; discount: number | null; payment_mode: string; remarks: string | null };
 type PaymentForm = { id: number | null; client_id: string; payment_date: string; amount: string; discount: string; payment_mode: string; remarks: string };
 type Toast = { type: "success" | "error"; msg: string };
 
-const ITEMS_PER_PAGE = 20;
 const istToday = todayIST();
 
 const fmtMoney = (value: number) => `₹${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -24,8 +23,8 @@ const fmtDate = (date: string) => formatIST(date.slice(0, 10), { day: "2-digit",
 const paymentCode = (id: number) => `PY-${String(id).padStart(4, "0")}`;
 const clientName = (c?: Client | null) => c ? [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ").trim() : "-";
 
-function getMonthRange(monthOffset: number) {
-  const d = new Date();
+function getMonthRange(monthOffset: number, baseDate?: string) {
+  const d = baseDate ? parseISTDate(baseDate) : new Date();
   d.setMonth(d.getMonth() + monthOffset);
   return { from: startOfMonthIST(d), to: endOfMonthIST(d) };
 }
@@ -48,6 +47,7 @@ export default function PaymentsPage() {
   const [form, setForm] = useState<PaymentForm>({ id: null, client_id: "", payment_date: istToday, amount: "", discount: "0", payment_mode: "Cash", remarks: "" });
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptPayment, setReceiptPayment] = useState<PaymentRow | null>(null);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); }, [toast]);
@@ -66,7 +66,7 @@ export default function PaymentsPage() {
     setLoading(true);
     try {
       const [{ data: cData, error: cErr }, { data: pData, error: pErr }] = await Promise.all([
-        supabase.from("client_list").select("id, firstname, middlename, lastname, contact").eq("del_status", 0).order("firstname"),
+        supabase.from("client_list").select("id, firstname, middlename, lastname, contact").eq("delete_flag", 0).order("firstname"),
         supabase.from("client_payments").select("*").order("payment_date", { ascending: false }).order("id", { ascending: false }).limit(1000),
       ]);
       if (cErr) throw cErr;
@@ -94,8 +94,9 @@ export default function PaymentsPage() {
     });
   }, [payments, fromDate, toDate, clientFilter, search, clientMap]);
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated = useMemo(() => filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [filtered, currentPage]);
+  const totalPages = itemsPerPage === -1 ? 1 : Math.ceil(filtered.length / itemsPerPage);
+  const paginated = useMemo(() => itemsPerPage === -1 ? filtered : filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), [filtered, currentPage, itemsPerPage]);
+  const handleItemsPerPage = (val: number) => { setItemsPerPage(val); setCurrentPage(1); };
 
   const totals = useMemo(() => filtered.reduce((a, p) => ({ amount: a.amount + p.amount, discount: a.discount + (p.discount || 0) }), { amount: 0, discount: 0 }), [filtered]);
 
@@ -131,7 +132,7 @@ export default function PaymentsPage() {
   };
 
   const viewReceipt = (p: PaymentRow) => { setReceiptPayment(p); setReceiptOpen(true); };
-  const applyMonth = (offset: number) => { const r = getMonthRange(offset); setFromDate(r.from); setToDate(r.to); setCurrentPage(1); };
+  const applyMonth = (offset: number) => { const r = getMonthRange(offset, fromDate); setFromDate(r.from); setToDate(r.to); setCurrentPage(1); };
   const reset = () => { const r = getMonthRange(0); setSearch(""); setClientFilter("all"); setFromDate(r.from); setToDate(r.to); setCurrentPage(1); };
 
   return (
@@ -212,12 +213,19 @@ export default function PaymentsPage() {
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
+          <button onClick={() => { setFromDate(istToday); setToDate(istToday); setCurrentPage(1); }} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all">Today</button>
           <button onClick={() => applyMonth(0)} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all">This Month</button>
+          <button onClick={() => { const d = new Date(fromDate); d.setDate(d.getDate() - 1); setFromDate(d.toISOString().split('T')[0]); setToDate(d.toISOString().split('T')[0]); setCurrentPage(1); }} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1">
+            <ChevronLeft size={14} /> Prev Day
+          </button>
+          <button onClick={() => { const d = new Date(toDate); d.setDate(d.getDate() + 1); setFromDate(d.toISOString().split('T')[0]); setToDate(d.toISOString().split('T')[0]); setCurrentPage(1); }} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1">
+            Next Day <ChevronRight size={14} />
+          </button>
           <button onClick={() => applyMonth(-1)} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1">
-            <ChevronLeft size={14} /> Prev
+            <ChevronLeft size={14} /> Prev Month
           </button>
           <button onClick={() => applyMonth(1)} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1">
-            Next <ChevronRight size={14} />
+            Next Month <ChevronRight size={14} />
           </button>
           <button onClick={reset} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1">
             <RotateCcw size={14} /> Reset
@@ -302,8 +310,15 @@ export default function PaymentsPage() {
 
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-4 py-4 border-t border-[#21293d]">
-                <div className="text-xs text-slate-500">
-                  {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <span>Show</span>
+                  <select value={itemsPerPage} onChange={(e) => handleItemsPerPage(Number(e.target.value))} className="bg-[#0d1117] border border-[#21293d] rounded-lg px-2 py-1.5 text-white text-xs font-bold">
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={-1}>All</option>
+                  </select>
+                  <span>of {filtered.length} entries</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}

@@ -338,7 +338,7 @@ function SidebarNav({
               <li><Link href="/reports/cash-flow"      className={subLinkCls(pathname === "/reports/cash-flow")}      onClick={onNavClick}><TrendingUp size={12} />Cash Flow</Link></li>
               <li><Link href="/reports/ledger"         className={subLinkCls(pathname === "/reports/ledger")}         onClick={onNavClick}><DollarSign size={12} />Business Ledger</Link></li>
               <li><Link href="/reports/yearly"         className={subLinkCls(pathname === "/reports/yearly")}         onClick={onNavClick}><Clock size={12} />Yearly Report</Link></li>
-              <li><Link href="/reports/client-payment" className={subLinkCls(pathname === "/reports/client-payment")} onClick={onNavClick}><CreditCard size={12} />Clients Payment</Link></li>
+
               <li><Link href="/reports/daily-sales"    className={subLinkCls(pathname === "/reports/daily-sales")}    onClick={onNavClick}><ShoppingCart size={12} />Daily Sales</Link></li>
               <li><Link href="/reports/daily-service"  className={subLinkCls(pathname === "/reports/daily-service")}  onClick={onNavClick}><Wrench size={12} />Daily Service</Link></li>
               <li><Link href="/reports/monthly-sales"   className={subLinkCls(pathname === "/reports/monthly-sales")}   onClick={onNavClick}><ShoppingCart size={12} />Monthly Sales</Link></li>
