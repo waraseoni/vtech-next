@@ -44,6 +44,24 @@ function NavbarSearch() {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
+  // Ctrl+K to open search
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        const input = document.querySelector('[data-search-input]') as HTMLInputElement;
+        if (input) input.focus();
+        setOpen(true);
+      }
+      if (e.key === "Escape") {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, []);
+
   const runSearch = useCallback(async (q: string) => {
     if (!q.trim()) { setResults([]); setOpen(false); return; }
     setLoading(true);
@@ -161,28 +179,33 @@ function NavbarSearch() {
   };
 
   return (
-    <div ref={wrapRef} className="relative max-w-sm w-full group">
+    <div ref={wrapRef} className="relative w-full group">
       {/* Input */}
       <Search size={14}
         className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-blue-400 transition-colors pointer-events-none z-10"/>
       {loading && (
         <Loader2 size={13}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 animate-spin pointer-events-none z-10"/>
+          className="absolute right-12 top-1/2 -translate-y-1/2 text-blue-400 animate-spin pointer-events-none z-10"/>
       )}
       {query && !loading && (
         <button onClick={() => { setQuery(""); setResults([]); setOpen(false); }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors z-10">
+          className="absolute right-12 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors z-10">
           <X size={13}/>
         </button>
       )}
       <input
         type="text"
         value={query}
+        data-search-input
         onChange={handleChange}
         onFocus={() => results.length > 0 && setOpen(true)}
-        placeholder="Search clients, jobs, products…"
-        className="w-full pl-9 pr-8 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-slate-300 placeholder:text-slate-700 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium"
+        placeholder="Search..."
+        className="w-full pl-9 pr-24 py-2.5 sm:py-2 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-slate-300 placeholder:text-slate-600 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium"
       />
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+        <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#1a2234] border border-[#21293d] text-[10px] font-medium text-slate-500">Ctrl</kbd>
+        <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-[#1a2234] border border-[#21293d] text-[10px] font-medium text-slate-500">K</kbd>
+      </div>
 
       {/* Dropdown Results */}
       {open && (
@@ -627,18 +650,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <RefreshCw size={15} />
                 </button>
               )}
-              {isMobile === true && (
-                <Link
-                  href="/ai"
-                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 rounded-xl text-purple-400"
-                  title="AI Assistant"
-                >
-                  <Sparkles size={15} />
-                </Link>
-              )}
-              <Suspense>
+              <div className="flex-1 min-w-0">
                 <NavbarSearch />
-              </Suspense>
+              </div>
             </div>
 
             {/* Refresh button — desktop */}

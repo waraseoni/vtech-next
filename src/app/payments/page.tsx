@@ -10,6 +10,7 @@ import {
   Calendar, Filter, Users, DollarSign, CreditCard
 } from "lucide-react";
 import { todayIST, formatIST, startOfMonthIST, endOfMonthIST, parseISTDate } from "@/lib/dateUtils";
+import { exportToCSV, printTable } from "@/lib/exportUtils";
 
 type Client = { id: number; firstname: string; middlename: string | null; lastname: string; contact: string | null };
 type PaymentRow = { id: number; client_id: number; payment_date: string; amount: number; discount: number | null; payment_mode: string; remarks: string | null };
@@ -104,6 +105,20 @@ export default function PaymentsPage() {
   const openEdit = (p: PaymentRow) => { setForm({ id: p.id, client_id: String(p.client_id), payment_date: p.payment_date.slice(0, 10), amount: String(p.amount), discount: String(p.discount || 0), payment_mode: p.payment_mode || "Cash", remarks: p.remarks || "" }); setModalOpen(true); };
   const closeModal = () => { if (saving) return; setModalOpen(false); setForm({ id: null, client_id: "", payment_date: istToday, amount: "", discount: "0", payment_mode: "Cash", remarks: "" }); };
 
+  const handleExportCSV = () => {
+    const data = filtered.map(p => ({
+      ID: paymentCode(p.id),
+      Date: fmtDate(p.payment_date),
+      Client: clientName(clientMap.get(p.client_id)),
+      Amount: p.amount,
+      Discount: p.discount || 0,
+      Mode: p.payment_mode,
+      Remarks: p.remarks || "",
+    }));
+    exportToCSV(data, "payments");
+  };
+  const handlePrint = () => printTable("payments-table", "Payments Report");
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     const cid = Number(form.client_id);
@@ -176,6 +191,12 @@ export default function PaymentsPage() {
             </div>
             <button onClick={openCreate} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black transition-all shadow-lg active:scale-95">
               <Plus size={16} /> NEW PAYMENT
+            </button>
+            <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2.5 bg-[#161b27] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 rounded-xl text-xs font-black transition-all">
+              Print
+            </button>
+            <button onClick={handleExportCSV} className="flex items-center gap-2 px-4 py-2.5 bg-[#161b27] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 rounded-xl text-xs font-black transition-all">
+              Export CSV
             </button>
           </div>
         </div>
@@ -265,7 +286,7 @@ export default function PaymentsPage() {
           <div className="px-4 py-12 text-center text-sm text-slate-500">No payments found</div>
         ) : (
           <>
-            <div className="overflow-x-auto hidden lg:block">
+            <div className="overflow-x-auto hidden lg:block" id="payments-table">
               <table className="w-full text-sm">
                 <thead className="bg-[#111520]">
                   <tr className="text-[10px] font-black uppercase tracking-wider text-slate-500">
