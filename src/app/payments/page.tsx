@@ -308,6 +308,39 @@ export default function PaymentsPage() {
               </table>
             </div>
 
+            {/* Mobile Card View */}
+            <div className="lg:hidden grid gap-3 p-3">
+              {paginated.map(p => (
+                <div key={p.id} className="rounded-2xl border border-[#21293d] bg-[#111520] p-4">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div>
+                      <button className="text-sm font-black text-purple-400" onClick={() => viewReceipt(p)}>{paymentCode(p.id)}</button>
+                      <div className="text-xs text-slate-500 mt-1">{fmtDate(p.payment_date)}</div>
+                    </div>
+                    <span className="inline-flex rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-blue-300">{p.payment_mode}</span>
+                  </div>
+                  <div className="text-sm font-bold text-white mb-1">{clientName(clientMap.get(p.client_id))}</div>
+                  <div className="text-xs text-slate-500 mb-3">{clientMap.get(p.client_id)?.contact || ""}</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                    <div className="rounded-lg bg-[#0d1117] p-2">
+                      <div className="text-slate-500">Amount</div>
+                      <div className="font-black text-emerald-400">{fmtMoney(p.amount)}</div>
+                    </div>
+                    <div className="rounded-lg bg-[#0d1117] p-2">
+                      <div className="text-slate-500">Discount</div>
+                      <div className="font-black text-amber-400">{fmtMoney(p.discount || 0)}</div>
+                    </div>
+                  </div>
+                  {p.remarks && <div className="text-xs text-slate-400 mb-3 bg-[#0d1117] rounded-lg p-2">{p.remarks}</div>}
+                  <div className="flex gap-2">
+                    <button onClick={() => viewReceipt(p)} className="flex-1 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 flex items-center justify-center gap-1"><Receipt size={12} /> Receipt</button>
+                    <button onClick={() => openEdit(p)} className="flex-1 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 flex items-center justify-center gap-1"><Pencil size={12} /> Edit</button>
+                    <button onClick={() => deleteP(p.id)} className="py-2 px-3 bg-red-600/20 border border-red-500/30 rounded-xl text-xs font-bold text-red-400"><Trash2 size={12} /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-4 py-4 border-t border-[#21293d]">
                 <div className="flex items-center gap-2 text-xs text-slate-400">
