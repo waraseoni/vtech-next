@@ -227,7 +227,7 @@ export default function Dashboard() {
           { data: paymentsRaw },
           { data: lowInvDetail },
         ] = await Promise.all([
-          supabase.from("transaction_list").select("id, status, amount, date_completed, client_name").eq("del_status", 0),
+          supabase.from("transaction_list").select("id, status, amount, date_completed, client_name").eq("del_status", 0).eq("status", 5).range(0, 2000),
           supabase.from("client_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0),
           supabase.from("mechanic_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0).eq("status", 1),
           supabase.from("inventory_list").select("product_id").lte("quantity", 5),
