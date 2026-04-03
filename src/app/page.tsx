@@ -118,7 +118,7 @@ function PublicWebsite() {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Profile = { full_name: string; role: string };
-type Stat = { totalClients: number; pendingJobs: number; inProgressJobs: number; finishedJobs: number; deliveredJobs: number; totalMechanics: number; lowStock: number; todayRevenue: number; };
+type Stat = { totalJobs: number; totalClients: number; pendingJobs: number; inProgressJobs: number; finishedJobs: number; deliveredJobs: number; totalMechanics: number; lowStock: number; todayRevenue: number; };
 type Financial = { totalSales: number; partsCost: number; grossProfit: number; discounts: number; salary: number; loanPaid: number; expenses: number; totalOutflow: number; netProfit: number; };
 type RecentJob = { id: number; job_id: string | null; client_name: string; item: string; amount: number; status: number; };
 type RecentPayment = { id: number; amount: number; payment_mode: string; payment_date: string; client_name: string; };
@@ -177,7 +177,7 @@ export default function Dashboard() {
   const [authChecked, setAuthChecked] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [stats, setStats] = useState<Stat>({ totalClients: 0, pendingJobs: 0, inProgressJobs: 0, finishedJobs: 0, deliveredJobs: 0, totalMechanics: 0, lowStock: 0, todayRevenue: 0 });
+  const [stats, setStats] = useState<Stat>({ totalJobs: 0, totalClients: 0, pendingJobs: 0, inProgressJobs: 0, finishedJobs: 0, deliveredJobs: 0, totalMechanics: 0, lowStock: 0, todayRevenue: 0 });
   const [financial, setFinancial] = useState<Financial>({ totalSales: 0, partsCost: 0, grossProfit: 0, discounts: 0, salary: 0, loanPaid: 0, expenses: 0, totalOutflow: 0, netProfit: 0 });
   const [revenueData, setRevenueData] = useState<RevenuePoint[]>([]);
   const [statusData, setStatusData] = useState<StatusPoint[]>([]);
@@ -217,8 +217,38 @@ export default function Dashboard() {
         // BUG FIX 2: use todayIST() — not new Date().toISOString().split('T')[0]
         const today = todayIST();
 
+        // Fetch transactions in batches to get all records
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        
+        let allTrans: any[] = [];
+        let offset = 0;
+        const batchSize = 1000;
+        
+        while (true) {
+          const url = `${supabaseUrl}/rest/v1/transaction_list?del_status=eq.0&order=date_created.desc&select=id,status,amount,date_completed,client_name&offset=${offset}&limit=${batchSize}`;
+          
+          const response = await fetch(url, {
+            headers: {
+              'apikey': supabaseKey!,
+              'Authorization': `Bearer ${supabaseKey}`,
+            },
+          });
+          
+          if (!response.ok) {
+            console.error("Fetch error:", await response.text());
+            break;
+          }
+          
+          const batch = await response.json();
+          allTrans = allTrans.concat(batch);
+          
+          if (batch.length < batchSize) break;
+          offset += batchSize;
+        }
+
         const [
-          { data: allTrans },
+          { count: totalJobsCount },
           { count: clientCount },
           { count: mechCount },
           { data: lowInv },
@@ -227,7 +257,7 @@ export default function Dashboard() {
           { data: paymentsRaw },
           { data: lowInvDetail },
         ] = await Promise.all([
-          supabase.from("transaction_list").select("id, status, amount, date_completed, client_name").eq("del_status", 0).eq("status", 5).range(0, 2000),
+          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0),
           supabase.from("client_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0),
           supabase.from("mechanic_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0).eq("status", 1),
           supabase.from("inventory_list").select("product_id").lte("quantity", 5),
@@ -251,6 +281,7 @@ export default function Dashboard() {
           .reduce((s: number, d: any) => s + n(d.total_amount), 0);
 
         setStats({
+          totalJobs: totalJobsCount ?? 0,
           totalClients: clientCount ?? 0,
           totalMechanics: mechCount ?? 0,
           lowStock,
@@ -500,6 +531,7 @@ export default function Dashboard() {
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ STAT CARDS */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard label="Total Jobs" value={stats.totalJobs} icon={<Wrench size={18} />} color="slate" href="/jobs" />
         <StatCard label="Total Clients" value={stats.totalClients} icon={<Users size={18} />} color="blue" href="/clients" />
         <StatCard label="Pending" value={stats.pendingJobs} icon={<Clock size={18} />} color="amber" href="/jobs?status=0" />
         <StatCard label="In Progress" value={stats.inProgressJobs} icon={<Activity size={18} />} color="cyan" href="/jobs?status=1" />

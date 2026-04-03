@@ -187,21 +187,46 @@ function JobsListContent() {
   const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
-      let q = supabase
-        .from("transaction_list")
-        .select("*")
-        .eq("del_status", 0)
-        .order("date_created", { ascending: false });
-
-      if (dateFrom) q = q.gte("date_created", `${dateFrom}T00:00:00`);
-      if (dateTo)   q = q.lte("date_created", `${dateTo}T23:59:59`);
-
-      const { data: txns, error: txnErr } = await q;
-      if (txnErr) throw txnErr;
-      if (!txns?.length) { setTransactions([]); return; }
+      
+      // Direct fetch to bypass any client-side limits
+      // Fetch in multiple batches since Supabase limits to 1000 per request
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      let allTxns: any[] = [];
+      let offset = 0;
+      const batchSize = 1000;
+      
+      while (true) {
+        const url = `${supabaseUrl}/rest/v1/transaction_list?del_status=eq.0&order=date_created.desc&select=*&offset=${offset}&limit=${batchSize}`;
+        
+        const response = await fetch(url, {
+          headers: {
+            'apikey': supabaseKey!,
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+        });
+        
+        if (!response.ok) {
+          const error = await response.text();
+          console.error("Fetch error:", error);
+          throw new Error(error);
+        }
+        
+        const batch = await response.json();
+        allTxns = allTxns.concat(batch);
+        
+        if (batch.length < batchSize) break;
+        offset += batchSize;
+        console.log("Fetched batch:", batch.length, "total so far:", allTxns.length);
+      }
+      
+        console.log("Total jobs fetched:", allTxns.length);
+      
+      if (!allTxns.length) { setTransactions([]); return; }
 
       // BUG FIX 1+2: client_name is TEXT column — pass strings
-      const clientIdsNum = [...new Set(txns.map(t => Number(t.client_name)))];
+      const clientIdsNum = [...new Set(allTxns.map((t: any) => Number(t.client_name)))];
       const clientIdsStr = clientIdsNum.map(String); // ← FIX
 
       const [clientsRes, billedRes, paidRes, salesRes] = await Promise.all([
@@ -238,7 +263,7 @@ function JobsListContent() {
 
       const clientMap = new Map(clientsRes.data?.map(c => [c.id, c]) ?? []);
 
-      setTransactions(txns.map(txn => {
+      setTransactions(allTxns.map((txn: any) => {
         const cid    = Number(txn.client_name);
         const client = clientMap.get(cid);
         return {
@@ -862,7 +887,7 @@ function JobsListContent() {
                   <option value={100}>100</option>
                   <option value={filteredTransactions.length}>All</option>
                 </select>
-                <span>entries • {filteredTransactions.length} total</span>
+                  <span>entries • {filteredTransactions.length} total</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <button onClick={() => setPageIndex(p => Math.max(p - 1, 0))} disabled={pageIndex === 0}
