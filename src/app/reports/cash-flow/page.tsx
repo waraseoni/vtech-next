@@ -286,7 +286,7 @@ export default function CashFlowPage() {
                   </div>
                 </div>
                 <div className="h-[300px] relative z-10">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" minHeight={200} height="100%">
                     <AreaChart data={stats.trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorInflow" x1="0" y1="0" x2="0" y2="1">
@@ -320,7 +320,7 @@ export default function CashFlowPage() {
                   Inflow Sources <PieChartIcon size={13} className="text-emerald-400" />
                 </h4>
                 <div className="flex-1 h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" minHeight={200} height="100%">
                     <PieChart>
                       <Pie data={stats.inflowDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={82}
                         paddingAngle={8} dataKey="value" stroke="none" cornerRadius={4}>

@@ -557,7 +557,7 @@ export default function Dashboard() {
           {revenueData.every(d => d.revenue === 0) ? (
             <EmptyChart label="Is period mein koi revenue nahi" />
           ) : (
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" minHeight={180} height={250}>
               <BarChart data={revenueData} margin={{ top: 4, right: 4, left: -10, bottom: 0 }} barCategoryGap="25%">
                 <defs>
                   <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
@@ -591,7 +591,7 @@ export default function Dashboard() {
             <EmptyChart label="Koi job nahi mili" />
           ) : (
             <>
-              <ResponsiveContainer width="100%" height={180}>
+              <ResponsiveContainer width="100%" minHeight={150} height={180}>
                 <PieChart>
                   <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={74} paddingAngle={3} dataKey="value" strokeWidth={0}>
                     {statusData.map((entry, i) => <Cell key={i} fill={entry.color} />)}

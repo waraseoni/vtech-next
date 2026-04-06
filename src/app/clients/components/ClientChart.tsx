@@ -24,7 +24,7 @@ export function ClientChart({ clients }: any) {
         <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Highest balance first</span>
       </div>
       <div className="h-48">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" minHeight={150} height="100%">
           <BarChart data={chartData} barCategoryGap="35%">
             <CartesianGrid strokeDasharray="3 3" stroke="#1e2a3a" vertical={false}/>
             <XAxis dataKey="name" tick={{fontSize:11,fontWeight:700,fill:"#64748b"}} axisLine={false} tickLine={false}/>
