@@ -541,10 +541,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <Sparkles size={20} className="text-white" />
                 </div>
                 <div>
-                  <div className="text-lg font-black tracking-tight text-white leading-none">
-                    V-TECH <span className="text-blue-400 font-light">PRO</span>
-                  </div>
-                  <div className="text-[8px] text-slate-600 font-black uppercase tracking-widest mt-0.5">Management System</div>
+                  <div className="text-lg font-black tracking-tight leading-none">
+  <span className="vtech-brand">V-TECH</span>{' '}
+  <span className="vtech-pro font-light">PRO</span>
+</div>
+                  <div className="text-[8px] text-slate-500 dark:text-slate-300 font-black uppercase tracking-widest mt-0.5">Management System</div>
                 </div>
               </div>
             </div>
@@ -552,7 +553,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <SidebarNav pathname={pathname} isAdmin={isAdmin} />
 
             <div className="px-4 py-3 border-t border-[#1a2234] flex items-center justify-between">
-              <span className="text-[9px] text-slate-700 font-black tracking-widest uppercase">V-TECH PRO v4.2</span>
+              <span className="text-[9px] text-slate-500 dark:text-slate-300 font-black tracking-widest uppercase">V-TECH PRO v4.2</span>
               <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
             </div>
           </aside>

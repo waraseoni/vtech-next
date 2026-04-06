@@ -856,15 +856,16 @@ function EmptyRow({ icon, label }: { icon: React.ReactNode; label: string }) {
   );
 }
 
-const STAT_C: Record<string, { border: string; icon: string }> = {
-  blue: { border: "border-blue-500/20", icon: "text-blue-400    bg-blue-500/10" },
-  amber: { border: "border-amber-500/20", icon: "text-amber-400   bg-amber-500/10" },
-  cyan: { border: "border-cyan-500/20", icon: "text-cyan-400    bg-cyan-500/10" },
-  emerald: { border: "border-emerald-500/20", icon: "text-emerald-400 bg-emerald-500/10" },
-  violet: { border: "border-violet-500/20", icon: "text-violet-400  bg-violet-500/10" },
-  pink: { border: "border-pink-500/20", icon: "text-pink-400    bg-pink-500/10" },
-  red: { border: "border-red-500/20", icon: "text-red-400     bg-red-500/10" },
-  indigo: { border: "border-indigo-500/20", icon: "text-indigo-400  bg-indigo-500/10" },
+const STAT_C: Record<string, { border: string; icon: string; bg: string; value: string }> = {
+  blue: { border: "border-blue-500/30", icon: "text-blue-400    bg-blue-500/15", bg: "bg-blue-500/10", value: "text-blue-400" },
+  amber: { border: "border-amber-500/30", icon: "text-amber-400   bg-amber-500/15", bg: "bg-amber-500/10", value: "text-amber-400" },
+  cyan: { border: "border-cyan-500/30", icon: "text-cyan-400    bg-cyan-500/15", bg: "bg-cyan-500/10", value: "text-cyan-400" },
+  emerald: { border: "border-emerald-500/30", icon: "text-emerald-400 bg-emerald-500/15", bg: "bg-emerald-500/10", value: "text-emerald-400" },
+  violet: { border: "border-violet-500/30", icon: "text-violet-400  bg-violet-500/15", bg: "bg-violet-500/10", value: "text-violet-400" },
+  pink: { border: "border-pink-500/30", icon: "text-pink-400    bg-pink-500/15", bg: "bg-pink-500/10", value: "text-pink-400" },
+  red: { border: "border-red-500/30", icon: "text-red-400     bg-red-500/15", bg: "bg-red-500/10", value: "text-red-400" },
+  indigo: { border: "border-indigo-500/30", icon: "text-indigo-400  bg-indigo-500/15", bg: "bg-indigo-500/10", value: "text-indigo-400" },
+  slate: { border: "border-slate-500/30", icon: "text-slate-400    bg-slate-500/15", bg: "bg-slate-500/10", value: "text-slate-300" },
 };
 
 function StatCard({ label, value, icon, color, href }: {
@@ -872,13 +873,13 @@ function StatCard({ label, value, icon, color, href }: {
 }) {
   const c = STAT_C[color] ?? STAT_C.blue;
   const inner = (
-    <div className={`bg-[#161b27] rounded-2xl border ${c.border} p-4 flex items-center gap-3 hover:bg-[#1a2234] transition-all duration-200 group cursor-pointer`}>
+    <div className={`${c.bg} rounded-2xl border ${c.border} p-4 flex items-center gap-3 hover:brightness-110 transition-all duration-200 group cursor-pointer`}>
       <div className={`p-2.5 rounded-xl ${c.icon} flex-shrink-0`}>{icon}</div>
       <div className="min-w-0 flex-1">
-        <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.15em] truncate">{label}</p>
-        <p className="text-xl font-black text-white tracking-tight leading-none mt-0.5">{value}</p>
+        <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.15em] truncate">{label}</p>
+        <p className={`text-xl font-black ${c.value} tracking-tight leading-none mt-0.5`}>{value}</p>
       </div>
-      {href && <ChevronRight size={13} className="text-slate-700 group-hover:text-slate-500 flex-shrink-0 transition" />}
+      {href && <ChevronRight size={13} className="text-slate-600 group-hover:text-slate-400 flex-shrink-0 transition" />}
     </div>
   );
   return href ? <Link href={href} className="no-underline block">{inner}</Link> : inner;

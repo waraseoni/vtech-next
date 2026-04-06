@@ -599,6 +599,14 @@ html[data-theme="dark"] .theme-sidebar {
   background-color: #080d14 !important;
 }
 
+/* PRO span – adjust blue for theme */
+html[data-theme="light"] .vtech-pro {
+  color: #2563eb !important; /* Tailwind blue-600 */
+}
+html[data-theme="dark"] .vtech-pro {
+  color: #60a5fa !important; /* Tailwind blue-400 */
+}
+
 /* Print Styles - Hide UI, Show Only Table Content */
 @media print {
   body {
