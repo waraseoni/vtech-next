@@ -55,6 +55,14 @@ html[data-theme="light"] {
   --app-hover: #f1f5f9;
   --background: var(--app-bg);
   --foreground: var(--app-text);
+
+  /* Vibrant PHP-style Gradients */
+  --grad-cyan: linear-gradient(135deg, #17a2b8, #20c997);
+  --grad-blue: linear-gradient(135deg, #007bff, #6610f2);
+  --grad-purple: linear-gradient(135deg, #6f42c1, #e83e8c);
+  --grad-orange: linear-gradient(135deg, #fd7e14, #ffc107);
+  --grad-red: linear-gradient(135deg, #dc3545, #fd7e14);
+  --grad-green: linear-gradient(135deg, #28a745, #20c997);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -176,6 +184,30 @@ html[data-theme="light"] {
   .bg-\[\#1a2234\] { background-color: var(--app-panel-2) !important; }
   .bg-\[\#21293d\] { background-color: var(--app-panel-2) !important; }
   
+  /* Visibility fix for stats: Ensure text is dark and background is vibrant or high-contrast in light mode */
+  .bg-\[\#111520\].rounded-2xl.p-4 {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+    border-left: 4px solid transparent !important;
+  }
+  /* Color Accents for Stat Cards in Light Mode */
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-blue-400) { border-left-color: #007bff !important; }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-cyan-400) { border-left-color: #17a2b8 !important; }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-emerald-400) { border-left-color: #28a745 !important; }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-amber-400) { border-left-color: #fd7e14 !important; }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-red-400) { border-left-color: #dc3545 !important; }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-violet-400) { border-left-color: #6f42c1 !important; }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-pink-400) { border-left-color: #e83e8c !important; }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-slate-400) { border-left-color: #64748b !important; }
+
+  .bg-\[\#111520\].rounded-2xl.p-4 .text-white {
+    color: #0f172a !important;
+  }
+  .bg-\[\#111520\].rounded-2xl.p-4 .text-white\/70 {
+    color: #64748b !important;
+  }
+  
   /* Borders */
   .border-\[\#21293d\] { border-color: var(--app-border) !important; }
   .border-\[\#1a2234\] { border-color: var(--app-border-2) !important; }
@@ -185,16 +217,13 @@ html[data-theme="light"] {
   .border-\[\#334155\] { border-color: #94a3b8 !important; }
   
   /* Text colors - ensure good contrast in light mode */
-  .text-white { color: #0f172a !important; }
-  .text-slate-100 { color: #1e293b !important; }
-  .text-slate-200 { color: #0f172a !important; }
-  .text-slate-300 { color: #0f172a !important; }
-  .text-slate-400 { color: #475569 !important; }
-  .text-slate-500 { color: #64748b !important; }
-  .text-slate-600 { color: #64748b !important; }
-  .text-slate-700 { color: #64748b !important; }
-  .text-slate-800 { color: #475569 !important; }
-  .text-slate-900 { color: #334155 !important; }
+  .text-slate-100, .text-slate-200, .text-slate-300 { color: #0f172a !important; }
+  .text-slate-400 { color: #1e293b !important; }
+  .text-slate-500 { color: #1e293b !important; }
+  .text-slate-600 { color: #0f172a !important; }
+  .text-slate-700 { color: #0f172a !important; }
+  .text-slate-800 { color: #0f172a !important; }
+  .text-slate-900 { color: #0f172a !important; }
   
   /* Input backgrounds - light mode inputs */
   input, select, textarea {
@@ -229,6 +258,14 @@ html[data-theme="light"] {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Gradient Utilities */
+  .bg-grad-cyan { background: var(--grad-cyan, #17a2b8); }
+  .bg-grad-blue { background: var(--grad-blue, #007bff); }
+  .bg-grad-purple { background: var(--grad-purple, #6f42c1); }
+  .bg-grad-orange { background: var(--grad-orange, #fd7e14); }
+  .bg-grad-red { background: var(--grad-red, #dc3545); }
+  .bg-grad-green { background: var(--grad-green, #28a745); }
 }
 
 /* ============================================
@@ -316,26 +353,6 @@ html[data-theme="light"] .bg-red-600 {
    LIGHT THEME - COMPREHENSIVE FIXES
    ============================================ */
 html[data-theme="light"] {
-  /* Fix for text that appears invisible */
-  .text-white, [class*="text-white"] {
-    color: #1e293b !important;
-  }
-  
-  /* Ensure all text is readable */
-  * {
-    border-color: var(--app-border);
-  }
-  
-  /* Card improvements */
-  .rounded-2xl, .rounded-xl, .rounded-lg {
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  }
-  
-  /* Loading spinner bg */
-  .animate-ping {
-    background-color: #10b981;
-  }
-  
   /* Better input contrast */
   input[type="text"],
   input[type="email"],
@@ -362,28 +379,39 @@ html[data-theme="light"] {
     appearance: none;
   }
   
-  /* All text elements - ensure readable contrast */
-  h1, h2, h3, h4, h5, h6, p, span, div, label, td, th {
-    color: var(--app-text);
+  /* Button & Badge Text Contrast Fix for Light Mode */
+  /* This ensures that any element with a dark background color always has white text */
+  .bg-blue-600, .bg-blue-500, .bg-blue-700,
+  .bg-emerald-600, .bg-emerald-500, .bg-emerald-700,
+  .bg-red-600, .bg-red-500, .bg-red-700,
+  .bg-amber-500, .bg-amber-600,
+  .bg-purple-600, .bg-purple-500, .bg-purple-700,
+  .bg-blue-600 *, .bg-blue-500 *, .bg-emerald-600 *, .bg-emerald-500 *, .bg-red-600 *, .bg-red-500 *,
+  button.bg-blue-600, button.bg-emerald-600, button.bg-red-600, button.bg-amber-500, button.bg-purple-600,
+  a.bg-blue-600, a.bg-emerald-600, a.bg-red-600, a.bg-amber-500, a.bg-purple-600,
+  [class*="bg-grad-"], [class*="bg-grad-"] * {
+    color: #ffffff !important;
   }
-  
-  /* Override all dark text colors */
-  [class*="text-slate-"] {
-    color: var(--app-muted) !important;
+
+  /* Specific fix for Link buttons that might have inherited blue text */
+  a.bg-blue-600, a.bg-emerald-600, a.bg-blue-500, a.bg-red-600, a.bg-amber-500, a.bg-purple-600, a[class*="bg-grad-"],
+  button.bg-blue-600, button.bg-emerald-600, button.bg-red-600, button.bg-blue-500, button.bg-amber-500, button.bg-purple-600 {
+    color: #ffffff !important;
   }
-  
-  /* Links */
-  a {
-    color: #2563eb;
+
+  /* Improved visibility for Action Buttons (View, Edit, Delete) */
+  .p-1\.5.bg-\[\#21293d\], .p-1\.5.bg-emerald-500\/10, .p-1\.5.bg-blue-500\/10, .p-1\.5.bg-red-500\/10 {
+    background-color: #e2e8f0 !important; /* Slightly darker for better visibility */
+    border-color: #cbd5e1 !important;
   }
-  a:hover {
-    color: #1d4ed8;
+  .p-1\.5.bg-\[\#21293d\] svg, .p-1\.5.bg-emerald-500\/10 svg, .p-1\.5.bg-blue-500\/10 svg, .p-1\.5.bg-red-500\/10 svg {
+    color: #0f172a !important; /* Fully dark icons for visibility */
   }
-  
+
   /* Table cells */
   table td, table th {
-    color: var(--app-text);
-    border-color: var(--app-border);
+    color: #0f172a !important;
+    border-color: #e2e8f0 !important;
   }
   
   /* Tab/badges */
@@ -555,12 +583,7 @@ html[data-theme="light"] .theme-card {
   color: #0f172a !important;
 }
 
-html[data-theme="light"] .theme-body a,
-html[data-theme="light"] .theme-panel a {
-  color: #2563eb !important;
-}
-
-html[data-theme="light"] .theme-body h1,
+  html[data-theme="light"] .theme-body h1,
 html[data-theme="light"] .theme-panel h1,
 html[data-theme="light"] .theme-card h1,
 html[data-theme="light"] .theme-body h2,

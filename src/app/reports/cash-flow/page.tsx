@@ -240,21 +240,28 @@ export default function CashFlowPage() {
                   amber:   'bg-amber-500/10 border-amber-500/20 text-amber-400',
                   purple:  'bg-purple-500/10 border-purple-500/20 text-purple-400',
                 };
-                const bm: Record<string,string> = {
+                const bm: Record<string, string> = {
                   emerald: 'bg-emerald-500', rose: 'bg-rose-500', blue: 'bg-blue-500', amber: 'bg-amber-500', purple: 'bg-purple-500',
+                };
+                const lightColorMap: Record<string, string> = {
+                  emerald: 'bg-grad-green text-white',
+                  rose:    'bg-grad-red text-white',
+                  blue:    'bg-grad-blue text-white',
+                  amber:   'bg-grad-orange text-white',
+                  purple:  'bg-grad-purple text-white',
                 };
                 return (
                   <div key={i} className="group relative">
-                    <div className="relative bg-[#161b27] border border-[#21293d] rounded-3xl p-6 h-full transition-transform duration-300 group-hover:-translate-y-1">
+                    <div className="relative bg-[#161b27] border border-[#21293d] rounded-3xl p-6 h-full transition-transform duration-300 group-hover:-translate-y-1 shadow-sm">
                       <div className="flex items-center justify-between mb-4">
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{stat.label}</p>
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${cm[stat.color]}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${cm[stat.color]} html[data-theme='light'] &:${lightColorMap[stat.color]}`}>
                           <stat.icon size={18} />
                         </div>
                       </div>
                       <h3 className="text-3xl font-black text-white tabular-nums tracking-tighter">{rupee(stat.value)}</h3>
                       <div className="mt-4 h-1.5 w-full rounded-full bg-[#21293d]/30 overflow-hidden">
-                        <div className={`h-full rounded-full ${bm[stat.color]}`} style={{ width: '65%' }} />
+                        <div className={`h-full rounded-full transition-all ${bm[stat.color]} html[data-theme='light'] &:${lightColorMap[stat.color]}`} style={{ width: '65%' }} />
                       </div>
                     </div>
                   </div>
