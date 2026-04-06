@@ -1,10 +1,10 @@
 {
-  "name": "V-Tech Software - Stage Lighting Repair Management",
-  "short_name": "V-Tech Software",
+  "name": "V-Tech PRO - Repair Management",
+  "short_name": "V-Tech PRO",
   "description": "Professional stage lighting and power supply repair center management software",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f1a",
+  "background_color": "#0d1117",
   "theme_color": "#3b82f6",
   "orientation": "portrait-primary",
   "scope": "/",
