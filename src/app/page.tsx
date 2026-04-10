@@ -248,7 +248,6 @@ export default function Dashboard() {
         }
 
         const [
-          { count: totalJobsCount },
           { count: clientCount },
           { count: mechCount },
           { data: lowInv },
@@ -257,7 +256,6 @@ export default function Dashboard() {
           { data: paymentsRaw },
           { data: lowInvDetail },
         ] = await Promise.all([
-          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0),
           supabase.from("client_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0),
           supabase.from("mechanic_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0).eq("status", 1),
           supabase.from("inventory_list").select("product_id").lte("quantity", 5),
@@ -281,7 +279,7 @@ export default function Dashboard() {
           .reduce((s: number, d: any) => s + n(d.total_amount), 0);
 
         setStats({
-          totalJobs: totalJobsCount ?? 0,
+          totalJobs: active.length,
           totalClients: clientCount ?? 0,
           totalMechanics: mechCount ?? 0,
           lowStock,
