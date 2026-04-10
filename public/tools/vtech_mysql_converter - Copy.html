@@ -199,53 +199,15 @@ function loadFile(f){
 // ════════════════════════════════════════════════════════════
 function parseSQL(sql){
   const res={};
-  let i=0,n=sql.length;
-  while(i<n){
-    // Find next INSERT INTO `table`
-    const insIdx=sql.indexOf("INSERT INTO `",i);
-    if(insIdx===-1) break;
-    const tblStart=insIdx+13;
-    const tblEnd=sql.indexOf("`",tblStart);
-    if(tblEnd===-1){i=insIdx+1;continue;}
-    const t=sql.slice(tblStart,tblEnd);
-    // Skip users / profiles (intentionally excluded)
-    if(t==="users"||t==="profiles"){i=tblEnd+1;continue;}
-    // Extract column list
-    const colStart=sql.indexOf("(",tblEnd);
-    if(colStart===-1){i=tblEnd+1;continue;}
-    const colEnd=sql.indexOf(")",colStart);
-    if(colEnd===-1){i=colStart+1;continue;}
-    const cols=sql.slice(colStart+1,colEnd).split(",").map(c=>c.trim().replace(/`/g,""));
-    // Find VALUES keyword
-    const valKw=sql.indexOf("VALUES",colEnd);
-    if(valKw===-1){i=colEnd+1;continue;}
-    // Char-by-char scan from VALUES to find the real end semicolon.
-    // FIX: old regex [\s\S]*?; stopped at first semicolon inside quoted
-    // strings (e.g. product description: 'Rotary Encoder 3 Pin ; Shape:...')
-    // causing rows after that point to be silently dropped.
-    // New logic: track quote state and only stop at semicolons at depth 0.
-    let j=valKw+6,inS=false,sc="",depth=0,blockStart=-1,blockEnd=-1;
-    while(j<n){
-      const ch=sql[j];
-      if(inS){
-        if(ch==="\\"&&j+1<n){j+=2;continue;}
-        if(ch===sc) inS=false;
-      } else {
-        if(ch==="'"||ch==='"'){inS=true;sc=ch;}
-        else if(ch==="("){
-          if(blockStart===-1) blockStart=j; // set ONCE at first row
-          depth++;
-        }
-        else if(ch===")") depth--;
-        else if(ch===";"&&depth===0){blockEnd=j;break;}
-      }
-      j++;
-    }
-    if(blockStart===-1||blockEnd===-1){i=valKw+1;continue;}
-    const rows=parseRows(sql.slice(blockStart,blockEnd),cols);
+  const re=/INSERT INTO `(\w+)` \(([^)]+)\) VALUES\s*\n?([\s\S]*?);/g;
+  let m;
+  while((m=re.exec(sql))!==null){
+    const t=m[1];
+    if(t==="users"||t==="profiles") continue;
+    const cols=m[2].split(",").map(c=>c.trim().replace(/`/g,""));
+    const rows=parseRows(m[3],cols);
     if(!res[t]) res[t]=[];
     res[t].push(...rows);
-    i=blockEnd+1;
   }
   return res;
 }
@@ -285,7 +247,6 @@ function parseVals(s){
   vals.push(cur.trim()==="NULL"||cur.trim()===""?null:cur.trim());
   return vals;
 }
-
 
 // ════════════════════════════════════════════════════════════
 // TYPE CASTING — exact match with Supabase backup

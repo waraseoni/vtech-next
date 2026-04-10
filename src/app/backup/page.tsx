@@ -57,7 +57,6 @@ const GENERATED_COLS: Record<string, string[]> = {
 // ── FK violations to skip (bad data that would cause FK error) ───────────────
 // These rows will be skipped during restore to avoid FK constraint errors
 const SKIP_INVALID_FK: Record<string, { field: string; invalidValues: (number|string)[] }> = {
-  "transaction_services":        { field: "service_id",   invalidValues: [23] },
   "mechanic_commission_history": { field: "mechanic_id",  invalidValues: [0]  },
 };
 
@@ -124,20 +123,42 @@ export default function BackupPage() {
         "client_payments": "id,client_id,job_id,loan_id,bill_no,payment_date,amount,discount,payment_mode,payment_type,remarks,created_at",
       };
 
+      // Helper function: Fetch all rows with pagination (Supabase default limit = 1000)
+      const fetchAllRows = async (tableName: string, selectCols: string, orderField: string) => {
+        const allRows: unknown[] = [];
+        const PAGE_SIZE = 1000;
+        let offset = 0;
+        while (true) {
+          const { data, error } = await supabase
+            .from(tableName)
+            .select(selectCols)
+            .order(orderField, { ascending: true })
+            .range(offset, offset + PAGE_SIZE - 1);
+          
+          if (error) {
+            console.warn(`${tableName} fetch error at offset ${offset}:`, error.message);
+            break;
+          }
+          if (!data || data.length === 0) break;
+          
+          allRows.push(...data);
+          if (data.length < PAGE_SIZE) break;
+          offset += PAGE_SIZE;
+        }
+        return allRows;
+      };
+
       for (const t of BACKUP_TABLES) {
         setProgress(`Fetching: ${t}...`);
         const orderField = COMPOSITE_ORDER[t] || "id";
         const selectCols = EXCLUDE_FROM_BACKUP[t] || "*";
-        const { data, error } = await supabase
-          .from(t)
-          .select(selectCols)
-          .order(orderField, { ascending: true });
-
-        if (error) {
-          console.warn(`${t} skip (${error.message})`);
+        
+        try {
+          const data = await fetchAllRows(t, selectCols, orderField);
+          backup[t] = data;
+        } catch (error) {
+          console.warn(`${t} skip (${error instanceof Error ? error.message : "Unknown error"})`);
           backup[t] = [];
-        } else {
-          backup[t] = data || [];
         }
       }
 
