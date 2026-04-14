@@ -2,13 +2,13 @@
 import { useState, useEffect, useCallback, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { Loader2, ChevronLeft, ChevronRight, Printer, X, Coins, Edit2, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Activity } from "lucide-react";
-import { todayIST, currentMonthIST, parseISTDate } from "@/lib/dateUtils";
+import { Loader2, ChevronLeft, ChevronRight, Printer, X, Coins, Edit2, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Activity, History, Trash2, Check } from "lucide-react";
+import { todayIST, currentMonthIST, parseISTDate, toISTString } from "@/lib/dateUtils";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 type SalaryHistory = { id: number; mechanic_id: number; salary: number; effective_date: string };
-type Mechanic = { id: number; firstname: string; middlename: string | null; lastname: string; salary_per_day: number; designation: string | null };
+type Mechanic = { id: number; firstname: string; middlename: string | null; lastname: string; salary_per_day: number; designation: string | null; last_updated?: string | null };
 
 type SalaryRow = {
   id: number; name: string; salary_per_day: number;
@@ -47,6 +47,14 @@ function SalaryContent() {
   const [salaryTarget, setSalaryTarget] = useState<{ id: number; name: string; salary: number } | null>(null);
   const [newSalary, setNewSalary] = useState("");
   const [newEffectiveDate, setNewEffectiveDate] = useState(todayIST());
+  
+  const [historyModal, setHistoryModal] = useState(false);
+  const [historyTarget, setHistoryTarget] = useState<{ id: number; name: string } | null>(null);
+  const [historyEntries, setHistoryEntries] = useState<SalaryHistory[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<SalaryHistory | null>(null);
+  const [editSalary, setEditSalary] = useState("");
+  const [editDate, setEditDate] = useState("");
 
   const fetchReport = useCallback(async () => {
     setLoading(true);
@@ -59,9 +67,8 @@ function SalaryContent() {
         .eq("delete_flag", 0)
         .order("firstname");
         
-      const typedMechs = (mechData || []).map((m) => ({ ...m, designation: m.designation || null }));
-      setMechanics(typedMechs);
-      const mechIds = typedMechs.map(m => m.id);
+      const rawMechs = mechData || [];
+      const mechIds = rawMechs.map(m => m.id);
 
       if (mechIds.length === 0) {
         setRows([]);
@@ -75,26 +82,50 @@ function SalaryContent() {
       nextMonthD.setMonth(nextMonthD.getMonth() + 1);
       const nextMonthStart = nextMonthD.toISOString().split("T")[0]; // Strictly less than this date
 
-      // 2. Bulk Fetch all related data to prevent N+1 queries (HUGE Performance Boost)
-      const [
-        { data: allAtt },
-        { data: allComm },
-        { data: allAdv },
-        { data: allHist }
-      ] = await Promise.all([
-        supabase.from("attendance_list").select("mechanic_id, curr_date, status").in("mechanic_id", mechIds).in("status", [1, 3]).lt("curr_date", nextMonthStart),
-        supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount, date_created").in("mechanic_id", mechIds).lt("date_created", `${nextMonthStart}T00:00:00`),
-        supabase.from("advance_payments").select("mechanic_id, amount, date_paid").in("mechanic_id", mechIds).lt("date_paid", nextMonthStart),
-        supabase.from("mechanic_salary_history").select("*").in("mechanic_id", mechIds).order("effective_date", { ascending: false }).order("id", { ascending: false })
+      // Helper to fully exhaust pagination
+      const fetchAllData = async (queryBuilder: any) => {
+        let allData: any[] = [];
+        let from = 0;
+        let hasMore = true;
+        while (hasMore) {
+          const { data, error } = await queryBuilder.range(from, from + 999);
+          if (error) { console.error(error); break; }
+          if (data && data.length > 0) {
+            allData.push(...data);
+            from += 1000;
+            if (data.length < 1000) hasMore = false;
+          } else {
+            hasMore = false;
+          }
+        }
+        return allData;
+      };
+
+      // 2. Bulk Fetch all related data safely (Bypasses Supabase 1000 rows max API limit)
+      const [allAtt, allComm, allAdv, allHist] = await Promise.all([
+        fetchAllData(supabase.from("attendance_list").select("mechanic_id, curr_date, status").in("mechanic_id", mechIds).in("status", [1, 3]).lt("curr_date", nextMonthStart)),
+        fetchAllData(supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount, date_created").in("mechanic_id", mechIds).lt("date_created", `${nextMonthStart}T23:59:59`)),
+        fetchAllData(supabase.from("advance_payments").select("mechanic_id, amount, date_paid").in("mechanic_id", mechIds).lt("date_paid", nextMonthStart)),
+        fetchAllData(supabase.from("mechanic_salary_history").select("*").in("mechanic_id", mechIds).order("effective_date", { ascending: false }).order("id", { ascending: false }))
       ]);
 
-      const attList = allAtt || [];
-      const commList = allComm || [];
-      const advList = allAdv || [];
       const histList = allHist || [];
+      const commList = (allComm || []).map(c => ({ ...c, istMonth: toISTString(new Date(c.date_created)).slice(0, 7) }));
+      const advList = allAdv || [];
+      const attList = allAtt || [];
 
       // 3. Process Data Locally
-      const salaryRows: SalaryRow[] = typedMechs.map((m) => {
+      const enrichedMechs = rawMechs.map((m) => {
+        const latestHist = histList.find(h => h.mechanic_id === m.id);
+        return { 
+          ...m, 
+          designation: m.designation || null,
+          last_updated: latestHist?.effective_date || null
+        };
+      });
+      setMechanics(enrichedMechs);
+
+      const salaryRows: SalaryRow[] = enrichedMechs.map((m) => {
         const name = [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ");
         const defaultSal = m.salary_per_day || 0;
 
@@ -105,7 +136,7 @@ function SalaryContent() {
           earnedPrev += (a.status === 3 ? rate / 2 : rate);
         });
 
-        const commPrevSum = commList.filter(c => c.mechanic_id === m.id && c.date_created < `${monthStart}T00:00:00`)
+        const commPrevSum = commList.filter(c => c.mechanic_id === m.id && c.istMonth < month)
                                     .reduce((s, c) => s + (c.mechanic_commission_amount || 0), 0);
         
         const advPrevSum = advList.filter(a => a.mechanic_id === m.id && a.date_paid < monthStart)
@@ -129,7 +160,7 @@ function SalaryContent() {
           }
         });
 
-        const currentComm = commList.filter(c => c.mechanic_id === m.id && c.date_created >= `${monthStart}T00:00:00` && c.date_created < `${nextMonthStart}T00:00:00`)
+        const currentComm = commList.filter(c => c.mechanic_id === m.id && c.istMonth === month)
                                     .reduce((s, c) => s + (c.mechanic_commission_amount || 0), 0);
 
         const currentAdv = advList.filter(a => a.mechanic_id === m.id && a.date_paid >= monthStart && a.date_paid < nextMonthStart)
@@ -178,13 +209,34 @@ function SalaryContent() {
       const { data: histList } = await supabase.from("mechanic_salary_history").select("*").eq("mechanic_id", r.id).order("effective_date", { ascending: false });
       const history = histList || [];
 
-      const { data: attAll } = await supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", r.id).in("status", [1, 3]).gte("curr_date", from).lt("curr_date", nextMonthStart);
-      const { data: commAll } = await supabase.from("transaction_list").select("job_id, code, mechanic_commission_amount, date_created").eq("mechanic_id", r.id).gte("date_created", `${from}T00:00:00`).lt("date_created", `${nextMonthStart}T00:00:00`);
-      const { data: advAll } = await supabase.from("advance_payments").select("amount, date_paid").eq("mechanic_id", r.id).gte("date_paid", from).lt("date_paid", nextMonthStart);
-      
-      const { data: attPrev } = await supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", r.id).in("status", [1, 3]).lt("curr_date", from);
-      const { data: commPrev } = await supabase.from("transaction_list").select("mechanic_commission_amount").eq("mechanic_id", r.id).lt("date_created", `${from}T00:00:00`);
-      const { data: advPrev } = await supabase.from("advance_payments").select("amount").eq("mechanic_id", r.id).lt("date_paid", from);
+      const fetchAllData = async (queryBuilder: any) => {
+        let allData: any[] = [];
+        let from = 0;
+        let hasMore = true;
+        while (hasMore) {
+          const { data, error } = await queryBuilder.range(from, from + 999);
+          if (error) { console.error(error); break; }
+          if (data && data.length > 0) {
+            allData.push(...data);
+            from += 1000;
+            if (data.length < 1000) hasMore = false;
+          } else {
+            hasMore = false;
+          }
+        }
+        return allData;
+      };
+
+      const [attAll, attPrev, commAllData, advAll, advPrev] = await Promise.all([
+        fetchAllData(supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", r.id).in("status", [1, 3]).gte("curr_date", from).lt("curr_date", nextMonthStart)),
+        fetchAllData(supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", r.id).in("status", [1, 3]).lt("curr_date", from)),
+        fetchAllData(supabase.from("transaction_list").select("job_id, code, mechanic_commission_amount, date_created").eq("mechanic_id", r.id).lt("date_created", `${nextMonthStart}T23:59:59`)),
+        fetchAllData(supabase.from("advance_payments").select("amount, date_paid").eq("mechanic_id", r.id).gte("date_paid", from).lt("date_paid", nextMonthStart)),
+        fetchAllData(supabase.from("advance_payments").select("amount").eq("mechanic_id", r.id).lt("date_paid", from))
+      ]);
+
+      const commAll = (commAllData || []).filter(c => toISTString(new Date(c.date_created)).slice(0, 7) === month);
+      const cp = (commAllData || []).filter(c => toISTString(new Date(c.date_created)).slice(0, 7) < month).reduce((s, x) => s + (x.mechanic_commission_amount || 0), 0);
 
       // Calc opening balance accurately with historical rates
       let ep = 0;
@@ -192,7 +244,6 @@ function SalaryContent() {
         const rate = getEffectiveRate(r.id, a.curr_date, r.salary_per_day, history);
         ep += (a.status === 3 ? rate / 2 : rate);
       });
-      const cp = commPrev?.reduce((s, x) => s + (x.mechanic_commission_amount || 0), 0) || 0;
       const ap = advPrev?.reduce((s, x) => s + (x.amount || 0), 0) || 0;
       
       let running = ep + cp - ap;
@@ -211,7 +262,10 @@ function SalaryContent() {
           else if (att.status === 3) { wage = dayRate / 2; attStatus = "Half Day"; } 
         }
         
-        const comm = commAll?.filter((c) => c.date_created.startsWith(d)).reduce((s, c) => s + (c.mechanic_commission_amount || 0), 0) || 0;
+        const comm = commAll?.filter((c) => {
+          const istD = toISTString(new Date(c.date_created)).split("T")[0];
+          return istD === d;
+        }).reduce((s, c) => s + (c.mechanic_commission_amount || 0), 0) || 0;
         const adv = advAll?.filter((a) => a.date_paid === d).reduce((s, a) => s + (a.amount || 0), 0) || 0;
         
         running += wage + comm - adv;
@@ -233,6 +287,32 @@ function SalaryContent() {
     await supabase.from("mechanic_salary_history").insert({ mechanic_id: salaryTarget.id, salary: parseFloat(newSalary), effective_date: newEffectiveDate });
     await supabase.from("mechanic_list").update({ salary_per_day: parseFloat(newSalary) }).eq("id", salaryTarget.id);
     setSalaryRateModal(false); setSalaryTarget(null); setNewSalary(""); fetchReport();
+  };
+
+  const openHistory = async (id: number, name: string) => {
+    setHistoryTarget({ id, name });
+    setHistoryModal(true);
+    setHistoryLoading(true);
+    const { data } = await supabase.from("mechanic_salary_history").select("*").eq("mechanic_id", id).order("effective_date", { ascending: false });
+    setHistoryEntries(data || []);
+    setHistoryLoading(false);
+  };
+
+  const handleDeleteHistory = async (entryId: number) => {
+    if (!confirm("Are you sure you want to delete this record?")) return;
+    const { error } = await supabase.from("mechanic_salary_history").delete().eq("id", entryId);
+    if (!error && historyTarget) openHistory(historyTarget.id, historyTarget.name);
+    fetchReport();
+  };
+
+  const handleUpdateHistoryEntry = async () => {
+    if (!editingEntry || !editSalary || !editDate) return;
+    const { error } = await supabase.from("mechanic_salary_history").update({ salary: parseFloat(editSalary), effective_date: editDate }).eq("id", editingEntry.id);
+    if (!error) {
+      setEditingEntry(null);
+      if (historyTarget) openHistory(historyTarget.id, historyTarget.name);
+      fetchReport();
+    }
   };
 
   const monthLabel = new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
@@ -362,8 +442,8 @@ function SalaryContent() {
             <table className="w-full">
               <thead>
                 <tr className="bg-[#111520]">
-                  {["#", "Staff Name", "Role", "Current Daily Wage", "Action"].map((h) => (
-                    <th key={h} className="px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-widest text-left">{h}</th>
+                  {["#", "Staff Name", "Role", "Current Daily Wage", "Last Updated", "Action"].map((h) => (
+                    <th key={h} className={`px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-widest text-left ${h === 'Last Updated' ? 'text-center' : ''}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -374,10 +454,16 @@ function SalaryContent() {
                     <td className="px-4 py-3 font-bold text-slate-200">{[m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ")}</td>
                     <td className="px-4 py-3 text-xs text-slate-400">{m.designation || "Technician"}</td>
                     <td className="px-4 py-3 text-sm font-black text-emerald-400">{inr(m.salary_per_day)}</td>
+                    <td className="px-4 py-3 text-xs text-slate-400 text-center">{m.last_updated ? new Date(m.last_updated).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : "N/A"}</td>
                     <td className="px-4 py-3">
-                      <button onClick={() => { setSalaryTarget({ id: m.id, name: [m.firstname, m.lastname].join(" "), salary: m.salary_per_day }); setNewSalary(String(m.salary_per_day)); setSalaryRateModal(true); }} className="px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm">
-                        <Edit2 size={12} className="inline mr-1.5 -mt-0.5" /> Update Rate
-                      </button>
+                      <div className="flex gap-2">
+                        <button onClick={() => { setSalaryTarget({ id: m.id, name: [m.firstname, m.lastname].join(" "), salary: m.salary_per_day }); setNewSalary(String(m.salary_per_day)); setSalaryRateModal(true); }} className="px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5">
+                          <Edit2 size={12} /> Update
+                        </button>
+                        <button onClick={() => openHistory(m.id, [m.firstname, m.lastname].join(" "))} className="px-3 py-1.5 bg-slate-500/10 border border-[#21293d] text-slate-400 rounded-lg text-xs font-bold hover:bg-[#1c2231] hover:text-white transition-all flex items-center gap-1.5">
+                          <History size={12} /> History
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -479,6 +565,79 @@ function SalaryContent() {
                 <button onClick={handleUpdateSalary} className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-black text-white shadow-lg shadow-blue-900/20 transition-all">Save New Rate</button>
                 <button onClick={() => { setSalaryRateModal(false); setSalaryTarget(null); }} className="px-5 py-3 bg-[#111520] border border-[#21293d] text-slate-400 hover:text-white hover:bg-[#1c2231] rounded-xl text-sm font-bold transition-all">Cancel</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Salary History Modal */}
+      {historyModal && historyTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh]">
+            <div className="p-5 bg-[#111520] border-b border-[#21293d] flex items-center justify-between">
+              <div>
+                <h3 className="font-black text-white text-lg flex items-center gap-2"><History size={20} className="text-blue-500"/> Salary History</h3>
+                <p className="text-xs font-bold text-slate-500 mt-1">{historyTarget.name}</p>
+              </div>
+              <button onClick={() => { setHistoryModal(false); setEditingEntry(null); }} className="w-9 h-9 flex items-center justify-center bg-[#161b27] border border-[#21293d] hover:border-slate-500 rounded-xl text-slate-400 hover:text-white transition-all"><X size={16} /></button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto">
+              <table className="w-full">
+                <thead className="sticky top-0 bg-[#161b27] border-b border-[#21293d] z-10">
+                  <tr>
+                    {["Effective Date", "Daily Rate", "Action"].map((h) => (
+                      <th key={h} className="px-5 py-3 text-[10px] font-black uppercase text-slate-500 tracking-widest text-left">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#21293d]/50">
+                  {historyLoading ? (
+                    <tr><td colSpan={3} className="py-12 text-center"><Loader2 size={24} className="animate-spin text-blue-500 mx-auto" /></td></tr>
+                  ) : historyEntries.length === 0 ? (
+                    <tr><td colSpan={3} className="py-12 text-center text-slate-500 text-sm font-bold">No history records found.</td></tr>
+                  ) : historyEntries.map((e) => (
+                    <tr key={e.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-5 py-3 text-sm font-bold text-slate-300">{new Date(e.effective_date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}</td>
+                      <td className="px-5 py-3 text-sm font-black text-emerald-400">{inr(e.salary)}</td>
+                      <td className="px-5 py-3">
+                        <div className="flex gap-2">
+                          <button onClick={() => { setEditingEntry(e); setEditSalary(String(e.salary)); setEditDate(e.effective_date); }} className="w-8 h-8 flex items-center justify-center bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg hover:bg-blue-500 hover:text-white transition-all"><Edit2 size={14} /></button>
+                          <button onClick={() => handleDeleteHistory(e.id)} className="w-8 h-8 flex items-center justify-center bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500 hover:text-white transition-all"><Trash2 size={14} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {editingEntry && (
+              <div className="p-5 bg-[#111520] border-t border-[#21293d] animate-in slide-in-from-bottom-5 duration-300">
+                <h4 className="text-xs font-black uppercase text-white tracking-widest mb-4 flex items-center gap-2">
+                  <Edit2 size={12} className="text-blue-500" /> Edit Record
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-1.5">New Rate</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xs">₹</span>
+                      <input type="number" value={editSalary} onChange={(e) => setEditSalary(e.target.value)} className="w-full pl-7 pr-3 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-sm font-black text-white outline-none focus:border-blue-500/50" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-1.5">Effective Date</label>
+                    <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="w-full px-3 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-sm font-bold text-slate-300 outline-none focus:border-blue-500/50 style-calendar" />
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-5">
+                  <button onClick={handleUpdateHistoryEntry} className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-black text-white transition-all flex items-center justify-center gap-2"><Check size={14}/> Save Changes</button>
+                  <button onClick={() => setEditingEntry(null)} className="px-5 py-2.5 bg-[#161b27] border border-[#21293d] text-slate-400 hover:text-white hover:bg-[#1c2231] rounded-xl text-xs font-bold transition-all">Cancel</button>
+                </div>
+              </div>
+            )}
+
+            <div className="p-4 bg-[#111520] border-t border-[#21293d] text-[10px] text-slate-500 text-center font-bold uppercase tracking-widest">
+              Total History Records: {historyEntries.length}
             </div>
           </div>
         </div>
