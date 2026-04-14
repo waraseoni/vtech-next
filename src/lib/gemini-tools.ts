@@ -192,10 +192,10 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
             let countQuery = supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0);
             
             if (args?.start_date) {
-                countQuery = countQuery.gte("date_created", `${args.start_date}T00:00:00.000Z`);
+                countQuery = countQuery.gte("date_created", `${args.start_date}T00:00:00`);
             }
             if (args?.end_date) {
-                countQuery = countQuery.lte("date_created", `${args.end_date}T23:59:59.999Z`);
+                countQuery = countQuery.lte("date_created", `${args.end_date}T23:59:59`);
             }
             
             const { count: jobsCount } = await countQuery;
@@ -205,8 +205,8 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
                 .select("amount, status, date_completed, date_updated")
                 .eq("status", 5)
                 .eq("del_status", 0)
-                .gte("date_completed", `${args.start_date}T00:00:00+05:30`)
-                .lte("date_completed", `${args.end_date}T23:59:59+05:30`);
+                .gte("date_completed", `${args.start_date}T00:00:00`)
+                .lte("date_completed", `${args.end_date}T23:59:59`);
             
             const totalRevenue = revData?.reduce((sum, job) => sum + (Number(job.amount) || 0), 0) || 0;
             
@@ -236,24 +236,24 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
                     .select("id, amount, status, date_completed, mechanic_commission_amount")
                     .eq("status", 5)
                     .eq("del_status", 0)
-                    .gte("date_completed", `${from}T00:00:00+05:30`)
-                    .lte("date_completed", `${to}T23:59:59+05:30`),
+                    .gte("date_completed", `${from}T00:00:00`)
+                    .lte("date_completed", `${to}T23:59:59`),
                 supabase.from("direct_sales")
                     .select("id, total_amount, date_created, client_id")
-                    .gte("date_created", `${from}T00:00:00+05:30`)
-                    .lte("date_created", `${to}T23:59:59+05:30`),
+                    .gte("date_created", `${from}T00:00:00`)
+                    .lte("date_created", `${to}T23:59:59`),
                 supabase.from("client_payments")
                     .select("id, amount, discount, payment_date")
-                    .gte("payment_date", `${from}T00:00:00+05:30`)
-                    .lte("payment_date", `${to}T23:59:59+05:30`),
+                    .gte("payment_date", `${from}T00:00:00`)
+                    .lte("payment_date", `${to}T23:59:59`),
                 supabase.from("expense_list")
                     .select("amount, date_created")
-                    .gte("date_created", `${from}T00:00:00+05:30`)
-                    .lte("date_created", `${to}T23:59:59+05:30`),
+                    .gte("date_created", `${from}T00:00:00`)
+                    .lte("date_created", `${to}T23:59:59`),
                 supabase.from("loan_payments")
                     .select("amount_paid")
-                    .gte("payment_date", `${from}T00:00:00+05:30`)
-                    .lte("payment_date", `${to}T23:59:59+05:30`),
+                    .gte("payment_date", `${from}T00:00:00`)
+                    .lte("payment_date", `${to}T23:59:59`),
                 supabase.from("attendance_list")
                     .select("mechanic_id, status")
                     .in("status", [1, 3])
@@ -370,41 +370,48 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
 
         if (name === "get_job_details_by_id") {
             const jobId = args?.job_id;
-            if (!jobId) return { error: "Job ID is required" };
+            if (!jobId) return { error: "Job ID or Search text is required" };
 
-            // Find the job with the exact job_id
-            const { data: jobs, error } = await supabase.from("transaction_list")
-                .select("*")
-                .eq("del_status", 0)
-                .eq("job_id", jobId);
+            const isNumeric = /^\d+$/.test(jobId);
+            let query = supabase.from("transaction_list").select("*").eq("del_status", 0);
+
+            // Find the job with the exact job_id or search by text
+            if (isNumeric) {
+                query = query.eq("job_id", jobId);
+            } else {
+                query = query.or(`item.ilike.%${jobId}%,fault.ilike.%${jobId}%`).order('date_created', { ascending: false }).limit(5);
+            }
+
+            const { data: jobs, error } = await query;
             
             if (error) {
-                return { error: `Database error while searching for Job ID ${jobId}: ${error.message}` };
+                return { error: `Database error while searching for ${jobId}: ${error.message}` };
             }
 
             if (!jobs || jobs.length === 0) {
-                return { result: `Koi bhi job, jiska id '${jobId}' ho, wo nahi mila.` };
+                return { result: `Koi bhi job, jiska id ya keyword '${jobId}' ho, wo nahi mila.` };
             }
 
-            const job = jobs[0];
-            if (job.client_name) {
-                // Fetch the actual client name based on ID
-                const { data: clientInfo } = await supabase.from("client_list")
-                    .select("firstname, lastname")
-                    .eq("id", job.client_name)
-                    .maybeSingle();
+            for (const job of jobs) {
+                if (job.client_name) {
+                    // Fetch the actual client name based on ID
+                    const { data: clientInfo } = await supabase.from("client_list")
+                        .select("firstname, lastname")
+                        .eq("id", job.client_name)
+                        .maybeSingle();
 
-                if (clientInfo) {
-                    (job as any).actual_client_name = `${clientInfo.firstname || ''} ${clientInfo.lastname || ''}`.trim();
-                } else {
-                    (job as any).actual_client_name = "Unknown Client";
+                    if (clientInfo) {
+                        (job as any).actual_client_name = `${clientInfo.firstname || ''} ${clientInfo.lastname || ''}`.trim();
+                    } else {
+                        (job as any).actual_client_name = "Unknown Client";
+                    }
                 }
+                
+                // Add status label
+                (job as any).status_label = STATUS_MAP[job.status] || "Unknown";
             }
-            
-            // Add status label
-            (job as any).status_label = STATUS_MAP[job.status] || "Unknown";
 
-            return { job_details: job };
+            return isNumeric ? { job_details: jobs[0] } : { matching_jobs: jobs };
         }
 
         return { error: "Unknown function call" };
