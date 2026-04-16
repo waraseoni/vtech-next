@@ -24,7 +24,8 @@ export const formatIST = (date: string | Date, options: Intl.DateTimeFormatOptio
 };
 
 export const toISTString = (date: Date = new Date()): string => {
-  return new Intl.DateTimeFormat("en-CA", {
+  // Returns ISO 8601 with +05:30 suffix so DB & browsers parse it correctly
+  const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",
     year: "numeric",
     month: "2-digit",
@@ -33,9 +34,10 @@ export const toISTString = (date: Date = new Date()): string => {
     minute: "2-digit",
     second: "2-digit",
     hour12: false,
-  })
-    .format(date)
-    .replace(", ", "T");
+  }).formatToParts(date);
+
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? "00";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}:${get("second")}+05:30`;
 };
 
 export const toLocalStr = (date: Date): string => {

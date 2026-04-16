@@ -18,7 +18,14 @@ function todayISTDateTime(): string {
     hour: "2-digit", minute: "2-digit", hour12: false,
   }).format(new Date()).replace(", ", "T").replace(",", "T");
 }
-function nowIST() { return new Date().toISOString(); }
+function nowIST(): string {
+  const p = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  }).formatToParts(new Date());
+  const g = (t: string) => p.find(x => x.type === t)?.value ?? "00";
+  return `${g("year")}-${g("month")}-${g("day")}T${g("hour")}:${g("minute")}:${g("second")}+05:30`;
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Client { id: number; firstname: string; middlename: string; lastname: string; contact: string; }

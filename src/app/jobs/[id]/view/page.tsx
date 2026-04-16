@@ -28,7 +28,14 @@ function fmtDateTime(d: string | null) {
     hour: "2-digit", minute: "2-digit", hour12: true,
   }).format(new Date(d));
 }
-function nowIST(): string { return new Date().toISOString(); }
+function nowIST(): string {
+  const p = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  }).formatToParts(new Date());
+  const g = (t: string) => p.find(x => x.type === t)?.value ?? "00";
+  return `${g("year")}-${g("month")}-${g("day")}T${g("hour")}:${g("minute")}:${g("second")}+05:30`;
+}
 function todayISTStr(): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",

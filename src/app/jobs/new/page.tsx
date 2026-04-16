@@ -506,7 +506,7 @@ export default function ManageJobPage({
         amount:                     grandTotal,
         mechanic_commission_amount: parseFloat(commissionAmt) || 0,
         status:                     0,  // Pending
-        date_updated:               new Date().toISOString(),
+        date_updated:               (() => { const p = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).formatToParts(new Date()); const g = (t: string) => p.find(x => x.type === t)?.value ?? "00"; return `${g("year")}-${g("month")}-${g("day")}T${g("hour")}:${g("minute")}:${g("second")}+05:30`; })(),
       };
 
       let txnId = jobId;
@@ -526,7 +526,7 @@ export default function ManageJobPage({
       } else {
         const { data, error } = await supabase
           .from("transaction_list")
-          .insert([{ ...payload, del_status: 0, date_created: new Date().toISOString() }])
+          .insert([{ ...payload, del_status: 0, date_created: (() => { const p = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).formatToParts(new Date()); const g = (t: string) => p.find(x => x.type === t)?.value ?? "00"; return `${g("year")}-${g("month")}-${g("day")}T${g("hour")}:${g("minute")}:${g("second")}+05:30`; })() }])
           .select("id").single();
         if (error) throw error;
         txnId = data.id;

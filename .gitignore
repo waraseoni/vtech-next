@@ -70,3 +70,5 @@ next-env.d.ts
 .eslintcache
 
 php-ref/
+
+db folder/

@@ -363,10 +363,10 @@ function JobsListContent() {
     setStatusChangeLoading(id);
     const updates: Record<string, unknown> = {
       status: newStatus,
-      date_updated: new Date().toISOString(),
+      date_updated: toISTString(),
     };
     if (newStatus === 5) {
-      updates.date_completed = new Date().toISOString();
+      updates.date_completed = toISTString();
     }
     const { error } = await supabase
       .from("transaction_list")
@@ -408,10 +408,10 @@ function JobsListContent() {
     setBulkActionLoading(true);
     const updates: Record<string, unknown> = {
       status: newStatus,
-      date_updated: new Date().toISOString(),
+      date_updated: toISTString(),
     };
     if (newStatus === 5) {
-      updates.date_completed = new Date().toISOString();
+      updates.date_completed = toISTString();
     }
     
     const { error } = await supabase

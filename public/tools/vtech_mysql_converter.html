@@ -156,8 +156,8 @@ const EMPTY_STR={
   transaction_list:["remark","uniq_id"],
 };
 
-// Datetime format — +00:00 for these tables, plain ISO for others
-const WITH_TZ=new Set(["mechanic_list","product_list","service_list","lender_list","mechanic_commission_history","transaction_list"]);
+// Datetime format — ALL tables use +05:30 (IST) since MariaDB stored IST local time
+const WITH_TZ=new Set(["mechanic_list","product_list","service_list","lender_list","mechanic_commission_history","transaction_list","client_list","client_loans","client_payments","direct_sales","direct_sale_items","expense_list","inventory_list","loan_payments","mechanic_salary_history","attendance_list","advance_payments","message_list","transaction_products","transaction_services","transaction_images"]);
 const DATE_ONLY=new Set(["date_paid","payment_date","curr_date","stock_date","loan_date","start_date","effective_date"]);
 const DT_FIELDS=new Set(["date_created","date_updated","date_completed","date_added","last_edited_date","created_at"]);
 
@@ -296,7 +296,7 @@ function fmtDT(val,table,field){
   if(DATE_ONLY.has(field)){const m=v.match(/(\d{4}-\d{2}-\d{2})/);return m?m[1]:v;}
   if(v.includes(" ")&&!v.includes("T")) v=v.replace(" ","T");
   v=v.replace(/[+-]\d{2}:\d{2}$/,"").replace(/Z$/,"");
-  return WITH_TZ.has(table)?v+"+00:00":v;
+  return WITH_TZ.has(table)?v+"+05:30":v;
 }
 function iWhole(v){return(typeof v==="number"&&v===Math.floor(v))?Math.floor(v):v;}
 
