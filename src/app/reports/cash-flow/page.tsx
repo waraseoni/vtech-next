@@ -104,7 +104,8 @@ export default function CashFlowPage() {
 
     const dailyDataMap: Record<string, { date: string; inflow: number; outflow: number; net: number }> = {};
     data.ledgerEntries.forEach(entry => {
-      const d = entry.date;
+      // Extract just the YYYY-MM-DD part for daily grouping
+      const d = entry.date.split('T')[0].split(' ')[0];
       if (!dailyDataMap[d]) dailyDataMap[d] = { date: d, inflow: 0, outflow: 0, net: 0 };
       if (entry.type === 'Cash In') dailyDataMap[d].inflow += entry.net_amount;
       else dailyDataMap[d].outflow += entry.net_amount;
@@ -359,8 +360,8 @@ export default function CashFlowPage() {
                 <table className="w-full">
                   <tbody>
                     {[
-                      { label: 'Client Recovery', value: data?.clientPaymentsReceived || 0 },
-                      { label: 'Direct Sales',     value: data?.walkinIncome || 0 },
+                      { label: 'Client Payments (Recovery)', value: data?.clientPaymentsReceived || 0 },
+                      { label: 'Direct Sales (Walk-in)',     value: data?.walkinIncome || 0 },
                     ].map((row, i) => (
                       <tr key={i} className={`${i > 0 ? 'border-t border-[#21293d]/50' : ''} hover:bg-white/[0.02] transition-colors`}>
                         <td className="px-5 py-4 text-sm font-semibold text-slate-300">{row.label}</td>

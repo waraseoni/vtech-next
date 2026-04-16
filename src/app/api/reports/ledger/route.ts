@@ -375,15 +375,9 @@ export async function GET(request: Request) {
       client_id:  s.client_id || null,
     }));
 
-    clientSales.forEach(s => ledgerEntries.push({
-      date:       s.date_created,
-      category:   'Direct Sale (Client)',
-      details:    `Invoice: ${s.sale_code} - ${s.client_firstname} ${s.client_lastname}`.trim(),
-      type:       'Cash In',
-      net_amount: s.total_amount,
-      client_id:  s.client_id,
-      client_fullname: `${s.client_firstname} ${s.client_lastname}`.trim(),
-    }));
+    // Direct Sales (Client) are credit sales. 
+    // They are NOT pushed to ledgerEntries as 'Cash In' to avoid double counting,
+    // since cash is received later via client_payments.
 
     expenses.forEach(e => ledgerEntries.push({
       date:       e.date_created,
