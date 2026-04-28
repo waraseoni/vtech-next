@@ -29,10 +29,10 @@ function MonthlySalesContent() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const from = `${month}-01T00:00:00`;
-      const toDate = parseISTDate(month + "-01");
-      toDate.setMonth(toDate.getMonth() + 1);
-      const to = toDate.toISOString().split("T")[0] + "T23:59:59";
+      const from = `${month}-01T00:00:00+05:30`;
+      const [year, m] = month.split("-").map(Number);
+      const lastDay = new Date(year, m, 0).getDate();
+      const to = `${month}-${String(lastDay).padStart(2, "0")}T23:59:59+05:30`;
 
       const { data: tpData } = await supabase
         .from("transaction_products").select("product_id, price, qty, date_updated, transaction_id")
@@ -75,7 +75,7 @@ function MonthlySalesContent() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const total = rows.reduce((s, r) => s + r.total, 0);
-  const monthLabel = new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const monthLabel = parseISTDate(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 
   return (
     <div className="space-y-4">

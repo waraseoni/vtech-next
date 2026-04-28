@@ -89,8 +89,8 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
     else setLoading(true);
 
     try {
-      const startDate = `${from}T00:00:00`;
-      const endDate = `${to}T23:59:59`;
+      const startDate = `${from}T00:00:00+05:30`;
+      const endDate = `${to}T23:59:59+05:30`;
 
       let query = supabase
         .from('transaction_list')

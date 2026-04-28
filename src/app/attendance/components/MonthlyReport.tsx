@@ -148,9 +148,9 @@ export default function MonthlyReport({
 
   const [y, m]      = month.split('-').map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
-  const firstDay    = new Date(month + '-01').getDay(); // 0=Sun
+  const firstDay    = parseISTDate(month + '-01').getDay(); // 0=Sun
 
-  const monthName   = new Date(month + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  const monthName   = parseISTDate(month + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 
   return (
     <div>

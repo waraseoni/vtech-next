@@ -13,6 +13,7 @@ import {
   Plus, X, CheckCircle, FileText,
   RefreshCw, Image as ImageIcon,
 } from "lucide-react";
+import { logActivity } from "@/lib/activity";
 
 // ─── IST HELPERS ─────────────────────────────────────────────────────────────
 function fmtDate(d: string | null) {
@@ -286,6 +287,7 @@ export default function JobDetailsPage() {
       setToast({ type: "error", msg: "Status update failed: " + error.message });
     } else {
       setJob({ ...job, ...updates } as JobDetail);
+      await logActivity('Updated Job Status', 'Jobs', job.job_id, `Status changed to: ${STATUS_MAP[newStatus]?.label}`);
       setToast({ type: "success", msg: `Status "${STATUS_MAP[newStatus]?.label}" update ho gaya!` });
       setShowStatusModal(false);
     }
@@ -308,6 +310,7 @@ export default function JobDetailsPage() {
     });
     if (error) { setToast({ type: "error", msg: "Payment save nahi hua: " + error.message }); }
     else {
+      await logActivity('Added Job Payment', 'Jobs', job.job_id, `Amount: Rs.${amt}, Mode: ${payMode}`);
       setToast({ type: "success", msg: "Payment save ho gayi!" });
       setShowPayModal(false);
       setPayAmount(""); setPayDiscount("0"); setPayRemarks("");
@@ -321,8 +324,10 @@ export default function JobDetailsPage() {
     if (!confirm("Kya aap pakka is job ko delete karna chahte hain?")) return;
     setDeleting(true);
     const { error } = await supabase.from("transaction_list").update({ del_status: 1 }).eq("id", jobId);
-    if (!error) router.push("/jobs");
-    else { setToast({ type: "error", msg: "Delete failed!" }); setDeleting(false); }
+    if (!error) {
+      await logActivity('Deleted Job', 'Jobs', job?.job_id, `Job #${job?.job_id} marked as deleted`);
+      router.push("/jobs");
+    } else { setToast({ type: "error", msg: "Delete failed!" }); setDeleting(false); }
   };
 
   // ── PRINT ──────────────────────────────────────────────────────────────────

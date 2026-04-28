@@ -24,8 +24,8 @@ export async function GET(request: Request) {
   );
 
   // PHP-style date handling (local time)
-  const start = `${from} 00:00:00`;
-  const end   = `${to} 23:59:59`;
+  const start = `${from}T00:00:00+05:30`;
+  const end   = `${to}T23:59:59+05:30`;
 
   try {
 

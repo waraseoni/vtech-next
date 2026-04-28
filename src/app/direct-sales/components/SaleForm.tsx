@@ -7,6 +7,7 @@ import {
   Banknote, Smartphone, Building2, MessageSquare, ShoppingCart,
   AlertTriangle, Minus, ChevronDown, UserCog, Search,
 } from "lucide-react";
+import { logActivity } from "@/lib/activity";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -381,6 +382,12 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
         }))
       );
       if (ie) throw ie;
+
+      if (mode === "new") {
+        await logActivity('Created Direct Sale', 'Sales', resultId, `Created Sale #${saleCode} for Rs.${totalAmount}`);
+      } else {
+        await logActivity('Updated Direct Sale', 'Sales', resultId, `Updated Sale #${originalSaleData?.sale_code} (Grand Total: Rs.${totalAmount})`);
+      }
 
       router.push(`/direct-sales/${resultId}/view`);
     } catch (err: any) {

@@ -7,7 +7,7 @@ import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { Loader2, ArrowLeft, Printer, FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react";
 
-import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate } from "@/lib/dateUtils";
+import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate, toISTDatePart } from "@/lib/dateUtils";
 
 type Mechanic = {
   id: number;
@@ -81,7 +81,7 @@ export default function MechanicLedgerPage() {
   const prevDateLimit = useMemo(() => {
     const d = parseISTDate(from);
     d.setDate(d.getDate() - 1);
-    return d.toISOString().split("T")[0];
+    return toISTDatePart(d);
   }, [from]);
 
   useEffect(() => {
@@ -224,7 +224,7 @@ export default function MechanicLedgerPage() {
 
     let running = openingBalance;
     for (let d = new Date(from); d <= new Date(to); d = new Date(d.getTime() + 86400000)) {
-      const ds = d.toISOString().slice(0, 10);
+      const ds = toISTDatePart(d);
       const st = attByDate.get(ds);
       let earned = 0;
       let statusLabel = "-";

@@ -11,6 +11,7 @@ import {
   CalendarDays, Send, Hash, Clock, ChevronDown,
 } from "lucide-react";
 import { todayIST, startOfMonthIST, endOfMonthIST, formatIST, parseISTDate } from "@/lib/dateUtils";
+import { logActivity } from "@/lib/activity";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DirectSale {
@@ -88,8 +89,8 @@ export default function DirectSalesPage() {
     try {
       let query = supabase
         .from("direct_sales").select("*")
-        .gte("date_created", `${dateFrom}T00:00:00`)
-        .lte("date_created", `${dateTo}T23:59:59`)
+        .gte("date_created", `${dateFrom}T00:00:00+05:30`)
+        .lte("date_created", `${dateTo}T23:59:59+05:30`)
         .order("date_created", { ascending: false });
       if (paymentFilter !== "all") query = query.eq("payment_mode", paymentFilter);
 
@@ -180,9 +181,12 @@ export default function DirectSalesPage() {
   // ── Actions ───────────────────────────────────────────────────────────────
   const handleDelete = async (id: number) => {
     if (!confirm("Is direct sale ko permanently delete karna chahte hain?")) return;
+    const saleToDelete = sales.find(s => s.id === id);
     const { error } = await supabase.from("direct_sales").delete().eq("id", id);
-    if (!error) fetchSales();
-    else alert("Delete failed: " + error.message);
+    if (!error) {
+      await logActivity('Deleted Direct Sale', 'Sales', id, `Deleted Sale #${saleToDelete?.sale_code}`);
+      fetchSales();
+    } else alert("Delete failed: " + error.message);
   };
 
   const exportCSV = () => {

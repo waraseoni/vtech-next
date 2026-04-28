@@ -9,6 +9,7 @@ import {
 
 const inr = (n: number) =>
   "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+import { currentMonthIST, parseISTDate } from "@/lib/dateUtils";
 
 type CommRow = {
   id: number;
@@ -25,7 +26,7 @@ function CommissionContent() {
   const searchParams = useSearchParams();
   const router       = useRouter();
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = currentMonthIST();
   const [month,      setMonthState] = useState(searchParams.get("month")       || currentMonth);
   const [mechanicId, setMechState]  = useState(searchParams.get("mechanic_id") || "all");
   const [loading,    setLoading]    = useState(true);
@@ -52,10 +53,10 @@ function CommissionContent() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const from = `${month}-01T00:00:00`;
-      const toDate = new Date(month + "-01");
-      toDate.setMonth(toDate.getMonth() + 1);
-      const to = toDate.toISOString().split("T")[0] + "T23:59:59";
+      const from = `${month}-01T00:00:00+05:30`;
+      const [year, m] = month.split("-").map(Number);
+      const lastDay = new Date(year, m, 0).getDate();
+      const to = `${month}-${String(lastDay).padStart(2, "0")}T23:59:59+05:30`;
 
       // 1. Parallel fetch: Mechanics and Transactions
       const [mechRes, txnRes] = await Promise.all([
@@ -133,13 +134,13 @@ function CommissionContent() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const navigate = (dir: "prev" | "next") => {
-    const d = new Date(month + "-01");
+    const d = parseISTDate(month + "-01");
     d.setMonth(d.getMonth() + (dir === "prev" ? -1 : 1));
-    setMonth(d.toISOString().slice(0, 7));
+    setMonth(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" }).format(d));
   };
 
   const totalComm  = rows.reduce((s, r) => s + r.mechanic_commission_amount, 0);
-  const monthLabel = new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const monthLabel = parseISTDate(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 
   // Per-mechanic summary
   const byMechanic = rows.reduce<Record<number, { name: string; total: number; jobs: number }>>(

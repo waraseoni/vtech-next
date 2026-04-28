@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
   const from = searchParams.get("from") || "";
   const to = searchParams.get("to") || "";
 
-  const fromTs = `${from}T00:00:00`;
-  const toTs = `${to}T23:59:59`;
+  const fromTs = `${from}T00:00:00+05:30`;
+  const toTs = `${to}T23:59:59+05:30`;
 
   const { data: tsData } = await supabase
     .from("transaction_services").select("service_id, price, date_updated, transaction_id")
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     <div class="shop-address">F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002</div>
     <div class="shop-contact">Mobile: 9179105875</div>
     <h1>Custom Service Report (Labor Charges)</h1>
-    <div class="subtitle">${formatDate(from + "T00:00:00")} — ${formatDate(to + "T23:59:59")} | Date: ${formatDate(new Date().toISOString())}</div>
+    <div class="subtitle">${formatDate(from + "T00:00:00+05:30")} — ${formatDate(to + "T23:59:59+05:30")} | Date: ${formatDate(new Date().toISOString())}</div>
   </div>
 
   <table>

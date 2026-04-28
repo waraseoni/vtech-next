@@ -78,9 +78,9 @@ function SalaryContent() {
 
       // Date Boundaries
       const monthStart = `${month}-01`;
-      const nextMonthD = new Date(monthStart);
-      nextMonthD.setMonth(nextMonthD.getMonth() + 1);
-      const nextMonthStart = nextMonthD.toISOString().split("T")[0]; // Strictly less than this date
+      const [year, m] = month.split("-").map(Number);
+      const lastDay = new Date(year, m, 0).getDate();
+      const nextMonthStart = `${month}-${String(lastDay).padStart(2, "0")}T23:59:59+05:30`;
 
       // Helper to fully exhaust pagination
       const fetchAllData = async (queryBuilder: any) => {
@@ -103,9 +103,9 @@ function SalaryContent() {
 
       // 2. Bulk Fetch all related data safely (Bypasses Supabase 1000 rows max API limit)
       const [allAtt, allComm, allAdv, allHist] = await Promise.all([
-        fetchAllData(supabase.from("attendance_list").select("mechanic_id, curr_date, status").in("mechanic_id", mechIds).in("status", [1, 3]).lt("curr_date", nextMonthStart)),
-        fetchAllData(supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount, date_created").in("mechanic_id", mechIds).lt("date_created", `${nextMonthStart}T23:59:59`)),
-        fetchAllData(supabase.from("advance_payments").select("mechanic_id, amount, date_paid").in("mechanic_id", mechIds).lt("date_paid", nextMonthStart)),
+        fetchAllData(supabase.from("attendance_list").select("mechanic_id, curr_date, status").in("mechanic_id", mechIds).in("status", [1, 3]).lte("curr_date", nextMonthStart.slice(0, 10))),
+        fetchAllData(supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount, date_created").in("mechanic_id", mechIds).lte("date_created", nextMonthStart)),
+        fetchAllData(supabase.from("advance_payments").select("mechanic_id, amount, date_paid").in("mechanic_id", mechIds).lte("date_paid", nextMonthStart.slice(0, 10))),
         fetchAllData(supabase.from("mechanic_salary_history").select("*").in("mechanic_id", mechIds).order("effective_date", { ascending: false }).order("id", { ascending: false }))
       ]);
 
@@ -195,10 +195,10 @@ function SalaryContent() {
 
   const openLedger = async (r: SalaryRow) => {
     const from = `${month}-01`;
-    const nextMonthD = parseISTDate(from);
-    nextMonthD.setMonth(nextMonthD.getMonth() + 1);
-    const nextMonthStart = nextMonthD.toISOString().split("T")[0];
-    const to = new Date(nextMonthD.getTime() - 86400000).toISOString().split("T")[0]; // Last day of current month
+    const [year, m] = month.split("-").map(Number);
+    const lastDay = new Date(year, m, 0).getDate();
+    const nextMonthBoundary = `${month}-${String(lastDay).padStart(2, "0")}T23:59:59+05:30`;
+    const to = nextMonthBoundary.slice(0, 10);
 
     setLedgerTarget({ id: r.id, name: r.name, default_salary: r.salary_per_day });
     setLedgerFrom(from); setLedgerTo(to);
@@ -228,10 +228,10 @@ function SalaryContent() {
       };
 
       const [attAll, attPrev, commAllData, advAll, advPrev] = await Promise.all([
-        fetchAllData(supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", r.id).in("status", [1, 3]).gte("curr_date", from).lt("curr_date", nextMonthStart)),
+        fetchAllData(supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", r.id).in("status", [1, 3]).gte("curr_date", from).lte("curr_date", to)),
         fetchAllData(supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", r.id).in("status", [1, 3]).lt("curr_date", from)),
-        fetchAllData(supabase.from("transaction_list").select("job_id, code, mechanic_commission_amount, date_created").eq("mechanic_id", r.id).lt("date_created", `${nextMonthStart}T23:59:59`)),
-        fetchAllData(supabase.from("advance_payments").select("amount, date_paid").eq("mechanic_id", r.id).gte("date_paid", from).lt("date_paid", nextMonthStart)),
+        fetchAllData(supabase.from("transaction_list").select("job_id, code, mechanic_commission_amount, date_created").eq("mechanic_id", r.id).lte("date_created", nextMonthBoundary)),
+        fetchAllData(supabase.from("advance_payments").select("amount, date_paid").eq("mechanic_id", r.id).gte("date_paid", from).lte("date_paid", to)),
         fetchAllData(supabase.from("advance_payments").select("amount").eq("mechanic_id", r.id).lt("date_paid", from))
       ]);
 
@@ -278,7 +278,7 @@ function SalaryContent() {
 
   const handlePaySalary = async () => {
     if (!payTarget) return;
-    await supabase.from("advance_payments").insert({ mechanic_id: payTarget.id, amount: payTarget.amount, date_paid: new Date().toISOString().split("T")[0], reason: `Salary Settlement for ${monthLabel}` });
+    await supabase.from("advance_payments").insert({ mechanic_id: payTarget.id, amount: payTarget.amount, date_paid: todayIST(), reason: `Salary Settlement for ${monthLabel}` });
     setShowPayModal(false); setPayTarget(null); fetchReport();
   };
 

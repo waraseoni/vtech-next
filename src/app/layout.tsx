@@ -11,7 +11,7 @@ import {
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
   DollarSign, Truck, CreditCard, Clock, Briefcase, Coins, Receipt,
   Toolbox, FolderOpen, UsersRound, Database, Settings2,
-  ChevronDown, ChevronRight, X, Menu, ArrowLeft, BarChart2, RefreshCw, Sun, Moon, History,
+  ChevronDown, ChevronRight, X, Menu, ArrowLeft, BarChart2, RefreshCw, Sun, Moon, History, Activity,
 } from "lucide-react";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
@@ -369,6 +369,7 @@ function SidebarNav({
               <li><Link href="/reports/custom-service"  className={subLinkCls(pathname === "/reports/custom-service")}  onClick={onNavClick}><Wrench size={12} />Custom Service</Link></li>
               <li><Link href="/reports/top-customers"  className={subLinkCls(pathname === "/reports/top-customers")}  onClick={onNavClick}><Users size={12} />Top Customers</Link></li>
               <li><Link href="/reports/loan"           className={subLinkCls(pathname === "/reports/loan")}           onClick={onNavClick}><CreditCard size={12} />Loan Report</Link></li>
+              <li><Link href="/activity-logs"          className={subLinkCls(pathname === "/activity-logs")}          onClick={onNavClick}><Activity size={12} />Activity Log</Link></li>
             </SubMenu>
 
             <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">

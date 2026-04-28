@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
 import { Save, ArrowLeft, UserPlus, Loader2, Edit3, AlertTriangle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { logActivity } from '@/lib/activity';
 
 // ── DARK THEME CONSTANTS ──────────────────────────────────
 const inputCls = "w-full px-4 py-3 rounded-xl bg-[#0d1117] border border-[#21293d] text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 outline-none transition-all text-sm font-medium";
@@ -182,17 +183,21 @@ export default function ManageClientPage() {
         address:         form.address.trim(),
         opening_balance: parseFloat(form.opening_balance) || 0,
       };
+      const clientName = [payload.firstname, payload.lastname].filter(Boolean).join(' ');
       if (isEdit) {
         const { error } = await supabase
           .from('client_list')
           .update({ ...payload, date_updated: new Date().toISOString() })
           .eq('id', clientId);
         if (error) throw error;
+        await logActivity('Updated Client Details', 'Clients', clientId, `Client: ${clientName}`);
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('client_list')
-          .insert([{ ...payload, delete_flag: 0 }]);
+          .insert([{ ...payload, delete_flag: 0 }])
+          .select('id').single();
         if (error) throw error;
+        await logActivity('Created New Client', 'Clients', data.id, `Client: ${clientName}`);
       }
       router.push('/clients');
     } catch (err: any) {

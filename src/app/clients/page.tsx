@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { todayIST } from "@/lib/dateUtils";
 import Link from "next/link";
 import {
   Users, UserPlus, Search, Phone, Mail,
@@ -274,7 +275,7 @@ export default function ClientsPage() {
     const rows=[["#","Name","Contact","Email","Address","Opening","Repairs","Direct","Loans","Paid","Balance"],...filteredSortedClients.map((c,i)=>[i+1,c.name,c.contact,c.email,c.address,c.opening_balance,c.repair_billed,c.direct_sales_billed,c.total_loan_given,c.total_paid,c.balance])];
     const a=document.createElement("a");
     a.href=URL.createObjectURL(new Blob([`<table>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</table>`],{type:"application/vnd.ms-excel"}));
-    a.download=`clients_${new Date().toISOString().slice(0,10)}.xls`; a.click();
+    a.download=`clients_${todayIST()}.xls`; a.click();
   };
 
   // ── Derived ────────────────────────────────────────────────────────────────

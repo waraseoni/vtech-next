@@ -9,6 +9,7 @@ import {
   Check, AlertCircle, User, Users, DollarSign, TrendingUp, Calendar,
   Eye, Wrench, FileText, MessageSquare
 } from "lucide-react";
+import { logActivity } from "@/lib/activity";
 
 type Mechanic = {
   id: number;
@@ -161,9 +162,11 @@ export default function MechanicsPage() {
       if (editing) {
         const { error } = await supabase.from("mechanic_list").update(payload).eq("id", editing.id);
         if (error) throw error;
+        await logActivity('Updated Staff Member', 'Mechanics', editing.id, `Updated profile for: ${payload.firstname} ${payload.lastname}`);
       } else {
-        const { error } = await supabase.from("mechanic_list").insert([{ ...payload, delete_flag: 0 }]);
+        const { data, error } = await supabase.from("mechanic_list").insert([{ ...payload, delete_flag: 0 }]).select("id").single();
         if (error) throw error;
+        await logActivity('Added Staff Member', 'Mechanics', data.id, `Created profile for: ${payload.firstname} ${payload.lastname}`);
       }
       setShowModal(false);
       fetchData();
@@ -177,14 +180,22 @@ export default function MechanicsPage() {
   const handleDelete = async (id: number, name: string) => {
     if (userRole !== "admin") { alert("Sirf Admin delete kar sakta hai!"); return; }
     if (!confirm(`"${name}" ko delete karna hai?`)) return;
-    await supabase.from("mechanic_list").update({ delete_flag: 1 }).eq("id", id);
-    fetchData();
+    const { error } = await supabase.from("mechanic_list").update({ delete_flag: 1 }).eq("id", id);
+    if (!error) {
+      await logActivity('Deleted Staff Member', 'Mechanics', id, `Deleted profile: ${name}`);
+      fetchData();
+    }
   };
 
   const toggleStatus = async (m: Mechanic) => {
     if (userRole !== "admin") { alert("Sirf Admin status change kar sakta hai!"); return; }
-    await supabase.from("mechanic_list").update({ status: m.status === 1 ? 0 : 1 }).eq("id", m.id);
-    fetchData();
+    const newStatus = m.status === 1 ? 0 : 1;
+    const name = [m.firstname, m.lastname].join(" ");
+    const { error } = await supabase.from("mechanic_list").update({ status: newStatus }).eq("id", m.id);
+    if (!error) {
+      await logActivity('Updated Staff Status', 'Mechanics', m.id, `${name} marked as ${newStatus === 1 ? 'Active' : 'Inactive'}`);
+      fetchData();
+    }
   };
 
   return (

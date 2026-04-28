@@ -43,7 +43,8 @@ function AttendanceContent() {
     const params = new URLSearchParams(searchParams.toString());
     if (tab === 'report') {
       params.set('view', 'report');
-      if (!params.has('month')) params.set('month', new Date().toISOString().slice(0, 7));
+      // Use IST helper instead of naive UTC string manipulation
+      if (!params.has('month')) params.set('month', new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" }).format(new Date()));
     } else {
       params.delete('view');
       params.delete('month');

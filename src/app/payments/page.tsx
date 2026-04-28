@@ -9,7 +9,7 @@ import {
   Loader2, Pencil, Plus, Receipt, RotateCcw, Search, Trash2, X,
   Calendar, Filter, Users, DollarSign, CreditCard
 } from "lucide-react";
-import { todayIST, formatIST, startOfMonthIST, endOfMonthIST, parseISTDate } from "@/lib/dateUtils";
+import { todayIST, formatIST, startOfMonthIST, endOfMonthIST, parseISTDate, toISTDatePart } from "@/lib/dateUtils";
 import { exportToCSV, printTable } from "@/lib/exportUtils";
 
 type Client = { id: number; firstname: string; middlename: string | null; lastname: string; contact: string | null };
@@ -236,10 +236,10 @@ export default function PaymentsPage() {
         <div className="mt-4 flex flex-wrap gap-2">
           <button onClick={() => { setFromDate(istToday); setToDate(istToday); setCurrentPage(1); }} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all">Today</button>
           <button onClick={() => applyMonth(0)} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all">This Month</button>
-          <button onClick={() => { const d = new Date(fromDate); d.setDate(d.getDate() - 1); setFromDate(d.toISOString().split('T')[0]); setToDate(d.toISOString().split('T')[0]); setCurrentPage(1); }} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1">
+          <button onClick={() => { const d = new Date(fromDate); d.setDate(d.getDate() - 1); const s = toISTDatePart(d); setFromDate(s); setToDate(s); setCurrentPage(1); }} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1">
             <ChevronLeft size={14} /> Prev Day
           </button>
-          <button onClick={() => { const d = new Date(toDate); d.setDate(d.getDate() + 1); setFromDate(d.toISOString().split('T')[0]); setToDate(d.toISOString().split('T')[0]); setCurrentPage(1); }} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1">
+          <button onClick={() => { const d = new Date(toDate); d.setDate(d.getDate() + 1); const s = toISTDatePart(d); setFromDate(s); setToDate(s); setCurrentPage(1); }} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1">
             Next Day <ChevronRight size={14} />
           </button>
           <button onClick={() => applyMonth(-1)} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1">

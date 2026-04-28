@@ -11,6 +11,7 @@ import {
   ChevronRight, Zap, CircleDot,
 } from "lucide-react";
 import StockModal from "./components/StockModal";
+import { logActivity } from "@/lib/activity";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -213,9 +214,12 @@ export default function ProductDetailPage() {
 
   const handleDeleteStock = async (id: number) => {
     if (!confirm("Delete this stock entry?")) return;
+    const entry = stockIn.find(s => s.id === id);
     const { error } = await supabase.from("inventory_list").delete().eq("id", id);
-    if (!error) fetchData();
-    else alert("Failed to delete: " + error.message);
+    if (!error) {
+      await logActivity('Deleted Stock Entry', 'Inventory', productId, `${product?.name || "Unknown"}: Removed entry of ${entry?.quantity} units (ID: ${id})`);
+      fetchData();
+    } else alert("Failed to delete: " + error.message);
   };
 
   // ── Computed ───────────────────────────────────────────────────────────────
@@ -618,6 +622,7 @@ export default function ProductDetailPage() {
       {modalOpen && (
         <StockModal
           productId={productId}
+          productName={product.name}
           stock={editingStock}
           onClose={() => setModalOpen(false)}
           onSaved={() => { setModalOpen(false); fetchData(); }}

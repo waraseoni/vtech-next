@@ -41,8 +41,8 @@ export default function YearlyReportPage() {
     try {
       const startDate = `${year}-01-01`;
       const endDate = `${year}-12-31`;
-      const from = `${year}-01-01T00:00:00`;
-      const to = `${year}-12-31T23:59:59`;
+      const from = `${year}-01-01T00:00:00+05:30`;
+      const to = `${year}-12-31T23:59:59+05:30`;
 
       const [jobsRes, salesRes, paymentsRes, expensesRes] = await Promise.all([
         supabase.from("transaction_list").select("id, amount, date_created")

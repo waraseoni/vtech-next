@@ -36,13 +36,13 @@ function TopCustomersContent() {
       let from: string, to: string;
       if (filterType === "monthly") {
         const d = new Date(selYear, selMonth - 1, 1);
-        from = startOfMonthIST(d) + "T00:00:00";
-        to = endOfMonthIST(d) + "T23:59:59";
+        from = startOfMonthIST(d) + "T00:00:00+05:30";
+        to = endOfMonthIST(d) + "T23:59:59+05:30";
       } else if (filterType === "yearly") {
-        from = `${selYear}-01-01T00:00:00`;
-        to = `${selYear}-12-31T23:59:59`;
+        from = `${selYear}-01-01T00:00:00+05:30`;
+        to = `${selYear}-12-31T23:59:59+05:30`;
       } else {
-        from = "2000-01-01T00:00:00";
+        from = "2000-01-01T00:00:00+05:30";
         to = toISTString();
       }
 

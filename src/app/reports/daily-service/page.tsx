@@ -19,7 +19,7 @@ type Job = {
 };
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
-const fmtDate = (v: string) => formatIST(String(v).slice(0, 10) + "T00:00:00", { day: "2-digit", month: "short", year: "numeric" });
+const fmtDate = (v: string) => formatIST(v.includes("T") ? v : v + "T00:00:00+05:30", { day: "2-digit", month: "short", year: "numeric" });
 const fmtDateTime = (v: string) => formatIST(v, { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
 
 const STATUS_LABELS: Record<number, { label: string; color: string }> = {
@@ -45,8 +45,8 @@ export default function DailyServiceReportPage() {
         .from("transaction_list")
         .select("id, code, client_name, mechanic_id, total, status, date_created, date_updated")
         .eq("delete_flag", 0)
-        .gte("date_created", date + "T00:00:00")
-        .lte("date_created", date + "T23:59:59")
+        .gte("date_created", date + "T00:00:00+05:30")
+        .lte("date_created", date + "T23:59:59+05:30")
         .order("date_created", { ascending: true });
       if (error) throw error;
       setJobs((data || []) as Job[]);

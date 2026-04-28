@@ -12,8 +12,8 @@ export async function GET(request: Request) {
   }
 
   // PHP-style date handling (local time)
-  const from = `${fromParam} 00:00:00`;
-  const to = `${toParam} 23:59:59`;
+  const from = `${fromParam}T00:00:00+05:30`;
+  const to = `${toParam}T23:59:59+05:30`;
 
   const cookieStore = await cookies();
   const supabase = createServerClient(

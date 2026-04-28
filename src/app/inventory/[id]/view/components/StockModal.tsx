@@ -5,6 +5,7 @@ import {
   X, Save, Package, MapPin, Calendar, Plus, Minus,
   CheckCircle2, AlertCircle, Loader2, ArrowDownToLine, Edit3,
 } from "lucide-react";
+import { todayIST, toISTDatePart } from "@/lib/dateUtils";
 
 interface StockModalProps {
   productId: number;
@@ -24,14 +25,14 @@ export default function StockModal({ productId, stock, onClose, onSaved }: Stock
   const [quantity,  setQuantity]  = useState(stock?.quantity  || 1);
   const [place,     setPlace]     = useState(stock?.place     || "");
   const [stockDate, setStockDate] = useState(
-    stock?.stock_date || new Date().toISOString().split("T")[0]
+    stock?.stock_date || todayIST()
   );
   const [saving,  setSaving]  = useState(false);
   const [success, setSuccess] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
 
   const overlayRef = useRef<HTMLDivElement>(null);
-  const today      = new Date().toISOString().split("T")[0];
+  const today      = todayIST();
 
   // Close on Escape
   useEffect(() => {
@@ -232,7 +233,7 @@ export default function StockModal({ productId, stock, onClose, onSaved }: Stock
               <div className="flex gap-2 mt-2">
                 {[
                   { label: "Today",     val: today },
-                  { label: "Yesterday", val: new Date(Date.now() - 86400000).toISOString().split("T")[0] },
+                  { label: "Yesterday", val: toISTDatePart(new Date(Date.now() - 86400000)) },
                 ].map(({ label, val }) => (
                   <button key={label} type="button"
                     onClick={() => setStockDate(val)}

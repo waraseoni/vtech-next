@@ -5,6 +5,8 @@ import {
   X, Save, Package, MapPin, Calendar, Plus, Minus,
   CheckCircle2, AlertCircle, Loader2, ArrowDownToLine, Edit3,
 } from "lucide-react";
+import { logActivity } from "@/lib/activity";
+import { todayIST, toISTDatePart } from "@/lib/dateUtils";
 
 interface StockModalProps {
   productId: number;
@@ -16,22 +18,23 @@ interface StockModalProps {
   } | null;
   onClose: () => void;
   onSaved: () => void;
+  productName?: string;
 }
 
-export default function StockModal({ productId, stock, onClose, onSaved }: StockModalProps) {
+export default function StockModal({ productId, stock, onClose, onSaved, productName }: StockModalProps) {
   const isEdit = !!stock;
 
   const [quantity,  setQuantity]  = useState(stock?.quantity  || 1);
   const [place,     setPlace]     = useState(stock?.place     || "");
   const [stockDate, setStockDate] = useState(
-    stock?.stock_date || new Date().toISOString().split("T")[0]
+    stock?.stock_date || todayIST()
   );
   const [saving,  setSaving]  = useState(false);
   const [success, setSuccess] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
 
   const overlayRef = useRef<HTMLDivElement>(null);
-  const today      = new Date().toISOString().split("T")[0];
+  const today      = todayIST();
 
   // Close on Escape
   useEffect(() => {
@@ -64,11 +67,13 @@ export default function StockModal({ productId, stock, onClose, onSaved }: Stock
           .update({ quantity, place: placeValue, stock_date: stockDate })
           .eq("id", stock!.id);
         if (err) throw err;
+        await logActivity('Updated Stock Entry', 'Inventory', productId, `${productName || 'Product'}: Updated to ${quantity} units (ID: ${stock!.id})`);
       } else {
         const { error: err } = await supabase
           .from("inventory_list")
           .insert([{ product_id: productId, quantity, place: placeValue, stock_date: stockDate }]);
         if (err) throw err;
+        await logActivity('Added New Stock', 'Inventory', productId, `${productName || 'Product'}: Added ${quantity} units`);
       }
       // Show success flash briefly
       setSuccess(true);
@@ -232,7 +237,7 @@ export default function StockModal({ productId, stock, onClose, onSaved }: Stock
               <div className="flex gap-2 mt-2">
                 {[
                   { label: "Today",     val: today },
-                  { label: "Yesterday", val: new Date(Date.now() - 86400000).toISOString().split("T")[0] },
+                  { label: "Yesterday", val: toISTDatePart(new Date(Date.now() - 86400000)) },
                 ].map(({ label, val }) => (
                   <button key={label} type="button"
                     onClick={() => setStockDate(val)}

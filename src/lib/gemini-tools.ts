@@ -192,10 +192,10 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
             let countQuery = supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0);
             
             if (args?.start_date) {
-                countQuery = countQuery.gte("date_created", `${args.start_date}T00:00:00`);
+                countQuery = countQuery.gte("date_created", `${args.start_date}T00:00:00+05:30`);
             }
             if (args?.end_date) {
-                countQuery = countQuery.lte("date_created", `${args.end_date}T23:59:59`);
+                countQuery = countQuery.lte("date_created", `${args.end_date}T23:59:59+05:30`);
             }
             
             const { count: jobsCount } = await countQuery;
@@ -205,8 +205,8 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
                 .select("amount, status, date_completed, date_updated")
                 .eq("status", 5)
                 .eq("del_status", 0)
-                .gte("date_completed", `${args.start_date}T00:00:00`)
-                .lte("date_completed", `${args.end_date}T23:59:59`);
+                .gte("date_completed", `${args.start_date}T00:00:00+05:30`)
+                .lte("date_completed", `${args.end_date}T23:59:59+05:30`);
             
             const totalRevenue = revData?.reduce((sum, job) => sum + (Number(job.amount) || 0), 0) || 0;
             
@@ -236,24 +236,24 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
                     .select("id, amount, status, date_completed, mechanic_commission_amount")
                     .eq("status", 5)
                     .eq("del_status", 0)
-                    .gte("date_completed", `${from}T00:00:00`)
-                    .lte("date_completed", `${to}T23:59:59`),
+                    .gte("date_completed", `${from}T00:00:00+05:30`)
+                    .lte("date_completed", `${to}T23:59:59+05:30`),
                 supabase.from("direct_sales")
                     .select("id, total_amount, date_created, client_id")
-                    .gte("date_created", `${from}T00:00:00`)
-                    .lte("date_created", `${to}T23:59:59`),
+                    .gte("date_created", `${from}T00:00:00+05:30`)
+                    .lte("date_created", `${to}T23:59:59+05:30`),
                 supabase.from("client_payments")
                     .select("id, amount, discount, payment_date")
-                    .gte("payment_date", `${from}T00:00:00`)
-                    .lte("payment_date", `${to}T23:59:59`),
+                    .gte("payment_date", `${from}T00:00:00+05:30`)
+                    .lte("payment_date", `${to}T23:59:59+05:30`),
                 supabase.from("expense_list")
                     .select("amount, date_created")
-                    .gte("date_created", `${from}T00:00:00`)
-                    .lte("date_created", `${to}T23:59:59`),
+                    .gte("date_created", `${from}T00:00:00+05:30`)
+                    .lte("date_created", `${to}T23:59:59+05:30`),
                 supabase.from("loan_payments")
                     .select("amount_paid")
-                    .gte("payment_date", `${from}T00:00:00`)
-                    .lte("payment_date", `${to}T23:59:59`),
+                    .gte("payment_date", `${from}T00:00:00+05:30`)
+                    .lte("payment_date", `${to}T23:59:59+05:30`),
                 supabase.from("attendance_list")
                     .select("mechanic_id, status")
                     .in("status", [1, 3])

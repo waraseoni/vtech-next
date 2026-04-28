@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
+import { formatIST, toISTDatePart } from "@/lib/dateUtils";
 import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Eye, CreditCard } from "lucide-react";
 
 type Client = { id: number; firstname: string; middlename: string | null; lastname: string; contact: string | null };
@@ -22,7 +23,7 @@ type Loan = {
 };
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
-const fmtDate = (v: string) => new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(new Date(String(v).slice(0, 10) + "T00:00:00"));
+const fmtDate = (v: string) => formatIST(v, { day: "2-digit", month: "short", year: "numeric" });
 function todayIST() { return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date()); }
 
 export default function ClientLoansPage() {
@@ -119,7 +120,7 @@ export default function ClientLoansPage() {
     setEditing(loan);
     setForm({
       client_id: String(loan.client_id),
-      loan_date: String(loan.loan_date).slice(0, 10),
+      loan_date: toISTDatePart(loan.loan_date),
       principal: String(loan.principal || ""),
       tenure_months: String(loan.tenure_months || ""),
       interest_rate: String(loan.interest_rate || ""),

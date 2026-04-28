@@ -135,7 +135,7 @@ const STATUS_META = [
   { label: "Delivered", color: "#3b82f6" },
 ];
 
-import { todayIST, formatIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+import { todayIST, formatIST, startOfMonthIST, endOfMonthIST, toISTDatePart } from "@/lib/dateUtils";
 
 // ─── Timezone-safe helpers ────────────────────────────────────────────────────
 // BUG FIX 4: fmtDate — new Date('YYYY-MM-DD') parses as UTC midnight.
@@ -146,7 +146,7 @@ const fmtDate = (d: string) =>
     day: "2-digit", month: "short", year: "numeric",
   });
 
-const isoDate = (iso: string) => (iso ? iso.split("T")[0] : "");
+const isoDate = (iso: string) => (iso ? toISTDatePart(iso) : "");
 const n = (v: unknown) => { const x = Number(v); return isNaN(x) ? 0 : x; };
 const inr = (v: number, digits = 0) =>
   "₹" + v.toLocaleString("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -370,8 +370,8 @@ export default function Dashboard() {
     setFinLoading(true);
     try {
       // PHP-style date handling (matching Ledger/PHP)
-      const f0 = `${from} 00:00:00`;
-      const t0 = `${to} 23:59:59`;
+      const f0 = `${from}T00:00:00+05:30`;
+      const t0 = `${to}T23:59:59+05:30`;
 
       const [
         { data: tD }, { data: dD },

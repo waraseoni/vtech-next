@@ -173,7 +173,7 @@ export default function DailyAttendance({
 
       {userRole === 'staff' && (
         <div className="mb-5 text-center text-sm text-slate-400 font-bold">
-          {new Date(selectedDate).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          {new Date(`${selectedDate}T00:00:00+05:30`).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
       )}
 

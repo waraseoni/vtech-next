@@ -81,10 +81,11 @@ h1{font-size:21px;font-weight:900;color:#fff;margin-bottom:4px}
 // ════════════════════════════════════════════════════════════
 // CONFIG — exact match with Supabase backup (verified field-by-field)
 // ════════════════════════════════════════════════════════════
-const TABLES=["system_info","job_id_counter","mechanic_list","client_list","product_list","service_list","inventory_list","lender_list","loan_payments","expense_list","transaction_list","transaction_products","transaction_services","transaction_images","client_loans","client_payments","direct_sales","direct_sale_items","attendance_list","advance_payments","mechanic_salary_history","mechanic_commission_history","message_list"];
+const TABLES=["system_info","job_id_counter","mechanic_list","client_list","product_list","service_list","inventory_list","lender_list","loan_payments","expense_list","transaction_list","transaction_products","transaction_services","transaction_images","client_loans","client_payments","direct_sales","direct_sale_items","attendance_list","advance_payments","mechanic_salary_history","mechanic_commission_history","message_list","activity_logs"];
 
 // INT fields — exact from schema + good backup
 const INT_F={
+  activity_logs:["id","user_id"],
   advance_payments:["id","mechanic_id"],
   attendance_list:["id","mechanic_id","status"],
   client_list:["id","delete_flag"],
@@ -157,7 +158,7 @@ const EMPTY_STR={
 };
 
 // Datetime format — ALL tables use +05:30 (IST) since MariaDB stored IST local time
-const WITH_TZ=new Set(["mechanic_list","product_list","service_list","lender_list","mechanic_commission_history","transaction_list","client_list","client_loans","client_payments","direct_sales","direct_sale_items","expense_list","inventory_list","loan_payments","mechanic_salary_history","attendance_list","advance_payments","message_list","transaction_products","transaction_services","transaction_images"]);
+const WITH_TZ=new Set(["mechanic_list","product_list","service_list","lender_list","mechanic_commission_history","transaction_list","client_list","client_loans","client_payments","direct_sales","direct_sale_items","expense_list","inventory_list","loan_payments","mechanic_salary_history","attendance_list","advance_payments","message_list","transaction_products","transaction_services","transaction_images","activity_logs"]);
 const DATE_ONLY=new Set(["date_paid","payment_date","curr_date","stock_date","loan_date","start_date","effective_date"]);
 const DT_FIELDS=new Set(["date_created","date_updated","date_completed","date_added","last_edited_date","created_at"]);
 

@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { Loader2, ChevronLeft, ChevronRight, Printer, BarChart2, Wrench } from "lucide-react";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+import { currentMonthIST, parseISTDate } from "@/lib/dateUtils";
 
 type CommRow = {
   id: number;
@@ -20,7 +21,7 @@ type CommRow = {
 function CommissionContent() {
   const searchParams = useSearchParams();
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = currentMonthIST();
   const [month, setMonth] = useState(searchParams.get("month") || currentMonth);
   const [mechanicId, setMechanicId] = useState(searchParams.get("mechanic_id") || "all");
   const [loading, setLoading] = useState(true);
@@ -32,10 +33,10 @@ function CommissionContent() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const from = `${month}-01T00:00:00`;
-      const toDate = new Date(month + "-01");
-      toDate.setMonth(toDate.getMonth() + 1);
-      const to = toDate.toISOString().split("T")[0] + "T23:59:59";
+      const from = `${month}-01T00:00:00+05:30`;
+      const [year, m] = month.split("-").map(Number);
+      const lastDay = new Date(year, m, 0).getDate();
+      const to = `${month}-${String(lastDay).padStart(2, "0")}T23:59:59+05:30`;
 
       // 1. Parallel fetch
       const [mechRes, txnRes] = await Promise.all([
@@ -109,14 +110,14 @@ function CommissionContent() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const navigate = (dir: "prev" | "next") => {
-    const d = new Date(month + "-01");
+    const d = parseISTDate(month + "-01");
     if (dir === "prev") d.setMonth(d.getMonth() - 1);
     else d.setMonth(d.getMonth() + 1);
-    setMonth(d.toISOString().slice(0, 7));
+    setMonth(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" }).format(d));
   };
 
   const totalComm = rows.reduce((s, r) => s + (r.mechanic_commission_amount || 0), 0);
-  const monthLabel = new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const monthLabel = parseISTDate(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 
   return (
     <div className="space-y-4">

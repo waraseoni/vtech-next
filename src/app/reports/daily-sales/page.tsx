@@ -18,7 +18,7 @@ type SaleItem = {
 };
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
-const fmtDate = (v: string) => formatIST(String(v).slice(0, 10) + "T00:00:00", { day: "2-digit", month: "short", year: "numeric" });
+const fmtDate = (v: string) => formatIST(v.includes("T") ? v : v + "T00:00:00+05:30", { day: "2-digit", month: "short", year: "numeric" });
 const fmtDateTime = (v: string) => formatIST(v, { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
 
 export default function DailySalesReportPage() {
@@ -41,8 +41,8 @@ export default function DailySalesReportPage() {
           transaction:transaction_list!inner(code, client_name, date_updated),
           product:product_list!inner(name)
         `)
-        .gte("date_updated", date + "T00:00:00")
-        .lte("date_updated", date + "T23:59:59")
+        .gte("date_updated", date + "T00:00:00+05:30")
+        .lte("date_updated", date + "T23:59:59+05:30")
         .order("date_updated", { ascending: true });
       if (error) throw error;
 

@@ -18,7 +18,7 @@ type Mechanic = {
   daily_salary: number;
 };
 
-import { todayIST, startOfMonthIST, endOfMonthIST, formatIST, parseISTDate } from "@/lib/dateUtils";
+import { todayIST, startOfMonthIST, endOfMonthIST, formatIST, parseISTDate, toISTDatePart } from "@/lib/dateUtils";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
@@ -67,7 +67,7 @@ export default function MechanicLedgerPage() {
     // Calculate opening balance (before fromDate)
     const d = parseISTDate(fromDate);
     d.setDate(d.getDate() - 1);
-    const prevDateStr = d.toISOString().split("T")[0];
+    const prevDateStr = toISTDatePart(d);
 
     const { data: prevAtt } = await supabase
       .from("attendance_list")
@@ -104,7 +104,7 @@ export default function MechanicLedgerPage() {
     const endDate = parseISTDate(toDate);
 
     while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split("T")[0];
+      const dateStr = toISTDatePart(currentDate);
       const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       const dayName = dayNames[currentDate.getDay()];
 

@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
   const [{ data: allAtt }, { data: allComm }, { data: allAdv }, { data: allHist }] = await Promise.all([
     supabase.from("attendance_list").select("mechanic_id, curr_date, status").in("mechanic_id", mechIds).in("status", [1, 3]).lt("curr_date", nextMonthStart),
-    supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount, date_created").in("mechanic_id", mechIds).lt("date_created", `${nextMonthStart}T00:00:00`),
+    supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount, date_created").in("mechanic_id", mechIds).lt("date_created", `${nextMonthStart}T00:00:00+05:30`),
     supabase.from("advance_payments").select("mechanic_id, amount, date_paid").in("mechanic_id", mechIds).lt("date_paid", nextMonthStart),
     supabase.from("mechanic_salary_history").select("*").in("mechanic_id", mechIds).order("effective_date", { ascending: false }).order("id", { ascending: false })
   ]);
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
       earnedPrev += (a.status === 3 ? rate / 2 : rate);
     });
 
-    const commPrevSum = commList.filter((c: any) => c.mechanic_id === m.id && c.date_created < `${monthStart}T00:00:00`).reduce((s: number, c: any) => s + (c.mechanic_commission_amount || 0), 0);
+    const commPrevSum = commList.filter((c: any) => c.mechanic_id === m.id && c.date_created < `${monthStart}T00:00:00+05:30`).reduce((s: number, c: any) => s + (c.mechanic_commission_amount || 0), 0);
     const advPrevSum = advList.filter((a: any) => a.mechanic_id === m.id && a.date_paid < monthStart).reduce((s: number, a: any) => s + (a.amount || 0), 0);
     const oldBalance = earnedPrev + commPrevSum - advPrevSum;
 
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       else { presentCount++; currentFix += rate; }
     });
 
-    const currentComm = commList.filter((c: any) => c.mechanic_id === m.id && c.date_created >= `${monthStart}T00:00:00` && c.date_created < `${nextMonthStart}T00:00:00`).reduce((s: number, c: any) => s + (c.mechanic_commission_amount || 0), 0);
+    const currentComm = commList.filter((c: any) => c.mechanic_id === m.id && c.date_created >= `${monthStart}T00:00:00+05:30` && c.date_created < `${nextMonthStart}T00:00:00+05:30`).reduce((s: number, c: any) => s + (c.mechanic_commission_amount || 0), 0);
     const currentAdv = advList.filter((a: any) => a.mechanic_id === m.id && a.date_paid >= monthStart && a.date_paid < nextMonthStart).reduce((s: number, a: any) => s + (a.amount || 0), 0);
     const netFinal = oldBalance + currentFix + currentComm - currentAdv;
 

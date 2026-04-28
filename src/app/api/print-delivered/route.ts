@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
   const to = searchParams.get("to") || from;
   const clientId = searchParams.get("client_id") || "all";
 
-  const startDate = `${from}T00:00:00`;
-  const endDate = `${to}T23:59:59`;
+  const startDate = `${from}T00:00:00+05:30`;
+  const endDate = `${to}T23:59:59+05:30`;
 
   let query = supabase
     .from('transaction_list')

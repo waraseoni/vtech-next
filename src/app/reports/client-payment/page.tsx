@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
-import { formatIST } from "@/lib/dateUtils";
+import { formatIST, startOfMonthIST, endOfMonthIST, toISTDatePart } from "@/lib/dateUtils";
 
 type Row = {
   id: number;
@@ -31,13 +31,9 @@ export default function ClientPaymentReportPage() {
 
   // Get current month start and end date
   const getCurrentMonthRange = () => {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0); // last day of month
-
     return {
-      from: startOfMonth.toISOString().split("T")[0],
-      to: endOfMonth.toISOString().split("T")[0],
+      from: startOfMonthIST(),
+      to: endOfMonthIST(),
     };
   };
 
@@ -156,9 +152,8 @@ export default function ClientPaymentReportPage() {
         return;
     }
 
-    const formatDate = (d: Date) => d.toISOString().split("T")[0];
-    setFromDate(formatDate(start));
-    setToDate(formatDate(end));
+    setFromDate(toISTDatePart(start));
+    setToDate(toISTDatePart(end));
     setClientSearch("");
     setCurrentPage(1);
   };

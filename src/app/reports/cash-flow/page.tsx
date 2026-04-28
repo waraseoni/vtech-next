@@ -7,7 +7,7 @@ import {
   Info, ArrowUp, ArrowDown, Calendar, Filter, Download, Zap,
   TrendingDown, PieChart as PieChartIcon, Activity
 } from "lucide-react";
-import { startOfMonthIST, endOfMonthIST, formatIST } from "@/lib/dateUtils";
+import { startOfMonthIST, endOfMonthIST, formatIST, toISTDatePart } from "@/lib/dateUtils";
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip,
   AreaChart, Area, XAxis, YAxis, CartesianGrid
@@ -123,7 +123,7 @@ export default function CashFlowPage() {
   const navigateDay = (dir: "prev" | "next") => {
     const d = new Date(from);
     d.setDate(d.getDate() + (dir === "next" ? 1 : -1));
-    const s = d.toISOString().split('T')[0];
+    const s = toISTDatePart(d);
     setFrom(s); setTo(s); setViewMode("day");
   };
 

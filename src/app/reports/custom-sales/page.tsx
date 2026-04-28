@@ -29,8 +29,8 @@ function CustomSalesContent() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const fromTs = `${from}T00:00:00`;
-      const toTs = `${to}T23:59:59`;
+      const fromTs = `${from}T00:00:00+05:30`;
+      const toTs = `${to}T23:59:59+05:30`;
 
       const { data: tpData } = await supabase
         .from("transaction_products").select("product_id, price, qty, date_updated, transaction_id")

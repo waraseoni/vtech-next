@@ -484,7 +484,7 @@ function JobsListContent() {
       const { count: todayCount } = await supabase
         .from("transaction_list")
         .select("id", { count: "exact", head: true })
-        .gte("date_created", todayStr + "T00:00:00");
+        .gte("date_created", todayStr + "T00:00:00+05:30");
       const dailySeq = String((todayCount || 0) + 1).padStart(2, "0");
 
       const { data: counterRow } = await supabase.from("job_id_counter").select("last_job_id").eq("id", 1).single();

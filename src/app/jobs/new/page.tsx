@@ -9,6 +9,7 @@ import {
   Trash2, Plus, IndianRupee, MapPin, MessageSquare, UserCog,
   Smartphone, X,
 } from "lucide-react";
+import { logActivity } from "@/lib/activity";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STYLES
@@ -374,6 +375,7 @@ export default function ManageJobPage({
       setSelectedClient(newClient);
       fetchClientBalance(newClient.id);
       setShowAddClientModal(false);
+      await logActivity('Created Client (from Job)', 'Clients', newClient.id, `Name: ${newClient.fullname}`);
       setNewClientForm({ firstname: "", middlename: "", lastname: "", contact: "", email: "", address: "" });
       setToast({ type: "success", msg: "Naya client add ho gaya! ✅" });
 
@@ -565,6 +567,9 @@ export default function ManageJobPage({
           .from("job_id_counter")
           .update({ last_job_id: parseInt(jobCode) })
           .eq("id", 1);
+        await logActivity('Created New Job', 'Jobs', txnId ?? undefined, `Job #${jobCode} for ${selectedClient.fullname}`);
+      } else {
+        await logActivity('Updated Job Details', 'Jobs', jobId, `Job #${jobCode} — ${item}`);
       }
 
       setToast({ type: "success", msg: isEdit ? "Job update ho gaya! ✅" : "Naya job create ho gaya! ✅" });

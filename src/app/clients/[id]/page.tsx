@@ -16,6 +16,7 @@ const toNum = (v: unknown) => { const x = Number(v); return isNaN(x) ? 0 : x; };
 const inr = (v: number, sign = true) => `${sign && v < 0 ? "−" : ""}₹${Math.abs(v).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "N/A";
 const fmtDateTime = (d: string | null) => d ? new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) : "N/A";
+import { todayIST } from "@/lib/dateUtils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Client = {
@@ -138,8 +139,8 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
   const filteredRepairs = repairs.filter(r => {
     if (!dateFrom && !dateTo) return true;
     const d = new Date(r.date_created);
-    if (dateFrom && d < new Date(dateFrom)) return false;
-    if (dateTo && d > new Date(dateTo + "T23:59:59")) return false;
+    if (dateFrom && d < new Date(dateFrom + "T00:00:00+05:30")) return false;
+    if (dateTo && d > new Date(dateTo + "T23:59:59+05:30")) return false;
     return true;
   });
 
@@ -156,7 +157,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
     const { error } = await supabase.from("client_payments").insert({
       client_id: clientId, amount: amt, discount: parseFloat(payDiscount) || 0,
       payment_mode: payMode, remarks: payRemarks.trim() || null,
-      payment_date: new Date().toISOString().slice(0, 10),
+      payment_date: todayIST(),
     });
     if (error) setToast({ type: "error", msg: "Payment save nahi hua: " + error.message });
     else { setToast({ type: "success", msg: "Payment save ho gayi! ✅" }); setShowPayModal(false); fetchData(); }
@@ -175,7 +176,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
     const { error } = await supabase.from("client_loans").insert({
       client_id: clientId, principal_amount: amt, interest_rate: rate,
       loan_period: period, total_payable: total, emi_amount: emi,
-      remarks: loanRemarks.trim() || null, loan_date: new Date().toISOString().slice(0, 10),
+      remarks: loanRemarks.trim() || null, loan_date: todayIST(),
       status: 1,
     });
     if (error) setToast({ type: "error", msg: "Loan save nahi hua: " + error.message });
@@ -193,7 +194,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
       client_id: clientId, loan_id: selectedLoanId, amount: amt,
       discount: 0, payment_mode: "Cash",
       remarks: emiRemarks.trim() || null,
-      payment_date: new Date().toISOString().slice(0, 10),
+      payment_date: todayIST(),
     });
     if (error) setToast({ type: "error", msg: "EMI save nahi hua: " + error.message });
     else { setToast({ type: "success", msg: "EMI collect ho gayi! ✅" }); setShowEmiModal(false); fetchData(); }

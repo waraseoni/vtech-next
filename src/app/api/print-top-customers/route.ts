@@ -18,14 +18,14 @@ export async function GET(request: NextRequest) {
   let from: string, to: string;
   if (filterType === "monthly") {
     const d = new Date(selYear, selMonth - 1, 1);
-    from = d.toISOString().slice(0, 10) + "T00:00:00";
+    from = d.toISOString().slice(0, 10) + "T00:00:00+05:30";
     const lastDay = new Date(selYear, selMonth, 0).toISOString().slice(0, 10);
-    to = lastDay + "T23:59:59";
+    to = lastDay + "T23:59:59+05:30";
   } else if (filterType === "yearly") {
-    from = `${selYear}-01-01T00:00:00`;
-    to = `${selYear}-12-31T23:59:59`;
+    from = `${selYear}-01-01T00:00:00+05:30`;
+    to = `${selYear}-12-31T23:59:59+05:30`;
   } else {
-    from = "2000-01-01T00:00:00";
+    from = "2000-01-01T00:00:00+05:30";
     to = new Date().toISOString();
   }
 

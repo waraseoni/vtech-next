@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { geminiTools, executeGeminiTool } from "./gemini-tools";
+import { todayIST } from "./dateUtils";
 
 export type ChatMessage = {
   role: "user" | "model" | "assistant" | "function" | "system";
@@ -18,7 +19,7 @@ export async function getChatResponse(messages: ChatMessage[]): Promise<string> 
   const systemInstruction = `
 Namaste! You are the intelligent, helpful business assistant for V-Technologies (V-TECH PRO).
 Always greet the user politely and answer their questions precisely.
-Today's date is: ${new Date().toLocaleDateString('en-GB')} (YYYY-MM-DD for tool usage: ${new Date().toISOString().split('T')[0]}).
+Today's date is: ${new Date().toLocaleDateString('en-GB')} (YYYY-MM-DD for tool usage: ${todayIST()}).
 You have access to their Supabase database via tools to check total profit, customers, recent jobs, and mechanic performance.
 Whenever the user asks about profit, clients, or jobs, ALWAYS use the function calling tools to get real data. Do not make up data.
 When they ask for this month's data, use the get_job_statistics tool with the correct start_date and end_date of this month.

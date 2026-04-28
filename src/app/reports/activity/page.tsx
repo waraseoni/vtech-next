@@ -1,0 +1,264 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { 
+  History, Search, Filter, RefreshCw, 
+  User as UserIcon, Calendar, Info, 
+  ChevronLeft, ChevronRight, Activity
+} from "lucide-react";
+import { format } from "date-fns";
+
+type LogEntry = {
+  id: number;
+  user_id: number | string;
+  action: string;
+  module: string;
+  meta_id: string;
+  details: string;
+  date_created: string;
+  profiles?: {
+    full_name: string;
+  };
+};
+
+export default function ActivityLogPage() {
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [moduleFilter, setModuleFilter] = useState("all");
+  const [modules, setModules] = useState<string[]>([]);
+
+  const fetchLogs = async () => {
+    setLoading(true);
+    try {
+      // 1. Fetch Logs (Simplified query first to ensure it works even if join fails)
+      let query = supabase
+        .from("activity_logs")
+        .select(`*`)
+        .order("date_created", { ascending: false });
+
+      if (moduleFilter !== "all") {
+        query = query.eq("module", moduleFilter);
+      }
+
+      if (searchTerm) {
+        query = query.or(`action.ilike.%${searchTerm}%,details.ilike.%${searchTerm}%,module.ilike.%${searchTerm}%`);
+      }
+
+      const { data, error } = await query.limit(100);
+
+      if (error) {
+        console.error("Supabase Error Details:", error.message, error.details, error.hint);
+        throw new Error(error.message);
+      }
+
+      // 2. Fetch User Profiles to map names (Manually mapping to avoid SQL Join complexity/errors)
+      const userIds = Array.from(new Set(data?.map(l => l.user_id).filter(Boolean)));
+      
+      let profilesMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profData } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        
+        if (profData) {
+          profData.forEach(p => profilesMap[p.id] = p.full_name);
+        }
+      }
+
+      const formattedLogs = (data || []).map(log => ({
+        ...log,
+        profiles: { full_name: profilesMap[log.user_id] || `User ${log.user_id}` }
+      }));
+
+      setLogs(formattedLogs);
+
+      // 3. Extract unique modules
+      const { data: modData } = await supabase.from("activity_logs").select("module");
+      if (modData) {
+        const uniqueMods = Array.from(new Set(modData.map(m => m.module))).filter(Boolean).sort() as string[];
+        setModules(uniqueMods);
+      }
+
+    } catch (err: any) {
+      console.error("Error fetching logs:", err.message || err);
+      // Extra check: If error contains 'relation "activity_logs" does not exist'
+      if (err.message?.includes('activity_logs')) {
+         alert("Error: 'activity_logs' table is missing in Supabase. Please run the SQL command provided in the previous step.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, [moduleFilter]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchLogs();
+  };
+
+  const getModuleColor = (mod: string) => {
+    const m = mod.toLowerCase();
+    if (m.includes('client')) return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+    if (m.includes('job') || m.includes('transaction')) return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+    if (m.includes('product') || m.includes('inventory')) return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+    if (m.includes('sale')) return 'bg-pink-500/10 text-pink-400 border-pink-500/20';
+    if (m.includes('mechanic')) return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+    return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+  };
+
+  return (
+    <div className="max-w-[1400px] mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#161b27] border border-[#21293d] p-5 rounded-2xl shadow-xl">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/40">
+            <Activity className="text-white" size={24} />
+          </div>
+          <div>
+            <h1 className="text-xl font-black text-white tracking-tight">System Activity Log</h1>
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-0.5">Track all changes and actions</p>
+          </div>
+        </div>
+        <button 
+          onClick={fetchLogs}
+          className="flex items-center gap-2 px-4 py-2 bg-[#0d1117] border border-[#21293d] hover:border-blue-500/50 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all shadow-sm"
+        >
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <form onSubmit={handleSearch} className="lg:col-span-2 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+          <input 
+            type="text" 
+            placeholder="Search action or details..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-[#161b27] border border-[#21293d] rounded-xl text-sm text-slate-300 outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all"
+          />
+        </form>
+
+        <div className="relative">
+          <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+          <select 
+            value={moduleFilter}
+            onChange={(e) => setModuleFilter(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-[#161b27] border border-[#21293d] rounded-xl text-sm text-slate-300 outline-none appearance-none focus:border-blue-500/50 transition-all cursor-pointer"
+          >
+            <option value="all">All Modules</option>
+            {modules.map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center justify-center p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl">
+           <span className="text-xs font-black text-blue-400 uppercase tracking-widest">
+             {logs.length} Recent Logs
+           </span>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-[#161b27] border border-[#21293d] rounded-3xl overflow-hidden shadow-2xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#0d1117]/50 border-b border-[#21293d]">
+                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">Time & User</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">Module</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">Action</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">Details</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#21293d]">
+              {loading ? (
+                Array(5).fill(0).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td colSpan={4} className="px-6 py-8">
+                      <div className="h-4 bg-slate-800/50 rounded w-full"></div>
+                    </td>
+                  </tr>
+                ))
+              ) : logs.length > 0 ? (
+                logs.map((log) => (
+                  <tr key={log.id} className="hover:bg-white/[0.02] transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-slate-300">
+                          {format(new Date(log.date_created), "hh:mm a")}
+                        </span>
+                        <span className="text-[10px] text-slate-600 font-medium">
+                          {format(new Date(log.date_created), "dd MMM, yyyy")}
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-2 text-blue-400/80">
+                          <UserIcon size={10} />
+                          <span className="text-[10px] font-black uppercase">{log.profiles?.full_name || "Unknown"}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${getModuleColor(log.module)}`}>
+                        {log.module}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-black text-white group-hover:text-blue-400 transition-colors">
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="max-w-xs sm:max-w-md">
+                        <p className="text-xs text-slate-500 leading-relaxed italic">
+                          {log.details || "No additional details"}
+                        </p>
+                        {log.meta_id && (
+                          <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 bg-[#0d1117] border border-[#21293d] rounded text-[9px] font-mono text-slate-600">
+                            <Info size={10} /> ID: {log.meta_id}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="px-6 py-20 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <History size={40} className="text-slate-800" />
+                      <p className="text-sm font-bold text-slate-600">No activity logs found</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Footer info */}
+        <div className="px-6 py-4 bg-[#0d1117]/30 border-t border-[#21293d] flex items-center justify-between">
+          <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">
+            Showing last 100 system events
+          </p>
+          <div className="flex items-center gap-2">
+            <button className="p-2 text-slate-700 hover:text-slate-400 transition-colors disabled:opacity-30" disabled>
+              <ChevronLeft size={16} />
+            </button>
+            <button className="p-2 text-slate-700 hover:text-slate-400 transition-colors disabled:opacity-30" disabled>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

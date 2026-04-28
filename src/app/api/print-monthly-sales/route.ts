@@ -36,10 +36,11 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const from = `${month}-01T00:00:00`;
+  const from = `${month}-01T00:00:00+05:30`;
   const toDate = new Date(month + "-01");
   toDate.setMonth(toDate.getMonth() + 1);
-  const to = toDate.toISOString().split("T")[0] + "T23:59:59";
+  toDate.setDate(toDate.getDate() - 1);
+  const to = toDate.toISOString().split("T")[0] + "T23:59:59+05:30";
 
   const { data: tpData } = await supabase
     .from("transaction_products").select("product_id, price, qty, date_updated, transaction_id")
