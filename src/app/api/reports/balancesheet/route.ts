@@ -28,82 +28,52 @@ export async function GET(request: Request) {
   );
 
   try {
-    const [
-      { data: clients },
-      { data: mechanics },
-      { data: products },
-      { data: lenders },
-    ] = await Promise.all([
-      supabase.from('client_list').select('id, firstname, middlename, lastname, contact, opening_balance').eq('delete_flag', 0),
-      supabase.from('mechanic_list').select('id, firstname, middlename, lastname, salary_per_day, commission_percent').eq('delete_flag', 0),
-      supabase.from('product_list').select('id, name, description, price').eq('delete_flag', 0),
-      supabase.from('lender_list').select('*').eq('delete_flag', 0),
+    const fetchList = async <T=any>(table: string, select: string, builder: (q: any) => any) => {
+      const list: T[] = [];
+      let page = 0;
+      while (true) {
+        let q = supabase.from(table).select(select);
+        q = builder(q);
+        const { data, error } = await q.range(page * 1000, (page + 1) * 1000 - 1);
+        if (error) console.error(error);
+        if (data) list.push(...(data as unknown as T[]));
+        if (!data || data.length < 1000) break;
+        page++;
+      }
+      return list;
+    };
+
+    const [clients, mechanics, products, lenders] = await Promise.all([
+      fetchList('client_list', 'id, firstname, middlename, lastname, contact, opening_balance', q => q.eq('delete_flag', 0)),
+      fetchList('mechanic_list', 'id, firstname, middlename, lastname, salary_per_day, commission_percent', q => q.eq('delete_flag', 0)),
+      fetchList('product_list', 'id, name, description, price', q => q.eq('delete_flag', 0)),
+      fetchList('lender_list', '*', q => q.eq('delete_flag', 0)),
     ]);
 
     const [
-      allTxnsRes,
-      periodTxnsRes,
-      allPaymentsRes,
-      periodPaymentsRes,
-      allAttendanceRes,
-      periodAttendanceRes,
-      allAdvancesRes,
-      periodAdvancesRes,
-      inventoryRes,
-      walkinSalesRes,
-      clientSalesRes,
-      directSaleItemsRes,
-      allExpensesRes,
-      periodExpensesRes,
-      loanPaymentsRes,
+      allTxns, periodTxns, allPayments, periodPayments,
+      allAttendance, periodAttendance, allAdvances, periodAdvances,
+      inventory, walkinSales, clientSales, directSaleItems,
+      allExpenses, periodExpenses, loanPayments
     ] = await Promise.all([
-      // All repairs (for opening balance) - matching PHP (no del_status filter)
-      supabase.from('transaction_list').select('id, client_name, amount, date_completed, status').eq('status', 5),
-      // Period repairs - matching PHP (no del_status filter)
-      supabase.from('transaction_list').select('id, client_name, amount, date_completed, status').eq('status', 5).gte('date_completed', from).lte('date_completed', to),
-      // All payments (for opening balance)
-      supabase.from('client_payments').select('id, client_id, amount, discount, payment_date'),
-      // Period payments
-      supabase.from('client_payments').select('id, client_id, amount, discount, payment_date').gte('payment_date', from).lte('payment_date', to),
-      // All attendance
-      supabase.from('attendance_list').select('mechanic_id, curr_date, status'),
-      // Period attendance
-      supabase.from('attendance_list').select('mechanic_id, curr_date, status').in('status', [1, 3]).gte('curr_date', from).lte('curr_date', to),
-      // All advances
-      supabase.from('advance_payments').select('mechanic_id, amount, date_paid'),
-      // Period advances
-      supabase.from('advance_payments').select('mechanic_id, amount, date_paid').gte('date_paid', from).lte('date_paid', to),
-      // Inventory
-      supabase.from('inventory_list').select('product_id, quantity'),
-      // Walk-in sales (no client_id or client_id = 0)
-      supabase.from('direct_sales').select('id, total_amount, date_created').or('client_id.is.null,client_id.eq.0'),
-      // Client sales (has client_id and not 0)
-      supabase.from('direct_sales').select('id, total_amount, date_created, client_id').not('client_id', 'is', null).neq('client_id', 0),
-      // Sale items
-      supabase.from('direct_sale_items').select('product_id, qty, sale_id'),
-      // All expenses
-      supabase.from('expense_list').select('category, amount, date_created'),
-      // Period expenses
-      supabase.from('expense_list').select('category, amount, date_created').gte('date_created', from).lte('date_created', to),
-      // Loan payments
-      supabase.from('loan_payments').select('lender_id, amount_paid, payment_date'),
+      fetchList('transaction_list', 'id, client_name, amount, date_completed, status', q => q.eq('status', 5)),
+      fetchList('transaction_list', 'id, client_name, amount, date_completed, status', q => q.eq('status', 5).gte('date_completed', from).lte('date_completed', to)),
+      fetchList('client_payments', 'id, client_id, amount, discount, payment_date', q => q),
+      fetchList('client_payments', 'id, client_id, amount, discount, payment_date', q => q.gte('payment_date', from).lte('payment_date', to)),
+      fetchList('attendance_list', 'mechanic_id, curr_date, status', q => q),
+      fetchList('attendance_list', 'mechanic_id, curr_date, status', q => q.in('status', [1, 3]).gte('curr_date', from).lte('curr_date', to)),
+      fetchList('advance_payments', 'mechanic_id, amount, date_paid', q => q),
+      fetchList('advance_payments', 'mechanic_id, amount, date_paid', q => q.gte('date_paid', from).lte('date_paid', to)),
+      fetchList('inventory_list', 'product_id, quantity', q => q),
+      fetchList('direct_sales', 'id, total_amount, date_created', q => q.or('client_id.is.null,client_id.eq.0')),
+      fetchList('direct_sales', 'id, total_amount, date_created, client_id', q => q.not('client_id', 'is', null).neq('client_id', 0)),
+      fetchList('direct_sale_items', 'product_id, qty, sale_id', q => q),
+      fetchList('expense_list', 'category, amount, date_created', q => q),
+      fetchList('expense_list', 'category, amount, date_created', q => q.gte('date_created', from).lte('date_created', to)),
+      fetchList('loan_payments', 'lender_id, amount_paid, payment_date', q => q)
     ]);
 
-    const allTxns = allTxnsRes.data || [];
-    const periodTxns = periodTxnsRes.data || [];
-    const allPayments = allPaymentsRes.data || [];
-    const periodPayments = periodPaymentsRes.data || [];
-    const allAttendance = allAttendanceRes.data || [];
-    const periodAttendance = periodAttendanceRes.data || [];
-    const allAdvances = allAdvancesRes.data || [];
-    const periodAdvances = periodAdvancesRes.data || [];
-    const inventory = inventoryRes.data || [];
-    const walkinSales = walkinSalesRes.data || [];
-    const clientSales = clientSalesRes.data || [];
-    const directSaleItems = directSaleItemsRes.data || [];
-    const allExpenses = allExpensesRes.data || [];
-    const periodExpenses = periodExpensesRes.data || [];
-    const loanPayments = loanPaymentsRes.data || [];
+
 
     const clientMap: Record<number, any> = {};
     (clients || []).forEach((c: any) => {

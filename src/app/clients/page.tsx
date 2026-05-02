@@ -142,15 +142,26 @@ export default function ClientsPage() {
         .eq("delete_flag", 0);
       if (!cls?.length) { setClients([]); return; }
       const ids = cls.map((c) => c.id);
-      const [
-        { data: repairs }, { data: dirSales }, { data: payments },
-        { data: loans },   { data: lastTxns },
-      ] = await Promise.all([
-        supabase.from("transaction_list").select("client_name, amount").eq("status", 5),
-        supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids),
-        supabase.from("client_payments").select("client_id, amount, discount").in("client_id", ids),
-        supabase.from("client_loans").select("client_id, total_payable").in("client_id", ids),
-        supabase.from("transaction_list").select("client_name, date_created"),
+      const fetchList = async (table: string, select: string, queryModifier: (q: any) => any) => {
+        const list: any[] = [];
+        let page = 0;
+        while (true) {
+          let q = supabase.from(table).select(select);
+          q = queryModifier(q);
+          const { data } = await q.range(page * 1000, (page + 1) * 1000 - 1);
+          if (data) list.push(...data);
+          if (!data || data.length < 1000) break;
+          page++;
+        }
+        return list;
+      };
+
+      const [repairs, dirSales, payments, loans, lastTxns] = await Promise.all([
+        fetchList("transaction_list", "client_name, amount", q => q.eq("status", 5)),
+        fetchList("direct_sales", "client_id, total_amount", q => q.in("client_id", ids)),
+        fetchList("client_payments", "client_id, amount, discount", q => q.in("client_id", ids)),
+        fetchList("client_loans", "client_id, total_payable", q => q.in("client_id", ids)),
+        fetchList("transaction_list", "client_name, date_created", q => q),
       ]);
       const repMap:  Record<number,number> = {};
       repairs?.forEach((r) => { const cid=parseInt(r.client_name??"",10); if(!isNaN(cid)) repMap[cid]=(repMap[cid]||0)+toNum(r.amount); });

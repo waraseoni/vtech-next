@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Printer, Users, TrendingUp, Star, BarChart2 } from "lucide-react";
+import { Loader2, Printer, Users, TrendingUp, Star, BarChart2, X } from "lucide-react";
 import { todayIST, formatIST, parseISTDate, toISTString, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0 });
@@ -24,11 +25,15 @@ function TopCustomersContent() {
   const today = todayIST();
   const currentYear = parseInt(today.slice(0, 4));
   const currentMonth = parseInt(today.slice(5, 7));
-  const [filterType, setFilterType] = useState<"monthly" | "yearly" | "all">("yearly");
+  const [filterType, setFilterType] = useState<"monthly" | "yearly" | "all">("all");
   const [selYear, setSelYear] = useState(currentYear);
   const [selMonth, setSelMonth] = useState(currentMonth);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<TopCustomer[]>([]);
+
+  const [modalClient, setModalClient] = useState<{ id: number; name: string; type: "revenue" | "payment" } | null>(null);
+  const [modalData, setModalData] = useState<any[]>([]);
+  const [modalLoading, setModalLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -43,34 +48,72 @@ function TopCustomersContent() {
         to = `${selYear}-12-31T23:59:59+05:30`;
       } else {
         from = "2000-01-01T00:00:00+05:30";
-        to = toISTString();
+        to = "2099-12-31T23:59:59+05:30";
       }
 
-      const { data: clients } = await supabase
-        .from("client_list").select("id, firstname, middlename, lastname, contact")
-        .eq("delete_flag", 0);
+      const fetchList = async (table: string, select: string, queryModifier: (q: any) => any) => {
+        const list: any[] = [];
+        let page = 0;
+        while (true) {
+          let q = supabase.from(table).select(select);
+          q = queryModifier(q);
+          const { data } = await q.range(page * 1000, (page + 1) * 1000 - 1);
+          if (data) list.push(...data);
+          if (!data || data.length < 1000) break;
+          page++;
+        }
+        return list;
+      };
+
+      const [clients, allTxns, allPmts, allDirectSales] = await Promise.all([
+        fetchList("client_list", "id, firstname, middlename, lastname, contact", q => q.eq("delete_flag", 0)),
+        fetchList("transaction_list", "client_name, amount", q => q.eq("status", 5).gte("date_created", from).lte("date_created", to)),
+        fetchList("client_payments", "client_id, amount, discount", q => q.gte("payment_date", from.split("T")[0]).lte("payment_date", to.split("T")[0])),
+        fetchList("direct_sales", "client_id, total_amount", q => q.gte("date_created", from).lte("date_created", to))
+      ]);
+
+      const txnsByClient = new Map<number, { amount: number, count: number }>();
+      const pmtsByClient = new Map<number, { amount: number }>();
+
+      for (const t of allTxns || []) {
+        if (!t.client_name) continue;
+        const cId = parseInt(String(t.client_name), 10);
+        const curr = txnsByClient.get(cId) || { amount: 0, count: 0 };
+        curr.amount += (t.amount || 0);
+        curr.count += 1;
+        txnsByClient.set(cId, curr);
+      }
+
+      for (const s of allDirectSales || []) {
+        if (!s.client_id) continue;
+        const cId = parseInt(String(s.client_id), 10);
+        const curr = txnsByClient.get(cId) || { amount: 0, count: 0 };
+        curr.amount += (s.total_amount || 0);
+        curr.count += 1;
+        txnsByClient.set(cId, curr);
+      }
+
+      for (const p of allPmts || []) {
+        if (!p.client_id) continue;
+        const cId = parseInt(String(p.client_id), 10);
+        const curr = pmtsByClient.get(cId) || { amount: 0 };
+        curr.amount += (p.amount || 0) + (p.discount || 0);
+        pmtsByClient.set(cId, curr);
+      }
 
       const topRows: TopCustomer[] = [];
       for (const c of clients || []) {
-        const name = [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ");
+        const tData = txnsByClient.get(c.id);
+        const pData = pmtsByClient.get(c.id);
 
-        const { data: txns } = await supabase
-          .from("transaction_list").select("id, amount, date_created")
-          .eq("client_name", c.id).in("status", [3, 5])
-          .gte("date_created", from).lte("date_created", to);
-
-        const { data: pmts } = await supabase
-          .from("client_payments").select("amount, discount, payment_date")
-          .eq("client_id", c.id)
-          .gte("payment_date", from.split("T")[0]).lte("payment_date", to.split("T")[0]);
-
-        const totalAmt = txns?.reduce((s, t) => s + (t.amount || 0), 0) || 0;
-        const totalPmt = pmts?.reduce((s, p) => s + (p.amount || 0) + (p.discount || 0), 0) || 0;
+        const totalAmt = tData?.amount || 0;
+        const totalPmt = pData?.amount || 0;
 
         if (totalAmt > 0 || totalPmt > 0) {
+          const name = [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ");
           topRows.push({
             client_id: c.id, customer_name: name, contact: c.contact,
-            total_jobs: txns?.length || 0,
+            total_jobs: tData?.count || 0,
             total_amount: totalAmt, total_payment: totalPmt,
             opening_balance: 0, current_balance: totalAmt - totalPmt,
           });
@@ -84,6 +127,53 @@ function TopCustomersContent() {
   }, [filterType, selYear, selMonth]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    if (!modalClient) return;
+    setModalLoading(true);
+    setModalData([]);
+    
+    let from: string, to: string;
+    if (filterType === "monthly") {
+      const d = new Date(selYear, selMonth - 1, 1);
+      from = startOfMonthIST(d) + "T00:00:00+05:30";
+      to = endOfMonthIST(d) + "T23:59:59+05:30";
+    } else if (filterType === "yearly") {
+      from = `${selYear}-01-01T00:00:00+05:30`;
+      to = `${selYear}-12-31T23:59:59+05:30`;
+    } else {
+      from = "2000-01-01T00:00:00+05:30";
+      to = "2099-12-31T23:59:59+05:30";
+    }
+
+    const fetchModalData = async () => {
+      try {
+        if (modalClient.type === "revenue") {
+          const [txnsRes, salesRes] = await Promise.all([
+            supabase.from("transaction_list").select("id, amount, date_created, code").eq("client_name", modalClient.id).eq("status", 5).gte("date_created", from).lte("date_created", to),
+            supabase.from("direct_sales").select("id, total_amount, date_created, sale_code").eq("client_id", modalClient.id).gte("date_created", from).lte("date_created", to)
+          ]);
+          
+          const combined: any[] = [];
+          if (txnsRes.data) combined.push(...txnsRes.data.map((t: any) => ({ ...t, source: "job" })));
+          if (salesRes.data) combined.push(...salesRes.data.map((s: any) => ({ id: s.id, amount: s.total_amount, date_created: s.date_created, code: s.sale_code, source: "sale" })));
+          
+          combined.sort((a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime());
+          setModalData(combined);
+        } else {
+          const { data } = await supabase
+            .from("client_payments")
+            .select("id, amount, discount, payment_date, payment_mode")
+            .eq("client_id", modalClient.id)
+            .gte("payment_date", from.split("T")[0]).lte("payment_date", to.split("T")[0])
+            .order("payment_date", { ascending: false });
+          setModalData(data || []);
+        }
+      } catch (e) { console.error(e); }
+      finally { setModalLoading(false); }
+    };
+    fetchModalData();
+  }, [modalClient, filterType, selYear, selMonth]);
 
   const grandTotal = rows.reduce((s, r) => s + r.total_amount, 0);
   const grandPayment = rows.reduce((s, r) => s + r.total_payment, 0);
@@ -183,12 +273,22 @@ function TopCustomersContent() {
                       : <span className="text-slate-500 text-xs font-bold">{i + 1}</span>}
                   </td>
                   <td className="px-3 py-2.5">
-                    <div className="text-sm font-bold text-slate-200">{r.customer_name}</div>
+                    <Link href={`/clients/${r.client_id}/view`} className="text-sm font-bold text-blue-400 hover:text-blue-300 hover:underline">
+                      {r.customer_name}
+                    </Link>
                   </td>
                   <td className="px-3 py-2.5 text-xs text-slate-400">{r.contact || "—"}</td>
                   <td className="px-3 py-2.5 text-xs text-center text-slate-300">{r.total_jobs}</td>
-                  <td className="px-3 py-2.5 text-xs text-right font-bold text-emerald-400">{inr(r.total_amount)}</td>
-                  <td className="px-3 py-2.5 text-xs text-right font-bold text-teal-400">{inr(r.total_payment)}</td>
+                  <td className="px-3 py-2.5 text-xs text-right font-bold text-emerald-400">
+                    <button onClick={() => setModalClient({ id: r.client_id, name: r.customer_name, type: "revenue" })} className="hover:underline decoration-emerald-500/50 underline-offset-2">
+                      {inr(r.total_amount)}
+                    </button>
+                  </td>
+                  <td className="px-3 py-2.5 text-xs text-right font-bold text-teal-400">
+                    <button onClick={() => setModalClient({ id: r.client_id, name: r.customer_name, type: "payment" })} className="hover:underline decoration-teal-500/50 underline-offset-2">
+                      {inr(r.total_payment)}
+                    </button>
+                  </td>
                   <td className={`px-3 py-2.5 text-xs text-right font-bold ${r.current_balance >= 0 ? "text-blue-400" : "text-red-400"}`}>{inr(Math.abs(r.current_balance))}</td>
                 </tr>
               ))}
@@ -196,6 +296,63 @@ function TopCustomersContent() {
           </table>
         </div>
       </div>
+
+      {modalClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl shadow-xl shadow-black/40 w-full max-w-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between p-4 border-b border-[#21293d] bg-[#111520]">
+              <div>
+                <h3 className="text-sm font-black text-white">{modalClient.name}</h3>
+                <p className="text-xs text-slate-400 mt-0.5">{modalClient.type === "revenue" ? "Transaction History" : "Payment History"}</p>
+              </div>
+              <button onClick={() => setModalClient(null)} className="p-2 text-slate-400 hover:text-white bg-white/5 rounded-xl transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              {modalLoading ? (
+                <div className="flex justify-center py-12"><Loader2 size={24} className="animate-spin text-blue-400" /></div>
+              ) : modalData.length === 0 ? (
+                <div className="text-center py-12 text-slate-500 text-xs font-bold">No records found.</div>
+              ) : (
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-[#21293d]">
+                      <th className="pb-2 text-[10px] font-black uppercase text-slate-600 tracking-widest">{modalClient.type === "revenue" ? "Job Info" : "Date"}</th>
+                      <th className="pb-2 text-[10px] font-black uppercase text-slate-600 tracking-widest text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {modalData.map((d, idx) => (
+                      <tr key={idx} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
+                        <td className="py-3">
+                          {modalClient.type === "revenue" ? (
+                            <div>
+                              <div className="text-xs font-bold text-slate-200">
+                                {d.source === "sale" ? "Direct Sale " : "Job "}#{d.id} {d.code ? `(${d.code})` : ""}
+                              </div>
+                              <div className="text-[10px] text-slate-500 mt-0.5">{formatIST(d.date_created, { dateStyle: "medium" })}</div>
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="text-xs font-bold text-slate-200">{formatIST(d.payment_date, { dateStyle: "medium" })}</div>
+                              {d.payment_mode && <div className="text-[10px] text-blue-400 mt-0.5">{d.payment_mode}</div>}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 text-right">
+                          <div className="text-xs font-bold text-emerald-400">{inr(d.amount + (d.discount || 0))}</div>
+                          {d.discount > 0 && <div className="text-[10px] text-slate-500">inc. {inr(d.discount)} disc.</div>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -77,12 +77,12 @@ export async function GET(request: NextRequest) {
 
   const [{ data: items }, { data: client }, { data: staff }, { data: editor }] = await Promise.all([
     supabase.from("direct_sale_items").select("*").eq("sale_id", sale.id),
-    sale.client_id ? supabase.from("client_list").select("contact, address").eq("id", sale.client_id).single() : Promise.resolve({ data: null }),
+    sale.client_id ? supabase.from("client_list").select("contact, address, firstname, middlename, lastname").eq("id", sale.client_id).single() : Promise.resolve({ data: null }),
     sale.created_by ? supabase.from("mechanic_list").select("firstname, lastname").eq("id", sale.created_by).single() : Promise.resolve({ data: null }),
     sale.last_edited_by ? supabase.from("profiles").select("full_name").eq("id", sale.last_edited_by).single() : Promise.resolve({ data: null }),
   ]);
 
-  const clientName = sale.client_id ? "Unknown" : "Walk-in Customer";
+  const clientName = client ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ") : (sale.client_id ? "Unknown" : "Walk-in Customer");
   const clientContact = client?.contact || null;
   const clientAddress = client?.address || null;
   const staffName = staff ? `${staff.firstname} ${staff.lastname}`.trim() : "Unknown";

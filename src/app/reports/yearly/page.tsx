@@ -44,26 +44,27 @@ export default function YearlyReportPage() {
       const from = `${year}-01-01T00:00:00+05:30`;
       const to = `${year}-12-31T23:59:59+05:30`;
 
-      const [jobsRes, salesRes, paymentsRes, expensesRes] = await Promise.all([
-        supabase.from("transaction_list").select("id, amount, date_created")
-          .eq("del_status", 0).in("status", [3, 5]).gte("date_created", from).lte("date_created", to),
-        supabase.from("direct_sales").select("id, total_amount, date_created")
-          .gte("date_created", from).lte("date_created", to),
-        supabase.from("client_payments").select("amount, discount, payment_date")
-          .gte("payment_date", startDate).lte("payment_date", endDate),
-        supabase.from("expense_list").select("amount, date_created")
-          .gte("date_created", from).lte("date_created", to),
+      const fetchList = async (table: string, select: string, builder: (q: any) => any) => {
+        const list: any[] = [];
+        let page = 0;
+        while (true) {
+          let q = supabase.from(table).select(select);
+          q = builder(q);
+          const { data, error } = await q.range(page * 1000, (page + 1) * 1000 - 1);
+          if (error) throw error;
+          if (data && data.length > 0) list.push(...data);
+          if (!data || data.length < 1000) break;
+          page++;
+        }
+        return list;
+      };
+
+      const [jobs, sales, payments, expenses] = await Promise.all([
+        fetchList("transaction_list", "id, amount, date_created", q => q.eq("del_status", 0).in("status", [3, 5]).gte("date_created", from).lte("date_created", to)),
+        fetchList("direct_sales", "id, total_amount, date_created", q => q.gte("date_created", from).lte("date_created", to)),
+        fetchList("client_payments", "amount, discount, payment_date", q => q.gte("payment_date", startDate).lte("payment_date", endDate)),
+        fetchList("expense_list", "amount, date_created", q => q.gte("date_created", from).lte("date_created", to)),
       ]);
-
-      if (jobsRes.error) throw jobsRes.error;
-      if (salesRes.error) throw salesRes.error;
-      if (paymentsRes.error) throw paymentsRes.error;
-      if (expensesRes.error) throw expensesRes.error;
-
-      const jobs = jobsRes.data || [];
-      const sales = salesRes.data || [];
-      const payments = paymentsRes.data || [];
-      const expenses = expensesRes.data || [];
 
       const jobsCount = jobs.length;
       const jobsAmount = jobs.reduce((s, j) => s + (j.amount || 0), 0);
