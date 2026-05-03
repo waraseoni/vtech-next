@@ -186,7 +186,7 @@ export default function MonthlyProfitReport() {
             <Tooltip 
               contentStyle={{ backgroundColor: '#0d1117', border: '1px solid #1f2937', borderRadius: '12px' }}
               itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-              formatter={(v: number) => [inr(v), ""]}
+              formatter={(v: any) => [inr(Number(v) || 0), ""]}
             />
             <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ paddingBottom: '20px', fontSize: '12px', fontWeight: 'bold' }} />
             <Bar dataKey="sales" name="Total Sales" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={40} />
