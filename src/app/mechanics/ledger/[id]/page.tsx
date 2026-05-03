@@ -176,7 +176,9 @@ export default function MechanicLedger() {
     setTo(format(newTo, "yyyy-MM-dd"));
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    window.open(`/api/print-mechanic-ledger?id=${mid}&from=${from}&to=${to}`, "_blank");
+  };
 
   if (loading && !mechanic) {
     return (

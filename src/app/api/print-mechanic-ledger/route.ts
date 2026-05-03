@@ -38,7 +38,6 @@ export async function GET(request: NextRequest) {
   }
 
   const name = [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ");
-  const dailyRate = mechanic.daily_salary || 0;
 
   if (!from || !to) {
     return new NextResponse(
@@ -50,25 +49,43 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const d = new Date(from);
-  d.setDate(d.getDate() - 1);
-  const prevDateStr = d.toISOString().split("T")[0];
+  // 1. Fetch Salary History
+  const { data: salaryHist } = await supabase
+    .from("mechanic_salary_history")
+    .select("salary, effective_date")
+    .eq("mechanic_id", id)
+    .order("effective_date", { ascending: false });
 
+  const getDailyRate = (dateStr: string) => {
+    const hist = (salaryHist || []).find(h => h.effective_date <= dateStr);
+    return hist ? parseFloat(hist.salary) : mechanic.daily_salary;
+  };
+
+  const prevLimit = new Date(from);
+  prevLimit.setDate(prevLimit.getDate() - 1);
+  const prevLimitStr = prevLimit.toISOString().split("T")[0];
+
+  // 2. Fetch Data for Opening Balance & Period
   const [prevAtt, prevComm, prevAdv, allAtt, allComm, allAdv] = await Promise.all([
-    supabase.from("attendance_list").select("status").eq("mechanic_id", parseInt(id)).in("status", [1, 3]).lte("curr_date", prevDateStr),
-    supabase.from("transaction_list").select("mechanic_commission_amount").eq("mechanic_id", parseInt(id)).lte("date_created", `${prevDateStr} 23:59:59`),
-    supabase.from("advance_payments").select("amount").eq("mechanic_id", parseInt(id)).lte("date_paid", prevDateStr),
-    supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", parseInt(id)).gte("curr_date", from).lte("curr_date", to),
-    supabase.from("transaction_list").select("date_created, mechanic_commission_amount").eq("mechanic_id", parseInt(id)).gte("date_created", `${from}T00:00:00`).lte("date_created", `${to}T23:59:59`),
-    supabase.from("advance_payments").select("date_paid, amount").eq("mechanic_id", parseInt(id)).gte("date_paid", from).lte("date_paid", to),
+    supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", id).in("status", [1, 3]).lte("curr_date", prevLimitStr),
+    supabase.from("transaction_list").select("mechanic_commission_amount").eq("mechanic_id", id).eq("status", 5).lte("date_completed", prevLimitStr + " 23:59:59"),
+    supabase.from("advance_payments").select("amount").eq("mechanic_id", id).lte("date_paid", prevLimitStr),
+    supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", id).gte("curr_date", from).lte("curr_date", to),
+    supabase.from("transaction_list").select("id, job_id, item, mechanic_commission_amount, status, date_created").eq("mechanic_id", id).gte("date_created", from + " 00:00:00").lte("date_created", to + " 23:59:59"),
+    supabase.from("advance_payments").select("amount, date_paid").eq("mechanic_id", id).gte("date_paid", from).lte("date_paid", to)
   ]);
 
+  // 3. Calculate Opening Balance
   let opening = 0;
-  (prevAtt.data || []).forEach((a: any) => { opening += a.status === 1 ? dailyRate : dailyRate / 2; });
-  opening += (prevComm.data || []).reduce((s: number, c: any) => s + (c.mechanic_commission_amount || 0), 0);
-  opening -= (prevAdv.data || []).reduce((s: number, a: any) => s + (a.amount || 0), 0);
+  (prevAtt.data || []).forEach(att => {
+    const rate = getDailyRate(att.curr_date);
+    opening += att.status === 1 ? rate : rate / 2;
+  });
+  opening += (prevComm.data || []).reduce((s, c) => s + (parseFloat(c.mechanic_commission_amount) || 0), 0);
+  opening -= (prevAdv.data || []).reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
 
-  const entries: { date: string; status: string; earned: number; commission: number; advance: number; running: number; dayName: string }[] = [];
+  // 4. Build Ledger Grid
+  const entries: any[] = [];
   let running = opening;
   let totalEarned = 0, totalComm = 0, totalAdv = 0;
 
@@ -76,40 +93,48 @@ export async function GET(request: NextRequest) {
   const endDate = new Date(to);
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-  const attMap: Record<string, number> = {};
-  (allAtt.data || []).forEach((a: any) => { attMap[a.curr_date] = a.status; });
-
-  const commMap: Record<string, number> = {};
-  (allComm.data || []).forEach((c: any) => {
-    const d = c.date_created?.split("T")[0];
-    if (d) commMap[d] = (commMap[d] || 0) + (c.mechanic_commission_amount || 0);
-  });
-
-  const advMap: Record<string, number> = {};
-  (allAdv.data || []).forEach((a: any) => {
-    advMap[a.date_paid] = (advMap[a.date_paid] || 0) + (a.amount || 0);
-  });
-
   const currentDate = new Date(startDate);
   while (currentDate <= endDate) {
-    const dateStr = currentDate.toISOString().split("T")[0];
+    const dStr = currentDate.toISOString().split("T")[0];
     const dayName = dayNames[currentDate.getDay()];
-    const status = attMap[dateStr];
+    
+    // Attendance
+    const att = (allAtt.data || []).find(a => a.curr_date === dStr);
+    let statusLabel = "Absent", wage = 0;
+    if (att) {
+      const rate = getDailyRate(dStr);
+      if (att.status === 1) { statusLabel = "Present"; wage = rate; }
+      else if (att.status === 3) { statusLabel = "Half Day"; wage = rate / 2; }
+    }
 
-    let dailyEarned = 0;
-    let statusLabel = "Absent";
-    if (status === 1) { dailyEarned = dailyRate; statusLabel = "Present"; }
-    else if (status === 3) { dailyEarned = dailyRate / 2; statusLabel = "Half Day"; }
+    // Jobs
+    const dayJobs = (allComm.data || []).filter(j => j.date_created.startsWith(dStr));
+    let commGen = 0, commPay = 0;
+    dayJobs.forEach(j => {
+        const val = parseFloat(j.mechanic_commission_amount) || 0;
+        commGen += val;
+        if (j.status === 5) commPay += val;
+    });
 
-    const dayComm = commMap[dateStr] || 0;
-    const dayAdv = advMap[dateStr] || 0;
+    // Advance
+    const dayAdv = (allAdv.data || []).filter(a => a.date_paid === dStr).reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
 
-    running += dailyEarned + dayComm - dayAdv;
-    totalEarned += dailyEarned;
-    totalComm += dayComm;
+    running += (wage + commPay - dayAdv);
+    totalEarned += wage;
+    totalComm += commPay;
     totalAdv += dayAdv;
 
-    entries.push({ date: dateStr, status: statusLabel, earned: dailyEarned, commission: dayComm, advance: dayAdv, running, dayName });
+    entries.push({ 
+      date: dStr, 
+      status: statusLabel, 
+      earned: wage, 
+      commission: commPay, 
+      advance: dayAdv, 
+      running, 
+      dayName,
+      jobs: dayJobs 
+    });
+    
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
@@ -117,11 +142,21 @@ export async function GET(request: NextRequest) {
 
   const ledgerRows = entries.map((e, i) => {
     const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+    const jobDetails = (e.jobs || []).map((j: any) => `
+      <div style="font-size:9px;color:#666;border-bottom:1px solid #eee;padding:2px 0">
+        <span style="color:#007bff;font-weight:bold">#${j.job_id}</span> ${j.item} 
+        <span style="float:right;font-weight:bold">₹${(parseFloat(j.mechanic_commission_amount) || 0).toFixed(0)}</span>
+      </div>
+    `).join("");
+
     return `<tr style="background:${rowBg}">
       <td style="padding:6px 8px;border:1px solid #dee2e6;font-size:11px">${fmtDate(e.date)}</td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;font-size:11px">${e.dayName}</td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;font-size:11px">${e.status}</td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px">${inr(e.earned)}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;font-size:11px">
+        ${jobDetails || '<span style="color:#ccc;font-style:italic">No jobs</span>'}
+      </td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:#28a745">${inr(e.commission)}</td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:#c0392b">${inr(e.advance)}</td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:${e.running >= 0 ? '#001f3f' : '#c0392b'}">${inr(e.running)}</td>
@@ -172,7 +207,7 @@ export async function GET(request: NextRequest) {
       <h1>📔 ${SHOP.name} — Mechanic Daily Ledger</h1>
       <p>Period: ${periodLabel} | Generated: ${fmtDate(new Date().toISOString())} | ${SHOP.mobile}</p>
     </div>
-    <div class="mechanic-info">${name} | Daily Rate: ${inr(dailyRate)}</div>
+    <div class="mechanic-info">${name} | Daily Rate: ${inr(mechanic.daily_salary)}</div>
     <div class="stats">
       <div class="stat">
         <div class="stat-num" style="color:${opening >= 0 ? '#001f3f' : '#c0392b'}">${inr(opening)}</div>
@@ -197,13 +232,14 @@ export async function GET(request: NextRequest) {
     <table>
       <thead>
         <tr>
-          <th style="width:15%">Date</th>
-          <th style="width:15%">Day</th>
-          <th style="width:14%">Status</th>
-          <th style="width:14%;text-align:right">Earned</th>
-          <th style="width:14%;text-align:right">Comm</th>
-          <th style="width:14%;text-align:right">Advance</th>
-          <th style="width:14%;text-align:right">Balance</th>
+          <th style="width:10%">Date</th>
+          <th style="width:10%">Day</th>
+          <th style="width:10%">Status</th>
+          <th style="width:12%;text-align:right">Wage</th>
+          <th style="width:28%">Jobs & Details</th>
+          <th style="width:10%;text-align:right">Comm</th>
+          <th style="width:10%;text-align:right">Advance</th>
+          <th style="width:10%;text-align:right">Balance</th>
         </tr>
       </thead>
       <tbody>${ledgerRows}</tbody>
