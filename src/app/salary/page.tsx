@@ -8,10 +8,10 @@ import { todayIST, currentMonthIST, parseISTDate, toISTString } from "@/lib/date
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 type SalaryHistory = { id: number; mechanic_id: number; salary: number; effective_date: string };
-type Mechanic = { id: number; firstname: string; middlename: string | null; lastname: string; salary_per_day: number; designation: string | null; last_updated?: string | null };
+type Mechanic = { id: number; firstname: string; middlename: string | null; lastname: string; daily_salary: number; designation: string | null; last_updated?: string | null };
 
 type SalaryRow = {
-  id: number; name: string; salary_per_day: number;
+  id: number; name: string; daily_salary: number;
   present_count: number; half_day_count: number;
   current_fix: number; current_comm: number;
   old_balance: number; current_adv: number; net_final: number;
@@ -62,7 +62,7 @@ function SalaryContent() {
       // 1. Fetch Active Mechanics
       const { data: mechData } = await supabase
         .from("mechanic_list")
-        .select("id, firstname, middlename, lastname, salary_per_day, designation")
+        .select("id, firstname, middlename, lastname, daily_salary, designation")
         .eq("status", 1)
         .eq("delete_flag", 0)
         .order("firstname");
@@ -127,7 +127,7 @@ function SalaryContent() {
 
       const salaryRows: SalaryRow[] = enrichedMechs.map((m) => {
         const name = [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ");
-        const defaultSal = m.salary_per_day || 0;
+        const defaultSal = m.daily_salary || 0;
 
         // --- OLD BALANCE (Everything strictly before monthStart) ---
         let earnedPrev = 0;
@@ -169,7 +169,7 @@ function SalaryContent() {
         const netFinal = oldBalance + currentFix + currentComm - currentAdv;
 
         return {
-          id: m.id, name, salary_per_day: defaultSal,
+          id: m.id, name, daily_salary: defaultSal,
           present_count: presentCount, half_day_count: halfDayCount,
           current_fix: currentFix, current_comm: currentComm,
           old_balance: oldBalance, current_adv: currentAdv, net_final: netFinal
@@ -200,7 +200,7 @@ function SalaryContent() {
     const nextMonthBoundary = `${month}-${String(lastDay).padStart(2, "0")}T23:59:59+05:30`;
     const to = nextMonthBoundary.slice(0, 10);
 
-    setLedgerTarget({ id: r.id, name: r.name, default_salary: r.salary_per_day });
+    setLedgerTarget({ id: r.id, name: r.name, default_salary: r.daily_salary });
     setLedgerFrom(from); setLedgerTo(to);
     setLedgerData([]); setShowLedgerModal(true); setLedgerLoading(true);
 
@@ -241,7 +241,7 @@ function SalaryContent() {
       // Calc opening balance accurately with historical rates
       let ep = 0;
       (attPrev || []).forEach(a => {
-        const rate = getEffectiveRate(r.id, a.curr_date, r.salary_per_day, history);
+        const rate = getEffectiveRate(r.id, a.curr_date, r.daily_salary, history);
         ep += (a.status === 3 ? rate / 2 : rate);
       });
       const ap = advPrev?.reduce((s, x) => s + (x.amount || 0), 0) || 0;
@@ -257,7 +257,7 @@ function SalaryContent() {
         let wage = 0, attStatus = "Absent";
         
         if (att) { 
-          const dayRate = getEffectiveRate(r.id, d, r.salary_per_day, history);
+          const dayRate = getEffectiveRate(r.id, d, r.daily_salary, history);
           if (att.status === 1) { wage = dayRate; attStatus = "Present"; } 
           else if (att.status === 3) { wage = dayRate / 2; attStatus = "Half Day"; } 
         }
@@ -285,7 +285,7 @@ function SalaryContent() {
   const handleUpdateSalary = async () => {
     if (!salaryTarget || !newSalary || !newEffectiveDate) return;
     await supabase.from("mechanic_salary_history").insert({ mechanic_id: salaryTarget.id, salary: parseFloat(newSalary), effective_date: newEffectiveDate });
-    await supabase.from("mechanic_list").update({ salary_per_day: parseFloat(newSalary) }).eq("id", salaryTarget.id);
+    await supabase.from("mechanic_list").update({ daily_salary: parseFloat(newSalary) }).eq("id", salaryTarget.id);
     setSalaryRateModal(false); setSalaryTarget(null); setNewSalary(""); fetchReport();
   };
 
@@ -453,11 +453,11 @@ function SalaryContent() {
                     <td className="px-4 py-3 text-xs text-slate-500 text-center">{i + 1}</td>
                     <td className="px-4 py-3 font-bold text-slate-200">{[m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ")}</td>
                     <td className="px-4 py-3 text-xs text-slate-400">{m.designation || "Technician"}</td>
-                    <td className="px-4 py-3 text-sm font-black text-emerald-400">{inr(m.salary_per_day)}</td>
+                    <td className="px-4 py-3 text-sm font-black text-emerald-400">{inr(m.daily_salary)}</td>
                     <td className="px-4 py-3 text-xs text-slate-400 text-center">{m.last_updated ? new Date(m.last_updated).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : "N/A"}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
-                        <button onClick={() => { setSalaryTarget({ id: m.id, name: [m.firstname, m.lastname].join(" "), salary: m.salary_per_day }); setNewSalary(String(m.salary_per_day)); setSalaryRateModal(true); }} className="px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5">
+                        <button onClick={() => { setSalaryTarget({ id: m.id, name: [m.firstname, m.lastname].join(" "), salary: m.daily_salary }); setNewSalary(String(m.daily_salary)); setSalaryRateModal(true); }} className="px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5">
                           <Edit2 size={12} /> Update
                         </button>
                         <button onClick={() => openHistory(m.id, [m.firstname, m.lastname].join(" "))} className="px-3 py-1.5 bg-slate-500/10 border border-[#21293d] text-slate-400 rounded-lg text-xs font-bold hover:bg-[#1c2231] hover:text-white transition-all flex items-center gap-1.5">

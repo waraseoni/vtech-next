@@ -356,8 +356,10 @@ function SidebarNav({
               Reports
             </li>
             <SubMenu title="Reports" icon={<PieChart size={15} />} basePath="/reports">
+              <li><Link href="/reports"                 className={subLinkCls(pathname === "/reports")}                onClick={onNavClick}><Sparkles size={12} className="text-blue-400" />All Reports</Link></li>
               <li><Link href="/reports/balancesheet"    className={subLinkCls(pathname === "/reports/balancesheet")}    onClick={onNavClick}><BarChart2 size={12} />Balance Sheet</Link></li>
               <li><Link href="/reports/delivered"      className={subLinkCls(pathname === "/reports/delivered")}      onClick={onNavClick}><Truck size={12} />Delivered Report</Link></li>
+              <li><Link href="/reports/monthly-profit" className={subLinkCls(pathname === "/reports/monthly-profit")} onClick={onNavClick}><BarChart2 size={12} className="text-emerald-400" />Monthly Profit</Link></li>
               <li><Link href="/reports/cash-flow"      className={subLinkCls(pathname === "/reports/cash-flow")}      onClick={onNavClick}><TrendingUp size={12} />Cash Flow</Link></li>
               <li><Link href="/reports/ledger"         className={subLinkCls(pathname === "/reports/ledger")}         onClick={onNavClick}><DollarSign size={12} />Business Ledger</Link></li>
               <li><Link href="/reports/yearly"         className={subLinkCls(pathname === "/reports/yearly")}         onClick={onNavClick}><Clock size={12} />Yearly Report</Link></li>
@@ -369,13 +371,16 @@ function SidebarNav({
               <li><Link href="/reports/custom-service"  className={subLinkCls(pathname === "/reports/custom-service")}  onClick={onNavClick}><Wrench size={12} />Custom Service</Link></li>
               <li><Link href="/reports/top-customers"  className={subLinkCls(pathname === "/reports/top-customers")}  onClick={onNavClick}><Users size={12} />Top Customers</Link></li>
               <li><Link href="/reports/loan"           className={subLinkCls(pathname === "/reports/loan")}           onClick={onNavClick}><CreditCard size={12} />Loan Report</Link></li>
+               <li><Link href="/reports/pending-jobs"   className={subLinkCls(pathname === "/reports/pending-jobs")}   onClick={onNavClick}><Clock size={12} className="text-amber-400" />Pending Jobs</Link></li>
+              <li><Link href="/reports/vyapar-darpan"   className={subLinkCls(pathname === "/reports/vyapar-darpan")}   onClick={onNavClick}><PieChart size={12} className="text-amber-400" />Vyapar Darpan</Link></li>
               <li><Link href="/activity-logs"          className={subLinkCls(pathname === "/activity-logs")}          onClick={onNavClick}><Activity size={12} />Activity Log</Link></li>
             </SubMenu>
 
             <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
               Back Office
             </li>
-            <SubMenu title="Back Office" icon={<Briefcase size={15} />} basePath="/backoffice">
+            <SubMenu title="Back Office" icon={<Briefcase size={15} />} basePath="/back-office">
+              <li><Link href="/back-office"   className={subLinkCls(pathname === "/back-office")}   onClick={onNavClick}><Sparkles size={12} className="text-purple-400" />Overview</Link></li>
               <li><Link href="/expenses"      className={subLinkCls(pathname === "/expenses")}      onClick={onNavClick}><DollarSign size={12} />Pay Outs</Link></li>
               <li><Link href="/payments"      className={subLinkCls(pathname === "/payments")}      onClick={onNavClick}><Receipt size={12} />Payments</Link></li>
               <li><Link href="/salary"        className={subLinkCls(pathname === "/salary")}        onClick={onNavClick}><Coins size={12} />Salary</Link></li>

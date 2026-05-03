@@ -23,9 +23,11 @@ dist/
 # 3. Secret Environment Variables (CRITICAL)
 # Inhe galti se bhi push mat karna, warna security risk ho jayega.
 .env
-.env*.local
-*.env*
-!.env.example  # Example file ko allow rakha hai taaki team ko pata chale kya setup karna hai
+.env.local
+.env.*.local
+.env*.7z
+.env*_*
+!.env.example
 
 # 4. Vercel & Deployment
 .vercel
@@ -68,7 +70,19 @@ next-env.d.ts
 *.bak
 *.tmp
 .eslintcache
+ledger.json
+test_data.js
+test_data2.js
+test_revenue.js
 
+# 10. Project Specific
+scratch/
 php-ref/
+vtech-rsms-php/
+android/
+out/
+.env.local.7z
+.env.local_v-tech-db
+.env.local_vikram_db
 
 db folder/

@@ -49,8 +49,10 @@ export const toLocalStr = (date: Date): string => {
   }).format(date);
 };
 
-export const toISTDatePart = (date: string | Date): string => {
+export const toISTDatePart = (date: string | Date | null | undefined): string => {
+  if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "";
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",
     year: "numeric",

@@ -8,6 +8,9 @@ import {
   ChevronLeft, ChevronRight, Activity
 } from "lucide-react";
 import { format } from "date-fns";
+import Link from "next/link";
+import { ExternalLink, Trash2, PlusCircle, Edit3, ShieldAlert } from "lucide-react";
+
 
 type LogEntry = {
   id: number;
@@ -112,6 +115,26 @@ export default function ActivityLogPage() {
     return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
   };
 
+  const getActionStyles = (action: string) => {
+    const a = action.toLowerCase();
+    if (a.includes('delete') || a.includes('removed')) return { color: 'text-red-400 bg-red-400/10 border-red-400/20', icon: <Trash2 size={12} /> };
+    if (a.includes('add') || a.includes('create') || a.includes('new')) return { color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20', icon: <PlusCircle size={12} /> };
+    if (a.includes('status') || a.includes('update')) return { color: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20', icon: <Edit3 size={12} /> };
+    return { color: 'text-blue-400 bg-blue-400/10 border-blue-400/20', icon: <History size={12} /> };
+  };
+
+  const getRelatedLink = (module: string, id: string) => {
+    if (!id || id === '0') return null;
+    const m = module.toLowerCase();
+    if (m.includes('transaction') || m.includes('job')) return `/jobs/${id}`;
+    if (m.includes('client')) return `/clients/${id}`;
+    if (m.includes('mechanic')) return `/mechanics/${id}`;
+    if (m.includes('sale')) return `/sales/view/${id}`;
+    if (m.includes('inventory') || m.includes('product')) return `/inventory`;
+    return null;
+  };
+
+
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
       {/* Header */}
@@ -178,6 +201,7 @@ export default function ActivityLogPage() {
                 <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">Module</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">Action</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">Details</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">Navigation</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#21293d]">
@@ -212,21 +236,44 @@ export default function ActivityLogPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm font-black text-white group-hover:text-blue-400 transition-colors">
-                        {log.action}
-                      </span>
+                      {(() => {
+                        const style = getActionStyles(log.action);
+                        return (
+                          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider ${style.color}`}>
+                            {style.icon}
+                            {log.action}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="max-w-xs sm:max-w-md">
-                        <p className="text-xs text-slate-500 leading-relaxed italic">
+                      <div className="max-w-xs sm:max-w-sm">
+                        <p className="text-xs text-slate-400 leading-relaxed font-medium">
                           {log.details || "No additional details"}
                         </p>
-                        {log.meta_id && (
-                          <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 bg-[#0d1117] border border-[#21293d] rounded text-[9px] font-mono text-slate-600">
-                            <Info size={10} /> ID: {log.meta_id}
-                          </div>
-                        )}
                       </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {(() => {
+                        const link = getRelatedLink(log.module, log.meta_id);
+                        if (!link) return <span className="text-slate-700 text-[10px] font-bold tracking-widest uppercase">N/A</span>;
+                        const isDelete = log.action.toLowerCase().includes('delete');
+                        
+                        return (
+                          <Link 
+                            href={link}
+                            className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-all shadow-sm no-underline ${
+                              isDelete 
+                              ? 'bg-red-500/5 border-red-500/20 text-red-400/50 hover:text-red-400 cursor-not-allowed opacity-60' 
+                              : 'bg-blue-500/5 border-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white'
+                            }`}
+                            onClick={(e) => isDelete && e.preventDefault()}
+                          >
+                            <ExternalLink size={12} />
+                            {isDelete ? 'Deleted' : 'View Record'}
+                          </Link>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))

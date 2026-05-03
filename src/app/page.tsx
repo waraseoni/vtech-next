@@ -146,7 +146,7 @@ const fmtDate = (d: string) =>
     day: "2-digit", month: "short", year: "numeric",
   });
 
-const isoDate = (iso: string) => (iso ? toISTDatePart(iso) : "");
+// isoDate replaced by toISTDatePart from dateUtils
 const n = (v: unknown) => { const x = Number(v); return isNaN(x) ? 0 : x; };
 const inr = (v: number, digits = 0) =>
   "₹" + v.toLocaleString("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -217,104 +217,105 @@ export default function Dashboard() {
         // BUG FIX 2: use todayIST() — not new Date().toISOString().split('T')[0]
         const today = todayIST();
 
-        // Fetch transactions in batches to get all records
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        
-        let allTrans: any[] = [];
-        let offset = 0;
-        const batchSize = 1000;
-        
-        while (true) {
-          const url = `${supabaseUrl}/rest/v1/transaction_list?del_status=eq.0&order=date_created.desc&select=id,status,amount,date_completed,client_name&offset=${offset}&limit=${batchSize}`;
-          
-          const response = await fetch(url, {
-            headers: {
-              'apikey': supabaseKey!,
-              'Authorization': `Bearer ${supabaseKey}`,
-            },
-          });
-          
-          if (!response.ok) {
-            console.error("Fetch error:", await response.text());
-            break;
-          }
-          
-          const batch = await response.json();
-          allTrans = allTrans.concat(batch);
-          
-          if (batch.length < batchSize) break;
-          offset += batchSize;
-        }
+        // Fetch today's data for the summary stats
+        const startToday = `${today}T00:00:00+05:30`;
+        const endToday   = `${today}T23:59:59+05:30`;
 
         const [
+          { data: todayRepairRes },
+          { data: todayDirectRes },
           { count: clientCount },
           { count: mechCount },
           { data: lowInv },
-          { data: dirSalesAll },
           { data: recentTransRaw },
           { data: paymentsRaw },
           { data: lowInvDetail },
         ] = await Promise.all([
+          // Today's Repair Income
+          supabase.from("transaction_list").select("amount").eq("status", 5).eq("del_status", 0).gte("date_completed", startToday).lte("date_completed", endToday),
+          // Today's Direct Sales
+          supabase.from("direct_sales").select("total_amount").gte("date_created", startToday).lte("date_created", endToday),
+          // Other stats
           supabase.from("client_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0),
           supabase.from("mechanic_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0).eq("status", 1),
           supabase.from("inventory_list").select("product_id").lte("quantity", 5),
-          supabase.from("direct_sales").select("total_amount, date_created"),
           supabase.from("transaction_list").select("id, job_id, client_name, item, amount, status").eq("del_status", 0).order("id", { ascending: false }).limit(5),
           supabase.from("client_payments").select("id, amount, payment_mode, payment_date, client_id").order("payment_date", { ascending: false }).order("id", { ascending: false }).limit(10),
           supabase.from("inventory_list").select("quantity, place, product_id").lte("quantity", 5).order("quantity", { ascending: true }).limit(10),
         ]);
 
-        const active = allTrans ?? [];
-        const dirSales = dirSalesAll ?? [];
+        const todayR = (todayRepairRes || []).reduce((s, r) => s + n(r.amount), 0);
+        const todayD = (todayDirectRes || []).reduce((s, r) => s + n(r.total_amount), 0);
+
+        // Fetch counts accurately using head-only count queries for ALL possible statuses
+        const [
+          { count: totalJobsCount },
+          { count: pendingCount },
+          { count: inProgressCount },
+          { count: finishedCount },
+          { count: paidCount },
+          { count: cancelledCount },
+          { count: deliveredCount },
+        ] = await Promise.all([
+          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0),
+          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0).eq("status", 0),
+          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0).eq("status", 1),
+          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0).eq("status", 2),
+          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0).eq("status", 3),
+          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0).eq("status", 4),
+          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0).eq("status", 5),
+        ]);
+
 
         const lowStock = lowInv
           ? [...new Set(lowInv.map((i: any) => i.product_id))].length : 0;
 
-        const todayR = active
-          .filter((t: any) => t.status === 5 && isoDate(t.date_completed ?? "") === today)
-          .reduce((s: number, t: any) => s + n(t.amount), 0);
-        const todayD = dirSales
-          .filter((d: any) => isoDate(d.date_created ?? "") === today)
-          .reduce((s: number, d: any) => s + n(d.total_amount), 0);
+        // todayR and todayD are already calculated above from targeted queries
+
 
         setStats({
-          totalJobs: active.length,
+          totalJobs: totalJobsCount || 0,
           totalClients: clientCount ?? 0,
           totalMechanics: mechCount ?? 0,
           lowStock,
           todayRevenue: todayR + todayD,
-          pendingJobs: active.filter((t: any) => t.status === 0).length,
-          inProgressJobs: active.filter((t: any) => t.status === 1).length,
-          finishedJobs: active.filter((t: any) => t.status === 2).length,
-          deliveredJobs: active.filter((t: any) => t.status === 5).length,
+          pendingJobs: pendingCount || 0,
+          inProgressJobs: inProgressCount || 0,
+          finishedJobs: finishedCount || 0,
+          deliveredJobs: deliveredCount || 0,
         });
 
         setStatusData(
-          STATUS_META.map((m, i) => ({
-            name: m.label, color: m.color,
-            value: active.filter((t: any) => t.status === i).length,
-          })).filter(d => d.value > 0)
+          STATUS_META.map((m, i) => {
+            let val = 0;
+            if (i === 0) val = pendingCount || 0;
+            else if (i === 1) val = inProgressCount || 0;
+            else if (i === 2) val = finishedCount || 0;
+            else if (i === 3) val = paidCount || 0;
+            else if (i === 4) val = cancelledCount || 0;
+            else if (i === 5) val = deliveredCount || 0;
+            return { name: m.label, color: m.color, value: val };
+          }).filter(d => d.value > 0)
         );
 
-        // BUG FIX 5: Monthly revenue chart — use toLocalStr not toISOString.split
+        // Monthly revenue chart - targeted queries for last 12 months
         const pts: RevenuePoint[] = [];
         for (let i = 11; i >= 0; i--) {
           const md = new Date();
-          md.setDate(1); // Set to 1st first to avoid month skipping
+          md.setDate(1); 
           md.setMonth(md.getMonth() - i);
 
-          const start = startOfMonthIST(md);
-          const end = endOfMonthIST(md);
-          const rep = active
-            .filter((t: any) => t.status === 5 && isoDate(t.date_completed ?? "") >= start && isoDate(t.date_completed ?? "") <= end)
-            .reduce((s: number, t: any) => s + n(t.amount), 0);
-          const dir = dirSales
-            .filter((d: any) => isoDate(d.date_created ?? "") >= start && isoDate(d.date_created ?? "") <= end)
-            .reduce((s: number, d: any) => s + n(d.total_amount), 0);
+          const start = `${startOfMonthIST(md)}T00:00:00+05:30`;
+          const end = `${endOfMonthIST(md)}T23:59:59+05:30`;
+          
+          const [{data: repMonth}, {data: dirMonth}] = await Promise.all([
+             supabase.from("transaction_list").select("amount").eq("status", 5).eq("del_status", 0).gte("date_completed", start).lte("date_completed", end).limit(5000),
+             supabase.from("direct_sales").select("total_amount").gte("date_created", start).lte("date_created", end).limit(5000)
+          ]);
+
           pts.push({
             month: md.toLocaleString("default", { month: "short", year: "2-digit" }),
-            revenue: rep + dir,
+            revenue: ((repMonth || []).reduce((s, r) => s + n(r.amount), 0)) + ((dirMonth || []).reduce((s, r) => s + n(r.total_amount), 0)),
           });
         }
         setRevenueData(pts);
@@ -369,7 +370,6 @@ export default function Dashboard() {
     if (!profile || profile.role !== "admin") return;
     setFinLoading(true);
     try {
-      // PHP-style date handling (matching Ledger/PHP)
       const f0 = `${from}T00:00:00+05:30`;
       const t0 = `${to}T23:59:59+05:30`;
 
@@ -379,14 +379,14 @@ export default function Dashboard() {
         { data: discD }, { data: attD },
         { data: loanD }, { data: expD },
       ] = await Promise.all([
-        supabase.from("transaction_list").select("amount").eq("status", 5).eq("del_status", 0).gte("date_completed", f0).lte("date_completed", t0),
-        supabase.from("direct_sales").select("total_amount").gte("date_created", f0).lte("date_created", t0),
-        supabase.from("transaction_list").select("id").eq("status", 5).eq("del_status", 0).gte("date_completed", f0).lte("date_completed", t0),
-        supabase.from("direct_sales").select("id").gte("date_created", f0).lte("date_created", t0),
-        supabase.from("client_payments").select("discount").gte("payment_date", from).lte("payment_date", to),
-        supabase.from("attendance_list").select("status, mechanic_id").gte("curr_date", from).lte("curr_date", to).in("status", [1, 3]),
-        supabase.from("loan_payments").select("amount_paid").gte("payment_date", from).lte("payment_date", to),
-        supabase.from("expense_list").select("amount").gte("date_created", f0).lte("date_created", t0),
+        supabase.from("transaction_list").select("amount").eq("status", 5).eq("del_status", 0).gte("date_completed", f0).lte("date_completed", t0).limit(5000),
+        supabase.from("direct_sales").select("total_amount").gte("date_created", f0).lte("date_created", t0).limit(5000),
+        supabase.from("transaction_list").select("id").eq("status", 5).eq("del_status", 0).gte("date_completed", f0).lte("date_completed", t0).limit(5000),
+        supabase.from("direct_sales").select("id").gte("date_created", f0).lte("date_created", t0).limit(5000),
+        supabase.from("client_payments").select("discount").gte("payment_date", from).lte("payment_date", to).limit(5000),
+        supabase.from("attendance_list").select("status, mechanic_id").gte("curr_date", from).lte("curr_date", to).in("status", [1, 3]).limit(5000),
+        supabase.from("loan_payments").select("amount_paid").gte("payment_date", from).lte("payment_date", to).limit(5000),
+        supabase.from("expense_list").select("amount").gte("date_created", f0).lte("date_created", t0).limit(5000),
       ]);
 
       const repairInc = (tD ?? []).reduce((s: number, t: any) => s + n(t.amount), 0);

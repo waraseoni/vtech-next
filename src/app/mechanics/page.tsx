@@ -319,8 +319,14 @@ export default function MechanicsPage() {
                       </td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center justify-center gap-1.5">
+                          <Link href={`/mechanics/ledger/${m.id}`}
+                            className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition no-underline"
+                            title="View Daily Ledger">
+                            <FileText size={13}/>
+                          </Link>
                           <Link href={`/mechanics/${m.id}`}
-                            className="p-2 rounded-lg bg-teal-500/10 text-teal-400 hover:bg-teal-500/20 transition no-underline">
+                            className="p-2 rounded-lg bg-teal-500/10 text-teal-400 hover:bg-teal-500/20 transition no-underline"
+                            title="View Profile">
                             <Eye size={13}/>
                           </Link>
                           <button onClick={() => openEdit(m)}
