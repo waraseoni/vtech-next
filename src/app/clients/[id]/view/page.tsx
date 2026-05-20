@@ -792,8 +792,9 @@ export default function ViewClientProfile() {
 
           {/* ── ALL PAYMENTS TAB ── */}
           {activeTab === 'payments' && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <>
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
                 <thead className="theme-panel-2">
                   <tr>
                     {['Date','Ref. ID','Type','Amount','Discount','Net Amount','Mode','Action'].map(h => (
@@ -841,13 +842,57 @@ export default function ViewClientProfile() {
                   )}
                 </tbody>
               </table>
-            </div>
+              </div>
+              
+              {/* Mobile cards for Payments */}
+              <div className="md:hidden divide-y divide-[#21293d]">
+                {filteredPayments.length === 0 && <p className="p-8 text-center text-slate-600 text-sm italic">No payments found</p>}
+                {filteredPayments.map(p => (
+                  <div key={p.id} className="p-4 hover:bg-white/[0.02] transition-colors">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-black text-white text-base">₹{fmt(p.amount)}</p>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-400 border border-slate-500/20">
+                            Service Payment
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">{p.payment_mode}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                        <span className="text-sm font-black text-emerald-400">Net: ₹{fmt(p.net_amount ?? (p.amount + (p.discount || 0)))}</span>
+                        {p.discount > 0 && <span className="text-[10px] text-slate-500">Discount: ₹{fmt(p.discount)}</span>}
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-600 mt-2 p-2 bg-[#0d1117] rounded-lg">
+                      <span>{fmtDate(p.payment_date)}</span>
+                      <span>• PAY-{p.id}</span>
+                      {p.job_id && <span>• Job: {p.job_id}</span>}
+                      {p.bill_no && <span>• Bill: {p.bill_no}</span>}
+                    </div>
+
+                    <div className="flex gap-2 mt-3 justify-end">
+                      <button onClick={() => openEdit(p)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-colors font-bold text-xs">
+                        <PencilLine size={13} /> Edit
+                      </button>
+                      <button onClick={() => handleDeletePayment(p.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors font-bold text-xs">
+                        <Trash2 size={13} /> Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {/* ── LOAN PAYMENTS TAB ── */}
           {activeTab === 'loan_payments' && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <>
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
                 <thead className="theme-panel-2">
                   <tr>
                     {['Date','Loan ID','Amount','Discount','Net Amount','Mode','Remarks','Action'].map(h => (
@@ -893,6 +938,49 @@ export default function ViewClientProfile() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile cards for Loan Payments */}
+            <div className="md:hidden divide-y divide-[#21293d]">
+              {filteredLoanPay.length === 0 && <p className="p-8 text-center text-slate-600 text-sm italic">No loan payments found</p>}
+              {filteredLoanPay.map(p => (
+                <div key={p.id} className="p-4 hover:bg-white/[0.02] transition-colors">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-black text-white text-base">₹{fmt(p.amount)}</p>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
+                          LN-{String(p.loan_id ?? 0).padStart(5, '0')}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">{p.payment_mode}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                      <span className="text-sm font-black text-emerald-400">Net: ₹{fmt(p.net_amount ?? (p.amount + (p.discount || 0)))}</span>
+                      {p.discount > 0 && <span className="text-[10px] text-slate-500">Discount: ₹{fmt(p.discount)}</span>}
+                    </div>
+                  </div>
+                  
+                  {p.remarks && <p className="text-xs text-slate-400 mt-2 mb-2 italic">"{p.remarks}"</p>}
+                  
+                  <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-600 mt-2 p-2 bg-[#0d1117] rounded-lg">
+                    <span>{fmtDate(p.payment_date)}</span>
+                    <span>• PAY-{p.id}</span>
+                  </div>
+
+                  <div className="flex gap-2 mt-3 justify-end">
+                    <button onClick={() => openEdit(p)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-colors font-bold text-xs">
+                      <PencilLine size={13} /> Edit
+                    </button>
+                    <button onClick={() => handleDeletePayment(p.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors font-bold text-xs">
+                      <Trash2 size={13} /> Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            </>
           )}
         </div>
 

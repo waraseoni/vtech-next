@@ -39,14 +39,7 @@ function PendingJobsContent() {
 
       let query = supabase
         .from("transaction_list")
-        .select(`
-          *,
-          client:client_name (
-            firstname,
-            lastname,
-            contact
-          )
-        `)
+        .select("*")
         .neq("status", 5) // Exclude Delivered
         .neq("status", 4) // Exclude Cancelled
         .eq("del_status", 0)
@@ -60,7 +53,34 @@ function PendingJobsContent() {
 
       const { data, error } = await query;
       if (error) throw error;
-      setJobs(data || []);
+      
+      const pendingJobs = data || [];
+      if (pendingJobs.length === 0) {
+        setJobs([]);
+        setLoading(false);
+        return;
+      }
+
+      const clientIdsNum = [...new Set(pendingJobs.map((t: any) => Number(t.client_name)).filter(id => !isNaN(id)))];
+      
+      let clientMap = new Map();
+      if (clientIdsNum.length > 0) {
+        const { data: clients, error: clientErr } = await supabase
+          .from("client_list")
+          .select("id, firstname, lastname, contact")
+          .in("id", clientIdsNum);
+          
+        if (!clientErr && clients) {
+          clients.forEach(c => clientMap.set(c.id, c));
+        }
+      }
+
+      const enrichedJobs = pendingJobs.map(job => ({
+        ...job,
+        client: clientMap.get(Number(job.client_name)) || null
+      }));
+
+      setJobs(enrichedJobs);
     } catch (err) {
       console.error(err);
     } finally {

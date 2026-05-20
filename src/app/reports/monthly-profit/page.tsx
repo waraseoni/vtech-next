@@ -12,6 +12,7 @@ import {
   ResponsiveContainer, Legend, Cell, ComposedChart, Line
 } from "recharts";
 import { format, startOfYear, endOfYear, eachMonthOfInterval } from "date-fns";
+import { X } from "lucide-react";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -32,6 +33,8 @@ export default function MonthlyProfitReport() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<MonthlyData[]>([]);
+  const [rawData, setRawData] = useState<any>({});
+  const [modalConfig, setModalConfig] = useState<{title: string, type: string, data: any[]} | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,15 +50,19 @@ export default function MonthlyProfitReport() {
           { data: expenses },
           { data: loanPayments },
           { data: attendance },
-          { data: mechanics }
+          { data: mechanics },
+          { data: clients },
+          { data: lenders }
         ] = await Promise.all([
           supabase.from("transaction_list").select("id, amount, date_created").eq("status", 5).gte("date_created", start).lte("date_created", end),
           supabase.from("transaction_products").select("transaction_id, price, qty"),
-          supabase.from("client_payments").select("discount, created_at").gte("created_at", start).lte("created_at", end),
-          supabase.from("expense_list").select("amount, date_created").gte("date_created", start).lte("date_created", end),
-          supabase.from("loan_payments").select("amount_paid, payment_date").gte("payment_date", start).lte("payment_date", end),
+          supabase.from("client_payments").select("client_id, amount, discount, remarks, payment_date, created_at").gte("created_at", start).lte("created_at", end),
+          supabase.from("expense_list").select("amount, date_created, category, remarks, payment_mode").gte("date_created", start).lte("date_created", end),
+          supabase.from("loan_payments").select("lender_id, amount_paid, payment_date, remarks").gte("payment_date", start).lte("payment_date", end),
           supabase.from("attendance_list").select("mechanic_id, curr_date, status").gte("curr_date", start).lte("curr_date", year + "-12-31"),
-          supabase.from("mechanic_list").select("id, daily_salary")
+          supabase.from("mechanic_list").select("id, firstname, lastname, daily_salary"),
+          supabase.from("client_list").select("id, firstname, lastname"),
+          supabase.from("lender_list").select("id, fullname")
         ]);
 
         const months = eachMonthOfInterval({ start: new Date(year, 0, 1), end: new Date(year, 11, 31) });
@@ -122,6 +129,7 @@ export default function MonthlyProfitReport() {
         });
 
         setData(monthlyRecords);
+        setRawData({ transactions, transProducts, clientPayments, expenses, loanPayments, attendance, mechanics, clients, lenders });
       } catch (err) {
         console.error(err);
       } finally {
@@ -143,6 +151,46 @@ export default function MonthlyProfitReport() {
       profit: acc.profit + m.profit
     }), { sales: 0, parts: 0, expenses: 0, salaries: 0, emi: 0, discounts: 0, profit: 0 });
   }, [data]);
+
+  const openModal = (type: string, monthNum: number, monthName: string) => {
+    const mStr = monthNum.toString().padStart(2, '0');
+    const prefix = `${year}-${mStr}`;
+    let detailData: any[] = [];
+    let title = "";
+
+    if (type === 'expenses') {
+      title = `Expenses - ${monthName} ${year}`;
+      detailData = (rawData.expenses || []).filter((e: any) => e.date_created.startsWith(prefix));
+    } else if (type === 'salaries') {
+      title = `Salaries - ${monthName} ${year}`;
+      const mAtt = (rawData.attendance || []).filter((a: any) => a.curr_date.startsWith(prefix));
+      const mechMap: any = {};
+      mAtt.forEach((att: any) => {
+        const mech = (rawData.mechanics || []).find((me: any) => me.id === att.mechanic_id);
+        if (!mech) return;
+        if (!mechMap[mech.id]) {
+          mechMap[mech.id] = { name: mech.firstname ? `${mech.firstname} ${mech.lastname || ''}` : `Mechanic #${mech.id}`, full: 0, half: 0, rate: mech.daily_salary || 0 };
+        }
+        if (att.status === 1) mechMap[mech.id].full += 1;
+        else if (att.status === 3) mechMap[mech.id].half += 1;
+      });
+      detailData = Object.values(mechMap).filter((m: any) => m.full > 0 || m.half > 0);
+    } else if (type === 'emi') {
+      title = `EMI & Loans - ${monthName} ${year}`;
+      detailData = (rawData.loanPayments || []).map((lp: any) => {
+        const lender = (rawData.lenders || []).find((l: any) => l.id === lp.lender_id);
+        return { ...lp, lender_name: lender ? lender.fullname : 'Unknown Lender' };
+      }).filter((lp: any) => lp.payment_date.startsWith(prefix));
+    } else if (type === 'discounts') {
+      title = `Discounts - ${monthName} ${year}`;
+      detailData = (rawData.clientPayments || []).map((cp: any) => {
+        const client = (rawData.clients || []).find((c: any) => c.id === cp.client_id);
+        return { ...cp, client_name: client ? `${client.firstname} ${client.lastname || ''}` : 'Unknown Client' };
+      }).filter((cp: any) => cp.created_at.startsWith(prefix) && parseFloat(cp.discount) > 0);
+    }
+
+    setModalConfig({ title, type, data: detailData });
+  };
 
   return (
     <div className="space-y-6 pb-10">
@@ -229,9 +277,9 @@ export default function MonthlyProfitReport() {
                   <td className="px-6 py-4 text-white font-black">{row.month}</td>
                   <td className="px-6 py-4 text-right font-bold">{inr(row.sales)}</td>
                   <td className="px-6 py-4 text-right font-bold text-amber-400/70">{inr(row.parts)}</td>
-                  <td className="px-6 py-4 text-right font-bold text-slate-400">{inr(row.expenses)}</td>
-                  <td className="px-6 py-4 text-right font-bold text-slate-400">{inr(row.salaries)}</td>
-                  <td className="px-6 py-4 text-right font-bold text-indigo-400/70">{inr(row.emi)}</td>
+                  <td className="px-6 py-4 text-right font-bold text-slate-400 cursor-pointer hover:text-white hover:underline decoration-slate-500 underline-offset-4" onClick={() => openModal('expenses', row.monthNum, row.month)} title="Click to view details">{inr(row.expenses)}</td>
+                  <td className="px-6 py-4 text-right font-bold text-slate-400 cursor-pointer hover:text-white hover:underline decoration-slate-500 underline-offset-4" onClick={() => openModal('salaries', row.monthNum, row.month)} title="Click to view details">{inr(row.salaries)}</td>
+                  <td className="px-6 py-4 text-right font-bold text-indigo-400/70 cursor-pointer hover:text-indigo-300 hover:underline decoration-indigo-500/50 underline-offset-4" onClick={() => openModal('emi', row.monthNum, row.month)} title="Click to view details">{inr(row.emi)}</td>
                   <td className={`px-6 py-4 text-right font-black ${row.profit >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
                     {inr(row.profit)}
                   </td>
@@ -264,6 +312,103 @@ export default function MonthlyProfitReport() {
           </table>
         </div>
       </div>
+
+      {/* Drill-down Modal */}
+      {modalConfig && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between p-6 border-b border-[#21293d]">
+              <h2 className="text-xl font-black text-white">{modalConfig.title}</h2>
+              <button onClick={() => setModalConfig(null)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-rose-500 transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto">
+              {modalConfig.data.length === 0 ? (
+                <div className="text-center py-10 text-slate-500 font-bold">No data found for this period.</div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-[#21293d]">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-[#0d1117] text-slate-400 text-[10px] uppercase tracking-widest">
+                      {modalConfig.type === 'expenses' && (
+                        <tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Remarks</th><th className="px-4 py-3">Mode</th><th className="px-4 py-3 text-right">Amount</th></tr>
+                      )}
+                      {modalConfig.type === 'salaries' && (
+                        <tr><th className="px-4 py-3">Staff Name</th><th className="px-4 py-3 text-center">Full Days</th><th className="px-4 py-3 text-center">Half Days</th><th className="px-4 py-3 text-center">Total Days</th><th className="px-4 py-3 text-right">Daily Rate</th><th className="px-4 py-3 text-right">Salary</th></tr>
+                      )}
+                      {modalConfig.type === 'emi' && (
+                        <tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Lender</th><th className="px-4 py-3">Remarks</th><th className="px-4 py-3 text-right">Amount</th></tr>
+                      )}
+                      {modalConfig.type === 'discounts' && (
+                        <tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Client</th><th className="px-4 py-3">Remarks</th><th className="px-4 py-3 text-right">Discount</th></tr>
+                      )}
+                    </thead>
+                    <tbody className="divide-y divide-[#21293d]">
+                      {modalConfig.data.map((row: any, i: number) => {
+                        if (modalConfig.type === 'expenses') return (
+                          <tr key={i} className="hover:bg-white/[0.02]">
+                            <td className="px-4 py-3 text-white">{row.date_created.split(' ')[0]}</td>
+                            <td className="px-4 py-3 text-slate-300"><span className="px-2 py-1 bg-slate-800 rounded-md text-xs">{row.category}</span></td>
+                            <td className="px-4 py-3 text-slate-400">{row.remarks || '-'}</td>
+                            <td className="px-4 py-3 text-slate-400">{row.payment_mode || 'Cash'}</td>
+                            <td className="px-4 py-3 text-right text-rose-400 font-bold">{inr(parseFloat(row.amount))}</td>
+                          </tr>
+                        );
+                        if (modalConfig.type === 'salaries') {
+                          const totalDays = row.full + (row.half * 0.5);
+                          const salary = totalDays * row.rate;
+                          return (
+                            <tr key={i} className="hover:bg-white/[0.02]">
+                              <td className="px-4 py-3 text-white font-bold">{row.name}</td>
+                              <td className="px-4 py-3 text-center text-slate-300">{row.full}</td>
+                              <td className="px-4 py-3 text-center text-slate-300">{row.half}</td>
+                              <td className="px-4 py-3 text-center text-indigo-400 font-bold">{totalDays}</td>
+                              <td className="px-4 py-3 text-right text-slate-400">{inr(row.rate)}</td>
+                              <td className="px-4 py-3 text-right text-rose-400 font-bold">{inr(salary)}</td>
+                            </tr>
+                          );
+                        }
+                        if (modalConfig.type === 'emi') return (
+                          <tr key={i} className="hover:bg-white/[0.02]">
+                            <td className="px-4 py-3 text-white">{row.payment_date.split(' ')[0]}</td>
+                            <td className="px-4 py-3 text-indigo-300 font-bold">{row.lender_name}</td>
+                            <td className="px-4 py-3 text-slate-400">{row.remarks || '-'}</td>
+                            <td className="px-4 py-3 text-right text-rose-400 font-bold">{inr(parseFloat(row.amount_paid))}</td>
+                          </tr>
+                        );
+                        if (modalConfig.type === 'discounts') return (
+                          <tr key={i} className="hover:bg-white/[0.02]">
+                            <td className="px-4 py-3 text-white">{row.created_at.split('T')[0]}</td>
+                            <td className="px-4 py-3 text-indigo-300 font-bold">{row.client_name}</td>
+                            <td className="px-4 py-3 text-slate-400">{row.remarks || '-'}</td>
+                            <td className="px-4 py-3 text-right text-rose-400 font-bold">{inr(parseFloat(row.discount))}</td>
+                          </tr>
+                        );
+                        return null;
+                      })}
+                    </tbody>
+                    <tfoot className="bg-[#0d1117] border-t border-[#21293d]">
+                      <tr>
+                        <td colSpan={modalConfig.type === 'salaries' ? 5 : modalConfig.type === 'expenses' ? 4 : 3} className="px-4 py-4 text-right text-[10px] uppercase tracking-widest text-slate-500 font-black">Total</td>
+                        <td className="px-4 py-4 text-right text-rose-500 font-black text-base">
+                          {inr(modalConfig.data.reduce((sum: number, row: any) => {
+                            if (modalConfig.type === 'expenses') return sum + (parseFloat(row.amount) || 0);
+                            if (modalConfig.type === 'salaries') return sum + ((row.full + (row.half * 0.5)) * row.rate);
+                            if (modalConfig.type === 'emi') return sum + (parseFloat(row.amount_paid) || 0);
+                            if (modalConfig.type === 'discounts') return sum + (parseFloat(row.discount) || 0);
+                            return sum;
+                          }, 0))}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

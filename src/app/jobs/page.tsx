@@ -109,6 +109,8 @@ function JobsListContent() {
 
   // Data
   const [transactions,  setTransactions]  = useState<Transaction[]>([]);
+  const [totalRows, setTotalRows] = useState(0);
+  const [stats, setStats] = useState({ total: 0, pending: 0, progress: 0, completed: 0, totalAmt: 0 });
   const [userRole,      setUserRole]      = useState<string | null>(null);
   const [loading,       setLoading]       = useState(true);
   const [isMobile,      setIsMobile]      = useState(false);
@@ -183,66 +185,82 @@ function JobsListContent() {
     return () => document.removeEventListener("mousedown", handler);
   }, [openDropdownId]);
 
-  // ── Fetch ─────────────────────────────────────────────────────────────────
+  // ── Fetch (SERVER SIDE PAGINATION & FILTERING) ────────────────────────────
   const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
       
-      // Direct fetch to bypass any client-side limits
-      // Fetch in multiple batches since Supabase limits to 1000 per request
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      
-      let allTxns: any[] = [];
-      let offset = 0;
-      const batchSize = 1000;
-      
-      while (true) {
-        const url = `${supabaseUrl}/rest/v1/transaction_list?del_status=eq.0&order=date_created.desc&select=*&offset=${offset}&limit=${batchSize}`;
-        
-        const response = await fetch(url, {
-          headers: {
-            'apikey': supabaseKey!,
-            'Authorization': `Bearer ${supabaseKey}`,
-          },
-        });
-        
-        if (!response.ok) {
-          const error = await response.text();
-          console.error("Fetch error:", error);
-          throw new Error(error);
-        }
-        
-        const batch = await response.json();
-        allTxns = allTxns.concat(batch);
-        
-        if (batch.length < batchSize) break;
-        offset += batchSize;
-        console.log("Fetched batch:", batch.length, "total so far:", allTxns.length);
+      const term = debouncedSearch.trim().toLowerCase();
+      let matchedClientIds = "";
+      if (term) {
+        // Step 1: Search clients first for foreign key filtering
+        const { data: matchedClients } = await supabase
+          .from("client_list")
+          .select("id")
+          .or(`firstname.ilike.%${term}%,lastname.ilike.%${term}%,contact.ilike.%${term}%`);
+        matchedClientIds = matchedClients?.map(c => c.id).join(",") || "-1";
       }
-      
-        console.log("Total jobs fetched:", allTxns.length);
-      
-      if (!allTxns.length) { setTransactions([]); return; }
 
-      // BUG FIX 1+2: client_name is TEXT column — pass strings
-      const clientIdsNum = [...new Set(allTxns.map((t: any) => Number(t.client_name)))];
-      const clientIdsStr = clientIdsNum.map(String); // ← FIX
+      // Step 2: Apply Filters
+      let query = supabase.from("transaction_list").select("*", { count: "exact" }).eq("del_status", 0);
+      
+      if (dateFrom) query = query.gte("date_created", `${dateFrom}T00:00:00+05:30`);
+      if (dateTo) query = query.lte("date_created", `${dateTo}T23:59:59+05:30`);
+      if (hideDelivered) query = query.neq("status", 5);
+      if (statusFilter !== "") query = query.eq("status", statusFilter);
+      
+      if (term) {
+        query = query.or(`job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`);
+      }
+
+      // ── Quick Stats Query (Lightweight parallel fetch) ──
+      let statsQuery = supabase.from("transaction_list").select("status, amount").eq("del_status", 0);
+      if (dateFrom) statsQuery = statsQuery.gte("date_created", `${dateFrom}T00:00:00+05:30`);
+      if (dateTo) statsQuery = statsQuery.lte("date_created", `${dateTo}T23:59:59+05:30`);
+      if (hideDelivered) statsQuery = statsQuery.neq("status", 5);
+      if (statusFilter !== "") statsQuery = statsQuery.eq("status", statusFilter);
+      if (term) statsQuery = statsQuery.or(`job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`);
+      statsQuery = statsQuery.limit(10000); // Fetch up to 10k for stats
+
+      // ── Execute Page Query ──
+      const from = pageIndex * pageSize;
+      const to = from + pageSize - 1;
+      query = query.order("date_created", { ascending: false }).range(from, to);
+
+      const [pageRes, statsRes] = await Promise.all([
+        query,
+        statsQuery
+      ]);
+
+      if (pageRes.error) throw pageRes.error;
+      
+      setTotalRows(pageRes.count || 0);
+
+      const allStats = statsRes.data || [];
+      setStats({
+        total: allStats.length,
+        pending: allStats.filter(t => t.status === 0).length,
+        progress: allStats.filter(t => t.status === 1).length,
+        completed: allStats.filter(t => [2, 3, 5].includes(t.status)).length,
+        totalAmt: allStats.reduce((s, t) => s + (t.amount || 0), 0),
+      });
+
+      const pageTxns = pageRes.data || [];
+      if (!pageTxns.length) {
+        setTransactions([]);
+        setLoading(false);
+        return;
+      }
+
+      // Step 3: Fetch related data ONLY for the current page's clients (Extremely fast!)
+      const clientIdsNum = [...new Set(pageTxns.map((t: any) => Number(t.client_name)))];
+      const clientIdsStr = clientIdsNum.map(String);
 
       const [clientsRes, billedRes, paidRes, salesRes] = await Promise.all([
-        supabase.from("client_list")
-          .select("id, firstname, middlename, lastname, contact, opening_balance")
-          .in("id", clientIdsNum),
-        supabase.from("transaction_list")
-          .select("client_name, amount")
-          .eq("status", 5)
-          .in("client_name", clientIdsStr), // ← FIX: string array
-        supabase.from("client_payments")
-          .select("client_id, amount, discount")
-          .in("client_id", clientIdsNum),
-        supabase.from("direct_sales")
-          .select("client_id, total_amount")
-          .in("client_id", clientIdsNum),
+        supabase.from("client_list").select("id, firstname, middlename, lastname, contact, opening_balance").in("id", clientIdsNum),
+        supabase.from("transaction_list").select("client_name, amount").eq("status", 5).in("client_name", clientIdsStr),
+        supabase.from("client_payments").select("client_id, amount, discount").in("client_id", clientIdsNum),
+        supabase.from("direct_sales").select("client_id, total_amount").in("client_id", clientIdsNum),
       ]);
 
       const billedMap = new Map<number, number>();
@@ -250,20 +268,17 @@ function JobsListContent() {
         const cid = Number(r.client_name);
         billedMap.set(cid, (billedMap.get(cid) || 0) + (r.amount || 0));
       });
-
       const paidMap = new Map<number, number>();
       paidRes.data?.forEach(r => {
         paidMap.set(r.client_id, (paidMap.get(r.client_id) || 0) + (r.amount || 0) + (r.discount || 0));
       });
-
       const salesMap = new Map<number, number>();
       salesRes.data?.forEach(r => {
         salesMap.set(r.client_id, (salesMap.get(r.client_id) || 0) + (r.total_amount || 0));
       });
-
       const clientMap = new Map(clientsRes.data?.map(c => [c.id, c]) ?? []);
 
-      setTransactions(allTxns.map((txn: any) => {
+      setTransactions(pageTxns.map((txn: any) => {
         const cid    = Number(txn.client_name);
         const client = clientMap.get(cid);
         return {
@@ -278,12 +293,13 @@ function JobsListContent() {
           total_sale:             salesMap.get(cid)  || 0,
         };
       }));
+
     } catch (err) {
       console.error("fetchTransactions error:", err);
     } finally {
       setLoading(false);
     }
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, hideDelivered, statusFilter, debouncedSearch, pageIndex, pageSize]);
 
   useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
 
@@ -306,48 +322,13 @@ function JobsListContent() {
     return              <span className="bg-slate-700/50 text-slate-500 border border-slate-600/30 px-1.5 py-0.5 rounded-full text-[9px] font-bold">Bal 0</span>;
   };
 
-  // ── Filter ────────────────────────────────────────────────────────────────
-  const filteredTransactions = useMemo(() => {
-    const term = debouncedSearch.toLowerCase().trim();
-    return transactions.filter(t => {
-      if (hideDelivered && t.status === 5)                          return false;
-      if (statusFilter !== "" && t.status !== statusFilter)         return false;
-      if (!term)                                                     return true;
-      const name = getClientName(t).toLowerCase();
-      return (
-        name.includes(term) ||
-        (t.job_id?.toLowerCase() || "").includes(term) ||
-        (t.code?.toLowerCase()   || "").includes(term) ||
-        (t.item?.toLowerCase()   || "").includes(term) ||
-        (t.fault?.toLowerCase()  || "").includes(term) ||
-        (t.uniq_id?.toLowerCase()|| "").includes(term) ||
-        (t.remark?.toLowerCase() || "").includes(term) ||
-        STATUS_MAP[t.status]?.toLowerCase().includes(term)
-      );
-    });
-  }, [transactions, debouncedSearch, hideDelivered, statusFilter]);
-
-  // BUG FIX 3: Reset pageIndex on actual filter/search change, not on length change
+  // BUG FIX 3: Reset pageIndex on actual filter/search change
   useEffect(() => { setPageIndex(0); }, [debouncedSearch, hideDelivered, statusFilter, dateFrom, dateTo]);
 
-  const paginatedTransactions = useMemo(() => {
-    const s = pageIndex * pageSize;
-    return filteredTransactions.slice(s, s + pageSize);
-  }, [filteredTransactions, pageIndex, pageSize]);
-
-  const totalPages = Math.ceil(filteredTransactions.length / pageSize);
-
-  // ── Quick Stats (PHP mobile-stats) ────────────────────────────────────────
-  const stats = useMemo(() => {
-    const shown = filteredTransactions;
-    return {
-      total:     shown.length,
-      pending:   shown.filter(t => t.status === 0).length,
-      progress:  shown.filter(t => t.status === 1).length,
-      completed: shown.filter(t => [2, 3, 5].includes(t.status)).length,
-      totalAmt:  shown.reduce((s, t) => s + (t.amount || 0), 0),
-    };
-  }, [filteredTransactions]);
+  // We already have the paginated transactions from the server!
+  const paginatedTransactions = transactions;
+  const filteredTransactions = transactions; // For backwards compatibility with other UI components
+  const totalPages = Math.ceil(totalRows / pageSize);
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const handleDelete = useCallback(async (id: number) => {
@@ -630,7 +611,7 @@ function JobsListContent() {
               <div>
                 <h1 className="text-base font-bold text-white">Transaction History</h1>
                 <p className="text-xs text-slate-500">
-                  {userRole === "admin" ? "👑 Admin" : "👤 Staff"} • {filteredTransactions.length} records
+                  {userRole === "admin" ? "👑 Admin" : "👤 Staff"} • {totalRows} records
                 </p>
               </div>
             </div>
@@ -885,9 +866,8 @@ function JobsListContent() {
                   <option value={25}>25</option>
                   <option value={50}>50</option>
                   <option value={100}>100</option>
-                  <option value={filteredTransactions.length}>All</option>
                 </select>
-                  <span>entries • {filteredTransactions.length} total</span>
+                <span>Page {pageIndex + 1} of {totalPages || 1} • {totalRows} Total Jobs</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <button onClick={() => setPageIndex(p => Math.max(p - 1, 0))} disabled={pageIndex === 0}
@@ -924,7 +904,7 @@ function JobsListContent() {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-slate-500 uppercase">
-              {filteredTransactions.length} records
+              {totalRows} records
             </span>
           </div>
         </div>
@@ -986,21 +966,21 @@ function JobsListContent() {
       {/* ── Search results indicator ── */}
       {debouncedSearch && (
         <div className="mx-3 my-2 bg-[#161b27] border border-[#21293d] p-2.5 rounded-xl flex justify-between items-center text-xs">
-          <span className="text-slate-500">Found <strong className="text-blue-400">{filteredTransactions.length}</strong> results</span>
+          <span className="text-slate-500">Found <strong className="text-blue-400">{totalRows}</strong> results</span>
           <button onClick={() => setLocalSearch("")} className="text-slate-600 hover:text-slate-400"><X size={14} /></button>
         </div>
       )}
 
       {/* ── Transaction Cards ── */}
       <div className="p-3 space-y-3">
-        {filteredTransactions.length === 0 ? (
+        {paginatedTransactions.length === 0 ? (
           <div className="bg-[#161b27] border border-[#21293d] p-10 rounded-2xl text-center">
             <AlertCircle className="mx-auto text-slate-700 mb-2" size={36} />
             <p className="text-slate-500 text-sm font-bold">No transactions found</p>
             <p className="text-xs text-slate-600 mt-1">Adjust filters or search</p>
           </div>
         ) : (
-          filteredTransactions.map(txn => {
+          paginatedTransactions.map(txn => {
             const clientName = getClientName(txn);
             const balance    = getClientBalance(txn);
             const phone      = txn.client_contact?.replace(/\D/g, "") || "";

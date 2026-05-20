@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
   Loader2, Calendar, Printer, TrendingUp, TrendingDown, Wallet,
-  ArrowUpCircle, ArrowDownCircle, Info, ChevronLeft, ArrowLeft
+  ArrowUpCircle, ArrowDownCircle, Info, ChevronLeft, ArrowLeft, X
 } from "lucide-react";
 import Link from "next/link";
 
@@ -32,6 +32,9 @@ function DailyIncomeContent() {
     loan_paid_to_lenders: 0,
   });
 
+  const [rawData, setRawData] = useState<any>({});
+  const [modalConfig, setModalConfig] = useState<{title: string, type: string, data: any[]} | null>(null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -45,22 +48,29 @@ function DailyIncomeContent() {
         clientPayRes,
         expenseRes,
         salaryRes,
-        loanPaidRes
+        loanPaidRes,
+        clientsRes,
+        mechanicsRes,
+        lendersRes
       ] = await Promise.all([
         // 1. Repair Income (Delivered)
-        supabase.from("transaction_list").select("amount").eq("status", 5).gte("date_completed", start).lte("date_completed", end),
+        supabase.from("transaction_list").select("id, amount, client_name, date_completed").eq("status", 5).gte("date_completed", start).lte("date_completed", end),
         // 2. Direct Sales
-        supabase.from("direct_sales").select("total_amount").gte("date_created", start).lte("date_created", end),
+        supabase.from("direct_sales").select("id, client_id, total_amount, date_created").gte("date_created", start).lte("date_created", end),
         // 3. Loan EMIs Received
-        supabase.from("client_payments").select("amount").not("loan_id", "is", null).gte("payment_date", start).lte("payment_date", end),
+        supabase.from("client_payments").select("id, client_id, amount, remarks, payment_date, loan_id").not("loan_id", "is", null).gte("payment_date", start).lte("payment_date", end),
         // 4. Client Direct Payments
-        supabase.from("client_payments").select("amount").is("loan_id", null).gte("payment_date", start).lte("payment_date", end),
+        supabase.from("client_payments").select("id, client_id, amount, remarks, payment_date, loan_id").is("loan_id", null).gte("payment_date", start).lte("payment_date", end),
         // 5. Shop Expenses
-        supabase.from("expense_list").select("amount").gte("date_created", start).lte("date_created", end),
+        supabase.from("expense_list").select("id, amount, category, remarks, payment_mode, date_created").gte("date_created", start).lte("date_created", end),
         // 6. Salaries/Advances Paid
-        supabase.from("advance_payments").select("amount").gte("date_paid", start).lte("date_paid", end),
+        supabase.from("advance_payments").select("id, mechanic_id, amount, remarks, date_paid").gte("date_paid", start).lte("date_paid", end),
         // 7. Loan Paid to Lenders
-        supabase.from("loan_payments").select("amount_paid").gte("payment_date", start).lte("payment_date", end),
+        supabase.from("loan_payments").select("id, lender_id, amount_paid, payment_date, remarks").gte("payment_date", start).lte("payment_date", end),
+        // Meta Tables
+        supabase.from("client_list").select("id, firstname, lastname"),
+        supabase.from("mechanic_list").select("id, firstname, lastname"),
+        supabase.from("lender_list").select("id, fullname")
       ]);
 
       setData({
@@ -71,6 +81,19 @@ function DailyIncomeContent() {
         expenses: (expenseRes.data || []).reduce((s, r) => s + (r.amount || 0), 0),
         salary_paid: (salaryRes.data || []).reduce((s, r) => s + (r.amount || 0), 0),
         loan_paid_to_lenders: (loanPaidRes.data || []).reduce((s, r) => s + (r.amount_paid || 0), 0),
+      });
+
+      setRawData({
+        repairs: repairRes.data || [],
+        direct: directRes.data || [],
+        loanRec: loanRecRes.data || [],
+        clientPay: clientPayRes.data || [],
+        expenses: expenseRes.data || [],
+        salaries: salaryRes.data || [],
+        loanPaid: loanPaidRes.data || [],
+        clients: clientsRes.data || [],
+        mechanics: mechanicsRes.data || [],
+        lenders: lendersRes.data || [],
       });
     } catch (e) {
       console.error(e);
@@ -91,6 +114,55 @@ function DailyIncomeContent() {
     p.set("from", from);
     p.set("to", to);
     router.replace("?" + p.toString(), { scroll: false });
+  };
+
+  const openModal = (type: string) => {
+    let detailData: any[] = [];
+    let title = "";
+
+    if (type === 'repairs') {
+      title = "Repair Income (Delivered)";
+      detailData = rawData.repairs.map((r: any) => {
+        const cid = Number(r.client_name);
+        const client = rawData.clients.find((c: any) => c.id === cid);
+        return { ...r, client_name: client ? `${client.firstname} ${client.lastname || ''}`.trim() : 'Unknown' };
+      });
+    } else if (type === 'direct') {
+      title = "Direct Sales Income";
+      detailData = rawData.direct.map((r: any) => {
+        const client = rawData.clients.find((c: any) => c.id === r.client_id);
+        return { ...r, client_name: client ? `${client.firstname} ${client.lastname || ''}`.trim() : 'Walk-in Customer' };
+      });
+    } else if (type === 'loan_received') {
+      title = "Loan EMIs Received";
+      detailData = rawData.loanRec.map((r: any) => {
+        const client = rawData.clients.find((c: any) => c.id === r.client_id);
+        return { ...r, client_name: client ? `${client.firstname} ${client.lastname || ''}`.trim() : 'Unknown' };
+      });
+    } else if (type === 'client_payments') {
+      title = "Client Direct Payments";
+      detailData = rawData.clientPay.map((r: any) => {
+        const client = rawData.clients.find((c: any) => c.id === r.client_id);
+        return { ...r, client_name: client ? `${client.firstname} ${client.lastname || ''}`.trim() : 'Unknown' };
+      });
+    } else if (type === 'expenses') {
+      title = "Shop Expenses";
+      detailData = rawData.expenses;
+    } else if (type === 'salaries') {
+      title = "Staff Salaries & Advances";
+      detailData = rawData.salaries.map((r: any) => {
+        const mech = rawData.mechanics.find((m: any) => m.id === r.mechanic_id);
+        return { ...r, staff_name: mech ? `${mech.firstname} ${mech.lastname || ''}`.trim() : 'Unknown' };
+      });
+    } else if (type === 'loan_paid') {
+      title = "Lender Loan Repayments";
+      detailData = rawData.loanPaid.map((r: any) => {
+        const lender = rawData.lenders.find((l: any) => l.id === r.lender_id);
+        return { ...r, lender_name: lender ? lender.fullname : 'Unknown Lender' };
+      });
+    }
+
+    setModalConfig({ title, type, data: detailData });
   };
 
   return (
@@ -223,20 +295,20 @@ function DailyIncomeContent() {
               <div className="p-0">
                 <table className="w-full text-sm">
                   <tbody className="divide-y divide-[#21293d]">
-                    <tr className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 text-slate-400 font-medium">Repair Jobs (Delivered)</td>
+                    <tr className="hover:bg-white/[0.02] transition-colors cursor-pointer group" onClick={() => openModal('repairs')}>
+                      <td className="px-6 py-4 text-slate-400 font-medium group-hover:text-blue-400 transition-colors">Repair Jobs (Delivered)</td>
                       <td className="px-6 py-4 text-right font-black text-white">{inr(data.repair_income)}</td>
                     </tr>
-                    <tr className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 text-slate-400 font-medium">Direct Sales Income</td>
+                    <tr className="hover:bg-white/[0.02] transition-colors cursor-pointer group" onClick={() => openModal('direct')}>
+                      <td className="px-6 py-4 text-slate-400 font-medium group-hover:text-blue-400 transition-colors">Direct Sales Income</td>
                       <td className="px-6 py-4 text-right font-black text-white">{inr(data.direct_income)}</td>
                     </tr>
-                    <tr className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 text-slate-400 font-medium">Loan EMIs (Received)</td>
+                    <tr className="hover:bg-white/[0.02] transition-colors cursor-pointer group" onClick={() => openModal('loan_received')}>
+                      <td className="px-6 py-4 text-slate-400 font-medium group-hover:text-blue-400 transition-colors">Loan EMIs (Received)</td>
                       <td className="px-6 py-4 text-right font-black text-white">{inr(data.loan_received)}</td>
                     </tr>
-                    <tr className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 text-slate-400 font-medium">Client Direct Payments</td>
+                    <tr className="hover:bg-white/[0.02] transition-colors cursor-pointer group" onClick={() => openModal('client_payments')}>
+                      <td className="px-6 py-4 text-slate-400 font-medium group-hover:text-blue-400 transition-colors">Client Direct Payments</td>
                       <td className="px-6 py-4 text-right font-black text-white">{inr(data.client_payments)}</td>
                     </tr>
                     <tr className="bg-emerald-500/5 border-t-2 border-emerald-500/20">
@@ -257,16 +329,16 @@ function DailyIncomeContent() {
               <div className="p-0">
                 <table className="w-full text-sm">
                   <tbody className="divide-y divide-[#21293d]">
-                    <tr className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 text-slate-400 font-medium">Shop Expenses (General)</td>
+                    <tr className="hover:bg-white/[0.02] transition-colors cursor-pointer group" onClick={() => openModal('expenses')}>
+                      <td className="px-6 py-4 text-slate-400 font-medium group-hover:text-blue-400 transition-colors">Shop Expenses (General)</td>
                       <td className="px-6 py-4 text-right font-black text-white">{inr(data.expenses)}</td>
                     </tr>
-                    <tr className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 text-slate-400 font-medium">Staff Salaries & Advances</td>
+                    <tr className="hover:bg-white/[0.02] transition-colors cursor-pointer group" onClick={() => openModal('salaries')}>
+                      <td className="px-6 py-4 text-slate-400 font-medium group-hover:text-blue-400 transition-colors">Staff Salaries & Advances</td>
                       <td className="px-6 py-4 text-right font-black text-white">{inr(data.salary_paid)}</td>
                     </tr>
-                    <tr className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 text-slate-400 font-medium">Lender Loan Repayments</td>
+                    <tr className="hover:bg-white/[0.02] transition-colors cursor-pointer group" onClick={() => openModal('loan_paid')}>
+                      <td className="px-6 py-4 text-slate-400 font-medium group-hover:text-blue-400 transition-colors">Lender Loan Repayments</td>
                       <td className="px-6 py-4 text-right font-black text-white">{inr(data.loan_paid_to_lenders)}</td>
                     </tr>
                     <tr className="hover:bg-white/[0.02] transition-colors">
@@ -283,12 +355,122 @@ function DailyIncomeContent() {
             </div>
           </div>
 
+          {/* Drill-down Modal */}
+          {modalConfig && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="bg-[#161b27] border border-[#21293d] rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
+                <div className="flex items-center justify-between p-6 border-b border-[#21293d]">
+                  <h2 className="text-xl font-black text-white">{modalConfig.title}</h2>
+                  <button onClick={() => setModalConfig(null)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-rose-500 transition-colors">
+                    <X size={18} />
+                  </button>
+                </div>
+                
+                <div className="p-6 overflow-y-auto">
+                  {modalConfig.data.length === 0 ? (
+                    <div className="text-center py-10 text-slate-500 font-bold">No data found for this period.</div>
+                  ) : (
+                    <div className="overflow-x-auto rounded-xl border border-[#21293d]">
+                      <table className="w-full text-sm text-left">
+                        <thead className="bg-[#0d1117] text-slate-400 text-[10px] uppercase tracking-widest">
+                          {modalConfig.type === 'repairs' && (
+                            <tr><th className="px-4 py-3">Date Completed</th><th className="px-4 py-3">Client</th><th className="px-4 py-3 text-right">Amount</th></tr>
+                          )}
+                          {modalConfig.type === 'direct' && (
+                            <tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Client</th><th className="px-4 py-3 text-right">Amount</th></tr>
+                          )}
+                          {(modalConfig.type === 'loan_received' || modalConfig.type === 'client_payments') && (
+                            <tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Client</th><th className="px-4 py-3">Remarks</th><th className="px-4 py-3 text-right">Amount</th></tr>
+                          )}
+                          {modalConfig.type === 'expenses' && (
+                            <tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Remarks</th><th className="px-4 py-3">Mode</th><th className="px-4 py-3 text-right">Amount</th></tr>
+                          )}
+                          {modalConfig.type === 'salaries' && (
+                            <tr><th className="px-4 py-3">Date Paid</th><th className="px-4 py-3">Staff Name</th><th className="px-4 py-3">Remarks</th><th className="px-4 py-3 text-right">Amount</th></tr>
+                          )}
+                          {modalConfig.type === 'loan_paid' && (
+                            <tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Lender</th><th className="px-4 py-3">Remarks</th><th className="px-4 py-3 text-right">Amount</th></tr>
+                          )}
+                        </thead>
+                        <tbody className="divide-y divide-[#21293d]">
+                          {modalConfig.data.map((row: any, i: number) => {
+                            if (modalConfig.type === 'repairs') return (
+                              <tr key={i} className="hover:bg-white/[0.02]">
+                                <td className="px-4 py-3 text-white">{row.date_completed?.split('T')[0] || row.date_completed}</td>
+                                <td className="px-4 py-3 text-indigo-300 font-bold">{row.client_name}</td>
+                                <td className="px-4 py-3 text-right text-emerald-400 font-bold">{inr(parseFloat(row.amount))}</td>
+                              </tr>
+                            );
+                            if (modalConfig.type === 'direct') return (
+                              <tr key={i} className="hover:bg-white/[0.02]">
+                                <td className="px-4 py-3 text-white">{row.date_created?.split('T')[0] || row.date_created?.split(' ')[0]}</td>
+                                <td className="px-4 py-3 text-indigo-300 font-bold">{row.client_name}</td>
+                                <td className="px-4 py-3 text-right text-emerald-400 font-bold">{inr(parseFloat(row.total_amount))}</td>
+                              </tr>
+                            );
+                            if (modalConfig.type === 'loan_received' || modalConfig.type === 'client_payments') return (
+                              <tr key={i} className="hover:bg-white/[0.02]">
+                                <td className="px-4 py-3 text-white">{row.payment_date?.split('T')[0] || row.payment_date?.split(' ')[0]}</td>
+                                <td className="px-4 py-3 text-indigo-300 font-bold">{row.client_name}</td>
+                                <td className="px-4 py-3 text-slate-400">{row.remarks || '-'}</td>
+                                <td className="px-4 py-3 text-right text-emerald-400 font-bold">{inr(parseFloat(row.amount))}</td>
+                              </tr>
+                            );
+                            if (modalConfig.type === 'expenses') return (
+                              <tr key={i} className="hover:bg-white/[0.02]">
+                                <td className="px-4 py-3 text-white">{row.date_created?.split(' ')[0]}</td>
+                                <td className="px-4 py-3 text-slate-300"><span className="px-2 py-1 bg-slate-800 rounded-md text-xs">{row.category}</span></td>
+                                <td className="px-4 py-3 text-slate-400">{row.remarks || '-'}</td>
+                                <td className="px-4 py-3 text-slate-400">{row.payment_mode || 'Cash'}</td>
+                                <td className="px-4 py-3 text-right text-rose-400 font-bold">{inr(parseFloat(row.amount))}</td>
+                              </tr>
+                            );
+                            if (modalConfig.type === 'salaries') return (
+                              <tr key={i} className="hover:bg-white/[0.02]">
+                                <td className="px-4 py-3 text-white">{row.date_paid?.split('T')[0] || row.date_paid?.split(' ')[0]}</td>
+                                <td className="px-4 py-3 text-indigo-300 font-bold">{row.staff_name}</td>
+                                <td className="px-4 py-3 text-slate-400">{row.remarks || '-'}</td>
+                                <td className="px-4 py-3 text-right text-rose-400 font-bold">{inr(parseFloat(row.amount))}</td>
+                              </tr>
+                            );
+                            if (modalConfig.type === 'loan_paid') return (
+                              <tr key={i} className="hover:bg-white/[0.02]">
+                                <td className="px-4 py-3 text-white">{row.payment_date?.split(' ')[0]}</td>
+                                <td className="px-4 py-3 text-indigo-300 font-bold">{row.lender_name}</td>
+                                <td className="px-4 py-3 text-slate-400">{row.remarks || '-'}</td>
+                                <td className="px-4 py-3 text-right text-rose-400 font-bold">{inr(parseFloat(row.amount_paid))}</td>
+                              </tr>
+                            );
+                            return null;
+                          })}
+                        </tbody>
+                        <tfoot className="bg-[#0d1117] border-t border-[#21293d]">
+                          <tr>
+                            <td colSpan={modalConfig.type === 'expenses' ? 4 : modalConfig.type === 'salaries' ? 3 : modalConfig.type === 'repairs' || modalConfig.type === 'direct' ? 2 : 3} className="px-4 py-4 text-right text-[10px] uppercase tracking-widest text-slate-500 font-black">Total</td>
+                            <td className="px-4 py-4 text-right font-black text-base text-white">
+                              {inr(modalConfig.data.reduce((sum: number, row: any) => {
+                                if (modalConfig.type === 'repairs' || modalConfig.type === 'loan_received' || modalConfig.type === 'client_payments' || modalConfig.type === 'expenses' || modalConfig.type === 'salaries') return sum + (parseFloat(row.amount) || 0);
+                                if (modalConfig.type === 'direct') return sum + (parseFloat(row.total_amount) || 0);
+                                if (modalConfig.type === 'loan_paid') return sum + (parseFloat(row.amount_paid) || 0);
+                                return sum;
+                              }, 0))}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Info Alert */}
           <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-4 flex items-center gap-3 text-blue-400/80 text-xs font-bold leading-relaxed shadow-lg">
             <Info size={20} className="flex-shrink-0" />
             <p>
               Note: This report tracks actual cash flow within the selected period based on payment dates and delivery dates. 
-              Repair jobs income is recognized only when the job status is set to &apos;Delivered&apos;.
+              Repair jobs income is recognized only when the job status is set to &apos;Delivered&apos;. Click on any row in the tables to view the detailed breakdown.
             </p>
           </div>
         </div>
@@ -308,3 +490,4 @@ export default function DailyIncomeReport() {
     </div>
   );
 }
+

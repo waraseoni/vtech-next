@@ -44,7 +44,15 @@ function FinancialReportContent() {
       const start = `${from}T00:00:00+05:30`;
       const end   = `${to}T23:59:59+05:30`;
 
-      // 1. Inflow/Outflow Queries
+      // First get the transactions in range
+      const { data: txRangeData } = await supabase
+        .from("transaction_list")
+        .select("id")
+        .eq("status", 5)
+        .gte("date_completed", start)
+        .lte("date_completed", end);
+      const txRangeIds = (txRangeData || []).map(t => String(t.id));
+
       const [
         svcRes,
         partsRes,
@@ -55,9 +63,13 @@ function FinancialReportContent() {
         stockAddRes
       ] = await Promise.all([
         // Service Revenue (status 5 delivered)
-        supabase.from("transaction_services").select("price, transaction_list!inner(date_completed, status)").eq("transaction_list.status", 5).gte("transaction_list.date_completed", start).lte("transaction_list.date_completed", end),
+        txRangeIds.length > 0 
+          ? supabase.from("transaction_services").select("price").in("transaction_id", txRangeIds)
+          : Promise.resolve({ data: [] }),
         // Parts Revenue (status 5 delivered)
-        supabase.from("transaction_products").select("qty, price, transaction_list!inner(date_completed, status)").eq("transaction_list.status", 5).gte("transaction_list.date_completed", start).lte("transaction_list.date_completed", end),
+        txRangeIds.length > 0 
+          ? supabase.from("transaction_products").select("qty, price").in("transaction_id", txRangeIds)
+          : Promise.resolve({ data: [] }),
         // Direct Sales
         supabase.from("direct_sales").select("total_amount").gte("date_created", start).lte("date_created", end),
         // Expenses
@@ -80,12 +92,16 @@ function FinancialReportContent() {
 
       // Calculate Stock Val (Simplified for now - we need full inv tracking for perfect accuracy)
       // We'll fetch inventory and sales for all products.
-      const [{data: invAll}, {data: tpAll}, {data: dsAll}] = await Promise.all([
+      const [{data: invAll}, {data: tpRaw}, {data: txAll}, {data: dsAll}] = await Promise.all([
           supabase.from("inventory_list").select("product_id, quantity"),
-          supabase.from("transaction_products").select("product_id, qty, transaction_list!inner(status)").neq("transaction_list.status", 4),
+          supabase.from("transaction_products").select("product_id, qty, transaction_id"),
+          supabase.from("transaction_list").select("id, status"),
           supabase.from("direct_sale_items").select("product_id, qty")
       ]);
       
+      const txStatusMap = new Map((txAll || []).map(t => [String(t.id), t.status]));
+      const tpAll = (tpRaw || []).filter(tp => txStatusMap.get(String(tp.transaction_id)) !== 4);
+
       const invMap: any = {}; (invAll || []).forEach(r => invMap[r.product_id] = (invMap[r.product_id] || 0) + (r.quantity || 0));
       const soldMap: any = {}; 
       (tpAll || []).forEach(r => soldMap[r.product_id] = (soldMap[r.product_id] || 0) + (r.qty || 0));

@@ -12,7 +12,7 @@ type Job = {
   code: string;
   client_name: string;
   mechanic_id: number | null;
-  total: number;
+  amount: number;
   status: number;
   date_created: string;
   date_updated: string;
@@ -43,15 +43,15 @@ export default function DailyServiceReportPage() {
     try {
       const { data, error } = await supabase
         .from("transaction_list")
-        .select("id, code, client_name, mechanic_id, total, status, date_created, date_updated")
-        .eq("delete_flag", 0)
+        .select("id, code, client_name, mechanic_id, amount, status, date_created, date_updated")
+        .eq("del_status", 0)
         .gte("date_created", date + "T00:00:00+05:30")
         .lte("date_created", date + "T23:59:59+05:30")
         .order("date_created", { ascending: true });
       if (error) throw error;
       setJobs((data || []) as Job[]);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
+    } catch (e: any) {
+      setErr(e?.message || e?.details || JSON.stringify(e));
     }
     setLoading(false);
   }, [date]);
@@ -60,7 +60,7 @@ export default function DailyServiceReportPage() {
 
   const totals = {
     count: jobs.length,
-    amount: jobs.reduce((s, j) => s + (j.total || 0), 0),
+    amount: jobs.reduce((s, j) => s + (j.amount || 0), 0),
   };
 
   const shiftDay = (diff: number) => {
@@ -160,7 +160,7 @@ export default function DailyServiceReportPage() {
                         <td className="px-4 py-3.5 text-slate-300 font-bold">{job.client_name}</td>
                         <td className="px-4 py-3.5 text-slate-400">{fmtDateTime(job.date_created)}</td>
                         <td className="px-4 py-3.5 text-slate-400">{fmtDateTime(job.date_updated)}</td>
-                        <td className="px-4 py-3.5 text-right font-black text-emerald-400">{inr(job.total)}</td>
+                        <td className="px-4 py-3.5 text-right font-black text-emerald-400">{inr(job.amount)}</td>
                         <td className="px-4 py-3.5 text-center">
                           <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border ${st.color}`}>
                             {st.label}

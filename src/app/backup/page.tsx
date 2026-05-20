@@ -52,6 +52,7 @@ const BACKUP_TABLES = BACKUP_TABLES_ORDERED.map(t => t.table);
 // "ERROR: cannot insert into column 'net_amount' (generated always)"
 const GENERATED_COLS: Record<string, string[]> = {
   "client_payments": ["net_amount"],
+  "product_list": ["barcode"],
 };
 
 // ── FK violations to skip (bad data that would cause FK error) ───────────────
@@ -322,7 +323,7 @@ export default function BackupPage() {
           const batch = rows.slice(i, i + batchSize);
           const { error: insErr } = await supabase
             .from(table)
-            .insert(batch as Record<string, unknown>[]);
+            .upsert(batch as Record<string, unknown>[]);
 
           if (insErr) {
             console.warn(`${table} batch ${i}-${i+batchSize} error:`, insErr.message);
@@ -330,7 +331,7 @@ export default function BackupPage() {
             for (const row of batch) {
               const { error: rowErr } = await supabase
                 .from(table)
-                .insert(row as Record<string, unknown>);
+                .upsert(row as Record<string, unknown>);
               if (!rowErr) {
                 totalRestored++;
               } else {

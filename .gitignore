@@ -1,9 +1,8 @@
 # --- V-TECH PROJECT GITIGNORE ---
 
 # 1. Dependencies
-# Ye folders 'npm install' se wapas aa jate hain, inko save karne ki zaroorat nahi.
+# 'npm install' se wapas aa jate hain, inko track karne ki zaroorat nahi
 node_modules/
-/node_modules
 .pnp
 .pnp.*
 .yarn/*
@@ -13,15 +12,14 @@ node_modules/
 !.yarn/versions
 
 # 2. Build & Production Outputs
-# Next.js aur static builds ka kachra
 .next/
 /out/
+out/
 build/
 dist/
 .cache/
 
-# 3. Secret Environment Variables (CRITICAL)
-# Inhe galti se bhi push mat karna, warna security risk ho jayega.
+# 3. Secret Environment Variables (CRITICAL - kabhi push mat karna!)
 .env
 .env.local
 .env.*.local
@@ -29,29 +27,31 @@ dist/
 .env*_*
 !.env.example
 
-# 4. Vercel & Deployment
+# 4. Sensitive Credential & Password Files (CRITICAL)
+supabase pw.txt
+vikram_db_supabase.txt
+
+# 5. Vercel & Deployment
 .vercel
 .turbo
 
-# 5. Logs aur Debugging
-# Jab code fat-ta hai toh ye files banti hain, inki repo mein zarurat nahi.
+# 6. Logs & Debugging
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-logs
+logs/
 *.log
 error.log
 
-# 6. IDE & Editors
-# VS Code ya WebStorm ki personal settings
+# 7. IDE & Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 .project
 
-# 7. OS Related (Mac/Windows Junk)
+# 8. OS Related (Mac/Windows Junk)
 .DS_Store
 .DS_Store?
 ._*
@@ -59,30 +59,37 @@ Thumbs.db
 ehthumbs.db
 desktop.ini
 
-# 8. TypeScript & Testing
+# 9. TypeScript & Testing
 *.tsbuildinfo
 next-env.d.ts
 /coverage
 .nyc_output
 
-# 9. Miscellaneous
-# Temporary files aur backups
-*.bak
-*.tmp
-.eslintcache
+# 10. Test & Scratch Files
 ledger.json
 test_data.js
 test_data2.js
 test_revenue.js
-
-# 10. Project Specific
 scratch/
+
+# 11. PHP Reference & Legacy Code (do not push)
 php-ref/
 vtech-rsms-php/
-android/
-out/
-.env.local.7z
-.env.local_v-tech-db
-.env.local_vikram_db
+temp-php-repo/
 
+# 12. Android / Capacitor Build Output
+android/
+
+# 13. Large Auto-Generated Files
+structure.txt
+
+# 14. Stray Copy Files
+*- Copy.*
+
+# 15. Backup page copies in src
+src/app/backup/page_100%*
+src/app/salary/*page - Copy.tsx*
+
+# 16. Misc sensitive txt files
+*.7z
 db folder/

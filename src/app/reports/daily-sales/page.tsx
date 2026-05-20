@@ -31,30 +31,61 @@ export default function DailySalesReportPage() {
     setLoading(true);
     setErr("");
     try {
-      const { data, error } = await supabase
-        .from("transaction_products")
-        .select(`
-          id,
-          price,
-          qty,
-          date_updated,
-          transaction:transaction_list!inner(code, client_name, date_updated),
-          product:product_list!inner(name)
-        `)
-        .gte("date_updated", date + "T00:00:00+05:30")
-        .lte("date_updated", date + "T23:59:59+05:30")
-        .order("date_updated", { ascending: true });
-      if (error) throw error;
+      // Step 1: Get transaction IDs for the selected date (filter on transaction_list.date_created)
+      // transaction_products has no date column — only transaction_id, product_id, qty, price
+      const { data: txData, error: txErr } = await supabase
+        .from("transaction_list")
+        .select("id, code, client_name, date_created")
+        .gte("date_created", date + "T00:00:00+05:30")
+        .lte("date_created", date + "T23:59:59+05:30")
+        .order("date_created", { ascending: true });
+      if (txErr) throw txErr;
 
-      const mapped = (data || []).map((item: any) => ({
-        id: item.id,
-        product_name: item.product?.name || "Unknown",
-        price: item.price,
-        qty: item.qty,
-        transaction_code: item.transaction?.code || "",
-        client_name: item.transaction?.client_name || "",
-        date_updated: item.date_updated,
-      })) as SaleItem[];
+      const txList = txData || [];
+      if (txList.length === 0) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+
+      const txIds = txList.map((t: any) => t.id);
+      const txMap = new Map(txList.map((t: any) => [t.id, t]));
+
+      // Step 2: Get products for those transactions
+      const { data: tpData, error: tpErr } = await supabase
+        .from("transaction_products")
+        .select("transaction_id, product_id, price, qty")
+        .in("transaction_id", txIds);
+      if (tpErr) throw tpErr;
+
+      const itemsData = tpData || [];
+      if (itemsData.length === 0) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+
+      // Step 3: Get product names
+      const prodIds = [...new Set(itemsData.map((d: any) => d.product_id))];
+      const { data: prodData } = await supabase
+        .from("product_list")
+        .select("id, name")
+        .in("id", prodIds);
+      const prodMap = new Map(prodData?.map((p: any) => [p.id, p]) || []);
+
+      const mapped = itemsData.map((item: any, i: number) => {
+        const tx  = txMap.get(item.transaction_id) as any;
+        const prod = prodMap.get(item.product_id) as any;
+        return {
+          id: i,
+          product_name: prod?.name || "Unknown",
+          price: item.price,
+          qty: item.qty,
+          transaction_code: tx?.code || "",
+          client_name: tx?.client_name || "",
+          date_updated: tx?.date_created || "",
+        };
+      }) as SaleItem[];
 
       setItems(mapped);
     } catch (e: any) {

@@ -167,7 +167,9 @@ export default function ActivityLogsPage() {
               <p className="text-slate-600 text-xs font-black uppercase tracking-widest">Fetching Audit Logs...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="bg-[#0d1117]/50 border-b border-[#21293d]">
@@ -224,6 +226,48 @@ export default function ActivityLogsPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden divide-y divide-[#21293d]">
+              {filteredLogs.map((log) => (
+                <div key={log.id} className="p-4 hover:bg-white/[0.02] transition-colors group">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] ${
+                        log.user_id === 0 ? "bg-amber-500/10 text-amber-500" : "bg-blue-500/10 text-blue-500"
+                      }`}>
+                        {log.username?.slice(0, 1).toUpperCase()}
+                      </div>
+                      <div>
+                        <span className="text-white font-bold block leading-tight">{log.username}</span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] text-slate-500 font-bold">{formatIST(log.date_created, { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                          <span className="text-[10px] text-slate-600 font-bold">•</span>
+                          <span className="text-[10px] text-slate-500 font-bold">{formatIST(log.date_created, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg px-2.5 py-1 w-fit flex-shrink-0">
+                      {getModuleIcon(log.module)}
+                      <span className="text-[9px] font-black uppercase tracking-tight text-slate-400">{log.module}</span>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <span className="text-slate-300 font-bold text-sm block mb-1">{log.action}</span>
+                    <p className="text-slate-500 text-xs leading-relaxed italic">
+                      {log.details || "—"}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {filteredLogs.length === 0 && (
+                <div className="p-10 text-center">
+                  <History size={32} className="text-slate-800 mx-auto mb-3 opacity-20" />
+                  <p className="text-slate-600 font-black uppercase tracking-widest text-[10px]">No activity logs found</p>
+                </div>
+              )}
+            </div>
+            </>
           )}
         </div>
       </div>

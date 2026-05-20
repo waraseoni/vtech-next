@@ -44,6 +44,14 @@ function VyaparDarpanContent() {
       const start = `${from}T00:00:00+05:30`;
       const end   = `${to}T23:59:59+05:30`;
 
+      // Pre-fetch parent IDs to avoid broken PostgREST !inner joins
+      const [deliveredTxRes, dsRangeRes] = await Promise.all([
+        supabase.from("transaction_list").select("id").eq("status", 5).gte("date_completed", start).lte("date_completed", end),
+        supabase.from("direct_sales").select("id").gte("date_created", start).lte("date_created", end),
+      ]);
+      const deliveredTxIds = (deliveredTxRes.data || []).map(t => String(t.id));
+      const dsRangeIds     = (dsRangeRes.data || []).map(d => String(d.id));
+
       const [
         repairRes, directRes,
         repPartsRes, dsPartsRes,
@@ -55,10 +63,14 @@ function VyaparDarpanContent() {
         supabase.from("transaction_list").select("amount").eq("status", 5).gte("date_completed", start).lte("date_completed", end),
         // 2. Direct Sales
         supabase.from("direct_sales").select("total_amount").gte("date_created", start).lte("date_created", end),
-        // 3. Repair Parts Value
-        supabase.from("transaction_products").select("qty, price, transaction_list!inner(status, date_completed)").eq("transaction_list.status", 5).gte("transaction_list.date_completed", start).lte("transaction_list.date_completed", end),
-        // 4. Direct Sale Items Value
-        supabase.from("direct_sale_items").select("qty, price, direct_sales!inner(date_created)").gte("direct_sales.date_created", start).lte("direct_sales.date_created", end),
+        // 3. Repair Parts Value (use pre-fetched IDs)
+        deliveredTxIds.length > 0
+          ? supabase.from("transaction_products").select("qty, price").in("transaction_id", deliveredTxIds)
+          : Promise.resolve({ data: [] }),
+        // 4. Direct Sale Items Value (use pre-fetched IDs)
+        dsRangeIds.length > 0
+          ? supabase.from("direct_sale_items").select("qty, price").in("sale_id", dsRangeIds)
+          : Promise.resolve({ data: [] }),
         // 5. Shop Expenses
         supabase.from("expense_list").select("amount").gte("date_created", start).lte("date_created", end),
         // 6. EMI Paid
