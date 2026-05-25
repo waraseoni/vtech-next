@@ -66,6 +66,7 @@ type BackupData = Record<string, unknown[]>;
 type TableStats = { table: string; count: number };
 type BackupPreview = { fileName: string; tables: { name: string; rows: number }[]; totalRows: number; totalTables: number; version: string; createdAt: string };
 type TableResult = { table: string; fileRows: number; restored: number; failed: number };
+type DiffRow = { table: string; fileRows: number; dbRows: number; diff: number };
 
 export default function BackupPage() {
   const [taking,     setTaking]     = useState(false);
@@ -77,6 +78,9 @@ export default function BackupPage() {
   const [loadingStats, setLoadingStats] = useState(false);
   const [preview, setPreview] = useState<BackupPreview | null>(null);
   const [restoreReport, setRestoreReport] = useState<TableResult[]>([]);
+  const [loadedBackup, setLoadedBackup] = useState<BackupData | null>(null);
+  const [diffData, setDiffData] = useState<DiffRow[] | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
 
   const showToast = (type: Toast["type"], msg: string) => {
     setToast({ type, msg });
@@ -188,6 +192,14 @@ export default function BackupPage() {
   // ── Tables with composite primary keys (need special delete) ─────────────────
   const COMPOSITE_KEY_TABLES = ["transaction_products", "transaction_services"];
 
+  // ── Tables that CANNOT be deleted (FK from other non-backup tables) ──────────
+  // mechanic_list: "profiles" table ka FK constraint hai — delete nahi ho sakta
+  // In tables mein sirf upsert karengen (existing rows update, naye add honge)
+  const NO_DELETE_TABLES = ["mechanic_list"];
+
+  // ── Small delay helper (Supabase rate limit se bachne ke liye) ───────────────
+  const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
   // ── RESTORE ────────────────────────────────────────────────────────────────
   const handleRestore = async (file: File, dryRun = false, preloadedBackup?: BackupData) => {
     if (!file.name.endsWith(".json") && !preloadedBackup) {
@@ -296,57 +308,71 @@ export default function BackupPage() {
         const tableStart = totalRestored;
         setProgress(`Restoring: ${table} (${rows.length} rows)...`);
 
-        // Step 1: Delete existing rows
-        let delErr = null;
-        if (COMPOSITE_KEY_TABLES.includes(table)) {
-          const { error } = await supabase
-            .from(table)
-            .delete()
-            .not("transaction_id", "is", null);
-          delErr = error;
-        } else {
-          const { error } = await supabase
-            .from(table)
-            .delete()
-            .neq("id", -999999);
-          delErr = error;
-          if (delErr) {
-            const { error: err2 } = await supabase.from(table).delete().gt("id", -1);
-            if (err2) {
-              const { error: err3 } = await supabase.from(table).delete().gte("id", 0);
-              delErr = err3;
-            } else {
-              delErr = null;
+        // Step 1: Delete existing rows (NO_DELETE_TABLES skip karein)
+        if (!NO_DELETE_TABLES.includes(table)) {
+          let delErr = null;
+          if (COMPOSITE_KEY_TABLES.includes(table)) {
+            const { error } = await supabase
+              .from(table)
+              .delete()
+              .not("transaction_id", "is", null);
+            delErr = error;
+          } else {
+            const { error } = await supabase
+              .from(table)
+              .delete()
+              .neq("id", -999999);
+            delErr = error;
+            if (delErr) {
+              const { error: err2 } = await supabase.from(table).delete().gt("id", -1);
+              if (err2) {
+                const { error: err3 } = await supabase.from(table).delete().gte("id", 0);
+                delErr = err3;
+              } else {
+                delErr = null;
+              }
             }
           }
+          if (delErr) console.warn(`${table} delete warning:`, delErr.message);
+        } else {
+          console.log(`${table}: delete skipped (FK constraint) — upsert only`);
         }
-        if (delErr) console.warn(`${table} delete warning:`, delErr.message);
         totalDeleted += rows.length;
 
-        // Step 2: Insert in batches of 50
-        const batchSize = 50;
+        // Step 2: Insert in batches of 25 (rate limit se bachne ke liye smaller batches)
+        const batchSize = 25;
         for (let i = 0; i < rows.length; i += batchSize) {
           const batch = rows.slice(i, i + batchSize);
+          setProgress(`Restoring: ${table} (${i + batch.length}/${rows.length})...`);
+
           const { error: insErr } = await supabase
             .from(table)
             .upsert(batch as Record<string, unknown>[]);
 
           if (insErr) {
             console.warn(`${table} batch ${i}-${i+batchSize} error:`, insErr.message);
-            // Row-by-row fallback — count only successful ones
+            // Row-by-row fallback with delay (rate limit se bachne ke liye)
             for (const row of batch) {
-              const { error: rowErr } = await supabase
-                .from(table)
-                .upsert(row as Record<string, unknown>);
-              if (!rowErr) {
-                totalRestored++;
-              } else {
-                console.warn(`${table} row skip:`, rowErr.message, row);
+              await sleep(120); // 120ms delay between each row
+              try {
+                const { error: rowErr } = await supabase
+                  .from(table)
+                  .upsert(row as Record<string, unknown>);
+                if (!rowErr) {
+                  totalRestored++;
+                } else {
+                  console.warn(`${table} row skip:`, rowErr.message, row);
+                }
+              } catch (networkErr) {
+                console.warn(`${table} row network error:`, networkErr, row);
+                await sleep(500); // Extra delay on network error
               }
             }
           } else {
             totalRestored += batch.length;
           }
+          // Batch ke baad thoda wait (large tables ke liye)
+          if (rows.length > 200) await sleep(50);
         }
 
         // Per-table result track karo
@@ -354,11 +380,13 @@ export default function BackupPage() {
       }
 
       // Step 3: Reset sequences (important for auto-increment IDs)
-      setProgress("Sequences reset kar rahe hain...");
-      await resetSequences();
+      setProgress("Sequences reset ho rahi hain (naye IDs ke liye)...");
+      const seqResults = await resetSequences();
+      console.log("Sequence reset results:", seqResults);
 
       setProgress("");
       setRestoreReport(tableResults);
+      clearLoaded(); // Diff panel clear karo restore ke baad
       const failedCount = tableResults.reduce((s, r) => s + r.failed, 0);
       if (failedCount > 0) {
         showToast("error", `⚠ ${totalRestored.toLocaleString()} restored, ${failedCount} failed — report dekhein`);
@@ -374,7 +402,8 @@ export default function BackupPage() {
     }
   };
 
-  // ── Reset PostgreSQL sequences ──────────────────────────────────────────────
+  // ── Reset PostgreSQL sequences via RPC ──────────────────────────────────────
+  // Requires: reset_sequence() SQL function in Supabase (run reset_sequences.sql once)
   const resetSequences = async () => {
     const sequenceTables = [
       "system_info", "job_id_counter", "mechanic_list", "client_list",
@@ -384,45 +413,59 @@ export default function BackupPage() {
       "mechanic_salary_history", "mechanic_commission_history", "message_list",
     ];
 
-    // Call RPC to reset sequences - this requires a Supabase function
-    // For now, we'll use a workaround with max ID + 1
+    const results: string[] = [];
     for (const table of sequenceTables) {
       try {
-        const { data } = await supabase
-          .from(table)
-          .select("id")
-          .order("id", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (data && typeof data.id === "number") {
-          // We can't directly reset sequences via Supabase client
-          // This is a limitation - sequences will auto-increment from current max + 1
-          // For proper reset, user should use Supabase Dashboard SQL Editor:
-          // SELECT setval(pg_get_serial_sequence('table_name', 'id'), (SELECT MAX(id) FROM table_name) + 1, false);
-          console.log(`${table}: max id = ${data.id}, sequence will resume from ${data.id + 1}`);
+        // Method 1: RPC function se sequence reset karo (reset_sequences.sql deploy hona chahiye)
+        const { data, error } = await supabase.rpc("reset_sequence", { table_name: table });
+        if (!error && data) {
+          console.log(`Sequence reset: ${data}`);
+          results.push(`✓ ${table}`);
+        } else {
+          // Method 2: Fallback — max ID fetch karke log karo
+          const { data: row } = await supabase
+            .from(table)
+            .select("id")
+            .order("id", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (row && typeof row.id === "number") {
+            console.log(`${table}: max id = ${row.id}, sequence will resume from ${row.id + 1}`);
+            results.push(`⚠ ${table} (manual reset needed)`);
+          }
         }
-      } catch (e) {
-        // Table might be empty or have no id column
+      } catch {
+        // Table might not have id column — skip silently
       }
     }
+    return results;
   };
 
-  // ── Preview backup file before restore ───────────────────────────────────
-  const previewBackupFile = async (file: File) => {
+  // ── File load + diff compute (no restore yet) ───────────────────────────
+  const loadFileAndDiff = async (file: File) => {
+    if (!file.name.endsWith(".json")) {
+      showToast("error", "Sirf .json backup file select karo!");
+      return;
+    }
+    setDiffLoading(true);
+    setDiffData(null);
+    setLoadedBackup(null);
+    setPreview(null);
+
     try {
       const text = await file.text();
       const backup = JSON.parse(text) as BackupData;
       const meta = backup._meta?.[0] as Record<string, unknown>;
 
       if (!meta?.version) {
-        showToast("error", "Invalid backup file!");
-        return null;
+        showToast("error", "Invalid backup file! V-Tech backup file use karo.");
+        setDiffLoading(false);
+        return;
       }
 
+      // Build preview info
       const tables: { name: string; rows: number }[] = [];
       let totalRows = 0;
-
       for (const t of BACKUP_TABLES) {
         const rows = backup[t];
         if (Array.isArray(rows)) {
@@ -430,31 +473,42 @@ export default function BackupPage() {
           totalRows += rows.length;
         }
       }
-
-      const previewData: BackupPreview = {
+      setPreview({
         fileName: file.name,
         tables,
         totalRows,
         totalTables: tables.length,
         version: String(meta.version || "unknown"),
         createdAt: String(meta.created_at || "unknown"),
-      };
+      });
 
-      setPreview(previewData);
-      return backup;
+      // Compute diff: file rows vs current DB rows
+      const diff: DiffRow[] = [];
+      for (const t of BACKUP_TABLES) {
+        const fileRows = Array.isArray(backup[t]) ? backup[t].length : 0;
+        const { count } = await supabase.from(t).select("*", { count: "exact", head: true });
+        const dbRows = count || 0;
+        diff.push({ table: t, fileRows, dbRows, diff: fileRows - dbRows });
+      }
+
+      setLoadedBackup(backup);
+      setDiffData(diff);
     } catch {
-      showToast("error", "Failed to read backup file!");
-      return null;
+      showToast("error", "File read karne mein error — valid JSON hai?");
+    } finally {
+      setDiffLoading(false);
     }
+  };
+
+  const clearLoaded = () => {
+    setLoadedBackup(null);
+    setDiffData(null);
+    setPreview(null);
   };
 
   const onFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      previewBackupFile(file).then(backup => {
-        if (backup) handleRestore(new File([], file.name), false, backup as BackupData);
-      });
-    }
+    if (file) loadFileAndDiff(file);
     e.target.value = "";
   };
 
@@ -462,11 +516,13 @@ export default function BackupPage() {
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) {
-      previewBackupFile(file).then(backup => {
-        if (backup) handleRestore(new File([], file.name), false, backup as BackupData);
-      });
-    }
+    if (file) loadFileAndDiff(file);
+  };
+
+  // Legacy helper kept for dry-run button compatibility
+  const previewBackupFile = async (file: File) => {
+    await loadFileAndDiff(file);
+    return loadedBackup;
   };
 
   const getRowCount = (table: string) => {
@@ -657,120 +713,154 @@ export default function BackupPage() {
               </ol>
             </div>
 
-            {/* Backup File Preview */}
-            {preview && (
-              <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle size={16} className="text-emerald-400"/>
-                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">
-                      Backup File Ready
-                    </p>
-                  </div>
-                  <button onClick={() => setPreview(null)}
-                    className="text-slate-500 hover:text-red-400 text-xs font-bold">
-                    ✕ Clear
-                  </button>
+            {/* ── STEP 1: File Drop Zone (sirf tab dikhao jab diff nahi load) ── */}
+            {!diffData && !diffLoading && (
+              <label
+                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={onDrop}
+                className={`flex flex-col items-center justify-center gap-3 p-10 rounded-xl border-2 border-dashed cursor-pointer transition-all ${
+                  dragOver
+                    ? "border-amber-500/60 bg-amber-500/10"
+                  : busy
+                    ? "border-[#21293d] opacity-50 cursor-not-allowed"
+                    : "border-[#21293d] hover:border-amber-500/40 hover:bg-amber-500/5"
+                }`}>
+                <input type="file" accept=".json" onChange={onFileInput} disabled={busy} className="hidden"/>
+                <div className="w-14 h-14 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center">
+                  <FileJson size={26} className="text-amber-400"/>
                 </div>
-                
-                {/* Summary */}
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  <div className="bg-[#0d1117] rounded-lg p-2 text-center">
-                    <p className="text-lg font-black text-emerald-400">{preview.totalTables}</p>
-                    <p className="text-[9px] text-slate-500 uppercase">Tables</p>
+                <div className="text-center">
+                  <p className="text-slate-200 font-bold text-sm">Backup file select karo</p>
+                  <p className="text-slate-500 text-xs mt-1">Drag & drop · ya click karke select karo · sirf .json</p>
+                  <p className="text-amber-400/60 text-[10px] mt-2 font-medium">
+                    ✦ File select hote hi DB vs File difference dikhega
+                  </p>
+                </div>
+              </label>
+            )}
+
+            {/* ── STEP 1b: Loading diff ── */}
+            {diffLoading && (
+              <div className="flex flex-col items-center gap-3 py-8 border border-[#21293d] rounded-xl bg-[#0d1117]">
+                <Loader2 size={22} className="animate-spin text-amber-400"/>
+                <p className="text-slate-400 text-sm font-medium">File parse ho rahi hai aur DB se compare ho raha hai...</p>
+              </div>
+            )}
+
+            {/* ── STEP 2: Diff Table (file loaded, no restore yet) ── */}
+            {diffData && loadedBackup && preview && !restoring && (
+              <div className="rounded-xl border border-[#2a3550] overflow-hidden">
+
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600/15 to-transparent border-b border-[#2a3550]">
+                  <div className="flex items-center gap-2">
+                    <Rows3 size={14} className="text-blue-400"/>
+                    <span className="text-[11px] font-black uppercase tracking-wider text-blue-400">
+                      File vs Database — Comparison
+                    </span>
                   </div>
-                  <div className="bg-[#0d1117] rounded-lg p-2 text-center">
-                    <p className="text-lg font-black text-blue-400">{preview.totalRows.toLocaleString()}</p>
-                    <p className="text-[9px] text-slate-500 uppercase">Total Rows</p>
-                  </div>
-                  <div className="bg-[#0d1117] rounded-lg p-2 text-center">
-                    <p className="text-[10px] font-bold text-slate-400 truncate" title={preview.fileName}>
-                      {preview.fileName.split("_")[1] || preview.fileName.slice(0, 8)}
-                    </p>
-                    <p className="text-[9px] text-slate-500 uppercase">File</p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] text-slate-500 font-mono truncate max-w-[140px]" title={preview.fileName}>
+                      📄 {preview.fileName}
+                    </span>
+                    <button onClick={clearLoaded} className="text-slate-600 hover:text-red-400 text-xs font-bold transition-colors">
+                      ✕ Clear
+                    </button>
                   </div>
                 </div>
 
-                {/* Table List */}
-                <div className="max-h-40 overflow-y-auto space-y-0.5">
-                  {preview.tables.map(({ name, rows }) => (
-                    <div key={name} className="flex items-center justify-between px-2 py-1 bg-[#0d1117] rounded text-[10px]">
-                      <span className="text-slate-400 font-mono">{name}</span>
-                      <span className={`font-bold ${rows > 0 ? "text-emerald-400" : "text-slate-600"}`}>
-                        {rows.toLocaleString()} rows
-                      </span>
-                    </div>
-                  ))}
+                {/* Summary bar */}
+                <div className="grid grid-cols-4 divide-x divide-[#21293d] bg-[#0d1117] border-b border-[#21293d]">
+                  <div className="px-3 py-2 text-center">
+                    <p className="text-sm font-black text-slate-300">{preview.totalTables}</p>
+                    <p className="text-[9px] text-slate-600 uppercase">Tables</p>
+                  </div>
+                  <div className="px-3 py-2 text-center">
+                    <p className="text-sm font-black text-blue-400">{preview.totalRows.toLocaleString()}</p>
+                    <p className="text-[9px] text-slate-600 uppercase">File Rows</p>
+                  </div>
+                  <div className="px-3 py-2 text-center">
+                    <p className="text-sm font-black text-slate-400">{diffData.reduce((s,d)=>s+d.dbRows,0).toLocaleString()}</p>
+                    <p className="text-[9px] text-slate-600 uppercase">DB Rows</p>
+                  </div>
+                  <div className="px-3 py-2 text-center">
+                    {(() => {
+                      const totalDiff = diffData.reduce((s,d)=>s+d.diff,0);
+                      return <>
+                        <p className={`text-sm font-black ${totalDiff > 0 ? "text-emerald-400" : totalDiff < 0 ? "text-red-400" : "text-slate-500"}`}>
+                          {totalDiff > 0 ? "+" : ""}{totalDiff.toLocaleString()}
+                        </p>
+                        <p className="text-[9px] text-slate-600 uppercase">Net Change</p>
+                      </>;
+                    })()}
+                  </div>
+                </div>
+
+                {/* Column headers */}
+                <div className="grid grid-cols-[1fr_80px_80px_70px] gap-0 px-3 py-1.5 bg-[#0d1117] border-b border-[#1e2637]">
+                  <span className="text-[9px] font-black uppercase text-slate-600">Table</span>
+                  <span className="text-[9px] font-black uppercase text-slate-600 text-right">In File</span>
+                  <span className="text-[9px] font-black uppercase text-slate-600 text-right">In DB</span>
+                  <span className="text-[9px] font-black uppercase text-slate-600 text-right">Diff</span>
+                </div>
+
+                {/* Diff rows */}
+                <div className="max-h-64 overflow-y-auto divide-y divide-[#1a2133]">
+                  {diffData.map(({ table, fileRows, dbRows, diff }) => {
+                    const isNew    = diff > 0;   // file mein zyada = naye rows aayenge
+                    const isLess   = diff < 0;   // file mein kam = rows hatenge
+                    const isSame   = diff === 0;
+                    const rowBg    = isNew ? "bg-emerald-500/4" : isLess ? "bg-red-500/4" : "";
+                    return (
+                      <div key={table} className={`grid grid-cols-[1fr_80px_80px_70px] gap-0 px-3 py-2 items-center ${rowBg} hover:bg-white/2 transition-colors`}>
+                        <span className="text-[11px] font-mono text-slate-400">{table}</span>
+                        <span className="text-[11px] font-bold text-right text-blue-400">{fileRows.toLocaleString()}</span>
+                        <span className="text-[11px] text-right text-slate-500">{dbRows.toLocaleString()}</span>
+                        <span className={`text-[11px] font-black text-right ${
+                          isNew  ? "text-emerald-400" :
+                          isLess ? "text-red-400"     :
+                                   "text-slate-600"
+                        }`}>
+                          {isSame ? "—" : `${diff > 0 ? "+" : ""}${diff}`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Legend */}
+                <div className="flex items-center gap-4 px-4 py-2 bg-[#0d1117] border-t border-[#1e2637]">
+                  <span className="flex items-center gap-1.5 text-[10px] text-emerald-400"><span className="w-2 h-2 rounded-full bg-emerald-500/40 inline-block"/>File mein zyada rows</span>
+                  <span className="flex items-center gap-1.5 text-[10px] text-red-400"><span className="w-2 h-2 rounded-full bg-red-500/40 inline-block"/>DB mein zyada rows</span>
+                  <span className="flex items-center gap-1.5 text-[10px] text-slate-600"><span className="inline-block">—</span> Koi fark nahi</span>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2 mt-3">
-                  <button onClick={() => handleRestore(new File([], preview.fileName), true, { _meta: [{ version: "2.0" }] } as BackupData)}
+                <div className="flex gap-2 px-4 py-3 bg-[#0d1117] border-t border-[#2a3550]">
+                  <button
+                    onClick={() => handleRestore(new File([], preview.fileName), true, loadedBackup)}
                     disabled={restoring}
-                    className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all">
-                    <FileJson size={12}/> Dry Run
+                    className="flex-1 py-2.5 bg-blue-600/80 hover:bg-blue-600 disabled:opacity-50 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all border border-blue-500/30">
+                    <FileJson size={13}/> Dry Run (Validate Only)
                   </button>
-                  <button onClick={() => handleRestore(new File([], preview.fileName), false, { _meta: [{ version: "2.0" }] } as BackupData)}
+                  <button
+                    onClick={() => handleRestore(new File([], preview.fileName), false, loadedBackup)}
                     disabled={restoring}
-                    className="flex-1 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all">
-                    <Upload size={12}/> Restore Now
+                    className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all border border-amber-500/30">
+                    <Upload size={13}/> Restore Now
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Drag & Drop zone */}
-            <label
-              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={onDrop}
-              className={`flex flex-col items-center justify-center gap-3 p-8 rounded-xl border-2 border-dashed cursor-pointer transition-all ${
-                dragOver
-                  ? "border-amber-500/60 bg-amber-500/10"
-                  : busy
-                  ? "border-[#21293d] opacity-50 cursor-not-allowed"
-                  : "border-[#21293d] hover:border-amber-500/40 hover:bg-amber-500/5"
-              }`}>
-              <input type="file" accept=".json" onChange={onFileInput}
-                disabled={busy} className="hidden"/>
-              <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center">
-                <FileJson size={22} className="text-amber-400"/>
+            {/* ── Restoring indicator ── */}
+            {restoring && (
+              <div className="flex items-center gap-3 px-4 py-3 bg-amber-500/8 border border-amber-500/20 rounded-xl">
+                <Loader2 size={16} className="animate-spin text-amber-400 flex-shrink-0"/>
+                <p className="text-amber-300 text-sm font-medium">{progress || "Restore ho raha hai..."}</p>
               </div>
-              <div className="text-center">
-                <p className="text-slate-300 font-bold text-sm">
-                  {restoring ? "Restore ho raha hai..." : "Backup file drop karo ya click karo"}
-                </p>
-                <p className="text-slate-600 text-xs mt-1">
-                  Drag & drop · click to select · sirf .json file
-                </p>
-              </div>
-              {restoring && (
-                <Loader2 size={20} className="animate-spin text-amber-400"/>
-              )}
-            </label>
-
-            {/* Dry Run Button */}
-            <p className="text-center text-[10px] text-slate-600">
-              Pehle "Dry Run" karein backup validate karne ke liye
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => {
-                const input = document.createElement("input");
-                input.type = "file";
-                input.accept = ".json";
-                input.onchange = async (e) => {
-                  const file = (e.target as HTMLInputElement).files?.[0];
-                  if (file) {
-                    const backup = await previewBackupFile(file);
-                    if (backup) handleRestore(file, true, backup as BackupData);
-                  }
-                };
-                input.click();
-              }} disabled={busy}
-                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
-                <FileJson size={14}/> Dry Run (Validate Only)
-              </button>
-            </div>
+            )}
           </div>
         </div>
 
