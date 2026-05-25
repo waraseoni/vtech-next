@@ -284,6 +284,12 @@ export default function BackupPage() {
                 else if (typeof r[tf] !== "string") r[tf] = String(r[tf]);
               }
             }
+            // Fix MySQL zero-dates → null (PostgreSQL "0000-00-00" support nahi karta)
+            for (const key of Object.keys(r)) {
+              if (typeof r[key] === "string" && (r[key] as string).startsWith("0000-00-00")) {
+                r[key] = null;
+              }
+            }
             return r;
           });
 
