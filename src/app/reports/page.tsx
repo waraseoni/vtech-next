@@ -6,7 +6,7 @@ import {
   FileText, TrendingUp, PieChart, BarChart2, DollarSign,
   ShoppingCart, Wrench, Truck, Clock, Users, Database,
   Activity, Briefcase, Store, Calculator, Scale, FileSearch,
-  Search, ChevronRight, Sparkles, Filter, Info
+  Search, ChevronRight, Sparkles, Filter, Info, CheckCircle
 } from "lucide-react";
 
 // --- Types ---
@@ -24,6 +24,15 @@ interface ReportItem {
 
 const REPORTS: ReportItem[] = [
   // Job Reports
+  {
+    title: "Daily Done Report",
+    description: "Daily snapshot of all jobs marked as done.",
+    href: "/reports/daily-done",
+    icon: <CheckCircle size={16} />,
+    category: "Job Reports",
+    color: "from-teal-500 to-emerald-600",
+    isNew: true
+  },
   {
     title: "Pending Jobs",
     description: "Track all service jobs currently in progress.",

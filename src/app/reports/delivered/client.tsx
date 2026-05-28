@@ -119,8 +119,10 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
 
       const [{ data: clientsData }, { data: billedData }, { data: paymentsData }, { data: salesData }] = await Promise.all([
         clientIds.length > 0 ? supabase.from('client_list').select('id, firstname, middlename, lastname, contact, opening_balance').in('id', clientIds) : Promise.resolve({ data: [] }),
-        clientIds.length > 0 ? supabase.from('transaction_list').select('client_name, amount').eq('status', 5).in('client_name', clientIds) : Promise.resolve({ data: [] }),
-        clientIds.length > 0 ? supabase.from('client_payments').select('client_id, amount, discount').in('client_id', clientIds) : Promise.resolve({ data: [] }),
+        // ALL transactions (any status) for total billed — matches PHP's repair_billed
+        clientIds.length > 0 ? supabase.from('transaction_list').select('client_name, amount').neq('del_status', 1).in('client_name', clientIds) : Promise.resolve({ data: [] }),
+        // Exclude loan repayments (loan_id = 0 or null) — matches PHP's WHERE loan_id IS NULL OR loan_id = 0
+        clientIds.length > 0 ? supabase.from('client_payments').select('client_id, amount, discount').in('client_id', clientIds).or('loan_id.is.null,loan_id.eq.0') : Promise.resolve({ data: [] }),
         clientIds.length > 0 ? supabase.from('direct_sales').select('client_id, total_amount').in('client_id', clientIds) : Promise.resolve({ data: [] }),
       ]);
 

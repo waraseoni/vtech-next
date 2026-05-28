@@ -258,8 +258,10 @@ function JobsListContent() {
 
       const [clientsRes, billedRes, paidRes, salesRes] = await Promise.all([
         supabase.from("client_list").select("id, firstname, middlename, lastname, contact, opening_balance").in("id", clientIdsNum),
-        supabase.from("transaction_list").select("client_name, amount").eq("status", 5).in("client_name", clientIdsStr),
-        supabase.from("client_payments").select("client_id, amount, discount").in("client_id", clientIdsNum),
+        // Only Delivered (5) & Paid (3) jobs count toward balance — Done (2) items still at shop are NOT billed yet
+        supabase.from("transaction_list").select("client_name, amount").in("status", [3, 5]).neq("del_status", 1).in("client_name", clientIdsStr),
+        // Exclude loan repayments — matches PHP WHERE loan_id IS NULL OR loan_id = 0
+        supabase.from("client_payments").select("client_id, amount, discount").in("client_id", clientIdsNum).or("loan_id.is.null,loan_id.eq.0"),
         supabase.from("direct_sales").select("client_id, total_amount").in("client_id", clientIdsNum),
       ]);
 
