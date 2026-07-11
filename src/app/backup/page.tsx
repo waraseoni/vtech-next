@@ -55,6 +55,33 @@ const GENERATED_COLS: Record<string, string[]> = {
   "product_list": ["barcode"],
 };
 
+// ── Database Schema Columns — Used to strip extra columns from backup JSON ───
+const TABLE_COLUMNS: Record<string, string[]> = {
+  "message_list": ["id", "fullname", "contact", "email", "message", "status", "date_created"],
+  "client_payments": ["id", "client_id", "job_id", "loan_id", "bill_no", "payment_date", "amount", "discount", "net_amount", "payment_mode", "payment_type", "remarks", "created_at"],
+  "mechanic_list": ["id", "firstname", "middlename", "lastname", "contact", "designation", "daily_salary", "avatar", "commission_percent", "status", "delete_flag", "date_added", "date_updated", "salary_per_day"],
+  "loan_payments": ["id", "lender_id", "amount_paid", "payment_date", "remarks"],
+  "service_list": ["id", "name", "description", "price", "status", "delete_flag", "date_created", "date_updated"],
+  "advance_payments": ["id", "mechanic_id", "amount", "date_paid", "reason", "date_created"],
+  "inventory_list": ["id", "product_id", "quantity", "place", "stock_date", "date_created", "date_updated"],
+  "direct_sale_items": ["id", "sale_id", "product_id", "qty", "price"],
+  "transaction_list": ["id", "user_id", "mechanic_id", "code", "job_id", "client_name", "fault", "remark", "item", "uniq_id", "amount", "mechanic_amount", "mechanic_commission_amount", "del_status", "status", "date_created", "date_updated", "date_completed"],
+  "product_list": ["id", "name", "description", "cost_price", "price", "image_path", "status", "delete_flag", "date_created", "date_updated"],
+  "lender_list": ["id", "fullname", "contact", "loan_amount", "interest_rate", "tenure_months", "reason", "emi_amount", "start_date", "status", "date_created"],
+  "attendance_list": ["id", "mechanic_id", "status", "curr_date"],
+  "expense_list": ["id", "category", "amount", "remarks", "date_created"],
+  "mechanic_salary_history": ["id", "mechanic_id", "salary", "effective_date", "date_created"],
+  "transaction_services": ["transaction_id", "service_id", "service_name", "price"],
+  "transaction_images": ["id", "transaction_id", "image_path", "date_created"],
+  "transaction_products": ["transaction_id", "product_id", "product_name", "qty", "price"],
+  "client_list": ["id", "firstname", "middlename", "lastname", "contact", "email", "address", "image_path", "opening_balance", "delete_flag", "date_created", "date_updated"],
+  "client_loans": ["id", "client_id", "principal_amount", "interest_rate", "loan_period", "total_payable", "emi_amount", "remarks", "loan_date", "status", "created_at"],
+  "direct_sales": ["id", "sale_code", "client_id", "mechanic_id", "total_amount", "payment_mode", "remarks", "last_edited_by", "last_edited_by_name", "last_edited_date", "date_created"],
+  "system_info": ["id", "meta_field", "meta_value"],
+  "job_id_counter": ["id", "last_job_id"],
+  "mechanic_commission_history": ["id", "mechanic_id", "commission_percent", "effective_date", "date_created"]
+};
+
 // ── FK violations to skip (bad data that would cause FK error) ───────────────
 // These rows will be skipped during restore to avoid FK constraint errors
 const SKIP_INVALID_FK: Record<string, { field: string; invalidValues: (number|string)[] }> = {
@@ -263,53 +290,12 @@ export default function BackupPage() {
       // Clear preview after successful restore start
       setPreview(null);
 
-      for (const { table } of orderedTables) {
-        const rawRows = backup[table];
-        if (!rawRows || rawRows.length === 0) {
-          setProgress(`${table}: koi data nahi — skip`);
-          await new Promise(r => setTimeout(r, 50));
-          continue;
-        }
-
-        // ── Strip GENERATED columns (DB auto-calculates these) ────────────────
-        const genCols = GENERATED_COLS[table] || [];
-        // ── Skip rows with invalid FK references ──────────────────────────────
-        const fkRule = SKIP_INVALID_FK[table];
-        const rows = (rawRows as Record<string, unknown>[])
-          .filter(row => {
-            if (!fkRule) return true;
-            const val = row[fkRule.field];
-            return !fkRule.invalidValues.includes(val as number | string);
-          })
-          .map(row => {
-            const r: Record<string, unknown> = { ...row };
-            // Strip generated columns
-            genCols.forEach(col => delete r[col]);
-            // Fix negative prices — CHECK (price >= 0)
-            for (const pf of ["price","cost_price","amount","discount"]) {
-              if (pf in r && typeof r[pf] === "number" && (r[pf] as number) < 0) r[pf] = 0;
-            }
-            // Fix int/null in text NOT NULL columns
-            for (const tf of ["name","description","category","fault","item","remark","uniq_id","code","fullname","address","sale_code"]) {
-              if (tf in r) {
-                if (r[tf] === null || r[tf] === undefined) r[tf] = "";
-                else if (typeof r[tf] !== "string") r[tf] = String(r[tf]);
-              }
-            }
-            // Fix MySQL zero-dates → null (PostgreSQL "0000-00-00" support nahi karta)
-            for (const key of Object.keys(r)) {
-              if (typeof r[key] === "string" && (r[key] as string).startsWith("0000-00-00")) {
-                r[key] = null;
-              }
-            }
-            return r;
-          });
-
-        const tableStart = totalRestored;
-        setProgress(`Restoring: ${table} (${rows.length} rows)...`);
-
-        // Step 1: Delete existing rows (NO_DELETE_TABLES skip karein)
+      // ── Step 0a: Clear existing data in REVERSE ORDER (avoiding FK violations) ──
+      setProgress("Clearing existing data (reverse order)...");
+      const reverseOrderedTables = [...orderedTables].reverse();
+      for (const { table } of reverseOrderedTables) {
         if (!NO_DELETE_TABLES.includes(table)) {
+          setProgress(`Clearing table: ${table}...`);
           let delErr = null;
           if (COMPOSITE_KEY_TABLES.includes(table)) {
             const { error } = await supabase
@@ -333,11 +319,65 @@ export default function BackupPage() {
               }
             }
           }
-          if (delErr) console.warn(`${table} delete warning:`, delErr.message);
-        } else {
-          console.log(`${table}: delete skipped (FK constraint) — upsert only`);
+          if (delErr) {
+            console.warn(`${table} clear warning:`, delErr.message);
+          }
         }
-        totalDeleted += rows.length;
+      }
+
+      for (const { table } of orderedTables) {
+        const rawRows = backup[table];
+        if (!rawRows || rawRows.length === 0) {
+          setProgress(`${table}: koi data nahi — skip`);
+          await new Promise(r => setTimeout(r, 50));
+          continue;
+        }
+
+        // ── Strip GENERATED columns (DB auto-calculates these) ────────────────
+        const genCols = GENERATED_COLS[table] || [];
+        // ── Skip rows with invalid FK references ──────────────────────────────
+        const fkRule = SKIP_INVALID_FK[table];
+        const rows = (rawRows as Record<string, unknown>[])
+          .filter(row => {
+            if (!fkRule) return true;
+            const val = row[fkRule.field];
+            return !fkRule.invalidValues.includes(val as number | string);
+          })
+          .map(row => {
+            const r: Record<string, unknown> = { ...row };
+            // Filter properties to keep only columns that exist in the database table schema
+            const allowedCols = TABLE_COLUMNS[table];
+            if (allowedCols) {
+              Object.keys(r).forEach(key => {
+                if (!allowedCols.includes(key)) {
+                  delete r[key];
+                }
+              });
+            }
+            // Strip generated columns
+            genCols.forEach(col => delete r[col]);
+            // Fix negative prices — CHECK (price >= 0)
+            for (const pf of ["price","cost_price","amount","discount"]) {
+              if (pf in r && typeof r[pf] === "number" && (r[pf] as number) < 0) r[pf] = 0;
+            }
+            // Fix int/null in text NOT NULL columns
+            for (const tf of ["name","description","category","fault","item","remark","remarks","uniq_id","code","fullname","address","sale_code","firstname","lastname","contact","email","message"]) {
+              if (tf in r) {
+                if (r[tf] === null || r[tf] === undefined) r[tf] = "";
+                else if (typeof r[tf] !== "string") r[tf] = String(r[tf]);
+              }
+            }
+            // Fix MySQL zero-dates → null (PostgreSQL "0000-00-00" support nahi karta)
+            for (const key of Object.keys(r)) {
+              if (typeof r[key] === "string" && (r[key] as string).startsWith("0000-00-00")) {
+                r[key] = null;
+              }
+            }
+            return r;
+          });
+
+        const tableStart = totalRestored;
+        setProgress(`Restoring: ${table} (${rows.length} rows)...`);
 
         // Step 2: Insert in batches of 25 (rate limit se bachne ke liye smaller batches)
         const batchSize = 25;

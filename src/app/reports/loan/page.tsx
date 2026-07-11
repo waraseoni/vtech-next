@@ -18,6 +18,7 @@ type LoanRow = {
   received: number;
   pending: number;
   status: number;
+  remaining_installments?: number;
 };
 
 function LoanReportContent() {
@@ -55,6 +56,7 @@ function LoanReportContent() {
         const interestVal = (l.total_payable || 0) - (l.principal_amount || 0);
 
         if (received > 0 || l.status === 1) {
+          const remainingInstallments = (l.emi_amount && l.emi_amount > 0) ? Math.ceil((pending > 0 ? pending : 0) / l.emi_amount) : 0;
           loanRows.push({
             id: l.id, client_name: name,
             principal_amount: l.principal_amount || 0,
@@ -63,6 +65,7 @@ function LoanReportContent() {
             emi_amount: l.emi_amount || 0,
             received: monthReceived,
             pending: pending > 0 ? pending : 0,
+            remaining_installments: remainingInstallments,
             status: l.status || 0,
           });
         }
@@ -79,6 +82,7 @@ function LoanReportContent() {
   const tTarget = rows.reduce((s, r) => s + r.emi_amount, 0);
   const tReceived = rows.reduce((s, r) => s + r.received, 0);
   const tPending = rows.reduce((s, r) => s + r.pending, 0);
+  const tRemainingInstallments = rows.reduce((s, r) => s + (r.remaining_installments || 0), 0);
   const monthLabel = formatIST(month + "-01", { month: "long", year: "numeric" });
 
   return (
@@ -128,6 +132,8 @@ function LoanReportContent() {
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 text-center">
           <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest">Pending</p>
           <p className="text-base font-black text-red-400 mt-1">{inr(tPending)}</p>
+          <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest mt-1">Inst. Left</p>
+          <p className="text-base font-black text-yellow-400 mt-1">{tRemainingInstallments}</p>
         </div>
       </div>
 
@@ -136,16 +142,16 @@ function LoanReportContent() {
           <table className="w-full">
             <thead>
               <tr className="bg-[#111520]">
-                {["#", "Client", "Principal", "Interest Rate", "Interest Val", "EMI", "Received", "Pending"].map((h) => (
+                {["#", "Client", "Principal", "Interest Rate", "Interest Val", "EMI", "Received", "Pending", "Inst. Left"].map((h) => (
                   <th key={h} className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} className="text-center py-12"><Loader2 size={20} className="animate-spin text-blue-400 mx-auto" /></td></tr>
+                <tr><td colSpan={9} className="text-center py-12"><Loader2 size={20} className="animate-spin text-blue-400 mx-auto" /></td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-12 text-slate-600 text-xs font-bold">No loan data found</td></tr>
+                <tr><td colSpan={9} className="text-center py-12 text-slate-600 text-xs font-bold">No loan data found</td></tr>
               ) : rows.map((r, i) => (
                 <tr key={r.id} className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors">
                   <td className="px-3 py-2.5 text-xs text-slate-500 text-center">{i + 1}</td>
@@ -156,6 +162,7 @@ function LoanReportContent() {
                   <td className="px-3 py-2.5 text-xs text-right text-slate-300">{inr(r.emi_amount)}</td>
                   <td className="px-3 py-2.5 text-xs text-right font-bold text-teal-400">{inr(r.received)}</td>
                   <td className="px-3 py-2.5 text-xs text-right font-bold text-red-400">{inr(r.pending)}</td>
+                  <td className="px-3 py-2.5 text-xs text-center font-bold text-yellow-400">{r.remaining_installments}</td>
                 </tr>
               ))}
             </tbody>

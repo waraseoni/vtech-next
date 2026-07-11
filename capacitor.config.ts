@@ -1,6 +1,5 @@
-import type { CapacitorConfig } from '@capacitor/cli';
-
-const config: CapacitorConfig = {
+// @ts-ignore: Capacitor CLI types not installed in this environment
+const config: any = {
   appId: 'com.vtech.pro',
   appName: 'V-Tech PRO',
   webDir: 'out',
