@@ -65,6 +65,113 @@ function PublicWebsite() {
                   <p className="text-xs" style={{ color: "#94a3b8" }}>{s.desc}</p>
                 </div>
               ))}
+              {/* EV Charger - NEW */}
+              <div className="text-center p-5 rounded-xl border border-[#1a3a1a] hover:border-[#22c55e] transition relative" style={{ background: "#1a1a2e" }}>
+                <div style={{ position: "absolute", top: "10px", right: "10px", background: "#22c55e", color: "white", fontSize: "0.6rem", padding: "2px 8px", borderRadius: "20px", fontWeight: 700 }}>NEW</div>
+                <div className="text-3xl mb-3">🔌</div>
+                <h4 className="text-sm font-bold mb-2">EV Charger Repair</h4>
+                <p className="text-xs" style={{ color: "#94a3b8" }}>Komaki, Ola, Hero, Ampere EV Charger Fix</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* EV Charger Section */}
+        <section className="py-20 px-4" style={{ background: "#0a0f0a" }}>
+          <div className="max-w-6xl mx-auto">
+            {/* Heading */}
+            <div className="text-center mb-12">
+              <span style={{
+                background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                color: "white",
+                padding: "6px 20px",
+                borderRadius: "50px",
+                fontSize: "0.8rem",
+                fontWeight: 700,
+                letterSpacing: "2px",
+                textTransform: "uppercase",
+                display: "inline-block",
+                marginBottom: "16px",
+              }}>⚡ New Service</span>
+              <h2 style={{ fontSize: "2.5rem", fontWeight: 700, marginBottom: "1rem", color: "white" }}>
+                EV Charger <span style={{ color: "#22c55e" }}>Repair &amp; Service</span>
+              </h2>
+              <p style={{ color: "#94a3b8", fontSize: "1.1rem", maxWidth: "700px", margin: "0 auto" }}>
+                अब हम Electric Vehicle Charger की repair भी करते हैं। Komaki, Ola, Hero Electric, Ampere सभी brands के EV charger repair किए जाते हैं।
+              </p>
+            </div>
+
+            {/* Komaki Gallery */}
+            <h3 className="text-center mb-8" style={{ fontSize: "1.5rem", fontWeight: 600, color: "#22c55e" }}>
+              🔌 Komaki EV Charger Gallery
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              {[
+                { src: "/komaki_ev_charger_1.png", label: "Komaki Home Charger", desc: "Portable EV Charger - Repair & Service Available" },
+                { src: "/komaki_ev_charger_2.png", label: "Komaki Fast Charger", desc: "Wall Mount EV Charging Station Repair" },
+                { src: "/ev_charger_repair.png", label: "Expert EV Charger Repair", desc: "PCB Level Repair - All EV Charger Models" },
+              ].map((photo, i) => (
+                <div key={i} className="rounded-2xl overflow-hidden border-2 transition-all duration-300 hover:-translate-y-2"
+                  style={{ background: "#111", borderColor: "#22c55e33", cursor: "pointer" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#22c55e")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "#22c55e33")}>
+                  <div style={{ position: "relative", height: "240px", overflow: "hidden" }}>
+                    <img
+                      src={photo.src}
+                      alt={photo.label + " - V-Technologies Jabalpur"}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.4s" }}
+                      onMouseEnter={e => ((e.target as HTMLImageElement).style.transform = "scale(1.08)")}
+                      onMouseLeave={e => ((e.target as HTMLImageElement).style.transform = "scale(1)")}
+                    />
+                    <div style={{
+                      position: "absolute", bottom: 0, left: 0, right: 0,
+                      background: "linear-gradient(transparent, rgba(0,0,0,0.85))",
+                      padding: "20px 15px 12px",
+                    }}>
+                      <span style={{ color: "#22c55e", fontWeight: 700 }}>{photo.label}</span>
+                    </div>
+                  </div>
+                  <div style={{ padding: "14px" }}>
+                    <p style={{ color: "#94a3b8", margin: 0, fontSize: "0.88rem" }}>{photo.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Feature Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+              {[
+                { icon: "🔌", title: "Komaki Charger", desc: "सभी Komaki EV models के charger repair" },
+                { icon: "⚡", title: "Fast Charger Fix", desc: "48V, 60V, 72V fast charger repair" },
+                { icon: "🔧", title: "PCB Level Repair", desc: "Component level board repair with warranty" },
+                { icon: "🛡️", title: "Warranty Service", desc: "Repair पर warranty दी जाती है" },
+              ].map((f, i) => (
+                <div key={i} className="text-center p-5 rounded-xl" style={{ background: "linear-gradient(135deg, #0f2a0f, #1a3a1a)", border: "1px solid #22c55e33" }}>
+                  <div className="text-3xl mb-3">{f.icon}</div>
+                  <h5 className="font-bold mb-2" style={{ color: "white" }}>{f.title}</h5>
+                  <p className="text-xs" style={{ color: "#86efac" }}>{f.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-wrap justify-center gap-4">
+              <a href="tel:9179105875" style={{
+                background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                color: "white", padding: "16px 40px", borderRadius: "50px",
+                fontSize: "1.1rem", fontWeight: 700, textDecoration: "none",
+                boxShadow: "0 8px 25px rgba(34,197,94,0.35)",
+              }}>
+                📞 EV Charger Repair Booking
+              </a>
+              <a href="https://wa.me/9179105875?text=Hello%2C%20mujhe%20EV%20Charger%20repair%20chahiye" target="_blank" rel="noopener" style={{
+                background: "#25d366",
+                color: "white", padding: "16px 40px", borderRadius: "50px",
+                fontSize: "1.1rem", fontWeight: 700, textDecoration: "none",
+                boxShadow: "0 8px 25px rgba(37,211,102,0.35)",
+              }}>
+                💬 WhatsApp करें
+              </a>
             </div>
           </div>
         </section>
