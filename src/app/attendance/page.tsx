@@ -16,9 +16,9 @@ function AttendanceContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'daily' | 'report'>(
-    searchParams.get('view') === 'report' ? 'report' : 'daily'
-  );
+  const viewParam = searchParams.get('view');
+  const activeTab = viewParam === 'report' ? 'report' : 'daily';
+
   const [userRole, setUserRole]     = useState<'admin' | 'staff'>('staff');
   const [mechanicId, setMechanicId] = useState<number | null>(null);
   const [loading, setLoading]       = useState(true);
@@ -39,11 +39,9 @@ function AttendanceContent() {
   }, [router]);
 
   const handleTabChange = (tab: 'daily' | 'report') => {
-    setActiveTab(tab);
     const params = new URLSearchParams(searchParams.toString());
     if (tab === 'report') {
       params.set('view', 'report');
-      // Use IST helper instead of naive UTC string manipulation
       if (!params.has('month')) params.set('month', new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" }).format(new Date()));
     } else {
       params.delete('view');

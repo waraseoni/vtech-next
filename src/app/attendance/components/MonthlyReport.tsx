@@ -13,7 +13,7 @@
 // ─────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, RotateCcw } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import AttendanceModal from './AttendanceModal';
 import { todayIST, currentMonthIST, parseISTDate } from '@/lib/dateUtils';
@@ -34,7 +34,15 @@ export default function MonthlyReport({
   const searchParams = useSearchParams();
   const router       = useRouter();
 
-  const [month, setMonth]             = useState(searchParams.get('month') || currentMonthIST());
+  const monthParam = searchParams.get('month');
+  const [month, setMonth]             = useState(monthParam || currentMonthIST());
+
+  useEffect(() => {
+    if (monthParam && monthParam !== month) {
+      setMonth(monthParam);
+    }
+  }, [monthParam]);
+
   const [mechanicsData, setMechanicsData] = useState<MechanicMonthData[]>([]);
   const [loading, setLoading]         = useState(true);
   const [modalOpen, setModalOpen]     = useState(false);
@@ -155,11 +163,12 @@ export default function MonthlyReport({
   return (
     <div>
 
-      {/* ── Month Navigation ── */}
+      {/* ── Month Navigation & Reset Filter ── */}
       <div className="flex items-center justify-between mb-6 gap-4">
         <button
           onClick={() => changeMonth(-1)}
           className="p-2.5 bg-[#161b27] hover:bg-[#21293d] border border-[#21293d] rounded-xl transition-all text-slate-400 hover:text-white"
+          title="Previous Month"
         >
           <ChevronLeft size={18} />
         </button>
@@ -173,11 +182,27 @@ export default function MonthlyReport({
             className="bg-[#0d1117] border border-[#21293d] text-white rounded-xl px-3 py-2 font-bold text-sm focus:border-blue-500 outline-none transition-all"
           />
           <span className="hidden sm:inline text-slate-400 font-bold text-sm">{monthName}</span>
+
+          {month !== currentMonthIST() && (
+            <button
+              onClick={() => {
+                const cur = currentMonthIST();
+                setMonth(cur);
+                router.push(`/attendance?view=report&month=${cur}`);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-xl text-xs font-bold transition-all ml-2"
+              title="Reset filter to current month"
+            >
+              <RotateCcw size={13} />
+              Reset Filter
+            </button>
+          )}
         </div>
 
         <button
           onClick={() => changeMonth(1)}
           className="p-2.5 bg-[#161b27] hover:bg-[#21293d] border border-[#21293d] rounded-xl transition-all text-slate-400 hover:text-white"
+          title="Next Month"
         >
           <ChevronRight size={18} />
         </button>

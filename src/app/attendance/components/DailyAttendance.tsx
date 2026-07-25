@@ -13,7 +13,7 @@
 // ─────────────────────────────────────────────────────────────────
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Calendar, Save, Check, Clock, X, AlertCircle } from 'lucide-react';
+import { Calendar, Save, Check, Clock, X, AlertCircle, RotateCcw } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
 interface Mechanic {
@@ -157,7 +157,7 @@ export default function DailyAttendance({
 
       {/* ── Date picker (admin only) ── */}
       {userRole === 'admin' && (
-        <div className="mb-6 flex justify-center">
+        <div className="mb-6 flex items-center justify-center gap-3">
           <div className="relative w-full max-w-xs">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
               <Calendar size={16} className="text-slate-500" />
@@ -168,6 +168,17 @@ export default function DailyAttendance({
               className="w-full pl-10 pr-4 py-2.5 bg-[#0d1117] border border-[#21293d] text-white rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 outline-none font-bold text-sm transition-all"
             />
           </div>
+          {selectedDate !== today && (
+            <button
+              type="button"
+              onClick={() => setSelectedDate(today)}
+              className="flex items-center gap-1.5 px-3 py-2.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-xl text-xs font-bold transition-all"
+              title="Reset date to today"
+            >
+              <RotateCcw size={13} />
+              Reset Date
+            </button>
+          )}
         </div>
       )}
 

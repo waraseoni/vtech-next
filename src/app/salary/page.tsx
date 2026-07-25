@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { Loader2, ChevronLeft, ChevronRight, Printer, X, Coins, Edit2, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Activity, History, Trash2, Check } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Printer, X, Coins, Edit2, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Activity, History, Trash2, Check, RotateCcw } from "lucide-react";
 import { todayIST, currentMonthIST, parseISTDate, toISTString } from "@/lib/dateUtils";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -376,6 +377,16 @@ function SalaryContent() {
             <div className="flex items-center justify-center gap-4">
               <button onClick={() => navigate("prev")} className="w-10 h-10 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-full text-slate-400 hover:text-white hover:border-blue-500/50 hover:bg-[#1c2231] transition-all"><ChevronLeft size={16} /></button>
               <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-4 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-sm font-black text-white outline-none focus:border-blue-500/50 text-center" />
+              {month !== currentMonth && (
+                <button
+                  onClick={() => setMonth(currentMonth)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-xl text-xs font-bold transition-all"
+                  title="Reset filter to current month"
+                >
+                  <RotateCcw size={13} />
+                  Reset
+                </button>
+              )}
               <button onClick={() => navigate("next")} className="w-10 h-10 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-full text-slate-400 hover:text-white hover:border-blue-500/50 hover:bg-[#1c2231] transition-all"><ChevronRight size={16} /></button>
             </div>
           </div>
@@ -403,11 +414,15 @@ function SalaryContent() {
                         <button onClick={() => openLedger(r)} className="text-sm font-black text-blue-400 print:text-black hover:text-blue-300 print:pointer-events-none transition-colors">{r.name}</button>
                       </td>
                       <td className="px-4 py-3 text-xs">
-                        <div className="flex items-center gap-1.5 bg-[#111520] print:bg-transparent w-max px-2 py-1 rounded-lg print:p-0">
-                          <span className="text-emerald-400 print:text-green-700 font-black">{r.present_count}</span>
+                        <Link
+                          href={`/attendance?view=report&month=${month}`}
+                          className="flex items-center gap-1.5 bg-[#111520] hover:bg-[#1a2030] border border-transparent hover:border-[#21293d] print:bg-transparent w-max px-2 py-1 rounded-lg print:p-0 transition-all group"
+                          title="Click to view Attendance Monthly Report"
+                        >
+                          <span className="text-emerald-400 print:text-green-700 font-black group-hover:underline">{r.present_count}</span>
                           <span className="text-slate-600 print:text-black">|</span>
-                          <span className="text-amber-400 print:text-orange-600 font-black">{r.half_day_count}</span>
-                        </div>
+                          <span className="text-amber-400 print:text-orange-600 font-black group-hover:underline">{r.half_day_count}</span>
+                        </Link>
                       </td>
                       <td className="px-4 py-3 text-xs text-right text-slate-300 print:text-black">{inr(r.current_fix)}</td>
                       <td className="px-4 py-3 text-xs text-right font-bold text-blue-400 print:text-black">{inr(r.current_comm)}</td>
