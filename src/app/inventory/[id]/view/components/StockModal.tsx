@@ -19,11 +19,15 @@ interface StockModalProps {
   onSaved: () => void;
 }
 
+interface Supplier { id: number; name: string; }
+
 export default function StockModal({ productId, stock, onClose, onSaved }: StockModalProps) {
   const isEdit = !!stock;
 
   const [quantity,  setQuantity]  = useState(stock?.quantity  || 1);
   const [place,     setPlace]     = useState(stock?.place     || "");
+  const [supplierId, setSupplierId] = useState<string>("");
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [stockDate, setStockDate] = useState(
     stock?.stock_date || todayIST()
   );
@@ -47,6 +51,12 @@ export default function StockModal({ productId, stock, onClose, onSaved }: Stock
     return () => { document.body.style.overflow = ""; };
   }, []);
 
+  // Load suppliers
+  useEffect(() => {
+    supabase.from("suppliers").select("id, name").eq("delete_flag", 0).eq("status", 1).order("name")
+      .then(({ data }) => setSuppliers((data || []) as Supplier[]));
+  }, []);
+
   const adjustQty = (delta: number) => {
     setQuantity(q => Math.max(1, q + delta));
   };
@@ -62,13 +72,13 @@ export default function StockModal({ productId, stock, onClose, onSaved }: Stock
       if (isEdit) {
         const { error: err } = await supabase
           .from("inventory_list")
-          .update({ quantity, place: placeValue, stock_date: stockDate })
+          .update({ quantity, place: placeValue, stock_date: stockDate, supplier_id: supplierId ? Number(supplierId) : null })
           .eq("id", stock!.id);
         if (err) throw err;
       } else {
         const { error: err } = await supabase
           .from("inventory_list")
-          .insert([{ product_id: productId, quantity, place: placeValue, stock_date: stockDate }]);
+          .insert([{ product_id: productId, quantity, place: placeValue, stock_date: stockDate, supplier_id: supplierId ? Number(supplierId) : null }]);
         if (err) throw err;
       }
       // Show success flash briefly
@@ -213,6 +223,27 @@ export default function StockModal({ productId, stock, onClose, onSaved }: Stock
                 className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 placeholder-slate-700 rounded-xl outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all text-sm"
               />
             </div>
+
+            {/* ── Supplier ── */}
+            {suppliers.length > 0 && (
+              <div>
+                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
+                  <span className="flex items-center gap-1.5">
+                    <Package size={10} className="text-slate-700" /> Supplier (Optional)
+                  </span>
+                </label>
+                <select
+                  value={supplierId}
+                  onChange={(e) => setSupplierId(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all text-sm"
+                >
+                  <option value="">-- Select Supplier --</option>
+                  {suppliers.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* ── Stock Date ── */}
             <div>

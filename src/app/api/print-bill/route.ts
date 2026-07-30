@@ -4,18 +4,25 @@ import { createClient } from "@supabase/supabase-js";
 // ─── Supabase (server-side) ──────────────────────────────────────────────────
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// ─── Shop Info ────────────────────────────────────────────────────────────────
-const SHOP = {
-  name:    "V-Technologies",
-  tagline: "Power Supply & Stage Light Repair Solutions",
-  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
-  mobile:  "9179105875",
-  email:   "vtech.jbp@gmail.com",
-  gstin:   "22AAAAA0000A1Z5",
-};
+// ─── Helper: fetch system info ────────────────────────────────────────────────
+async function fetchShopInfo() {
+  const { data } = await supabase.from("system_info").select("meta_field, meta_value");
+  const info: Record<string, string> = {};
+  (data || []).forEach(r => { info[r.meta_field] = r.meta_value; });
+  return {
+    name:    info.name        || "V-Technologies",
+    tagline: "Power Supply & Stage Light Repair Solutions",
+    address: info.address     || "F4, Hotel Plaza, Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
+    mobile:  info.contact     || "9179105875",
+    email:   info.email       || "vtech.jbp@gmail.com",
+    gstin:   info.gst_no      || info.gstin || "",
+    upiId:   info.upi_id      || "",
+    signature: info.signature || "",
+  };
+}
 
 const CGST_RATE = 9;
 const SGST_RATE = 9;
@@ -71,21 +78,36 @@ export async function GET(req: NextRequest) {
   const jobIdStr = url.searchParams.get("job_id");
   const billType = url.searchParams.get("bill_type") || "non_gst"; // non_gst default
 
+  // ── Fetch dynamic shop info ──────────────────────────────────────────────
+  const SHOP = await fetchShopInfo();
+
   if (!jobIdStr) {
     return new NextResponse("job_id parameter required", { status: 400 });
   }
 
   // ── Fetch transaction ──────────────────────────────────────────────────────
-  const { data: txn, error: txnErr } = await supabase
-    .from("transaction_list")
-    .select("*")
-    .eq("job_id", jobIdStr)
-    .eq("del_status", 0)
-    .single();
+  let txnRaw: Record<string, any> | null = null;
 
-  if (txnErr || !txn) {
+  const r1 = await supabase.from("transaction_list").select("*").eq("job_id", jobIdStr).single();
+  if (r1.data) txnRaw = r1.data;
+
+  if (!txnRaw) {
+    const num = parseInt(jobIdStr, 10);
+    if (!isNaN(num)) {
+      const r2 = await supabase.from("transaction_list").select("*").eq("job_id", num).single();
+      if (r2.data) txnRaw = r2.data;
+
+      if (!txnRaw) {
+        const r3 = await supabase.from("transaction_list").select("*").eq("id", num).single();
+        if (r3.data) txnRaw = r3.data;
+      }
+    }
+  }
+
+  if (!txnRaw) {
     return new NextResponse(`Job ID ${jobIdStr} not found`, { status: 404 });
   }
+  const txn: Record<string, any> = txnRaw;
 
   // ── Fetch client ───────────────────────────────────────────────────────────
   const { data: client } = await supabase
@@ -120,8 +142,8 @@ export async function GET(req: NextRequest) {
   // ── Billing calculations ───────────────────────────────────────────────────
   const subtotal   = items.reduce((s, r) => s + r.total, 0) || txn.amount || 0;
   const isGST      = billType === "gst";
-  const cgstAmt    = isGST ? subtotal * (CGST_RATE / 100) : 0;
-  const sgstAmt    = isGST ? subtotal * (SGST_RATE / 100) : 0;
+  const cgstAmt    = isGST ? Math.round(subtotal * (CGST_RATE / 100) * 100) / 100 : 0;
+  const sgstAmt    = isGST ? Math.round(subtotal * (SGST_RATE / 100) * 100) / 100 : 0;
   const grandTotal = subtotal + cgstAmt + sgstAmt;
 
   const clientName = client
@@ -169,6 +191,25 @@ export async function GET(req: NextRequest) {
       <td class="al" colspan="4">Total GST (${CGST_RATE + SGST_RATE}%):</td>
       <td class="ar">${inr(cgstAmt + sgstAmt)}</td>
     </tr>` : "";
+
+  // ── Fetch UPI ID from system_info ──────────────────────────────────────────
+  const { data: upiRow } = await supabase
+    .from("system_info")
+    .select("meta_value")
+    .eq("meta_field", "upi_id")
+    .single();
+  const upiId = upiRow?.meta_value || SHOP.mobile + "@ybl";
+
+  // ── QR Code helpers ────────────────────────────────────────────────────────
+  function qrUrl(data: string, size = 130): string {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
+  }
+  function upiQrUrl(amount: number): string {
+    const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(SHOP.name)}&am=${encodeURIComponent(amount)}&cu=INR&tn=${encodeURIComponent("Payment for Job #" + txn.job_id)}`;
+    return qrUrl(upiUri, 130);
+  }
+  const upiQrImg = upiQrUrl(grandTotal);
+  const trackingQrImg = qrUrl(`https://vtech-rsms/job-status?job_id=${txn.job_id}`, 130);
 
   // ── HTML ───────────────────────────────────────────────────────────────────
   const html = `<!DOCTYPE html>
@@ -368,6 +409,22 @@ export async function GET(req: NextRequest) {
     </ol>
   </div>
 
+  <!-- QR Section -->
+  <div style="display:flex;justify-content:center;gap:24px;margin:20px 0;padding:16px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;">
+    <div id="trackQrBox" style="display:none;text-align:center;">
+      <img src="${trackingQrImg}" alt="Track QR" width="120" height="120" style="border:1px solid #ddd;border-radius:4px;" />
+      <div style="font-size:11px;color:#666;margin-top:6px;font-weight:600;">Scan to Track Job</div>
+    </div>
+    <div style="text-align:center;">
+      <img src="${upiQrImg}" alt="UPI QR Code" width="120" height="120" style="border:1px solid #ddd;border-radius:4px;" />
+      <div style="font-size:11px;color:#1a7a3a;margin-top:6px;font-weight:700;">Scan to Pay UPI</div>
+      <div style="font-size:10px;color:#999;">${upiId}</div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-bottom:10px;">
+    <button onclick="toggleTrackQR()" style="font-size:11px;padding:4px 12px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:#fff;color:#666;">👁 Toggle Track QR</button>
+  </div>
+
   <!-- Footer -->
   <div class="footer">
     <div class="ty">❤ Thank You for Your Business!</div>
@@ -375,9 +432,12 @@ export async function GET(req: NextRequest) {
       For any queries: 📞 ${SHOP.mobile} &nbsp;|&nbsp; ✉ ${SHOP.email}
     </div>
     <div class="sig">
-      <div style="border-top:1px solid #333;width:220px;display:inline-block;padding-top:8px">
+      ${SHOP.signature
+        ? `<img src="${SHOP.signature}" alt="Signature" style="max-height:50px;max-width:200px;object-fit:contain;"><br>`
+        : `<div style="border-top:1px solid #333;width:220px;display:inline-block;padding-top:8px">`
+      }
         For ${SHOP.name}<br><strong>Authorized Signature</strong>
-      </div>
+      ${SHOP.signature ? "" : "</div>"}
     </div>
   </div>
 </div>
@@ -407,6 +467,10 @@ export async function GET(req: NextRequest) {
 </div>
 
 <script>
+function toggleTrackQR(){
+  var el=document.getElementById('trackQrBox');
+  el.style.display=el.style.display==='none'?'block':'none';
+}
 function savePDF(){
   window.print();
   setTimeout(()=>alert("PDF save karne ke liye:\\n1. Print dialog mein 'Save as PDF' select karo\\n2. Paper: A4\\n3. Margins: Default\\n4. Background graphics: ON"),200);

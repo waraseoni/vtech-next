@@ -409,7 +409,7 @@ ${svcHtml}${prodHtml}
                   className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
                   <User size={12}/> View Client
                 </Link>
-                <Link href={`/jobs/${job.id}/gst-bill`} target="_blank"
+                <Link href={`/api/print-bill?job_id=${job.job_id}&bill_type=gst`} target="_blank"
                   className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
                   <FileText size={12}/> GST Bill
                 </Link>

@@ -10,7 +10,7 @@ import {
   User, LogOut, Sparkles, Loader2, ShieldCheck, CalendarCheck,
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
   DollarSign, Truck, CreditCard, Clock, Briefcase, Coins, Receipt,
-  Toolbox, FolderOpen, UsersRound, Database, Settings2,
+  Toolbox, FolderOpen, UsersRound, Database, Settings2, MessageSquare,
   ChevronDown, ChevronRight, X, Menu, ArrowLeft, BarChart2, RefreshCw, Sun, Moon, History, Activity,
 } from "lucide-react";
 
@@ -387,6 +387,7 @@ function SidebarNav({
               <li><Link href="/advance"       className={subLinkCls(pathname === "/advance")}       onClick={onNavClick}><DollarSign size={12} />Advance</Link></li>
               <li><Link href="/services"      className={subLinkCls(pathname === "/services")}      onClick={onNavClick}><Toolbox size={12} />Services</Link></li>
               <li><Link href="/products"      className={subLinkCls(pathname === "/products")}      onClick={onNavClick}><Package size={12} />Products</Link></li>
+              <li><Link href="/suppliers"    className={subLinkCls(pathname === "/suppliers")}    onClick={onNavClick}><Truck size={12} />Suppliers</Link></li>
               <li><Link href="/mechanics"     className={subLinkCls(pathname.startsWith("/mechanics"))}     onClick={onNavClick}><UsersRound size={12} />Mechanics</Link></li>
               <li><Link href="/mechanics/commission" className={subLinkCls(pathname === "/mechanics/commission")} onClick={onNavClick}><BarChart2 size={12} />Commission History</Link></li>
               <li><Link href="/clients-admin" className={subLinkCls(pathname === "/clients-admin")} onClick={onNavClick}><FolderOpen size={12} />Client Amt</Link></li>
@@ -395,6 +396,7 @@ function SidebarNav({
               <li><Link href="/users"         className={subLinkCls(pathname === "/users")}         onClick={onNavClick}><ShieldCheck size={12} />Users</Link></li>
               <li><Link href="/backup"        className={subLinkCls(pathname === "/backup")}        onClick={onNavClick}><Database size={12} />Backup</Link></li>
               <li><Link href="/settings"      className={subLinkCls(pathname === "/settings")}      onClick={onNavClick}><Settings2 size={12} />Settings</Link></li>
+              <li><Link href="/settings/whatsapp-templates" className={subLinkCls(pathname === "/settings/whatsapp-templates")} onClick={onNavClick}><MessageSquare size={12} className="text-green-400" />WA Templates</Link></li>
             </SubMenu>
           </>
         )}

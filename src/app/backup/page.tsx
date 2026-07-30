@@ -17,6 +17,9 @@ const BACKUP_TABLES_ORDERED = [
   { table: "client_list",         order: 2 },
   { table: "product_list",        order: 2 },
   { table: "service_list",       order: 2 },
+  { table: "suppliers",          order: 2 },
+  // Step 2b: Pivot tables (FK: product_list, suppliers)
+  { table: "spare_supplier",     order: 2 },
   // Step 3: Inventory (FK: product_list)
   { table: "inventory_list",      order: 3 },
   // Step 4: Finance - Lenders first (parent of loan_payments)
@@ -43,6 +46,8 @@ const BACKUP_TABLES_ORDERED = [
   { table: "mechanic_commission_history", order: 10 },
   // Step 11: Messages
   { table: "message_list",        order: 11 },
+  // Step 12: WhatsApp Templates
+  { table: "wp_template_history",  order: 12 },
 ];
 
 const BACKUP_TABLES = BACKUP_TABLES_ORDERED.map(t => t.table);
@@ -63,8 +68,10 @@ const TABLE_COLUMNS: Record<string, string[]> = {
   "loan_payments": ["id", "lender_id", "amount_paid", "payment_date", "remarks"],
   "service_list": ["id", "name", "description", "price", "status", "delete_flag", "date_created", "date_updated"],
   "advance_payments": ["id", "mechanic_id", "amount", "date_paid", "reason", "date_created"],
-  "inventory_list": ["id", "product_id", "quantity", "place", "stock_date", "date_created", "date_updated"],
+  "inventory_list": ["id", "product_id", "quantity", "place", "stock_date", "supplier_id", "date_created", "date_updated"],
   "direct_sale_items": ["id", "sale_id", "product_id", "qty", "price"],
+  "suppliers": ["id", "name", "contact", "email", "address", "status", "delete_flag", "date_created", "date_updated"],
+  "spare_supplier": ["spare_id", "supplier_id"],
   "transaction_list": ["id", "user_id", "mechanic_id", "code", "job_id", "client_name", "fault", "remark", "item", "uniq_id", "amount", "mechanic_amount", "mechanic_commission_amount", "del_status", "status", "date_created", "date_updated", "date_completed"],
   "product_list": ["id", "name", "description", "cost_price", "price", "image_path", "status", "delete_flag", "date_created", "date_updated"],
   "lender_list": ["id", "fullname", "contact", "loan_amount", "interest_rate", "tenure_months", "reason", "emi_amount", "start_date", "status", "date_created"],
@@ -79,7 +86,8 @@ const TABLE_COLUMNS: Record<string, string[]> = {
   "direct_sales": ["id", "sale_code", "client_id", "mechanic_id", "total_amount", "payment_mode", "remarks", "last_edited_by", "last_edited_by_name", "last_edited_date", "date_created"],
   "system_info": ["id", "meta_field", "meta_value"],
   "job_id_counter": ["id", "last_job_id"],
-  "mechanic_commission_history": ["id", "mechanic_id", "commission_percent", "effective_date", "date_created"]
+  "mechanic_commission_history": ["id", "mechanic_id", "commission_percent", "effective_date", "date_created"],
+  "wp_template_history": ["id", "template_key", "action", "old_value", "new_value", "changed_by", "changed_at"],
 };
 
 // ── FK violations to skip (bad data that would cause FK error) ───────────────

@@ -7,15 +7,22 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// ─── Shop Info ────────────────────────────────────────────────────────────────
-const SHOP = {
-  name:    "V-Technologies",
-  tagline: "Power Supply & Stage Light Repair Solutions",
-  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
-  mobile:  "9179105875",
-  email:   "vtech.jbp@gmail.com",
-  gstin:   "22AAAAA0000A1Z5",
-};
+// ─── Helper: fetch system info ────────────────────────────────────────────────
+async function fetchShopInfo() {
+  const { data } = await supabase.from("system_info").select("meta_field, meta_value");
+  const info: Record<string, string> = {};
+  (data || []).forEach(r => { info[r.meta_field] = r.meta_value; });
+  return {
+    name:    info.name        || "V-Technologies",
+    tagline: "Power Supply & Stage Light Repair Solutions",
+    address: info.address     || "F4, Hotel Plaza, Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
+    mobile:  info.contact     || "9179105875",
+    email:   info.email       || "vtech.jbp@gmail.com",
+    gstin:   info.gst_no      || info.gstin || "",
+    upiId:   info.upi_id      || "",
+    signature: info.signature || "",
+  };
+}
 
 const CGST_RATE = 9;
 const SGST_RATE = 9;
@@ -91,6 +98,9 @@ export async function GET(req: NextRequest) {
   if (jobIds.length === 0) {
     return new NextResponse("Koi valid job IDs nahi diye gaye", { status: 400 });
   }
+
+  // ── Fetch dynamic shop info ──────────────────────────────────────────────
+  const SHOP = await fetchShopInfo();
 
   // ── Fetch transactions ─────────────────────────────────────────────────────
   const { data: txns, error: txnErr } = await supabase
@@ -181,8 +191,8 @@ export async function GET(req: NextRequest) {
 
   // Grand totals
   const grandSubtotal = jobRows.reduce((s, r) => s + r.subtotal, 0);
-  const cgstAmt  = isGST ? grandSubtotal * (CGST_RATE / 100) : 0;
-  const sgstAmt  = isGST ? grandSubtotal * (SGST_RATE / 100) : 0;
+  const cgstAmt  = isGST ? Math.round(grandSubtotal * (CGST_RATE / 100) * 100) / 100 : 0;
+  const sgstAmt  = isGST ? Math.round(grandSubtotal * (SGST_RATE / 100) * 100) / 100 : 0;
   const grandTotal = grandSubtotal + cgstAmt + sgstAmt;
 
   // ── Build HTML sections for each job ──────────────────────────────────────
@@ -256,6 +266,21 @@ export async function GET(req: NextRequest) {
       <td style="padding:6px 10px;border:1px solid #dee2e6">${esc(job.item)}</td>
       <td style="padding:6px 10px;border:1px solid #dee2e6;text-align:right;font-weight:700">${inr(job.subtotal)}</td>
     </tr>`).join("");
+
+  // ── Fetch UPI ID from system_info ──────────────────────────────────────────
+  const { data: upiRow } = await supabase
+    .from("system_info")
+    .select("meta_value")
+    .eq("meta_field", "upi_id")
+    .single();
+  const upiId = upiRow?.meta_value || SHOP.mobile + "@ybl";
+
+  function qrUrl(data: string, size = 130): string {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
+  }
+  const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(SHOP.name)}&am=${encodeURIComponent(grandTotal)}&cu=INR&tn=${encodeURIComponent("Payment for Invoice " + jobIds.join(","))}`;
+  const upiQrImg = qrUrl(upiUri, 130);
+  const trackingQrImg = qrUrl(`https://vtech-rsms/job-status?job_id=${jobIds[0]}`, 130);
 
   // ── Final HTML ────────────────────────────────────────────────────────────
   const html = `<!DOCTYPE html>
@@ -434,14 +459,33 @@ export async function GET(req: NextRequest) {
     </ol>
   </div>
 
+  <!-- QR Section -->
+  <div style="display:flex;justify-content:center;gap:24px;margin:20px 0;padding:16px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;">
+    <div id="trackQrBox" style="display:none;text-align:center;">
+      <img src="${trackingQrImg}" alt="Track QR" width="95" height="95" style="border:1px solid #ddd;border-radius:4px;" />
+      <div style="font-size:11px;color:#666;margin-top:6px;font-weight:600;">Scan to Track</div>
+    </div>
+    <div style="text-align:center;">
+      <img src="${upiQrImg}" alt="UPI QR Code" width="95" height="95" style="border:1px solid #ddd;border-radius:4px;" />
+      <div style="font-size:11px;color:#1a7a3a;margin-top:6px;font-weight:700;">Scan to Pay UPI</div>
+      <div style="font-size:10px;color:#999;">${upiId}</div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-bottom:10px;">
+    <button onclick="toggleTrackQR()" style="font-size:11px;padding:4px 12px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:#fff;color:#666;">👁 Toggle Track QR</button>
+  </div>
+
   <!-- Footer -->
   <div class="footer">
     <div style="font-size:15px;font-weight:700;color:#28a745;margin-bottom:6px">❤ Thank You for Your Business!</div>
     <div style="color:#666;font-size:12px">📞 ${SHOP.mobile} &nbsp;|&nbsp; ✉ ${SHOP.email}</div>
     <div class="sig">
-      <div style="border-top:1px solid #333;width:220px;display:inline-block;padding-top:8px">
+      ${SHOP.signature
+        ? `<img src="${SHOP.signature}" alt="Signature" style="max-height:50px;max-width:200px;object-fit:contain;"><br>`
+        : `<div style="border-top:1px solid #333;width:220px;display:inline-block;padding-top:8px">`
+      }
         For ${esc(SHOP.name)}<br><strong>Authorized Signature</strong>
-      </div>
+      ${SHOP.signature ? "" : "</div>"}
     </div>
   </div>
 
@@ -471,6 +515,10 @@ export async function GET(req: NextRequest) {
 </div>
 
 <script>
+function toggleTrackQR(){
+  var el=document.getElementById('trackQrBox');
+  el.style.display=el.style.display==='none'?'block':'none';
+}
 document.addEventListener("keydown", e => {
   if (e.ctrlKey && e.key === "p") { e.preventDefault(); window.print(); }
   if (e.key === "Escape") window.close();

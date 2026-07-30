@@ -1334,21 +1334,31 @@ function JobsListContent() {
             </button>
             <span className="text-sm font-bold text-white">{selectedIds.size} selected</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto">
             <button onClick={() => bulkUpdateStatus(1)}
               disabled={bulkActionLoading}
-              className="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all">
+              className="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all whitespace-nowrap">
               <ArrowRight size={12} /> On-Progress
             </button>
             <button onClick={() => bulkUpdateStatus(2)}
               disabled={bulkActionLoading}
-              className="px-3 py-1.5 bg-teal-600/20 hover:bg-teal-600/30 border border-teal-500/30 text-teal-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all">
-              <ArrowRight size={12} /> Done
+              className="px-3 py-1.5 bg-teal-600/20 hover:bg-teal-600/30 border border-teal-500/30 text-teal-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all whitespace-nowrap">
+              <CheckCircle2 size={12} /> Done
+            </button>
+            <button onClick={() => bulkUpdateStatus(3)}
+              disabled={bulkActionLoading}
+              className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all whitespace-nowrap">
+              <IndianRupee size={12} /> Paid
             </button>
             <button onClick={() => bulkUpdateStatus(5)}
               disabled={bulkActionLoading}
-              className="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all">
+              className="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all whitespace-nowrap">
               <ArrowRight size={12} /> Delivered
+            </button>
+            <button onClick={() => bulkUpdateStatus(4)}
+              disabled={bulkActionLoading}
+              className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all whitespace-nowrap">
+              <Trash2 size={12} /> Cancel
             </button>
           </div>
         </div>

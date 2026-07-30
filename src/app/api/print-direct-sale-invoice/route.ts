@@ -97,6 +97,23 @@ export async function GET(request: NextRequest) {
 
   const subtotal = saleItems.reduce((s, i) => s + i.total, 0);
 
+  // ── Fetch UPI ID from system_info ──────────────────────────────────────────
+  const { data: upiRow } = await supabase
+    .from("system_info")
+    .select("meta_value")
+    .eq("meta_field", "upi_id")
+    .single();
+  const upiId = upiRow?.meta_value || SHOP.mobile + "@ybl";
+
+  function qrUrl(data: string, size = 130): string {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
+  }
+  function upiQrUrl(amount: number): string {
+    const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(SHOP.name)}&am=${encodeURIComponent(amount)}&cu=INR&tn=${encodeURIComponent("Payment for " + sale.sale_code)}`;
+    return qrUrl(upiUri, 130);
+  }
+  const upiQrImg = upiQrUrl(sale.total_amount);
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -188,6 +205,14 @@ export async function GET(request: NextRequest) {
   </div>
   
   ${sale.remarks ? `<div class="remarks"><b>Remarks:</b> ${sale.remarks}</div>` : ""}
+  
+  <div style="display:flex;justify-content:center;gap:24px;margin:20px 0;padding:16px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;">
+    <div style="text-align:center;">
+      <img src="${upiQrImg}" alt="UPI QR Code" width="120" height="120" style="border:1px solid #ddd;border-radius:4px;" />
+      <div style="font-size:11px;color:#1a7a3a;margin-top:6px;font-weight:700;">Scan to Pay UPI</div>
+      <div style="font-size:10px;color:#999;">${upiId}</div>
+    </div>
+  </div>
   
   <div class="footer">Goods sold are not returnable. Thank you for your business! — ${SHOP.name}</div>
   
