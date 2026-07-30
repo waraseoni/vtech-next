@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-// Import paths ko check karein, ye @/lib/gemini hona chahiye
 import { getChatResponse, generateWhatsAppReply } from "@/lib/gemini";
 import { getGroqChatResponse } from "@/lib/groq";
 import type { ChatMessage } from "@/lib/gemini";
+import { getAiSettings } from "@/lib/ai-settings";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,23 +16,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Fetch AI settings from DB, but allow override from request body
+    const bodyApiKey = body.apiKey;
+    const bodyModel = body.model;
+
+    const aiSettings = await getAiSettings();
+
+    const activeProvider = provider || aiSettings.provider;
+    const apiKey = bodyApiKey || aiSettings.apiKey;
+    const modelName = bodyModel || aiSettings.model;
+
     let responseText: string;
 
     if (type === "chat" && messages) {
-      if (provider === "groq") {
-         responseText = await getGroqChatResponse(messages);
+      if (activeProvider === "groq") {
+         responseText = await getGroqChatResponse(messages, apiKey, modelName);
       } else {
-         responseText = await getChatResponse(messages as ChatMessage[]);
+         responseText = await getChatResponse(messages as ChatMessage[], apiKey, modelName);
       }
     } else if (type === "whatsapp") {
       responseText = await generateWhatsAppReply(
         message,
         context?.customerName,
-        context
+        context,
+        apiKey,
+        modelName
       );
     } else {
       const prompt = message || (messages && messages[messages.length - 1]?.content) || "";
-      responseText = await getChatResponse([{ role: "user", content: prompt }]);
+      responseText = await getChatResponse([{ role: "user", content: prompt }], apiKey, modelName);
     }
 
     return NextResponse.json({ response: responseText });

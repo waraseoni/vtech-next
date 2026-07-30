@@ -48,6 +48,8 @@ const BACKUP_TABLES_ORDERED = [
   { table: "message_list",        order: 11 },
   // Step 12: WhatsApp Templates
   { table: "wp_template_history",  order: 12 },
+  // Step 13: Activity logs (no FK dependencies)
+  { table: "activity_logs",        order: 13 },
 ];
 
 const BACKUP_TABLES = BACKUP_TABLES_ORDERED.map(t => t.table);
@@ -88,6 +90,7 @@ const TABLE_COLUMNS: Record<string, string[]> = {
   "job_id_counter": ["id", "last_job_id"],
   "mechanic_commission_history": ["id", "mechanic_id", "commission_percent", "effective_date", "date_created"],
   "wp_template_history": ["id", "template_key", "action", "old_value", "new_value", "changed_by", "changed_at"],
+  "activity_logs": ["user_id", "action", "module", "meta_id", "details", "date_created"],
 };
 
 // ── FK violations to skip (bad data that would cause FK error) ───────────────
@@ -225,7 +228,12 @@ export default function BackupPage() {
   };
 
   // ── Tables with composite primary keys (need special delete) ─────────────────
-  const COMPOSITE_KEY_TABLES = ["transaction_products", "transaction_services"];
+  const COMPOSITE_KEY_CONFIG: Record<string, string> = {
+    "transaction_products": "transaction_id",
+    "transaction_services": "transaction_id",
+    "spare_supplier": "spare_id",
+  };
+  const COMPOSITE_KEY_TABLES = Object.keys(COMPOSITE_KEY_CONFIG);
 
   // ── Tables that CANNOT be deleted (FK from other non-backup tables) ──────────
   // mechanic_list: "profiles" table ka FK constraint hai — delete nahi ho sakta
@@ -306,10 +314,11 @@ export default function BackupPage() {
           setProgress(`Clearing table: ${table}...`);
           let delErr = null;
           if (COMPOSITE_KEY_TABLES.includes(table)) {
+            const col = COMPOSITE_KEY_CONFIG[table] || "transaction_id";
             const { error } = await supabase
               .from(table)
               .delete()
-              .not("transaction_id", "is", null);
+              .not(col, "is", null);
             delErr = error;
           } else {
             const { error } = await supabase
@@ -369,7 +378,7 @@ export default function BackupPage() {
               if (pf in r && typeof r[pf] === "number" && (r[pf] as number) < 0) r[pf] = 0;
             }
             // Fix int/null in text NOT NULL columns
-            for (const tf of ["name","description","category","fault","item","remark","remarks","uniq_id","code","fullname","address","sale_code","firstname","lastname","contact","email","message"]) {
+            for (const tf of ["name","description","category","fault","item","remark","remarks","uniq_id","code","fullname","address","sale_code","firstname","lastname","contact","email","message","meta_value"]) {
               if (tf in r) {
                 if (r[tf] === null || r[tf] === undefined) r[tf] = "";
                 else if (typeof r[tf] !== "string") r[tf] = String(r[tf]);
@@ -389,8 +398,25 @@ export default function BackupPage() {
 
         // Step 2: Insert in batches of 25 (rate limit se bachne ke liye smaller batches)
         const batchSize = 25;
+        const hasIdCol = TABLE_COLUMNS[table]?.includes("id");
         for (let i = 0; i < rows.length; i += batchSize) {
-          const batch = rows.slice(i, i + batchSize);
+          let batch = rows.slice(i, i + batchSize);
+          // Dedup within batch to avoid "cannot affect row a second time"
+          if (hasIdCol && batch.length > 1) {
+            const seen = new Set<unknown>();
+            const deduped: Record<string, unknown>[] = [];
+            for (const r of batch) {
+              const id = (r as Record<string, unknown>).id;
+              if (id != null && seen.has(id)) continue;
+              if (id != null) seen.add(id);
+              deduped.push(r);
+            }
+            if (deduped.length < batch.length) {
+              console.warn(`${table} batch ${i}: ${batch.length - deduped.length} duplicates skipped`);
+            }
+            batch = deduped;
+          }
+          if (batch.length === 0) continue;
           setProgress(`Restoring: ${table} (${i + batch.length}/${rows.length})...`);
 
           const { error: insErr } = await supabase
@@ -459,6 +485,7 @@ export default function BackupPage() {
       "expense_list", "transaction_list", "client_loans", "client_payments",
       "direct_sales", "direct_sale_items", "attendance_list", "advance_payments",
       "mechanic_salary_history", "mechanic_commission_history", "message_list",
+      "wp_template_history", "activity_logs",
     ];
 
     const results: string[] = [];

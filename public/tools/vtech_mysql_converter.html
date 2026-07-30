@@ -81,7 +81,7 @@ h1{font-size:21px;font-weight:900;color:#fff;margin-bottom:4px}
 // ════════════════════════════════════════════════════════════
 // CONFIG — exact match with Supabase backup (verified field-by-field)
 // ════════════════════════════════════════════════════════════
-const TABLES=["system_info","job_id_counter","mechanic_list","client_list","product_list","service_list","inventory_list","lender_list","loan_payments","expense_list","transaction_list","transaction_products","transaction_services","transaction_images","client_loans","client_payments","direct_sales","direct_sale_items","attendance_list","advance_payments","mechanic_salary_history","mechanic_commission_history","message_list","activity_logs"];
+const TABLES=["system_info","job_id_counter","mechanic_list","client_list","product_list","service_list","suppliers","spare_supplier","inventory_list","lender_list","loan_payments","expense_list","transaction_list","transaction_products","transaction_services","transaction_images","client_loans","client_payments","direct_sales","direct_sale_items","attendance_list","advance_payments","mechanic_salary_history","mechanic_commission_history","message_list","wp_template_history","activity_logs"];
 
 // INT fields — exact from schema + good backup
 const INT_F={
@@ -104,11 +104,14 @@ const INT_F={
   message_list:["id","status"],
   product_list:["id","status","delete_flag"],
   service_list:["id","status","delete_flag"],
+  suppliers:["id","status","delete_flag"],
+  spare_supplier:["spare_id","supplier_id"],
   system_info:["id"],
   transaction_images:["id","transaction_id"],
   transaction_list:["id","user_id","mechanic_id","del_status","status"],
   transaction_products:["transaction_id","product_id","qty"],
   transaction_services:["transaction_id","service_id"],
+  wp_template_history:["id"],
 };
 
 // FLOAT fields
@@ -139,6 +142,7 @@ const STR_F={
   lender_list:["contact"],
   mechanic_list:["contact"],
   message_list:["contact"],
+  suppliers:["contact"],
   transaction_list:["code","job_id","client_name","remark","uniq_id","fault","item"],
 };
 
@@ -151,16 +155,18 @@ const EMPTY_STR={
   direct_sales:["remarks"],
   expense_list:["category","remarks"],
   inventory_list:["place"],
+  system_info:["meta_value"],
   loan_payments:["remarks"],
   mechanic_list:["contact","middlename"],
   product_list:["image_path"],
+  suppliers:["email","address"],
   transaction_list:["remark","uniq_id"],
 };
 
 // Datetime format — ALL tables use +05:30 (IST) since MariaDB stored IST local time
-const WITH_TZ=new Set(["mechanic_list","product_list","service_list","lender_list","mechanic_commission_history","transaction_list","client_list","client_loans","client_payments","direct_sales","direct_sale_items","expense_list","inventory_list","loan_payments","mechanic_salary_history","attendance_list","advance_payments","message_list","transaction_products","transaction_services","transaction_images","activity_logs"]);
+const WITH_TZ=new Set(["mechanic_list","product_list","service_list","suppliers","lender_list","mechanic_commission_history","transaction_list","client_list","client_loans","client_payments","direct_sales","direct_sale_items","expense_list","inventory_list","loan_payments","mechanic_salary_history","attendance_list","advance_payments","message_list","transaction_products","transaction_services","transaction_images","wp_template_history","activity_logs"]);
 const DATE_ONLY=new Set(["date_paid","payment_date","curr_date","stock_date","loan_date","start_date","effective_date"]);
-const DT_FIELDS=new Set(["date_created","date_updated","date_completed","date_added","last_edited_date","created_at"]);
+const DT_FIELDS=new Set(["date_created","date_updated","date_completed","date_added","last_edited_date","created_at","changed_at"]);
 
 // Valid enums
 const VALID_PM=new Set(["Cash","PhonePe/GPay","UPI","Bank Transfer","Credit Card","Credit to Client"]);

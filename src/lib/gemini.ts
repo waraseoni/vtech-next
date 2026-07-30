@@ -7,14 +7,17 @@ export type ChatMessage = {
   content: string;
 };
 
-// Use environment variable for API Key
-const API_KEY = process.env.GEMINI_API_KEY || "API_KEY_MISSING"; 
-const genAI = new GoogleGenerativeAI(API_KEY);
-
-export async function getChatResponse(messages: ChatMessage[]): Promise<string> {
-  if (API_KEY === "API_KEY_MISSING" || API_KEY.trim() === "") {
-    return "ERROR: Gemini API Key is missing in `.env.local`. Krupya GEMINI_API_KEY add karein.";
+export async function getChatResponse(
+  messages: ChatMessage[],
+  apiKey?: string,
+  modelName?: string
+): Promise<string> {
+  const key = apiKey || process.env.GEMINI_API_KEY || "API_KEY_MISSING";
+  if (key === "API_KEY_MISSING" || key.trim() === "") {
+    return "ERROR: Gemini API Key missing. Settings page se API key daalein ya .env.local mein GEMINI_API_KEY set karein.";
   }
+  const genAI = new GoogleGenerativeAI(key);
+  const modelId = modelName || "gemini-2.0-flash";
 
   const systemInstruction = `
 Namaste! You are the intelligent, helpful business assistant for V-Technologies (V-TECH PRO).
@@ -29,7 +32,7 @@ Be concise with your outputs. Do not return markdown that cannot be read well. U
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash",
+      model: modelId,
       tools: [{ functionDeclarations: geminiTools }],
       systemInstruction: systemInstruction
     });
@@ -103,7 +106,7 @@ Be concise with your outputs. Do not return markdown that cannot be read well. U
   }
 }
 
-export async function generateWhatsAppReply(msg: string, customerName?: string, context?: any) {
+export async function generateWhatsAppReply(msg: string, customerName?: string, context?: any, apiKey?: string, modelName?: string) {
   const prompt = `Generate a polite and professional WhatsApp reply for this message: "${msg}". Customer Name: ${customerName || 'Unknown'}. Context provided: ${JSON.stringify(context || {})}`;
-  return await getChatResponse([{ role: "user", content: prompt }]);
+  return await getChatResponse([{ role: "user", content: prompt }], apiKey, modelName);
 }

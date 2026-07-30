@@ -1,10 +1,6 @@
 import Groq from "groq-sdk";
 import { geminiTools, executeGeminiTool } from "./gemini-tools";
 
-const API_KEY = process.env.GROQ_API_KEY || "API_KEY_MISSING";
-const groq = new Groq({ apiKey: API_KEY });
-
-// Convert Gemini tool schema to Groq (OpenAI style) tool schema
 const groqTools = geminiTools.map((t: any) => ({
     type: "function",
     function: {
@@ -14,10 +10,13 @@ const groqTools = geminiTools.map((t: any) => ({
     }
 }));
 
-export async function getGroqChatResponse(messages: any[]): Promise<string> {
-    if (API_KEY === "API_KEY_MISSING" || API_KEY.trim() === "") {
-        return "ERROR: Groq API Key is missing in `.env.local`. Kripya nayi GROQ_API_KEY = ... wahan add karein aur server restart karein.";
+export async function getGroqChatResponse(messages: any[], apiKey?: string, modelName?: string): Promise<string> {
+    const key = apiKey || process.env.GROQ_API_KEY || "API_KEY_MISSING";
+    if (key === "API_KEY_MISSING" || key.trim() === "") {
+        return "ERROR: Groq API Key missing. Settings page se API key daalein ya .env.local mein GROQ_API_KEY set karein.";
     }
+    const groq = new Groq({ apiKey: key });
+    const modelId = modelName || "llama-3.3-70b-versatile";
 
     const systemInstruction = `
 Namaste! You are the intelligent, helpful business assistant for V-Technologies (V-TECH PRO).
@@ -49,7 +48,7 @@ If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). O
 
     try {
         const response = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
+            model: modelId,
             messages: formattedHistory,
             // @ts-ignore
             tools: groqTools,
@@ -90,7 +89,7 @@ If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). O
 
             // Get final response from Groq
             const finalResponse = await groq.chat.completions.create({
-                model: "llama-3.3-70b-versatile",
+                model: modelId,
                 messages: formattedHistory,
             });
 
@@ -123,7 +122,7 @@ If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). O
                 });
 
                 const finalResponse = await groq.chat.completions.create({
-                    model: "llama-3.3-70b-versatile",
+                    model: modelId,
                     messages: formattedHistory,
                 });
 
@@ -177,7 +176,7 @@ If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). O
                         });
                         
                         const finalResponse = await groq.chat.completions.create({
-                            model: "llama-3.3-70b-versatile",
+                            model: modelId,
                             messages: fallbackHistory,
                         });
                         return finalResponse.choices[0]?.message?.content || "No response generated.";

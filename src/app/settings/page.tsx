@@ -285,7 +285,13 @@ export default function SettingsPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: "Say 'OK' and nothing else", provider: aiProvider, type: aiProvider === "groq" ? "groq" : undefined }),
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Sirf 'OK' likho aur kuch mat likho" }],
+          type: "chat",
+          provider: aiProvider,
+          apiKey: aiApiKey,
+          model: aiModel,
+        }),
       });
       const json = await res.json();
       if (json.response?.includes("OK")) {
