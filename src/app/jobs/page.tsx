@@ -48,6 +48,7 @@ interface Transaction {
   date_created: string;
   date_updated: string;
   date_completed: string | null;
+  status_changed_at: string | null;
   del_status: number;
   client_firstname?: string;
   client_middlename?: string;
@@ -213,30 +214,33 @@ function JobsListContent() {
         query = query.or(`job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`);
       }
 
-      // ── Quick Stats Query (Lightweight parallel fetch) ──
-      let statsQuery = supabase.from("transaction_list").select("status, amount").eq("del_status", 0);
-      if (dateFrom) statsQuery = statsQuery.gte("date_created", `${dateFrom}T00:00:00+05:30`);
-      if (dateTo) statsQuery = statsQuery.lte("date_created", `${dateTo}T23:59:59+05:30`);
-      if (hideDelivered) statsQuery = statsQuery.neq("status", 5);
-      if (statusFilter !== "") statsQuery = statsQuery.eq("status", statusFilter);
-      if (term) statsQuery = statsQuery.or(`job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`);
-      statsQuery = statsQuery.limit(10000); // Fetch up to 10k for stats
+      // ── Quick Stats Query (batched to bypass Supabase 1k max-rows) ──
+      const buildStatsQuery = (rangeFrom: number, rangeTo: number) => {
+        let q = supabase.from("transaction_list").select("status, amount").eq("del_status", 0).range(rangeFrom, rangeTo);
+        if (dateFrom) q = q.gte("date_created", `${dateFrom}T00:00:00+05:30`);
+        if (dateTo) q = q.lte("date_created", `${dateTo}T23:59:59+05:30`);
+        if (hideDelivered) q = q.neq("status", 5);
+        if (statusFilter !== "") q = q.eq("status", statusFilter);
+        if (term) q = q.or(`job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`);
+        return q;
+      };
 
       // ── Execute Page Query ──
       const from = pageIndex * pageSize;
       const to = from + pageSize - 1;
       query = query.order("date_created", { ascending: false }).range(from, to);
 
-      const [pageRes, statsRes] = await Promise.all([
+      const [pageRes, statsRes1, statsRes2] = await Promise.all([
         query,
-        statsQuery
+        buildStatsQuery(0, 999),
+        buildStatsQuery(1000, 1999),
       ]);
 
       if (pageRes.error) throw pageRes.error;
       
       setTotalRows(pageRes.count || 0);
 
-      const allStats = statsRes.data || [];
+      const allStats = [...(statsRes1.data || []), ...(statsRes2.data || [])];
       setStats({
         total: allStats.length,
         pending: allStats.filter(t => t.status === 0).length,
@@ -256,14 +260,35 @@ function JobsListContent() {
       const clientIdsNum = [...new Set(pageTxns.map((t: any) => Number(t.client_name)))];
       const clientIdsStr = clientIdsNum.map(String);
 
-      const [clientsRes, billedRes, paidRes, salesRes] = await Promise.all([
+      // Fetch status change timestamps from activity_logs
+      const jobIdList = pageTxns.map((t: any) => t.job_id).filter(Boolean);
+      const logPromise = jobIdList.length > 0
+        ? supabase
+            .from("activity_logs")
+            .select("meta_id, date_created")
+            .eq("module", "Jobs")
+            .eq("action", "Updated Job Status")
+            .in("meta_id", jobIdList)
+            .order("date_created", { ascending: false })
+        : Promise.resolve({ data: [] });
+
+      const [clientsRes, billedRes, paidRes, salesRes, logsRes] = await Promise.all([
         supabase.from("client_list").select("id, firstname, middlename, lastname, contact, opening_balance").in("id", clientIdsNum),
         // Only Delivered (5) & Paid (3) jobs count toward balance — Done (2) items still at shop are NOT billed yet
         supabase.from("transaction_list").select("client_name, amount").in("status", [3, 5]).neq("del_status", 1).in("client_name", clientIdsStr),
         // Exclude loan repayments — matches PHP WHERE loan_id IS NULL OR loan_id = 0
         supabase.from("client_payments").select("client_id, amount, discount").in("client_id", clientIdsNum).or("loan_id.is.null,loan_id.eq.0"),
         supabase.from("direct_sales").select("client_id, total_amount").in("client_id", clientIdsNum),
+        logPromise,
       ]);
+
+      // Build latest status change map (activity_logs returns ordered desc, keep first per job)
+      const statusChangeMap = new Map<string, string>();
+      for (const log of (logsRes as any)?.data || []) {
+        if (!statusChangeMap.has(log.meta_id)) {
+          statusChangeMap.set(log.meta_id, log.date_created);
+        }
+      }
 
       const billedMap = new Map<number, number>();
       billedRes.data?.forEach(r => {
@@ -283,6 +308,8 @@ function JobsListContent() {
       setTransactions(pageTxns.map((txn: any) => {
         const cid    = Number(txn.client_name);
         const client = clientMap.get(cid);
+        const statusDate = txn.status === 5 ? txn.date_completed
+          : statusChangeMap.get(txn.job_id as string) || txn.date_updated;
         return {
           ...txn,
           client_firstname:       client?.firstname       || "",
@@ -293,6 +320,7 @@ function JobsListContent() {
           total_billed:           billedMap.get(cid) || 0,
           total_paid:             paidMap.get(cid)   || 0,
           total_sale:             salesMap.get(cid)  || 0,
+          status_changed_at:      statusDate,
         };
       }));
 
@@ -792,9 +820,9 @@ function JobsListContent() {
 
                         <td className="px-3 py-2.5 text-center">
                           <span className={getStatusBadge(txn.status)}>{STATUS_MAP[txn.status]}</span>
-                          {txn.status === 5 && txn.date_completed && (
+                          {txn.status_changed_at && (
                             <div className="text-[9px] text-slate-600 mt-0.5">
-                              {fmtDate(txn.date_completed)} {fmtTime(txn.date_completed)}
+                              {fmtDate(txn.status_changed_at)} {fmtTime(txn.status_changed_at)}
                             </div>
                           )}
                         </td>
@@ -1016,10 +1044,10 @@ function JobsListContent() {
                           {fmtDate(txn.date_created)}
                         </span>
                       </div>
-                      {txn.status === 5 && txn.date_completed && (
-                        <div className="flex items-center gap-1 mt-1 text-[9px] text-emerald-500">
-                          <CheckCircle2 size={9} />
-                          Delivered: {fmtDateTime(txn.date_completed)}
+                      {txn.status_changed_at && (
+                        <div className="flex items-center gap-1 mt-1 text-[9px] text-slate-500">
+                          <Clock size={9} />
+                          {STATUS_MAP[txn.status]}: {fmtDateTime(txn.status_changed_at)}
                         </div>
                       )}
                     </div>

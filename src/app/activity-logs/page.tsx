@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   History, Search, Loader2, Calendar, User, Info,
@@ -19,6 +19,8 @@ interface LogEntry {
   username?: string;
 }
 
+const PAGE_SIZES = [10, 25, 50, 100];
+
 export default function ActivityLogsPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,31 +28,49 @@ export default function ActivityLogsPage() {
   const [moduleFilter, setModuleFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalCount, setTotalCount] = useState(0);
 
-  useEffect(() => {
-    fetchLogs();
-  }, [moduleFilter, dateFrom, dateTo]);
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      let query = supabase
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+
+      let countQuery = supabase
+        .from("activity_logs")
+        .select("*", { count: "exact", head: true });
+
+      let dataQuery = supabase
         .from("activity_logs")
         .select("*")
         .order("date_created", { ascending: false })
-        .limit(200);
+        .range(from, to);
 
-      if (moduleFilter !== "all") query = query.eq("module", moduleFilter);
-      if (dateFrom) query = query.gte("date_created", `${dateFrom}T00:00:00`);
-      if (dateTo) query = query.lte("date_created", `${dateTo}T23:59:59`);
+      if (moduleFilter !== "all") {
+        countQuery = countQuery.eq("module", moduleFilter);
+        dataQuery = dataQuery.eq("module", moduleFilter);
+      }
+      if (dateFrom) {
+        countQuery = countQuery.gte("date_created", `${dateFrom}T00:00:00`);
+        dataQuery = dataQuery.gte("date_created", `${dateFrom}T00:00:00`);
+      }
+      if (dateTo) {
+        countQuery = countQuery.lte("date_created", `${dateTo}T23:59:59`);
+        dataQuery = dataQuery.lte("date_created", `${dateTo}T23:59:59`);
+      }
+      if (search) {
+        countQuery = countQuery.or(`action.ilike.%${search}%,details.ilike.%${search}%`);
+        dataQuery = dataQuery.or(`action.ilike.%${search}%,details.ilike.%${search}%`);
+      }
 
-      const { data, error } = await query;
+      const [{ count }, { data, error }] = await Promise.all([countQuery, dataQuery]);
       if (error) throw error;
 
-      // Fetch user/mechanic names for display
       const mechIds = [...new Set((data || []).map(l => l.user_id).filter(id => id > 0))];
-      const mechsMap = new Map();
-      
+      const mechsMap = new Map<number, string>();
+
       if (mechIds.length > 0) {
         const { data: mechs } = await supabase
           .from("mechanic_list")
@@ -65,18 +85,19 @@ export default function ActivityLogsPage() {
       }));
 
       setLogs(formatted);
+      setTotalCount(count || 0);
     } catch (err) {
       console.error("Error fetching logs:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [moduleFilter, dateFrom, dateTo, search, page, pageSize]);
 
-  const filteredLogs = logs.filter(l => 
-    l.details?.toLowerCase().includes(search.toLowerCase()) ||
-    l.action.toLowerCase().includes(search.toLowerCase()) ||
-    l.username?.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
+
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const getModuleIcon = (mod: string) => {
     switch (mod) {
@@ -91,7 +112,7 @@ export default function ActivityLogsPage() {
   return (
     <div className="min-h-screen bg-[#0d1117] text-white p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-4">
@@ -111,12 +132,12 @@ export default function ActivityLogsPage() {
             <div className="flex-1 min-w-[240px]">
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5 ml-1">Search Logs</label>
               <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1-2 text-slate-600" />
-                <input 
-                  type="text" 
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+                <input
+                  type="text"
                   value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Search by action, user or details..."
+                  onChange={e => { setSearch(e.target.value); setPage(0); }}
+                  placeholder="Search by action or details..."
                   className="w-full bg-[#0d1117] border border-[#21293d] rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-blue-500/50 transition-all shadow-inner"
                 />
               </div>
@@ -124,9 +145,9 @@ export default function ActivityLogsPage() {
 
             <div className="w-full sm:w-48">
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5 ml-1">Module</label>
-              <select 
+              <select
                 value={moduleFilter}
-                onChange={e => setModuleFilter(e.target.value)}
+                onChange={e => { setModuleFilter(e.target.value); setPage(0); }}
                 className="w-full bg-[#0d1117] border border-[#21293d] rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500/50 [color-scheme:dark]"
               >
                 <option value="all">All Modules</option>
@@ -141,21 +162,41 @@ export default function ActivityLogsPage() {
             <div className="flex items-center gap-2">
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5 ml-1">From</label>
-                <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+                <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }}
                   className="bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-2 text-sm [color-scheme:dark]" />
               </div>
               <div className="pt-6 text-slate-700">—</div>
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5 ml-1">To</label>
-                <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+                <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }}
                   className="bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-2 text-sm [color-scheme:dark]" />
               </div>
             </div>
 
-            <button onClick={() => { setSearch(""); setModuleFilter("all"); setDateFrom(""); setDateTo(""); }}
+            <button onClick={() => { setSearch(""); setModuleFilter("all"); setDateFrom(""); setDateTo(""); setPage(0); }}
               className="p-2.5 bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-red-400 rounded-xl transition-all">
               <X size={18} />
             </button>
+          </div>
+        </div>
+
+        {/* Stats + Page Size */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-500 font-bold">
+              {totalCount.toLocaleString()} total entries
+            </span>
+            <span className="text-slate-700">|</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-slate-600 font-black uppercase">Show</span>
+              <select
+                value={pageSize}
+                onChange={e => { setPageSize(Number(e.target.value)); setPage(0); }}
+                className="bg-[#0d1117] border border-[#21293d] rounded-lg px-2 py-1 text-xs outline-none [color-scheme:dark]"
+              >
+                {PAGE_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -181,7 +222,7 @@ export default function ActivityLogsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#21293d]">
-                  {filteredLogs.map((log) => (
+                  {logs.map((log) => (
                     <tr key={log.id} className="hover:bg-white/[0.02] transition-colors group">
                       <td className="px-5 py-4 whitespace-nowrap">
                         <div className="flex flex-col">
@@ -215,7 +256,7 @@ export default function ActivityLogsPage() {
                       </td>
                     </tr>
                   ))}
-                  {filteredLogs.length === 0 && (
+                  {logs.length === 0 && (
                     <tr>
                       <td colSpan={5} className="p-20 text-center">
                         <History size={40} className="text-slate-800 mx-auto mb-4 opacity-20" />
@@ -229,7 +270,7 @@ export default function ActivityLogsPage() {
 
             {/* Mobile Cards */}
             <div className="md:hidden divide-y divide-[#21293d]">
-              {filteredLogs.map((log) => (
+              {logs.map((log) => (
                 <div key={log.id} className="p-4 hover:bg-white/[0.02] transition-colors group">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex items-center gap-2">
@@ -260,13 +301,65 @@ export default function ActivityLogsPage() {
                   </div>
                 </div>
               ))}
-              {filteredLogs.length === 0 && (
+              {logs.length === 0 && (
                 <div className="p-10 text-center">
                   <History size={32} className="text-slate-800 mx-auto mb-3 opacity-20" />
                   <p className="text-slate-600 font-black uppercase tracking-widest text-[10px]">No activity logs found</p>
                 </div>
               )}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-5 py-4 border-t border-[#21293d] bg-[#0d1117]/30">
+                <span className="text-[11px] text-slate-500 font-bold">
+                  Page {page + 1} of {totalPages}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                    className="p-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-slate-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalPages <= 7) {
+                        pageNum = i;
+                      } else if (page < 3) {
+                        pageNum = i;
+                      } else if (page > totalPages - 4) {
+                        pageNum = totalPages - 7 + i;
+                      } else {
+                        pageNum = page - 3 + i;
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setPage(pageNum)}
+                          className={`min-w-[32px] h-8 rounded-lg text-xs font-bold transition-all ${
+                            page === pageNum
+                              ? "bg-blue-600 text-white"
+                              : "bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-white"
+                          }`}
+                        >
+                          {pageNum + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                    disabled={page === totalPages - 1}
+                    className="p-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-slate-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
             </>
           )}
         </div>
