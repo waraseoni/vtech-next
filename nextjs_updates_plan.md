@@ -73,6 +73,15 @@ The legacy PHP RSMS has features the Next.js port is missing. This plan tracks t
 - [x] `product_list.barcode` on products — migration `20260806_phase3_barcode.sql` (apply via SQL Editor), field in product form + table column. Note: PHP schema has the column but exposes no admin form field; added as new functionality.
 - [x] Outstanding anon-key routes fixed → service-role key: `print-advance`, `print-monthly-sales`, `export-transactions` (all verified 200 over HTTP; balancesheet/ledger were already session-based and verified working)
 
+### 11. Attendance times parity (check-in/out + working hours)
+- PHP reference: `classes/Master/StaffTrait.php` (`save_attendance()`/`save_check_in_out()`, security + 21,600s Half-Day threshold), `admin/attendance/index.php` (time modal), `admin/attendance/view_report.php` (calendar + hour cells)
+- [x] Supabase migration: `attendance_list.time_in`, `attendance_list.time_out` (TIME DEFAULT NULL) — `20260806_phase3_attendance_times.sql` (apply via SQL Editor)
+- [x] `src/lib/dateUtils.ts`: `nowISTTime()`, `minutesBetweenIST()` (overnight), `hoursBetweenIST()` ("Xh Ym"), `deriveStatusFromTimes()` (no in→null, in-only→1, <6h→3, else→1), `fmtTimeIST()`
+- [x] `DailyAttendance`: self check-in/out card (Fingerprint, In/Out, Hours, Check In/Out), admin date picker + daily stats pills, admin In/Out time inputs + status buttons, unmarked→Absent warning, FAB/bulk save with status auto-derivation, staff read-only
+- [x] `MonthlyReport`: per-day hours chip (6px) + tooltip (status + time range + hours); modal receives initial times
+- [x] `AttendanceModal`: editable time inputs with live hours preview, Save In/Out Times (auto-derive), Clear Times (keeps status), status quick-buttons, error/loading states
+- [x] Verified end-to-end via headless-Chrome CDP suite: staff check-in/out (derived Half Day < 6h), admin bulk save 09:00–18:00 → Present, report hours/tooltip, modal Save → Half Day, Clear Times preserves status (19/19 checks PASS, no console errors)
+
 ## Verification
 - `npm run build` after each phase
 - Manual: create product/service with HSN, print invoices, add client due date, send WA reminder, check dashboard

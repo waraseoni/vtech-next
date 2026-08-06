@@ -16,10 +16,10 @@ import { supabase } from '@/lib/supabase';
 import { ChevronLeft, ChevronRight, Calendar, RotateCcw } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import AttendanceModal from './AttendanceModal';
-import { todayIST, currentMonthIST, parseISTDate } from '@/lib/dateUtils';
+import { currentMonthIST, parseISTDate, hoursBetweenIST, fmtTimeIST } from '@/lib/dateUtils';
 
 interface Mechanic { id: number; name: string; }
-interface DayData   { day: number; status: 0 | 1 | 2 | 3; isSunday: boolean; }
+interface DayData   { day: number; status: 0 | 1 | 2 | 3; isSunday: boolean; timeIn: string; timeOut: string; hours: string; }
 interface MechanicMonthData {
   mechanic: Mechanic;
   days: DayData[];
@@ -46,7 +46,7 @@ export default function MonthlyReport({
   const [mechanicsData, setMechanicsData] = useState<MechanicMonthData[]>([]);
   const [loading, setLoading]         = useState(true);
   const [modalOpen, setModalOpen]     = useState(false);
-  const [selected, setSelected]       = useState<{ mechanicId: number; mechanicName: string; date: string } | null>(null);
+  const [selected, setSelected]       = useState<{ mechanicId: number; mechanicName: string; date: string; timeIn?: string; timeOut?: string } | null>(null);
   // BUG FIX 3: trigger refetch without hard reload
   const [refreshKey, setRefreshKey]   = useState(0);
 
@@ -72,7 +72,7 @@ export default function MonthlyReport({
 
     const { data: attData } = await supabase
       .from('attendance_list')
-      .select('mechanic_id, curr_date, status')
+      .select('mechanic_id, curr_date, status, time_in, time_out')
       .gte('curr_date', startDate)
       .lte('curr_date', endDate);
 
@@ -86,7 +86,9 @@ export default function MonthlyReport({
         if (status === 1) fullDays++;
         else if (status === 3) halfDays++;
         else if (status === 2) absentDays++;
-        days.push({ day: d, status, isSunday: parseISTDate(dateStr).getDay() === 0 });
+        const timeIn  = (att?.time_in as string)?.slice(0, 5) || '';
+        const timeOut = (att?.time_out as string)?.slice(0, 5) || '';
+        days.push({ day: d, status, isSunday: parseISTDate(dateStr).getDay() === 0, timeIn, timeOut, hours: hoursBetweenIST(timeIn || null, timeOut || null) });
       }
       return {
         mechanic: { id: mech.id, name: `${mech.firstname} ${mech.lastname}`.trim() },
@@ -110,7 +112,9 @@ export default function MonthlyReport({
 
   const handleDayClick = (mId: number, mName: string, dateStr: string) => {
     if (userRole !== 'admin') return;
-    setSelected({ mechanicId: mId, mechanicName: mName, date: dateStr });
+    const md = mechanicsData.find(x => x.mechanic.id === mId);
+    const day = md?.days.find(d => `${month}-${d.day.toString().padStart(2, '0')}` === dateStr);
+    setSelected({ mechanicId: mId, mechanicName: mName, date: dateStr, timeIn: day?.timeIn, timeOut: day?.timeOut });
     setModalOpen(true);
   };
 
@@ -250,15 +254,28 @@ export default function MonthlyReport({
                 else if (day.status === 2) cls = 'bg-red-500/70 text-white';
                 else if (day.isSunday)     cls = 'bg-red-900/30 text-red-500';
 
+                const statusLabel =
+                  day.status === 1 ? 'Present'
+                  : day.status === 3 ? 'Half Day'
+                  : day.status === 2 ? 'Absent'
+                  : 'Not marked';
+                const tooltip =
+                  `${new Date(dateStr + 'T00:00:00+05:30').toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' })} — ${statusLabel}` +
+                  (day.timeIn && day.timeOut ? ` — ${fmtTimeIST(day.timeIn)} to ${fmtTimeIST(day.timeOut)} (${day.hours})` : '');
+
                 return (
                   <div
                     key={day.day}
+                    title={tooltip}
                     onClick={() => handleDayClick(md.mechanic.id, md.mechanic.name, dateStr)}
-                    className={`aspect-square flex items-center justify-center rounded-md text-[10px] transition-all ${cls} ${
+                    className={`aspect-square flex flex-col items-center justify-center rounded-md text-[10px] leading-none transition-all ${cls} ${
                       userRole === 'admin' ? 'cursor-pointer hover:scale-110 hover:ring-1 hover:ring-blue-400/60' : ''
                     }`}
                   >
-                    {day.day}
+                    <span>{day.day}</span>
+                    {day.hours !== '—' && (
+                      <span className="text-[6px] font-bold mt-0.5 opacity-90">{day.hours}</span>
+                    )}
                   </div>
                 );
               })}
@@ -279,6 +296,8 @@ export default function MonthlyReport({
           mechanicId={selected.mechanicId}
           mechanicName={selected.mechanicName}
           date={selected.date}
+          initialTimeIn={selected.timeIn}
+          initialTimeOut={selected.timeOut}
           onClose={() => {
             setModalOpen(false);
             setSelected(null);
