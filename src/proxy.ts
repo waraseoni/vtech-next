@@ -31,8 +31,13 @@ export async function proxy(request: NextRequest) {
     path === r || path.startsWith(r + "/")
   );
 
-  // Skip static files
-  if (path.startsWith("/_next") || path.includes("favicon") || path.startsWith("/api")) {
+  // Skip static files (Next assets, public/ files like images, manifest, sw, tools html)
+  if (
+    path.startsWith("/_next") ||
+    path.includes("favicon") ||
+    path.startsWith("/api") ||
+    /\.[a-zA-Z0-9]+$/.test(path)
+  ) {
     return response;
   }
 
