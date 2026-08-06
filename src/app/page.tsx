@@ -16,13 +16,27 @@ import Navbar from "./components/Navbar";
 
 // ─── PUBLIC WEBSITE (shown when not logged in) ─────────────────────────────
 function PublicWebsite() {
+  const [cover, setCover] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.from("system_info").select("meta_field, meta_value").eq("meta_field", "cover").maybeSingle();
+        const v = data?.meta_value;
+        if (v && !v.startsWith("uploads/")) setCover(v);
+      } catch {}
+    })();
+  }, []);
+
   return (
     <>
       <Navbar />
       <div className="min-h-screen bg-[#0f0f1a] text-white">
         {/* Hero */}
         <section className="text-center" style={{
-          background: "linear-gradient(rgba(15,15,26,0.92), rgba(15,15,26,0.95))",
+          background: cover
+            ? `linear-gradient(rgba(15,15,26,0.92), rgba(15,15,26,0.95)), url("${cover}") center/cover no-repeat`
+            : "linear-gradient(rgba(15,15,26,0.92), rgba(15,15,26,0.95))",
           minHeight: "calc(100vh - 60px)", display: "flex", alignItems: "center",
         }}>
           <div className="max-w-5xl mx-auto px-4">

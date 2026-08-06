@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { 
+import {
   History, Search, Filter, RefreshCw, 
   User as UserIcon, Calendar, Info, 
   ChevronLeft, ChevronRight, Activity
 } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
-import { ExternalLink, Trash2, PlusCircle, Edit3, ShieldAlert } from "lucide-react";
+import { ExternalLink, Trash2, PlusCircle, Edit3, ShieldAlert, Eraser } from "lucide-react";
 
 
 type LogEntry = {
@@ -31,6 +31,38 @@ export default function ActivityLogPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [moduleFilter, setModuleFilter] = useState("all");
   const [modules, setModules] = useState<string[]>([]);
+  const [retention, setRetention] = useState(90);
+  const [cleaning, setCleaning] = useState(false);
+  const [cleanMsg, setCleanMsg] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.from("system_info").select("meta_value").eq("meta_field", "log_retention").maybeSingle();
+        setRetention(parseInt(data?.meta_value || "90") || 90);
+      } catch {}
+    })();
+  }, []);
+
+  const cleanOldLogs = async () => {
+    if (!confirm(`Are you sure to clean up old activity logs? This will delete logs older than ${retention} days.`)) return;
+    setCleaning(true);
+    setCleanMsg("");
+    try {
+      const res = await fetch("/api/admin/clean-logs", { method: "POST" });
+      const json = await res.json();
+      if (json.status === "success") {
+        setCleanMsg(json.msg);
+        fetchLogs();
+      } else {
+        alert(json.msg || "Cleanup failed");
+      }
+    } catch {
+      alert("Cleanup failed");
+    } finally {
+      setCleaning(false);
+    }
+  };
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -155,6 +187,21 @@ export default function ActivityLogPage() {
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           Refresh
         </button>
+        <button 
+          onClick={cleanOldLogs} disabled={cleaning}
+          className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/25 hover:bg-red-500/20 rounded-xl text-xs font-bold text-red-400 transition-all shadow-sm disabled:opacity-50"
+        >
+          <Eraser size={14} className={cleaning ? "animate-spin" : ""} />
+          {cleaning ? "Cleaning..." : "Clean Old Logs"}
+        </button>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 p-4 bg-blue-500/5 border border-blue-500/15 rounded-2xl">
+        <p className="text-xs text-slate-400">
+          <Info size={13} className="inline mr-1 text-blue-400" />
+          Retention: <strong className="text-blue-400">{retention} days</strong>. Cleaning logs will remove entries older than this from the database.
+        </p>
+        {cleanMsg && <span className="text-xs font-bold text-emerald-400 whitespace-nowrap">{cleanMsg}</span>}
       </div>
 
       {/* Filters */}

@@ -54,16 +54,24 @@ The legacy PHP RSMS has features the Next.js port is missing. This plan tracks t
 
 ### 7. Website Cover upload
 - PHP: `system_info.cover`; display on public site
+- [x] Settings: cover upload as dataURL → `system_info.cover` (remove + save buttons)
+- [x] Public site hero: `PublicWebsite()` fetches `system_info.cover` and renders as hero background (gradient fallback when empty or `uploads/...` legacy value)
 
 ### 8. Bulk edit transactions
 - PHP: `admin/transactions/bulk_edit_transactions.php`; Next.js has only bulk *create* (`/jobs/bulk`)
+- [x] New page `/jobs/bulk-edit`: source client dropdown → load transactions (del_status=0) → per-row edit (target client, item, fault, mechanic, uniq_id, remark) + "Apply New Client to All" → Save All
+- [x] Linked from `/jobs` header + FAB menu
 
 ### 9. Loan & EMI Report logic parity
 - Verify `/reports/loan` against PHP `admin/reports/loan_report.php`
+- [x] `/reports/loan`: loans filtered by `loan_date <= month-end`, payments `<= payment_date month-end`
+- [x] `received` = cumulative `amount + discount`; `pending = max(0, emi_amount - received)`; installments left = ceil of outstanding/EMI
+- [x] `/api/print-loan`: same month-end filters + received logic
 
 ### 10. Misc
-- `log_retention` activity-log setting
-- `client_list.barcode` on products (PHP has it)
+- [x] `log_retention` activity-log setting — Settings fieldset + `/api/admin/clean-logs` (admin-only) + Clean Old Logs button on `/reports/activity`
+- [x] `product_list.barcode` on products — migration `20260806_phase3_barcode.sql` (apply via SQL Editor), field in product form + table column. Note: PHP schema has the column but exposes no admin form field; added as new functionality.
+- [x] Outstanding anon-key routes fixed → service-role key: `print-advance`, `print-monthly-sales`, `export-transactions` (all verified 200 over HTTP; balancesheet/ledger were already session-based and verified working)
 
 ## Verification
 - `npm run build` after each phase

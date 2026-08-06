@@ -6,6 +6,7 @@ import {
   Settings2, Save, Loader2, CheckCircle, AlertCircle,
   Building2, Phone, Mail, MapPin, Tag, ShieldCheck,
   Clock, Pen, Trash2, Upload, Eye, EyeOff, User, Image as ImageIcon,
+  History,
 } from "lucide-react";
 
 const inputCls  = "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
@@ -31,6 +32,7 @@ export default function SettingsPage() {
   const [gstin,      setGstin]      = useState("");
   const [upiId,      setUpiId]      = useState("");
   const [bizHours,   setBizHours]   = useState({ open: "09:00", close: "19:00", days: "Mon-Sat" });
+  const [logRetention, setLogRetention] = useState("90");
 
   // Signature
   const [signature, setSignature] = useState("");
@@ -48,6 +50,13 @@ export default function SettingsPage() {
   const [logoFileName, setLogoFileName] = useState("");
   const [logoSaving, setLogoSaving] = useState(false);
   const logoRef = useRef<HTMLInputElement>(null);
+
+  // Website Cover
+  const [cover, setCover] = useState("");
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverFileName, setCoverFileName] = useState("");
+  const [coverSaving, setCoverSaving] = useState(false);
+  const coverRef = useRef<HTMLInputElement>(null);
 
   // AI
   const [aiProvider, setAiProvider] = useState("gemini");
@@ -101,12 +110,17 @@ export default function SettingsPage() {
         close: info.biz_close || "19:00",
         days: info.biz_days || "Mon-Sat",
       });
+      setLogRetention(info.log_retention || "90");
 
       // Signature
       setSignature(info.signature || "");
 
       // Logo
       setLogo(info.logo || "");
+
+      // Website Cover
+      const c = info.cover || "";
+      setCover(c.startsWith("uploads/") ? "" : c);
 
       // AI Settings
       setAiProvider(info.ai_provider || "gemini");
@@ -156,6 +170,7 @@ export default function SettingsPage() {
         upsertField("biz_open",   bizHours.open),
         upsertField("biz_close",  bizHours.close),
         upsertField("biz_days",   bizHours.days),
+        upsertField("log_retention", logRetention.trim() || "90"),
       ]);
       setToast({ type: "success", msg: "Settings save ho gayi! ✅" });
     } catch (err: unknown) {
@@ -339,6 +354,56 @@ export default function SettingsPage() {
     }
   };
 
+  // ── Website Cover upload ─────────────────────────────────────
+  const handleCoverFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) { setCoverFile(f); setCoverFileName(f.name); }
+  };
+
+  const saveCover = async () => {
+    if (!coverFile) return;
+    setCoverSaving(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          await upsertField("cover", reader.result as string);
+          setCover(reader.result as string);
+          setCoverFile(null);
+          setCoverFileName("");
+          setToast({ type: "success", msg: "Cover save ho gaya ✅" });
+        } catch (err: unknown) {
+          setToast({ type: "error", msg: err instanceof Error ? err.message : "Save failed" });
+        } finally {
+          setCoverSaving(false);
+        }
+      };
+      reader.onerror = () => {
+        setToast({ type: "error", msg: "Cover file read nahi hui" });
+        setCoverSaving(false);
+      };
+      reader.readAsDataURL(coverFile);
+    } catch (err: unknown) {
+      setToast({ type: "error", msg: err instanceof Error ? err.message : "Save failed" });
+      setCoverSaving(false);
+    }
+  };
+
+  const removeCover = async () => {
+    setCoverSaving(true);
+    try {
+      await upsertField("cover", "");
+      setCover("");
+      setCoverFile(null);
+      setCoverFileName("");
+      setToast({ type: "success", msg: "Cover remove ho gaya" });
+    } catch (err: unknown) {
+      setToast({ type: "error", msg: err instanceof Error ? err.message : "Failed" });
+    } finally {
+      setCoverSaving(false);
+    }
+  };
+
   // ── Test AI API ──────────────────────────────────────
   const testAiApi = async () => {
     if (!aiApiKey.trim()) { setToast({ type: "error", msg: "Pehle API key daalein" }); return; }
@@ -485,6 +550,46 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
+              <div>
+                <label className={labelCls}>Website Cover</label>
+                <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    {cover ? (
+                      <img src={cover} alt="Cover" className="max-h-28 max-w-[260px] object-cover rounded-lg border border-[#21293d]" />
+                    ) : (
+                      <div className="w-36 h-24 rounded-lg bg-white/5 border border-dashed border-[#2a3450] flex items-center justify-center">
+                        <ImageIcon size={20} className="text-slate-600" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-[180px]">
+                      <p className="text-xs font-bold text-slate-400 mb-2">
+                        Public website ke home page par yeh cover dikhega.
+                      </p>
+                      <input ref={coverRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                        onChange={handleCoverFileChange} className="hidden"/>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button type="button" onClick={() => coverRef.current?.click()}
+                          className="text-xs bg-blue-600/20 text-blue-400 border border-blue-600/30 px-3 py-1.5 rounded-lg hover:bg-blue-600/30 transition-all">
+                          <span className="inline-flex items-center gap-1.5"><Upload size={12}/> Choose Cover</span>
+                        </button>
+                        {coverFile && (
+                          <button type="button" onClick={saveCover} disabled={coverSaving}
+                            className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-50">
+                            {coverSaving ? "Saving..." : "Save Cover"}
+                          </button>
+                        )}
+                        {cover && (
+                          <button type="button" onClick={removeCover} disabled={coverSaving}
+                            className="text-xs text-red-400 hover:text-red-300 px-3 py-1.5 rounded-lg border border-red-500/30 hover:bg-red-500/10 transition-all">
+                            <span className="inline-flex items-center gap-1.5"><Trash2 size={12}/> Remove</span>
+                          </button>
+                        )}
+                      </div>
+                      {coverFileName && <p className="text-[10px] text-slate-600 mt-1.5">{coverFileName}</p>}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -580,6 +685,22 @@ export default function SettingsPage() {
                 <label className={labelCls}>Close Time</label>
                 <input type="time" value={bizHours.close} onChange={e => setBizHours(b => ({ ...b, close: e.target.value }))} className={inputCls}/>
               </div>
+            </div>
+          </div>
+
+          {/* Activity Log Retention */}
+          <div className={fieldsets}>
+            <div className={`${fHdr} from-slate-600/20 to-transparent`}>
+              <History size={14} className="text-slate-400"/>
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Activity Log Retention</h3>
+            </div>
+            <div className="p-5">
+              <label className={labelCls}>Retention (Days)</label>
+              <input type="number" min="1" value={logRetention} onChange={e => setLogRetention(e.target.value)}
+                className={inputCls}/>
+              <p className="text-[10px] text-slate-700 mt-1">
+                Clean old logs action sirf isse zyada din purane logs delete karega. Default: 90 days.
+              </p>
             </div>
           </div>
 

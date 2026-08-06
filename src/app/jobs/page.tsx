@@ -30,7 +30,7 @@ import {
   Filter, Printer, FileSpreadsheet, History, Layers,
   ChevronLeft, ChevronRight, AlertCircle, ChevronDown, X,
   TrendingUp, Clock, CheckCircle2, IndianRupee, MessageSquare,
-  Square, CheckSquare, Zap, GitBranch, ArrowRight, User,
+  Square, CheckSquare, Zap, GitBranch, ArrowRight, User, PenSquare,
 } from "lucide-react";
 import { substituteTemplate, firmVars } from "@/lib/whatsapp";
 import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
@@ -670,6 +670,7 @@ function JobsListContent() {
               <Link href="/jobs/new"  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all"><Plus size={14} /> New</Link>
               <Link href="/jobs/old"  className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all"><History size={14} /> Old</Link>
               <Link href="/jobs/bulk" className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all"><Layers size={14} /> Bulk</Link>
+              <Link href="/jobs/bulk-edit" className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all"><PenSquare size={14} /> Bulk Edit</Link>
             </div>
           </div>
 
@@ -1206,6 +1207,7 @@ function JobsListContent() {
               { href: "/jobs/new",  icon: Plus,          label: "Create New",   cls: "text-blue-300"    },
               { href: "/jobs/old",  icon: History,       label: "Old Jobs",    cls: "text-amber-400"   },
               { href: "/jobs/bulk", icon: Layers,        label: "Bulk Entry",  cls: "text-emerald-400" },
+              { href: "/jobs/bulk-edit", icon: PenSquare, label: "Bulk Edit",   cls: "text-purple-400"  },
             ].map(({ href, action, icon: Icon, label, cls }) =>
               href ? (
                 <Link key={label} href={href} onClick={() => setFabOpen(false)}

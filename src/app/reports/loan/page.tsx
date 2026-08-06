@@ -32,43 +32,44 @@ function LoanReportContent() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      const y = parseInt(month.slice(0, 4));
+      const m = parseInt(month.slice(5, 7));
+      const lastDay = new Date(y, m, 0).getDate();
+      const monthEnd = `${month}-${String(lastDay).padStart(2, "0")}`;
+
       const { data: loans } = await supabase
-        .from("client_loans").select("id, client_id, principal_amount, interest_rate, total_payable, emi_amount, status")
-        .gte("id", 0);
+        .from("client_loans").select("id, client_id, loan_date, principal_amount, interest_rate, total_payable, emi_amount, status")
+        .lte("loan_date", monthEnd);
 
       const { data: clients } = await supabase
         .from("client_list").select("id, firstname, middlename, lastname").eq("delete_flag", 0);
 
       const { data: payments } = await supabase
-        .from("client_payments").select("loan_id, amount, discount, payment_date");
+        .from("client_payments").select("loan_id, amount, discount, payment_date")
+        .not("loan_id", "is", null)
+        .lte("payment_date", monthEnd);
 
-      const monthPrefix = `${month}-`;
       const loanRows: LoanRow[] = [];
       for (const l of loans || []) {
         const client = (clients || []).find((c) => c.id === l.client_id);
         const name = client ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ") : "Unknown";
         const loanPmts = payments?.filter((p) => p.loan_id === l.id) || [];
         const received = loanPmts.reduce((s, p) => s + (p.amount || 0) + (p.discount || 0), 0);
-        const pending = (l.total_payable || 0) - received;
-
-        // Only show loans that have payments in this month
-        const monthReceived = loanPmts.filter((p) => p.payment_date?.startsWith(monthPrefix)).reduce((s, p) => s + (p.amount || 0) + (p.discount || 0), 0);
         const interestVal = (l.total_payable || 0) - (l.principal_amount || 0);
+        const targetEmi = l.emi_amount || 0;
+        const pending = Math.max(0, targetEmi - received);
 
-        if (received > 0 || l.status === 1) {
-          const remainingInstallments = (l.emi_amount && l.emi_amount > 0) ? Math.ceil((pending > 0 ? pending : 0) / l.emi_amount) : 0;
-          loanRows.push({
-            id: l.id, client_name: name,
-            principal_amount: l.principal_amount || 0,
-            interest_rate: l.interest_rate || 0,
-            total_payable: l.total_payable || 0,
-            emi_amount: l.emi_amount || 0,
-            received: monthReceived,
-            pending: pending > 0 ? pending : 0,
-            remaining_installments: remainingInstallments,
-            status: l.status || 0,
-          });
-        }
+        loanRows.push({
+          id: l.id, client_name: name,
+          principal_amount: l.principal_amount || 0,
+          interest_rate: l.interest_rate || 0,
+          total_payable: l.total_payable || 0,
+          emi_amount: targetEmi,
+          received,
+          pending,
+          remaining_installments: (targetEmi > 0) ? Math.ceil(((l.total_payable || 0) - received > 0 ? (l.total_payable || 0) - received : 0) / targetEmi) : 0,
+          status: l.status || 0,
+        });
       }
       setRows(loanRows);
     } catch (e) { console.error(e); }
