@@ -305,7 +305,7 @@ export default function CashFlowPage() {
                       <YAxis axisLine={false} tickLine={false} tick={{ fill: chartAxis, fontSize: 10, fontWeight: 700 }} tickFormatter={v => `₹${v / 1000}k`} />
                       <RechartsTooltip
                         contentStyle={{ backgroundColor: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: '14px', color: tooltipColor, boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}
-                        labelFormatter={l => formatIST(l, { dateStyle: 'medium' })}
+                        labelFormatter={l => formatIST(String(l), { dateStyle: 'medium' })}
                         formatter={(v: any) => [rupee(Number(v)), '']}
                       />
                       <Area type="monotone" dataKey="inflow" stroke="#10b981" fillOpacity={1} fill="url(#colorInflow)" strokeWidth={3} dot={{ r: 3, fill: '#10b981', strokeWidth: 0 }} activeDot={{ r: 5 }} />

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import { todayIST, formatIST, parseISTDate, toISTString, toLocalStr } from "@/lib/dateUtils";
+import { logActivity } from "@/lib/activity";
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -26,9 +27,21 @@ type Client = {
   email?: string;
   address?: string;
   opening_balance: number;
+  payment_due_date?: string | null;
+  payment_due_remarks?: string | null;
   // image_path removed — BUG FIX 13 & 14
   date_created: string;
   fullName: string;
+};
+
+type PaymentReminder = {
+  id: number;
+  client_id: number;
+  amount_due: number;
+  channel: string;
+  status: string;
+  remarks: string;
+  reminder_date: string;
 };
 
 type Job = {
@@ -180,6 +193,10 @@ export default function ViewClientProfile() {
   const clientId = parseInt(params.id as string);
 
   const [client,         setClient]         = useState<Client | null>(null);
+  const [reminders,      setReminders]      = useState<PaymentReminder[]>([]);
+  const [dueModal,       setDueModal]       = useState(false);
+  const [dueForm,        setDueForm]       = useState({ due_date: '', due_remarks: '' });
+  const [savingDue,      setSavingDue]      = useState(false);
   const [jobs,           setJobs]           = useState<Job[]>([]);
   const [directSales,    setDirectSales]    = useState<DirectSale[]>([]);
   const [payments,       setPayments]       = useState<Payment[]>([]);
@@ -216,13 +233,21 @@ export default function ViewClientProfile() {
       // 1. Client — BUG FIX 14: removed image_path from select
       const { data: cd, error: ce } = await supabase
         .from('client_list')
-        .select('id, firstname, middlename, lastname, contact, email, address, opening_balance, date_created')
+        .select('id, firstname, middlename, lastname, contact, email, address, opening_balance, payment_due_date, payment_due_remarks, date_created')
         .eq('id', clientId)
         .eq('delete_flag', 0)
         .single();
       if (ce || !cd) throw ce || new Error('Client not found');
       const fullName = [cd.firstname, cd.middlename, cd.lastname].filter(Boolean).join(' ').trim();
       setClient({ ...cd, fullName });
+
+      // 1b. Payment reminders (WhatsApp log)
+      const { data: remd } = await supabase
+        .from('payment_reminders')
+        .select('id, client_id, amount_due, channel, status, remarks, reminder_date')
+        .eq('client_id', clientId)
+        .order('reminder_date', { ascending: false });
+      setReminders(remd || []);
 
       // 2. Jobs
       const { data: jd } = await supabase
@@ -373,6 +398,40 @@ export default function ViewClientProfile() {
     setEditingPayment(null);
   };
 
+  // ── PROMISED DUE DATE ──────────────────────────────────────
+  const openDueModal = () => {
+    setDueForm({
+      due_date:   client?.payment_due_date ? toLocalStr(new Date(client.payment_due_date)) : todayIST().slice(0, 10),
+      due_remarks: client?.payment_due_remarks || '',
+    });
+    setDueModal(true);
+  };
+
+  const handleSaveDueDate = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!client) return;
+    setSavingDue(true);
+    try {
+      const updates: Record<string, string | null> = {
+        payment_due_date:   dueForm.due_date ? `${dueForm.due_date}T00:00:00+05:30` : null,
+        payment_due_remarks: dueForm.due_remarks.trim() || null,
+        date_updated: new Date().toISOString(),
+      };
+      const { error } = await supabase
+        .from('client_list')
+        .update(updates)
+        .eq('id', client.id);
+      if (error) throw error;
+      setClient({ ...client, payment_due_date: dueForm.due_date, payment_due_remarks: dueForm.due_remarks.trim() || null });
+      setDueModal(false);
+      await logActivity('Set Promised Due Date', 'Clients', client.id, `Client: ${client.fullName}`);
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    } finally {
+      setSavingDue(false);
+    }
+  };
+
   // ── LOADING / ERROR ────────────────────────────────────────
   if (loading) {
     return (
@@ -435,6 +494,16 @@ export default function ViewClientProfile() {
                   className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-300 hover:bg-blue-500/25 transition-colors no-underline">
                   <Phone size={11} /> Call
                 </a>
+                {client.payment_due_date && (
+                  <span className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${
+                    (new Date(client.payment_due_date).getTime() < Date.now())
+                      ? 'bg-red-500/15 border-red-500/25 text-red-300'
+                      : 'bg-amber-500/15 border-amber-500/25 text-amber-300'
+                  }`}>
+                    <Calendar size={11} /> Due: {fmtDate(client.payment_due_date)}
+                    {client.payment_due_remarks && <span className="opacity-80 truncate max-w-[140px]" title={client.payment_due_remarks}>· “{client.payment_due_remarks}”</span>}
+                  </span>
+                )}
                 <a href={`https://wa.me/91${client.contact}`} target="_blank" rel="noreferrer"
                   className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-green-500/15 border border-green-500/25 text-green-300 hover:bg-green-500/25 transition-colors no-underline">
                   <MessageCircle size={11} /> WhatsApp
@@ -455,6 +524,10 @@ export default function ViewClientProfile() {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2">
+            <button onClick={openDueModal}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-red-600 hover:bg-red-700 text-white transition-all">
+              <Calendar size={15} /> Set Due Date
+            </button>
             <Link href={`/clients/${client.id}/edit`}
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-all no-underline">
               <Edit3 size={15} /> Edit
@@ -597,6 +670,50 @@ export default function ViewClientProfile() {
                           </Link>
                         )}
                       </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── PAYMENT REMINDERS LOG ── */}
+        {reminders.length > 0 && (
+          <div className="rounded-2xl border overflow-hidden theme-card">
+            <div className="px-5 py-4 border-b flex items-center justify-between theme-panel-2">
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <MessageSquare size={16} className="text-green-400" /> Payment Reminders Sent
+              </h2>
+              <span className="text-[11px] font-semibold text-green-400 bg-green-400/10 border border-green-400/20 px-2.5 py-0.5 rounded-full">
+                {reminders.length} total
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="theme-panel-2">
+                  <tr>
+                    {['Date & Time','Amount Due','Channel','Status','Remarks'].map(h => (
+                      <th key={h} className={thCls}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {reminders.map(r => (
+                    <tr key={r.id} className={trCls}>
+                      <td className={`${tdCls} text-xs whitespace-nowrap`}>{fmtDate(r.reminder_date)}</td>
+                      <td className={`${tdCls} text-right font-black text-red-400`}>₹{fmt(r.amount_due)}</td>
+                      <td className={tdCls}>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/25">
+                          <MessageCircle size={10} className="inline mr-1" />{r.channel || 'WhatsApp'}
+                        </span>
+                      </td>
+                      <td className={tdCls}>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/25">
+                          {r.status || 'Sent'}
+                        </span>
+                      </td>
+                      <td className={`${tdCls} text-xs text-slate-400`}>{r.remarks || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -986,6 +1103,58 @@ export default function ViewClientProfile() {
 
       </div>
 
+
+      {/* ── SET PROMISED DUE DATE MODAL ── */}
+      {dueModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border p-6 shadow-2xl theme-card">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Calendar size={16} className="text-red-400" /> Set Promised Due Date
+              </h3>
+              <button onClick={() => setDueModal(false)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleSaveDueDate} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Promised Due Date</label>
+                <input
+                  type="date"
+                  value={dueForm.due_date}
+                  onChange={e => setDueForm({ ...dueForm, due_date: e.target.value })}
+                  className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors [color-scheme:dark]"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Remarks / Promise Details</label>
+                <textarea
+                  rows={3} placeholder="e.g. promised to pay full amount via PhonePe"
+                  value={dueForm.due_remarks}
+                  onChange={e => setDueForm({ ...dueForm, due_remarks: e.target.value })}
+                  className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors resize-none"
+                />
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button type="submit" disabled={savingDue}
+                  className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-all disabled:opacity-50">
+                  {savingDue ? <Loader2 className="inline animate-spin" size={14} /> : null} Save Due Date
+                </button>
+                <button type="button"
+                  onClick={async () => {
+                    if (!confirm('Kya aap is client ki due date clear karna chahte hain?')) return;
+                    setDueForm({ due_date: '', due_remarks: '' });
+                    await handleSaveDueDate();
+                  }}
+                  className="flex-1 py-2.5 rounded-xl font-bold text-sm border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all">
+                  Clear Due Date
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── EDIT PAYMENT MODAL ── */}
       {editingPayment && (

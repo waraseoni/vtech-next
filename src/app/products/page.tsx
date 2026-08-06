@@ -11,6 +11,8 @@ type Product = {
   description: string;
   cost_price: number;
   price: number;
+  hsn: string;
+  alert_quantity: number;
   status: number;
   delete_flag: number;
 };
@@ -27,7 +29,7 @@ export default function ProductsPage() {
   const [err, setErr] = useState("");
   const [userRole, setUserRole] = useState("staff");
 
-  const [form, setForm] = useState({ name: "", description: "", cost_price: "", price: "" });
+  const [form, setForm] = useState({ name: "", description: "", cost_price: "", price: "", hsn: "", alert_quantity: "" });
   const [formErr, setFormErr] = useState("");
 
   useEffect(() => {
@@ -42,7 +44,7 @@ export default function ProductsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("product_list")
-      .select("id, name, description, cost_price, price, status, delete_flag")
+      .select("id, name, description, cost_price, price, hsn, alert_quantity, status, delete_flag")
       .eq("delete_flag", 0)
       .order("name");
     if (error) setErr(error.message);
@@ -57,8 +59,8 @@ export default function ProductsPage() {
     p.description?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const openAdd = () => { setEditing(null); setForm({ name: "", description: "", cost_price: "", price: "" }); setFormErr(""); setShowModal(true); };
-  const openEdit = (p: Product) => { setEditing(p); setForm({ name: p.name, description: p.description || "", cost_price: String(p.cost_price || ""), price: String(p.price || "") }); setFormErr(""); setShowModal(true); };
+  const openAdd = () => { setEditing(null); setForm({ name: "", description: "", cost_price: "", price: "", hsn: "", alert_quantity: "" }); setFormErr(""); setShowModal(true); };
+  const openEdit = (p: Product) => { setEditing(p); setForm({ name: p.name, description: p.description || "", cost_price: String(p.cost_price || ""), price: String(p.price || ""), hsn: p.hsn || "", alert_quantity: String(p.alert_quantity || "") }); setFormErr(""); setShowModal(true); };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +73,8 @@ export default function ProductsPage() {
         description: form.description.trim(),
         cost_price: parseFloat(form.cost_price) || 0,
         price: parseFloat(form.price),
+        hsn: form.hsn.trim().toUpperCase(),
+        alert_quantity: parseInt(form.alert_quantity) || 0,
         status: 1,
       };
       if (editing) {
@@ -145,6 +149,7 @@ export default function ProductsPage() {
                 <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
                   <th className="text-left px-4 py-3">Product Name</th>
                   <th className="text-left px-4 py-3">Description</th>
+                  <th className="text-center px-4 py-3">HSN</th>
                   <th className="text-right px-4 py-3">Cost Price</th>
                   <th className="text-right px-4 py-3">Selling Price</th>
                   <th className="text-right px-4 py-3">Margin</th>
@@ -165,6 +170,9 @@ export default function ProductsPage() {
                       </td>
                       <td className="px-4 py-3.5 text-slate-500 text-xs max-w-[180px] truncate" title={p.description || ""}>
                         {p.description || "—"}
+                      </td>
+                      <td className="px-4 py-3.5 text-center">
+                        {p.hsn ? <span className="inline-block px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded text-[10px] font-bold">{p.hsn}</span> : <span className="text-slate-700 text-xs">—</span>}
                       </td>
                       <td className="px-4 py-3.5 text-right text-slate-400">
                         {inr(p.cost_price)}
@@ -210,7 +218,7 @@ export default function ProductsPage() {
               </tbody>
               <tfoot>
                 <tr className="bg-[#111520] border-t border-[#21293d]">
-                  <td colSpan={3} className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-wider text-slate-600">Total Value:</td>
+                  <td colSpan={4} className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-wider text-slate-600">Total Value:</td>
                   <td className="px-4 py-3 text-right font-black text-emerald-400">{inr(totalValue)}</td>
                   <td colSpan={3} />
                 </tr>
@@ -262,6 +270,21 @@ export default function ProductsPage() {
                   <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Selling Price (₹) <span className="text-red-400">*</span></label>
                   <input type="number" step="0.01" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))}
                     placeholder="0.00"
+                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">HSN Code</label>
+                  <input value={form.hsn} onChange={e => setForm(p => ({ ...p, hsn: e.target.value }))}
+                    placeholder="e.g. 8504"
+                    maxLength={20}
+                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Alert Quantity</label>
+                  <input type="number" min="0" value={form.alert_quantity} onChange={e => setForm(p => ({ ...p, alert_quantity: e.target.value }))}
+                    placeholder="0"
                     className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500" />
                 </div>
               </div>

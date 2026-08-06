@@ -119,24 +119,33 @@ export async function GET(req: NextRequest) {
   // ── Fetch products ─────────────────────────────────────────────────────────
   const { data: products } = await supabase
     .from("transaction_products")
-    .select("product_name, qty, price")
+    .select("product_id, product_name, qty, price")
     .eq("transaction_id", txn.id);
 
   // ── Fetch services ─────────────────────────────────────────────────────────
   const { data: services } = await supabase
     .from("transaction_services")
-    .select("service_name, price")
+    .select("service_id, service_name, price")
     .eq("transaction_id", txn.id);
 
+  // ── Fetch HSN/SAC for line items ───────────────────────────────────────────
+  const prodIds = [...new Set((products || []).map(p => p.product_id).filter(Boolean))];
+  const svcIds  = [...new Set((services || []).map(s => s.service_id).filter(Boolean))];
+  const [{ data: prodRows }, { data: svcRows }] = await Promise.all([
+    prodIds.length ? supabase.from("product_list").select("id, hsn").in("id", prodIds) : Promise.resolve({ data: [] }),
+    svcIds.length  ? supabase.from("service_list").select("id, hsn").in("id", svcIds)  : Promise.resolve({ data: [] }),
+  ]);
+  const hsnMap = { ...Object.fromEntries((prodRows || []).map(p => [p.id, p.hsn])), ...Object.fromEntries((svcRows || []).map(s => [s.id, s.hsn])) };
+
   // ── Build line items ───────────────────────────────────────────────────────
-  interface LineItem { desc: string; qty: number; rate: number; total: number; }
+  interface LineItem { desc: string; qty: number; rate: number; total: number; hsn: string; }
   const items: LineItem[] = [];
 
   (products || []).forEach(p => {
-    items.push({ desc: `${p.product_name || "Part"} (Part)`, qty: p.qty ?? 1, rate: p.price ?? 0, total: (p.qty ?? 1) * (p.price ?? 0) });
+    items.push({ desc: `${p.product_name || "Part"} (Part)`, qty: p.qty ?? 1, rate: p.price ?? 0, total: (p.qty ?? 1) * (p.price ?? 0), hsn: hsnMap[p.product_id] || "" });
   });
   (services || []).forEach(s => {
-    items.push({ desc: `${s.service_name || "Repair Service"} (Service)`, qty: 1, rate: s.price ?? 0, total: s.price ?? 0 });
+    items.push({ desc: `${s.service_name || "Repair Service"} (Service)`, qty: 1, rate: s.price ?? 0, total: s.price ?? 0, hsn: hsnMap[s.service_id] || "" });
   });
 
   // ── Billing calculations ───────────────────────────────────────────────────
@@ -161,18 +170,19 @@ export async function GET(req: NextRequest) {
       <tr>
         <td class="tc">${i + 1}</td>
         <td>${r.desc}</td>
+        <td class="tc">${r.hsn || "—"}</td>
         <td class="tc">${r.qty}</td>
         <td class="tr">${inr(r.rate)}</td>
         <td class="tr">${inr(r.total)}</td>
       </tr>`).join("")
-    : `<tr><td colspan="5" class="tc" style="color:#999;font-style:italic;">
+    : `<tr><td colspan="6" class="tc" style="color:#999;font-style:italic;">
         Repair service — no individual items listed
        </td></tr>`;
 
   // ── Remarks row ────────────────────────────────────────────────────────────
   const remarkRow = txn.remark?.trim() ? `
     <tr style="background:#fffbeb">
-      <td colspan="5" style="padding:8px 10px;font-size:12px;color:#666;border:1px solid #dee2e6;">
+      <td colspan="6" style="padding:8px 10px;font-size:12px;color:#666;border:1px solid #dee2e6;">
         <strong>Remarks:</strong> ${txn.remark}
       </td>
     </tr>` : "";
@@ -180,15 +190,15 @@ export async function GET(req: NextRequest) {
   // ── GST rows ───────────────────────────────────────────────────────────────
   const gstRows = isGST ? `
     <tr class="gst-row">
-      <td class="al" colspan="4">CGST @ ${CGST_RATE}%:</td>
+      <td class="al" colspan="5">CGST @ ${CGST_RATE}%:</td>
       <td class="ar">${inr(cgstAmt)}</td>
     </tr>
     <tr class="gst-row">
-      <td class="al" colspan="4">SGST @ ${SGST_RATE}%:</td>
+      <td class="al" colspan="5">SGST @ ${SGST_RATE}%:</td>
       <td class="ar">${inr(sgstAmt)}</td>
     </tr>
     <tr class="gst-row" style="font-weight:bold">
-      <td class="al" colspan="4">Total GST (${CGST_RATE + SGST_RATE}%):</td>
+      <td class="al" colspan="5">Total GST (${CGST_RATE + SGST_RATE}%):</td>
       <td class="ar">${inr(cgstAmt + sgstAmt)}</td>
     </tr>` : "";
 
@@ -367,6 +377,7 @@ export async function GET(req: NextRequest) {
       <tr>
         <th width="5%" class="tc">#</th>
         <th>Description</th>
+        <th width="12%" class="tc">HSN/SAC</th>
         <th width="8%" class="tc">Qty</th>
         <th width="16%" class="tr">Rate (₹)</th>
         <th width="16%" class="tr">Amount (₹)</th>

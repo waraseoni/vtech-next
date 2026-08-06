@@ -4,6 +4,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { numberToWords } from "@/lib/utils";
+import { substituteTemplate, firmVars } from "@/lib/whatsapp";
+import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
 import {
   ArrowLeft, Edit3, Printer, Phone, User, Loader2,
   ShoppingBag, MapPin, Calendar, Clock, Hash, UserCog,
@@ -76,20 +78,16 @@ export default function ViewSalePage() {
 
   const [sale,        setSale]        = useState<Sale | null>(null);
   const [loading,     setLoading]     = useState(true);
-  const [companyInfo, setCompanyInfo] = useState({ name: "V-Technologies", address: "", contact: "" });
+  const [sysInfo,     setSysInfo]     = useState<Record<string, string>>({});
 
   useEffect(() => { fetchSale(); fetchCompanyInfo(); }, [saleId]);
 
   const fetchCompanyInfo = async () => {
     const { data } = await supabase.from("system_info").select("meta_field, meta_value");
     if (data) {
-      const info: any = { name: "V-Technologies", address: "", contact: "" };
-      data.forEach(r => {
-        if (r.meta_field === "name")    info.name    = r.meta_value;
-        if (r.meta_field === "address") info.address = r.meta_value;
-        if (r.meta_field === "contact") info.contact = r.meta_value;
-      });
-      setCompanyInfo(info);
+      const info: Record<string, string> = {};
+      data.forEach(r => { info[r.meta_field] = r.meta_value; });
+      setSysInfo(info);
     }
   };
 
@@ -251,16 +249,16 @@ export default function ViewSalePage() {
           </div>
           <div className="relative flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-black text-white tracking-tight">{companyInfo.name}</h2>
+              <h2 className="text-xl font-black text-white tracking-tight">{sysInfo.name || "V-Technologies"}</h2>
               <div className="flex flex-wrap items-center gap-3 mt-1">
-                {companyInfo.address && (
+                {sysInfo.address && (
                   <span className="flex items-center gap-1 text-[11px] text-slate-500">
-                    <MapPin size={9} /> {companyInfo.address}
+                    <MapPin size={9} /> {sysInfo.address}
                   </span>
                 )}
-                {companyInfo.contact && (
+                {sysInfo.contact && (
                   <span className="flex items-center gap-1 text-[11px] text-slate-500">
-                    <Phone size={9} /> {companyInfo.contact}
+                    <Phone size={9} /> {sysInfo.contact}
                   </span>
                 )}
               </div>
@@ -294,7 +292,19 @@ export default function ViewSalePage() {
                   value={
                     <div className="flex items-center gap-2">
                       <span>{sale.client_contact}</span>
-                      <a href={`https://wa.me/91${sale.client_contact.replace(/\D/g, "")}`} target="_blank"
+                      <a
+                        href={`https://wa.me/91${sale.client_contact.replace(/\D/g, "")}?text=${encodeURIComponent(
+                          substituteTemplate(
+                            sysInfo.whatsapp_sale || DEFAULT_TEMPLATES.whatsapp_sale,
+                            {
+                              client_name: sale.client_name || "Customer",
+                              sale_code: sale.sale_code,
+                              total_amount: "₹" + (sale.total_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }),
+                              ...firmVars(sysInfo),
+                            }
+                          )
+                        )}`}
+                        target="_blank"
                         className="flex items-center gap-0.5 text-emerald-400 hover:text-emerald-300 transition-colors text-[10px] font-bold">
                         <Send size={9} /> WA
                       </a>
@@ -442,7 +452,7 @@ export default function ViewSalePage() {
         <div className="flex items-center justify-center gap-2 py-4 border-t border-[#21293d]">
           <CheckCircle2 size={12} className="text-slate-700" />
           <p className="text-[11px] text-slate-700 font-medium">
-            Goods sold are not returnable. Thank you for your business! — {companyInfo.name}
+            Goods sold are not returnable. Thank you for your business! — {sysInfo.name || "V-Technologies"}
           </p>
         </div>
 

@@ -126,17 +126,26 @@ export async function GET(req: NextRequest) {
   const [{ data: allProducts }, { data: allServices }] = await Promise.all([
     supabase
       .from("transaction_products")
-      .select("transaction_id, product_name, qty, price")
+      .select("transaction_id, product_id, product_name, qty, price")
       .in("transaction_id", jobIds),
     supabase
       .from("transaction_services")
-      .select("transaction_id, service_name, price")
+      .select("transaction_id, service_id, service_name, price")
       .in("transaction_id", jobIds),
   ]);
 
+  // ── Fetch HSN/SAC codes ────────────────────────────────────────────────────
+  const prodIds = [...new Set((allProducts || []).map(p => p.product_id).filter(Boolean))];
+  const svcIds  = [...new Set((allServices || []).map(s => s.service_id).filter(Boolean))];
+  const [{ data: prodRows }, { data: svcRows }] = await Promise.all([
+    prodIds.length ? supabase.from("product_list").select("id, hsn").in("id", prodIds) : Promise.resolve({ data: [] }),
+    svcIds.length  ? supabase.from("service_list").select("id, hsn").in("id", svcIds)  : Promise.resolve({ data: [] }),
+  ]);
+  const hsnMap = { ...Object.fromEntries((prodRows || []).map(p => [p.id, p.hsn])), ...Object.fromEntries((svcRows || []).map(s => [s.id, s.hsn])) };
+
   // Map products/services by transaction_id
-  const prodMap = new Map<number, { product_name: string; qty: number; price: number }[]>();
-  const svcMap  = new Map<number, { service_name: string; price: number }[]>();
+  const prodMap = new Map<number, { product_id: number; product_name: string; qty: number; price: number }[]>();
+  const svcMap  = new Map<number, { service_id: number; service_name: string; price: number }[]>();
   (allProducts || []).forEach(p => {
     const tid = p.transaction_id;
     if (!prodMap.has(tid)) prodMap.set(tid, []);
@@ -168,14 +177,14 @@ export async function GET(req: NextRequest) {
     date_created: string;
     amount: number;
     subtotal: number;
-    lineItems: { desc: string; qty: number; rate: number; total: number }[];
+    lineItems: { desc: string; hsn: string; qty: number; rate: number; total: number }[];
   }
   const jobRows: JobRow[] = txns.map(txn => {
     const prods = prodMap.get(txn.id) || [];
     const svcs  = svcMap.get(txn.id) || [];
-    const lineItems: { desc: string; qty: number; rate: number; total: number }[] = [];
-    prods.forEach(p => lineItems.push({ desc: `${p.product_name || "Part"} (Part)`, qty: p.qty ?? 1, rate: p.price ?? 0, total: (p.qty ?? 1) * (p.price ?? 0) }));
-    svcs.forEach(s  => lineItems.push({ desc: `${s.service_name || "Repair Service"} (Service)`, qty: 1, rate: s.price ?? 0, total: s.price ?? 0 }));
+    const lineItems: { desc: string; hsn: string; qty: number; rate: number; total: number }[] = [];
+    prods.forEach(p => lineItems.push({ desc: `${p.product_name || "Part"} (Part)`, hsn: hsnMap[p.product_id] || "—", qty: p.qty ?? 1, rate: p.price ?? 0, total: (p.qty ?? 1) * (p.price ?? 0) }));
+    svcs.forEach(s  => lineItems.push({ desc: `${s.service_name || "Repair Service"} (Service)`, hsn: hsnMap[s.service_id] || "—", qty: 1, rate: s.price ?? 0, total: s.price ?? 0 }));
     const subtotal = lineItems.reduce((s, r) => s + r.total, 0) || txn.amount || 0;
     return {
       job_id: txn.job_id,
@@ -205,11 +214,12 @@ export async function GET(req: NextRequest) {
           <tr>
             <td class="tc">${i + 1}</td>
             <td>${esc(r.desc)}</td>
+            <td class="tc">${esc(r.hsn)}</td>
             <td class="tc">${r.qty}</td>
             <td class="tr">${inr(r.rate)}</td>
             <td class="tr">${inr(r.total)}</td>
           </tr>`).join("")
-      : `<tr><td colspan="5" class="tc" style="color:#999;font-style:italic;padding:10px">Repair service — no individual items listed</td></tr>`;
+      : `<tr><td colspan="6" class="tc" style="color:#999;font-style:italic;padding:10px">Repair service — no individual items listed</td></tr>`;
 
     return `
       <div class="job-section" style="margin-bottom:24px;page-break-inside:avoid">
@@ -230,6 +240,7 @@ export async function GET(req: NextRequest) {
             <tr style="background:#f8f9fa">
               <th width="5%" class="tc" style="padding:7px;border:1px solid #dee2e6;">#</th>
               <th style="padding:7px;border:1px solid #dee2e6;text-align:left">Description</th>
+              <th width="12%" class="tc" style="padding:7px;border:1px solid #dee2e6;">HSN/SAC</th>
               <th width="8%" class="tc" style="padding:7px;border:1px solid #dee2e6;">Qty</th>
               <th width="16%" class="tr" style="padding:7px;border:1px solid #dee2e6;">Rate (₹)</th>
               <th width="16%" class="tr" style="padding:7px;border:1px solid #dee2e6;">Amount (₹)</th>

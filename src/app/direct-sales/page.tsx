@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { todayIST, startOfMonthIST, endOfMonthIST, formatIST, parseISTDate } from "@/lib/dateUtils";
 import { logActivity } from "@/lib/activity";
+import { substituteTemplate, firmVars } from "@/lib/whatsapp";
+import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DirectSale {
@@ -66,6 +68,28 @@ export default function DirectSalesPage() {
   const [dateTo,        setDateTo]        = useState(searchParams.get("to")   || todayIST());
   const [paymentFilter, setPaymentFilter] = useState(searchParams.get("payment_mode") || "all");
   const [stats,         setStats]         = useState({ totalSales: 0, totalAmount: 0, avgAmount: 0, cashTotal: 0, upiTotal: 0 });
+  const [sysInfo,       setSysInfo]       = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("system_info").select("meta_field, meta_value");
+      if (data) {
+        const info: Record<string, string> = {};
+        data.forEach(r => { info[r.meta_field] = r.meta_value; });
+        setSysInfo(info);
+      }
+    })();
+  }, []);
+
+  const waHref = (s: DirectSale) => {
+    const msg = substituteTemplate(sysInfo.whatsapp_sale || DEFAULT_TEMPLATES.whatsapp_sale, {
+      client_name: s.client_name || "Customer",
+      sale_code: s.sale_code,
+      total_amount: "₹" + (s.total_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }),
+      ...firmVars(sysInfo),
+    });
+    return `https://wa.me/91${(s.client_contact || "").replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
+  };
 
   // Payment breakdown for mini chart
   const payBreakdown = useMemo(() => {
@@ -359,7 +383,7 @@ export default function DirectSalesPage() {
                       </span>
                     </div>
                     {s.client_contact && (
-                      <a href={`https://wa.me/91${s.client_contact.replace(/\D/g, "")}`} target="_blank"
+                      <a href={waHref(s)} target="_blank"
                         className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold">
                         <Send size={10} /> WA
                       </a>
@@ -627,7 +651,7 @@ export default function DirectSalesPage() {
                           {s.client_name || <span className="text-slate-600 italic">Walk-in</span>}
                         </div>
                         {s.client_contact && (
-                          <a href={`https://wa.me/91${s.client_contact.replace(/\D/g, "")}`} target="_blank"
+                          <a href={waHref(s)} target="_blank"
                             className="flex items-center gap-1 text-[10px] text-emerald-500 hover:text-emerald-400 transition-colors mt-0.5">
                             <Send size={8} /> {s.client_contact}
                           </a>

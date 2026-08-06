@@ -6,11 +6,23 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const SHOP = {
-  name: "V-Technologies",
-  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
-  mobile: "9179105875",
-};
+// ─── Helper: fetch system info (dynamic firm details) ────────────────────────
+async function fetchShopInfo() {
+  const { data } = await supabase.from("system_info").select("meta_field, meta_value");
+  const info: Record<string, string> = {};
+  (data || []).forEach(r => { info[r.meta_field] = r.meta_value; });
+  return {
+    name:    info.name        || "V-Technologies",
+    address: info.address     || "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
+    mobile:  info.contact     || "9179105875",
+    email:   info.email       || "",
+    gstin:   info.gst_no      || info.gstin || "",
+    upiId:   info.upi_id      || "",
+  };
+}
+
+const CGST_RATE = 9;
+const SGST_RATE = 9;
 
 function fmtIST(iso: string | null): string {
   if (!iso) return "—";
@@ -60,10 +72,13 @@ function numberToWords(num: number): string {
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const saleId = url.searchParams.get("id");
+  const billType = url.searchParams.get("bill_type") || "non_gst";
 
   if (!saleId) {
     return NextResponse.json({ error: "Missing sale id" }, { status: 400 });
   }
+
+  const SHOP = await fetchShopInfo();
 
   const { data: sale, error } = await supabase
     .from("direct_sales")
@@ -76,11 +91,18 @@ export async function GET(request: NextRequest) {
   }
 
   const [{ data: items }, { data: client }, { data: staff }, { data: editor }] = await Promise.all([
-    supabase.from("direct_sale_items").select("*").eq("sale_id", sale.id),
+    supabase.from("direct_sale_items").select("product_id, product_name, qty, price").eq("sale_id", sale.id),
     sale.client_id ? supabase.from("client_list").select("contact, address, firstname, middlename, lastname").eq("id", sale.client_id).single() : Promise.resolve({ data: null }),
     sale.created_by ? supabase.from("mechanic_list").select("firstname, lastname").eq("id", sale.created_by).single() : Promise.resolve({ data: null }),
     sale.last_edited_by ? supabase.from("profiles").select("full_name").eq("id", sale.last_edited_by).single() : Promise.resolve({ data: null }),
   ]);
+
+  // ── Fetch HSN/SAC codes for sold products ──────────────────────────────────
+  const prodIds = [...new Set((items || []).map((it: any) => it.product_id).filter(Boolean))];
+  const { data: prodRows } = prodIds.length
+    ? await supabase.from("product_list").select("id, hsn").in("id", prodIds)
+    : { data: [] };
+  const hsnMap: Record<number, string> = Object.fromEntries((prodRows || []).map(p => [p.id, p.hsn]));
 
   const clientName = client ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ") : (sale.client_id ? "Unknown" : "Walk-in Customer");
   const clientContact = client?.contact || null;
@@ -90,20 +112,21 @@ export async function GET(request: NextRequest) {
 
   const saleItems = (items || []).map((it: any) => ({
     product_name: it.product_name,
+    hsn: hsnMap[it.product_id] || "—",
     qty: it.qty,
     price: it.price,
     total: it.qty * it.price,
   }));
 
-  const subtotal = saleItems.reduce((s, i) => s + i.total, 0);
+  const isGST     = billType === "gst";
+  const accentColor = isGST ? "#dc3545" : "#001f3f";
+  const subtotal  = saleItems.reduce((s, i) => s + i.total, 0);
+  const cgstAmt   = isGST ? Math.round(subtotal * (CGST_RATE / 100) * 100) / 100 : 0;
+  const sgstAmt   = isGST ? Math.round(subtotal * (SGST_RATE / 100) * 100) / 100 : 0;
+  const grandTotal = isGST ? subtotal + cgstAmt + sgstAmt : sale.total_amount;
 
   // ── Fetch UPI ID from system_info ──────────────────────────────────────────
-  const { data: upiRow } = await supabase
-    .from("system_info")
-    .select("meta_value")
-    .eq("meta_field", "upi_id")
-    .single();
-  const upiId = upiRow?.meta_value || SHOP.mobile + "@ybl";
+  const upiId = SHOP.upiId || SHOP.mobile + "@ybl";
 
   function qrUrl(data: string, size = 130): string {
     return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
@@ -112,7 +135,7 @@ export async function GET(request: NextRequest) {
     const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(SHOP.name)}&am=${encodeURIComponent(amount)}&cu=INR&tn=${encodeURIComponent("Payment for " + sale.sale_code)}`;
     return qrUrl(upiUri, 130);
   }
-  const upiQrImg = upiQrUrl(sale.total_amount);
+  const upiQrImg = upiQrUrl(grandTotal);
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -123,9 +146,12 @@ export async function GET(request: NextRequest) {
   <style>
     *{box-sizing:border-box}
     body{font-family:Arial,sans-serif;padding:30px;max-width:800px;margin:0 auto;color:#1a1a1a}
-    .hdr{text-align:center;border-bottom:3px solid #001f3f;padding-bottom:16px;margin-bottom:20px}
-    .co-name{font-size:26px;font-weight:900;color:#001f3f;margin:0 0 4px}
+    .hdr{text-align:center;border-bottom:3px solid ${accentColor};padding-bottom:16px;margin-bottom:20px}
+    .co-name{font-size:26px;font-weight:900;color:${accentColor};margin:0 0 4px}
     .co-meta{font-size:12px;color:#666}
+    .badge{display:inline-block;padding:4px 14px;border-radius:4px;color:#fff;font-size:11px;font-weight:700}
+    .badge-gst{background:#dc3545}
+    .badge-retail{background:#17a2b8}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
     .box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px}
     .box h3{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin:0 0 8px}
@@ -133,11 +159,11 @@ export async function GET(request: NextRequest) {
     table{width:100%;border-collapse:collapse;font-size:13px}
     thead{background:#001f3f;color:#fff}
     th{padding:10px 12px;text-align:left}
-    th:nth-child(3){text-align:center}
-    th:nth-child(4),th:nth-child(5){text-align:right}
+    th:nth-child(3),th:nth-child(4){text-align:center}
+    th:nth-child(5),th:nth-child(6){text-align:right}
     td{padding:9px 12px;border-bottom:1px solid #e2e8f0}
-    td:nth-child(3){text-align:center}
-    td:nth-child(4),td:nth-child(5){text-align:right}
+    td:nth-child(3),td:nth-child(4){text-align:center}
+    td:nth-child(5),td:nth-child(6){text-align:right}
     .total-box{display:flex;justify-content:flex-end;margin-top:16px}
     .total-inner{width:220px;border-top:2px solid #001f3f;padding-top:8px}
     .total-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
@@ -150,14 +176,23 @@ export async function GET(request: NextRequest) {
     .btn{padding:10px 20px;border:none;border-radius:6px;font-weight:600;cursor:pointer}
     .btn-print{background:#28a745;color:#fff}
     .btn-close{background:#6c757d;color:#fff}
-    @media print{.actions{display:none!important}}
+    .type-bar{position:fixed;bottom:20px;left:20px;display:flex;gap:8px;background:#fff;padding:8px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.15);border:1px solid #e2e8f0}
+    .type-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:none;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;text-decoration:none}
+    .type-gst{background:#dc3545;color:#fff}
+    .type-retail{background:#17a2b8;color:#fff}
+    .type-btn.inactive{background:#f1f5f9;color:#64748b}
+    @media print{.actions,.type-bar{display:none!important}}
   </style>
 </head>
 <body>
   <div class="hdr">
     <div class="co-name">${SHOP.name}</div>
-    <div class="co-meta">${SHOP.address} | 📞 ${SHOP.mobile}</div>
-    <div style="margin-top:8px;font-size:13px;color:#475569">DIRECT SALE INVOICE</div>
+    <div class="co-meta">${SHOP.address} | 📞 ${SHOP.mobile}${SHOP.email ? ` | ✉ ${SHOP.email}` : ""}</div>
+    ${isGST ? `<div class="co-meta" style="margin-top:4px"><strong>GSTIN: ${SHOP.gstin || "—"}</strong></div>` : ""}
+    <div style="margin-top:8px;font-size:13px;color:#475569;display:flex;justify-content:center;align-items:center;gap:10px">
+      <span>DIRECT SALE INVOICE</span>
+      <span class="badge ${isGST ? "badge-gst" : "badge-retail"}">${isGST ? "GST TAX INVOICE" : "RETAIL INVOICE"}</span>
+    </div>
   </div>
   
   <div class="grid">
@@ -179,6 +214,7 @@ export async function GET(request: NextRequest) {
       <tr>
         <th>#</th>
         <th>Product</th>
+        <th>HSN/SAC</th>
         <th>Qty</th>
         <th>Unit Price</th>
         <th>Total</th>
@@ -189,6 +225,7 @@ export async function GET(request: NextRequest) {
       <tr>
         <td>${i + 1}</td>
         <td>${it.product_name}</td>
+        <td>${it.hsn}</td>
         <td style="text-align:center">${it.qty}</td>
         <td style="text-align:right">${inr(it.price)}</td>
         <td style="text-align:right">${inr(it.total)}</td>
@@ -199,8 +236,11 @@ export async function GET(request: NextRequest) {
   <div class="total-box">
     <div class="total-inner">
       <div class="total-row"><span>Subtotal</span><span>${inr(subtotal)}</span></div>
-      <div class="total-row grand"><span>Grand Total</span><span>${inr(sale.total_amount)}</span></div>
-      <div class="words">${numberToWords(sale.total_amount)} Rupees Only</div>
+      ${isGST ? `
+      <div class="total-row"><span>CGST @ ${CGST_RATE}%</span><span>${inr(cgstAmt)}</span></div>
+      <div class="total-row"><span>SGST @ ${SGST_RATE}%</span><span>${inr(sgstAmt)}</span></div>` : ""}
+      <div class="total-row grand"><span>Grand Total</span><span>${inr(grandTotal)}</span></div>
+      <div class="words">${numberToWords(grandTotal)} Rupees Only</div>
     </div>
   </div>
   
@@ -216,6 +256,10 @@ export async function GET(request: NextRequest) {
   
   <div class="footer">Goods sold are not returnable. Thank you for your business! — ${SHOP.name}</div>
   
+  <div class="type-bar">
+    <a href="?id=${sale.id}&bill_type=gst" class="type-btn ${isGST ? "type-gst" : "inactive"}">🧾 GST Invoice</a>
+    <a href="?id=${sale.id}&bill_type=non_gst" class="type-btn ${!isGST ? "type-retail" : "inactive"}">🏪 Retail Invoice</a>
+  </div>
   <div class="actions">
     <button class="btn btn-close" onclick="window.close()">Close</button>
     <button class="btn btn-print" onclick="window.print()">🖨 Print</button>

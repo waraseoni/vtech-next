@@ -32,6 +32,19 @@ import {
   TrendingUp, Clock, CheckCircle2, IndianRupee, MessageSquare,
   Square, CheckSquare, Zap, GitBranch, ArrowRight, User,
 } from "lucide-react";
+import { substituteTemplate, firmVars } from "@/lib/whatsapp";
+import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
+
+// ─── WhatsApp status template keys (PHP: pending=0, repairing=1, ready=2, delivered=3/5, cancelled=4) ─
+const STATUS_WA_KEY: Record<number, string> = {
+  0: "whatsapp_status_pending",
+  1: "whatsapp_status_repairing",
+  2: "whatsapp_status_ready",
+  3: "whatsapp_status_delivered",
+  4: "whatsapp_status_cancelled",
+  5: "whatsapp_status_delivered",
+};
+const WA_FALLBACK = (st: number) => DEFAULT_TEMPLATES[STATUS_WA_KEY[st]] || DEFAULT_TEMPLATES.whatsapp_status_pending;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Transaction {
@@ -115,6 +128,18 @@ function JobsListContent() {
   const [userRole,      setUserRole]      = useState<string | null>(null);
   const [loading,       setLoading]       = useState(true);
   const [isMobile,      setIsMobile]      = useState(false);
+  const [sysInfo,       setSysInfo]       = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("system_info").select("meta_field, meta_value");
+      if (data) {
+        const info: Record<string, string> = {};
+        data.forEach(r => { info[r.meta_field] = r.meta_value; });
+        setSysInfo(info);
+      }
+    })();
+  }, []);
 
   // Filters
   const [localSearch,   setLocalSearch]   = useState("");
@@ -541,22 +566,18 @@ function JobsListContent() {
   const sendWA = (txn: Transaction) => {
     const phone = txn.client_contact?.replace(/\D/g, "");
     if (!phone || phone.length < 10) { alert("Valid mobile number nahi mila!"); return; }
-    const name   = getClientName(txn);
-    const amt    = (txn.amount || 0).toLocaleString("en-IN");
-    const biz    = "Vikram Jain, V-Technologies, Jabalpur, Mob. 9179105875";
-    const id     = txn.job_id;
-    const code   = txn.code || "";
-    const item   = txn.item || "";
-
-    const msgs: Record<number, string> = {
-      0: `Namaste ${name} ji 🙏!\n\nAapka *${item}* repair ke liye register ho gaya hai. 📝\n\n📋 *Details:*\nJob ID: #${id}\nCode: #${code}\nStatus: *Received/Pending*\n\nHum jald hi aapke device ko check karke update denge. Dhanyavaad! ❤️\n\n${biz}`,
-      1: `Namaste ${name} ji 🙏!\n\nAapke *${item}* (Job ID: #${id}) (Code: #${code}) par kaam shuru kar diya gaya hai. 🛠️\n\nStatus: *In-Progress/Repairing*\n\nHamare technician isse jald se jald theek karne ki koshish kar rahe hain. ✨\n\n${biz}`,
-      2: `Namaste ${name} ji 🙏!\n\nKhushkhabri! Aapka *${item}* repair complete ho gaya hai. ✅\n\n📋 *Details:*\nJob ID: #${id}\nCode: #${code}\nBill Amount: *₹${amt}*\n\nAap workshop par aakar apna device collect kar sakte hain. 🛍️\n\nDhanyavaad! ❤️\n\n${biz}`,
-      3: `Namaste ${name} ji 🙏!\n\nAapka *${item}* (Job ID: #${id}) (Code: #${code}) deliver kar diya gaya hai. 🏁\n\nTotal Paid: *₹${amt}*\n\nV-Technologies ki seva lene ke liye dhanyavaad. ⭐\n\n${biz}`,
-      4: `Namaste ${name} ji 🙏!\n\nAapka Job ID: #${id} (Code: #${code}) (*${item}*) cancel kar diya gaya hai. ❌\n\nKripya adhik jankari ke liye workshop par sampark karein. 🙏\n\n${biz}`,
-      5: `Namaste ${name} ji 🙏!\n\nAapka *${item}* (Job ID: #${id}) (Code: #${code}) deliver kar diya gaya hai. 🏁\n\nTotal Paid: *₹${amt}*\n\nV-Technologies ki seva lene ke liye dhanyavaad. ⭐\n\n${biz}`,
-    };
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msgs[txn.status] || msgs[0])}`, "_blank");
+    const name = getClientName(txn);
+    const key  = STATUS_WA_KEY[txn.status] || "whatsapp_status_pending";
+    const tpl  = sysInfo[key] || WA_FALLBACK(txn.status);
+    const msg  = substituteTemplate(tpl, {
+      client_name: name,
+      item: txn.item || "",
+      job_id: txn.job_id,
+      code: txn.code || "",
+      amount: "₹" + (txn.amount || 0).toLocaleString("en-IN"),
+      ...firmVars(sysInfo),
+    });
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   const printReport = () => {

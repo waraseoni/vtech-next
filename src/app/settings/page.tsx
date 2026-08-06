@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Settings2, Save, Loader2, CheckCircle, AlertCircle,
   Building2, Phone, Mail, MapPin, Tag, ShieldCheck,
-  Clock, Pen, Trash2, Upload, Eye, EyeOff,
+  Clock, Pen, Trash2, Upload, Eye, EyeOff, User,
 } from "lucide-react";
 
 const inputCls  = "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
@@ -24,6 +24,7 @@ export default function SettingsPage() {
   // Basic info
   const [name,       setName]       = useState("");
   const [shortName,  setShortName]  = useState("");
+  const [owner,      setOwner]      = useState("");
   const [email,      setEmail]      = useState("");
   const [contact,    setContact]    = useState("");
   const [address,    setAddress]    = useState("");
@@ -82,6 +83,7 @@ export default function SettingsPage() {
 
       setName(info.name      || "");
       setShortName(info.short_name || "");
+      setOwner(info.owner    || "");
       setEmail(info.email    || "");
       setContact(info.contact || "");
       setAddress(info.address || "");
@@ -134,6 +136,7 @@ export default function SettingsPage() {
       await Promise.all([
         upsertField("name",       name.trim()),
         upsertField("short_name", shortName.trim()),
+        upsertField("owner",      owner.trim()),
         upsertField("email",      email.trim()),
         upsertField("contact",    contact.trim()),
         upsertField("address",    address.trim()),
@@ -370,6 +373,17 @@ export default function SettingsPage() {
                 <label className={labelCls}>Short Name</label>
                 <input type="text" value={shortName} onChange={e => setShortName(e.target.value)}
                   placeholder="V-Tech" className={inputCls}/>
+              </div>
+              <div>
+                <label className={labelCls}>Firm Owner Name</label>
+                <div className="relative">
+                  <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"/>
+                  <input type="text" value={owner} onChange={e => setOwner(e.target.value)}
+                    placeholder="Vikram Jain" className={`${inputCls} pl-9`}/>
+                </div>
+                <p className="text-[10px] text-slate-700 mt-1">
+                  WhatsApp messages ke {`{firm_owner}`} placeholder mein yeh naam use hoga.
+                </p>
               </div>
             </div>
           </div>

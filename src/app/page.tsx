@@ -10,7 +10,7 @@ import {
 import {
   Wrench, Clock, CheckCircle, IndianRupee, TrendingUp, TrendingDown,
   Users, ArrowRight, AlertCircle, Zap, Loader2, DollarSign, CreditCard,
-  Filter, RotateCcw, Package, Activity, ChevronRight,
+  Filter, RotateCcw, Package, Activity, ChevronRight, CalendarClock, MessageCircle,
 } from "lucide-react";
 import Navbar from "./components/Navbar";
 
@@ -242,7 +242,7 @@ const STATUS_META = [
   { label: "Delivered", color: "#3b82f6" },
 ];
 
-import { todayIST, formatIST, startOfMonthIST, endOfMonthIST, toISTDatePart } from "@/lib/dateUtils";
+import { todayIST, formatIST, startOfMonthIST, endOfMonthIST, toISTDatePart, parseISTDate } from "@/lib/dateUtils";
 
 // ─── Timezone-safe helpers ────────────────────────────────────────────────────
 // BUG FIX 4: fmtDate — new Date('YYYY-MM-DD') parses as UTC midnight.
@@ -305,6 +305,7 @@ export default function Dashboard() {
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
   const [recentPayments, setRecentPayments] = useState<RecentPayment[]>([]);
   const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
+  const [dueStats, setDueStats] = useState<{ overdue: number; today: number; upcoming: number; amount: number }>({ overdue: 0, today: 0, upcoming: 0, amount: 0 });
   const [loading, setLoading] = useState(true);
   const [finLoading, setFinLoading] = useState(false);
 
@@ -482,6 +483,45 @@ export default function Dashboard() {
         console.error("Dashboard fetch error:", e);
       } finally {
         setLoading(false);
+      }
+    })();
+  }, []);
+
+  // ── DUE REMINDERS WIDGET ────────────────────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
+        const [{ data: clients }, { data: repairs }, { data: sales }, { data: loans }, { data: payments }] = await Promise.all([
+          supabase.from("client_list").select("id, opening_balance, payment_due_date").eq("delete_flag", 0).limit(5000),
+          supabase.from("transaction_list").select("client_name, amount").eq("status", 5).limit(5000),
+          supabase.from("direct_sales").select("client_id, total_amount").limit(5000),
+          supabase.from("client_loans").select("client_id, total_payable").limit(5000),
+          supabase.from("client_payments").select("client_id, amount, discount").limit(5000),
+        ]);
+        const sumBy = (arr: any[] | null, key: string, fn: (r: any) => number) => {
+          const m = new Map<number, number>();
+          (arr || []).forEach(r => { const id = Number(r[key]); if (id) m.set(id, (m.get(id) || 0) + fn(r)); });
+          return m;
+        };
+        const rM = sumBy(repairs, "client_name", r => n(r.amount));
+        const sM = sumBy(sales, "client_id", r => n(r.total_amount));
+        const lM = sumBy(loans, "client_id", r => n(r.total_payable));
+        const pM = sumBy(payments, "client_id", r => n(r.amount) + n(r.discount));
+        const today = parseISTDate(todayIST()).getTime();
+        let overdue = 0, todayC = 0, upcoming = 0, amount = 0;
+        (clients || []).forEach((c: any) => {
+          const bal = n(c.opening_balance) + (rM.get(c.id) || 0) + (sM.get(c.id) || 0) + (lM.get(c.id) || 0) - (pM.get(c.id) || 0);
+          if (bal <= 0.01) return;
+          amount += bal;
+          if (!c.payment_due_date) return;
+          const diff = Math.round((parseISTDate(c.payment_due_date).getTime() - today) / 86400000);
+          if (diff < 0) overdue++;
+          else if (diff === 0) todayC++;
+          else if (diff <= 7) upcoming++;
+        });
+        setDueStats({ overdue, today: todayC, upcoming, amount });
+      } catch (e) {
+        console.error("Due stats fetch error:", e);
       }
     })();
   }, []);
@@ -965,6 +1005,60 @@ export default function Dashboard() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ DUE REMINDERS */}
+      <section className="bg-[#161b27] rounded-3xl border border-[#21293d] overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#21293d]">
+          <div>
+            <h3 className="text-sm font-black text-white flex items-center gap-2">
+              <CalendarClock size={13} className="text-red-400" /> Payment Due Reminders
+            </h3>
+            <p className="text-slate-600 text-[10px] font-bold uppercase tracking-wider">
+              Promised due dates · Overdue &amp; upcoming
+            </p>
+          </div>
+          <Link href="/reports/due-reminders" className="flex items-center gap-1 text-red-400 hover:text-red-300 text-xs font-black transition no-underline uppercase tracking-wider">
+            Open Report <ChevronRight size={12} />
+          </Link>
+        </div>
+        <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-red-500/8 border border-red-500/20 rounded-2xl p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-red-400 flex items-center gap-1.5">
+              <AlertCircle size={12} /> Overdue
+            </p>
+            <p className="text-2xl font-black text-white mt-1">{dueStats.overdue}</p>
+          </div>
+          <div className="bg-orange-500/8 border border-orange-500/20 rounded-2xl p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
+              <Clock size={12} /> Due Today
+            </p>
+            <p className="text-2xl font-black text-white mt-1">{dueStats.today}</p>
+          </div>
+          <div className="bg-cyan-500/8 border border-cyan-500/20 rounded-2xl p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+              <CalendarClock size={12} /> Upcoming 7d
+            </p>
+            <p className="text-2xl font-black text-white mt-1">{dueStats.upcoming}</p>
+          </div>
+          <div className="bg-violet-500/8 border border-violet-500/20 rounded-2xl p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-violet-400 flex items-center gap-1.5">
+              <IndianRupee size={12} /> Total Due
+            </p>
+            <p className="text-2xl font-black text-white mt-1">{inr(dueStats.amount)}</p>
+          </div>
+        </div>
+        {dueStats.overdue > 0 && (
+          <div className="px-5 pb-4">
+            <Link href="/reports/due-reminders?status=overdue"
+              className="flex items-center justify-between gap-2 bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3 text-red-300 hover:bg-red-500/20 transition-all no-underline">
+              <span className="text-xs font-bold flex items-center gap-2">
+                <MessageCircle size={13} /> {dueStats.overdue} client{dueStats.overdue > 1 ? "s" : ""} ko WhatsApp reminder bhejein
+              </span>
+              <ChevronRight size={14} />
+            </Link>
           </div>
         )}
       </section>

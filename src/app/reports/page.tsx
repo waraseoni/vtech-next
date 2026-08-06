@@ -6,7 +6,8 @@ import {
   FileText, TrendingUp, PieChart, BarChart2, DollarSign,
   ShoppingCart, Wrench, Truck, Clock, Users, Database,
   Activity, Briefcase, Store, Calculator, Scale, FileSearch,
-  Search, ChevronRight, Sparkles, Filter, Info, CheckCircle
+  Search, ChevronRight, Sparkles, Filter, Info, CheckCircle,
+  CalendarClock
 } from "lucide-react";
 
 // --- Types ---
@@ -49,6 +50,15 @@ const REPORTS: ReportItem[] = [
     icon: <Truck size={16} />,
     category: "Job Reports",
     color: "from-emerald-500 to-teal-600"
+  },
+  {
+    title: "Due Reminders",
+    description: "Promised payment dues — overdue, due today, upcoming.",
+    href: "/reports/due-reminders",
+    icon: <CalendarClock size={16} />,
+    category: "Job Reports",
+    color: "from-red-500 to-orange-600",
+    isNew: true
   },
 
   // Finance & Accounts

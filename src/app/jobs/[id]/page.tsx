@@ -13,6 +13,8 @@ import {
   Plus, X, CheckCircle, FileText,
   RefreshCw, Image as ImageIcon,
 } from "lucide-react";
+import { substituteTemplate, firmVars } from "@/lib/whatsapp";
+import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
 
 // ─── IST HELPERS ─────────────────────────────────────────────────────────────
 function fmtDate(d: string | null) {
@@ -110,6 +112,17 @@ const BADGE_COLORS: Record<string, { bg: string; text: string; border: string }>
 const DEL_STATUS: Record<number, string> = { 0: "In Shop", 1: "Delivered" };
 const FIRM = { name: "V-Technologies", contact: "9179105875", address: "Jabalpur", owner: "Vikram Jain" };
 
+// Job status → WhatsApp template key (PHP: pending=0, repairing=1, ready=2, delivered=3/5, cancelled=4)
+const STATUS_WA_KEY: Record<number, string> = {
+  0: "whatsapp_status_pending",
+  1: "whatsapp_status_repairing",
+  2: "whatsapp_status_ready",
+  3: "whatsapp_status_delivered",
+  4: "whatsapp_status_cancelled",
+  5: "whatsapp_status_delivered",
+};
+const WA_FALLBACK = (st: number) => DEFAULT_TEMPLATES[STATUS_WA_KEY[st]] || DEFAULT_TEMPLATES.whatsapp_status_pending;
+
 // ─── FIELDSET COMPONENT (PHP jaisi styling) ───────────────────────────────────
 function Fieldset({ title, icon: Icon, children, color = "primary" }: {
   title: string; icon?: React.ElementType; children: React.ReactNode; color?: "primary" | "success" | "info" | "danger";
@@ -157,6 +170,7 @@ export default function JobDetailsPage() {
   const [loading,  setLoading]  = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [toast,    setToast]    = useState<Toast | null>(null);
+  const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
 
   // Status modal
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -191,6 +205,12 @@ export default function JobDetailsPage() {
         const { data: p } = await supabase.from("profiles").select("role").eq("id", user.id).single();
         setUserRole(p?.role || "staff");
       }
+
+      // Firm info + WhatsApp templates (system_info key-value)
+      const { data: sys } = await supabase.from("system_info").select("meta_field, meta_value");
+      const info: Record<string, string> = {};
+      (sys || []).forEach(r => { info[r.meta_field] = r.meta_value; });
+      setFirmInfo(info);
 
       const { data: jobData, error: jobErr } = await supabase
         .from("transaction_list").select("*")
@@ -254,16 +274,17 @@ export default function JobDetailsPage() {
     if (!phone || phone.length < 10) { setToast({ type: "error", msg: "Valid mobile number nahi mila!" }); return; }
     const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
     const amt  = (job.amount || 0).toLocaleString("en-IN");
-    const biz  = `${FIRM.owner}, ${FIRM.name}, ${FIRM.address}, Mob.-${FIRM.contact}`;
-    const msgs: Record<number, string> = {
-      0: `Namaste ${name} ji!\n\nAapka *${job.item}* (Job ID: ${job.job_id}) repair ke liye prapt hua hai.\n\nStatus: *Pending (Queue mein hai)*\nHum jald hi check karke update denge.\n\nDhanyavaad\n${biz}`,
-      1: `Namaste ${name} ji!\n\nAapke *${job.item}* (Job ID: ${job.job_id}) par kaam shuru kar diya gaya hai.\n\nStatus: *On-Progress*\nKripya dhairya rakhein.\n\nDhanyavaad\n${biz}`,
-      2: `Namaste ${name} ji!\n\nKhushkhabri! Aapka *${job.item}* repair complete ho gaya hai.\n\nJob ID: ${job.job_id} | Code: ${job.code}\nTotal Bill: *Rs.${amt}*\nStatus: *Ready for Delivery*\n\nAap workshop aakar collect kar sakte hain.\n\nDhanyavaad\n${biz}`,
-      3: `Namaste ${name} ji!\n\nAapka *${job.item}* (Job ID: ${job.job_id}) deliver kar diya gaya hai.\n\nStatus: *Paid*\nPayment: *Rs.${amt}*\n\nV-Technologies par bharosa karne ke liye dhanyavaad!\n\n${biz}`,
-      4: `Namaste ${name} ji!\n\nAapka Job ID: ${job.job_id} (*${job.item}*) Cancel kar diya gaya hai.\n\nAdhik jankari ke liye sampark karein.\n\nDhanyavaad\n${biz}`,
-      5: `Namaste ${name} ji!\n\nAapka *${job.item}* (Job ID: ${job.job_id}) safaltapurvak deliver kar diya gaya hai.\n\nStatus: *Delivered*\nPayment: *Rs.${amt}*\n\nV-Technologies par bharosa karne ke liye dhanyavaad!\n\n${biz}`,
-    };
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msgs[job.status] || msgs[0])}`, "_blank");
+    const key  = STATUS_WA_KEY[job.status] || "whatsapp_status_pending";
+    const tpl  = firmInfo[key] || WA_FALLBACK(job.status);
+    const msg  = substituteTemplate(tpl, {
+      client_name: name,
+      item: job.item,
+      job_id: job.job_id,
+      code: job.code,
+      amount: `₹${amt}`,
+      ...firmVars(firmInfo),
+    });
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   // ── UPDATE STATUS ──────────────────────────────────────────────────────────
@@ -339,7 +360,7 @@ export default function JobDetailsPage() {
 h1{font-size:18px;font-weight:900;color:#001f3f;margin-bottom:2px}h2{font-size:12px;color:#555;margin-bottom:10px}
 hr{border:1px solid #001f3f;margin:8px 0}.total{font-size:16px;font-weight:900;margin-top:12px;color:#155724}
 @page{margin:1cm;size:A4}</style></head><body>
-<h1>${FIRM.name}</h1><h2>${FIRM.owner} | ${FIRM.address} | ${FIRM.contact}</h2><hr/>
+<h1>${firmInfo.name || FIRM.name}</h1><h2>${firmInfo.owner || FIRM.owner} | ${firmInfo.address || FIRM.address} | ${firmInfo.contact || FIRM.contact}</h2><hr/>
 <p><b>Job ID:</b> ${job.job_id}&nbsp;&nbsp;<b>Code:</b> ${job.code}&nbsp;&nbsp;<b>Status:</b> ${STATUS_MAP[job.status]?.label}</p>
 <p><b>Client:</b> ${[client?.firstname, client?.middlename, client?.lastname].filter(Boolean).join(" ")}&nbsp;&nbsp;<b>Contact:</b> ${client?.contact || ""}</p>
 <p><b>Item:</b> ${job.item}&nbsp;&nbsp;<b>Fault:</b> ${job.fault}</p>

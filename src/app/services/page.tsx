@@ -10,6 +10,7 @@ type Service = {
   name: string;
   description: string;
   price: number;
+  hsn: string;
   status: number;
   delete_flag: number;
 };
@@ -26,7 +27,7 @@ export default function ServicesPage() {
   const [err, setErr] = useState("");
   const [userRole, setUserRole] = useState("staff");
 
-  const [form, setForm] = useState({ name: "", description: "", price: "" });
+  const [form, setForm] = useState({ name: "", description: "", price: "", hsn: "" });
   const [formErr, setFormErr] = useState("");
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function ServicesPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("service_list")
-      .select("id, name, description, price, status, delete_flag")
+      .select("id, name, description, price, hsn, status, delete_flag")
       .eq("delete_flag", 0)
       .order("name");
     if (error) setErr(error.message);
@@ -56,8 +57,8 @@ export default function ServicesPage() {
     s.description?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const openAdd = () => { setEditing(null); setForm({ name: "", description: "", price: "" }); setFormErr(""); setShowModal(true); };
-  const openEdit = (s: Service) => { setEditing(s); setForm({ name: s.name, description: s.description || "", price: String(s.price || "") }); setFormErr(""); setShowModal(true); };
+  const openAdd = () => { setEditing(null); setForm({ name: "", description: "", price: "", hsn: "" }); setFormErr(""); setShowModal(true); };
+  const openEdit = (s: Service) => { setEditing(s); setForm({ name: s.name, description: s.description || "", price: String(s.price || ""), hsn: s.hsn || "" }); setFormErr(""); setShowModal(true); };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +66,7 @@ export default function ServicesPage() {
     if (!form.price || parseFloat(form.price) < 0) { setFormErr("Valid price daalo!"); return; }
     setSaving(true);
     try {
-      const payload = { name: form.name.trim(), description: form.description.trim(), price: parseFloat(form.price), status: 1 };
+      const payload = { name: form.name.trim(), description: form.description.trim(), price: parseFloat(form.price), hsn: form.hsn.trim().toUpperCase(), status: 1 };
       if (editing) {
         const { error } = await supabase.from("service_list").update(payload).eq("id", editing.id);
         if (error) throw error;
@@ -136,6 +137,7 @@ export default function ServicesPage() {
                 <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
                   <th className="text-left px-4 py-3">Name</th>
                   <th className="text-left px-4 py-3">Description</th>
+                  <th className="text-center px-4 py-3">HSN/SAC</th>
                   <th className="text-right px-4 py-3">Price</th>
                   <th className="text-center px-4 py-3">Status</th>
                   <th className="text-center px-4 py-3">Actions</th>
@@ -149,6 +151,9 @@ export default function ServicesPage() {
                     </td>
                     <td className="px-4 py-3.5 text-slate-500 text-xs max-w-[200px] truncate" title={s.description || ""}>
                       {s.description || "—"}
+                    </td>
+                    <td className="px-4 py-3.5 text-center">
+                      {s.hsn ? <span className="inline-block px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded text-[10px] font-bold">{s.hsn}</span> : <span className="text-slate-700 text-xs">—</span>}
                     </td>
                     <td className="px-4 py-3.5 text-right">
                       <span className="font-black text-emerald-400">{inr(s.price)}</span>
@@ -221,6 +226,13 @@ export default function ServicesPage() {
                 <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Price (₹) <span className="text-red-400">*</span></label>
                 <input type="number" step="0.01" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))}
                   placeholder="0.00"
+                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">HSN/SAC Code</label>
+                <input value={form.hsn} onChange={e => setForm(p => ({ ...p, hsn: e.target.value }))}
+                  placeholder="e.g. 998714"
+                  maxLength={20}
                   className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500" />
               </div>
               <div className="flex gap-3 pt-2">

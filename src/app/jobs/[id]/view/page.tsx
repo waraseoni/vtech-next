@@ -14,6 +14,8 @@ import {
   RefreshCw, Image as ImageIcon,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
+import { substituteTemplate, firmVars } from "@/lib/whatsapp";
+import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
 
 // ─── IST HELPERS ─────────────────────────────────────────────────────────────
 function fmtDate(d: string | null) {
@@ -74,11 +76,11 @@ interface Mechanic {
 }
 interface TransactionProduct {
   transaction_id: number; product_id: number;
-  product_name: string | null; qty: number; price: number;
+  product_name: string | null; qty: number; price: number; hsn: string | null;
 }
 interface TransactionService {
   transaction_id: number; service_id: number;
-  service_name: string | null; price: number;
+  service_name: string | null; price: number; hsn: string | null;
 }
 interface TransactionImage {
   id: number; transaction_id: number; image_path: string; date_created: string;
@@ -110,6 +112,17 @@ const BADGE_COLORS: Record<string, { bg: string; text: string; border: string }>
 
 const DEL_STATUS: Record<number, string> = { 0: "In Shop", 1: "Delivered" };
 const FIRM = { name: "V-Technologies", contact: "9179105875", address: "Jabalpur", owner: "Vikram Jain" };
+
+// Job status → WhatsApp template key (PHP: pending=0, repairing=1, ready=2, delivered=3/5, cancelled=4)
+const STATUS_WA_KEY: Record<number, string> = {
+  0: "whatsapp_status_pending",
+  1: "whatsapp_status_repairing",
+  2: "whatsapp_status_ready",
+  3: "whatsapp_status_delivered",
+  4: "whatsapp_status_cancelled",
+  5: "whatsapp_status_delivered",
+};
+const WA_FALLBACK = (st: number) => DEFAULT_TEMPLATES[STATUS_WA_KEY[st]] || DEFAULT_TEMPLATES.whatsapp_status_pending;
 
 // ─── FIELDSET COMPONENT (PHP jaisi styling) ───────────────────────────────────
 function Fieldset({ title, icon: Icon, children, color = "primary" }: {
@@ -158,6 +171,7 @@ export default function JobDetailsPage() {
   const [loading,  setLoading]  = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [toast,    setToast]    = useState<Toast | null>(null);
+  const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
 
   // Status modal
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -193,6 +207,12 @@ export default function JobDetailsPage() {
         setUserRole(p?.role || "staff");
       }
 
+      // Firm info + WhatsApp templates (system_info key-value)
+      const { data: sys } = await supabase.from("system_info").select("meta_field, meta_value");
+      const info: Record<string, string> = {};
+      (sys || []).forEach(r => { info[r.meta_field] = r.meta_value; });
+      setFirmInfo(info);
+
       const { data: jobData, error: jobErr } = await supabase
         .from("transaction_list").select("*")
         .eq("id", numId).eq("del_status", 0).single();
@@ -227,20 +247,30 @@ export default function JobDetailsPage() {
       setImages((imgRes.data || []) as TransactionImage[]);
 
       const prods = (prodRes.data || []) as TransactionProduct[];
-      const missingPIds = prods.filter(p => !p.product_name).map(p => p.product_id);
-      if (missingPIds.length > 0) {
-        const { data: pn } = await supabase.from("product_list").select("id, name").in("id", missingPIds);
-        const pm = Object.fromEntries((pn || []).map(p => [p.id, p.name]));
-        setProducts(prods.map(p => ({ ...p, product_name: p.product_name || pm[p.product_id] || null })));
-      } else { setProducts(prods); }
+      const prodIds = [...new Set(prods.map(p => p.product_id).filter(Boolean))];
+      const { data: plRows } = prodIds.length > 0
+        ? await supabase.from("product_list").select("id, name, hsn").in("id", prodIds)
+        : { data: null };
+      const pm = Object.fromEntries((plRows || []).map(p => [p.id, p.name]));
+      const phsn = Object.fromEntries((plRows || []).map(p => [p.id, p.hsn]));
+      setProducts(prods.map(p => ({
+        ...p,
+        product_name: p.product_name || pm[p.product_id] || null,
+        hsn: phsn[p.product_id] || null,
+      })));
 
       const svcs = (svcRes.data || []) as TransactionService[];
-      const missingSIds = svcs.filter(s => !s.service_name).map(s => s.service_id);
-      if (missingSIds.length > 0) {
-        const { data: sn } = await supabase.from("service_list").select("id, name").in("id", missingSIds);
-        const sm = Object.fromEntries((sn || []).map(s => [s.id, s.name]));
-        setServices(svcs.map(s => ({ ...s, service_name: s.service_name || sm[s.service_id] || null })));
-      } else { setServices(svcs); }
+      const svcIds = [...new Set(svcs.map(s => s.service_id).filter(Boolean))];
+      const { data: slRows } = svcIds.length > 0
+        ? await supabase.from("service_list").select("id, name, hsn").in("id", svcIds)
+        : { data: null };
+      const sm = Object.fromEntries((slRows || []).map(s => [s.id, s.name]));
+      const shsn = Object.fromEntries((slRows || []).map(s => [s.id, s.hsn]));
+      setServices(svcs.map(s => ({
+        ...s,
+        service_name: s.service_name || sm[s.service_id] || null,
+        hsn: shsn[s.service_id] || null,
+      })));
 
     } catch (err) { console.error("fetchData:", err); }
     finally { setLoading(false); }
@@ -255,16 +285,17 @@ export default function JobDetailsPage() {
     if (!phone || phone.length < 10) { setToast({ type: "error", msg: "Valid mobile number nahi mila!" }); return; }
     const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
     const amt  = (job.amount || 0).toLocaleString("en-IN");
-    const biz  = `${FIRM.owner}, ${FIRM.name}, ${FIRM.address}, Mob.-${FIRM.contact}`;
-    const msgs: Record<number, string> = {
-      0: `Namaste ${name} ji!\n\nAapka *${job.item}* (Job ID: ${job.job_id}) repair ke liye prapt hua hai.\n\nStatus: *Pending (Queue mein hai)*\nHum jald hi check karke update denge.\n\nDhanyavaad\n${biz}`,
-      1: `Namaste ${name} ji!\n\nAapke *${job.item}* (Job ID: ${job.job_id}) par kaam shuru kar diya gaya hai.\n\nStatus: *On-Progress*\nKripya dhairya rakhein.\n\nDhanyavaad\n${biz}`,
-      2: `Namaste ${name} ji!\n\nKhushkhabri! Aapka *${job.item}* repair complete ho gaya hai.\n\nJob ID: ${job.job_id} | Code: ${job.code}\nTotal Bill: *Rs.${amt}*\nStatus: *Ready for Delivery*\n\nAap workshop aakar collect kar sakte hain.\n\nDhanyavaad\n${biz}`,
-      3: `Namaste ${name} ji!\n\nAapka *${job.item}* (Job ID: ${job.job_id}) deliver kar diya gaya hai.\n\nStatus: *Paid*\nPayment: *Rs.${amt}*\n\nV-Technologies par bharosa karne ke liye dhanyavaad!\n\n${biz}`,
-      4: `Namaste ${name} ji!\n\nAapka Job ID: ${job.job_id} (*${job.item}*) Cancel kar diya gaya hai.\n\nAdhik jankari ke liye sampark karein.\n\nDhanyavaad\n${biz}`,
-      5: `Namaste ${name} ji!\n\nAapka *${job.item}* (Job ID: ${job.job_id}) safaltapurvak deliver kar diya gaya hai.\n\nStatus: *Delivered*\nPayment: *Rs.${amt}*\n\nV-Technologies par bharosa karne ke liye dhanyavaad!\n\n${biz}`,
-    };
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msgs[job.status] || msgs[0])}`, "_blank");
+    const key  = STATUS_WA_KEY[job.status] || "whatsapp_status_pending";
+    const tpl  = firmInfo[key] || WA_FALLBACK(job.status);
+    const msg  = substituteTemplate(tpl, {
+      client_name: name,
+      item: job.item,
+      job_id: job.job_id,
+      code: job.code,
+      amount: `₹${amt}`,
+      ...firmVars(firmInfo),
+    });
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   // ── UPDATE STATUS ──────────────────────────────────────────────────────────
@@ -344,7 +375,7 @@ export default function JobDetailsPage() {
 h1{font-size:18px;font-weight:900;color:#001f3f;margin-bottom:2px}h2{font-size:12px;color:#555;margin-bottom:10px}
 hr{border:1px solid #001f3f;margin:8px 0}.total{font-size:16px;font-weight:900;margin-top:12px;color:#155724}
 @page{margin:1cm;size:A4}</style></head><body>
-<h1>${FIRM.name}</h1><h2>${FIRM.owner} | ${FIRM.address} | ${FIRM.contact}</h2><hr/>
+<h1>${firmInfo.name || FIRM.name}</h1><h2>${firmInfo.owner || FIRM.owner} | ${firmInfo.address || FIRM.address} | ${firmInfo.contact || FIRM.contact}</h2><hr/>
 <p><b>Job ID:</b> ${job.job_id}&nbsp;&nbsp;<b>Code:</b> ${job.code}&nbsp;&nbsp;<b>Status:</b> ${STATUS_MAP[job.status]?.label}</p>
 <p><b>Client:</b> ${[client?.firstname, client?.middlename, client?.lastname].filter(Boolean).join(" ")}&nbsp;&nbsp;<b>Contact:</b> ${client?.contact || ""}</p>
 <p><b>Item:</b> ${job.item}&nbsp;&nbsp;<b>Fault:</b> ${job.fault}</p>
@@ -490,6 +521,7 @@ ${svcHtml}${prodHtml}
                           <thead className="bg-[#0d1f35] text-slate-300">
                             <tr>
                               <th className="px-3 py-2 text-left">Service</th>
+                              <th className="px-3 py-2 text-center">HSN/SAC</th>
                               <th className="px-3 py-2 text-right">Charge</th>
                             </tr>
                           </thead>
@@ -497,13 +529,14 @@ ${svcHtml}${prodHtml}
                             {services.map((s, i) => (
                               <tr key={i} className={i % 2 === 0 ? "bg-[#111520]" : "bg-[#161b27]"}>
                                 <td className="px-3 py-2 text-slate-300">{s.service_name || `Service #${s.service_id}`}</td>
+                                <td className="px-3 py-2 text-center text-slate-500 text-xs">{s.hsn || "—"}</td>
                                 <td className="px-3 py-2 text-right font-medium text-slate-200">Rs.{s.price.toFixed(2)}</td>
                               </tr>
                             ))}
                           </tbody>
                           <tfoot className="bg-[#0d1117] font-bold border-t border-[#21293d]">
                             <tr>
-                              <td className="px-3 py-2 text-right text-sm text-slate-500">Services Total:</td>
+                              <td colSpan={2} className="px-3 py-2 text-right text-sm text-slate-500">Services Total:</td>
                               <td className="px-3 py-2 text-right text-emerald-400">Rs.{servicesTotal.toFixed(2)}</td>
                             </tr>
                           </tfoot>
@@ -520,6 +553,7 @@ ${svcHtml}${prodHtml}
                           <thead className="bg-emerald-900/50 text-emerald-300">
                             <tr>
                               <th className="px-3 py-2 text-left">Product</th>
+                              <th className="px-3 py-2 text-center">HSN</th>
                               <th className="px-3 py-2 text-center">Qty</th>
                               <th className="px-3 py-2 text-right">Price</th>
                               <th className="px-3 py-2 text-right">Total</th>
@@ -529,6 +563,7 @@ ${svcHtml}${prodHtml}
                             {products.map((p, i) => (
                               <tr key={i} className={i % 2 === 0 ? "bg-[#111520]" : "bg-[#161b27]"}>
                                 <td className="px-3 py-2 text-slate-300">{p.product_name || `Product #${p.product_id}`}</td>
+                                <td className="px-3 py-2 text-center text-slate-500 text-xs">{p.hsn || "—"}</td>
                                 <td className="px-3 py-2 text-center text-slate-400">{p.qty}</td>
                                 <td className="px-3 py-2 text-right text-slate-400">Rs.{p.price.toFixed(2)}</td>
                                 <td className="px-3 py-2 text-right font-medium text-slate-200">Rs.{(p.qty * p.price).toFixed(2)}</td>
@@ -537,7 +572,7 @@ ${svcHtml}${prodHtml}
                           </tbody>
                           <tfoot className="bg-[#0d1117] font-bold border-t border-[#21293d]">
                             <tr>
-                              <td colSpan={3} className="px-3 py-2 text-right text-sm text-slate-500">Products Total:</td>
+                              <td colSpan={4} className="px-3 py-2 text-right text-sm text-slate-500">Products Total:</td>
                               <td className="px-3 py-2 text-right text-emerald-400">Rs.{productsTotal.toFixed(2)}</td>
                             </tr>
                           </tfoot>
