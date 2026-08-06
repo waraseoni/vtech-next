@@ -7,7 +7,7 @@ import {
   ShoppingCart, Wrench, Truck, Clock, Users, Database,
   Activity, Briefcase, Store, Calculator, Scale, FileSearch,
   Search, ChevronRight, Sparkles, Filter, Info, CheckCircle,
-  CalendarClock
+  CalendarClock, PackageX
 } from "lucide-react";
 
 // --- Types ---
@@ -58,6 +58,15 @@ const REPORTS: ReportItem[] = [
     icon: <CalendarClock size={16} />,
     category: "Job Reports",
     color: "from-red-500 to-orange-600",
+    isNew: true
+  },
+  {
+    title: "Requirement List",
+    description: "Low-stock spares with linked suppliers and order quantity.",
+    href: "/reports/requirement-list",
+    icon: <PackageX size={16} />,
+    category: "Job Reports",
+    color: "from-amber-500 to-orange-600",
     isNew: true
   },
 

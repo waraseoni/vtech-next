@@ -37,17 +37,18 @@ The legacy PHP RSMS has features the Next.js port is missing. This plan tracks t
 - PHP reference: `admin/requirement_list/index.php`
 - [x] Supabase migration: `product_list.alert_quantity`
 - [x] Product form: alert quantity + supplier linking
-- [ ] New page `/reports/requirement-list`: low-stock spares (current stock < alert), linked suppliers with phone, "Need to Order" qty, print
-- [ ] Replace hardcoded dashboard low-stock threshold (5) with `alert_quantity`
+- [x] New page `/reports/requirement-list`: low-stock spares (current stock < alert), linked suppliers with phone, "Need to Order" qty, print
+- [x] Replace hardcoded dashboard low-stock threshold (5) with `alert_quantity`
 
 ### 5. Accounting Dashboard
 - PHP reference: `admin/reports/accounting_dashboard.php`
-- [ ] `/reports/accounting-dashboard` is linked in `src/app/reports/page.tsx:58` but 404s — create page OR remove the broken link
+- [x] New page `/reports/accounting-dashboard`: date-range filters, P&L summary, performance (expense breakdown + top customers), cash flow, assets & liabilities, inventory health, print + balance-sheet link
 
 ### 6. System Logo upload
 - PHP reference: `admin/system_info/index.php`, `pdf/gst_bill.php` (uses `uploads/logo.png`)
-- [ ] Settings: logo upload (storage bucket + `system_info.logo`)
-- [ ] Print routes: show logo in header
+- [x] Settings: logo upload as dataURL → `system_info.logo` (storage buckets `signatures`/`logos` missing, so dataURL instead)
+- [x] Print routes (`print-bill`, `print-combined-invoice`, `print-direct-sale-invoice`): show logo in header, fallback to V•TECH text
+- [x] Bonus fix: `print-combined-invoice` used anon key → RLS blocked reads → always 404. Switched to service role key.
 
 ## Phase 3 — LOW
 

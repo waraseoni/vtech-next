@@ -18,6 +18,7 @@ async function fetchShopInfo() {
     email:   info.email       || "",
     gstin:   info.gst_no      || info.gstin || "",
     upiId:   info.upi_id      || "",
+    logo:    info.logo        || "",
   };
 }
 
@@ -186,6 +187,7 @@ export async function GET(request: NextRequest) {
 </head>
 <body>
   <div class="hdr">
+    ${SHOP.logo ? `<img src="${SHOP.logo}" alt="Logo" style="max-height:60px;max-width:180px;object-fit:contain;margin-bottom:6px;" />` : ""}
     <div class="co-name">${SHOP.name}</div>
     <div class="co-meta">${SHOP.address} | 📞 ${SHOP.mobile}${SHOP.email ? ` | ✉ ${SHOP.email}` : ""}</div>
     ${isGST ? `<div class="co-meta" style="margin-top:4px"><strong>GSTIN: ${SHOP.gstin || "—"}</strong></div>` : ""}

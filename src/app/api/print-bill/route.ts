@@ -21,6 +21,7 @@ async function fetchShopInfo() {
     gstin:   info.gst_no      || info.gstin || "",
     upiId:   info.upi_id      || "",
     signature: info.signature || "",
+    logo:    info.logo        || "",
   };
 }
 
@@ -322,8 +323,10 @@ export async function GET(req: NextRequest) {
   <!-- Header -->
   <div class="hdr">
     <div class="hdr-left">
-      <div style="font-size:28px;font-weight:900;color:${accentColor}">V•TECH</div>
-      <div style="font-size:10px;font-weight:700;color:#999;letter-spacing:2px">REPAIR SHOP</div>
+      ${SHOP.logo
+        ? `<img src="${SHOP.logo}" alt="Logo" style="max-height:64px;max-width:180px;object-fit:contain;" />`
+        : `<div style="font-size:28px;font-weight:900;color:${accentColor}">V•TECH</div>
+           <div style="font-size:10px;font-weight:700;color:#999;letter-spacing:2px">REPAIR SHOP</div>`}
     </div>
     <div class="hdr-mid">
       <div class="shop-name">${SHOP.name}</div>

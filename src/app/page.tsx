@@ -229,7 +229,7 @@ type Stat = { totalJobs: number; totalClients: number; pendingJobs: number; inPr
 type Financial = { totalSales: number; partsCost: number; grossProfit: number; discounts: number; salary: number; loanPaid: number; expenses: number; totalOutflow: number; netProfit: number; };
 type RecentJob = { id: number; job_id: string | null; client_name: string; item: string; amount: number; status: number; };
 type RecentPayment = { id: number; amount: number; payment_mode: string; payment_date: string; client_name: string; };
-type LowStockItem = { name: string; quantity: number; place: string };
+type LowStockItem = { name: string; quantity: number; place: string; alert: number };
 type RevenuePoint = { month: string; revenue: number };
 type StatusPoint = { name: string; value: number; color: string };
 
@@ -348,10 +348,12 @@ export default function Dashboard() {
           { data: todayDirectRes },
           { count: clientCount },
           { count: mechCount },
-          { data: lowInv },
+          { data: lowProds },
+          { data: lowInvAll },
+          { data: lowJobItems },
+          { data: lowSaleItems },
           { data: recentTransRaw },
           { data: paymentsRaw },
-          { data: lowInvDetail },
         ] = await Promise.all([
           // Today's Repair Income
           supabase.from("transaction_list").select("amount").eq("status", 5).eq("del_status", 0).gte("date_completed", startToday).lte("date_completed", endToday),
@@ -360,10 +362,13 @@ export default function Dashboard() {
           // Other stats
           supabase.from("client_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0),
           supabase.from("mechanic_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0).eq("status", 1),
-          supabase.from("inventory_list").select("product_id").lte("quantity", 5),
+          // Low stock — products with alert level
+          supabase.from("product_list").select("id, name, alert_quantity").eq("delete_flag", 0).gt("alert_quantity", 0).limit(5000),
+          supabase.from("inventory_list").select("product_id, quantity, place").limit(5000),
+          supabase.from("transaction_products").select("product_id, qty, transaction_id").limit(5000),
+          supabase.from("direct_sale_items").select("product_id, qty").limit(5000),
           supabase.from("transaction_list").select("id, job_id, client_name, item, amount, status").eq("del_status", 0).order("id", { ascending: false }).limit(5),
           supabase.from("client_payments").select("id, amount, payment_mode, payment_date, client_id").order("payment_date", { ascending: false }).order("id", { ascending: false }).limit(10),
-          supabase.from("inventory_list").select("quantity, place, product_id").lte("quantity", 5).order("quantity", { ascending: true }).limit(10),
         ]);
 
         const todayR = (todayRepairRes || []).reduce((s, r) => s + n(r.amount), 0);
@@ -389,8 +394,7 @@ export default function Dashboard() {
         ]);
 
 
-        const lowStock = lowInv
-          ? [...new Set(lowInv.map((i: any) => i.product_id))].length : 0;
+        let lowStock = 0;
 
         // todayR and todayD are already calculated above from targeted queries
 
@@ -468,16 +472,38 @@ export default function Dashboard() {
           })));
         }
 
-        // Low stock — resolve product names
-        if (lowInvDetail?.length) {
-          const pIds = [...new Set(lowInvDetail.map((i: any) => i.product_id).filter(Boolean))];
-          const { data: prods } = pIds.length
-            ? await supabase.from("product_list").select("id, name").in("id", pIds)
-            : { data: [] };
-          const pMap = Object.fromEntries((prods ?? []).map((p: any) => [p.id, p.name]));
-          setLowStockItems(lowInvDetail.map((i: any) => ({
-            name: pMap[i.product_id] ?? "Unknown", quantity: n(i.quantity), place: i.place ?? "—",
-          })));
+        // Low stock — compute available stock (in − sold) vs alert_quantity
+        if ((lowProds || []).length) {
+          const txnIds = [...new Set((lowJobItems || []).map((i: any) => i.transaction_id))];
+          let validTxnSet = new Set<number>();
+          if (txnIds.length) {
+            const { data: txns } = await supabase
+              .from("transaction_list").select("id").in("id", txnIds).neq("status", 4);
+            validTxnSet = new Set((txns || []).map((t: any) => t.id));
+          }
+          const stockMap = new Map<number, number>();
+          (lowInvAll || []).forEach((i: any) => stockMap.set(i.product_id, (stockMap.get(i.product_id) || 0) + n(i.quantity)));
+          const soldJobMap = new Map<number, number>();
+          (lowJobItems || []).forEach((i: any) => {
+            if (validTxnSet.has(i.transaction_id)) soldJobMap.set(i.product_id, (soldJobMap.get(i.product_id) || 0) + n(i.qty));
+          });
+          const soldSaleMap = new Map<number, number>();
+          (lowSaleItems || []).forEach((i: any) => soldSaleMap.set(i.product_id, (soldSaleMap.get(i.product_id) || 0) + n(i.qty)));
+
+          const placeMap = new Map<number, string>();
+          (lowInvAll || []).forEach((i: any) => { if (i.place && !placeMap.has(i.product_id)) placeMap.set(i.product_id, i.place); });
+
+          const builtLow = (lowProds || [])
+            .map((p: any) => {
+              const available = (stockMap.get(p.id) || 0) - (soldJobMap.get(p.id) || 0) - (soldSaleMap.get(p.id) || 0);
+              return { name: p.name, quantity: available, place: placeMap.get(p.id) || "—", alert: n(p.alert_quantity) };
+            })
+            .filter((x: any) => x.quantity < x.alert)
+            .sort((a: any, b: any) => (a.quantity - a.alert) - (b.quantity - b.alert));
+
+          lowStock = builtLow.length;
+          setLowStockItems(builtLow.slice(0, 12));
+          setStats(prev => ({ ...prev, lowStock }));
         }
       } catch (e) {
         console.error("Dashboard fetch error:", e);
@@ -974,7 +1000,7 @@ export default function Dashboard() {
             <h3 className="text-sm font-black text-white flex items-center gap-2">
               <AlertCircle size={13} className="text-red-400" /> Low Stock Alert
             </h3>
-            <p className="text-slate-600 text-[10px] font-bold uppercase tracking-wider">Items with quantity ≤ 5</p>
+            <p className="text-slate-600 text-[10px] font-bold uppercase tracking-wider">Items below their alert level</p>
           </div>
           <Link href="/inventory" className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs font-black transition no-underline uppercase tracking-wider">
             Manage <ChevronRight size={12} />
@@ -988,9 +1014,10 @@ export default function Dashboard() {
         ) : (
           <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
             {lowStockItems.map((item, i) => {
-              const u = item.quantity === 0
+              const ratio = item.alert > 0 ? item.quantity / item.alert : 1;
+              const u = item.quantity <= 0
                 ? { bg: "bg-red-500/8", border: "border-red-500/20", text: "text-red-400" }
-                : item.quantity <= 2
+                : ratio <= 0.4
                   ? { bg: "bg-orange-500/8", border: "border-orange-500/20", text: "text-orange-400" }
                   : { bg: "bg-amber-500/8", border: "border-amber-500/15", text: "text-amber-400" };
               return (
@@ -1000,7 +1027,7 @@ export default function Dashboard() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-white text-sm font-bold truncate">{item.name}</p>
-                    <p className="text-slate-600 text-xs truncate">{item.place}</p>
+                    <p className="text-slate-600 text-xs truncate">{item.place} · alert {item.alert}</p>
                   </div>
                 </div>
               );

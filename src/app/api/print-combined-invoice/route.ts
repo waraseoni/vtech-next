@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 // ─── Supabase (server-side) ──────────────────────────────────────────────────
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 // ─── Helper: fetch system info ────────────────────────────────────────────────
@@ -21,6 +21,7 @@ async function fetchShopInfo() {
     gstin:   info.gst_no      || info.gstin || "",
     upiId:   info.upi_id      || "",
     signature: info.signature || "",
+    logo:    info.logo        || "",
   };
 }
 
@@ -374,8 +375,10 @@ export async function GET(req: NextRequest) {
   <!-- Header -->
   <div class="hdr">
     <div>
-      <div style="font-size:30px;font-weight:900;color:${accentColor}">V•TECH</div>
-      <div style="font-size:10px;font-weight:700;color:#999;letter-spacing:2px">REPAIR SHOP</div>
+      ${SHOP.logo
+        ? `<img src="${SHOP.logo}" alt="Logo" style="max-height:70px;max-width:180px;object-fit:contain;" />`
+        : `<div style="font-size:30px;font-weight:900;color:${accentColor}">V•TECH</div>
+           <div style="font-size:10px;font-weight:700;color:#999;letter-spacing:2px">REPAIR SHOP</div>`}
     </div>
     <div style="text-align:center;flex:1;padding:0 20px">
       <div class="shop-name">${esc(SHOP.name)}</div>

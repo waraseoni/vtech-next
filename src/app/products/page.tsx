@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Package } from "lucide-react";
+import Link from "next/link";
 
 type Product = {
   id: number;
@@ -31,6 +32,8 @@ export default function ProductsPage() {
 
   const [form, setForm] = useState({ name: "", description: "", cost_price: "", price: "", hsn: "", alert_quantity: "" });
   const [formErr, setFormErr] = useState("");
+  const [suppliers, setSuppliers] = useState<{ id: number; name: string }[]>([]);
+  const [selectedSuppliers, setSelectedSuppliers] = useState<number[]>([]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -38,6 +41,11 @@ export default function ProductsPage() {
       supabase.from("profiles").select("role").eq("id", user.id).single()
         .then(({ data }) => setUserRole(data?.role ?? "staff"));
     });
+  }, []);
+
+  useEffect(() => {
+    supabase.from("suppliers").select("id, name").eq("delete_flag", 0).eq("status", 1).order("name")
+      .then(({ data }) => setSuppliers((data || []) as { id: number; name: string }[]));
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -59,8 +67,19 @@ export default function ProductsPage() {
     p.description?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const openAdd = () => { setEditing(null); setForm({ name: "", description: "", cost_price: "", price: "", hsn: "", alert_quantity: "" }); setFormErr(""); setShowModal(true); };
-  const openEdit = (p: Product) => { setEditing(p); setForm({ name: p.name, description: p.description || "", cost_price: String(p.cost_price || ""), price: String(p.price || ""), hsn: p.hsn || "", alert_quantity: String(p.alert_quantity || "") }); setFormErr(""); setShowModal(true); };
+  const openAdd = () => { setEditing(null); setForm({ name: "", description: "", cost_price: "", price: "", hsn: "", alert_quantity: "" }); setSelectedSuppliers([]); setFormErr(""); setShowModal(true); };
+  const openEdit = (p: Product) => {
+    setEditing(p); setForm({ name: p.name, description: p.description || "", cost_price: String(p.cost_price || ""), price: String(p.price || ""), hsn: p.hsn || "", alert_quantity: String(p.alert_quantity || "") }); setFormErr(""); setShowModal(true);
+    supabase.from("spare_supplier").select("supplier_id").eq("spare_id", p.id)
+      .then(({ data }) => setSelectedSuppliers((data || []).map(d => d.supplier_id)));
+  };
+
+  const syncSuppliers = async (spareId: number) => {
+    await supabase.from("spare_supplier").delete().eq("spare_id", spareId);
+    if (selectedSuppliers.length > 0) {
+      await supabase.from("spare_supplier").insert(selectedSuppliers.map(supplier_id => ({ spare_id: spareId, supplier_id })));
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,9 +99,11 @@ export default function ProductsPage() {
       if (editing) {
         const { error } = await supabase.from("product_list").update(payload).eq("id", editing.id);
         if (error) throw error;
+        await syncSuppliers(editing.id);
       } else {
-        const { error } = await supabase.from("product_list").insert([{ ...payload, delete_flag: 0 }]);
+        const { data: inserted, error } = await supabase.from("product_list").insert([{ ...payload, delete_flag: 0 }]).select("id");
         if (error) throw error;
+        if (inserted && inserted[0]) await syncSuppliers(inserted[0].id);
       }
       setShowModal(false);
       fetchData();
@@ -287,6 +308,23 @@ export default function ProductsPage() {
                     placeholder="0"
                     className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500" />
                 </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Linked Suppliers <span className="normal-case font-semibold text-slate-600">(order karne ke liye)</span></label>
+                {suppliers.length === 0 ? (
+                  <p className="text-xs text-slate-600 italic">Koi active supplier nahi — pehle <Link href="/suppliers" className="text-blue-400 underline">Suppliers</Link> me add karein.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {suppliers.map(s => (
+                      <label key={s.id} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all text-sm ${selectedSuppliers.includes(s.id) ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400" : "bg-[#0d1117] border-[#21293d] text-slate-400 hover:border-[#2a3550]"}`}>
+                        <input type="checkbox" checked={selectedSuppliers.includes(s.id)}
+                          onChange={e => setSelectedSuppliers(prev => e.target.checked ? [...prev, s.id] : prev.filter(x => x !== s.id))}
+                          className="accent-emerald-500" />
+                        {s.name}
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={saving}
