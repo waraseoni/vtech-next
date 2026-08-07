@@ -102,6 +102,6 @@ The legacy PHP RSMS has features the Next.js port is missing. This plan tracks t
 - [x] **CLN-1** deleted dead files: `src/app/salary/page - Copy.tsx`, `src/app/backup/page_100%_restore_from_backup.tsx`, `src/app/backup/vtech_mysql_converter.html`, `public/tools/vtech_mysql_converter - Copy.html`; fixed `/jobs/old-edit/:id` 404 link → `/jobs/:id/old`
 - [x] **CLN-4** CSV export: UTF-8 BOM (₹/Hindi in Excel) + IST filename; `console.log` → `console.debug` leftovers
 - [x] Typecheck (`npx tsc --noEmit`) clean after each phase
-- [ ] **PERF-3** `/clients` full-table fetch → pagination/balance via DB
-- [ ] **CLN-2** de-dup byte-identical `jobs/old` routes + `StockModal.tsx` copies
-- [ ] **CLN-3** design-token centralization (`inputCls`/`labelCls`/fieldsets/`fHdr` across 20+ files)
+- [x] **PERF-3** `/clients` no full-table scan — chunked `IN` filters (400/batch, 1000-row pages) on repairs/`last_txn_date` queries (verified via CDP, 25 rows render)
+- [x] **CLN-2** evaluated, no-op: `jobs/old` (new entry) vs `jobs/[id]/old` (edit) are the same component mounted at two routes (`params?.id` drives mode) — deletion would break a route; two `StockModal.tsx` copies have diverged (view copy adds supplier select, drops `logActivity`/`productName`) — legitimately different
+- [ ] **CLN-3** design-token centralization (`inputCls`/`labelCls`/fieldsets/`fHdr` across 20+ files) — deferred: cosmetic-only, high regression risk, no functional value
