@@ -24,14 +24,24 @@ export const FORBIDDEN = () =>
 
 export async function requireUser() {
   const supabase = await getServerSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  return user;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    return user;
+  } catch {
+    return null;
+  }
 }
 
 export async function requireAdmin() {
   const supabase = await getServerSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
+  let user: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"];
+  try {
+    const res = await supabase.auth.getUser();
+    user = res.data.user;
+  } catch {
+    return null;
+  }
   if (!user) return null;
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
   if (profile?.role !== "admin") return null;

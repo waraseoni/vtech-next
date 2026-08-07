@@ -23,7 +23,21 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data: { user: u } } = await supabase.auth.getUser();
+    user = u;
+  } catch (err) {
+    // Stale/invalid session cookie (e.g. refresh_token_not_found — token was
+    // rotated/revoked server-side). Clear every Supabase auth cookie so we
+    // don't retry + fail on every request; protected routes redirect to login.
+    console.debug("proxy: stale session cookie, clearing auth cookies:", (err as Error)?.message);
+    request.cookies.getAll()
+      .filter((c) => c.name.startsWith("sb-"))
+      .forEach((c) => {
+        response.cookies.set({ name: c.name, value: "", maxAge: 0, path: "/" });
+      });
+  }
   const path = request.nextUrl.pathname;
 
   // ✅ PUBLIC routes — no login required
