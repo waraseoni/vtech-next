@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { todayIST, nowISTTime, hoursBetweenIST, fmtTimeIST, deriveStatusFromTimes } from '@/lib/dateUtils';
+import { verifyAttendanceLocation, geoErrorMessage } from '@/lib/geofence';
 
 interface Mechanic {
   id: number;
@@ -160,11 +161,6 @@ export default function DailyAttendance({
           setSelfMsg({ type: 'ok', text: `Already checked in at ${fmtTimeIST(existing.time_in)}.` });
           return;
         }
-        const { error } = await supabase
-          .from('attendance_list')
-          .upsert({ mechanic_id: mechanicId, curr_date: today, time_in: now, status: 1 }, { onConflict: 'mechanic_id,curr_date' });
-        if (error) throw error;
-        setSelfMsg({ type: 'ok', text: `Checked in at ${fmtTimeIST(now)}. Have a nice day!` });
       } else {
         if (!existing?.time_in) {
           setSelfMsg({ type: 'err', text: 'Pehle check-in karein, tabhi check-out hoga.' });
@@ -174,12 +170,35 @@ export default function DailyAttendance({
           setSelfMsg({ type: 'ok', text: `Already checked out at ${fmtTimeIST(existing.time_out)}.` });
           return;
         }
-        const derived = deriveStatusFromTimes(existing.time_in, now) ?? 1;
+      }
+
+      // GPS geofence check — only enforced when actually writing a stamp
+      const geo = await verifyAttendanceLocation();
+      if (!geo.ok) {
+        setSelfMsg({ type: 'err', text: geoErrorMessage(geo) });
+        return;
+      }
+      const coords = geo.coords;
+
+      if (action === 'in') {
         const { error } = await supabase
           .from('attendance_list')
-          .upsert({ mechanic_id: mechanicId, curr_date: today, time_out: now, status: derived }, { onConflict: 'mechanic_id,curr_date' });
+          .upsert({
+            mechanic_id: mechanicId, curr_date: today, time_in: now, status: 1,
+            ...(coords ? { lat_in: coords.lat, lng_in: coords.lng } : {}),
+          }, { onConflict: 'mechanic_id,curr_date' });
         if (error) throw error;
-        const hours = hoursBetweenIST(existing.time_in, now);
+        setSelfMsg({ type: 'ok', text: `Checked in at ${fmtTimeIST(now)}. Have a nice day!` });
+      } else {
+        const derived = deriveStatusFromTimes(existing?.time_in ?? null, now) ?? 1;
+        const { error } = await supabase
+          .from('attendance_list')
+          .upsert({
+            mechanic_id: mechanicId, curr_date: today, time_out: now, status: derived,
+            ...(coords ? { lat_out: coords.lat, lng_out: coords.lng } : {}),
+          }, { onConflict: 'mechanic_id,curr_date' });
+        if (error) throw error;
+        const hours = hoursBetweenIST(existing?.time_in ?? null, now);
         setSelfMsg({
           type: 'ok',
           text: `Checked out at ${fmtTimeIST(now)}. Working hours: ${hours}${derived === 3 ? ' (Half Day - under 6 hours)' : ''}`,

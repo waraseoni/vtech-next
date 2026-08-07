@@ -34,6 +34,13 @@ export default function SettingsPage() {
   const [bizHours,   setBizHours]   = useState({ open: "09:00", close: "19:00", days: "Mon-Sat" });
   const [logRetention, setLogRetention] = useState("90");
 
+  // Attendance Geofencing
+  const [gfEnabled, setGfEnabled] = useState(false);
+  const [gfLat,     setGfLat]     = useState("");
+  const [gfLng,     setGfLng]     = useState("");
+  const [gfRadius,  setGfRadius]  = useState("200");
+  const [gfLocating, setGfLocating] = useState(false);
+
   // Signature
   const [signature, setSignature] = useState("");
   const [sigFile, setSigFile] = useState<File | null>(null);
@@ -112,6 +119,12 @@ export default function SettingsPage() {
       });
       setLogRetention(info.log_retention || "90");
 
+      // Attendance Geofencing
+      setGfEnabled(info.geofence_enabled === "true");
+      setGfLat(info.geofence_lat || "");
+      setGfLng(info.geofence_lng || "");
+      setGfRadius(info.geofence_radius_m || "200");
+
       // Signature
       setSignature(info.signature || "");
 
@@ -171,6 +184,10 @@ export default function SettingsPage() {
         upsertField("biz_close",  bizHours.close),
         upsertField("biz_days",   bizHours.days),
         upsertField("log_retention", logRetention.trim() || "90"),
+        upsertField("geofence_enabled", gfEnabled ? "true" : "false"),
+        upsertField("geofence_lat", gfLat.trim()),
+        upsertField("geofence_lng", gfLng.trim()),
+        upsertField("geofence_radius_m", gfRadius.trim() || "200"),
       ]);
       setToast({ type: "success", msg: "Settings save ho gayi! ✅" });
     } catch (err: unknown) {
@@ -193,6 +210,28 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // ── Attendance Geofencing: fill current coordinates ─────────────
+  const useMyLocation = () => {
+    if (!("geolocation" in navigator)) {
+      setToast({ type: "error", msg: "Is browser me geolocation support nahi hai" });
+      return;
+    }
+    setGfLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setGfLat(p.coords.latitude.toFixed(6));
+        setGfLng(p.coords.longitude.toFixed(6));
+        setGfLocating(false);
+        setToast({ type: "success", msg: "Current location set ✅" });
+      },
+      () => {
+        setGfLocating(false);
+        setToast({ type: "error", msg: "Location fetch nahi hui. Permission/Internet/GPS check karein." });
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   // ── Signature upload ────────────────────────────────
@@ -701,6 +740,47 @@ export default function SettingsPage() {
               <p className="text-[10px] text-slate-700 mt-1">
                 Clean old logs action sirf isse zyada din purane logs delete karega. Default: 90 days.
               </p>
+            </div>
+          </div>
+
+          {/* Attendance Geofencing */}
+          <div className={fieldsets}>
+            <div className={`${fHdr} from-blue-600/20 to-transparent`}>
+              <MapPin size={14} className="text-blue-400"/>
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Attendance Geofencing</h3>
+            </div>
+            <div className="p-5 space-y-4">
+              <label className="flex items-center gap-2.5 text-xs font-bold text-slate-400 cursor-pointer">
+                <input type="checkbox" checked={gfEnabled} onChange={e => setGfEnabled(e.target.checked)}
+                  className="accent-blue-500 w-4 h-4"/>
+                Self check-in / check-out ke liye GPS location verify karein
+              </label>
+              <p className="text-[10px] text-slate-700">
+                Enable hone par staff office radius ke bahar se attendance mark nahi kar payenge.
+                Check-in/out ki coordinates record par audit ke liye save hoti hain.
+                (Admin ka manual time-editing geofence se exempt rehta hai.)
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className={labelCls}>Office Latitude</label>
+                  <input type="text" value={gfLat} onChange={e => setGfLat(e.target.value)}
+                    placeholder="23.1545" className={inputCls}/>
+                </div>
+                <div>
+                  <label className={labelCls}>Office Longitude</label>
+                  <input type="text" value={gfLng} onChange={e => setGfLng(e.target.value)}
+                    placeholder="79.9426" className={inputCls}/>
+                </div>
+                <div>
+                  <label className={labelCls}>Radius (meters)</label>
+                  <input type="number" min="50" value={gfRadius} onChange={e => setGfRadius(e.target.value)}
+                    className={inputCls}/>
+                </div>
+              </div>
+              <button type="button" onClick={useMyLocation} disabled={gfLocating}
+                className="text-xs bg-blue-600/20 text-blue-400 border border-blue-600/30 px-3 py-1.5 rounded-lg hover:bg-blue-600/30 transition-all inline-flex items-center gap-1.5 disabled:opacity-50">
+                {gfLocating ? "Locating..." : "Use My Current Location"}
+              </button>
             </div>
           </div>
 

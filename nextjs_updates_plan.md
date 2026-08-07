@@ -82,6 +82,14 @@ The legacy PHP RSMS has features the Next.js port is missing. This plan tracks t
 - [x] `AttendanceModal`: editable time inputs with live hours preview, Save In/Out Times (auto-derive), Clear Times (keeps status), status quick-buttons, error/loading states
 - [x] Verified end-to-end via headless-Chrome CDP suite: staff check-in/out (derived Half Day < 6h), admin bulk save 09:00–18:00 → Present, report hours/tooltip, modal Save → Half Day, Clear Times preserves status (19/19 checks PASS, no console errors)
 
+### 12. Attendance GPS Geofencing (new security feature)
+- Problem: app is deployed on Vercel → staff can login from anywhere and fake attendance. Solution: verify GPS location on self check-in/out.
+- [x] Supabase migration: `attendance_list.lat_in/lng_in/lat_out/lng_out` (DOUBLE PRECISION, audit) + `system_info` geofence config defaults (`geofence_enabled`, `geofence_lat`, `geofence_lng`, `geofence_radius_m`) — `20260807_attendance_geofence.sql` (applied via SQL Editor)
+- [x] `src/lib/geofence.ts`: haversine `distanceMeters`, `getCurrentPosition` (promise), `loadGeofenceConfig`, `verifyAttendanceLocation`, Hindi `geoErrorMessage`
+- [x] `DailyAttendance`: self check-in/out runs `verifyAttendanceLocation()` before writing — outside radius → blocked with Hindi message; inside → `lat_in/lng_in` (check-in) and `lat_out/lng_out` (check-out) saved on the record; disabled → no behavior change
+- [x] Settings → "Attendance Geofencing" fieldset: enable toggle, office lat/lng, radius (m), "Use My Current Location" button (fill current coords), saved via existing `system_info` upsert
+- [x] Verified via CDP `Emulation.setGeolocationOverride`: far (Delhi, 665km) → blocked + no DB write; office (110m) → check-in/out succeed + coords saved (7/7 checks PASS); disabled path re-verified (19/19 regression PASS)
+
 ## Verification
 - `npm run build` after each phase
 - Manual: create product/service with HSN, print invoices, add client due date, send WA reminder, check dashboard
