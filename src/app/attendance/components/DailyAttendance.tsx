@@ -226,8 +226,11 @@ export default function DailyAttendance({
     setSaving(true);
     try {
       await Promise.all(mechanics.map(async (mech) => {
-        // Status 0 (unmarked) defaults to Absent on save (PHP parity)
-        let status: number = (attendance[mech.id] || 0) === 0 ? 2 : attendance[mech.id];
+        // Status 0 (unmarked) → skip. Unmarked ko silently Absent mat karo —
+        // sirf explicitly marked (1 Present / 2 Absent / 3 Half Day) save hote hain.
+        const s = attendance[mech.id];
+        if (s !== 1 && s !== 2 && s !== 3) return;
+        let status: number = s;
         const t = times[mech.id];
         let timeIn: string | null = null;
         let timeOut: string | null = null;

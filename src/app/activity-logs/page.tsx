@@ -53,12 +53,12 @@ export default function ActivityLogsPage() {
         dataQuery = dataQuery.eq("module", moduleFilter);
       }
       if (dateFrom) {
-        countQuery = countQuery.gte("date_created", `${dateFrom}T00:00:00`);
-        dataQuery = dataQuery.gte("date_created", `${dateFrom}T00:00:00`);
+        countQuery = countQuery.gte("date_created", `${dateFrom}T00:00:00+05:30`);
+        dataQuery = dataQuery.gte("date_created", `${dateFrom}T00:00:00+05:30`);
       }
       if (dateTo) {
-        countQuery = countQuery.lte("date_created", `${dateTo}T23:59:59`);
-        dataQuery = dataQuery.lte("date_created", `${dateTo}T23:59:59`);
+        countQuery = countQuery.lte("date_created", `${dateTo}T23:59:59+05:30`);
+        dataQuery = dataQuery.lte("date_created", `${dateTo}T23:59:59+05:30`);
       }
       if (search) {
         countQuery = countQuery.or(`action.ilike.%${search}%,details.ilike.%${search}%`);

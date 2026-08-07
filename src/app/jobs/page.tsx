@@ -239,7 +239,7 @@ function JobsListContent() {
         query = query.or(`job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`);
       }
 
-      // ── Quick Stats Query (batched to bypass Supabase 1k max-rows) ──
+      // ── Quick Stats Query (exact — no 2k-row cap) ──
       const buildStatsQuery = (rangeFrom: number, rangeTo: number) => {
         let q = supabase.from("transaction_list").select("status, amount").eq("del_status", 0).range(rangeFrom, rangeTo);
         if (dateFrom) q = q.gte("date_created", `${dateFrom}T00:00:00+05:30`);
@@ -250,28 +250,55 @@ function JobsListContent() {
         return q;
       };
 
+      // Exact status counts via head queries (no row fetch)
+      const statusCount = async (statuses: number[]) => {
+        let q = supabase.from("transaction_list").select("id", { count: "exact", head: true }).eq("del_status", 0);
+        if (statuses.length === 1) q = q.eq("status", statuses[0]);
+        else if (statuses.length > 1) q = q.in("status", statuses);
+        if (dateFrom) q = q.gte("date_created", `${dateFrom}T00:00:00+05:30`);
+        if (dateTo) q = q.lte("date_created", `${dateTo}T23:59:59+05:30`);
+        if (hideDelivered) q = q.neq("status", 5);
+        if (statusFilter !== "") q = q.eq("status", statusFilter);
+        if (term) q = q.or(`job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`);
+        const { count } = await q;
+        return count || 0;
+      };
+
+      // Exact amount sum — paginate past Supabase's 1k row cap
+      const sumAmounts = async () => {
+        let sum = 0;
+        for (let start = 0; ; start += 1000) {
+          const { data } = await buildStatsQuery(start, start + 999);
+          if (!data || data.length === 0) break;
+          sum += data.reduce((s, t) => s + (t.amount || 0), 0);
+          if (data.length < 1000) break;
+        }
+        return sum;
+      };
+
       // ── Execute Page Query ──
       const from = pageIndex * pageSize;
       const to = from + pageSize - 1;
       query = query.order("date_created", { ascending: false }).range(from, to);
 
-      const [pageRes, statsRes1, statsRes2] = await Promise.all([
+      const [pageRes, pending, progress, done, totalAmt] = await Promise.all([
         query,
-        buildStatsQuery(0, 999),
-        buildStatsQuery(1000, 1999),
+        statusCount([0]),
+        statusCount([1]),
+        statusCount([2, 3, 5]),
+        sumAmounts(),
       ]);
 
       if (pageRes.error) throw pageRes.error;
       
       setTotalRows(pageRes.count || 0);
 
-      const allStats = [...(statsRes1.data || []), ...(statsRes2.data || [])];
       setStats({
-        total: allStats.length,
-        pending: allStats.filter(t => t.status === 0).length,
-        progress: allStats.filter(t => t.status === 1).length,
-        completed: allStats.filter(t => [2, 3, 5].includes(t.status)).length,
-        totalAmt: allStats.reduce((s, t) => s + (t.amount || 0), 0),
+        total: pageRes.count || 0,
+        pending,
+        progress,
+        completed: done,
+        totalAmt,
       });
 
       const pageTxns = pageRes.data || [];

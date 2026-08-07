@@ -84,10 +84,10 @@ export async function GET(request: Request) {
       { data: allAttRaw },
       { data: allAdvRaw },
     ] = await Promise.all([
-      // 1. Repair jobs (matching PHP - no del_status filter)
+      // 1. Repair jobs (del_status=0 — soft-deleted jobs ko income/liability dono se exclude)
       supabase.from('transaction_list')
         .select('id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id')
-        .eq('status', 5)
+        .eq('status', 5).eq('del_status', 0)
         .gte('date_completed', start).lte('date_completed', end),
 
       // 2. Walk-in sales

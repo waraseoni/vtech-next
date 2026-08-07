@@ -20,7 +20,7 @@ interface Props {
   initialTimeIn?: string;
   initialTimeOut?: string;
   onClose: () => void;
-  onUpdate: (newStatus: 1 | 2 | 3) => void;  // 🔧 FIX: Now receives the new status
+  onUpdate: (newStatus: 0 | 1 | 2 | 3) => void;  // 🔧 FIX: Now receives the new status
 }
 
 const STATUS_OPTIONS = [
@@ -82,8 +82,8 @@ export default function AttendanceModal({ mechanicId, mechanicName, date, initia
 
   const handleSaveTimes = async () => {
     const derived = deriveStatusFromTimes(timeIn || null, timeOut || null);
-    // If times given, derive; otherwise keep current status (or absent if none)
-    const status: 1 | 2 | 3 = derived ?? (currentStatus !== 0 ? currentStatus as 1 | 2 | 3 : 2);
+    // If times given, derive; otherwise keep current status (unmarked = 0, Absent nahi)
+    const status: 0 | 1 | 2 | 3 = derived ?? (currentStatus !== 0 ? currentStatus as 1 | 2 | 3 : 0);
     const ok = await upsert({
       time_in:  timeIn  || null,
       time_out: timeOut || null,
@@ -96,7 +96,7 @@ export default function AttendanceModal({ mechanicId, mechanicName, date, initia
   };
 
   const handleClearTimes = async () => {
-    const status: 1 | 2 | 3 = currentStatus !== 0 ? currentStatus as 1 | 2 | 3 : 2;
+    const status: 0 | 1 | 2 | 3 = currentStatus !== 0 ? currentStatus as 1 | 2 | 3 : 0;
     setTimeIn('');
     setTimeOut('');
     const ok = await upsert({ time_in: null, time_out: null, status });

@@ -41,7 +41,7 @@ export default function MonthlyProfitReport() {
       setLoading(true);
       try {
         const start = `${year}-01-01`;
-        const end = `${year}-12-31 23:59:59`;
+        const end = `${year}-12-31T23:59:59+05:30`;
 
         const [
           { data: transactions },

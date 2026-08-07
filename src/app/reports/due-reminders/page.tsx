@@ -119,7 +119,7 @@ function DueRemindersContent() {
       const repairsMap = sumBy(repairs.data, "client_name", r => Number(r.amount) || 0);
       const salesMap   = sumBy(sales.data,   "client_id",   r => Number(r.total_amount) || 0);
       const loansMap   = sumBy(loans.data,   "client_id",   r => Number(r.total_payable) || 0);
-      const payMap     = sumBy(payments.data, "client_id",  r => Number(r.amount) || 0 + Number(r.discount) || 0);
+      const payMap     = sumBy(payments.data, "client_id",  r => (Number(r.amount) || 0) + (Number(r.discount) || 0));
       const lastRemMap = new Map<number, string>();
       const countMap   = new Map<number, number>();
       (reminders.data || []).forEach(r => {

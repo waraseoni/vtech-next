@@ -5,17 +5,18 @@ export const metadata = {
   title: 'Delivered Items Report - V-TECH',
 };
 
-export default function DeliveredReportPage({
+export default async function DeliveredReportPage({
   searchParams,
 }: {
-  searchParams: { from_date?: string; to_date?: string; client_id?: string };
+  searchParams: Promise<{ from_date?: string; to_date?: string; client_id?: string }>;
 }) {
+  const { from_date, to_date, client_id } = await searchParams;
   return (
     <Suspense fallback={<div className="p-8 text-center">Loading report...</div>}>
       <DeliveredReportClient
-        fromDate={searchParams.from_date}
-        toDate={searchParams.to_date}
-        clientId={searchParams.client_id}
+        fromDate={from_date}
+        toDate={to_date}
+        clientId={client_id}
       />
     </Suspense>
   );
