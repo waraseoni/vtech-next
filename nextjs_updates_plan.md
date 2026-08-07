@@ -93,3 +93,15 @@ The legacy PHP RSMS has features the Next.js port is missing. This plan tracks t
 ## Verification
 - `npm run build` after each phase
 - Manual: create product/service with HSN, print invoices, add client due date, send WA reminder, check dashboard
+
+## Phase 4 — Security, Bugfixes, Performance & Cleanup (06 Aug, third pass)
+- [x] **SEC security hardening** (commit `68600fd`): `src/lib/api-auth.ts` (`requireUser`/`requireAdmin`/`getServerSupabase`); 21 print routes guarded (public `print-job-status` stays); backups `requireAdmin` + download whitelist (`php-ref/db/*.sql`, `vikram_db_supabase.txt`; `.env.local` → 403); `api/chat` requireUser + no client apiKey override; `export-transactions` requireUser; deleted `api/test-tx` + `api/test-logs`; signup forces `role:"staff"` (admin selector removed); login stores email only (no password); admin APIs cookie-session-verified + last-admin protection; AI key env-priority + never rendered client-side (`aiKeyConfigured` bool + masked placeholder)
+- [x] **BUG data fixes** (commit `4069fbf`): due-reminders `payMap` operator-precedence; attendance unmarked rows no longer silently Absent; jobs quick-stats exact via `head:true` + paginated amount sum; `+05:30` bounds on `monthly-profit`/`activity-logs`; reports delivered searchParams awaited; ledger repair jobs `.eq("del_status",0)`
+- [x] **PERF-1** ledger N+1 → 3 bulk queries (attendance in [1,3], commissions, advances date-range) + in-memory maps, day loop without await
+- [x] **PERF-2** `<Suspense>` around `useSearchParams` pages: `/payments`, `/expenses`, `/direct-sales`, `/inquiries`, `/reports/cash-flow`, `/jobs/new` (verified via CDP — no prerender bailout / runtime errors)
+- [x] **CLN-1** deleted dead files: `src/app/salary/page - Copy.tsx`, `src/app/backup/page_100%_restore_from_backup.tsx`, `src/app/backup/vtech_mysql_converter.html`, `public/tools/vtech_mysql_converter - Copy.html`; fixed `/jobs/old-edit/:id` 404 link → `/jobs/:id/old`
+- [x] **CLN-4** CSV export: UTF-8 BOM (₹/Hindi in Excel) + IST filename; `console.log` → `console.debug` leftovers
+- [x] Typecheck (`npx tsc --noEmit`) clean after each phase
+- [ ] **PERF-3** `/clients` full-table fetch → pagination/balance via DB
+- [ ] **CLN-2** de-dup byte-identical `jobs/old` routes + `StockModal.tsx` copies
+- [ ] **CLN-3** design-token centralization (`inputCls`/`labelCls`/fieldsets/`fHdr` across 20+ files)
