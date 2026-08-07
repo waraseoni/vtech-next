@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { requireAdmin } from "@/lib/api-auth";
 
 type BackupFile = {
   name: string;
@@ -17,6 +18,9 @@ const extraFiles = [
 ];
 
 export async function GET() {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const files: BackupFile[] = [];
 

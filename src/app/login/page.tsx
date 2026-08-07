@@ -13,14 +13,12 @@ export default function LoginPage() {
   const [error,      setError]      = useState("");
   const router = useRouter();
 
-  // ── Load saved credentials ─────────────────────────────────────────────
+  // ── Load saved email ───────────────────────────────────────────────────
   useEffect(() => {
     const savedEmail    = localStorage.getItem("vtech_email");
-    const savedPassword = localStorage.getItem("vtech_password");
     const savedRemember = localStorage.getItem("vtech_remember") === "true";
-    if (savedRemember && savedEmail && savedPassword) {
+    if (savedRemember && savedEmail) {
       setEmail(savedEmail);
-      setPassword(savedPassword);
       setRememberMe(true);
     }
   }, []);
@@ -43,16 +41,15 @@ export default function LoginPage() {
       return;
     }
 
-    // Remember Me
+    // Remember Me (email only — password kabhi localStorage me store nahi karte)
     if (rememberMe) {
       localStorage.setItem("vtech_email",    email);
-      localStorage.setItem("vtech_password", password);
       localStorage.setItem("vtech_remember", "true");
     } else {
       localStorage.removeItem("vtech_email");
-      localStorage.removeItem("vtech_password");
       localStorage.removeItem("vtech_remember");
     }
+    localStorage.removeItem("vtech_password");
 
     // ── CRITICAL: Fetch role BEFORE navigating ─────────────────────────
     // Layout ka useEffect sirf mount pe chalta hai.
@@ -181,7 +178,7 @@ export default function LoginPage() {
                 onClick={() => setRememberMe(v => !v)}
                 className="text-xs font-bold text-slate-500 cursor-pointer select-none hover:text-slate-400 transition-colors"
               >
-                Remember My Credentials
+                Remember My Email
               </label>
             </div>
 

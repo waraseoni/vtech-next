@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAdmin } from "@/lib/api-auth";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,23 +10,18 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, fullName, role, requesterId } = await req.json();
+    const { email, password, fullName, role } = await req.json();
 
-    if (!email || !password || !fullName || !requesterId) {
+    if (!email || !password || !fullName) {
       return NextResponse.json({ error: "Sabhi fields required hain" }, { status: 400 });
     }
     if (password.length < 6) {
       return NextResponse.json({ error: "Password kam se kam 6 characters ka hona chahiye" }, { status: 400 });
     }
 
-    // ── Verify requester is admin ─────────────────────────────────────────
-    const { data: requesterProfile } = await supabaseAdmin
-      .from("profiles")
-      .select("role")
-      .eq("id", requesterId)
-      .single();
-
-    if (requesterProfile?.role !== "admin") {
+    // ── Verify requester is admin via session cookie ──────────────────────
+    const admin = await requireAdmin();
+    if (!admin) {
       return NextResponse.json({ error: "Sirf Admin naya user create kar sakta hai" }, { status: 403 });
     }
 

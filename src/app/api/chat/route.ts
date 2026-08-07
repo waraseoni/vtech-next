@@ -3,9 +3,13 @@ import { getChatResponse, generateWhatsAppReply } from "@/lib/gemini";
 import { getGroqChatResponse } from "@/lib/groq";
 import type { ChatMessage } from "@/lib/gemini";
 import { getAiSettings } from "@/lib/ai-settings";
+import { requireUser } from "@/lib/api-auth";
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const body = await request.json();
     const { message, messages, type, context, provider } = body;
 
@@ -16,15 +20,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch AI settings from DB, but allow override from request body
-    const bodyApiKey = body.apiKey;
-    const bodyModel = body.model;
-
     const aiSettings = await getAiSettings();
 
     const activeProvider = provider || aiSettings.provider;
-    const apiKey = bodyApiKey || aiSettings.apiKey;
-    const modelName = bodyModel || aiSettings.model;
+    const apiKey = aiSettings.apiKey;
+    const modelName = aiSettings.model;
 
     let responseText: string;
 

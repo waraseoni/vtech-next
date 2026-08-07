@@ -68,6 +68,7 @@ export default function SettingsPage() {
   // AI
   const [aiProvider, setAiProvider] = useState("gemini");
   const [aiApiKey, setAiApiKey] = useState("");
+  const [aiKeyConfigured, setAiKeyConfigured] = useState(false);
   const [aiModel, setAiModel] = useState("gemini-2.0-flash");
   const [showAiKey, setShowAiKey] = useState(false);
   const [aiTesting, setAiTesting] = useState(false);
@@ -135,9 +136,10 @@ export default function SettingsPage() {
       const c = info.cover || "";
       setCover(c.startsWith("uploads/") ? "" : c);
 
-      // AI Settings
+      // AI Settings (key value kabhi client par render nahi karte)
       setAiProvider(info.ai_provider || "gemini");
-      setAiApiKey(info.ai_api_key || "");
+      setAiKeyConfigured(!!info.ai_api_key);
+      setAiApiKey("");
       setAiModel(info.ai_model || "gemini-2.0-flash");
 
       setLoading(false);
@@ -202,7 +204,12 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       await upsertField("ai_provider", aiProvider);
-      await upsertField("ai_api_key", aiApiKey);
+      // Naya key type kiya ho to hi update karte hain (existing key kabhi read-back nahi karte)
+      if (aiApiKey.trim()) {
+        await upsertField("ai_api_key", aiApiKey.trim());
+        setAiApiKey("");
+        setAiKeyConfigured(true);
+      }
       await upsertField("ai_model", aiModel);
       setToast({ type: "success", msg: "AI settings saved ✅" });
     } catch (err: unknown) {
@@ -445,7 +452,6 @@ export default function SettingsPage() {
 
   // ── Test AI API ──────────────────────────────────────
   const testAiApi = async () => {
-    if (!aiApiKey.trim()) { setToast({ type: "error", msg: "Pehle API key daalein" }); return; }
     setAiTesting(true);
     setAiTestResult("Testing...");
     try {
@@ -878,7 +884,7 @@ export default function SettingsPage() {
                   <label className={labelCls}>API Key</label>
                   <div className="relative">
                     <input type={showAiKey ? "text" : "password"} value={aiApiKey} onChange={e => setAiApiKey(e.target.value)}
-                      className={`${inputCls} pr-9`} placeholder="Enter API key"/>
+                      className={`${inputCls} pr-9`} placeholder={aiKeyConfigured ? "•••••••••• (key set hai — naya daalne ke liye type karein)" : "Enter API key"}/>
                     <button type="button" onClick={() => setShowAiKey(!showAiKey)}
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
                       {showAiKey ? <EyeOff size={16}/> : <Eye size={16}/>}

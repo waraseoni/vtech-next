@@ -20,9 +20,12 @@ export async function getAiSettings(): Promise<AiSettings> {
   const info: Record<string, string> = {};
   (data || []).forEach((r: any) => { info[r.meta_field] = r.meta_value; });
 
+  const provider = info.ai_provider || "gemini";
+  const envKey = provider === "groq" ? process.env.GROQ_API_KEY : process.env.GEMINI_API_KEY;
+
   return {
-    provider: info.ai_provider || "gemini",
-    apiKey: info.ai_api_key || "",
+    provider,
+    apiKey: envKey || info.ai_api_key || "",
     model: info.ai_model || "gemini-2.0-flash",
   };
 }

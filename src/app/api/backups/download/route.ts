@@ -1,8 +1,11 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { requireAdmin } from "@/lib/api-auth";
 
 const rootDir = process.cwd();
+const mariadbDir = path.join(rootDir, "php-ref", "db");
+const ALLOWED = ["vikram_db_supabase.txt"];
 
 function safeResolve(relativePath: string) {
   const normalized = relativePath.replace(/\\/g, "/");
@@ -13,10 +16,23 @@ function safeResolve(relativePath: string) {
   return fullPath;
 }
 
+function isAllowed(relativePath: string) {
+  const normalized = relativePath.replace(/\\/g, "/");
+  if (ALLOWED.includes(normalized)) return true;
+  const sqlPrefix = path.join("php-ref", "db", "").replace(/\\/g, "/");
+  return normalized.startsWith(sqlPrefix) && normalized.endsWith(".sql");
+}
+
 export async function GET(req: NextRequest) {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const relativePath = req.nextUrl.searchParams.get("file");
   if (!relativePath) {
     return new NextResponse("file query param required", { status: 400 });
+  }
+  if (!isAllowed(relativePath)) {
+    return new NextResponse("Access denied", { status: 403 });
   }
 
   try {

@@ -2,14 +2,13 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { UserPlus, Mail, Lock, User, Shield, Loader2, ArrowLeft } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState("staff");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -37,7 +36,7 @@ export default function SignUpPage() {
       const { error: profileError } = await supabase
         .from('profiles')
         .insert([
-          { id: authData.user.id, role: role }
+          { id: authData.user.id, role: "staff" }
         ]);
 
       if (profileError) {
@@ -72,14 +71,6 @@ export default function SignUpPage() {
           <div style={inputGroup}>
             <Lock size={18} color="#888" />
             <input type="password" placeholder="Password (Min 6 chars)" style={inputStyle} onChange={(e) => setPassword(e.target.value)} required />
-          </div>
-
-          <div style={inputGroup}>
-            <Shield size={18} color="#888" />
-            <select style={inputStyle} value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="staff">Staff (Limited Access)</option>
-              <option value="admin">Admin (Full Access)</option>
-            </select>
           </div>
 
           <button type="submit" disabled={loading} style={signUpBtn}>
