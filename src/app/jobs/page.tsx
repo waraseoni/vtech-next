@@ -1193,7 +1193,7 @@ function JobsListContent() {
                     { href: `/jobs/${txn.id}`,          icon: Eye,      label: "View",     border: "border-blue-500/20",    text: "text-blue-400"    },
                     { href: null,                        icon: Phone,    label: "WhatsApp", border: "border-emerald-500/20", text: "text-emerald-400", onClick: () => sendWA(txn) },
                     { href: `/api/print-bill?job_id=${txn.job_id}`, icon: Printer, label: "Print", border: "border-orange-500/20", text: "text-orange-400", target: "_blank" },
-                    { href: `/jobs/old-edit/${txn.id}`,  icon: History,  label: "Old Edit", border: "border-cyan-500/20",   text: "text-cyan-400"    },
+                    { href: `/jobs/${txn.id}/old`,     icon: History,  label: "Old Edit", border: "border-cyan-500/20",   text: "text-cyan-400"    },
                     { href: `/jobs/edit/${txn.id}`,      icon: Settings, label: "Edit",     border: "border-indigo-500/20", text: "text-indigo-400"  },
                   ].map(({ href, icon: Icon, label, border, text, onClick, target }) =>
                     href ? (

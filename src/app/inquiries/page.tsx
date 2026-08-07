@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -36,7 +36,7 @@ const daysAgo    = (s: string) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
-export default function InquiriesPage() {
+function InquiriesPageInner() {
   const router       = useRouter();
   const searchParams = useSearchParams();
 
@@ -613,5 +613,13 @@ export default function InquiriesPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function InquiriesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <InquiriesPageInner />
+    </Suspense>
   );
 }

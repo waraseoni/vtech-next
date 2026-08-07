@@ -456,7 +456,7 @@ export default function BackupPage() {
       // Step 3: Reset sequences (important for auto-increment IDs)
       setProgress("Sequences reset ho rahi hain (naye IDs ke liye)...");
       const seqResults = await resetSequences();
-      console.log("Sequence reset results:", seqResults);
+      console.debug("Sequence reset results:", seqResults);
 
       setProgress("");
       setRestoreReport(tableResults);
@@ -494,7 +494,7 @@ export default function BackupPage() {
         // Method 1: RPC function se sequence reset karo (reset_sequences.sql deploy hona chahiye)
         const { data, error } = await supabase.rpc("reset_sequence", { table_name: table });
         if (!error && data) {
-          console.log(`Sequence reset: ${data}`);
+          console.debug(`Sequence reset: ${data}`);
           results.push(`✓ ${table}`);
         } else {
           // Method 2: Fallback — max ID fetch karke log karo
@@ -505,7 +505,7 @@ export default function BackupPage() {
             .limit(1)
             .maybeSingle();
           if (row && typeof row.id === "number") {
-            console.log(`${table}: max id = ${row.id}, sequence will resume from ${row.id + 1}`);
+            console.debug(`${table}: max id = ${row.id}, sequence will resume from ${row.id + 1}`);
             results.push(`⚠ ${table} (manual reset needed)`);
           }
         }

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, use, useRef, useCallback } from "react";
+import { Suspense, useState, useEffect, use, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -42,6 +42,18 @@ type Toast = { type: "success" | "error"; msg: string };
 // COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ManageJobPage({
+  params,
+}: {
+  params: Promise<{ id?: string }>;
+}) {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <ManageJobPageInner params={params} />
+    </Suspense>
+  );
+}
+
+function ManageJobPageInner({
   params,
 }: {
   params: Promise<{ id?: string }>;

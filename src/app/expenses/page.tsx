@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
@@ -142,7 +142,7 @@ function mechanicName(mechanic?: Mechanic | null) {
   return [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ").trim();
 }
 
-export default function ExpensesPage() {
+function ExpensesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentQuery = searchParams.toString();
@@ -835,6 +835,14 @@ export default function ExpensesPage() {
         </div>
       )}
     </AdminPage>
+  );
+}
+
+export default function ExpensesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <ExpensesPageInner />
+    </Suspense>
   );
 }
 

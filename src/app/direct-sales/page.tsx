@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -53,7 +53,7 @@ const PayBadge = ({ mode }: { mode: string }) => {
 };
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export default function DirectSalesPage() {
+function DirectSalesPageInner() {
   const router       = useRouter();
   const searchParams = useSearchParams();
 
@@ -734,5 +734,13 @@ export default function DirectSalesPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function DirectSalesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <DirectSalesPageInner />
+    </Suspense>
   );
 }

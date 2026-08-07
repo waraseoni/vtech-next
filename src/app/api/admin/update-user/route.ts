@@ -7,7 +7,6 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const { userId, email, password, full_name } = await request.json();
-    console.log('📥 Request for user:', userId);
 
     // 🔥 FIX: cookies() ko await karna hoga (Next.js 15+)
     const cookieStore = await cookies();

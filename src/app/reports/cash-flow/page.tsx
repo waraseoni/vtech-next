@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Loader2, TrendingUp, Wallet, Printer, ChevronLeft, ChevronRight,
@@ -47,7 +47,7 @@ const COLORS = {
   inflow: ['#10b981', '#34d399', '#059669', '#6ee7b7'],
 };
 
-export default function CashFlowPage() {
+function CashFlowPageInner() {
   const searchParams = useSearchParams();
 
   const [loading, setLoading] = useState(true);
@@ -535,5 +535,13 @@ export default function CashFlowPage() {
         <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-40" />
       </div>
     </div>
+  );
+}
+
+export default function CashFlowPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <CashFlowPageInner />
+    </Suspense>
   );
 }

@@ -72,7 +72,7 @@ Be concise with your outputs. Do not return markdown that cannot be read well. U
     if (functionCalls && functionCalls.length > 0) {
         // We only handle the first function call for simplicity
         const call = functionCalls[0];
-        console.log(`Gemini requested tool: ${call.name}`, call.args);
+        console.debug(`Gemini requested tool: ${call.name}`, call.args);
         
         // Execute our internal function
         const apiResponse = await executeGeminiTool(call);

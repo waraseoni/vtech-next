@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
@@ -30,7 +30,7 @@ function getMonthRange(monthOffset: number, baseDate?: string) {
   return { from: startOfMonthIST(d), to: endOfMonthIST(d) };
 }
 
-export default function PaymentsPage() {
+function PaymentsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -539,5 +539,13 @@ export default function PaymentsPage() {
         </div>
       )}
     </AdminPage>
+  );
+}
+
+export default function PaymentsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <PaymentsPageInner />
+    </Suspense>
   );
 }

@@ -96,6 +96,35 @@ export default function MechanicLedgerPage() {
     opening -= (prevAdv || []).reduce((s: number, a: any) => s + (a.amount || 0), 0);
     setOpeningBalance(opening);
 
+    // Bulk-fetch the whole range in 3 queries (was N+1: 3 queries × every day ≈ 93 round-trips/month)
+    const [periodAtt, periodComm, periodAdv] = await Promise.all([
+      supabase.from("attendance_list")
+        .select("curr_date, status")
+        .eq("mechanic_id", id).in("status", [1, 3])
+        .gte("curr_date", fromDate).lte("curr_date", toDate),
+      supabase.from("transaction_list")
+        .select("date_created, mechanic_commission_amount")
+        .eq("mechanic_id", id)
+        .gte("date_created", `${fromDate}T00:00:00+05:30`)
+        .lte("date_created", `${toDate}T23:59:59+05:30`),
+      supabase.from("advance_payments")
+        .select("date_paid, amount")
+        .eq("mechanic_id", id)
+        .gte("date_paid", fromDate).lte("date_paid", toDate),
+    ]);
+
+    const attMap: Record<string, number> = {};
+    (periodAtt.data || []).forEach((a: any) => { attMap[a.curr_date] = a.status; });
+    const commMap: Record<string, number> = {};
+    (periodComm.data || []).forEach((c: any) => {
+      const ds = toISTDatePart(c.date_created);
+      commMap[ds] = (commMap[ds] || 0) + (c.mechanic_commission_amount || 0);
+    });
+    const advMap: Record<string, number> = {};
+    (periodAdv.data || []).forEach((a: any) => {
+      advMap[a.date_paid] = (advMap[a.date_paid] || 0) + (a.amount || 0);
+    });
+
     // Generate all dates in range
     const entries: LedgerEntry[] = [];
     let runningBalance = opening;
@@ -108,54 +137,26 @@ export default function MechanicLedgerPage() {
       const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       const dayName = dayNames[currentDate.getDay()];
 
-      // Fetch attendance for this day
-      const { data: dayAtt } = await supabase
-        .from("attendance_list")
-        .select("status")
-        .eq("mechanic_id", id)
-        .eq("curr_date", dateStr)
-        .single();
-
-      // Fetch commission for this day
-      const { data: dayComm } = await supabase
-        .from("transaction_list")
-        .select("mechanic_commission_amount")
-        .eq("mechanic_id", id)
-        .gte("date_created", `${dateStr} 00:00:00`)
-        .lte("date_created", `${dateStr} 23:59:59`);
-
-      // Fetch advance for this day
-      const { data: dayAdv } = await supabase
-        .from("advance_payments")
-        .select("amount")
-        .eq("mechanic_id", id)
-        .eq("date_paid", dateStr);
+      const attStatus = attMap[dateStr];
+      const dailyComm = commMap[dateStr] || 0;
+      const dailyAdv = advMap[dateStr] || 0;
 
       let dailyEarned = 0;
       let status = "Absent";
       let statusClass = "bg-red-500/10 text-red-400";
       let icon = <XCircle size={11}/>;
 
-      if (dayAtt) {
-        if (dayAtt.status === 1) {
-          dailyEarned = mechanic.daily_salary || 0;
-          status = "Full Day";
-          statusClass = "bg-emerald-500/10 text-emerald-400";
-          icon = <CheckCircle size={11}/>;
-        } else if (dayAtt.status === 3) {
-          dailyEarned = (mechanic.daily_salary || 0) / 2;
-          status = "Half Day";
-          statusClass = "bg-amber-500/10 text-amber-400";
-          icon = <Clock size={11}/>;
-        } else {
-          status = "Absent";
-          statusClass = "bg-red-500/10 text-red-400";
-          icon = <XCircle size={11}/>;
-        }
+      if (attStatus === 1) {
+        dailyEarned = mechanic.daily_salary || 0;
+        status = "Full Day";
+        statusClass = "bg-emerald-500/10 text-emerald-400";
+        icon = <CheckCircle size={11}/>;
+      } else if (attStatus === 3) {
+        dailyEarned = (mechanic.daily_salary || 0) / 2;
+        status = "Half Day";
+        statusClass = "bg-amber-500/10 text-amber-400";
+        icon = <Clock size={11}/>;
       }
-
-      const dailyComm = (dayComm || []).reduce((s: number, c: any) => s + (c.mechanic_commission_amount || 0), 0);
-      const dailyAdv = (dayAdv || []).reduce((s: number, a: any) => s + (a.amount || 0), 0);
 
       runningBalance += dailyEarned + dailyComm - dailyAdv;
       totalEarned += dailyEarned;
