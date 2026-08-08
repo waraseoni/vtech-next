@@ -189,6 +189,10 @@ html[data-theme="light"] {
   /* Card/Panel backgrounds */
   .bg-\[\#1a2234\] { background-color: var(--app-panel-2) !important; }
   .bg-\[\#21293d\] { background-color: var(--app-panel-2) !important; }
+  .bg-\[\#1e2637\] { background-color: #e9edf4 !important; }
+  .bg-\[\#253048\] { background-color: #e3e8f0 !important; }
+  .bg-\[\#252f45\] { background-color: #e3e8f0 !important; }
+  .bg-\[\#1e2030\] { background-color: #e9edf4 !important; }
   
   /* Visibility fix for stats: Ensure text is dark and background is vibrant or high-contrast in light mode */
   .bg-\[\#111520\].rounded-2xl.p-4 {
@@ -230,6 +234,10 @@ html[data-theme="light"] {
   .text-slate-700 { color: #0f172a !important; }
   .text-slate-800 { color: #0f172a !important; }
   .text-slate-900 { color: #0f172a !important; }
+  .text-red-400 { color: #dc3545 !important; }
+  .text-red-500 { color: #dc3545 !important; }
+  .text-emerald-400 { color: #0d7a3f !important; }
+  .text-emerald-500 { color: #0d7a3f !important; }
   
   /* Input backgrounds - light mode inputs */
   input, select, textarea {

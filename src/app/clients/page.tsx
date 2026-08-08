@@ -522,7 +522,7 @@ export default function ClientsPage() {
                         )}
                         <div>
                           <Link href={`/clients/${client.id}/view`}
-                            className="font-black text-white text-base no-underline hover:text-blue-400 transition leading-tight block">
+                            className="font-black text-slate-100 text-base no-underline hover:text-blue-400 transition leading-tight block">
                             {client.name}
                           </Link>
                           <div className="flex items-center gap-3 mt-1">
@@ -675,7 +675,7 @@ export default function ClientsPage() {
                           )}
                           <div className="min-w-0 flex-1">
                             <Link href={`/clients/${client.id}/view`}
-                              className="font-extrabold text-white hover:text-blue-400 no-underline transition text-[13px] block truncate leading-snug">
+                              className="font-extrabold text-slate-100 hover:text-blue-400 no-underline transition text-[13px] block truncate leading-snug">
                               {client.name}
                             </Link>
                             <div className="flex items-center gap-3 mt-0.5">
