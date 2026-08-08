@@ -9,10 +9,12 @@ import {
   Banknote, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, X,
   Printer, MessageCircle, ExternalLink, Trash2,
   PencilLine, IndianRupee, RefreshCw, MessageSquare,
+  CheckSquare, Square, Copy, Send, FileText,
 } from 'lucide-react';
 
 import { todayIST, formatIST, parseISTDate, toISTString, toLocalStr } from "@/lib/dateUtils";
 import { logActivity } from "@/lib/activity";
+import { firmVars } from "@/lib/whatsapp";
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -56,6 +58,9 @@ type Job = {
   amount?: number;
   date_created: string;
   date_completed?: string;
+  client_contact?: string;
+  client_name?: string;
+  date_updated?: string;
 };
 
 type DirectSale = {
@@ -212,6 +217,17 @@ export default function ViewClientProfile() {
     payment_type: '', bill_no: '',
   });
 
+  // ── BULK STATUS UPDATE (PHP parity: jobs page bulk modal) ──
+  const [selectedIds,        setSelectedIds]        = useState<Set<number>>(new Set());
+  const [bulkActionLoading,  setBulkActionLoading]  = useState(false);
+  const [bulkDeliverDate,    setBulkDeliverDate]    = useState("");
+  const [bulkStatus,         setBulkStatus]         = useState("");
+  const [waModal,            setWaModal]            = useState(false);
+  const [waText,             setWaText]             = useState("");
+  const [waEdited,           setWaEdited]           = useState(false);
+  const [waGroups,           setWaGroups]           = useState<Array<{ phone: string; fullname: string; rows: Job[] }>>([]);
+  const [sysInfo,            setSysInfo]            = useState<Record<string, string>>({});
+
   const [repairBilled, setRepairBilled] = useState(0);
   const [directBilled, setDirectBilled] = useState(0);
   const [servicePaid,  setServicePaid]  = useState(0);
@@ -312,6 +328,17 @@ export default function ViewClientProfile() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("system_info").select("meta_field, meta_value");
+      if (data) {
+        const info: Record<string, string> = {};
+        data.forEach(r => { info[r.meta_field] = r.meta_value; });
+        setSysInfo(info);
+      }
+    })();
+  }, []);
+
   // Recalculate service financials
   useEffect(() => {
     // PHP view_client.php: WHERE status = 5 (Delivered only)
@@ -349,6 +376,133 @@ export default function ViewClientProfile() {
   const filteredSales    = directSales.filter(s => inRange(s.date_created));
   const filteredPayments = payments.filter(p => !p.loan_id && inRange(p.payment_date));
   const filteredLoanPay  = payments.filter(p => !!p.loan_id && inRange(p.payment_date));
+
+  // ── BULK SELECTION (PHP parity: jobs page) ──────────────────
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredJobs.length && filteredJobs.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredJobs.map(j => j.id)));
+    }
+  };
+
+  const bulkUpdateStatus = async (newStatus: number) => {
+    if (selectedIds.size === 0) { alert("Select jobs first!"); return; }
+    if (!confirm(`${selectedIds.size} jobs ka status change karein?`)) return;
+
+    setBulkActionLoading(true);
+    const updates: Record<string, unknown> = {
+      status: newStatus,
+      date_updated: toISTString(),
+      date_completed: newStatus === 5 ? (bulkDeliverDate || toISTString()) : null,
+    };
+
+    const ids = [...selectedIds];
+    const { error } = await supabase
+      .from("transaction_list")
+      .update(updates)
+      .in("id", ids);
+
+    if (!error) {
+      setJobs(prev => prev.map(j => selectedIds.has(j.id) ? { ...j, ...updates } as Job : j));
+      setSelectedIds(new Set());
+      setBulkDeliverDate("");
+      setBulkStatus("");
+      const statusName = STATUS_MAP[newStatus]?.label || String(newStatus);
+      for (const id of ids) {
+        const job = jobs.find(j => j.id === id);
+        await logActivity('Transaction Status Changed', 'Transactions', id, `Job ID: ${job?.job_id || ""}, Bulk Update → ${statusName}`);
+      }
+      await logActivity('Bulk Status Update', 'Transactions', undefined, `Updated ${ids.length} transactions to status ${statusName}`);
+    } else {
+      alert("Bulk update failed: " + error.message);
+    }
+    setBulkActionLoading(false);
+  };
+
+  // ── BULK WHATSAPP REPORT (PHP parity: sendBulkWhatsAppReport) ──
+  const buildBulkWAMessage = (rows: Job[], fullname: string) => {
+    const fv = firmVars(sysInfo);
+    const businessName = `${fv.firm_owner}, ${fv.firm_name}, ${fv.firm_address}, Mob. ${fv.firm_phone}`;
+    const statText = ["Pending", "On-Progress", "Done", "Paid", "Cancelled", "Delivered"];
+    let msg = `Namaste ${fullname} ji 🙏!\n\n` +
+              `Aapke repair jobs ki current status update neeche di gayi hai:\n\n` +
+              `----------------------------\n`;
+    let totalSum = 0;
+    rows.forEach((row, i) => {
+      const st = statText[row.status] || "Pending";
+      const amt = row.amount || 0;
+      totalSum += amt;
+      msg += `${i + 1}. *${row.item}*\n` +
+             `   Job ID: #${row.job_id}\n` +
+             `   Code: #${row.code || ""}\n` +
+             `   Status: *${st}*\n`;
+      if (row.status === 2 || row.status === 3 || row.status === 5) {
+        msg += `   Amount: ₹${amt.toLocaleString('en-IN')}\n`;
+      }
+      msg += `\n`;
+    });
+    msg += `----------------------------\n` +
+           `*Grand Total: ₹${totalSum.toLocaleString('en-IN')}*\n\n` +
+           `Kripya kisi bhi jankari ke liye workshop par sampark karein. 🙏\n\n` +
+           `${businessName}`;
+    return msg;
+  };
+
+  const openBulkWhatsApp = () => {
+    if (selectedIds.size === 0) { alert("Select jobs first!"); return; }
+    const selected = filteredJobs.filter(j => selectedIds.has(j.id));
+    const phone = (client?.contact || "").replace(/\D/g, "");
+    if (phone.length < 10) { alert("Client ke paas valid mobile number nahi mila"); return; }
+    const groups = [{ phone, fullname: client?.fullName || "Client", rows: selected }];
+    setWaGroups(groups);
+    setWaEdited(false);
+    setWaText(buildBulkWAMessage(selected, client?.fullName || "Client"));
+    setWaModal(true);
+  };
+
+  const sendBulkWA = () => {
+    if (waGroups.length === 0) return;
+    const msg = waText;
+    if (waGroups.length > 1 && !waEdited) {
+      waGroups.forEach(g => {
+        window.open(`https://wa.me/91${g.phone}?text=${encodeURIComponent(buildBulkWAMessage(g.rows, g.fullname))}`, "_blank");
+      });
+    } else {
+      waGroups.forEach(g => {
+        window.open(`https://wa.me/91${g.phone}?text=${encodeURIComponent(msg)}`, "_blank");
+      });
+    }
+    setWaModal(false);
+  };
+
+  const copyWAMessage = async () => {
+    try {
+      await navigator.clipboard.writeText(waText);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = waText;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+  };
+
+  const openCombinedInvoice = (billType: "gst" | "non_gst") => {
+    if (selectedIds.size === 0) { alert("Select jobs first!"); return; }
+    const ids = [...selectedIds].join(",");
+    window.open(`/api/print-combined-invoice?ids=${ids}&bill_type=${billType}`, "_blank");
+  };
 
   // ── PAYMENT CRUD ───────────────────────────────────────────
   const handleDeletePayment = async (id: number) => {
@@ -782,6 +936,13 @@ export default function ViewClientProfile() {
                 <table className="w-full text-sm">
                   <thead className="theme-panel-2">
                     <tr>
+                      <th className={thCls}>
+                        <button onClick={toggleSelectAll} className="text-blue-400 hover:text-blue-300 transition-colors" title="Select all">
+                          {selectedIds.size === filteredJobs.length && filteredJobs.length > 0
+                            ? <CheckSquare size={15} />
+                            : <Square size={15} />}
+                        </button>
+                      </th>
                       {['Date','Job ID','Item / Model','Fault','Location','Status','Amount'].map(h => (
                         <th key={h} className={thCls}>{h}</th>
                       ))}
@@ -790,8 +951,17 @@ export default function ViewClientProfile() {
                   <tbody>
                     {filteredJobs.map(job => {
                       const st = STATUS_MAP[job.status] ?? { label: 'Unknown', color: 'bg-slate-500/20 text-slate-400 border-slate-500/20' };
+                      const isSel = selectedIds.has(job.id);
                       return (
-                        <tr key={job.id} className={`${trCls} group`}>
+                        <tr key={job.id} className={`${trCls} group ${isSel ? 'bg-blue-500/10' : ''}`}>
+                          <td className={`${tdCls} w-8`}>
+                            <button
+                              onClick={() => toggleSelect(job.id)}
+                              className="text-blue-400 hover:text-blue-300 transition-colors"
+                              title="Select job">
+                              {isSel ? <CheckSquare size={15} /> : <Square size={15} />}
+                            </button>
+                          </td>
                           <td className={`${tdCls} text-xs text-slate-400 whitespace-nowrap`}>{fmtDate(job.date_created)}</td>
                           <td className={tdCls}>
                             <Link href={`/jobs/${job.id}/view`}
@@ -816,7 +986,7 @@ export default function ViewClientProfile() {
                       );
                     })}
                     {filteredJobs.length === 0 && (
-                      <tr><td colSpan={7} className="p-10 text-center text-slate-600 text-sm italic">No repairs found</td></tr>
+                      <tr><td colSpan={8} className="p-10 text-center text-slate-600 text-sm italic">No repairs found</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -826,8 +996,9 @@ export default function ViewClientProfile() {
                 {filteredJobs.length === 0 && <p className="p-8 text-center text-slate-600 text-sm italic">No repairs found</p>}
                 {filteredJobs.map(job => {
                   const st = STATUS_MAP[job.status] ?? { label: 'Unknown', color: 'bg-slate-500/20 text-slate-400 border-slate-500/20' };
+                  const isSel = selectedIds.has(job.id);
                   return (
-                    <div key={job.id} className="p-4 hover:bg-white/[0.02] transition-colors">
+                    <div key={job.id} className={`p-4 hover:bg-white/[0.02] transition-colors ${isSel ? 'bg-blue-500/10' : ''}`}>
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="flex-1 min-w-0">
                           <Link href={`/jobs/${job.id}/view`} className="font-black text-blue-400 text-base no-underline hover:underline">
@@ -842,6 +1013,17 @@ export default function ViewClientProfile() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 text-[10px] text-slate-600">
+                        <button
+                          onClick={() => toggleSelect(job.id)}
+                          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all text-[10px] font-bold ${
+                            isSel
+                              ? 'border-blue-500/40 bg-blue-500/10 text-blue-400'
+                              : 'border-[#2a3550] bg-white/[0.02] text-slate-500 hover:text-blue-400'
+                          }`}
+                          title="Select job">
+                          {isSel ? <CheckSquare size={13} /> : <Square size={13} />}
+                          {isSel ? 'Selected' : 'Select'}
+                        </button>
                         <span>{fmtDate(job.date_created)}</span>
                         {job.uniq_id && <span>📍 {job.uniq_id}</span>}
                         {job.code && <span className="font-mono">{job.code}</span>}
@@ -1259,6 +1441,129 @@ export default function ViewClientProfile() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── BULK ACTION BAR (PHP parity: jobs page) ── */}
+      {selectedIds.size > 0 && (
+        <div
+          className="fixed bottom-5 left-1/2 z-[60] text-white rounded-2xl px-4 py-3 flex flex-wrap items-center justify-center gap-3 min-w-[300px] max-w-[95vw]"
+          style={{
+            background: "linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)",
+            boxShadow: "0 -4px 30px rgba(0,0,0,0.35)",
+            transform: "translateX(-50%)",
+            animation: "bulkBarPop 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+          }}
+        >
+          <span className="bg-[#667eea] text-white rounded-full px-3 py-1 font-bold text-sm whitespace-nowrap">
+            {selectedIds.size} selected
+          </span>
+
+          <select
+            value={bulkStatus}
+            onChange={e => setBulkStatus(e.target.value)}
+            className="border-none rounded-lg px-3 py-2 text-sm font-semibold outline-none cursor-pointer min-w-[150px]"
+            style={{ backgroundColor: "#ffffff !important", color: "#1a1a2e !important" }}
+          >
+            <option value="">-- Status --</option>
+            <option value="0">Pending</option>
+            <option value="1">On-Progress</option>
+            <option value="2">Done</option>
+            <option value="3">Paid</option>
+            <option value="4">Cancelled</option>
+            <option value="5">Delivered</option>
+          </select>
+
+          {bulkStatus === "5" && (
+            <input
+              type="datetime-local"
+              value={bulkDeliverDate}
+              onChange={e => setBulkDeliverDate(e.target.value)}
+              title="Delivery Date & Time"
+              className="border-none rounded-lg px-3 py-2 text-sm outline-none cursor-pointer"
+              style={{ backgroundColor: "#ffffff !important", color: "#1a1a2e !important" }}
+            />
+          )}
+
+          <button
+            onClick={() => {
+              if (!bulkStatus) { alert("Please select a status first"); return; }
+              bulkUpdateStatus(Number(bulkStatus));
+            }}
+            disabled={bulkActionLoading}
+            className="text-white border-none rounded-[10px] px-5 py-2 font-bold text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1.5 whitespace-nowrap"
+            style={{ background: "linear-gradient(135deg,#48bb78 0%,#38a169 100%)" }}
+          >
+            <CheckCircle2 size={14} /> {bulkActionLoading ? "Applying..." : "Apply"}
+          </button>
+
+          <button
+            onClick={openBulkWhatsApp}
+            className="text-white border-none rounded-lg px-4 py-2 font-bold text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1.5 whitespace-nowrap"
+            style={{ background: "#25d366" }}
+          >
+            <MessageCircle size={14} /> WhatsApp Report
+          </button>
+
+          <button
+            onClick={() => openCombinedInvoice("gst")}
+            className="text-white border-none rounded-lg px-4 py-2 font-bold text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1.5 whitespace-nowrap"
+            style={{ background: "#0d6efd" }}
+          >
+            <FileText size={14} /> Combined Invoice
+          </button>
+          <button
+            onClick={() => openCombinedInvoice("non_gst")}
+            className="text-white border-none rounded-lg px-4 py-2 font-bold text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1.5 whitespace-nowrap"
+            style={{ background: "#6c757d" }}
+          >
+            <FileText size={14} /> Combined Estimate
+          </button>
+
+          <button
+            onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); setBulkDeliverDate(""); }}
+            className="bg-white/15 text-white border border-white/30 rounded-[10px] px-3.5 py-2 text-sm cursor-pointer transition-colors hover:bg-white/25 flex items-center gap-1.5 whitespace-nowrap"
+          >
+            <X size={14} /> Clear
+          </button>
+        </div>
+      )}
+
+      {/* ── WHATSAPP MODAL (PHP parity: jobs page) ── */}
+      {waModal && (
+        <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+            <div className="bg-green-600/90 px-5 py-3.5 flex items-center justify-between">
+              <h3 className="font-black text-white text-sm flex items-center gap-2">
+                <MessageCircle size={16} /> Send WhatsApp Message
+              </h3>
+              <button onClick={() => setWaModal(false)} className="text-white/80 hover:text-white transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <textarea
+                rows={10}
+                value={waText}
+                onChange={e => { setWaText(e.target.value); setWaEdited(true); }}
+                className="w-full bg-[#0d1117] border border-green-500/40 text-slate-200 rounded-xl p-3 text-sm font-mono leading-relaxed outline-none focus:border-green-500 resize-none"
+              />
+            </div>
+            <div className="px-5 py-3.5 bg-[#111520] flex items-center justify-end gap-2 border-t border-[#21293d]">
+              <button onClick={() => setWaModal(false)}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-slate-400 bg-[#21293d] hover:bg-[#2a3550] transition-colors">
+                Close
+              </button>
+              <button onClick={copyWAMessage}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-blue-400 bg-blue-600/15 border border-blue-500/30 hover:bg-blue-600/25 transition-colors flex items-center gap-1.5">
+                <Copy size={13} /> Copy
+              </button>
+              <button onClick={sendBulkWA}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-colors flex items-center gap-1.5">
+                <Send size={13} /> Send
+              </button>
+            </div>
           </div>
         </div>
       )}
