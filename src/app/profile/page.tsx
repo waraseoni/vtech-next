@@ -1,11 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import {
   User, Mail, Shield, ShieldCheck, Save, KeyRound,
   Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Wrench,
+  Camera, Trash2,
 } from "lucide-react";
+import { compressImage } from "@/lib/imageCompression";
 
 const inputCls = "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
 const labelCls = "block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5";
@@ -24,6 +26,58 @@ export default function ProfilePage() {
   const [email,       setEmail]       = useState("");
   const [role,        setRole]        = useState("");
   const [mechanicName,setMechanicName]= useState("");
+  const [avatarUrl,   setAvatarUrl]   = useState<string | null>(null);
+
+  // Avatar photo
+  const [photoSaving, setPhotoSaving] = useState(false);
+  const [photoErr,    setPhotoErr]    = useState("");
+  const photoRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setPhotoSaving(true);
+    setPhotoErr("");
+    try {
+      const compressed = await compressImage(file);
+      if (compressed.bytes > 100 * 1024) {
+        setPhotoErr("Image abhi bhi 100KB se bada hai — kam resolution ki photo try karein");
+        setPhotoSaving(false);
+        return;
+      }
+      const fd = new FormData();
+      fd.append("file", compressed.file);
+      fd.append("userId", userId);
+      const res = await fetch("/api/user-avatar", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.msg || "Upload failed");
+      setAvatarUrl(json.url);
+      setPhotoSaving(false);
+    } catch (err: unknown) {
+      setPhotoErr(err instanceof Error ? err.message : "Upload failed");
+      setPhotoSaving(false);
+    }
+  };
+
+  const handlePhotoDelete = async () => {
+    if (!confirm("Kya aap apni avatar photo delete karna chahte hain?")) return;
+    setPhotoSaving(true);
+    setPhotoErr("");
+    try {
+      const fd = new FormData();
+      fd.append("userId", userId);
+      fd.append("delete", "1");
+      const res = await fetch("/api/user-avatar", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.msg || "Delete failed");
+      setAvatarUrl(null);
+      setPhotoSaving(false);
+    } catch (err: unknown) {
+      setPhotoErr(err instanceof Error ? err.message : "Delete failed");
+      setPhotoSaving(false);
+    }
+  };
 
   // Password change
   const [currentPass, setCurrentPass] = useState("");
@@ -49,12 +103,13 @@ export default function ProfilePage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, role, mechanic_id, email")
+        .select("full_name, role, mechanic_id, email, avatar_url")
         .eq("id", user.id)
         .single();
 
       setFullName(profile?.full_name || user.email?.split("@")[0] || "");
       setRole(profile?.role || "staff");
+      setAvatarUrl(profile?.avatar_url || null);
       if (profile?.email) setEmail(profile.email);
 
       // Mechanic name fetch karo agar linked hai
@@ -153,12 +208,26 @@ export default function ProfilePage() {
         {/* Profile header card */}
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-6 flex items-center gap-5">
           {/* Avatar circle */}
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-xl flex-shrink-0 shadow-lg ${
-            role === "admin"
-              ? "bg-gradient-to-br from-amber-500 to-amber-700 shadow-amber-900/40"
-              : "bg-gradient-to-br from-blue-500 to-blue-700 shadow-blue-900/40"
-          }`}>
-            {(fullName || "U").slice(0, 2).toUpperCase()}
+          <div className="relative flex-shrink-0">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={fullName || "User"}
+                className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 shadow-lg border border-white/10"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+            ) : (
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-xl flex-shrink-0 shadow-lg ${
+                role === "admin"
+                  ? "bg-gradient-to-br from-amber-500 to-amber-700 shadow-amber-900/40"
+                  : "bg-gradient-to-br from-blue-500 to-blue-700 shadow-blue-900/40"
+              }`}>
+                {(fullName || "U").slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <button onClick={() => photoRef.current?.click()} disabled={photoSaving}
+              className="absolute -bottom-1.5 -right-1.5 w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors disabled:opacity-60"
+              title="Photo upload">
+              {photoSaving ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+            </button>
+            <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-black text-white truncate">{fullName || "—"}</h1>
@@ -178,7 +247,15 @@ export default function ProfilePage() {
                   <Wrench size={10}/> {mechanicName}
                 </span>
               )}
+              {avatarUrl && (
+                <button onClick={handlePhotoDelete} disabled={photoSaving}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-60"
+                  title="Delete photo">
+                  <Trash2 size={10}/> Photo Delete
+                </button>
+              )}
             </div>
+            {photoErr && <p className="text-[11px] text-red-400 font-semibold mt-1.5">{photoErr}</p>}
           </div>
         </div>
 

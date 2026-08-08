@@ -416,7 +416,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   // Server always renders null-state → no sidebar flicker.
   const [isMobile,     setIsMobile]     = useState<boolean | null>(null);
   const [loading,      setLoading]      = useState(true);
-  const [profile,      setProfile]      = useState<{ full_name: string; role: string } | null>(null);
+  const [profile,      setProfile]      = useState<{ full_name: string; role: string; avatar_url?: string | null } | null>(null);
   const [userEmail,    setUserEmail]    = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [drawerOpen,   setDrawerOpen]   = useState(false);
@@ -445,10 +445,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         }
         setUserEmail(user.email ?? null);
         const { data: pd } = await supabase
-          .from("profiles").select("full_name, role").eq("id", user.id).maybeSingle();
+          .from("profiles").select("full_name, role, avatar_url").eq("id", user.id).maybeSingle();
         setProfile({
           full_name: pd?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
           role:      pd?.role || "staff",
+          avatar_url: pd?.avatar_url || null,
         });
       } catch (e) {
         console.error("Auth error:", e);
@@ -611,9 +612,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {/* User info at drawer bottom */}
               <div className="px-3 py-3 border-t border-[#1a2234]">
                 <div className="flex items-center gap-3 px-3 py-2.5 bg-[#111520] rounded-xl">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center text-white font-black text-xs flex-shrink-0">
-                    {initials}
-                  </div>
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt={displayName}
+                      className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-white/10"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                  ) : (
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center text-white font-black text-xs flex-shrink-0">
+                      {initials}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-black text-white truncate">{displayName}</p>
                     <p className="text-[9px] text-blue-400 font-bold uppercase tracking-wider">{profile?.role}</p>
@@ -702,9 +709,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <p className="text-[11px] font-black uppercase text-slate-200">{displayName}</p>
                   <p className="text-[9px] font-bold text-blue-400 uppercase mt-0.5">{profile?.role}</p>
                 </div>
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center font-black shadow-md text-xs">
-                  {initials}
-                </div>
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt={displayName}
+                    className="w-9 h-9 rounded-xl object-cover shadow-md flex-shrink-0 border border-white/10"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                ) : (
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center font-black shadow-md text-xs">
+                    {initials}
+                  </div>
+                )}
               </button>
 
               {dropdownOpen && (

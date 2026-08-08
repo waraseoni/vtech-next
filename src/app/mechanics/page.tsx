@@ -23,6 +23,7 @@ type Mechanic = {
   status: number;
   delete_flag: number;
   date_added?: string;
+  image_path?: string | null;
 };
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -91,7 +92,7 @@ export default function MechanicsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("mechanic_list")
-      .select("id, firstname, middlename, lastname, contact, designation, daily_salary, commission_percent, status, delete_flag, date_added")
+      .select("id, firstname, middlename, lastname, contact, designation, daily_salary, commission_percent, status, delete_flag, date_added, image_path")
       .eq("delete_flag", 0)
       .order("firstname", { ascending: true });
     if (error) setErr(error.message);
@@ -283,9 +284,15 @@ export default function MechanicsPage() {
                     <tr key={m.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-[#1a2234] flex items-center justify-center text-slate-400 font-black text-sm">
-                            {name.slice(0, 2).toUpperCase()}
-                          </div>
+                          {m.image_path ? (
+                            <img src={m.image_path} alt={name}
+                              className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                          ) : (
+                            <div className="w-9 h-9 rounded-xl bg-[#1a2234] flex items-center justify-center text-slate-400 font-black text-sm">
+                              {name.slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
                           <div>
                             <p className="font-bold text-slate-200">{name}</p>
                             <p className="text-xs text-slate-500">{m.contact}</p>

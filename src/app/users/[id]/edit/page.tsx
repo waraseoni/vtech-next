@@ -1,12 +1,14 @@
 "use client";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Save, ArrowLeft, User, Mail, Shield, ShieldCheck,
   Loader2, CheckCircle, AlertCircle, Wrench, Eye, EyeOff, KeyRound,
+  Camera, Trash2,
 } from "lucide-react";
+import { compressImage } from "@/lib/imageCompression";
 
 const inputCls = "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all";
 const labelCls = "block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5";
@@ -32,6 +34,58 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [newPassword, setNewPassword] = useState("");  // blank = no change
   const [showPass,    setShowPass]    = useState(false);
 
+  // Avatar photo
+  const [avatarUrl,    setAvatarUrl]    = useState<string | null>(null);
+  const [photoSaving,  setPhotoSaving]  = useState(false);
+  const [photoErr,     setPhotoErr]     = useState("");
+  const photoRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setPhotoSaving(true);
+    setPhotoErr("");
+    try {
+      const compressed = await compressImage(file);
+      if (compressed.bytes > 100 * 1024) {
+        setPhotoErr("Image abhi bhi 100KB se bada hai — kam resolution ki photo try karein");
+        setPhotoSaving(false);
+        return;
+      }
+      const fd = new FormData();
+      fd.append("file", compressed.file);
+      fd.append("userId", userId);
+      const res = await fetch("/api/user-avatar", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.msg || "Upload failed");
+      setAvatarUrl(json.url);
+      setPhotoSaving(false);
+    } catch (err: unknown) {
+      setPhotoErr(err instanceof Error ? err.message : "Upload failed");
+      setPhotoSaving(false);
+    }
+  };
+
+  const handlePhotoDelete = async () => {
+    if (!confirm("Kya aap user ki avatar photo delete karna chahte hain?")) return;
+    setPhotoSaving(true);
+    setPhotoErr("");
+    try {
+      const fd = new FormData();
+      fd.append("userId", userId);
+      fd.append("delete", "1");
+      const res = await fetch("/api/user-avatar", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.msg || "Delete failed");
+      setAvatarUrl(null);
+      setPhotoSaving(false);
+    } catch (err: unknown) {
+      setPhotoErr(err instanceof Error ? err.message : "Delete failed");
+      setPhotoSaving(false);
+    }
+  };
+
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 3500);
@@ -53,7 +107,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       // Fetch the user being edited
       const { data: profile, error } = await supabase
         .from("profiles")
-        .select("id, full_name, role, mechanic_id, email")
+        .select("id, full_name, role, mechanic_id, email, avatar_url")
         .eq("id", userId).single();
 
       if (error || !profile) {
@@ -66,6 +120,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       setEmail(profile.email          ?? "");
       setRole(profile.role            ?? "staff");
       setMechanicId(profile.mechanic_id ? String(profile.mechanic_id) : "");
+      setAvatarUrl(profile.avatar_url ?? null);
 
       // Fetch mechanics list (PHP: mechanic_list WHERE status=1)
       const { data: mechs } = await supabase
@@ -154,19 +209,43 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         {/* Header */}
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm ${
-              role === "admin"
-                ? "bg-gradient-to-br from-amber-500 to-amber-700"
-                : "bg-gradient-to-br from-blue-500 to-blue-700"
-            }`}>
-              {(fullName || "U").slice(0, 2).toUpperCase()}
-            </div>
-            <div>
-              <h1 className="text-base font-black text-white">Edit User</h1>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider truncate max-w-[180px]">
+          <div className="relative flex-shrink-0">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={fullName || "User"}
+                className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-white/10"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+            ) : (
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm ${
+                role === "admin"
+                  ? "bg-gradient-to-br from-amber-500 to-amber-700"
+                  : "bg-gradient-to-br from-blue-500 to-blue-700"
+              }`}>
+                {(fullName || "U").slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <button onClick={() => photoRef.current?.click()} disabled={photoSaving}
+              className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors disabled:opacity-60"
+              title="Photo upload">
+              {photoSaving ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+            </button>
+            <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+          </div>
+          <div>
+            <h1 className="text-base font-black text-white">Edit User</h1>
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider truncate max-w-[160px]">
                 {fullName || "Loading..."}
               </p>
+              {avatarUrl && (
+                <button onClick={handlePhotoDelete} disabled={photoSaving}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-60"
+                  title="Delete photo">
+                  <Trash2 size={10}/>
+                </button>
+              )}
             </div>
+            {photoErr && <p className="text-[10px] text-red-400 font-semibold mt-0.5">{photoErr}</p>}
+          </div>
           </div>
           <Link href="/users"
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 rounded-xl text-xs font-bold no-underline transition-all">

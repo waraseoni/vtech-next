@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
   Loader2, ArrowLeft, Calendar, DollarSign, TrendingUp, Users,
   Wrench, FileText, Clock, CheckCircle, XCircle, AlertCircle,
-  ChevronLeft, ChevronRight, Eye, MessageSquare, Printer
+  ChevronLeft, ChevronRight, Eye, MessageSquare, Printer,
+  Camera, Trash2
 } from "lucide-react";
+import { compressImage } from "@/lib/imageCompression";
 
 type Mechanic = {
   id: number;
@@ -20,6 +22,7 @@ type Mechanic = {
   daily_salary: number;
   commission_percent: number;
   status: number;
+  image_path?: string | null;
 };
 
 type Job = {
@@ -118,6 +121,57 @@ export default function MechanicDetailPage() {
     halfDays: 0,
     absentDays: 0,
   });
+
+  // ── MECHANIC PHOTO ─────────────────────────────────────────
+  const [photoSaving, setPhotoSaving] = useState(false);
+  const [photoErr,    setPhotoErr]    = useState("");
+  const photoRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setPhotoSaving(true);
+    setPhotoErr("");
+    try {
+      const compressed = await compressImage(file);
+      if (compressed.bytes > 100 * 1024) {
+        setPhotoErr("Image abhi bhi 100KB se bada hai — kam resolution ki photo try karein");
+        setPhotoSaving(false);
+        return;
+      }
+      const fd = new FormData();
+      fd.append("file", compressed.file);
+      fd.append("mechanicId", String(id));
+      const res = await fetch("/api/mechanic-photo", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.msg || "Upload failed");
+      setMechanic(prev => prev ? { ...prev, image_path: json.url } : prev);
+      setPhotoSaving(false);
+    } catch (err: unknown) {
+      setPhotoErr(err instanceof Error ? err.message : "Upload failed");
+      setPhotoSaving(false);
+    }
+  };
+
+  const handlePhotoDelete = async () => {
+    if (!confirm("Kya aap mechanic ki photo delete karna chahte hain?")) return;
+    setPhotoSaving(true);
+    setPhotoErr("");
+    try {
+      const fd = new FormData();
+      fd.append("mechanicId", String(id));
+      fd.append("delete", "1");
+      const res = await fetch("/api/mechanic-photo", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.msg || "Delete failed");
+      setMechanic(prev => prev ? { ...prev, image_path: null } : prev);
+      setPhotoSaving(false);
+    } catch (err: unknown) {
+      setPhotoErr(err instanceof Error ? err.message : "Delete failed");
+      setPhotoSaving(false);
+    }
+  };
 
   const fetchMechanic = useCallback(async () => {
     const { data, error } = await supabase
@@ -266,8 +320,22 @@ export default function MechanicDetailPage() {
             className="p-2 rounded-xl bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition no-underline">
             <ArrowLeft size={16} />
           </Link>
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black text-lg">
-            {name.slice(0, 2).toUpperCase()}
+          <div className="relative flex-shrink-0">
+            {mechanic?.image_path ? (
+              <img src={mechanic.image_path} alt={name}
+                className="w-14 h-14 rounded-xl object-cover shadow-lg border border-white/10 flex-shrink-0"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+            ) : (
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black text-lg">
+                {name.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <button onClick={() => photoRef.current?.click()} disabled={photoSaving}
+              className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors disabled:opacity-60"
+              title="Photo upload">
+              {photoSaving ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />}
+            </button>
+            <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-black text-white">{name}</h1>
@@ -281,7 +349,14 @@ export default function MechanicDetailPage() {
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-500/10 text-blue-400">
                 <Wrench size={9}/> {mechanic?.designation || "Mechanic"}
               </span>
+              {mechanic?.image_path && (
+                <button onClick={handlePhotoDelete} disabled={photoSaving}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-60">
+                  <Trash2 size={9}/> Photo Delete
+                </button>
+              )}
             </div>
+            {photoErr && <p className="text-[11px] text-red-400 font-semibold mt-1.5">{photoErr}</p>}
           </div>
           <div className="flex items-center gap-2">
             <button onClick={shareWhatsApp}
