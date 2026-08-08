@@ -209,6 +209,7 @@ export default function ViewClientProfile() {
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [editForm,       setEditForm]       = useState({
     amount: '', payment_date: '', discount: '', payment_mode: '', remarks: '',
+    payment_type: '', bill_no: '',
   });
 
   const [repairBilled, setRepairBilled] = useState(0);
@@ -367,6 +368,8 @@ export default function ViewClientProfile() {
       payment_date: toLocalStr(new Date(p.payment_date)),
       discount:     (p.discount || 0).toString(),
       payment_mode: p.payment_mode,
+      payment_type: p.payment_type || 'Full',
+      bill_no:      p.bill_no || '',
       remarks:      p.remarks || '',
     });
   };
@@ -383,6 +386,8 @@ export default function ViewClientProfile() {
         : editForm.payment_date,
       discount:     parseFloat(editForm.discount) || 0,
       payment_mode: editForm.payment_mode,
+      payment_type: editForm.payment_type || 'Full',
+      bill_no:      editForm.bill_no.trim() || null,
       remarks:      editForm.remarks,
       // NOTE: net_amount is GENERATED ALWAYS column in DB — never include it in updates
     };
@@ -929,8 +934,8 @@ export default function ViewClientProfile() {
                         <div className="text-[10px] text-slate-600">PAY-{p.id}</div>
                       </td>
                       <td className={tdCls}>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-400 border border-slate-500/20">
-                          Service Payment
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/25">
+                          {p.payment_type || 'Full'}
                         </span>
                       </td>
                       <td className={`${tdCls} text-right`}>₹{fmt(p.amount)}</td>
@@ -970,11 +975,18 @@ export default function ViewClientProfile() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="font-black text-white text-base">₹{fmt(p.amount)}</p>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-400 border border-slate-500/20">
-                            Service Payment
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/25">
+                            {p.payment_type || 'Full'}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">{p.payment_mode}</p>
+                      <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap">
+                        {p.payment_mode}
+                        {p.payment_type && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
+                            {p.payment_type}
+                          </span>
+                        )}
+                      </p>
                       </div>
                       <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                         <span className="text-sm font-black text-emerald-400">Net: ₹{fmt(p.net_amount ?? (p.amount + (p.discount || 0)))}</span>
@@ -1033,7 +1045,16 @@ export default function ViewClientProfile() {
                       <td className={`${tdCls} text-right font-black text-emerald-400`}>
                         ₹{fmt(p.net_amount ?? (p.amount + (p.discount || 0)))}
                       </td>
-                      <td className={tdCls}>{p.payment_mode}</td>
+                      <td className={tdCls}>
+                        <span className="inline-flex items-center gap-1.5 flex-wrap">
+                          {p.payment_mode}
+                          {p.payment_type && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
+                              {p.payment_type}
+                            </span>
+                          )}
+                        </span>
+                      </td>
                       <td className={`${tdCls} text-xs text-slate-400`}>{p.remarks || '—'}</td>
                       <td className={tdCls}>
                         <div className="flex gap-2">
@@ -1191,10 +1212,33 @@ export default function ViewClientProfile() {
                   onChange={e => setEditForm({ ...editForm, payment_mode: e.target.value })}
                   className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors"
                 >
-                  {['Cash','PhonePe/GPay','Bank Transfer','Credit Card'].map(m => (
+                  {['Cash','PhonePe/GPay','UPI','NEFT','Cheque','Bank Transfer','Credit Card'].map(m => (
                     <option key={m}>{m}</option>
                   ))}
                 </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Payment Type</label>
+                  <select
+                    value={editForm.payment_type}
+                    onChange={e => setEditForm({ ...editForm, payment_type: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors"
+                  >
+                    {['Full','Partial','Advance','On Account'].map(m => (
+                      <option key={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Bill No.</label>
+                  <input
+                    type="text" placeholder="Optional"
+                    value={editForm.bill_no}
+                    onChange={e => setEditForm({ ...editForm, bill_no: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Remarks</label>

@@ -1,5 +1,5 @@
 # PHP vs Next.js Updates Pending (Comparison Report)
-*Updated: 30 Jul 2026 (based on latest PHP Git Logs)*
+*Updated: 08 Aug 2026 (all items ported except WhatsApp Business API, which PHP lacks too)*
 
 This document tracks the updates made in the legacy PHP software (`vtech-rsms-php`) that need to be implemented in the new Next.js software to achieve feature parity and modernization.
 
@@ -48,16 +48,16 @@ This document tracks the updates made in the legacy PHP software (`vtech-rsms-ph
 - **Next.js**: Uses `wa.me` links like PHP; no WhatsApp Business API integration yet
 
 ## 9. Loan & EMI Report
-- **Status**: ⏳ Pending (already marked in previous todo)
-- **Next.js**: Not ported yet
+- **Status**: ✅ Completed (port of PHP `admin/reports/loan_report.php`)
+- **Next.js**: `/reports/loan` — loans filtered by `loan_date <= month-end`, payments `<= payment_date month-end`; `received` = cumulative `amount + discount`; `pending = max(0, emi_amount - received)`; `/api/print-loan` uses the same month-end filters + received logic
 
 ## 10. Backup & Restore
 - **Status**: ✅ Already done
 - **Next.js**: `/backup` page exists with create/restore/dry-run
 
 ## 11. Settings: Logo, Cover, Banner Upload
-- **Status**: ⏳ Not ported
-- **Next.js**: `/settings` page doesn't have logo/cover/banner upload yet
+- **Status**: ✅ Completed (port of PHP `admin/system_info/index.php`)
+- **Next.js**: `/settings` has logo + cover upload (stored as dataURL → `system_info.logo`/`system_info.cover` since storage buckets `signatures`/`logos` are missing); print routes (`print-bill`, `print-combined-invoice`, `print-direct-sale-invoice`) render the logo with V•TECH text fallback; public site hero uses the cover
 
 ---
 
@@ -66,5 +66,6 @@ This document tracks the updates made in the legacy PHP software (`vtech-rsms-ph
 2. ~~Port Digital Signature~~ ✅ Done
 3. ~~Port AI Settings configuration~~ ✅ Done
 4. ~~Make GSTIN dynamic~~ ✅ Done
-5. Port Logo/Cover/Banner upload to settings page (medium priority)
-6. Port Loan & EMI Report updated logic (low priority)
+5. ~~Port Logo/Cover/Banner upload to settings page~~ ✅ Done (in nextjs_updates_plan Phase 2 #6 + Phase 3 #7)
+6. ~~Port Loan & EMI Report updated logic~~ ✅ Done (in nextjs_updates_plan Phase 3 #9)
+7. WhatsApp Business API integration (not present in PHP either — low priority)

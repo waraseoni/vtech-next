@@ -185,6 +185,9 @@ export default function JobDetailsPage() {
   const [payAmount,    setPayAmount]    = useState("");
   const [payDiscount,  setPayDiscount]  = useState("0");
   const [payMode,      setPayMode]      = useState("Cash");
+  const [payType,      setPayType]      = useState("Full");
+  const [payBillNo,    setPayBillNo]    = useState("");
+  const [payDate,      setPayDate]      = useState(todayISTStr());
   const [payRemarks,   setPayRemarks]   = useState("");
   const [savingPay,    setSavingPay]    = useState(false);
 
@@ -336,15 +339,17 @@ export default function JobDetailsPage() {
       client_id: client.id, job_id: job.job_id,
       amount: amt, discount: disc,
       payment_mode: payMode,
+      payment_type: payType,
+      bill_no: payBillNo.trim() || null,
       remarks: payRemarks.trim() || null,
-      payment_date: `${todayISTStr()}T00:00:00+05:30`,
+      payment_date: payDate || `${todayISTStr()}T00:00:00+05:30`,
     });
     if (error) { setToast({ type: "error", msg: "Payment save nahi hua: " + error.message }); }
     else {
-      await logActivity('Added Job Payment', 'Jobs', job.job_id, `Amount: Rs.${amt}, Mode: ${payMode}`);
+      await logActivity('Added Job Payment', 'Jobs', job.job_id, `Amount: Rs.${amt}, Mode: ${payMode}, Type: ${payType}`);
       setToast({ type: "success", msg: "Payment save ho gayi!" });
       setShowPayModal(false);
-      setPayAmount(""); setPayDiscount("0"); setPayRemarks("");
+      setPayAmount(""); setPayDiscount("0"); setPayRemarks(""); setPayBillNo(""); setPayType("Full"); setPayDate(todayISTStr());
     }
     setSavingPay(false);
   };
@@ -448,6 +453,10 @@ ${svcHtml}${prodHtml}
                 <Link href={`/api/print-bill?job_id=${job.job_id}&bill_type=gst`} target="_blank"
                   className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
                   <FileText size={12}/> GST Bill
+                </Link>
+                <Link href={`/api/print-bill?job_id=${job.job_id}&type=thermal`} target="_blank"
+                  className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
+                  <Printer size={12}/> Thermal Receipt
                 </Link>
                 <button onClick={handlePrint}
                   className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
@@ -756,6 +765,10 @@ ${svcHtml}${prodHtml}
                   className="flex items-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
                   <Printer size={15}/> Print Page
                 </button>
+                <Link href={`/api/print-bill?job_id=${job.job_id}&type=thermal`} target="_blank"
+                  className="flex items-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline">
+                  <Printer size={15}/> Thermal Receipt
+                </Link>
                 <button onClick={() => setShowPayModal(true)}
                   className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
                   <Plus size={15}/> Add Payment
@@ -914,10 +927,34 @@ ${svcHtml}${prodHtml}
               )}
 
               <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Bill No.</label>
+                <input type="text" value={payBillNo} onChange={(e) => setPayBillNo(e.target.value)}
+                  placeholder="Optional — e.g. INV-001"
+                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Payment Date</label>
+                  <input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)}
+                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Payment Type</label>
+                  <select value={payType} onChange={(e) => setPayType(e.target.value)}
+                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500">
+                    {["Full","Partial","Advance","On Account"].map(m => (
+                      <option key={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1.5">Payment Mode *</label>
                 <select value={payMode} onChange={(e) => setPayMode(e.target.value)}
                   className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500">
-                  {["Cash","PhonePe/GPay","Bank Transfer","Credit Card"].map(m => (
+                  {["Cash","PhonePe/GPay","UPI","NEFT","Cheque","Bank Transfer"].map(m => (
                     <option key={m}>{m}</option>
                   ))}
                 </select>

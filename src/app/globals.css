@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Bulk action bar entrance (PHP parity: bounce slide-up) */
+@keyframes bulkBarPop {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 :root {
   --app-bg: #f8f9fc;
   --app-panel: #ffffff;

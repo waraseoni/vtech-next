@@ -31,9 +31,11 @@ import {
   ChevronLeft, ChevronRight, AlertCircle, ChevronDown, X,
   TrendingUp, Clock, CheckCircle2, IndianRupee, MessageSquare,
   Square, CheckSquare, Zap, GitBranch, ArrowRight, User, PenSquare,
+  FileText, Copy, Send, MessageCircle, Truck, LayoutGrid, List,
 } from "lucide-react";
 import { substituteTemplate, firmVars } from "@/lib/whatsapp";
 import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
+import { logActivity } from "@/lib/activity";
 
 // ─── WhatsApp status template keys (PHP: pending=0, repairing=1, ready=2, delivered=3/5, cancelled=4) ─
 const STATUS_WA_KEY: Record<number, string> = {
@@ -160,12 +162,30 @@ function JobsListContent() {
   // FAB (mobile)
   const [fabOpen, setFabOpen] = useState(false);
 
+  // ── Mobile view toggle (PHP: transactions_view localStorage) ──
+  const [mobileView, setMobileView] = useState<"card" | "table">("card");
+  useEffect(() => {
+    const saved = localStorage.getItem("transactions_view");
+    if (saved === "card" || saved === "table") setMobileView(saved);
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("transactions_view", mobileView);
+  }, [mobileView]);
+
   // ── NEW: Quick Create Modal ───────────────────────────────
   const [showQuickCreate, setShowQuickCreate] = useState(false);
 
   // ── NEW: Bulk Status Update ──────────────────────────────
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [bulkDeliverDate, setBulkDeliverDate] = useState("");
+  const [bulkStatus, setBulkStatus] = useState("");
+
+  // ── Bulk WhatsApp Report (PHP: index.php sendBulkWhatsAppReport) ──
+  const [waModal,   setWaModal]   = useState(false);
+  const [waText,    setWaText]    = useState("");
+  const [waEdited,  setWaEdited]  = useState(false);
+  const [waGroups,  setWaGroups]  = useState<Array<{ phone: string; fullname: string; rows: Transaction[] }>>([]);
 
   // ── NEW: Quick Status Change ─────────────────────────────
   const [statusChangeLoading, setStatusChangeLoading] = useState<number | null>(null);
@@ -469,28 +489,124 @@ function JobsListContent() {
     if (!confirm(`${selectedIds.size} jobs ka status change karein?`)) return;
     
     setBulkActionLoading(true);
+    // PHP parity: Delivered → set date_completed (delivery datetime); others → clear it
     const updates: Record<string, unknown> = {
       status: newStatus,
       date_updated: toISTString(),
+      date_completed: newStatus === 5 ? (bulkDeliverDate || toISTString()) : null,
     };
-    if (newStatus === 5) {
-      updates.date_completed = toISTString();
-    }
-    
+
+    const ids = [...selectedIds];
     const { error } = await supabase
       .from("transaction_list")
       .update(updates)
-      .in("id", [...selectedIds]);
+      .in("id", ids);
     
     if (!error) {
       setTransactions(prev => prev.map(t => 
         selectedIds.has(t.id) ? { ...t, ...updates } as Transaction : t
       ));
       setSelectedIds(new Set());
+      setBulkDeliverDate("");
+      setBulkStatus("");
+      const statusName = STATUS_MAP[newStatus] || String(newStatus);
+      for (const id of ids) {
+        const txn = transactions.find(t => t.id === id);
+        await logActivity('Transaction Status Changed', 'Transactions', id, `Job ID: ${txn?.job_id || ""}, Bulk Update → ${statusName}`);
+      }
+      await logActivity('Bulk Status Update', 'Transactions', undefined, `Updated ${ids.length} transactions to status ${statusName}`);
     } else {
       alert("Bulk update failed: " + error.message);
     }
     setBulkActionLoading(false);
+  };
+
+  // ── Bulk WhatsApp Report (PHP parity) ──────────────────────────────
+  const buildBulkWAMessage = (rows: Transaction[], fullname: string) => {
+    const fv = firmVars(sysInfo);
+    const businessName = `${fv.firm_owner}, ${fv.firm_name}, ${fv.firm_address}, Mob. ${fv.firm_phone}`;
+    const statText = ["Pending", "On-Progress", "Done", "Paid", "Cancelled", "Delivered"];
+    let msg = `Namaste ${fullname} ji 🙏!\n\n` +
+              `Aapke repair jobs ki current status update neeche di gayi hai:\n\n` +
+              `----------------------------\n`;
+    let totalSum = 0;
+    rows.forEach((row, i) => {
+      const st = statText[row.status] || "Pending";
+      const amt = row.amount || 0;
+      totalSum += amt;
+      msg += `${i + 1}. *${row.item}*\n` +
+             `   Job ID: #${row.job_id}\n` +
+             `   Code: #${row.code || ""}\n` +
+             `   Status: *${st}*\n`;
+      if (row.status === 2 || row.status === 3 || row.status === 5) {
+        msg += `   Amount: ₹${amt.toLocaleString('en-IN')}\n`;
+      }
+      msg += `\n`;
+    });
+    msg += `----------------------------\n` +
+           `*Grand Total: ₹${totalSum.toLocaleString('en-IN')}*\n\n` +
+           `Kripya kisi bhi jankari ke liye workshop par sampark karein. 🙏\n\n` +
+           `${businessName}`;
+    return msg;
+  };
+
+  const openBulkWhatsApp = () => {
+    if (selectedIds.size === 0) { alert("Select jobs first!"); return; }
+    const selected = transactions.filter(t => selectedIds.has(t.id));
+    const groups: Array<{ phone: string; fullname: string; rows: Transaction[] }> = [];
+    const groupMap = new Map<string, { phone: string; fullname: string; rows: Transaction[] }>();
+    selected.forEach(row => {
+      const phone = (row.client_contact || "").replace(/\D/g, "");
+      if (phone.length < 10) return;
+      let g = groupMap.get(phone);
+      if (!g) {
+        g = { phone, fullname: getClientName(row), rows: [] };
+        groupMap.set(phone, g);
+        groups.push(g);
+      }
+      g.rows.push(row);
+    });
+    if (groups.length === 0) { alert("Selected jobs me koi valid mobile number nahi mila"); return; }
+    setWaGroups(groups);
+    setWaEdited(false);
+    setWaText(buildBulkWAMessage(groups[0].rows, groups[0].fullname));
+    setWaModal(true);
+  };
+
+  const sendBulkWA = () => {
+    if (waGroups.length === 0) return;
+    const msg = waText;
+    if (waGroups.length > 1 && !waEdited) {
+      // Har client ko uski apni jobs ke saath alag message
+      waGroups.forEach(g => {
+        window.open(`https://wa.me/91${g.phone}?text=${encodeURIComponent(buildBulkWAMessage(g.rows, g.fullname))}`, "_blank");
+      });
+    } else {
+      // Single client ya user-ne-edit-kia → same text sabko
+      waGroups.forEach(g => {
+        window.open(`https://wa.me/91${g.phone}?text=${encodeURIComponent(msg)}`, "_blank");
+      });
+    }
+    setWaModal(false);
+  };
+
+  const copyWAMessage = async () => {
+    try {
+      await navigator.clipboard.writeText(waText);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = waText;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+  };
+
+  const openCombinedInvoice = (billType: "gst" | "non_gst") => {
+    if (selectedIds.size === 0) { alert("Select jobs first!"); return; }
+    const ids = [...selectedIds].join(",");
+    window.open(`/api/print-combined-invoice?ids=${ids}&bill_type=${billType}`, "_blank");
   };
 
   // ── Quick Create Job ───────────────────────────────────────────────────────
@@ -662,6 +778,140 @@ function JobsListContent() {
     setShowFilterModal(false);
   };
 
+  // ── Bulk Action Bar + WhatsApp Modal (shared desktop + mobile) ────────────
+  const bulkActionBar = selectedIds.size > 0 && (
+    <div
+      className="fixed bottom-5 left-1/2 z-[60] text-white rounded-2xl px-4 py-3 flex flex-wrap items-center justify-center gap-3 min-w-[300px] max-w-[95vw]"
+      style={{
+        background: "linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)",
+        boxShadow: "0 -4px 30px rgba(0,0,0,0.35)",
+        transform: "translateX(-50%)",
+        animation: "bulkBarPop 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+      }}
+    >
+      {/* Count pill */}
+      <span className="bg-[#667eea] text-white rounded-full px-3 py-1 font-bold text-sm whitespace-nowrap">
+        {selectedIds.size} selected
+      </span>
+
+      {/* Status dropdown (PHP parity) */}
+      <select
+        value={bulkStatus}
+        onChange={e => setBulkStatus(e.target.value)}
+        className="border-none rounded-lg px-3 py-2 text-sm font-semibold outline-none cursor-pointer min-w-[150px]"
+        style={{ backgroundColor: "#ffffff !important", color: "#1a1a2e !important" }}
+      >
+        <option value="">-- Status --</option>
+        <option value="0">Pending</option>
+        <option value="1">On-Progress</option>
+        <option value="2">Done</option>
+        <option value="3">Paid</option>
+        <option value="4">Cancelled</option>
+        <option value="5">Delivered</option>
+      </select>
+
+      {/* Delivery date — only for Delivered (PHP: #bulkDeliveryWrap) */}
+      {bulkStatus === "5" && (
+        <input
+          type="datetime-local"
+          value={bulkDeliverDate}
+          onChange={e => setBulkDeliverDate(e.target.value)}
+          title="Delivery Date & Time"
+          className="border-none rounded-lg px-3 py-2 text-sm outline-none cursor-pointer"
+          style={{ backgroundColor: "#ffffff !important", color: "#1a1a2e !important" }}
+        />
+      )}
+
+      {/* Apply (PHP: #bulkApplyBtn) */}
+      <button
+        onClick={() => {
+          if (!bulkStatus) { alert("Please select a status first"); return; }
+          bulkUpdateStatus(Number(bulkStatus));
+        }}
+        disabled={bulkActionLoading}
+        className="text-white border-none rounded-[10px] px-5 py-2 font-bold text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1.5 whitespace-nowrap"
+        style={{ background: "linear-gradient(135deg,#48bb78 0%,#38a169 100%)" }}
+      >
+        <CheckCircle2 size={14} /> {bulkActionLoading ? "Applying..." : "Apply"}
+      </button>
+
+      {/* WhatsApp Report (PHP: #bulkWABtn) */}
+      <button
+        onClick={openBulkWhatsApp}
+        className="text-white border-none rounded-lg px-4 py-2 font-bold text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1.5 whitespace-nowrap"
+        style={{ background: "#25d366" }}
+      >
+        <MessageCircle size={14} /> WhatsApp Report
+      </button>
+
+      {/* Combined Invoice / Estimate (PHP: printCombinedBill) */}
+      <button
+        onClick={() => openCombinedInvoice("gst")}
+        className="text-white border-none rounded-lg px-4 py-2 font-bold text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1.5 whitespace-nowrap"
+        style={{ background: "#0d6efd" }}
+      >
+        <FileText size={14} /> Combined Invoice
+      </button>
+      <button
+        onClick={() => openCombinedInvoice("non_gst")}
+        className="text-white border-none rounded-lg px-4 py-2 font-bold text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1.5 whitespace-nowrap"
+        style={{ background: "#6c757d" }}
+      >
+        <FileText size={14} /> Combined Estimate
+      </button>
+
+      {/* Clear (PHP: #bulkClearBtn) */}
+      <button
+        onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); setBulkDeliverDate(""); }}
+        className="bg-white/15 text-white border border-white/30 rounded-[10px] px-3.5 py-2 text-sm cursor-pointer transition-colors hover:bg-white/25 flex items-center gap-1.5 whitespace-nowrap"
+      >
+        <X size={14} /> Clear
+      </button>
+    </div>
+  );
+
+  const bulkWaModal = waModal && (
+    <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4">
+      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+        <div className="bg-green-600/90 px-5 py-3.5 flex items-center justify-between">
+          <h3 className="font-black text-white text-sm flex items-center gap-2">
+            <MessageCircle size={16} /> Send WhatsApp Message
+          </h3>
+          <button onClick={() => setWaModal(false)} className="text-white/80 hover:text-white transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-5 space-y-3">
+          {waGroups.length > 1 && (
+            <p className="text-[11px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
+              Ye message {waGroups.length} clients ko send hoga — har client ko uski apni jobs ke saath. Message edit karne par same text sabko jayega.
+            </p>
+          )}
+          <textarea
+            rows={10}
+            value={waText}
+            onChange={e => { setWaText(e.target.value); setWaEdited(true); }}
+            className="w-full bg-[#0d1117] border border-green-500/40 text-slate-200 rounded-xl p-3 text-sm font-mono leading-relaxed outline-none focus:border-green-500 resize-none"
+          />
+        </div>
+        <div className="px-5 py-3.5 bg-[#111520] flex items-center justify-end gap-2 border-t border-[#21293d]">
+          <button onClick={() => setWaModal(false)}
+            className="px-4 py-2 rounded-xl text-sm font-bold text-slate-400 bg-[#21293d] hover:bg-[#2a3550] transition-colors">
+            Close
+          </button>
+          <button onClick={copyWAMessage}
+            className="px-4 py-2 rounded-xl text-sm font-bold text-blue-400 bg-blue-600/15 border border-blue-500/30 hover:bg-blue-600/25 transition-colors flex items-center gap-1.5">
+            <Copy size={13} /> Copy
+          </button>
+          <button onClick={sendBulkWA}
+            className="px-4 py-2 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-colors flex items-center gap-1.5">
+            <Send size={13} /> Send
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -673,6 +923,197 @@ function JobsListContent() {
   }
 
   // ══════════════════════════════════════════════════════════════════
+  // -- Shared Table (desktop + mobile card/table toggle) ------------
+  const tableSection = (
+    <div className="bg-[#161b27] border border-[#21293d] rounded-xl overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm table-fixed min-w-[1000px]">
+          <colgroup>
+            <col className="w-[3%]" />
+            <col className="w-[4%]" />
+            <col className="w-[9%]" />
+            <col className="w-[9%]" />
+            <col className="w-[18%]" />
+            <col className="w-[11%]" />
+            <col className="w-[10%]" />
+            <col className="w-[5%]" />
+            <col className="w-[7%]" />
+            <col className="w-[9%]" />
+            <col className="w-[8%]" />
+          </colgroup>
+          <thead>
+            <tr className="bg-[#111520] border-b border-[#21293d]">
+              <th className="px-3 py-3 text-center">
+                <button onClick={toggleSelectAll} title="Select All / Clear" className="text-slate-500 hover:text-blue-400 transition-colors">
+                  {selectedIds.size === paginatedTransactions.length && paginatedTransactions.length > 0
+                    ? <CheckSquare size={14} />
+                    : <Square size={14} />}
+                </button>
+              </th>
+              {["#", "Date/Time", "Job/Code", "Client", "Item", "Fault", "Loc", "Amount", "Status", "Actions"].map(h => (
+                <th key={h} className="px-3 py-3 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-600">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#21293d]">
+            {paginatedTransactions.map((txn, idx) => {
+              const clientName = getClientName(txn);
+              const balance    = getClientBalance(txn);
+              const phone      = txn.client_contact?.replace(/\D/g, "") || "";
+
+              return (
+                <tr key={txn.id} className={`hover:bg-white/[0.02] transition-colors ${selectedIds.has(txn.id) ? "bg-blue-500/[0.06]" : ""}`}>
+                  <td className="px-3 py-2.5 text-center">
+                    <button onClick={() => toggleSelect(txn.id)} title="Select / Deselect"
+                      className="text-slate-500 hover:text-blue-400 transition-colors">
+                      {selectedIds.has(txn.id) ? <CheckSquare size={13} /> : <Square size={13} />}
+                    </button>
+                  </td>
+                  <td className="px-3 py-2.5 text-slate-600 text-xs">{pageIndex * pageSize + idx + 1}</td>
+
+                  {/* Date + Time (PHP feature) */}
+                  <td className="px-3 py-2.5">
+                    <div className="text-xs text-slate-300 font-medium">{fmtDate(txn.date_created)}</div>
+                    <div className="text-[10px] text-slate-600 mt-0.5">{fmtTime(txn.date_created)}</div>
+                  </td>
+
+                  <td className="px-3 py-2.5">
+                    <Link href={`/jobs/${txn.id}/view`}
+                      className="font-bold text-blue-400 hover:text-blue-300 text-xs transition-colors no-underline">
+                      #{txn.job_id}
+                    </Link>
+                    {txn.code && (
+                      <Link href={`/jobs/${txn.id}/view`}
+                        className="block text-slate-600 hover:text-slate-400 text-[10px] truncate transition-colors no-underline mt-0.5">
+                        {txn.code}
+                      </Link>
+                    )}
+                  </td>
+
+                  {/* Client with phone number text (PHP feature) */}
+                  <td className="px-3 py-2.5">
+                    <Link href={`/clients/${txn.client_name}/view`}
+                      className="font-bold text-slate-200 text-xs hover:text-blue-400 truncate block max-w-[160px] transition-colors"
+                      title={clientName}>
+                      {clientName}
+                    </Link>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <BalanceBadge bal={balance} />
+                      {phone && (
+                        <a href={`https://wa.me/91${phone}`} target="_blank"
+                          className="flex items-center gap-0.5 text-emerald-500 hover:text-emerald-400 text-[10px]">
+                          <Phone size={10} />
+                          <span className="hidden xl:inline">{txn.client_contact}</span>
+                        </a>
+                      )}
+                    </div>
+                  </td>
+
+                  <td className="px-3 py-2.5 text-xs text-slate-300 truncate" title={txn.item}>{txn.item}</td>
+                  <td className="px-3 py-2.5 text-xs text-red-400 truncate" title={txn.fault}>{txn.fault}</td>
+                  <td className="px-3 py-2.5 text-xs text-slate-600">{txn.uniq_id || "—"}</td>
+                  <td className="px-3 py-2.5 text-right font-bold text-sm text-slate-200">₹{(txn.amount || 0).toFixed(0)}</td>
+
+                  <td className="px-3 py-2.5 text-center">
+                    <span className={getStatusBadge(txn.status)}>{STATUS_MAP[txn.status]}</span>
+                    {txn.status_changed_at && (
+                      <div className="text-[9px] text-slate-600 mt-0.5">
+                        {fmtDate(txn.status_changed_at)} {fmtTime(txn.status_changed_at)}
+                      </div>
+                    )}
+                  </td>
+
+                  {/* Dropdown Actions */}
+                  <td className="px-3 py-2.5 relative">
+                    <button
+                      data-dropdown-trigger
+                      onClick={() => setOpenDropdownId(openDropdownId === txn.id ? null : txn.id)}
+                      className="bg-[#21293d] hover:bg-[#2a3550] border border-[#2a3550] text-slate-400 hover:text-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold flex items-center gap-1 mx-auto transition-all"
+                    >
+                      Action <ChevronDown size={12} />
+                    </button>
+                    {openDropdownId === txn.id && (
+                      <div data-dropdown-menu
+                        className="absolute right-0 mt-1 w-44 bg-[#161b27] border border-[#21293d] rounded-xl shadow-2xl z-20 py-1 overflow-hidden">
+                        {[
+                          { href: `/jobs/${txn.id}/view`,          icon: Eye,      label: "View",       cls: "text-blue-400" },
+                          { href: `/jobs/${txn.id}/edit`,     icon: Settings, label: "Edit",       cls: "text-indigo-400" },
+                          { href: `/jobs/${txn.id}/old`, icon: History,  label: "Old Edit",   cls: "text-cyan-400" },
+                        ].map(({ href, icon: Icon, label, cls }) => (
+                          <Link key={label} href={href}
+                            className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-slate-400 hover:text-slate-200 transition-colors"
+                            onClick={() => setOpenDropdownId(null)}>
+                            <Icon size={13} className={cls} /> {label}
+                          </Link>
+                        ))}
+                        <button onClick={() => { sendWA(txn); setOpenDropdownId(null); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-slate-400 hover:text-emerald-400 transition-colors">
+                          <Phone size={13} className="text-emerald-400" /> WhatsApp
+                        </button>
+                        <a href={`/api/print-bill?job_id=${txn.job_id}`} target="_blank"
+                          className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-slate-400 hover:text-orange-400 transition-colors"
+                          onClick={() => setOpenDropdownId(null)}>
+                          <Printer size={13} className="text-orange-400" /> Print Bill
+                        </a>
+                        <a href={`/api/print-bill?job_id=${txn.job_id}&type=thermal`} target="_blank"
+                          className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-slate-400 hover:text-yellow-400 transition-colors"
+                          onClick={() => setOpenDropdownId(null)}>
+                          <Printer size={13} className="text-yellow-400" /> Thermal Receipt
+                        </a>
+                        {userRole === "admin" && (
+                          <>
+                            <hr className="my-1 border-[#21293d]" />
+                            <button onClick={() => { handleDelete(txn.id); setOpenDropdownId(null); }}
+                              className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-red-500/10 text-sm text-red-500 transition-colors">
+                              <Trash2 size={13} /> Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+            {filteredTransactions.length === 0 && (
+              <tr>
+                <td colSpan={10} className="text-center py-16 text-slate-600">
+                  <AlertCircle className="mx-auto mb-2 text-slate-700" size={32} />
+                  <p className="text-sm font-bold">No transactions found</p>
+                  <p className="text-xs mt-1">Try adjusting filters</p>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── Pagination ── */}
+      <div className="flex items-center justify-between border-t border-[#21293d] bg-[#111520] px-4 py-3">
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <span>Show</span>
+          <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPageIndex(0); }}
+            className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1 text-xs outline-none">
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <span>Page {pageIndex + 1} of {totalPages || 1} • {totalRows} Total Jobs</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <button onClick={() => setPageIndex(p => Math.max(p - 1, 0))} disabled={pageIndex === 0}
+            className="px-3 py-1.5 bg-[#21293d] border border-[#21293d] text-slate-400 rounded-lg disabled:opacity-30 hover:bg-[#2a3550] transition-all">
+            ← Prev
+          </button>
+          <span className="text-slate-500 px-2">Page {pageIndex + 1} / {totalPages || 1}</span>
+          <button onClick={() => setPageIndex(p => Math.min(p + 1, totalPages - 1))} disabled={pageIndex >= totalPages - 1}
+            className="px-3 py-1.5 bg-[#21293d] border border-[#21293d] text-slate-400 rounded-lg disabled:opacity-30 hover:bg-[#2a3550] transition-all">
+            Next →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
   // DESKTOP VIEW
   // ══════════════════════════════════════════════════════════════════
   if (!isMobile) {
@@ -769,6 +1210,10 @@ function JobsListContent() {
                 className="bg-teal-700 hover:bg-teal-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all">
                 <FileSpreadsheet size={13} /> Excel
               </button>
+              <Link href="/reports/delivered"
+                className="bg-cyan-700 hover:bg-cyan-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all">
+                <Truck size={13} /> Delivered Report
+              </Link>
               <label className="flex items-center gap-2 ml-auto bg-[#0d1117] border border-[#21293d] px-3 py-1.5 rounded-lg cursor-pointer">
                 <input type="checkbox" checked={hideDelivered} onChange={e => setHideDelivered(e.target.checked)} className="w-3.5 h-3.5 accent-blue-500" />
                 <span className="text-xs font-bold text-slate-400">Hide Delivered</span>
@@ -791,177 +1236,11 @@ function JobsListContent() {
             )}
           </div>
 
-          {/* ── Table ── */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm table-fixed">
-                <colgroup>
-                  <col className="w-[4%]" />
-                  <col className="w-[9%]" />
-                  <col className="w-[9%]" />
-                  <col className="w-[18%]" />
-                  <col className="w-[11%]" />
-                  <col className="w-[10%]" />
-                  <col className="w-[5%]" />
-                  <col className="w-[7%]" />
-                  <col className="w-[9%]" />
-                  <col className="w-[8%]" />
-                </colgroup>
-                <thead>
-                  <tr className="bg-[#111520] border-b border-[#21293d]">
-                    {["#", "Date/Time", "Job/Code", "Client", "Item", "Fault", "Loc", "Amount", "Status", "Actions"].map(h => (
-                      <th key={h} className="px-3 py-3 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-600">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#21293d]">
-                  {paginatedTransactions.map((txn, idx) => {
-                    const clientName = getClientName(txn);
-                    const balance    = getClientBalance(txn);
-                    const phone      = txn.client_contact?.replace(/\D/g, "") || "";
-
-                    return (
-                      <tr key={txn.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="px-3 py-2.5 text-slate-600 text-xs">{pageIndex * pageSize + idx + 1}</td>
-
-                        {/* Date + Time (PHP feature) */}
-                        <td className="px-3 py-2.5">
-                          <div className="text-xs text-slate-300 font-medium">{fmtDate(txn.date_created)}</div>
-                          <div className="text-[10px] text-slate-600 mt-0.5">{fmtTime(txn.date_created)}</div>
-                        </td>
-
-                        <td className="px-3 py-2.5">
-                          <Link href={`/jobs/${txn.id}/view`}
-                            className="font-bold text-blue-400 hover:text-blue-300 text-xs transition-colors no-underline">
-                            #{txn.job_id}
-                          </Link>
-                          {txn.code && (
-                            <Link href={`/jobs/${txn.id}/view`}
-                              className="block text-slate-600 hover:text-slate-400 text-[10px] truncate transition-colors no-underline mt-0.5">
-                              {txn.code}
-                            </Link>
-                          )}
-                        </td>
-
-                        {/* Client with phone number text (PHP feature) */}
-                        <td className="px-3 py-2.5">
-                          <Link href={`/clients/${txn.client_name}/view`}
-                            className="font-bold text-slate-200 text-xs hover:text-blue-400 truncate block max-w-[160px] transition-colors"
-                            title={clientName}>
-                            {clientName}
-                          </Link>
-                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                            <BalanceBadge bal={balance} />
-                            {phone && (
-                              <a href={`https://wa.me/91${phone}`} target="_blank"
-                                className="flex items-center gap-0.5 text-emerald-500 hover:text-emerald-400 text-[10px]">
-                                <Phone size={10} />
-                                <span className="hidden xl:inline">{txn.client_contact}</span>
-                              </a>
-                            )}
-                          </div>
-                        </td>
-
-                        <td className="px-3 py-2.5 text-xs text-slate-300 truncate" title={txn.item}>{txn.item}</td>
-                        <td className="px-3 py-2.5 text-xs text-red-400 truncate" title={txn.fault}>{txn.fault}</td>
-                        <td className="px-3 py-2.5 text-xs text-slate-600">{txn.uniq_id || "—"}</td>
-                        <td className="px-3 py-2.5 text-right font-bold text-sm text-slate-200">₹{(txn.amount || 0).toFixed(0)}</td>
-
-                        <td className="px-3 py-2.5 text-center">
-                          <span className={getStatusBadge(txn.status)}>{STATUS_MAP[txn.status]}</span>
-                          {txn.status_changed_at && (
-                            <div className="text-[9px] text-slate-600 mt-0.5">
-                              {fmtDate(txn.status_changed_at)} {fmtTime(txn.status_changed_at)}
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Dropdown Actions */}
-                        <td className="px-3 py-2.5 relative">
-                          <button
-                            data-dropdown-trigger
-                            onClick={() => setOpenDropdownId(openDropdownId === txn.id ? null : txn.id)}
-                            className="bg-[#21293d] hover:bg-[#2a3550] border border-[#2a3550] text-slate-400 hover:text-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold flex items-center gap-1 mx-auto transition-all"
-                          >
-                            Action <ChevronDown size={12} />
-                          </button>
-                          {openDropdownId === txn.id && (
-                            <div data-dropdown-menu
-                              className="absolute right-0 mt-1 w-44 bg-[#161b27] border border-[#21293d] rounded-xl shadow-2xl z-20 py-1 overflow-hidden">
-                              {[
-                                { href: `/jobs/${txn.id}/view`,          icon: Eye,      label: "View",       cls: "text-blue-400" },
-                                { href: `/jobs/${txn.id}/edit`,     icon: Settings, label: "Edit",       cls: "text-indigo-400" },
-                                { href: `/jobs/${txn.id}/old`, icon: History,  label: "Old Edit",   cls: "text-cyan-400" },
-                              ].map(({ href, icon: Icon, label, cls }) => (
-                                <Link key={label} href={href}
-                                  className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-slate-400 hover:text-slate-200 transition-colors"
-                                  onClick={() => setOpenDropdownId(null)}>
-                                  <Icon size={13} className={cls} /> {label}
-                                </Link>
-                              ))}
-                              <button onClick={() => { sendWA(txn); setOpenDropdownId(null); }}
-                                className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-slate-400 hover:text-emerald-400 transition-colors">
-                                <Phone size={13} className="text-emerald-400" /> WhatsApp
-                              </button>
-                              <a href={`/api/print-bill?job_id=${txn.job_id}`} target="_blank"
-                                className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-slate-400 hover:text-orange-400 transition-colors"
-                                onClick={() => setOpenDropdownId(null)}>
-                                <Printer size={13} className="text-orange-400" /> Print Bill
-                              </a>
-                              {userRole === "admin" && (
-                                <>
-                                  <hr className="my-1 border-[#21293d]" />
-                                  <button onClick={() => { handleDelete(txn.id); setOpenDropdownId(null); }}
-                                    className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-red-500/10 text-sm text-red-500 transition-colors">
-                                    <Trash2 size={13} /> Delete
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {filteredTransactions.length === 0 && (
-                    <tr>
-                      <td colSpan={10} className="text-center py-16 text-slate-600">
-                        <AlertCircle className="mx-auto mb-2 text-slate-700" size={32} />
-                        <p className="text-sm font-bold">No transactions found</p>
-                        <p className="text-xs mt-1">Try adjusting filters</p>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* ── Pagination ── */}
-            <div className="flex items-center justify-between border-t border-[#21293d] bg-[#111520] px-4 py-3">
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <span>Show</span>
-                <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPageIndex(0); }}
-                  className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1 text-xs outline-none">
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-                <span>Page {pageIndex + 1} of {totalPages || 1} • {totalRows} Total Jobs</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <button onClick={() => setPageIndex(p => Math.max(p - 1, 0))} disabled={pageIndex === 0}
-                  className="px-3 py-1.5 bg-[#21293d] border border-[#21293d] text-slate-400 rounded-lg disabled:opacity-30 hover:bg-[#2a3550] transition-all">
-                  ← Prev
-                </button>
-                <span className="text-slate-500 px-2">Page {pageIndex + 1} / {totalPages || 1}</span>
-                <button onClick={() => setPageIndex(p => Math.min(p + 1, totalPages - 1))} disabled={pageIndex >= totalPages - 1}
-                  className="px-3 py-1.5 bg-[#21293d] border border-[#21293d] text-slate-400 rounded-lg disabled:opacity-30 hover:bg-[#2a3550] transition-all">
-                  Next →
-                </button>
-              </div>
-            </div>
-          </div>
+          {/* ── Table (shared with mobile card/table toggle) ── */}
+          {tableSection}
         </div>
+      {bulkActionBar}
+      {bulkWaModal}
       </div>
     );
   }
@@ -981,10 +1260,26 @@ function JobsListContent() {
             </div>
             <h1 className="text-sm font-black text-white tracking-wide">Transactions</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-bold text-slate-500 uppercase">
               {totalRows} records
             </span>
+            <Link href="/reports/delivered" title="Delivered Report"
+              className="bg-[#48bb78] hover:bg-[#3da968] text-white px-2 py-1 rounded-lg flex items-center gap-1 text-[10px] font-bold no-underline transition-all">
+              <Truck size={11} /> Delivered
+            </Link>
+            <div className="flex items-center gap-0.5 bg-[#161b27] border border-[#21293d] p-0.5 rounded-lg">
+              <button onClick={() => setMobileView("card")}
+                className={`p-1 rounded transition-all ${mobileView === "card" ? "bg-blue-600 text-white" : "text-slate-500"}`}
+                title="Card View">
+                <LayoutGrid size={12} />
+              </button>
+              <button onClick={() => setMobileView("table")}
+                className={`p-1 rounded transition-all ${mobileView === "table" ? "bg-blue-600 text-white" : "text-slate-500"}`}
+                title="Table View">
+                <List size={12} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1050,7 +1345,10 @@ function JobsListContent() {
         </div>
       )}
 
-      {/* ── Transaction Cards ── */}
+      {/* ── Card / Table view (PHP: transactions_view toggle) ── */}
+      {mobileView === "table" ? (
+        <div className="p-3">{tableSection}</div>
+      ) : (
       <div className="p-3 space-y-3">
         {paginatedTransactions.length === 0 ? (
           <div className="bg-[#161b27] border border-[#21293d] p-10 rounded-2xl text-center">
@@ -1193,6 +1491,7 @@ function JobsListContent() {
                     { href: `/jobs/${txn.id}`,          icon: Eye,      label: "View",     border: "border-blue-500/20",    text: "text-blue-400"    },
                     { href: null,                        icon: Phone,    label: "WhatsApp", border: "border-emerald-500/20", text: "text-emerald-400", onClick: () => sendWA(txn) },
                     { href: `/api/print-bill?job_id=${txn.job_id}`, icon: Printer, label: "Print", border: "border-orange-500/20", text: "text-orange-400", target: "_blank" },
+                    { href: `/api/print-bill?job_id=${txn.job_id}&type=thermal`, icon: Printer, label: "Thermal", border: "border-yellow-500/20", text: "text-yellow-400", target: "_blank" },
                     { href: `/jobs/${txn.id}/old`,     icon: History,  label: "Old Edit", border: "border-cyan-500/20",   text: "text-cyan-400"    },
                     { href: `/jobs/edit/${txn.id}`,      icon: Settings, label: "Edit",     border: "border-indigo-500/20", text: "text-indigo-400"  },
                   ].map(({ href, icon: Icon, label, border, text, onClick, target }) =>
@@ -1220,6 +1519,7 @@ function JobsListContent() {
           })
         )}
       </div>
+      )}
 
       {/* ── FAB ── */}
       <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-3 items-end">
@@ -1402,49 +1702,11 @@ function JobsListContent() {
         </div>
       )}
 
-      {/* ── Bulk Action Bar ── */}
-      {selectedIds.size > 0 && (
-        <div className="fixed bottom-20 left-4 right-4 z-30 bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl p-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <button onClick={() => setSelectedIds(new Set())}
-              className="w-8 h-8 flex items-center justify-center bg-[#111520] hover:bg-[#21293d] rounded-lg text-slate-500 hover:text-white transition-all">
-              <X size={14} />
-            </button>
-            <span className="text-sm font-bold text-white">{selectedIds.size} selected</span>
-          </div>
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <button onClick={() => bulkUpdateStatus(1)}
-              disabled={bulkActionLoading}
-              className="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all whitespace-nowrap">
-              <ArrowRight size={12} /> On-Progress
-            </button>
-            <button onClick={() => bulkUpdateStatus(2)}
-              disabled={bulkActionLoading}
-              className="px-3 py-1.5 bg-teal-600/20 hover:bg-teal-600/30 border border-teal-500/30 text-teal-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all whitespace-nowrap">
-              <CheckCircle2 size={12} /> Done
-            </button>
-            <button onClick={() => bulkUpdateStatus(3)}
-              disabled={bulkActionLoading}
-              className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all whitespace-nowrap">
-              <IndianRupee size={12} /> Paid
-            </button>
-            <button onClick={() => bulkUpdateStatus(5)}
-              disabled={bulkActionLoading}
-              className="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all whitespace-nowrap">
-              <ArrowRight size={12} /> Delivered
-            </button>
-            <button onClick={() => bulkUpdateStatus(4)}
-              disabled={bulkActionLoading}
-              className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 rounded-lg text-xs font-bold flex items-center gap-1 transition-all whitespace-nowrap">
-              <Trash2 size={12} /> Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
+      {bulkActionBar}
+      {bulkWaModal}
       {/* ── Filter Modal ── */}
       {showFilterModal && (
-        <div className="fixed inset-0 bg-black/70 z-30 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4">
           <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm p-5 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-black text-white">Filter Transactions</h3>
