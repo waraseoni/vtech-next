@@ -27,6 +27,9 @@ dist/
 .env*_*
 !.env.example
 
+# 3b. Applied (already-run) Supabase migrations — archived, not re-applied
+supabase/migrations/done/
+
 # 4. Sensitive Credential & Password Files (CRITICAL)
 supabase pw.txt
 vikram_db_supabase.txt
