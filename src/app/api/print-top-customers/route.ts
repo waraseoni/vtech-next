@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
+import { fetchAll } from "@/lib/fetch-all";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -32,24 +33,30 @@ export async function GET(request: NextRequest) {
     to = new Date().toISOString();
   }
 
-  const { data: clients } = await supabase
-    .from("client_list").select("id, firstname, middlename, lastname, contact")
-    .eq("delete_flag", 0);
+  const clients = await fetchAll(
+    supabase
+      .from("client_list").select("id, firstname, middlename, lastname, contact")
+      .eq("delete_flag", 0)
+  );
 
   const topRows: { client_id: number; customer_name: string; contact: string | null; total_jobs: number; total_amount: number; total_payment: number; current_balance: number; }[] = [];
 
   for (const c of clients || []) {
     const name = [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ");
 
-    const { data: txns } = await supabase
-      .from("transaction_list").select("id, amount, date_created")
-      .eq("client_name", c.id).in("status", [3, 5])
-      .gte("date_created", from).lte("date_created", to);
+    const txns = await fetchAll(
+      supabase
+        .from("transaction_list").select("id, amount, date_created")
+        .eq("client_name", c.id).in("status", [3, 5])
+        .gte("date_created", from).lte("date_created", to)
+    );
 
-    const { data: pmts } = await supabase
-      .from("client_payments").select("amount, discount, payment_date")
-      .eq("client_id", c.id)
-      .gte("payment_date", from.split("T")[0]).lte("payment_date", to.split("T")[0]);
+    const pmts = await fetchAll(
+      supabase
+        .from("client_payments").select("amount, discount, payment_date")
+        .eq("client_id", c.id)
+        .gte("payment_date", from.split("T")[0]).lte("payment_date", to.split("T")[0])
+    );
 
     const totalAmt = txns?.reduce((s: number, t: { amount: number }) => s + (t.amount || 0), 0) || 0;
     const totalPmt = pmts?.reduce((s: number, p: { amount: number; discount: number }) => s + (p.amount || 0) + (p.discount || 0), 0) || 0;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
+import { fetchAll } from "@/lib/fetch-all";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -47,9 +48,9 @@ export async function GET(request: NextRequest) {
     .order("date_created", { ascending: false });
   if (paymentFilter !== "all") query = query.eq("payment_mode", paymentFilter);
 
-  const { data: salesData, error } = await query;
+  const salesData = await fetchAll(query);
 
-  if (error || !salesData?.length) {
+  if (!salesData?.length) {
     return new NextResponse(
       `<!DOCTYPE html><html><body style="font-family:Arial;padding:40px;text-align:center">
         <h2>Koi direct sales nahi mili</h2>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
+import { fetchAll, fetchAllIn } from "@/lib/fetch-all";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,8 +56,8 @@ export async function GET(req: NextRequest) {
   if (dateFrom) q = q.gte("date_created", `${dateFrom}T00:00:00+05:30`);
   if (dateTo)   q = q.lte("date_created", `${dateTo}T23:59:59+05:30`);
 
-  const { data: txns } = await q;
-  if (!txns?.length) {
+  const txns = await fetchAll(q);
+  if (!txns.length) {
     return new NextResponse(
       `<!DOCTYPE html><html><body style="font-family:Arial;padding:40px;text-align:center">
         <h2>Koi transactions nahi mili</h2>
@@ -69,20 +70,26 @@ export async function GET(req: NextRequest) {
 
   // ── Fetch client names ─────────────────────────────────────────────────────
   const clientIds = [...new Set(txns.map(t => Number(t.client_name)))];
-  const { data: clients } = await supabase
-    .from("client_list")
-    .select("id, firstname, middlename, lastname, contact")
-    .in("id", clientIds);
+  const clients = await fetchAllIn(
+    (ids) => supabase
+      .from("client_list")
+      .select("id, firstname, middlename, lastname, contact")
+      .in("id", ids),
+    clientIds
+  );
   const clientMap = new Map(clients?.map(c => [c.id, c]) ?? []);
 
   // ── Fetch mechanic names ───────────────────────────────────────────────────
   const mechIds = [...new Set(txns.map(t => t.mechanic_id).filter(Boolean))];
   const mechMap = new Map<number, string>();
   if (mechIds.length > 0) {
-    const { data: mechs } = await supabase
-      .from("mechanic_list")
-      .select("id, firstname, lastname")
-      .in("id", mechIds);
+    const mechs = await fetchAllIn(
+      (ids) => supabase
+        .from("mechanic_list")
+        .select("id, firstname, lastname")
+        .in("id", ids),
+      mechIds
+    );
     mechs?.forEach(m => mechMap.set(m.id, `${m.firstname} ${m.lastname}`.trim()));
   }
 

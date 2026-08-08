@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
+import { fetchAll, pageAll, fetchAllIn } from "@/lib/fetch-all";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
     query = query.eq('client_name', parseInt(clientId));
   }
 
-  const { data: txData } = await query;
+  const txData = await fetchAll(query);
 
   if (!txData || txData.length === 0) {
     return new NextResponse(
@@ -62,8 +63,8 @@ export async function GET(request: NextRequest) {
   const clientIds = [...new Set(txData.map(t => t.client_name).filter(id => id != null))];
 
   const [{ data: clientsData }, { data: clientNamesData }] = await Promise.all([
-    clientIds.length > 0 ? supabase.from('client_list').select('id, firstname, middlename, lastname').in('id', clientIds) : Promise.resolve({ data: [] }),
-    clientIds.length > 0 ? supabase.from('client_list').select('id, firstname, middlename, lastname, contact').in('id', clientIds) : Promise.resolve({ data: [] })
+    clientIds.length > 0 ? pageAll(fetchAllIn((ids: number[]) => supabase.from('client_list').select('id, firstname, middlename, lastname').in('id', ids), clientIds)) : Promise.resolve({ data: [] }),
+    clientIds.length > 0 ? pageAll(fetchAllIn((ids: number[]) => supabase.from('client_list').select('id, firstname, middlename, lastname, contact').in('id', ids), clientIds)) : Promise.resolve({ data: [] })
   ]);
 
   const clientMap: Record<number, any> = {};

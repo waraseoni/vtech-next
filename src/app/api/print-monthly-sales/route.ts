@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
+import { fetchAll } from "@/lib/fetch-all";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -45,21 +46,28 @@ export async function GET(req: NextRequest) {
   toDate.setDate(toDate.getDate() - 1);
   const to = toDate.toISOString().split("T")[0] + "T23:59:59+05:30";
 
-  const { data: tpData } = await supabase
-    .from("transaction_products").select("product_id, price, qty, date_updated, transaction_id")
-    .gte("date_updated", from).lte("date_updated", to);
+  const tpData = await fetchAll(
+    supabase
+      .from("transaction_products").select("product_id, price, qty, date_updated, transaction_id")
+      .gte("date_updated", from).lte("date_updated", to)
+  );
 
   const txnIds = [...new Set(tpData?.map((t) => t.transaction_id) || [])];
-  const { data: txns } = await supabase
-    .from("transaction_list").select("id, code, client_name, status, date_updated")
-    .in("id", txnIds).in("status", [1, 2, 3, 5]);
+  const txns = [];
+  for (let i = 0; i < txnIds.length; i += 500) {
+    txns.push(...(await fetchAll(
+      supabase.from("transaction_list").select("id, code, client_name, status, date_updated")
+        .in("id", txnIds.slice(i, i + 500)).in("status", [1, 2, 3, 5])
+    )));
+  }
 
-  const { data: clients } = await supabase
-    .from("client_list").select("id, firstname, middlename, lastname")
-    .eq("delete_flag", 0);
+  const clients = await fetchAll(
+    supabase.from("client_list").select("id, firstname, middlename, lastname").eq("delete_flag", 0)
+  );
 
-  const { data: products } = await supabase
-    .from("product_list").select("id, name").eq("delete_flag", 0);
+  const products = await fetchAll(
+    supabase.from("product_list").select("id, name").eq("delete_flag", 0)
+  );
 
   const saleRows: { date_updated: string; code: string | null; client_name: string; product_name: string; price: number; qty: number; total: number }[] = [];
   for (const tp of tpData || []) {

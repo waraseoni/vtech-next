@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { fetchAll, pageAll } from '@/lib/fetch-all';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -40,9 +41,9 @@ export async function GET(request: Request) {
       { data: allMechanics },
       { data: allProducts },
     ] = await Promise.all([
-      supabase.from('client_list').select('id, firstname, middlename, lastname'),
-      supabase.from('mechanic_list').select('id, firstname, lastname, daily_salary, salary_per_day, delete_flag'),
-      supabase.from('product_list').select('id, name, price'),
+      pageAll(fetchAll(supabase.from('client_list').select('id, firstname, middlename, lastname'))),
+      pageAll(fetchAll(supabase.from('mechanic_list').select('id, firstname, lastname, daily_salary, salary_per_day, delete_flag'))),
+      pageAll(fetchAll(supabase.from('product_list').select('id, name, price'))),
     ]);
 
     const clientMap: Record<number, { firstname: string; middlename: string; lastname: string }> = {};
@@ -85,71 +86,71 @@ export async function GET(request: Request) {
       { data: allAdvRaw },
     ] = await Promise.all([
       // 1. Repair jobs (del_status=0 — soft-deleted jobs ko income/liability dono se exclude)
-      supabase.from('transaction_list')
+      pageAll(fetchAll(supabase.from('transaction_list')
         .select('id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id')
         .eq('status', 5).eq('del_status', 0)
-        .gte('date_completed', start).lte('date_completed', end),
+        .gte('date_completed', start).lte('date_completed', end))),
 
       // 2. Walk-in sales
-      supabase.from('direct_sales')
+      pageAll(fetchAll(supabase.from('direct_sales')
         .select('id, sale_code, total_amount, date_created, client_id')
         .or('client_id.is.null,client_id.eq.0')
-        .gte('date_created', start).lte('date_created', end),
+        .gte('date_created', start).lte('date_created', end))),
 
       // 3. Client sales
-      supabase.from('direct_sales')
+      pageAll(fetchAll(supabase.from('direct_sales')
         .select('id, sale_code, total_amount, date_created, client_id')
         .not('client_id', 'is', null).neq('client_id', 0)
-        .gte('date_created', start).lte('date_created', end),
+        .gte('date_created', start).lte('date_created', end))),
 
       // 4. Client payments
-      supabase.from('client_payments')
+      pageAll(fetchAll(supabase.from('client_payments')
         .select('id, client_id, amount, discount, payment_date, remarks, payment_mode')
-        .gte('payment_date', from).lte('payment_date', to),
+        .gte('payment_date', from).lte('payment_date', to))),
 
       // 5. Attendance (period)
-      supabase.from('attendance_list')
+      pageAll(fetchAll(supabase.from('attendance_list')
         .select('mechanic_id, curr_date, status')
         .in('status', [1, 3])
-        .gte('curr_date', from).lte('curr_date', to),
+        .gte('curr_date', from).lte('curr_date', to))),
 
       // 6. Advances (period)
-      supabase.from('advance_payments')
+      pageAll(fetchAll(supabase.from('advance_payments')
         .select('mechanic_id, date_paid, amount, reason')
-        .gte('date_paid', from).lte('date_paid', to),
+        .gte('date_paid', from).lte('date_paid', to))),
 
       // 7. Expenses (period)
-      supabase.from('expense_list')
+      pageAll(fetchAll(supabase.from('expense_list')
         .select('id, category, amount, remarks, date_created')
-        .gte('date_created', start).lte('date_created', end),
+        .gte('date_created', start).lte('date_created', end))),
 
       // 8. Loan payments (period)
-      supabase.from('loan_payments')
+      pageAll(fetchAll(supabase.from('loan_payments')
         .select('amount_paid, payment_date, remarks')
-        .gte('payment_date', from).lte('payment_date', to),
+        .gte('payment_date', from).lte('payment_date', to))),
 
       // 9. Inventory (no join - manual)
-      supabase.from('inventory_list')
-        .select('product_id, quantity').gt('quantity', 0),
+      pageAll(fetchAll(supabase.from('inventory_list')
+        .select('product_id, quantity').gt('quantity', 0))),
 
       // 10. Lenders (active)
-      supabase.from('lender_list')
-        .select('loan_amount').eq('status', 1),
+      pageAll(fetchAll(supabase.from('lender_list')
+        .select('loan_amount').eq('status', 1))),
 
       // 11. All-time loan paid
-      supabase.from('loan_payments').select('amount_paid'),
+      pageAll(fetchAll(supabase.from('loan_payments').select('amount_paid'))),
 
       // 12. All-time repairs (liability)
-      supabase.from('transaction_list')
+      pageAll(fetchAll(supabase.from('transaction_list')
         .select('mechanic_id, mechanic_commission_amount')
-        .eq('status', 5).eq('del_status', 0),
+        .eq('status', 5).eq('del_status', 0))),
 
       // 13. All-time attendance (liability)
-      supabase.from('attendance_list')
-        .select('mechanic_id, status').in('status', [1, 3]),
+      pageAll(fetchAll(supabase.from('attendance_list')
+        .select('mechanic_id, status').in('status', [1, 3]))),
 
       // 14. All-time advances (liability)
-      supabase.from('advance_payments').select('mechanic_id, amount'),
+      pageAll(fetchAll(supabase.from('advance_payments').select('mechanic_id, amount'))),
     ]);
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -162,11 +163,13 @@ export async function GET(request: Request) {
     ];
 
     const saleItemsMap: Record<number, any[]> = {};
-    if (allSaleIds.length > 0) {
-      const { data: saleItems } = await supabase
-        .from('direct_sale_items')
-        .select('sale_id, product_id, qty, price')
-        .in('sale_id', allSaleIds);
+    for (let i = 0; i < allSaleIds.length; i += 500) {
+      const saleItems = await fetchAll(
+        supabase
+          .from('direct_sale_items')
+          .select('sale_id, product_id, qty, price')
+          .in('sale_id', allSaleIds.slice(i, i + 500))
+      );
       saleItems?.forEach((item: any) => {
         if (!saleItemsMap[item.sale_id]) saleItemsMap[item.sale_id] = [];
         saleItemsMap[item.sale_id].push(item);

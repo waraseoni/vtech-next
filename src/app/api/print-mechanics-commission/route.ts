@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
+import { fetchAll } from "@/lib/fetch-all";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,11 +37,13 @@ export async function GET(request: NextRequest) {
   toDate.setMonth(toDate.getMonth() + 1);
   const to = month ? toDate.toISOString().split("T")[0] + "T23:59:59" : "";
 
-  const { data: mechData } = await supabase
-    .from("mechanic_list")
-    .select("id, firstname, middlename, lastname")
-    .eq("delete_flag", 0)
-    .order("firstname");
+  const mechData = await fetchAll(
+    supabase
+      .from("mechanic_list")
+      .select("id, firstname, middlename, lastname")
+      .eq("delete_flag", 0)
+      .order("firstname")
+  );
 
   let q = supabase
     .from("transaction_list")
@@ -48,7 +51,7 @@ export async function GET(request: NextRequest) {
     .gte("date_created", from)
     .lte("date_created", to);
   if (mechanicId && mechanicId !== "all") q = q.eq("mechanic_id", parseInt(mechanicId));
-  const { data: txns } = await q;
+  const txns = await fetchAll(q);
 
   if (!txns?.length) {
     return new NextResponse(

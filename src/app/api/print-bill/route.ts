@@ -168,6 +168,84 @@ export async function GET(req: NextRequest) {
   const badgeColor   = isGST ? "#dc3545" : "#17a2b8";
   const accentColor  = isGST ? "#dc3545" : "#007bff";
 
+  // ── THERMAL RECEIPT (POS, 58mm) ──────────────────────────────────────────────
+  if (url.searchParams.get("type") === "thermal") {
+    const thermalRows = items.length > 0
+      ? items.map((r, i) => `
+        <tr>
+          <td>${i + 1}. ${r.desc}${r.qty > 1 ? ` x${r.qty}` : ""}</td>
+          <td>${inr(r.total)}</td>
+        </tr>`).join("")
+      : `<tr><td>Repair service</td><td>${inr(subtotal)}</td></tr>`;
+
+    const thermalHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Receipt — Job #${txn.job_id}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{width:58mm;margin:0 auto;font-family:'Courier New',monospace;font-size:11px;color:#000;padding:4mm 2mm;line-height:1.45}
+  .ctr{text-align:center}
+  .shop{font-size:15px;font-weight:900;text-transform:uppercase}
+  .title{font-size:13px;font-weight:900;border-top:1px dashed #000;border-bottom:1px dashed #000;padding:3px 0;margin:6px 0;text-align:center;text-transform:uppercase}
+  .row{display:flex;justify-content:space-between}
+  table{width:100%;border-collapse:collapse;margin:4px 0}
+  td{border-bottom:1px dotted #aaa;padding:2px 0}
+  .tr{text-align:right}
+  .tot td{border-top:1px solid #000;border-bottom:1px solid #000;font-weight:900;padding:4px 0}
+  .words{margin-top:4px;text-align:center}
+  .foot{margin-top:8px;text-align:center}
+  .dash{border-top:1px dashed #000;margin:6px 0}
+  .btns{margin-top:10px;text-align:center}
+  .btn{padding:9px 22px;border:none;border-radius:4px;background:#001f3f;color:#fff;font-size:13px;font-weight:700;cursor:pointer}
+  @media print{ body{padding:0} .btns{display:none} @page{size:58mm auto;margin:2mm} }
+</style>
+</head>
+<body>
+  <div class="ctr shop">${SHOP.name}</div>
+  <div class="ctr">${SHOP.address}</div>
+  <div class="ctr">📞 ${SHOP.mobile}${SHOP.gstin ? `  GSTIN: ${SHOP.gstin}` : ""}</div>
+  <div class="title">${isGST ? "TAX INVOICE" : "ESTIMATE / RECEIPT"}</div>
+  <div class="row"><span>Job #</span><span>${txn.job_id}</span></div>
+  <div class="row"><span>Code</span><span>${txn.code || "—"}</span></div>
+  <div class="row"><span>Date</span><span>${fmtDate(txn.date_created)}</span></div>
+  <div class="row"><span>Time</span><span>${fmtTime(txn.date_created)}</span></div>
+  <div class="row"><span>Status</span><span>${STATUS[txn.status] || "—"}</span></div>
+  <div class="dash"></div>
+  <div class="row"><span>Customer</span><span>${clientName}</span></div>
+  <div class="row"><span>Mobile</span><span>${client?.contact || "—"}</span></div>
+  <div class="row"><span>Item</span><span>${txn.item || "—"}</span></div>
+  <div class="row"><span>Fault</span><span>${txn.fault || "—"}</span></div>
+  ${txn.uniq_id ? `<div class="row"><span>Location</span><span>${txn.uniq_id}</span></div>` : ""}
+  <div class="dash"></div>
+  <table>
+    ${thermalRows}
+  </table>
+  <table class="tot">
+    <tr><td>Sub Total</td><td class="tr">${inr(subtotal)}</td></tr>
+    ${isGST ? `
+    <tr><td>CGST @${CGST_RATE}%</td><td class="tr">${inr(cgstAmt)}</td></tr>
+    <tr><td>SGST @${SGST_RATE}%</td><td class="tr">${inr(sgstAmt)}</td></tr>
+    <tr><td>GRAND TOTAL</td><td class="tr">${inr(grandTotal)}</td></tr>` : `
+    <tr><td>GRAND TOTAL</td><td class="tr">${inr(grandTotal)}</td></tr>`}
+  </table>
+  <div class="words">${numberToWords(Math.floor(grandTotal))}</div>
+  <div class="dash"></div>
+  <div class="foot">❤ Thank You for Your Business!<br/>For queries: ${SHOP.mobile}</div>
+  <div class="btns">
+    <button class="btn" onclick="window.print()">🖨 Print Receipt</button>
+  </div>
+  <script>setTimeout(()=>window.print(), 300);</script>
+</body>
+</html>`;
+    return new NextResponse(thermalHtml, {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }
+
   // ── Items rows HTML ────────────────────────────────────────────────────────
   const itemRows = items.length > 0
     ? items.map((r, i) => `

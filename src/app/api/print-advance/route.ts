@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
+import { fetchAll, fetchAllIn } from "@/lib/fetch-all";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
     q = q.eq("mechanic_id", parseInt(mechanicId));
   }
 
-  const { data: advances } = await q;
+  const advances = await fetchAll(q);
   if (!advances?.length) {
     return new NextResponse(
       `<!DOCTYPE html><html><body style="font-family:Arial;padding:40px;text-align:center">
@@ -57,10 +58,13 @@ export async function GET(req: NextRequest) {
 
   // Fetch mechanics
   const mechIds = [...new Set(advances.map(a => a.mechanic_id))];
-  const { data: mechanics } = await supabase
-    .from("mechanic_list")
-    .select("id, firstname, middlename, lastname")
-    .in("id", mechIds);
+  const mechanics = await fetchAllIn(
+    (ids) => supabase
+      .from("mechanic_list")
+      .select("id, firstname, middlename, lastname")
+      .in("id", ids),
+    mechIds
+  );
 
   const mechMap = new Map(mechanics?.map(m => [m.id, [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ")]) ?? []);
 

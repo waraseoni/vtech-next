@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
+import { fetchAll, pageAll } from "@/lib/fetch-all";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -46,10 +47,10 @@ export async function GET(request: NextRequest) {
   const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
 
   const [{ data: repairs }, { data: payments }, { data: loans }, { data: directSales }] = await Promise.all([
-    supabase.from("transaction_list").select("id, job_id, code, item, fault, remark, amount, status, date_created").eq("client_name", parseInt(clientId)).order("date_created", { ascending: false }),
-    supabase.from("client_payments").select("id, amount, discount, payment_date, payment_mode, remarks, job_id, loan_id, created_at").eq("client_id", parseInt(clientId)).order("payment_date", { ascending: false }),
-    supabase.from("client_loans").select("id, principal_amount, interest_rate, loan_period, total_payable, emi_amount, loan_date, status, created_at").eq("client_id", parseInt(clientId)).order("loan_date", { ascending: false }),
-    supabase.from("direct_sales").select("id, sale_code, total_amount, payment_mode, remarks, date_created").eq("client_id", parseInt(clientId)).order("date_created", { ascending: false }),
+    pageAll(fetchAll(supabase.from("transaction_list").select("id, job_id, code, item, fault, remark, amount, status, date_created").eq("client_name", parseInt(clientId)).order("date_created", { ascending: false }))),
+    pageAll(fetchAll(supabase.from("client_payments").select("id, amount, discount, payment_date, payment_mode, remarks, job_id, loan_id, created_at").eq("client_id", parseInt(clientId)).order("payment_date", { ascending: false }))),
+    pageAll(fetchAll(supabase.from("client_loans").select("id, principal_amount, interest_rate, loan_period, total_payable, emi_amount, loan_date, status, created_at").eq("client_id", parseInt(clientId)).order("loan_date", { ascending: false }))),
+    pageAll(fetchAll(supabase.from("direct_sales").select("id, sale_code, total_amount, payment_mode, remarks, date_created").eq("client_id", parseInt(clientId)).order("date_created", { ascending: false }))),
   ]);
 
   const repairsList = repairs || [];

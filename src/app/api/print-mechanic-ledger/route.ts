@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
+import { fetchAll, pageAll } from "@/lib/fetch-all";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -53,11 +54,13 @@ export async function GET(request: NextRequest) {
   }
 
   // 1. Fetch Salary History
-  const { data: salaryHist } = await supabase
-    .from("mechanic_salary_history")
-    .select("salary, effective_date")
-    .eq("mechanic_id", id)
-    .order("effective_date", { ascending: false });
+  const salaryHist = await fetchAll(
+    supabase
+      .from("mechanic_salary_history")
+      .select("salary, effective_date")
+      .eq("mechanic_id", id)
+      .order("effective_date", { ascending: false })
+  );
 
   const getDailyRate = (dateStr: string) => {
     const hist = (salaryHist || []).find(h => h.effective_date <= dateStr);
@@ -70,12 +73,12 @@ export async function GET(request: NextRequest) {
 
   // 2. Fetch Data for Opening Balance & Period
   const [prevAtt, prevComm, prevAdv, allAtt, allComm, allAdv] = await Promise.all([
-    supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", id).in("status", [1, 3]).lte("curr_date", prevLimitStr),
-    supabase.from("transaction_list").select("mechanic_commission_amount").eq("mechanic_id", id).eq("status", 5).lte("date_completed", prevLimitStr + " 23:59:59"),
-    supabase.from("advance_payments").select("amount").eq("mechanic_id", id).lte("date_paid", prevLimitStr),
-    supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", id).gte("curr_date", from).lte("curr_date", to),
-    supabase.from("transaction_list").select("id, job_id, item, mechanic_commission_amount, status, date_created").eq("mechanic_id", id).gte("date_created", from + " 00:00:00").lte("date_created", to + " 23:59:59"),
-    supabase.from("advance_payments").select("amount, date_paid").eq("mechanic_id", id).gte("date_paid", from).lte("date_paid", to)
+    pageAll(fetchAll(supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", id).in("status", [1, 3]).lte("curr_date", prevLimitStr))),
+    pageAll(fetchAll(supabase.from("transaction_list").select("mechanic_commission_amount").eq("mechanic_id", id).eq("status", 5).lte("date_completed", prevLimitStr + " 23:59:59"))),
+    pageAll(fetchAll(supabase.from("advance_payments").select("amount").eq("mechanic_id", id).lte("date_paid", prevLimitStr))),
+    pageAll(fetchAll(supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", id).gte("curr_date", from).lte("curr_date", to))),
+    pageAll(fetchAll(supabase.from("transaction_list").select("id, job_id, item, mechanic_commission_amount, status, date_created").eq("mechanic_id", id).gte("date_created", from + " 00:00:00").lte("date_created", to + " 23:59:59"))),
+    pageAll(fetchAll(supabase.from("advance_payments").select("amount, date_paid").eq("mechanic_id", id).gte("date_paid", from).lte("date_paid", to)))
   ]);
 
   // 3. Calculate Opening Balance

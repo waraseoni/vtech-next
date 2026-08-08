@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
+import { fetchAll } from "@/lib/fetch-all";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -18,17 +19,22 @@ export async function GET(request: NextRequest) {
   const lastDay = new Date(parseInt(month.slice(0, 4)), parseInt(month.slice(5, 7)), 0).getDate();
   const monthEnd = `${month}-${String(lastDay).padStart(2, "0")}`;
 
-  const { data: loans } = await supabase
-    .from("client_loans").select("id, client_id, loan_date, principal_amount, interest_rate, total_payable, emi_amount, status")
-    .lte("loan_date", monthEnd);
+  const loans = await fetchAll(
+    supabase
+      .from("client_loans").select("id, client_id, loan_date, principal_amount, interest_rate, total_payable, emi_amount, status")
+      .lte("loan_date", monthEnd)
+  );
 
-  const { data: clients } = await supabase
-    .from("client_list").select("id, firstname, middlename, lastname").eq("delete_flag", 0);
+  const clients = await fetchAll(
+    supabase.from("client_list").select("id, firstname, middlename, lastname").eq("delete_flag", 0)
+  );
 
-  const { data: payments } = await supabase
-    .from("client_payments").select("loan_id, amount, discount, payment_date")
-    .not("loan_id", "is", null)
-    .lte("payment_date", monthEnd);
+  const payments = await fetchAll(
+    supabase
+      .from("client_payments").select("loan_id, amount, discount, payment_date")
+      .not("loan_id", "is", null)
+      .lte("payment_date", monthEnd)
+  );
 
   const loanRows: { id: number; client_name: string; principal_amount: number; interest_rate: number; total_payable: number; emi_amount: number; received: number; pending: number; status: number; }[] = [];
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
+import { fetchAll, pageAll } from "@/lib/fetch-all";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -40,12 +41,14 @@ export async function GET(request: NextRequest) {
   nextMonthD.setMonth(nextMonthD.getMonth() + 1);
   const nextMonthStart = nextMonthD.toISOString().split("T")[0];
 
-  const { data: mechData } = await supabase
-    .from("mechanic_list")
-    .select("id, firstname, middlename, lastname, salary_per_day, designation")
-    .eq("status", 1)
-    .eq("delete_flag", 0)
-    .order("firstname");
+  const mechData = await fetchAll(
+    supabase
+      .from("mechanic_list")
+      .select("id, firstname, middlename, lastname, salary_per_day, designation")
+      .eq("status", 1)
+      .eq("delete_flag", 0)
+      .order("firstname")
+  );
 
   const typedMechs = (mechData || []).map((m) => ({ ...m, designation: m.designation || null }));
   const mechIds = typedMechs.map(m => m.id);
@@ -62,10 +65,10 @@ export async function GET(request: NextRequest) {
   }
 
   const [{ data: allAtt }, { data: allComm }, { data: allAdv }, { data: allHist }] = await Promise.all([
-    supabase.from("attendance_list").select("mechanic_id, curr_date, status").in("mechanic_id", mechIds).in("status", [1, 3]).lt("curr_date", nextMonthStart),
-    supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount, date_created").in("mechanic_id", mechIds).lt("date_created", `${nextMonthStart}T00:00:00+05:30`),
-    supabase.from("advance_payments").select("mechanic_id, amount, date_paid").in("mechanic_id", mechIds).lt("date_paid", nextMonthStart),
-    supabase.from("mechanic_salary_history").select("*").in("mechanic_id", mechIds).order("effective_date", { ascending: false }).order("id", { ascending: false })
+    pageAll(fetchAll(supabase.from("attendance_list").select("mechanic_id, curr_date, status").in("mechanic_id", mechIds).in("status", [1, 3]).lt("curr_date", nextMonthStart))),
+    pageAll(fetchAll(supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount, date_created").in("mechanic_id", mechIds).lt("date_created", `${nextMonthStart}T00:00:00+05:30`))),
+    pageAll(fetchAll(supabase.from("advance_payments").select("mechanic_id, amount, date_paid").in("mechanic_id", mechIds).lt("date_paid", nextMonthStart))),
+    pageAll(fetchAll(supabase.from("mechanic_salary_history").select("*").in("mechanic_id", mechIds).order("effective_date", { ascending: false }).order("id", { ascending: false })))
   ]);
 
   const attList = allAtt || [];

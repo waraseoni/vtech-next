@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
+import { fetchAll, pageAll } from "@/lib/fetch-all";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -44,23 +45,23 @@ export async function GET(request: NextRequest) {
     periodExpensesRes,
     loanPaymentsRes,
   ] = await Promise.all([
-    supabase.from('client_list').select('id, firstname, middlename, lastname, contact, opening_balance').eq('delete_flag', 0),
-    supabase.from('mechanic_list').select('id, firstname, middlename, lastname, salary_per_day, commission_percent').eq('delete_flag', 0),
-    supabase.from('product_list').select('id, name, description, price').eq('delete_flag', 0),
-    supabase.from('lender_list').select('*').eq('delete_flag', 0),
-    supabase.from('transaction_list').select('id, client_name, amount, date_completed, status').eq('status', 5),
-    supabase.from('transaction_list').select('id, client_name, amount, date_completed, status').eq('status', 5).eq('del_status', 0).gte('date_completed', `${from} 00:00:00`).lte('date_completed', `${to} 23:59:59`),
-    supabase.from('client_payments').select('id, client_id, amount, discount, payment_date'),
-    supabase.from('client_payments').select('id, client_id, amount, discount, payment_date').gte('payment_date', from).lte('payment_date', to),
-    supabase.from('attendance_list').select('mechanic_id, curr_date, status'),
-    supabase.from('attendance_list').select('mechanic_id, curr_date, status').in('status', [1, 3]).gte('curr_date', from).lte('curr_date', to),
-    supabase.from('advance_payments').select('mechanic_id, amount, date_paid'),
-    supabase.from('advance_payments').select('mechanic_id, amount, date_paid').gte('date_paid', from).lte('date_paid', to),
-    supabase.from('inventory_list').select('product_id, quantity'),
-    supabase.from('direct_sales').select('id, total_amount, date_created'),
-    supabase.from('expense_list').select('category, amount, date_created'),
-    supabase.from('expense_list').select('category, amount, date_created').gte('date_created', `${from} 00:00:00`).lte('date_created', `${to} 23:59:59`),
-    supabase.from('loan_payments').select('lender_id, amount_paid, payment_date'),
+    pageAll(fetchAll(supabase.from('client_list').select('id, firstname, middlename, lastname, contact, opening_balance').eq('delete_flag', 0))),
+    pageAll(fetchAll(supabase.from('mechanic_list').select('id, firstname, middlename, lastname, salary_per_day, commission_percent').eq('delete_flag', 0))),
+    pageAll(fetchAll(supabase.from('product_list').select('id, name, description, price').eq('delete_flag', 0))),
+    pageAll(fetchAll(supabase.from('lender_list').select('*').eq('delete_flag', 0))),
+    pageAll(fetchAll(supabase.from('transaction_list').select('id, client_name, amount, date_completed, status').eq('status', 5))),
+    pageAll(fetchAll(supabase.from('transaction_list').select('id, client_name, amount, date_completed, status').eq('status', 5).eq('del_status', 0).gte('date_completed', `${from} 00:00:00`).lte('date_completed', `${to} 23:59:59`))),
+    pageAll(fetchAll(supabase.from('client_payments').select('id, client_id, amount, discount, payment_date'))),
+    pageAll(fetchAll(supabase.from('client_payments').select('id, client_id, amount, discount, payment_date').gte('payment_date', from).lte('payment_date', to))),
+    pageAll(fetchAll(supabase.from('attendance_list').select('mechanic_id, curr_date, status'))),
+    pageAll(fetchAll(supabase.from('attendance_list').select('mechanic_id, curr_date, status').in('status', [1, 3]).gte('curr_date', from).lte('curr_date', to))),
+    pageAll(fetchAll(supabase.from('advance_payments').select('mechanic_id, amount, date_paid'))),
+    pageAll(fetchAll(supabase.from('advance_payments').select('mechanic_id, amount, date_paid').gte('date_paid', from).lte('date_paid', to))),
+    pageAll(fetchAll(supabase.from('inventory_list').select('product_id, quantity'))),
+    pageAll(fetchAll(supabase.from('direct_sales').select('id, total_amount, date_created'))),
+    pageAll(fetchAll(supabase.from('expense_list').select('category, amount, date_created'))),
+    pageAll(fetchAll(supabase.from('expense_list').select('category, amount, date_created').gte('date_created', `${from} 00:00:00`).lte('date_created', `${to} 23:59:59`))),
+    pageAll(fetchAll(supabase.from('loan_payments').select('lender_id, amount_paid, payment_date'))),
   ]);
 
   const allTxns = allTxnsRes.data || [];

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
+import { fetchAll, pageAll, fetchAllIn } from "@/lib/fetch-all";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -28,10 +29,12 @@ export async function GET(request: NextRequest) {
   const sortField = searchParams.get("sortField") || "balance";
   const sortDir = searchParams.get("sortDir") || "desc";
 
-  const { data: cls } = await supabase
-    .from("client_list")
-    .select("id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance")
-    .eq("delete_flag", 0);
+  const cls = await fetchAll(
+    supabase
+      .from("client_list")
+      .select("id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance")
+      .eq("delete_flag", 0)
+  );
 
   if (!cls?.length) {
     return new NextResponse(
@@ -47,10 +50,10 @@ export async function GET(request: NextRequest) {
   const ids = cls.map((c) => c.id);
 
   const [{ data: repairs }, { data: dirSales }, { data: payments }, { data: loans }] = await Promise.all([
-    supabase.from("transaction_list").select("client_name, amount").eq("status", 5),
-    supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids),
-    supabase.from("client_payments").select("client_id, amount, discount").in("client_id", ids),
-    supabase.from("client_loans").select("client_id, total_payable").in("client_id", ids),
+    pageAll(fetchAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5))),
+    fetchAllIn((ids: number[]) => supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids), ids).then(rows => ({ data: rows })),
+    fetchAllIn((ids: number[]) => supabase.from("client_payments").select("client_id, amount, discount").in("client_id", ids), ids).then(rows => ({ data: rows })),
+    fetchAllIn((ids: number[]) => supabase.from("client_loans").select("client_id, total_payable").in("client_id", ids), ids).then(rows => ({ data: rows })),
   ]);
 
   const toNum = (v: unknown) => { const x = Number(v); return isNaN(x) ? 0 : x; };

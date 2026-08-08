@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
+import { fetchAll } from "@/lib/fetch-all";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -51,29 +52,29 @@ export async function GET(request: NextRequest) {
     const end = `${to}T23:59:59`;
 
     const [jobsRes, advRes, attRes] = await Promise.all([
-      supabase.from("transaction_list")
+      fetchAll(supabase.from("transaction_list")
         .select("id, job_id, item, mechanic_commission_amount, date_updated, status")
         .eq("mechanic_id", parseInt(id))
         .gte("date_updated", start)
         .lte("date_updated", end)
-        .order("date_updated", { ascending: false }),
-      supabase.from("advance_payments")
+        .order("date_updated", { ascending: false })),
+      fetchAll(supabase.from("advance_payments")
         .select("id, reason, amount, date_paid")
         .eq("mechanic_id", parseInt(id))
         .gte("date_paid", from)
         .lte("date_paid", to)
-        .order("date_paid", { ascending: false }),
-      supabase.from("attendance_list")
+        .order("date_paid", { ascending: false })),
+      fetchAll(supabase.from("attendance_list")
         .select("id, curr_date, status")
         .eq("mechanic_id", parseInt(id))
         .gte("curr_date", from)
         .lte("curr_date", to)
-        .order("curr_date", { ascending: false }),
+        .order("curr_date", { ascending: false })),
     ]);
 
-    jobs = jobsRes.data || [];
-    advances = advRes.data || [];
-    attendance = attRes.data || [];
+    jobs = jobsRes;
+    advances = advRes;
+    attendance = attRes;
   }
 
   const totalComm = jobs.reduce((s, j) => s + (j.mechanic_commission_amount || 0), 0);
