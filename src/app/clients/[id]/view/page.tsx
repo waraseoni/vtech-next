@@ -10,11 +10,13 @@ import {
   Printer, MessageCircle, ExternalLink, Trash2,
   PencilLine, IndianRupee, RefreshCw, MessageSquare,
   CheckSquare, Square, Copy, Send, FileText,
+  Camera, Upload, Loader,
 } from 'lucide-react';
 
 import { todayIST, formatIST, parseISTDate, toISTString, toLocalStr } from "@/lib/dateUtils";
 import { logActivity } from "@/lib/activity";
 import { firmVars } from "@/lib/whatsapp";
+import { compressImage } from "@/lib/imageCompression";
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -31,7 +33,7 @@ type Client = {
   opening_balance: number;
   payment_due_date?: string | null;
   payment_due_remarks?: string | null;
-  // image_path removed — BUG FIX 13 & 14
+  image_path?: string;
   date_created: string;
   fullName: string;
 };
@@ -160,8 +162,22 @@ function StatCard({
 }
 
 // ─────────────────────────────────────────────────────────────
-// INITIALS AVATAR (replaces image — BUG FIX 13)
+// CLIENT AVATAR — photo upload hui ho to photo, warna initials
 // ─────────────────────────────────────────────────────────────
+function ClientAvatar({ name, imagePath }: { name: string; imagePath?: string }) {
+  if (imagePath) {
+    return (
+      <img
+        src={imagePath}
+        alt={name}
+        className="w-28 h-28 md:w-36 md:h-36 rounded-2xl object-cover flex-shrink-0 shadow-lg border border-white/10"
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+      />
+    );
+  }
+  return <InitialsAvatar name={name} />;
+}
+
 function InitialsAvatar({ name }: { name: string }) {
   const initials = name
     .split(' ')
@@ -183,8 +199,8 @@ function InitialsAvatar({ name }: { name: string }) {
   const [grad, txt] = colors[idx];
 
   return (
-    <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center flex-shrink-0 shadow-lg border border-white/10`}>
-      <span className={`${txt} text-xl font-black tracking-tight`}>{initials}</span>
+    <div className={`w-28 h-28 md:w-36 md:h-36 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center flex-shrink-0 shadow-lg border border-white/10`}>
+      <span className={`${txt} text-3xl font-black tracking-tight`}>{initials}</span>
     </div>
   );
 }
@@ -228,6 +244,57 @@ export default function ViewClientProfile() {
   const [waGroups,           setWaGroups]           = useState<Array<{ phone: string; fullname: string; rows: Job[] }>>([]);
   const [sysInfo,            setSysInfo]            = useState<Record<string, string>>({});
 
+  // ── CLIENT PHOTO ─────────────────────────────────────────────
+  const [photoSaving,  setPhotoSaving]  = useState(false);
+  const [photoErr,     setPhotoErr]     = useState("");
+  const photoRef = React.useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setPhotoSaving(true);
+    setPhotoErr("");
+    try {
+      const compressed = await compressImage(file);
+      if (compressed.bytes > 100 * 1024) {
+        setPhotoErr("Image abhi bhi 100KB se bada hai — kam resolution ki photo try karein");
+        setPhotoSaving(false);
+        return;
+      }
+      const fd = new FormData();
+      fd.append("file", compressed.file);
+      fd.append("clientId", String(clientId));
+      const res = await fetch("/api/client-photo", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.msg || "Upload failed");
+      setClient(prev => prev ? { ...prev, image_path: json.url } : prev);
+      setPhotoSaving(false);
+    } catch (err: unknown) {
+      setPhotoErr(err instanceof Error ? err.message : "Upload failed");
+      setPhotoSaving(false);
+    }
+  };
+
+  const handlePhotoDelete = async () => {
+    if (!confirm("Kya aap client ki photo delete karna chahte hain?")) return;
+    setPhotoSaving(true);
+    setPhotoErr("");
+    try {
+      const fd = new FormData();
+      fd.append("clientId", String(clientId));
+      fd.append("delete", "1");
+      const res = await fetch("/api/client-photo", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.msg || "Delete failed");
+      setClient(prev => prev ? { ...prev, image_path: undefined } : prev);
+      setPhotoSaving(false);
+    } catch (err: unknown) {
+      setPhotoErr(err instanceof Error ? err.message : "Delete failed");
+      setPhotoSaving(false);
+    }
+  };
+
   const [repairBilled, setRepairBilled] = useState(0);
   const [directBilled, setDirectBilled] = useState(0);
   const [servicePaid,  setServicePaid]  = useState(0);
@@ -247,10 +314,10 @@ export default function ViewClientProfile() {
       setLoading(true);
       setError(null);
 
-      // 1. Client — BUG FIX 14: removed image_path from select
+      // 1. Client
       const { data: cd, error: ce } = await supabase
         .from('client_list')
-        .select('id, firstname, middlename, lastname, contact, email, address, opening_balance, payment_due_date, payment_due_remarks, date_created')
+        .select('id, firstname, middlename, lastname, contact, email, address, opening_balance, payment_due_date, payment_due_remarks, image_path, date_created')
         .eq('id', clientId)
         .eq('delete_flag', 0)
         .single();
@@ -635,9 +702,20 @@ export default function ViewClientProfile() {
         <div
           className="rounded-2xl border p-5 flex flex-col md:flex-row md:items-center justify-between gap-5 theme-card"
         >
-          {/* Profile — BUG FIX 13: image replaced with InitialsAvatar */}
+          {/* Profile — photo agar upload hui to photo, warna initials */}
           <div className="flex items-center gap-4">
-            <InitialsAvatar name={client.fullName} />
+            <div className="relative flex-shrink-0">
+              <ClientAvatar name={client.fullName} imagePath={client.image_path} />
+              <button
+                onClick={() => photoRef.current?.click()}
+                disabled={photoSaving}
+                className="absolute -bottom-1.5 -right-1.5 w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors disabled:opacity-60"
+                title="Photo upload"
+              >
+                {photoSaving ? <Loader size={16} className="animate-spin" /> : <Camera size={16} />}
+              </button>
+              <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+            </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-black text-white uppercase leading-tight tracking-tight">
                 {client.fullName}
@@ -677,7 +755,15 @@ export default function ViewClientProfile() {
                     {client.email}
                   </a>
                 )}
+                {client.image_path && (
+                  <button onClick={handlePhotoDelete}
+                    disabled={photoSaving}
+                    className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-red-500/15 border border-red-500/25 text-red-300 hover:bg-red-500/25 transition-colors disabled:opacity-60">
+                    <Trash2 size={11} /> Photo Delete
+                  </button>
+                )}
               </div>
+              {photoErr && <p className="text-[11px] text-red-400 font-semibold mt-1.5">{photoErr}</p>}
             </div>
           </div>
 

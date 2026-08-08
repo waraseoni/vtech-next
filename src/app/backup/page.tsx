@@ -158,6 +158,7 @@ export default function BackupPage() {
       const COMPOSITE_ORDER: Record<string, string> = {
         "transaction_products": "transaction_id",
         "transaction_services": "transaction_id",
+        "spare_supplier": "spare_id",
       };
 
       // GENERATED ALWAYS columns ko backup se bahar rakho

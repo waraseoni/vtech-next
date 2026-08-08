@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { todayIST } from "@/lib/dateUtils";
 import Link from "next/link";
 import {
-  Users, UserPlus, Search, Phone, Mail,
+  Users, UserPlus, User, Search, Phone, Mail,
   Eye, Edit3, Trash2, Loader2, ShieldCheck,
   MessageCircle, TrendingUp, AlertTriangle, CheckCircle,
   RotateCcw, IndianRupee, Printer, FileSpreadsheet, FileText, X,
@@ -22,7 +22,7 @@ type Client = {
   address: string; date_created: string; opening_balance: number;
   repair_billed: number; direct_sales_billed: number;
   total_loan_given: number; total_paid: number; balance: number;
-  last_txn_date: string | null;
+  last_txn_date: string | null; image_path?: string;
 };
 type SortField = "name" | "balance" | "date_created" | "total_paid";
 type SortDir   = "asc" | "desc";
@@ -138,7 +138,7 @@ export default function ClientsPage() {
     try {
       const { data: cls } = await supabase
         .from("client_list")
-        .select("id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance")
+        .select("id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance, image_path")
         .eq("delete_flag", 0);
       if (!cls?.length) { setClients([]); return; }
       const ids = cls.map((c) => c.id);
@@ -189,7 +189,8 @@ export default function ClientsPage() {
         return { id:c.id, name:[c.firstname,c.middlename,c.lastname].filter(Boolean).join(" ").trim(),
           contact:c.contact||"", email:c.email||"", address:c.address||"", date_created:c.date_created||"",
           opening_balance:ob, repair_billed:rep, direct_sales_billed:dir, total_loan_given:loan,
-          total_paid:paid, balance:ob+rep+dir+loan-paid, last_txn_date:lastTxnMap[c.id]||null };
+          total_paid:paid, balance:ob+rep+dir+loan-paid, last_txn_date:lastTxnMap[c.id]||null,
+          image_path:c.image_path || undefined };
       });
       built.sort((a,b) => b.balance-a.balance);
       setClients(built);
@@ -509,14 +510,25 @@ export default function ClientsPage() {
                 <div key={client.id} className={`bg-[#161b27] rounded-2xl border border-[#21293d] overflow-hidden ${meta.rowCls}`}>
                   <div className="p-4 space-y-3">
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <Link href={`/clients/${client.id}/view`}
-                          className="font-black text-white text-base no-underline hover:text-blue-400 transition leading-tight block">
-                          {client.name}
-                        </Link>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-slate-600 text-[10px] font-bold">#{client.id}</span>
-                          {client.contact&&<span className="text-slate-400 text-[10px] font-bold flex items-center gap-0.5"><Phone size={9}/>{client.contact}</span>}
+                      <div className="flex items-start gap-3">
+                        {client.image_path ? (
+                          <img src={client.image_path} alt={client.name}
+                            className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                        ) : (
+                          <div className="w-14 h-14 rounded-xl bg-[#1e2637] border border-[#2a3550] flex items-center justify-center flex-shrink-0">
+                            <User size={20} className="text-slate-500" />
+                          </div>
+                        )}
+                        <div>
+                          <Link href={`/clients/${client.id}/view`}
+                            className="font-black text-white text-base no-underline hover:text-blue-400 transition leading-tight block">
+                            {client.name}
+                          </Link>
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="text-slate-600 text-[10px] font-bold">#{client.id}</span>
+                            {client.contact&&<span className="text-slate-400 text-[10px] font-bold flex items-center gap-0.5"><Phone size={9}/>{client.contact}</span>}
+                          </div>
                         </div>
                       </div>
                       <span className={`text-[9px] font-extrabold px-2 py-1 rounded border ${meta.badge} flex-shrink-0`}>{meta.label}</span>
@@ -654,7 +666,13 @@ export default function ClientsPage() {
                       {/* Client — Name · ID · Mobile · WA */}
                       <td className="px-3 py-3.5 align-middle">
                         <div className="flex items-center gap-2 min-w-0">
-                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${meta.dot}`}/>
+                          {client.image_path ? (
+                            <img src={client.image_path} alt={client.name}
+                              className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                          ) : (
+                            <div className={`w-3 h-3 rounded-full flex-shrink-0 ${meta.dot}`}/>
+                          )}
                           <div className="min-w-0 flex-1">
                             <Link href={`/clients/${client.id}/view`}
                               className="font-extrabold text-white hover:text-blue-400 no-underline transition text-[13px] block truncate leading-snug">

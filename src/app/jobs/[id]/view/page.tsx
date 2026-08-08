@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -11,11 +11,12 @@ import {
   Loader2, Box, Hammer, Tag, Locate, ChevronRight,
   ShieldAlert, Banknote, UserCog, Send,
   Plus, X, CheckCircle, FileText,
-  RefreshCw, Image as ImageIcon,
+  RefreshCw, Image as ImageIcon, Upload, Loader,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars } from "@/lib/whatsapp";
 import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
+import { compressImage } from "@/lib/imageCompression";
 
 // ─── IST HELPERS ─────────────────────────────────────────────────────────────
 function fmtDate(d: string | null) {
@@ -172,6 +173,59 @@ export default function JobDetailsPage() {
   const [deleting, setDeleting] = useState(false);
   const [toast,    setToast]    = useState<Toast | null>(null);
   const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
+
+  // ── Item photo upload/delete ─────────────────────────────────
+  const [uploading,   setUploading]   = useState(false);
+  const [photoErr,    setPhotoErr]    = useState("");
+  const imgInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (files.length === 0 || !job) return;
+    setUploading(true);
+    setPhotoErr("");
+    try {
+      const numId = Number(jobId?.trim());
+      const compressed = await Promise.all(files.map(f => compressImage(f)));
+      const over = compressed.filter(c => c.bytes > 100 * 1024);
+      if (over.length > 0) {
+        setPhotoErr(`${over.length} image(s) abhi bhi 100KB se bade hain — kam resolution try karein`);
+        setUploading(false);
+        return;
+      }
+      const fd = new FormData();
+      fd.append("action", "upload");
+      fd.append("transactionId", String(numId));
+      compressed.forEach(c => fd.append("files", c.file));
+      const res = await fetch("/api/job-images", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.msg || "Upload failed");
+      setImages(prev => [...(json.uploaded as TransactionImage[]), ...prev]);
+      setUploading(false);
+    } catch (err: unknown) {
+      setPhotoErr(err instanceof Error ? err.message : "Upload failed");
+      setUploading(false);
+    }
+  };
+
+  const handleImageDelete = async (img: TransactionImage) => {
+    if (!confirm("Kya aap ye photo delete karna chahte hain?")) return;
+    setPhotoErr("");
+    try {
+      const fd = new FormData();
+      fd.append("action", "delete");
+      fd.append("transactionId", String(Number(jobId?.trim())));
+      fd.append("imageId", String(img.id));
+      fd.append("imagePath", img.image_path);
+      const res = await fetch("/api/job-images", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.msg || "Delete failed");
+      setImages(prev => prev.filter(i => i.id !== img.id));
+    } catch (err: unknown) {
+      setPhotoErr(err instanceof Error ? err.message : "Delete failed");
+    }
+  };
 
   // Status modal
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -612,19 +666,43 @@ ${svcHtml}${prodHtml}
                   </div>
 
                   {/* Item Photos */}
-                  {images.length > 0 && (
-                    <Fieldset title={`Item Photos (${images.length})`} icon={ImageIcon} color="primary">
-                      <div className="grid grid-cols-3 gap-2">
+                  <Fieldset title={`Item Photos (${images.length})`} icon={ImageIcon} color="primary">
+                    <div className="flex items-center gap-2 mb-3">
+                      <button
+                        onClick={() => imgInputRef.current?.click()}
+                        disabled={uploading}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-60"
+                      >
+                        {uploading ? <Loader size={13} className="animate-spin" /> : <Upload size={13} />}
+                        {uploading ? "Uploading..." : "Upload Photos"}
+                      </button>
+                      <span className="text-[10px] text-slate-500">JPEG/PNG · ≤100KB · auto-compressed</span>
+                      <input ref={imgInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+                    </div>
+                    {photoErr && <p className="text-[11px] text-red-400 font-semibold mb-2">{photoErr}</p>}
+                    {images.length > 0 ? (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {images.map((img) => (
-                          <a key={img.id} href={img.image_path} target="_blank" rel="noreferrer">
-                            <img src={img.image_path} alt="Item"
-                              className="w-full h-20 object-cover rounded border border-[#21293d] hover:opacity-80 transition-opacity cursor-pointer"
-                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}/>
-                          </a>
+                          <div key={img.id} className="relative group">
+                            <a href={img.image_path} target="_blank" rel="noreferrer">
+                              <img src={img.image_path} alt="Item"
+                                className="w-full h-32 object-cover rounded-lg border border-[#21293d] hover:opacity-80 transition-opacity cursor-pointer"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}/>
+                            </a>
+                            <button
+                              onClick={() => handleImageDelete(img)}
+                              className="absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors"
+                              title="Delete photo"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
                         ))}
                       </div>
-                    </Fieldset>
-                  )}
+                    ) : (
+                      <p className="text-xs text-slate-500 italic">Koi photo upload nahi hui. Item ka photo add karein.</p>
+                    )}
+                  </Fieldset>
 
                   {/* Billing Summary */}
                   <div className="border border-emerald-500/25 rounded bg-emerald-500/5 p-4 mb-4">
