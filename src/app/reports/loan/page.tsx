@@ -39,7 +39,8 @@ function LoanReportContent() {
 
       const { data: loans } = await supabase
         .from("client_loans").select("id, client_id, loan_date, principal_amount, interest_rate, total_payable, emi_amount, status")
-        .lte("loan_date", monthEnd);
+        .lte("loan_date", monthEnd)
+        .gte("status", 0);
 
       const { data: clients } = await supabase
         .from("client_list").select("id, firstname, middlename, lastname").eq("delete_flag", 0);
@@ -52,7 +53,8 @@ function LoanReportContent() {
       const loanRows: LoanRow[] = [];
       for (const l of loans || []) {
         const client = (clients || []).find((c) => c.id === l.client_id);
-        const name = client ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ") : "Unknown";
+        if (!client) continue;
+        const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
         const loanPmts = payments?.filter((p) => p.loan_id === l.id) || [];
         const received = loanPmts.reduce((s, p) => s + (p.amount || 0) + (p.discount || 0), 0);
         const interestVal = (l.total_payable || 0) - (l.principal_amount || 0);

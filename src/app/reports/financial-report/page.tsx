@@ -79,28 +79,31 @@ function FinancialReportContent() {
         // Advances Paid
         supabase.from("advance_payments").select("amount").gte("date_paid", start).lte("date_paid", end),
         // Stock Added Value (Selling Price)
-        supabase.from("inventory_list").select("quantity, product_list(price)").gte("stock_date", start).lte("stock_date", end),
+        supabase.from("inventory_list").select("product_id, quantity, stock_date").gte("stock_date", start).lte("stock_date", end),
       ]);
+
+      // Resolve stock added value via product price map (avoid embed FK dependency)
+      const { data: priceList } = await supabase.from("product_list").select("id, price");
+      const priceMap = new Map((priceList || []).map((p: any) => [p.id, p.price || 0]));
+      const stock_added_val = (stockAddRes.data || []).reduce(
+        (s: number, r: any) => s + ((r.quantity || 0) * (priceMap.get(r.product_id) || 0)), 0
+      );
 
       // 2. Current Stock Value & Loan Pending (Overall, not range filtered)
       const [stockValRes, lendersRes, loanPaysRes] = await Promise.all([
-        // Complex stock calc - for now we'll do it in memory or simplified
-        supabase.from("product_list").select("id, price").eq("delete_flag", 0),
+        // Match PHP: all products (no delete_flag filter)
+        supabase.from("product_list").select("id, price"),
         supabase.from("lender_list").select("id, emi_amount, tenure_months").eq("status", 1),
         supabase.from("loan_payments").select("lender_id, amount_paid")
       ]);
 
-      // Calculate Stock Val (Simplified for now - we need full inv tracking for perfect accuracy)
-      // We'll fetch inventory and sales for all products.
-      const [{data: invAll}, {data: tpRaw}, {data: txAll}, {data: dsAll}] = await Promise.all([
+      // Match PHP current stock calc: (inventory - transaction_products - direct_sale_items) * price per product
+      // PHP does NOT filter transaction_products by status here, so include cancelled txn qty too.
+      const [{data: invAll}, {data: tpAll}, {data: dsAll}] = await Promise.all([
           supabase.from("inventory_list").select("product_id, quantity"),
-          supabase.from("transaction_products").select("product_id, qty, transaction_id"),
-          supabase.from("transaction_list").select("id, status"),
+          supabase.from("transaction_products").select("product_id, qty"),
           supabase.from("direct_sale_items").select("product_id, qty")
       ]);
-      
-      const txStatusMap = new Map((txAll || []).map(t => [String(t.id), t.status]));
-      const tpAll = (tpRaw || []).filter(tp => txStatusMap.get(String(tp.transaction_id)) !== 4);
 
       const invMap: any = {}; (invAll || []).forEach(r => invMap[r.product_id] = (invMap[r.product_id] || 0) + (r.quantity || 0));
       const soldMap: any = {}; 
@@ -110,7 +113,7 @@ function FinancialReportContent() {
       let currentStockVal = 0;
       (stockValRes.data || []).forEach(p => {
           const qty = (invMap[p.id] || 0) - (soldMap[p.id] || 0);
-          if (qty > 0) currentStockVal += (qty * (p.price || 0));
+          currentStockVal += (qty * (p.price || 0));
       });
 
       // Calculate Debt
@@ -130,7 +133,7 @@ function FinancialReportContent() {
         expenses: (expenseRes.data || []).reduce((s, r) => s + (r.amount || 0), 0),
         emi_paid: (emiRes.data || []).reduce((s, r) => s + (r.amount_paid || 0), 0),
         advance_paid: (advanceRes.data || []).reduce((s, r) => s + (r.amount || 0), 0),
-        stock_added_val: (stockAddRes.data || []).reduce((s, r) => s + ((r.quantity || 0) * (r.product_list as any)?.price || 0), 0),
+        stock_added_val,
         current_stock_val: currentStockVal,
         loan_pending: loanPending,
       });

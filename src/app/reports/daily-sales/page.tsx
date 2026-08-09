@@ -31,14 +31,15 @@ export default function DailySalesReportPage() {
     setLoading(true);
     setErr("");
     try {
-      // Step 1: Get transaction IDs for the selected date (filter on transaction_list.date_created)
+      // Step 1: Get transaction IDs for the selected date (filter on transaction_list.date_updated, exclude cancelled)
       // transaction_products has no date column — only transaction_id, product_id, qty, price
       const { data: txData, error: txErr } = await supabase
         .from("transaction_list")
-        .select("id, code, client_name, date_created")
-        .gte("date_created", date + "T00:00:00+05:30")
-        .lte("date_created", date + "T23:59:59+05:30")
-        .order("date_created", { ascending: true });
+        .select("id, code, client_name, status, date_updated")
+        .gte("date_updated", date + "T00:00:00+05:30")
+        .lte("date_updated", date + "T23:59:59+05:30")
+        .neq("status", 4)
+        .order("date_updated", { ascending: true });
       if (txErr) throw txErr;
 
       const txList = txData || [];
@@ -65,7 +66,7 @@ export default function DailySalesReportPage() {
         return;
       }
 
-      // Step 3: Get product names
+      // Step 3: Get product names and client names
       const prodIds = [...new Set(itemsData.map((d: any) => d.product_id))];
       const { data: prodData } = await supabase
         .from("product_list")
@@ -73,17 +74,27 @@ export default function DailySalesReportPage() {
         .in("id", prodIds);
       const prodMap = new Map(prodData?.map((p: any) => [p.id, p]) || []);
 
+      const clientIds = [...new Set(txList.map((t: any) => t.client_name).filter(Boolean))];
+      const { data: clientData } = await supabase
+        .from("client_list")
+        .select("id, firstname, middlename, lastname")
+        .in("id", clientIds);
+      const clientMap = new Map(clientData?.map((c: any) => [c.id, c]) || []);
+
       const mapped = itemsData.map((item: any, i: number) => {
         const tx  = txMap.get(item.transaction_id) as any;
         const prod = prodMap.get(item.product_id) as any;
+        const client = clientMap.get(tx?.client_name) as any;
         return {
           id: i,
           product_name: prod?.name || "Unknown",
           price: item.price,
           qty: item.qty,
           transaction_code: tx?.code || "",
-          client_name: tx?.client_name || "",
-          date_updated: tx?.date_created || "",
+          client_name: client
+            ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
+            : "Walk-in",
+          date_updated: tx?.date_updated || "",
         };
       }) as SaleItem[];
 

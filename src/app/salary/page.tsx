@@ -105,23 +105,24 @@ function SalaryContent() {
       // 2. Bulk Fetch all related data safely (Bypasses Supabase 1000 rows max API limit)
       const [allAtt, allComm, allAdv, allHist] = await Promise.all([
         fetchAllData(supabase.from("attendance_list").select("mechanic_id, curr_date, status").in("mechanic_id", mechIds).in("status", [1, 3]).lte("curr_date", nextMonthStart.slice(0, 10))),
-        fetchAllData(supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount, date_created").in("mechanic_id", mechIds).lte("date_created", nextMonthStart)),
+        fetchAllData(supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount, status, date_completed").in("mechanic_id", mechIds).eq("status", 5).lte("date_completed", nextMonthStart)),
         fetchAllData(supabase.from("advance_payments").select("mechanic_id, amount, date_paid").in("mechanic_id", mechIds).lte("date_paid", nextMonthStart.slice(0, 10))),
         fetchAllData(supabase.from("mechanic_salary_history").select("*").in("mechanic_id", mechIds).order("effective_date", { ascending: false }).order("id", { ascending: false }))
       ]);
 
       const histList = allHist || [];
-      const commList = (allComm || []).map(c => ({ ...c, istMonth: toISTString(new Date(c.date_created)).slice(0, 7) }));
+      const commList = (allComm || []).map(c => ({ ...c, istMonth: toISTString(new Date(c.date_completed)).slice(0, 7) }));
       const advList = allAdv || [];
       const attList = allAtt || [];
 
       // 3. Process Data Locally
       const enrichedMechs = rawMechs.map((m) => {
-        const latestHist = histList.find(h => h.mechanic_id === m.id);
+        const histForMech = histList.filter(h => h.mechanic_id === m.id);
+        const latestHist = histForMech.reduce((a, b) => (a && a.id > b.id ? a : b), null);
         return { 
           ...m, 
           designation: m.designation || null,
-          last_updated: latestHist?.effective_date || null
+          last_updated: latestHist?.date_created || null
         };
       });
       setMechanics(enrichedMechs);
@@ -231,13 +232,13 @@ function SalaryContent() {
       const [attAll, attPrev, commAllData, advAll, advPrev] = await Promise.all([
         fetchAllData(supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", r.id).in("status", [1, 3]).gte("curr_date", from).lte("curr_date", to)),
         fetchAllData(supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", r.id).in("status", [1, 3]).lt("curr_date", from)),
-        fetchAllData(supabase.from("transaction_list").select("job_id, code, mechanic_commission_amount, date_created").eq("mechanic_id", r.id).lte("date_created", nextMonthBoundary)),
+        fetchAllData(supabase.from("transaction_list").select("job_id, code, mechanic_commission_amount, status, date_completed").eq("mechanic_id", r.id).eq("status", 5).lte("date_completed", nextMonthBoundary)),
         fetchAllData(supabase.from("advance_payments").select("amount, date_paid").eq("mechanic_id", r.id).gte("date_paid", from).lte("date_paid", to)),
         fetchAllData(supabase.from("advance_payments").select("amount").eq("mechanic_id", r.id).lt("date_paid", from))
       ]);
 
-      const commAll = (commAllData || []).filter(c => toISTString(new Date(c.date_created)).slice(0, 7) === month);
-      const cp = (commAllData || []).filter(c => toISTString(new Date(c.date_created)).slice(0, 7) < month).reduce((s, x) => s + (x.mechanic_commission_amount || 0), 0);
+      const commAll = (commAllData || []).filter(c => toISTString(new Date(c.date_completed)).slice(0, 7) === month);
+      const cp = (commAllData || []).filter(c => toISTString(new Date(c.date_completed)).slice(0, 7) < month).reduce((s, x) => s + (x.mechanic_commission_amount || 0), 0);
 
       // Calc opening balance accurately with historical rates
       let ep = 0;
@@ -251,7 +252,7 @@ function SalaryContent() {
       const entries: any[] = [];
       if (running !== 0) entries.push({ date: "Opening", status: "—", wage: running, comm: 0, adv: 0, balance: running, type: "opening" });
 
-      const dates = new Set([...(attAll?.map((a) => a.curr_date) || []), ...(commAll?.map((c) => c.date_created.split("T")[0]) || []), ...(advAll?.map((a) => a.date_paid) || [])]);
+      const dates = new Set([...(attAll?.map((a) => a.curr_date) || []), ...(commAll?.map((c) => toISTString(new Date(c.date_completed)).split("T")[0]) || []), ...(advAll?.map((a) => a.date_paid) || [])]);
       
       for (const d of Array.from(dates).sort()) {
         const att = attAll?.find((a) => a.curr_date === d);
@@ -264,7 +265,7 @@ function SalaryContent() {
         }
         
         const comm = commAll?.filter((c) => {
-          const istD = toISTString(new Date(c.date_created)).split("T")[0];
+          const istD = toISTString(new Date(c.date_completed)).split("T")[0];
           return istD === d;
         }).reduce((s, c) => s + (c.mechanic_commission_amount || 0), 0) || 0;
         const adv = advAll?.filter((a) => a.date_paid === d).reduce((s, a) => s + (a.amount || 0), 0) || 0;

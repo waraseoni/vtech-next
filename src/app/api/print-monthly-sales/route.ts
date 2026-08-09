@@ -46,20 +46,16 @@ export async function GET(req: NextRequest) {
   toDate.setDate(toDate.getDate() - 1);
   const to = toDate.toISOString().split("T")[0] + "T23:59:59+05:30";
 
-  const tpData = await fetchAll(
+  const txns = await fetchAll(
     supabase
-      .from("transaction_products").select("product_id, price, qty, date_updated, transaction_id")
-      .gte("date_updated", from).lte("date_updated", to)
+      .from("transaction_list").select("id, code, client_name, status, date_updated")
+      .gte("date_updated", from).lte("date_updated", to).neq("status", 4)
   );
 
-  const txnIds = [...new Set(tpData?.map((t) => t.transaction_id) || [])];
-  const txns = [];
-  for (let i = 0; i < txnIds.length; i += 500) {
-    txns.push(...(await fetchAll(
-      supabase.from("transaction_list").select("id, code, client_name, status, date_updated")
-        .in("id", txnIds.slice(i, i + 500)).in("status", [1, 2, 3, 5])
-    )));
-  }
+  const txnIds = [...new Set(txns?.map((t) => t.id) || [])];
+  const tpData = txnIds.length ? await fetchAll(
+    supabase.from("transaction_products").select("transaction_id, product_id, product_name, price, qty").in("transaction_id", txnIds)
+  ) : [];
 
   const clients = await fetchAll(
     supabase.from("client_list").select("id, firstname, middlename, lastname").eq("delete_flag", 0)
@@ -72,14 +68,14 @@ export async function GET(req: NextRequest) {
   const saleRows: { date_updated: string; code: string | null; client_name: string; product_name: string; price: number; qty: number; total: number }[] = [];
   for (const tp of tpData || []) {
     const txn = (txns || []).find((t) => t.id === tp.transaction_id);
-    if (!txn || ![1, 2, 3, 5].includes(txn.status)) continue;
+    if (!txn) continue;
     const client = (clients || []).find((c) => c.id === txn.client_name);
     const product = (products || []).find((p) => p.id === tp.product_id);
     saleRows.push({
-      date_updated: tp.date_updated || txn.date_updated,
+      date_updated: txn.date_updated,
       code: txn.code,
       client_name: client ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ") : "Walk-in",
-      product_name: product?.name || "Unknown",
+      product_name: product?.name || tp.product_name || "Unknown",
       price: tp.price || 0,
       qty: tp.qty || 1,
       total: (tp.price || 0) * (tp.qty || 1),

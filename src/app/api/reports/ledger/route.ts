@@ -43,10 +43,12 @@ export async function GET(request: Request) {
       { data: allClients },
       { data: allMechanics },
       { data: allProducts },
+      { data: salaryHistory },
     ] = await Promise.all([
       pageAll(fetchAll(supabase.from('client_list').select('id, firstname, middlename, lastname'))),
-      pageAll(fetchAll(supabase.from('mechanic_list').select('id, firstname, lastname, daily_salary, salary_per_day, delete_flag'))),
+      pageAll(fetchAll(supabase.from('mechanic_list').select('id, firstname, lastname, daily_salary, delete_flag'))),
       pageAll(fetchAll(supabase.from('product_list').select('id, name, price'))),
+      pageAll(fetchAll(supabase.from('mechanic_salary_history').select('mechanic_id, effective_date, salary'))),
     ]);
 
     const clientMap: Record<number, { firstname: string; middlename: string; lastname: string }> = {};
@@ -59,9 +61,33 @@ export async function GET(request: Request) {
       mechanicMap[m.id] = {
         firstname: m.firstname || '',
         lastname:  m.lastname  || '',
-        daily:     Number(m.salary_per_day) || Number(m.daily_salary) || 0,
+        daily:     Number(m.daily_salary) || 0,
       };
     });
+
+    // Salary history (PHP: latest effective_date <= attendance date, else daily_salary)
+    const salaryHistoryMap: Record<number, { effective_date: string; salary: number }[]> = {};
+    (salaryHistory || []).forEach((h: any) => {
+      if (!salaryHistoryMap[h.mechanic_id]) salaryHistoryMap[h.mechanic_id] = [];
+      salaryHistoryMap[h.mechanic_id].push({
+        effective_date: h.effective_date,
+        salary:         Number(h.salary) || 0,
+      });
+    });
+    Object.values(salaryHistoryMap).forEach(arr =>
+      arr.sort((a, b) => new Date(a.effective_date).getTime() - new Date(b.effective_date).getTime())
+    );
+    const historyRateFor = (mechId: number, onDate: string): number | null => {
+      const hist = salaryHistoryMap[mechId];
+      if (!hist || !onDate) return null;
+      const on = new Date(onDate).getTime();
+      let rate: number | null = null;
+      for (const h of hist) {
+        if (new Date(h.effective_date).getTime() <= on) rate = h.salary;
+        else break;
+      }
+      return rate;
+    };
 
     const productMap: Record<number, { name: string; price: number }> = {};
     allProducts?.forEach((p: any) => {
@@ -88,10 +114,10 @@ export async function GET(request: Request) {
       { data: allAttRaw },
       { data: allAdvRaw },
     ] = await Promise.all([
-      // 1. Repair jobs (del_status=0 — soft-deleted jobs ko income/liability dono se exclude)
+      // 1. Repair jobs (PHP: status=5 + date range — no del_status filter)
       pageAll(fetchAll(supabase.from('transaction_list')
         .select('id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id')
-        .eq('status', 5).eq('del_status', 0)
+        .eq('status', 5)
         .gte('date_completed', start).lte('date_completed', end))),
 
       // 2. Walk-in sales
@@ -134,7 +160,7 @@ export async function GET(request: Request) {
 
       // 9. Inventory (no join - manual)
       pageAll(fetchAll(supabase.from('inventory_list')
-        .select('product_id, quantity').gt('quantity', 0))),
+        .select('product_id, quantity'))),
 
       // 10. Lenders (active)
       pageAll(fetchAll(supabase.from('lender_list')
@@ -146,11 +172,11 @@ export async function GET(request: Request) {
       // 12. All-time repairs (liability)
       pageAll(fetchAll(supabase.from('transaction_list')
         .select('mechanic_id, mechanic_commission_amount')
-        .eq('status', 5).eq('del_status', 0))),
+        .eq('status', 5))),
 
       // 13. All-time attendance (liability)
       pageAll(fetchAll(supabase.from('attendance_list')
-        .select('mechanic_id, status').in('status', [1, 3]))),
+        .select('mechanic_id, curr_date, status').in('status', [1, 3]))),
 
       // 14. All-time advances (liability)
       pageAll(fetchAll(supabase.from('advance_payments').select('mechanic_id, amount'))),
@@ -279,17 +305,21 @@ export async function GET(request: Request) {
     }));
 
     // Stock Items (inventory_list → product_list manual join)
+    // PHP Balance Sheet: SUM(p.price*i.quantity) over ALL inventory rows
+    // PHP detail table: only quantity > 0 rows
     const stockSumMap: Record<number, number> = {};
     (inventoryRaw || []).forEach((i: any) => {
       stockSumMap[i.product_id] = (stockSumMap[i.product_id] || 0) + (Number(i.quantity) || 0);
     });
+    const stockValue = Object.entries(stockSumMap)
+      .reduce((s, [pid, qty]) => s + (productMap[parseInt(pid)]?.price || 0) * qty, 0);
     const stockItems = Object.entries(stockSumMap)
+      .filter(([, qty]) => qty > 0)
       .map(([pid, qty]) => {
         const prod = productMap[parseInt(pid)];
         return { name: prod?.name || '', price: prod?.price || 0, quantity: qty };
       })
       .filter(i => i.name !== '');
-    const stockValue = stockItems.reduce((s, i) => s + i.price * i.quantity, 0);
 
     // Loan Outstanding (all-time)
     const totalLoan        = (lenders || []).reduce((s, l: any) => s + (Number(l.loan_amount) || 0), 0);
@@ -319,20 +349,27 @@ export async function GET(request: Request) {
       daily_salary:  d.daily,
       salary_earned: (d.full + d.half * 0.5) * d.daily,
     }));
-    const totalSalary = salaryDetails.reduce((s, d) => s + d.salary_earned, 0);
 
-    // Staff Liability (all-time)
+    // P&L salary (PHP: per attendance row, salary_history rate <= curr_date, else daily_salary)
+    const totalSalary = (attendance || []).reduce((sum, a: any) => {
+      const rate = historyRateFor(a.mechanic_id, a.curr_date) ?? (mechanicMap[a.mechanic_id]?.daily || 0);
+      return sum + (a.status === 3 ? rate / 2 : rate);
+    }, 0);
+
+    // Staff Liability (all-time) — PHP: ALL mechanics (no delete_flag filter),
+    // earned_sal uses salary_history rate (fallback 0), earned_comm all status=5
     let staffLiability = 0;
-    (allMechanics || []).filter((m: any) => m.delete_flag === 0).forEach((m: any) => {
-      const daily = Number(m.salary_per_day) || Number(m.daily_salary) || 0;
-
+    (allMechanics || []).forEach((m: any) => {
       const earnedComm = (allRepairsRaw || [])
         .filter((r: any) => r.mechanic_id === m.id)
         .reduce((s, r: any) => s + (Number(r.mechanic_commission_amount) || 0), 0);
 
       const earnedSal = (allAttRaw || [])
         .filter((a: any) => a.mechanic_id === m.id)
-        .reduce((s, a: any) => s + (a.status === 3 ? daily / 2 : daily), 0);
+        .reduce((s, a: any) => {
+          const rate = historyRateFor(m.id, a.curr_date) ?? 0;
+          return s + (a.status === 3 ? rate / 2 : rate);
+        }, 0);
 
       const paid = (allAdvRaw || [])
         .filter((a: any) => a.mechanic_id === m.id)

@@ -300,7 +300,7 @@ function BalanceSheetContent() {
               {activeTab === "mechanic" && <MechanicTab data={mechanicLedger} />}
               {activeTab === "inventory" && <InventoryTab data={stockInventory} />}
               {activeTab === "income" && <IncomeTab data={incomeSummary} summary={summary} />}
-              {activeTab === "expense" && <ExpenseTab data={expenseSummary} summary={summary} />}
+              {activeTab === "expense" && <ExpenseTab data={expenseSummary} />}
               {activeTab === "top_customers" && <TopCustomersTab data={topCustomers} />}
               {activeTab === "loan" && <LoanTab data={loanLedger} />}
             </>
@@ -323,7 +323,7 @@ function BalanceSheetContent() {
             <div className="bg-slate-900/50 rounded-lg p-2">
               <p className="text-blue-400 font-bold mb-1">Expenses</p>
               <div className="text-slate-500 space-y-0.5">
-                <div><span className="text-red-400">Total Expenses</span> = Sum of all expense categories</div>
+                <div><span className="text-red-400">Total Expenses</span> = Salary + Commission + Shop + EMI + Discount</div>
                 <div><span className="text-cyan-400">Net Profit</span> = Total Income − Total Expenses</div>
               </div>
             </div>
@@ -522,7 +522,8 @@ function IncomeTab({ data, summary }: { data: IncomeRow[]; summary: Summary | nu
   );
 }
 
-function ExpenseTab({ data, summary }: { data: ExpenseRow[]; summary: Summary | null }) {
+function ExpenseTab({ data }: { data: ExpenseRow[] }) {
+  const total = data.reduce((s, e) => s + e.amount, 0);
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -546,7 +547,7 @@ function ExpenseTab({ data, summary }: { data: ExpenseRow[]; summary: Summary | 
               ))}
               <tr className="border-t-2 border-[#21293d]">
                 <td className="px-3 py-3 text-sm font-black text-white">कुल व्यय</td>
-                <td className="px-3 py-3 text-sm text-right font-black text-red-400">{inr(summary?.totalExpenses || 0)}</td>
+                <td className="px-3 py-3 text-sm text-right font-black text-red-400">{inr(total)}</td>
               </tr>
             </>
           )}

@@ -26,13 +26,14 @@ export async function GET(request: NextRequest) {
   const from = searchParams.get("from") || new Date().toISOString().split("T")[0];
   const to = searchParams.get("to") || from;
 
-  const start = `${from}T00:00:00`;
-  const end = `${to}T23:59:59`;
+  const start = `${from}T00:00:00+05:30`;
+  const end = `${to}T23:59:59+05:30`;
 
   const [
     { data: allClients },
     { data: allMechanics },
     { data: allProducts },
+    { data: salaryHistory },
     repairJobsRaw,
     walkinRaw,
     clientSalesRaw,
@@ -43,9 +44,10 @@ export async function GET(request: NextRequest) {
     loanPaymentsRaw,
   ] = await Promise.all([
     pageAll(fetchAll(supabase.from('client_list').select('id, firstname, middlename, lastname'))),
-    pageAll(fetchAll(supabase.from('mechanic_list').select('id, firstname, lastname, salary_per_day'))),
+    pageAll(fetchAll(supabase.from('mechanic_list').select('id, firstname, lastname, daily_salary'))),
     pageAll(fetchAll(supabase.from('product_list').select('id, name, price'))),
-    pageAll(fetchAll(supabase.from('transaction_list').select('id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id').eq('status', 5).eq('del_status', 0).gte('date_completed', start).lte('date_completed', end))),
+    pageAll(fetchAll(supabase.from('mechanic_salary_history').select('mechanic_id, effective_date, salary'))),
+    pageAll(fetchAll(supabase.from('transaction_list').select('id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id').eq('status', 5).gte('date_completed', start).lte('date_completed', end))),
     pageAll(fetchAll(supabase.from('direct_sales').select('id, sale_code, total_amount, date_created, client_id').or('client_id.is.null,client_id.eq.0').gte('date_created', start).lte('date_created', end))),
     pageAll(fetchAll(supabase.from('direct_sales').select('id, sale_code, total_amount, date_created, client_id').not('client_id', 'eq', 0).not('client_id', 'is', null).gte('date_created', start).lte('date_created', end))),
     pageAll(fetchAll(supabase.from('client_payments').select('id, client_id, amount, discount, payment_date').gte('payment_date', from).lte('payment_date', to))),
@@ -59,7 +61,25 @@ export async function GET(request: NextRequest) {
   (allClients || []).forEach((c: any) => { clientMap[c.id] = `${c.firstname} ${c.middlename || ''} ${c.lastname || ''}`.trim(); });
 
   const mechMap: Record<number, any> = {};
-  (allMechanics || []).forEach((m: any) => { mechMap[m.id] = { name: `${m.firstname} ${m.lastname}`.trim(), salary: m.salary_per_day || 0 }; });
+  (allMechanics || []).forEach((m: any) => { mechMap[m.id] = { name: `${m.firstname} ${m.lastname}`.trim(), daily: Number(m.daily_salary) || 0 }; });
+
+  const salaryHistoryMap: Record<number, { effective_date: string; salary: number }[]> = {};
+  (salaryHistory || []).forEach((h: any) => {
+    if (!salaryHistoryMap[h.mechanic_id]) salaryHistoryMap[h.mechanic_id] = [];
+    salaryHistoryMap[h.mechanic_id].push({ effective_date: h.effective_date, salary: Number(h.salary) || 0 });
+  });
+  Object.values(salaryHistoryMap).forEach(arr => arr.sort((a, b) => new Date(a.effective_date).getTime() - new Date(b.effective_date).getTime()));
+  const historyRateFor = (mechId: number, onDate: string): number | null => {
+    const hist = salaryHistoryMap[mechId];
+    if (!hist || !onDate) return null;
+    const on = new Date(onDate).getTime();
+    let rate: number | null = null;
+    for (const h of hist) {
+      if (new Date(h.effective_date).getTime() <= on) rate = h.salary;
+      else break;
+    }
+    return rate;
+  };
 
   const repairJobs = (repairJobsRaw.data || []).map((t: any) => ({
     job_id: t.job_id, date: t.date_completed, item: t.item, amount: t.amount, comm: t.mechanic_commission_amount,
@@ -73,16 +93,19 @@ export async function GET(request: NextRequest) {
   const totalRepair = repairJobs.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
   const totalWalkin = walkinSales.reduce((s: number, s_: any) => s + Number(s_.amount || 0), 0);
   const totalClientSales = clientSales.reduce((s: number, s_: any) => s + Number(s_.amount || 0), 0);
-  const totalPayments = payments.reduce((s: number, p: any) => s + Number(p.amount || 0) + Number(p.discount || 0), 0);
+  const totalPayments = payments.reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
 
   const totalComm = repairJobs.reduce((s: number, t: any) => s + Number(t.comm || 0), 0);
-  const totalSalary = (attendance.data || []).reduce((s: number, a: any) => s + (mechMap[a.mechanic_id]?.salary || 0) * (a.status === 3 ? 0.5 : 1), 0);
-  const totalAdvance = (advancesRaw.data || []).reduce((s: number, a: any) => s + Number(a.amount || 0), 0);
+  const totalSalary = (attendance.data || []).reduce((s: number, a: any) => {
+    const rate = historyRateFor(a.mechanic_id, a.curr_date) ?? (mechMap[a.mechanic_id]?.daily || 0);
+    return s + (a.status === 3 ? rate / 2 : rate);
+  }, 0);
   const totalExpenses = (expensesRaw.data || []).reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
   const totalEmi = (loanPaymentsRaw.data || []).reduce((s: number, p: any) => s + Number(p.amount_paid || 0), 0);
+  const totalDiscount = payments.reduce((s: number, p: any) => s + Number(p.discount || 0), 0);
 
   const totalIncome = totalRepair + totalWalkin + totalClientSales;
-  const totalExpense = totalComm + totalSalary + totalAdvance + totalExpenses + totalEmi;
+  const totalExpense = totalComm + totalSalary + totalExpenses + totalEmi + totalDiscount;
   const netProfit = totalIncome - totalExpense;
 
   const monthLabel = `${fmtDate(from)} - ${fmtDate(to)}`;

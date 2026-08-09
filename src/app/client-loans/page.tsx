@@ -13,7 +13,7 @@ type Loan = {
   client_id: number;
   loan_date: string;
   principal: number;
-  tenure_months: number;
+  loan_period: number;
   interest_rate: number;
   total_payable: number;
   emi_amount: number;
@@ -43,7 +43,7 @@ export default function ClientLoansPage() {
     client_id: "",
     loan_date: todayIST(),
     principal: "",
-    tenure_months: "",
+    loan_period: "",
     interest_rate: "",
     total_payable: "",
     emi_amount: "",
@@ -76,6 +76,7 @@ export default function ClientLoansPage() {
       });
       const loans = (loanRes.data || []).map(loan => ({
         ...loan,
+        principal: loan.principal_amount,
         paid: paymentByLoan.get(loan.id) || 0,
         balance: (loan.total_payable || 0) - (paymentByLoan.get(loan.id) || 0),
       }));
@@ -111,7 +112,7 @@ export default function ClientLoansPage() {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ client_id: "", loan_date: todayIST(), principal: "", tenure_months: "", interest_rate: "", total_payable: "", emi_amount: "" });
+    setForm({ client_id: "", loan_date: todayIST(), principal: "", loan_period: "", interest_rate: "", total_payable: "", emi_amount: "" });
     setFormErr("");
     setShowModal(true);
   };
@@ -122,7 +123,7 @@ export default function ClientLoansPage() {
       client_id: String(loan.client_id),
       loan_date: toISTDatePart(loan.loan_date),
       principal: String(loan.principal || ""),
-      tenure_months: String(loan.tenure_months || ""),
+      loan_period: String(loan.loan_period || ""),
       interest_rate: String(loan.interest_rate || ""),
       total_payable: String(loan.total_payable || ""),
       emi_amount: String(loan.emi_amount || ""),
@@ -141,7 +142,7 @@ export default function ClientLoansPage() {
 
   const autoFill = () => {
     const p = parseFloat(form.principal) || 0;
-    const n = parseInt(form.tenure_months) || 0;
+    const n = parseInt(form.loan_period) || 0;
     const r = parseFloat(form.interest_rate) || 0;
     if (p && n && r) {
       const total = calcEMI(p, r, n) * n;
@@ -155,7 +156,7 @@ export default function ClientLoansPage() {
     if (!form.client_id) { setFormErr("Client select karo!"); return; }
     const principal = parseFloat(form.principal);
     if (!principal || principal <= 0) { setFormErr("Valid principal amount daalo!"); return; }
-    const tenure = parseInt(form.tenure_months);
+    const tenure = parseInt(form.loan_period);
     if (!tenure || tenure <= 0) { setFormErr("Valid tenure daalo!"); return; }
     const rate = parseFloat(form.interest_rate) || 0;
     const totalPayable = parseFloat(form.total_payable) || 0;
@@ -166,8 +167,8 @@ export default function ClientLoansPage() {
       const payload = {
         client_id: parseInt(form.client_id),
         loan_date: form.loan_date,
-        principal,
-        tenure_months: tenure,
+        principal_amount: principal,
+        loan_period: tenure,
         interest_rate: rate,
         total_payable: totalPayable,
         emi_amount: emi,
@@ -279,7 +280,7 @@ export default function ClientLoansPage() {
                       <td className="px-4 py-3.5 text-slate-400">{fmtDate(loan.loan_date)}</td>
                       <td className="px-4 py-3.5 text-right font-black text-slate-200">{inr(loan.principal)}</td>
                       <td className="px-4 py-3.5 text-right text-blue-400">{Number(loan.interest_rate || 0).toFixed(1)}%</td>
-                      <td className="px-4 py-3.5 text-right text-slate-500">{loan.tenure_months} mo</td>
+                      <td className="px-4 py-3.5 text-right text-slate-500">{loan.loan_period} mo</td>
                       <td className="px-4 py-3.5 text-right font-black text-emerald-400">{inr(loan.total_payable)}</td>
                       <td className="px-4 py-3.5 text-right font-black text-amber-400">{inr(loan.paid)}</td>
                       <td className="px-4 py-3.5 text-right font-black text-red-400">{inr(loan.balance)}</td>
@@ -365,8 +366,8 @@ export default function ClientLoansPage() {
                 </div>
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Tenure (Months) <span className="text-red-400">*</span></label>
-                  <input type="number" value={form.tenure_months}
-                    onChange={e => setForm(p => ({ ...p, tenure_months: e.target.value }))}
+                  <input type="number" value={form.loan_period}
+                    onChange={e => setForm(p => ({ ...p, loan_period: e.target.value }))}
                     placeholder="e.g. 12"
                     className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500" />
                 </div>
@@ -435,7 +436,7 @@ export default function ClientLoansPage() {
                 <DetailItem label="Status" value={viewing.status === 1 ? "Active" : "Closed"} valueClass={viewing.status === 1 ? "text-emerald-400" : "text-slate-500"} />
                 <DetailItem label="Principal" value={inr(viewing.principal)} valueClass="text-slate-200 font-bold" />
                 <DetailItem label="Interest Rate" value={`${Number(viewing.interest_rate || 0).toFixed(1)}%`} />
-                <DetailItem label="Tenure" value={`${viewing.tenure_months} months`} />
+                <DetailItem label="Tenure" value={`${viewing.loan_period} months`} />
                 <DetailItem label="Total Payable" value={inr(viewing.total_payable)} valueClass="text-emerald-400 font-bold" />
                 <DetailItem label="Paid" value={inr(viewing.paid)} valueClass="text-amber-400 font-bold" />
                 <DetailItem label="Balance" value={inr(viewing.balance)} valueClass="text-red-400 font-bold" />

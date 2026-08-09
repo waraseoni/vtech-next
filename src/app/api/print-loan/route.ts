@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     supabase
       .from("client_loans").select("id, client_id, loan_date, principal_amount, interest_rate, total_payable, emi_amount, status")
       .lte("loan_date", monthEnd)
+      .gte("status", 0)
   );
 
   const clients = await fetchAll(
@@ -40,7 +41,8 @@ export async function GET(request: NextRequest) {
 
   for (const l of loans || []) {
     const client = (clients || []).find((c: { id: number }) => c.id === l.client_id);
-    const name = client ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ") : "Unknown";
+    if (!client) continue;
+    const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
     const loanPmts = payments?.filter((p: { loan_id: number }) => p.loan_id === l.id) || [];
     const received = loanPmts.reduce((s: number, p: { amount: number; discount: number }) => s + (p.amount || 0) + (p.discount || 0), 0);
     const interestVal = (l.total_payable || 0) - (l.principal_amount || 0);

@@ -369,7 +369,7 @@ export default function ViewClientProfile() {
             .from('client_payments')
             .select('amount, discount')
             .eq('loan_id', loan.id);
-          // BUG FIX 7: net payment = amount + discount (not amount + discount)
+          // Paid = Amount + Discount (credit) — matches client_api.php
           const paid = (lp || []).reduce(
             (s: number, r: { amount: number; discount: number }) => s + (r.amount + (r.discount || 0)),
             0
@@ -416,7 +416,7 @@ export default function ViewClientProfile() {
         .reduce((s, j) => s + (j.amount || 0), 0)
     );
     setDirectBilled(directSales.reduce((s, d) => s + (d.total_amount || 0), 0));
-    // BUG FIX 6: net payment = amount - discount (not +)
+    // Paid = Amount + Discount (credit) — matches client_api.php
     setServicePaid(
       payments
         .filter(p => !p.loan_id)
@@ -1208,9 +1208,9 @@ export default function ViewClientProfile() {
                       </td>
                       <td className={`${tdCls} text-right`}>₹{fmt(p.amount)}</td>
                       <td className={`${tdCls} text-right text-slate-400`}>₹{fmt(p.discount || 0)}</td>
-                      {/* BUG FIX 5: net = amount - discount (was amount + discount — wrong!) */}
+                      {/* Net = Amount + Discount (credit) — matches view_client.php */}
                       <td className={`${tdCls} text-right font-black text-emerald-400`}>
-                        ₹{fmt(p.net_amount ?? (p.amount + (p.discount || 0)))}
+                        ₹{fmt(p.amount + (p.discount || 0))}
                       </td>
                       <td className={tdCls}>{p.payment_mode}</td>
                       <td className={tdCls}>
@@ -1257,7 +1257,7 @@ export default function ViewClientProfile() {
                       </p>
                       </div>
                       <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                        <span className="text-sm font-black text-emerald-400">Net: ₹{fmt(p.net_amount ?? (p.amount + (p.discount || 0)))}</span>
+                        <span className="text-sm font-black text-emerald-400">Net: ₹{fmt(p.amount + (p.discount || 0))}</span>
                         {p.discount > 0 && <span className="text-[10px] text-slate-500">Discount: ₹{fmt(p.discount)}</span>}
                       </div>
                     </div>
@@ -1309,9 +1309,9 @@ export default function ViewClientProfile() {
                       </td>
                       <td className={`${tdCls} text-right`}>₹{fmt(p.amount)}</td>
                       <td className={`${tdCls} text-right text-slate-400`}>₹{fmt(p.discount || 0)}</td>
-                      {/* BUG FIX 5 (same): net = amount - discount */}
+                      {/* Net = Amount + Discount (credit) — matches view_client.php */}
                       <td className={`${tdCls} text-right font-black text-emerald-400`}>
-                        ₹{fmt(p.net_amount ?? (p.amount + (p.discount || 0)))}
+                        ₹{fmt(p.amount + (p.discount || 0))}
                       </td>
                       <td className={tdCls}>
                         <span className="inline-flex items-center gap-1.5 flex-wrap">
@@ -1361,7 +1361,7 @@ export default function ViewClientProfile() {
                       <p className="text-xs text-slate-500 mt-1">{p.payment_mode}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                      <span className="text-sm font-black text-emerald-400">Net: ₹{fmt(p.net_amount ?? (p.amount + (p.discount || 0)))}</span>
+                      <span className="text-sm font-black text-emerald-400">Net: ₹{fmt(p.amount + (p.discount || 0))}</span>
                       {p.discount > 0 && <span className="text-[10px] text-slate-500">Discount: ₹{fmt(p.discount)}</span>}
                     </div>
                   </div>

@@ -270,7 +270,7 @@ function PaymentsPageInner() {
         </div>
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
           <div className="inline-flex rounded-xl border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 border-purple-500/20">Net Received</div>
-          <p className="mt-3 text-xl font-black text-purple-400">{fmtMoney(totals.amount - totals.discount)}</p>
+          <p className="mt-3 text-xl font-black text-purple-400">{fmtMoney(totals.amount + totals.discount)}</p>
         </div>
       </div>
 

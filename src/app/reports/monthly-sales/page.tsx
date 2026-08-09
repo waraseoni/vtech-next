@@ -34,14 +34,14 @@ function MonthlySalesContent() {
       const lastDay = new Date(year, m, 0).getDate();
       const to = `${month}-${String(lastDay).padStart(2, "0")}T23:59:59+05:30`;
 
-      const { data: tpData } = await supabase
-        .from("transaction_products").select("product_id, price, qty, date_updated, transaction_id")
-        .gte("date_updated", from).lte("date_updated", to);
-
-      const txnIds = [...new Set(tpData?.map((t) => t.transaction_id) || [])];
       const { data: txns } = await supabase
         .from("transaction_list").select("id, code, client_name, status, date_updated")
-        .in("id", txnIds).in("status", [1, 2, 3, 5]);
+        .gte("date_updated", from).lte("date_updated", to).neq("status", 4);
+
+      const txnIds = [...new Set(txns?.map((t) => t.id) || [])];
+      const { data: tpData } = txnIds.length
+        ? await supabase.from("transaction_products").select("transaction_id, product_id, product_name, price, qty").in("transaction_id", txnIds)
+        : { data: [] };
 
       const { data: clients } = await supabase
         .from("client_list").select("id, firstname, middlename, lastname")
@@ -53,14 +53,14 @@ function MonthlySalesContent() {
       const saleRows: SaleRow[] = [];
       for (const tp of tpData || []) {
         const txn = (txns || []).find((t) => t.id === tp.transaction_id);
-        if (!txn || ![1, 2, 3, 5].includes(txn.status)) continue;
+        if (!txn) continue;
         const client = (clients || []).find((c) => c.id === txn.client_name);
         const product = (products || []).find((p) => p.id === tp.product_id);
         saleRows.push({
-          date_updated: tp.date_updated || txn.date_updated,
+          date_updated: txn.date_updated,
           code: txn.code,
           client_name: client ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ") : "Walk-in",
-          product_name: product?.name || "Unknown",
+          product_name: product?.name || tp.product_name || "Unknown",
           price: tp.price || 0,
           qty: tp.qty || 1,
           total: (tp.price || 0) * (tp.qty || 1),
