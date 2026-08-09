@@ -3,11 +3,11 @@ import { getChatResponse, generateWhatsAppReply } from "@/lib/gemini";
 import { getGroqChatResponse } from "@/lib/groq";
 import type { ChatMessage } from "@/lib/gemini";
 import { getAiSettings } from "@/lib/ai-settings";
-import { requireUser } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireStaff();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();

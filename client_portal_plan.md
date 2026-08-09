@@ -23,9 +23,16 @@ Client ko login dekar **sirf uski apni** repairs/payments/loan details dekhne ki
 5. **`public/job-status`** → response se `client_name` (internal client ID) hata diya. `amount` UI me dikhta hai isliye rakhna pada — note: koi bhi enumerable `job_id` se job ka amount dekh sakta hai, ye intentional "Check Your Repair Status" feature hai.
 
 ### Baaki jo portal se pehle fix karna hai (TODO)
-- [ ] `requireUser()` sirf login check hai — data routes par `requireStaff()` (role = admin/staff) lau; profile-less user ko block karo
-- [ ] Photo upload routes (`client-photo`, `product-image`, `mechanic-photo`, `job-images`, `user-avatar`) service-role POST hai, koi auth check nahi
-- [ ] `print-job-status` service-role, koi user check nahi
+- [x] `requireStaff()` helper (`src/lib/api-auth.ts`) — role `admin`/`staff` check; profile-less user reject. Sab print/export/chat/report routes ab `requireStaff()` use karte hain (done 09 Aug)
+- [x] Photo upload routes (`client-photo`, `product-image`, `mechanic-photo`, `job-images`, `user-avatar`) — `requireStaff()` guard (pehle service-role POST, koi auth nahi)
+- [x] `settings/signature` — `requireStaff()` guard
+- [x] `print-job-status` — **public rehne ka decision**: public "Check Your Repair Status" page ka Print button isse kholta hai. Isliye public hi hai, par `client_name` (internal client ID) response se hata diya — ab public API jitna hi data expose karta hai
+- [ ] `device-info` — harmless dev helper (production me `null`), leave as is
+
+## Decisions (09 Aug)
+- **Login method:** Phone OTP **WhatsApp ke through** (SMS nahi). Supabase built-in OTP SMS-only hai isliye **custom OTP flow** banega: OTP generate → WhatsApp provider (Twilio WhatsApp / Gupshup / MSG91) → khud verify → session manage. Zaroori: WhatsApp Business API + Meta OTP template approval.
+- **login_allowed:** Admin toggle — `client_list.login_allowed` flag, sirf select clients.
+- **Loan scope:** Portal me **sirf repairs + payments**, loan details nahi.
 
 ## Gap Analysis (kya karna padega)
 
@@ -39,9 +46,11 @@ Client ko login dekar **sirf uski apni** repairs/payments/loan details dekhne ki
   - ⚠️ **RLS RLS se kaam nahi karega** — zyada tar data routes service-role key se query karte hain jo RLS bypass karti hai. API guards (Phase 4) hi asli isolation hai. RLS ko defense-in-depth treat karo, primary guard nahi.
 
 ### Phase 2 — Auth Flow
-- [ ] **Phone OTP login** best fit (clients ke paas phone hai, password nahi yaad hota):
-  - Supabase Auth me phone OTP enable karna (dashboard/console) — SMS provider (Twilio/Vonage) setup check karo, cost consideration
+- [ ] **WhatsApp OTP login** (custom flow — Supabase built-in OTP SMS-only hai):
+  - OTP generate karo (6-digit, expiry) → apni table me store (hash) → WhatsApp provider se bhejo
+  - WhatsApp Business API + Meta OTP template approval zaroori
   - Login page par "Client Login" tab: phone number → OTP → verify
+  - Session: Supabase Auth ka email/password sign-in as client ke saath bhi ho sakta hai (admin create-user se account) ya khud ka session table
   - Fallback: email/password bhi ho sakta hai (optional)
 - [ ] `profiles` auto-create/update on first client login: `role="client"`, `client_id` map via **client_id** (phone/naam match se NAHI — duplicates possible, neeche note)
 - [ ] Remember-me / OTP expiry handling
@@ -74,11 +83,12 @@ Client ko login dekar **sirf uski apni** repairs/payments/loan details dekhne ki
 ## Order of Work (recommended — security pehle, RLS ki jagah API guards)
 1. ✅ **Open registration band** (done 09 Aug) — signup page, login auto-create, role-escalation trigger
 2. ✅ **Unauth/public endpoints lock** (done 09 Aug) — reports/ledger, reports/balancesheet, job-status client_name
-3. **API guards (Phase 4)** — `requireStaff()` + client-IDOR check; ye primary isolation hai
-4. Phase 2 (OTP login) — Phase 4 ke saath-saath
+3. ✅ **requireStaff() + data route guards** (done 09 Aug) — print/export/chat/reports + photo uploads + signature
+4. Phase 2 (WhatsApp OTP login) — Phase 4 ke saath-saath
 5. Phase 1 (RLS/migrations) — defense-in-depth, dashboard me apply karna
-6. Phase 3 (UI) — last, kyunki UI sirf data darshaata hai
-7. Phase 5 cleanup
+6. Phase 4 (API guards — client-IDOR) — `requireStaff()` pehle hi hai; client role ka check add karna hai
+7. Phase 3 (UI) — last, kyunki UI sirf data darshaata hai
+8. Phase 5 cleanup
 
 ## Effort Estimate
 - Phase 1: ~1-2 ghante (migration + dashboard RLS apply)
@@ -88,7 +98,8 @@ Client ko login dekar **sirf uski apni** repairs/payments/loan details dekhne ki
 - **Total: ~1-2 din**
 
 ## Open Questions (implement karne se pehle decide)
-- [ ] Client login ke liye admin har client ko `login_allowed` toggle kare ya sabko automatic?
-- [ ] Phone OTP ke liye Supabase ka SMS provider (Twilio/Vonage) setup hai ya abhi nahi? (cost consideration)
-- [ ] Agar OTP setup nahi hai toh email/password wala route hi pehle? (dummy email per client)
-- [ ] Client ko loan details dikhane hain ya sirf repairs + payments?
+- [x] ~~Client login ke liye admin har client ko `login_allowed` toggle kare ya sabko automatic?~~ → **Admin toggle** (decided 09 Aug)
+- [x] ~~Phone OTP ke liye SMS provider setup?~~ → **WhatsApp OTP (custom flow)**, SMS nahi (decided 09 Aug). WhatsApp Business API + Meta template approval chahiye
+- [ ] WhatsApp provider kaun: Twilio WhatsApp / Gupshup / MSG91? (cost + India support compare karo)
+- [ ] `login_allowed` toggle UI kahaan: `/clients` list par inline, ya client detail page par?
+- [x] ~~Client ko loan details dikhane hain?~~ → **Nahi, sirf repairs + payments** (decided 09 Aug)

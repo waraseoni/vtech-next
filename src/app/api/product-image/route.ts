@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireStaff } from "@/lib/api-auth";
 
 // ─── Supabase Admin Client (service_role) ────────────────────────────────────
 // IMPORTANT: service_role key sirf server-side use karo — client-side kabhi nahi
@@ -12,6 +13,9 @@ const BUCKET = "product-images";
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireStaff();
+    if (!user) return NextResponse.json({ status: "unauthorized", msg: "Login required" }, { status: 401 });
+
     const form = await request.formData();
     const file = form.get("file") as File | null;
     const productId = form.get("productId") as string | null;

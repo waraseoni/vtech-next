@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { requireUser } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 
 // ─── Supabase (server-side) ──────────────────────────────────────────────────
 const supabase = createClient(
@@ -76,7 +76,7 @@ const STATUS: Record<number, string> = {
 
 // ─── ROUTE HANDLER ────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
-  const user = await requireUser();
+  const user = await requireStaff();
   if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const url      = new URL(req.url);
   const jobIdStr = url.searchParams.get("job_id");

@@ -33,6 +33,23 @@ export async function requireUser() {
   }
 }
 
+export async function requireStaff() {
+  const supabase = await getServerSupabase();
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.role !== "admin" && profile?.role !== "staff") return null;
+    return user;
+  } catch {
+    return null;
+  }
+}
+
 export async function requireAdmin() {
   const supabase = await getServerSupabase();
   let user: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"];

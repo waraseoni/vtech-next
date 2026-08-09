@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from("transaction_list")
-    .select("id, job_id, code, item, fault, remark, status, amount, client_name, date_created")
+    .select("id, job_id, code, item, fault, remark, status, amount, date_created")
     .limit(1);
 
   if (jobId) query = query.eq("job_id", jobId);
@@ -160,7 +160,6 @@ export async function GET(request: NextRequest) {
     <div class="job-info">
       <div class="job-row"><span class="job-label">Job ID</span><span class="job-value">#${txn.job_id}</span></div>
       ${txn.code ? `<div class="job-row"><span class="job-label">Code</span><span class="job-value">${txn.code}</span></div>` : ""}
-      <div class="job-row"><span class="job-label">Customer</span><span class="job-value">${txn.client_name || "—"}</span></div>
       <div class="job-row"><span class="job-label">Item</span><span class="job-value">${txn.item || "—"}</span></div>
       <div class="job-row"><span class="job-label">Fault</span><span class="job-value">${txn.fault || "—"}</span></div>
       <div class="job-row"><span class="job-label">Created</span><span class="job-value">${fmtDate(txn.date_created)}</span></div>

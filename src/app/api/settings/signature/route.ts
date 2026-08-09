@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireStaff } from "@/lib/api-auth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,6 +22,9 @@ async function upsertField(field: string, value: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireStaff();
+    if (!user) return NextResponse.json({ status: "unauthorized", msg: "Login required" }, { status: 401 });
+
     const form = await request.formData();
     const file = form.get("file") as File | null;
     const canvasData = form.get("canvasData") as string | null;

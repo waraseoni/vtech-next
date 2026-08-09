@@ -1,10 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { requireUser, UNAUTHORIZED } from '@/lib/api-auth';
+import { requireStaff, UNAUTHORIZED } from '@/lib/api-auth';
 
 export async function GET(request: Request) {
-  if (!(await requireUser())) return UNAUTHORIZED();
+  if (!(await requireStaff())) return UNAUTHORIZED();
 
   const { searchParams } = new URL(request.url);
   const fromParam = searchParams.get('from');

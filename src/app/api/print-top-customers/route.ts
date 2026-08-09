@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { requireUser } from "@/lib/api-auth";
+import { requireStaff } from "@/lib/api-auth";
 import { fetchAll } from "@/lib/fetch-all";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -12,7 +12,7 @@ function formatDate(iso: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const user = await requireUser();
+  const user = await requireStaff();
   if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const filterType = searchParams.get("filterType") || "yearly";
