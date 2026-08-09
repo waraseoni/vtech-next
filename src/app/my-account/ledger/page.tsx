@@ -282,7 +282,7 @@ ${el.innerHTML}
             </div>
 
             {/* Table */}
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, color: "#333" }}>
               <thead>
                 <tr style={{ background: "#001f3f", color: "#fff" }}>
                   <th style={{ padding: "6px 5px", border: "1px solid #ddd", textAlign: "left" }}>Date</th>
