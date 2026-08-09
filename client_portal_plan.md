@@ -1,6 +1,7 @@
 # Client Portal Plan (Client Login → Sirf Apni Details)
 *Created: 08 Aug 2026 · Status: CORE IMPLEMENTED — migration apply + SMTP setup pending · Updated: 09 Aug 2026 (security review + hardening + email OTP)*
 *Source: current auth model analysis*
+*⚠️ 09 Aug (diagnostic): `profiles_role_check` CHECK constraint sirf admin/staff allow karta hai — `role='client'` insert live me FAIL (`violates check constraint profiles_role_check`). Fix migration me section 5 me add — SQL editor me run karna hai. Email collision: client #2 (`coolguy.1595@gmail.com`) aur #3 (`vik.vtech@gmail.com`) ke emails pehle se staff auth accounts hain → unse portal login par staff UI milegi. Test ke liye non-conflicting email (e.g. #4 `preetijn65@gmail.com`).*
 
 ## Goal
 Client ko login dekar **sirf uski apni** repairs/payments/loan details dekhne ki suvidha. Na koi aur client ka data, na internal pages.
@@ -101,6 +102,8 @@ Client ko login dekar **sirf uski apni** repairs/payments/loan details dekhne ki
 3. ✅ **requireStaff() + data route guards** (done 09 Aug) — print/export/chat/reports + photo uploads + signature
 4. ✅ **Phase 2 (Email OTP login) + Phase 4 client API guards** (done 09 Aug) — login tabs, onboard/me/jobs/payments, requireClient
 5. ⬜ **Phase 1 (RLS/migrations) apply** — `20260809_client_portal.sql` Supabase me run karna (user action), fir E2E test
+   - ✅ `login_allowed` + `profiles.client_id` column **live me applied** (diag confirm)
+   - ⚠️ **Section 5 baaki:** `profiles_role_check` constraint me `client` add (abhi SQL editor me run karna hai) — bina iske `role='client'` insert fail karta hai
 6. ⬜ **SMTP setup** (user action) + client emails set + portal toggle ON
 7. ⬜ Phase 3 polish (optional WhatsApp link per job) + Phase 5 production test
 8. ⬜ Deploy: git push → Vercel

@@ -60,3 +60,11 @@ create policy portal_client_payments_client_own on public.client_payments
     (select role from public.profiles where id = auth.uid()) = 'client'
     and client_id = (select client_id from public.profiles where id = auth.uid())
   );
+
+-- ── 5) profiles.role CHECK constraint me 'client' add karo ⭐───────────────
+-- Purana constraint sirf admin/staff allow karta tha — portal ke liye role="client"
+-- insert karne par "violates check constraint profiles_role_check" error aata tha.
+-- (Service-role bhi is check ke under aata hai — check constraint RLS/trigger nahi
+--  hai jo service-role bypass kare.)
+alter table public.profiles drop constraint if exists profiles_role_check;
+alter table public.profiles add constraint profiles_role_check check (role in ('admin', 'staff', 'client'));
