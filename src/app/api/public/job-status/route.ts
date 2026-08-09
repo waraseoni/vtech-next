@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from("transaction_list")
-    .select("id, job_id, code, item, fault, remark, status, amount, client_name, date_created")
+    .select("id, job_id, code, item, fault, remark, status, amount, date_created")
     .limit(1);
 
   if (jobId) query = query.eq("job_id", jobId);

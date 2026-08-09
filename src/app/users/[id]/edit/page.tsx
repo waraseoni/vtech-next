@@ -149,18 +149,28 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
     setSaving(true);
     try {
-      // 1. Update profiles table
+      // 1. Update profiles table (role ke alawa — role service-role API se hota hai)
       const { error: profileErr } = await supabase
         .from("profiles")
         .update({
           full_name:   fullName.trim(),
           email:       email.trim() || null,
-          role:        role,
           mechanic_id: mechanicId ? parseInt(mechanicId) : null,
         })
         .eq("id", userId);
 
       if (profileErr) throw new Error("Profile update failed: " + profileErr.message);
+
+      // 1b. Role update — service-role API (DB trigger browser ko role change se rokta hai)
+      const roleRes = await fetch("/api/admin/update-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, role }),
+      });
+      if (!roleRes.ok) {
+        const errData = await roleRes.json().catch(() => ({}));
+        throw new Error("Role update failed: " + (errData.error || roleRes.status));
+      }
 
       // 2. Password change karna ho to — server API use karo (service_role needed)
       if (newPassword) {

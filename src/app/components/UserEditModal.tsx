@@ -1,7 +1,6 @@
 "use client";
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 
 export default function UserEditModal({ user, onClose, onSaved }: any) {
   const [email, setEmail] = useState(user.email || '');
@@ -30,12 +29,16 @@ export default function UserEditModal({ user, onClose, onSaved }: any) {
         if (!res.ok) throw new Error('Auth update failed');
       }
 
-      // 2. Profile अपडेट (रोल, फुल_नेम)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ full_name: fullName, role })
-        .eq('id', user.id);
-      if (profileError) throw profileError;
+      // 2. Profile अपडेट (रोल, फुल_नेम) — service-role API se (trigger role guard bypass karta hai)
+      const res = await fetch('/api/admin/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, full_name: fullName, role }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Profile update failed');
+      }
 
       alert('User updated successfully!');
       onSaved(); // पैरेंट को रिफ्रेश करने के लिए कहें

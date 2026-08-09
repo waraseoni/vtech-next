@@ -56,24 +56,10 @@ export default function LoginPage() {
     // Agar seedha push() karein toh layout stale state mein ho sakta hai.
     // router.refresh() server ko signal karta hai ki session update hua hai
     // aur layout dobara profile fetch karega.
-    if (data.user) {
-      // Ensure profile exists in DB — insert if missing
-      const { data: pd } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", data.user.id)
-        .maybeSingle();
-
-      if (!pd) {
-        // New user — create profile with staff role by default
-        // Admin can change role later from /users page
-        await supabase.from("profiles").insert({
-          id:        data.user.id,
-          full_name: data.user.user_metadata?.full_name || email.split("@")[0],
-          role:      "staff",
-        });
-      }
-    }
+    // NOTE: Naye accounts sirf admin se bante hain (/api/admin/create-user).
+    // Idhar profile auto-create karna security hole tha — koi bhi signUp karke
+    // role:"staff" access le sakta tha. Profile-less user ko layout staff ki tarah
+    // treat karta hai; Phase 4 me requireStaff() se ye bhi block hoga.
 
     // Full reload → fresh auth state → correct sidebar
     window.location.href = "/";

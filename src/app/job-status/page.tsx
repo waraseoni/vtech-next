@@ -13,7 +13,6 @@ type JobData = {
   remark: string;
   status: number;
   amount: number;
-  client_name: string;
   date_created: string;
 };
 
@@ -38,8 +37,6 @@ export default function JobStatusPage() {
   const [job, setJob] = useState<JobData | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [clientName, setClientName] = useState("");
-  const [clientContact, setClientContact] = useState("");
   const [error, setError] = useState("");
   const [view, setView] = useState<"detailed" | "compact" | "timeline">("detailed");
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
@@ -93,12 +90,8 @@ export default function JobStatusPage() {
         remark: txn.remark,
         status: txn.status,
         amount: txn.amount,
-        client_name: txn.client_name,
         date_created: txn.date_created,
       });
-
-      setClientName(txn.client_name || "");
-      setClientContact("");
 
       setServices(data.services || []);
       setProducts(data.products || []);
