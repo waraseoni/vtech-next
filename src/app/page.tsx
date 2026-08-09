@@ -11,7 +11,9 @@ import {
   Wrench, Clock, CheckCircle, IndianRupee, TrendingUp, TrendingDown,
   Users, ArrowRight, AlertCircle, Zap, Loader2, DollarSign, CreditCard,
   Filter, RotateCcw, Package, Activity, ChevronRight, CalendarClock, MessageCircle,
+  QrCode, X,
 } from "lucide-react";
+import QRCode from "qrcode";
 import Navbar from "./components/Navbar";
 
 // ─── PUBLIC WEBSITE (shown when not logged in) ─────────────────────────────
@@ -299,6 +301,9 @@ export default function Dashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [qrUrl, setQrUrl] = useState("");
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
@@ -311,6 +316,37 @@ export default function Dashboard() {
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
+
+  // QR code — scan to open the site on mobile.
+  // Domain/IP access → use that origin. localhost → swap in the machine's LAN IP
+  // (via /api/device-info) so a phone on the same WiFi can reach the dev server.
+  useEffect(() => {
+    if (!qrOpen) return;
+    let cancelled = false;
+    (async () => {
+      const { hostname, protocol, port } = window.location;
+      let siteUrl = window.location.origin;
+      if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
+        try {
+          const res = await fetch("/api/device-info");
+          const { lanIp } = await res.json();
+          if (lanIp) siteUrl = `${protocol}//${lanIp}${port ? `:${port}` : ""}`;
+        } catch {}
+      }
+      if (cancelled) return;
+      setQrUrl(siteUrl);
+      QRCode.toDataURL(siteUrl, {
+        width: 240,
+        margin: 2,
+        color: { dark: "#0d1117", light: "#ffffff" },
+      }).then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      }).catch(() => {
+        if (!cancelled) setQrDataUrl("");
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [qrOpen]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stats, setStats] = useState<Stat>({ totalJobs: 0, totalClients: 0, pendingJobs: 0, inProgressJobs: 0, finishedJobs: 0, deliveredJobs: 0, totalMechanics: 0, lowStock: 0, todayRevenue: 0 });
   const [financial, setFinancial] = useState<Financial>({ totalSales: 0, partsCost: 0, grossProfit: 0, discounts: 0, salary: 0, loanPaid: 0, expenses: 0, totalOutflow: 0, netProfit: 0 });
@@ -699,6 +735,13 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="self-start sm:self-center flex items-center gap-2">
+            <button
+              onClick={() => setQrOpen(true)}
+              title="Phone pe site kholo"
+              className="flex items-center gap-2 bg-[#111520] border border-[#21293d] hover:border-blue-500/50 text-slate-300 hover:text-white px-4 py-2.5 rounded-2xl font-bold text-xs transition-all active:scale-95"
+            >
+              <QrCode size={16} strokeWidth={2.5} /> QR
+            </button>
             {installPrompt && !isInstalled && (
               <button
                 onClick={async () => {
@@ -1103,6 +1146,26 @@ export default function Dashboard() {
           </div>
         )}
       </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ QR MODAL */}
+      {qrOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setQrOpen(false)}>
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-xs shadow-2xl p-5 text-center"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-white text-sm flex items-center gap-2"><QrCode size={15} className="text-blue-400" /> Site QR</h3>
+              <button onClick={() => setQrOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"><X size={16} /></button>
+            </div>
+            {qrDataUrl ? (
+              <img src={qrDataUrl} alt="Site QR Code" className="mx-auto rounded-xl bg-white p-2" width={220} height={220} />
+            ) : (
+              <div className="h-[220px] flex items-center justify-center"><Loader2 className="animate-spin text-slate-600" /></div>
+            )}
+            <p className="text-slate-400 text-xs font-bold mt-3">Mobile camera se scan karke site kholo</p>
+            <p className="text-slate-600 text-[10px] mt-1 break-all font-bold">{qrUrl || "…"}</p>
+          </div>
+        </div>
+      )}
 
       <p className="text-center text-slate-800 text-xs font-bold pb-2">
         V-TECH Management System &mdash; {new Date().getFullYear()}
