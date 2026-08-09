@@ -6,4 +6,7 @@ import { createSerwistRoute } from "@serwist/turbopack";
 export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } =
   createSerwistRoute({
     swSrc: "src/app/sw.ts",
+    // Force native esbuild everywhere (Vercel/Linux otherwise defaults to
+    // esbuild-wasm, which is not installed).
+    useNativeEsbuild: true,
   });
