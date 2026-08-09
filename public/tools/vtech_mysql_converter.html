@@ -81,7 +81,7 @@ h1{font-size:21px;font-weight:900;color:#fff;margin-bottom:4px}
 // ════════════════════════════════════════════════════════════
 // CONFIG — exact match with Supabase backup (verified field-by-field)
 // ════════════════════════════════════════════════════════════
-const TABLES=["system_info","job_id_counter","mechanic_list","client_list","product_list","service_list","suppliers","spare_supplier","inventory_list","lender_list","loan_payments","expense_list","transaction_list","transaction_products","transaction_services","transaction_images","client_loans","client_payments","direct_sales","direct_sale_items","attendance_list","advance_payments","mechanic_salary_history","mechanic_commission_history","message_list","wp_template_history","activity_logs"];
+const TABLES=["system_info","job_id_counter","mechanic_list","client_list","product_list","service_list","suppliers","spare_supplier","inventory_list","lender_list","loan_payments","expense_list","transaction_list","transaction_products","transaction_services","transaction_images","client_loans","client_payments","direct_sales","direct_sale_items","attendance_list","advance_payments","mechanic_salary_history","mechanic_commission_history","message_list","wp_template_history","activity_logs","payment_reminders"];
 
 // INT fields — exact from schema + good backup
 const INT_F={
@@ -102,7 +102,8 @@ const INT_F={
   mechanic_list:["id","status","delete_flag"],
   mechanic_salary_history:["id","mechanic_id"],
   message_list:["id","status"],
-  product_list:["id","status","delete_flag"],
+  payment_reminders:["id","client_id"],
+  product_list:["id","status","delete_flag","alert_quantity"],
   service_list:["id","status","delete_flag"],
   suppliers:["id","status","delete_flag"],
   spare_supplier:["spare_id","supplier_id"],
@@ -123,11 +124,13 @@ const FLOAT_F={
   direct_sale_items:["price"],
   direct_sales:["total_amount"],
   expense_list:["amount"],
+  inventory_list:["purchase_cost","courier_charges"],
   lender_list:["loan_amount","interest_rate","emi_amount"],
   loan_payments:["amount_paid"],
   mechanic_commission_history:["commission_percent"],
   mechanic_list:["daily_salary","commission_percent","salary_per_day"],
   mechanic_salary_history:["salary"],
+  payment_reminders:["amount_due"],
   product_list:["cost_price","price"],
   service_list:["price"],
   transaction_list:["amount","mechanic_amount","mechanic_commission_amount"],
@@ -158,15 +161,16 @@ const EMPTY_STR={
   system_info:["meta_value"],
   loan_payments:["remarks"],
   mechanic_list:["contact","middlename"],
-  product_list:["image_path"],
+  product_list:["image_path","hsn"],
+  service_list:["hsn"],
   suppliers:["email","address"],
   transaction_list:["remark","uniq_id"],
 };
 
 // Datetime format — ALL tables use +05:30 (IST) since MariaDB stored IST local time
-const WITH_TZ=new Set(["mechanic_list","product_list","service_list","suppliers","lender_list","mechanic_commission_history","transaction_list","client_list","client_loans","client_payments","direct_sales","direct_sale_items","expense_list","inventory_list","loan_payments","mechanic_salary_history","attendance_list","advance_payments","message_list","transaction_products","transaction_services","transaction_images","wp_template_history","activity_logs"]);
-const DATE_ONLY=new Set(["date_paid","payment_date","curr_date","stock_date","loan_date","start_date","effective_date"]);
-const DT_FIELDS=new Set(["date_created","date_updated","date_completed","date_added","last_edited_date","created_at","changed_at"]);
+const WITH_TZ=new Set(["mechanic_list","product_list","service_list","suppliers","lender_list","mechanic_commission_history","transaction_list","client_list","client_loans","client_payments","direct_sales","direct_sale_items","expense_list","inventory_list","loan_payments","mechanic_salary_history","attendance_list","advance_payments","message_list","transaction_products","transaction_services","transaction_images","wp_template_history","activity_logs","payment_reminders"]);
+const DATE_ONLY=new Set(["date_paid","payment_date","curr_date","stock_date","loan_date","start_date","effective_date","payment_due_date"]);
+const DT_FIELDS=new Set(["date_created","date_updated","date_completed","date_added","last_edited_date","created_at","changed_at","reminder_date"]);
 
 // Valid enums
 const VALID_PM=new Set(["Cash","PhonePe/GPay","UPI","Bank Transfer","Credit Card","Credit to Client"]);
@@ -203,6 +207,47 @@ function loadFile(f){
 
 // ════════════════════════════════════════════════════════════
 // MYSQL PARSER — handles escaped chars, nested quotes
+// Extract column names from `CREATE TABLE` definition (mysqldump fallback)
+function getCreateColumns(sql,t){
+  const key="CREATE TABLE `"+t+"`";
+  const idx=sql.indexOf(key);
+  if(idx===-1) return null;
+  const open=sql.indexOf("(",idx);
+  if(open===-1) return null;
+  let d=0,inS=false,sc="";
+  for(let j=open;j<sql.length;j++){
+    const ch=sql[j];
+    if(inS){
+      if(ch==="\\"){j++;continue;}
+      if(ch===sc) inS=false;
+    }else{
+      if(ch==="'"||ch==='"'){inS=true;sc=ch;}
+      else if(ch==="(") d++;
+      else if(ch===")"){d--;if(d===0) return sql.slice(open+1,j);}
+    }
+  }
+  return null;
+}
+function splitTopLevel(s){
+  const parts=[];let d=0,inS=false,sc="",cur="";
+  for(let i=0;i<s.length;i++){
+    const ch=s[i];
+    if(inS){
+      if(ch==="\\"&&i+1<s.length){cur+=s[i+1];i++;continue;}
+      if(ch===sc) inS=false;
+      cur+=ch;
+    }else{
+      if(ch==="'"||ch==='"'){inS=true;sc=ch;cur+=ch;}
+      else if(ch==="("){d++;cur+=ch;}
+      else if(ch===")"){d--;cur+=ch;}
+      else if(ch===","&&d===0){parts.push(cur);cur="";}
+      else cur+=ch;
+    }
+  }
+  if(cur.trim()) parts.push(cur);
+  return parts;
+}
+
 // ════════════════════════════════════════════════════════════
 function parseSQL(sql){
   const res={};
@@ -215,17 +260,30 @@ function parseSQL(sql){
     const tblEnd=sql.indexOf("`",tblStart);
     if(tblEnd===-1){i=insIdx+1;continue;}
     const t=sql.slice(tblStart,tblEnd);
-    // Skip users / profiles (intentionally excluded)
-    if(t==="users"||t==="profiles"){i=tblEnd+1;continue;}
-    // Extract column list
+    // Skip users / profiles / login_throttle (intentionally excluded)
+    if(t==="users"||t==="profiles"||t==="login_throttle"){i=tblEnd+1;continue;}
+    // Extract column list (explicit list, or fall back to CREATE TABLE def)
     const colStart=sql.indexOf("(",tblEnd);
     if(colStart===-1){i=tblEnd+1;continue;}
-    const colEnd=sql.indexOf(")",colStart);
-    if(colEnd===-1){i=colStart+1;continue;}
-    const cols=sql.slice(colStart+1,colEnd).split(",").map(c=>c.trim().replace(/`/g,""));
+    let cols, searchFrom;
+    if(sql.slice(tblEnd+1,colStart).includes("VALUES")){
+      // mysqldump no-column-list format: INSERT INTO `table` VALUES (...)
+      // → column names must come from the CREATE TABLE definition
+      const def=getCreateColumns(sql,t);
+      if(!def){i=tblEnd+1;continue;}
+      cols=splitTopLevel(def)
+        .map(line=>{const m=line.trim().match(/^`([^`]+)`|^([^\s`]+)/);return m?(m[1]||m[2]):null;})
+        .filter(n=>n!==null&&!["PRIMARY","UNIQUE","KEY","CONSTRAINT","INDEX","FULLTEXT","CHECK"].includes(n));
+      searchFrom=tblEnd+1;
+    }else{
+      const colEnd=sql.indexOf(")",colStart);
+      if(colEnd===-1){i=colStart+1;continue;}
+      cols=sql.slice(colStart+1,colEnd).split(",").map(c=>c.trim().replace(/`/g,""));
+      searchFrom=colEnd;
+    }
     // Find VALUES keyword
-    const valKw=sql.indexOf("VALUES",colEnd);
-    if(valKw===-1){i=colEnd+1;continue;}
+    const valKw=sql.indexOf("VALUES",searchFrom);
+    if(valKw===-1){i=searchFrom+1;continue;}
     // Char-by-char scan from VALUES to find the real end semicolon.
     // FIX: old regex [\s\S]*?; stopped at first semicolon inside quoted
     // strings (e.g. product description: 'Rotary Encoder 3 Pin ; Shape:...')
@@ -370,6 +428,11 @@ function castRow(table,row){
   if(["attendance_list","advance_payments","mechanic_salary_history","mechanic_commission_history"].includes(table)){
     if(r.mechanic_id===0||r.mechanic_id===null) r.mechanic_id=1;
   }
+
+  // ── Drop invalid id=0 on activity_logs (no AUTO_INCREMENT in MySQL; all
+  //    rows carry id=0). id is the PK in Supabase, so strip it so the
+  //    restore auto-generates. Nothing FKs activity_logs.id, so this is safe.
+  if(table==="activity_logs"&&(r.id===0||r.id===null||r.id===undefined)) delete r.id;
 
   return r;
 }

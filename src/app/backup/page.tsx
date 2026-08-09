@@ -50,6 +50,8 @@ const BACKUP_TABLES_ORDERED = [
   { table: "wp_template_history",  order: 12 },
   // Step 13: Activity logs (no FK dependencies)
   { table: "activity_logs",        order: 13 },
+  // Step 14: Due-reminder logs (no FK dependencies)
+  { table: "payment_reminders",    order: 14 },
 ];
 
 const BACKUP_TABLES = BACKUP_TABLES_ORDERED.map(t => t.table);
@@ -59,38 +61,38 @@ const BACKUP_TABLES = BACKUP_TABLES_ORDERED.map(t => t.table);
 // "ERROR: cannot insert into column 'net_amount' (generated always)"
 const GENERATED_COLS: Record<string, string[]> = {
   "client_payments": ["net_amount"],
-  "product_list": ["barcode"],
 };
 
 // ── Database Schema Columns — Used to strip extra columns from backup JSON ───
 const TABLE_COLUMNS: Record<string, string[]> = {
   "message_list": ["id", "fullname", "contact", "email", "message", "status", "date_created"],
   "client_payments": ["id", "client_id", "job_id", "loan_id", "bill_no", "payment_date", "amount", "discount", "net_amount", "payment_mode", "payment_type", "remarks", "created_at"],
-  "mechanic_list": ["id", "firstname", "middlename", "lastname", "contact", "designation", "daily_salary", "avatar", "commission_percent", "status", "delete_flag", "date_added", "date_updated", "salary_per_day"],
+  "mechanic_list": ["id", "firstname", "middlename", "lastname", "contact", "designation", "daily_salary", "avatar", "commission_percent", "status", "delete_flag", "date_added", "date_updated", "salary_per_day", "image_path"],
   "loan_payments": ["id", "lender_id", "amount_paid", "payment_date", "remarks"],
-  "service_list": ["id", "name", "description", "price", "status", "delete_flag", "date_created", "date_updated"],
+  "service_list": ["id", "name", "description", "price", "status", "delete_flag", "date_created", "date_updated", "hsn"],
   "advance_payments": ["id", "mechanic_id", "amount", "date_paid", "reason", "date_created"],
-  "inventory_list": ["id", "product_id", "quantity", "place", "stock_date", "supplier_id", "date_created", "date_updated"],
+  "inventory_list": ["id", "product_id", "quantity", "place", "stock_date", "supplier_id", "date_created", "date_updated", "purchase_cost", "courier_charges"],
   "direct_sale_items": ["id", "sale_id", "product_id", "qty", "price"],
   "suppliers": ["id", "name", "contact", "email", "address", "status", "delete_flag", "date_created", "date_updated"],
   "spare_supplier": ["spare_id", "supplier_id"],
   "transaction_list": ["id", "user_id", "mechanic_id", "code", "job_id", "client_name", "fault", "remark", "item", "uniq_id", "amount", "mechanic_amount", "mechanic_commission_amount", "del_status", "status", "date_created", "date_updated", "date_completed"],
-  "product_list": ["id", "name", "description", "cost_price", "price", "image_path", "status", "delete_flag", "date_created", "date_updated"],
+  "product_list": ["id", "name", "description", "cost_price", "price", "image_path", "status", "delete_flag", "date_created", "date_updated", "hsn", "alert_quantity", "barcode"],
   "lender_list": ["id", "fullname", "contact", "loan_amount", "interest_rate", "tenure_months", "reason", "emi_amount", "start_date", "status", "date_created"],
-  "attendance_list": ["id", "mechanic_id", "status", "curr_date"],
+  "attendance_list": ["id", "mechanic_id", "status", "curr_date", "time_in", "time_out", "lat_in", "lng_in", "lat_out", "lng_out"],
   "expense_list": ["id", "category", "amount", "remarks", "date_created"],
   "mechanic_salary_history": ["id", "mechanic_id", "salary", "effective_date", "date_created"],
   "transaction_services": ["transaction_id", "service_id", "service_name", "price"],
   "transaction_images": ["id", "transaction_id", "image_path", "date_created"],
   "transaction_products": ["transaction_id", "product_id", "product_name", "qty", "price"],
-  "client_list": ["id", "firstname", "middlename", "lastname", "contact", "email", "address", "image_path", "opening_balance", "delete_flag", "date_created", "date_updated"],
+  "client_list": ["id", "firstname", "middlename", "lastname", "contact", "email", "address", "image_path", "opening_balance", "delete_flag", "date_created", "date_updated", "payment_due_date", "payment_due_remarks", "login_allowed"],
   "client_loans": ["id", "client_id", "principal_amount", "interest_rate", "loan_period", "total_payable", "emi_amount", "remarks", "loan_date", "status", "created_at"],
   "direct_sales": ["id", "sale_code", "client_id", "mechanic_id", "total_amount", "payment_mode", "remarks", "last_edited_by", "last_edited_by_name", "last_edited_date", "date_created"],
   "system_info": ["id", "meta_field", "meta_value"],
   "job_id_counter": ["id", "last_job_id"],
   "mechanic_commission_history": ["id", "mechanic_id", "commission_percent", "effective_date", "date_created"],
   "wp_template_history": ["id", "template_key", "action", "old_value", "new_value", "changed_by", "changed_at"],
-  "activity_logs": ["user_id", "action", "module", "meta_id", "details", "date_created"],
+  "activity_logs": ["id", "user_id", "action", "module", "meta_id", "details", "date_created"],
+  "payment_reminders": ["id", "client_id", "amount_due", "reminder_date", "channel", "status", "remarks"],
 };
 
 // ── FK violations to skip (bad data that would cause FK error) ───────────────
@@ -379,11 +381,15 @@ export default function BackupPage() {
               if (pf in r && typeof r[pf] === "number" && (r[pf] as number) < 0) r[pf] = 0;
             }
             // Fix int/null in text NOT NULL columns
-            for (const tf of ["name","description","category","fault","item","remark","remarks","uniq_id","code","fullname","address","sale_code","firstname","lastname","contact","email","message","meta_value"]) {
+            for (const tf of ["name","description","category","fault","item","remark","remarks","uniq_id","code","fullname","address","sale_code","firstname","lastname","contact","email","message","meta_value","hsn"]) {
               if (tf in r) {
                 if (r[tf] === null || r[tf] === undefined) r[tf] = "";
                 else if (typeof r[tf] !== "string") r[tf] = String(r[tf]);
               }
+            }
+            // Fix boolean NOT NULL columns (converter 0/1 se aa sakta hai)
+            for (const bf of ["login_allowed"]) {
+              if (bf in r) r[bf] = !!r[bf];
             }
             // Fix MySQL zero-dates → null (PostgreSQL "0000-00-00" support nahi karta)
             for (const key of Object.keys(r)) {
@@ -487,6 +493,7 @@ export default function BackupPage() {
       "direct_sales", "direct_sale_items", "attendance_list", "advance_payments",
       "mechanic_salary_history", "mechanic_commission_history", "message_list",
       "wp_template_history", "activity_logs",
+      "payment_reminders",
     ];
 
     const results: string[] = [];
