@@ -38,6 +38,10 @@ vikram_db_supabase.txt
 .vercel
 .turbo
 
+# 5b. Service worker build artifacts (Serwist)
+public/sw*
+public/swe-worker*
+
 # 6. Logs & Debugging
 npm-debug.log*
 yarn-debug.log*
