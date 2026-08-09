@@ -328,7 +328,7 @@ export default function ClientsPage() {
     return list;
   }, [clients,searchTerm,minBal,maxBal,tabFilter,sortField,sortDir]);
 
-  const totalOutstanding=useMemo(()=>clients.reduce((s,c)=>s+(c.balance>0?c.balance:0),0),[clients]);
+  const totalOutstanding=useMemo(()=>clients.reduce((s,c)=>s+c.balance,0),[clients]);
   const totalCleared    =useMemo(()=>clients.filter(c=>c.balance<=0).length,[clients]);
   const clientsWithDue  =useMemo(()=>clients.filter(c=>c.balance>0).length,[clients]);
   const highRiskCount   =useMemo(()=>clients.filter(c=>c.balance>20_000).length,[clients]);
