@@ -1,52 +1,19 @@
 // src/app/api/admin/update-user/route.ts
-import { createServerClient } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/api-auth';
 
 export async function POST(request: Request) {
   try {
     const { userId, email, password, full_name } = await request.json();
 
-    // 🔥 FIX: cookies() ko await karna hoga (Next.js 15+)
-    const cookieStore = await cookies();
-
-    // 1. Normal client (cookie-based) → current user / auth check ke liye
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
-            });
-          },
-        },
-      }
-    );
-
-    // Current logged-in user check (admin)
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Admin role check from profiles table
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || profile?.role !== 'admin') {
+    // Admin guard (role=admin + session)
+    const adminAuth = await requireAdmin();
+    if (!adminAuth) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    // 2. Service role client (bypass RLS + admin auth ops)
+    // Service role client (bypass RLS + admin auth ops)
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return NextResponse.json({ error: 'Server config error' }, { status: 500 });
     }

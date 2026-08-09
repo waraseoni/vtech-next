@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { requireAdmin } from "@/lib/api-auth";
 
 export async function POST(request: NextRequest) {
   const cookieStore = await cookies();
@@ -16,11 +17,8 @@ export async function POST(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ status: "failed", msg: "Unauthorized" }, { status: 401 });
-
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return NextResponse.json({ status: "failed", msg: "Admin only" }, { status: 403 });
+  const adminSession = await requireAdmin();
+  if (!adminSession) return NextResponse.json({ status: "failed", msg: "Admin only" }, { status: 403 });
 
   const { data: info } = await supabase
     .from("system_info").select("meta_value").eq("meta_field", "log_retention").maybeSingle();
