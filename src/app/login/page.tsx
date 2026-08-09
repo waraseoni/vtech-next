@@ -331,9 +331,9 @@ export default function LoginPage() {
                         type="text"
                         inputMode="numeric"
                         autoComplete="one-time-code"
-                        placeholder="6-digit code"
+                        placeholder="OTP code"
                         value={otp}
-                        onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
                         required
                         className="w-full pl-10 pr-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                       />
