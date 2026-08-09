@@ -16,6 +16,7 @@ interface ProductStock {
   description: string;
   cost_price: number;
   price: number;
+  image_path: string | null;
   total_in: number;
   total_sold: number;
   available: number;
@@ -70,7 +71,7 @@ export default function InventoryPage() {
     try {
       const { data: pl } = await supabase
         .from("product_list")
-        .select("id, name, description, cost_price, price")
+        .select("id, name, description, cost_price, price, image_path")
         .eq("delete_flag", 0)
         .order("name");
 
@@ -125,6 +126,7 @@ export default function InventoryPage() {
           description: p.description,
           cost_price:  p.cost_price || 0,
           price:       p.price || 0,
+          image_path:  p.image_path || null,
           total_in:    s.qty,
           total_sold:  totalSold,
           available,
@@ -421,10 +423,15 @@ export default function InventoryPage() {
 
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          {/* Icon avatar */}
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 border ${st.bg}`}>
-                            <Package size={14} className={st.color} />
-                          </div>
+                          {p.image_path ? (
+                            <img src={p.image_path} alt={p.name}
+                              className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                          ) : (
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 border ${st.bg}`}>
+                              <Package size={14} className={st.color} />
+                            </div>
+                          )}
                           <div className="min-w-0">
                             <div className="font-bold text-slate-200 text-sm truncate max-w-[200px]" title={p.name}>
                               {p.name}
@@ -543,9 +550,15 @@ export default function InventoryPage() {
                   {/* Header row */}
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border ${st.bg}`}>
-                        <Package size={16} className={st.color} />
-                      </div>
+                      {p.image_path ? (
+                        <img src={p.image_path} alt={p.name}
+                          className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                      ) : (
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border ${st.bg}`}>
+                          <Package size={16} className={st.color} />
+                        </div>
+                      )}
                       <div className="min-w-0">
                         <div className="font-black text-white text-sm truncate">{p.name}</div>
                         <div className="text-[11px] text-slate-600 truncate mt-0.5">{p.description}</div>

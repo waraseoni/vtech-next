@@ -303,12 +303,19 @@ export default function ProductDetailPage() {
               </Link>
 
               <div className="flex items-start gap-3">
-                {/* Icon */}
-                <div className={`relative w-14 h-14 rounded-2xl flex items-center justify-center border flex-shrink-0 ${st.bg}`}>
-                  <Package size={24} className={st.color} />
-                  {/* Status dot */}
-                  <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-[#0d1117] ${st.bar}`} />
-                </div>
+                {product.image_path ? (
+                  <div className="relative flex-shrink-0">
+                    <img src={product.image_path} alt={product.name}
+                      className="w-16 h-16 rounded-2xl object-cover border border-[#21293d]" />
+                    <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-[#0d1117] ${st.bar}`} />
+                  </div>
+                ) : (
+                  <div className={`relative w-14 h-14 rounded-2xl flex items-center justify-center border flex-shrink-0 ${st.bg}`}>
+                    <Package size={24} className={st.color} />
+                    {/* Status dot */}
+                    <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-[#0d1117] ${st.bar}`} />
+                  </div>
+                )}
                 <div>
                   <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
                     {product.name}

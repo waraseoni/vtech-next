@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
 import { Loader2, Search, ChevronRight, Printer, Share2, ArrowLeft, RotateCcw } from "lucide-react";
 import Navbar from "../components/Navbar";
 
@@ -47,14 +46,13 @@ export default function JobStatusPage() {
   const [recentLoading, setRecentLoading] = useState(true);
 
   useEffect(() => {
-    supabase.from("transaction_list")
-      .select("id, job_id, code, item, status, date_created")
-      .order("id", { ascending: false })
-      .limit(10)
-      .then(({ data }) => {
-        setRecentJobs(data || []);
+    fetch("/api/public/job-status?recent=1")
+      .then(r => r.json())
+      .then((d) => {
+        setRecentJobs(d.recent || []);
         setRecentLoading(false);
-      });
+      })
+      .catch(() => setRecentLoading(false));
   }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -66,27 +64,25 @@ export default function JobStatusPage() {
     setJob(null);
 
     try {
-      // Transaction search - without join since relationship doesn't exist
-      let query = supabase
-        .from("transaction_list")
-        .select("id, job_id, code, item, fault, remark, status, amount, client_name, date_created")
-        .limit(1);
+      const qs = new URLSearchParams();
+      if (searchType === "job_id") qs.set("job_id", search.trim());
+      else qs.set("code", search.trim());
 
-      if (searchType === "job_id") {
-        query = query.eq("job_id", search.trim());
-      } else {
-        query = query.eq("code", search.trim());
-      }
+      const res = await fetch(`/api/public/job-status?${qs.toString()}`);
+      const data = await res.json();
 
-      const { data: txnData, error: txnErr } = await query;
-
-if (txnErr || !txnData || txnData.length === 0) {
-        setError(txnErr ? "Error: " + txnErr.message : "Job nahi mila! Sahi Job ID ya Code daalo.");
+      if (!res.ok) {
+        setError("Error: " + (data.error || res.status));
         setLoading(false);
         return;
       }
 
-      const txn = txnData[0] as any;
+      const txn = data.job;
+      if (!txn) {
+        setError("Job nahi mila! Sahi Job ID ya Code daalo.");
+        setLoading(false);
+        return;
+      }
 
       setJob({
         id: txn.id,
@@ -104,43 +100,8 @@ if (txnErr || !txnData || txnData.length === 0) {
       setClientName(txn.client_name || "");
       setClientContact("");
 
-      // Fetch services
-      const { data: svcData } = await supabase
-        .from("transaction_services")
-        .select("service_id, price")
-        .eq("transaction_id", txn.id);
-
-      const serviceIds = (svcData || []).map((s: any) => s.service_id).filter(Boolean);
-      const serviceNames: Record<number, string> = {};
-      if (serviceIds.length > 0) {
-        const { data: services } = await supabase.from("service_list").select("id, name").in("id", serviceIds);
-        if (services) services.forEach((s: any) => { serviceNames[s.id] = s.name; });
-      }
-
-      setServices((svcData || []).map((s: any) => ({
-        service_name: serviceNames[s.service_id] || "Unknown",
-        price: s.price,
-      })));
-
-      // Fetch products
-      const { data: prodData } = await supabase
-        .from("transaction_products")
-        .select("product_id, qty, price")
-        .eq("transaction_id", txn.id);
-
-      const productIds = (prodData || []).map((p: any) => p.product_id).filter(Boolean);
-      const productNames: Record<number, string> = {};
-      if (productIds.length > 0) {
-        const { data: products } = await supabase.from("product_list").select("id, name").in("id", productIds);
-        if (products) products.forEach((p: any) => { productNames[p.id] = p.name; });
-      }
-
-      setProducts((prodData || []).map((p: any) => ({
-        product_name: productNames[p.product_id] || "Unknown",
-        qty: p.qty,
-        price: p.price,
-        total: p.qty * p.price,
-      })));
+      setServices(data.services || []);
+      setProducts(data.products || []);
 
     } catch (err: any) {
       setError(err.message || "Search mein error aayi!");

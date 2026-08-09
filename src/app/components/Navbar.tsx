@@ -8,7 +8,6 @@ const NAV_ITEMS = [
   { href: "/", icon: "🏠", label: "Home" },
   { href: "/about", icon: "ℹ️", label: "About" },
   { href: "/job-status", icon: "🔍", label: "Job Status" },
-  { href: "/ai", icon: "🤖", label: "AI Chat" },
   { href: "/contact", icon: "📞", label: "Contact" },
   { href: "/login", icon: "🔐", label: "Login" },
 ];
