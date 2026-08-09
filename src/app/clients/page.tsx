@@ -551,6 +551,21 @@ export default function ClientsPage() {
                         {client.balance<0?"−":""}{inr(client.balance)}
                       </span>
                     </div>
+                    {userRole==="admin"&&(
+                      <button onClick={()=>handleToggleLogin(client)}
+                        className={`w-full flex items-center justify-between bg-[#0d1117] rounded-xl px-4 py-3 border cursor-pointer transition ${client.login_allowed?"border-emerald-500/30":"border-[#21293d]"}`}>
+                        <span className="flex items-center gap-2 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                          <ShieldCheck size={13} className={client.login_allowed?"text-emerald-400":"text-slate-600"}/>
+                          Portal Access
+                        </span>
+                        <span className="flex items-center gap-2">
+                          {!client.email&&<span className="text-[9px] font-bold text-amber-400/80">No email</span>}
+                          <span className={`relative w-11 h-6 rounded-full transition-colors ${client.login_allowed?"bg-emerald-500":"bg-[#21293d]"}`}>
+                            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${client.login_allowed?"left-[22px]":"left-0.5"}`}/>
+                          </span>
+                        </span>
+                      </button>
+                    )}
                     {client.balance>0&&(
                       <div className="h-1.5 bg-[#1e2637] rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-red-500 to-orange-400 rounded-full"

@@ -32,6 +32,19 @@ export default function LoginPage() {
     }
   }, []);
 
+  // ── Auto-logoff reason (revoked access / idle timeout) ────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reason = params.get("reason");
+    if (reason === "revoked") {
+      setTab("client");
+      setError("Aapki portal access band kar di gayi hai. Dobara access ke liye shop se sampark karein.");
+    } else if (reason === "idle") {
+      setTab("client");
+      setError("Kuchh der inactivity ki wajah se aap automatically logout ho gaye hain. Dobara login karein.");
+    }
+  }, []);
+
   // ── Staff login handler ────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

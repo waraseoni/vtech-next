@@ -61,6 +61,14 @@ export async function requireClient() {
       .eq("id", user.id)
       .maybeSingle();
     if (profile?.role !== "client" || !profile.client_id) return null;
+    // Revoked portal access → session invalid. Admin ne login_allowed=false
+    // kar diya to client turant hi logout ho jata hai (API level par bhi).
+    const { data: cl } = await supabase
+      .from("client_list")
+      .select("login_allowed")
+      .eq("id", profile.client_id)
+      .maybeSingle();
+    if (!cl?.login_allowed) return null;
     return { user, profile };
   } catch {
     return null;

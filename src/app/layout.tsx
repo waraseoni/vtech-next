@@ -491,6 +491,50 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     }
   }, [profile?.role, pathname, router]);
 
+  // ── Client portal session security ──────────────────────────────────────
+  // 1) Access revoked (login_allowed=false) → auto-logoff.
+  // 2) Idle timeout → kuchh der browser na chalane par auto-logoff.
+  const forceClientLogout = useCallback(async (reason: "revoked" | "idle") => {
+    try { await supabase.auth.signOut(); } catch { /* ignore */ }
+    window.location.href = "/login?reason=" + reason;
+  }, []);
+
+  const CLIENT_IDLE_MIN = 10; // minutes of inactivity → logoff
+  const CLIENT_CHECK_MS = 30_000; // access re-check interval
+
+  useEffect(() => {
+    if (profile?.role !== "client") return;
+    const IDLE_MS = CLIENT_IDLE_MIN * 60 * 1000;
+    const bump = () => { try { sessionStorage.setItem("vtech_client_last_active", String(Date.now())); } catch { /* ignore */ } };
+    bump();
+    const events: (keyof WindowEventMap)[] = ["mousemove", "keydown", "touchstart", "click", "scroll"];
+    events.forEach(e => window.addEventListener(e, bump, { passive: true }));
+    const interval = setInterval(() => {
+      try {
+        const last = Number(sessionStorage.getItem("vtech_client_last_active") || "0");
+        if (last && Date.now() - last > IDLE_MS) forceClientLogout("idle");
+      } catch { /* ignore */ }
+    }, 15_000);
+    return () => {
+      events.forEach(e => window.removeEventListener(e, bump));
+      clearInterval(interval);
+    };
+  }, [profile?.role, forceClientLogout]);
+
+  useEffect(() => {
+    if (profile?.role !== "client") return;
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const res = await fetch("/api/client/me", { cache: "no-store" });
+        if (res.status === 401 && !cancelled) forceClientLogout("revoked");
+      } catch { /* ignore */ }
+    };
+    check();
+    const interval = setInterval(check, CLIENT_CHECK_MS);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [profile?.role, forceClientLogout]);
+
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
     check();
