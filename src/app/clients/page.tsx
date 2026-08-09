@@ -22,7 +22,7 @@ type Client = {
   address: string; date_created: string; opening_balance: number;
   repair_billed: number; direct_sales_billed: number;
   total_loan_given: number; total_paid: number; balance: number;
-  last_txn_date: string | null; image_path?: string;
+  last_txn_date: string | null; image_path?: string; login_allowed: boolean;
 };
 type SortField = "name" | "balance" | "date_created" | "total_paid";
 type SortDir   = "asc" | "desc";
@@ -138,7 +138,7 @@ export default function ClientsPage() {
     try {
       const { data: cls } = await supabase
         .from("client_list")
-        .select("id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance, image_path")
+        .select("id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance, image_path, login_allowed")
         .eq("delete_flag", 0);
       if (!cls?.length) { setClients([]); return; }
       const ids = cls.map((c) => c.id);
@@ -190,7 +190,7 @@ export default function ClientsPage() {
           contact:c.contact||"", email:c.email||"", address:c.address||"", date_created:c.date_created||"",
           opening_balance:ob, repair_billed:rep, direct_sales_billed:dir, total_loan_given:loan,
           total_paid:paid, balance:ob+rep+dir+loan-paid, last_txn_date:lastTxnMap[c.id]||null,
-          image_path:c.image_path || undefined };
+          image_path:c.image_path || undefined, login_allowed:!!c.login_allowed };
       });
       built.sort((a,b) => b.balance-a.balance);
       setClients(built);
@@ -206,6 +206,17 @@ export default function ClientsPage() {
     const { error } = await supabase.from("client_list").update({ delete_flag: 1 }).eq("id", id);
     if (!error) setClients((p) => p.filter((c) => c.id !== id));
     else alert("Delete nahi ho paya!");
+  };
+
+  // Portal access toggle (admin only). Client ko email OTP se login dene ke liye
+  // uske email ka client_list me hona bhi zaroori hai.
+  const handleToggleLogin = async (c: Client) => {
+    if (userRole !== "admin") { alert("Permission Denied: Sirf Admin hi portal access de sakta hai!"); return; }
+    if (!c.email) { alert("Portal access ke liye client ka email hona zaroori hai — pehle Edit Client se email set karein."); return; }
+    const next = !c.login_allowed;
+    const { error } = await supabase.from("client_list").update({ login_allowed: next }).eq("id", c.id);
+    if (error) { alert("Update nahi hua: " + error.message); return; }
+    setClients((p) => p.map((x) => x.id === c.id ? { ...x, login_allowed: next } : x));
   };
 
   const toggleSort = (field: SortField) => {
@@ -747,6 +758,8 @@ export default function ClientsPage() {
                           clientId={client.id} clientName={client.name}
                           userRole={userRole} onDelete={()=>handleDelete(client.id,client.name)}
                           onWhatsApp={()=>openWaModal(client)} hasContact={!!client.contact}
+                          loginAllowed={client.login_allowed}
+                          onToggleLogin={()=>handleToggleLogin(client)}
                         />
                       </td>
                     </tr>
@@ -944,9 +957,10 @@ export default function ClientsPage() {
 
 // ─── ActionDropdown ───────────────────────────────────────────────────────────
 // Opens upward if near bottom of viewport to prevent clipping
-function ActionDropdown({clientId,clientName,userRole,onDelete,onWhatsApp,hasContact}:{
+function ActionDropdown({clientId,clientName,userRole,onDelete,onWhatsApp,hasContact,loginAllowed,onToggleLogin}:{
   clientId:number;clientName:string;userRole:string;
   onDelete:()=>void;onWhatsApp:()=>void;hasContact:boolean;
+  loginAllowed?:boolean;onToggleLogin?:()=>void;
 }) {
   const [open,setOpen]=useState(false);
   const [openUp,setOpenUp]=useState(false);
@@ -975,6 +989,7 @@ function ActionDropdown({clientId,clientName,userRole,onDelete,onWhatsApp,hasCon
     {icon:<Edit3 size={12}/>,       label:"Edit Client",  href:`/clients/${clientId}/edit`,    color:"text-blue-400"},
     {icon:<IndianRupee size={12}/>, label:"Add Payment",  href:`/clients/${clientId}/add-payment`, color:"text-emerald-400"},
     ...(hasContact?[{icon:<MessageCircle size={12}/>,label:"WhatsApp",href:null,color:"text-[#4ade80]",action:onWhatsApp}]:[]),
+    ...(userRole==="admin"?[{icon:<ShieldCheck size={12}/>,label:loginAllowed?"Portal Access ON":"Portal Access OFF",href:null,color:loginAllowed?"text-emerald-400":"text-slate-400",action:onToggleLogin}]:[]),
     ...(userRole==="admin"?[{icon:<Trash2 size={12}/>,label:"Delete",href:null,color:"text-red-400",action:onDelete}]:[]),
   ];
 

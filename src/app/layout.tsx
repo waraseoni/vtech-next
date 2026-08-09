@@ -295,12 +295,31 @@ const subLinkCls = (active: boolean) =>
 
 // ─── Sidebar nav (shared by desktop + mobile drawer) ─────────────────────────
 function SidebarNav({
-  pathname, isAdmin, onNavClick,
+  pathname, isAdmin, isClient, onNavClick,
 }: {
-  pathname: string; isAdmin: boolean; onNavClick?: () => void;
+  pathname: string; isAdmin: boolean; isClient?: boolean; onNavClick?: () => void;
 }) {
   const lk = (href: string, exact = false) =>
     exact ? pathname === href : pathname.startsWith(href);
+
+  if (isClient) {
+    return (
+      <nav className="flex-1 overflow-y-auto py-3 px-2 scrollbar-hide">
+        <ul className="space-y-0.5">
+          <li>
+            <Link href="/my-account" className={navLinkCls(lk("/my-account", true))} onClick={onNavClick}>
+              <Wrench size={16} /><span>Meri Repairs</span>
+            </Link>
+          </li>
+          <li>
+            <Link href="/my-account/payments" className={navLinkCls(pathname === "/my-account/payments")} onClick={onNavClick}>
+              <Receipt size={16} /><span>Meri Payments</span>
+            </Link>
+          </li>
+        </ul>
+      </nav>
+    );
+  }
 
   return (
     <nav className="flex-1 overflow-y-auto py-3 px-2 scrollbar-hide">
@@ -460,6 +479,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // ← empty deps: intentional, auth only on mount
 
+  // Client role → sirf /my-account/* access. Baaki pages par redirect.
+  useEffect(() => {
+    if (profile?.role === "client" && !pathname.startsWith("/my-account")) {
+      router.replace("/my-account");
+    }
+  }, [profile?.role, pathname, router]);
+
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
     check();
@@ -530,6 +556,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }
 
   const isAdmin     = profile?.role === "admin";
+  const isClient    = profile?.role === "client";
   const displayName = profile?.full_name ?? "User";
   const initials    = displayName.slice(0, 2).toUpperCase();
 
@@ -559,7 +586,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </div>
 
-            <SidebarNav pathname={pathname} isAdmin={isAdmin} />
+            <SidebarNav pathname={pathname} isAdmin={isAdmin} isClient={isClient} />
 
             <div className="px-4 py-3 border-t border-[#1a2234] flex items-center justify-between">
               <span className="text-[9px] text-slate-500 dark:text-slate-300 font-black tracking-widest uppercase">V-TECH PRO v4.2</span>
@@ -607,7 +634,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
 
               {/* Same full nav as desktop */}
-              <SidebarNav pathname={pathname} isAdmin={isAdmin} onNavClick={() => setDrawerOpen(false)} />
+              <SidebarNav pathname={pathname} isAdmin={isAdmin} isClient={isClient} onNavClick={() => setDrawerOpen(false)} />
 
               {/* User info at drawer bottom */}
               <div className="px-3 py-3 border-t border-[#1a2234]">
@@ -662,7 +689,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </button>
               )}
               <div className={isMobile === true ? "w-full px-2" : "flex-1 min-w-0"}>
-                <NavbarSearch />
+                {!isClient && <NavbarSearch />}
               </div>
             </div>
 
@@ -678,7 +705,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             )}
 
             {/* AI Assistant - Desktop */}
-            {isMobile === false && (
+            {isMobile === false && !isClient && (
               <Link
                 href="/ai"
                 className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 hover:border-purple-500/50 rounded-xl text-purple-400 hover:text-purple-300 transition-all"
@@ -752,7 +779,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
           {/* ── PAGE CONTENT ── */}
           <main className="flex-1 p-3 sm:p-5 theme-body">
-            {children}
+            {isClient && !pathname.startsWith("/my-account")
+              ? (
+                <div className="h-[60vh] flex flex-col items-center justify-center gap-3 text-slate-600">
+                  <Loader2 size={22} className="animate-spin" />
+                  <p className="text-xs font-bold uppercase tracking-widest">Redirecting...</p>
+                </div>
+              )
+              : children}
           </main>
         </div>
 

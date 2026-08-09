@@ -50,6 +50,23 @@ export async function requireStaff() {
   }
 }
 
+export async function requireClient() {
+  const supabase = await getServerSupabase();
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, client_id")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.role !== "client" || !profile.client_id) return null;
+    return { user, profile };
+  } catch {
+    return null;
+  }
+}
+
 export async function requireAdmin() {
   const supabase = await getServerSupabase();
   let user: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"];

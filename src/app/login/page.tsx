@@ -2,16 +2,25 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { LogIn, Mail, Lock, Loader2, ShieldCheck, Eye, EyeOff, AlertCircle, Globe } from "lucide-react";
+import { LogIn, Mail, Lock, Loader2, ShieldCheck, Eye, EyeOff, AlertCircle, Globe, Smartphone, KeyRound, ArrowLeft, UserRound } from "lucide-react";
+
+type Tab = "staff" | "client";
 
 export default function LoginPage() {
-  const [email,      setEmail]      = useState("");
-  const [password,   setPassword]   = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
-  const [showPass,   setShowPass]   = useState(false);
-  const [loading,    setLoading]    = useState(false);
-  const [error,      setError]      = useState("");
   const router = useRouter();
+  const [tab,          setTab]          = useState<Tab>("staff");
+  const [email,        setEmail]        = useState("");
+  const [password,     setPassword]     = useState("");
+  const [rememberMe,   setRememberMe]   = useState(false);
+  const [showPass,     setShowPass]     = useState(false);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState("");
+
+  // Client OTP state
+  const [clientEmail,  setClientEmail]  = useState("");
+  const [otpStep,      setOtpStep]      = useState<"request" | "verify">("request");
+  const [otp,          setOtp]          = useState("");
+  const [info,         setInfo]         = useState("");
 
   // ── Load saved email ───────────────────────────────────────────────────
   useEffect(() => {
@@ -23,13 +32,13 @@ export default function LoginPage() {
     }
   }, []);
 
-  // ── Login handler ──────────────────────────────────────────────────────
+  // ── Staff login handler ────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: authErr } = await supabase.auth.signInWithPassword({ email, password });
 
     if (authErr) {
       setError(
@@ -41,7 +50,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Remember Me (email only — password kabhi localStorage me store nahi karte)
     if (rememberMe) {
       localStorage.setItem("vtech_email",    email);
       localStorage.setItem("vtech_remember", "true");
@@ -49,21 +57,93 @@ export default function LoginPage() {
       localStorage.removeItem("vtech_email");
       localStorage.removeItem("vtech_remember");
     }
-    localStorage.removeItem("vtech_password");
 
-    // ── CRITICAL: Fetch role BEFORE navigating ─────────────────────────
-    // Layout ka useEffect sirf mount pe chalta hai.
-    // Agar seedha push() karein toh layout stale state mein ho sakta hai.
-    // router.refresh() server ko signal karta hai ki session update hua hai
-    // aur layout dobara profile fetch karega.
-    // NOTE: Naye accounts sirf admin se bante hain (/api/admin/create-user).
-    // Idhar profile auto-create karna security hole tha — koi bhi signUp karke
-    // role:"staff" access le sakta tha. Profile-less user ko layout staff ki tarah
-    // treat karta hai; Phase 4 me requireStaff() se ye bhi block hoga.
-
-    // Full reload → fresh auth state → correct sidebar
     window.location.href = "/";
   };
+
+  // ── Client OTP: send code ──────────────────────────────────────────────
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setInfo("");
+    setLoading(true);
+
+    const { error: otpErr } = await supabase.auth.signInWithOtp({
+      email: clientEmail.trim().toLowerCase(),
+      options: { shouldCreateUser: true },
+    });
+
+    if (otpErr) {
+      setError(otpErr.message.includes("rate") || otpErr.message.includes("limit")
+        ? "Thodi der ruk kar dobara try karein (OTP limit)."
+        : otpErr.message);
+      setLoading(false);
+      return;
+    }
+
+    setInfo("OTP aapke email par bheja gaya hai. Jald hi aa jayega (spam folder bhi check karein).");
+    setOtpStep("verify");
+    setLoading(false);
+  };
+
+  // ── Client OTP: verify → onboard → redirect ───────────────────────────
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setInfo("");
+    setLoading(true);
+
+    const { error: verifyErr } = await supabase.auth.verifyOtp({
+      email: clientEmail.trim().toLowerCase(),
+      token: otp.trim(),
+      type: "email",
+    });
+
+    if (verifyErr) {
+      setError(verifyErr.message.includes("code")
+        ? "OTP galat hai ya expire ho gaya. Dobara try karein."
+        : verifyErr.message);
+      setLoading(false);
+      return;
+    }
+
+    // Profile (role=client, client_id) service-role API se banao
+    const res = await fetch("/api/client/onboard", { method: "POST" });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error || "Account setup nahi hua.");
+      await supabase.auth.signOut();
+      setLoading(false);
+      setOtpStep("request");
+      return;
+    }
+
+    window.location.href = data.redirect === "/" ? "/" : "/my-account";
+  };
+
+  const switchTab = (t: Tab) => {
+    setTab(t);
+    setError("");
+    setInfo("");
+    setOtpStep("request");
+    setOtp("");
+  };
+
+  const TabButton = ({ t, icon, label }: { t: Tab; icon: React.ReactNode; label: string }) => (
+    <button
+      type="button"
+      onClick={() => switchTab(t)}
+      className={`flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+        tab === t
+          ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
+          : "bg-[#111520] text-slate-500 hover:text-slate-300"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
 
   return (
     <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-4">
@@ -89,9 +169,21 @@ export default function LoginPage() {
 
         {/* Card */}
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-7 shadow-2xl">
-          <div className="mb-6">
-            <h2 className="text-lg font-black text-white">Welcome Back</h2>
-            <p className="text-slate-600 text-sm mt-0.5">Login to manage your shop</p>
+          {/* Tabs */}
+          <div className="flex gap-2 mb-6">
+            <TabButton t="staff"  icon={<UserRound size={13} />} label="Staff" />
+            <TabButton t="client" icon={<Smartphone size={13} />} label="Client" />
+          </div>
+
+          <div className="mb-5">
+            <h2 className="text-lg font-black text-white">
+              {tab === "staff" ? "Staff Login" : "Client Login"}
+            </h2>
+            <p className="text-slate-600 text-sm mt-0.5">
+              {tab === "staff"
+                ? "Login to manage your shop"
+                : "Email OTP se apne repairs dekhein"}
+            </p>
           </div>
 
           {/* Error message */}
@@ -102,89 +194,180 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
-
-            {/* Email */}
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
-                <input
-                  type="email"
-                  placeholder="staff@vtech.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
-                  className="w-full pl-10 pr-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
-                />
-              </div>
+          {/* Info message */}
+          {info && (
+            <div className="flex items-start gap-2.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-semibold px-4 py-3 rounded-xl mb-5">
+              <KeyRound size={15} className="flex-shrink-0 mt-0.5" />
+              {info}
             </div>
+          )}
 
-            {/* Password */}
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
-                <input
-                  type={showPass ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  className="w-full pl-10 pr-11 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
-                />
+          {tab === "staff" && (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+                  <input
+                    type="email"
+                    placeholder="staff@vtech.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    className="w-full pl-10 pr-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+                  <input
+                    type={showPass ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    className="w-full pl-10 pr-11 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(v => !v)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors"
+                  >
+                    {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setShowPass(v => !v)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors"
+                  onClick={() => setRememberMe(v => !v)}
+                  className={`w-9 h-5 rounded-full transition-all duration-200 flex-shrink-0 relative ${
+                    rememberMe ? "bg-blue-600" : "bg-[#21293d]"
+                  }`}
                 >
-                  {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
+                    rememberMe ? "left-[18px]" : "left-0.5"
+                  }`} />
                 </button>
+                <label
+                  onClick={() => setRememberMe(v => !v)}
+                  className="text-xs font-bold text-slate-500 cursor-pointer select-none hover:text-slate-400 transition-colors"
+                >
+                  Remember My Email
+                </label>
               </div>
-            </div>
 
-            {/* Remember Me */}
-            <div className="flex items-center gap-2.5">
               <button
-                type="button"
-                onClick={() => setRememberMe(v => !v)}
-                className={`w-9 h-5 rounded-full transition-all duration-200 flex-shrink-0 relative ${
-                  rememberMe ? "bg-blue-600" : "bg-[#21293d]"
-                }`}
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-900/30 mt-2"
               >
-                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
-                  rememberMe ? "left-[18px]" : "left-0.5"
-                }`} />
+                {loading
+                  ? <><Loader2 size={17} className="animate-spin" /> Logging in...</>
+                  : <><LogIn size={17} /> Login to Dashboard</>}
               </button>
-              <label
-                onClick={() => setRememberMe(v => !v)}
-                className="text-xs font-bold text-slate-500 cursor-pointer select-none hover:text-slate-400 transition-colors"
-              >
-                Remember My Email
-              </label>
-            </div>
+            </form>
+          )}
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-900/30 mt-2"
-            >
-              {loading
-                ? <><Loader2 size={17} className="animate-spin" /> Logging in...</>
-                : <><LogIn size={17} /> Login to Dashboard</>}
-            </button>
-          </form>
+          {tab === "client" && (
+            <div className="space-y-4">
+              {otpStep === "request" ? (
+                <form onSubmit={handleSendOtp} className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                      Apna Register Email
+                    </label>
+                    <div className="relative">
+                      <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+                      <input
+                        type="email"
+                        placeholder="aapka@email.com"
+                        value={clientEmail}
+                        onChange={e => setClientEmail(e.target.value)}
+                        required
+                        className="w-full pl-10 pr-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-600 mt-2">
+                      OTP usi email par jayega jo dukaan me register hai. Pehle shop se apna email confirm karwayein.
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-900/30"
+                  >
+                    {loading
+                      ? <><Loader2 size={17} className="animate-spin" /> Sending OTP...</>
+                      : <><KeyRound size={17} /> Send OTP</>}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  <button
+                    type="button"
+                    onClick={() => setOtpStep("request")}
+                    className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    <ArrowLeft size={13} /> {clientEmail} — change
+                  </button>
+
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                      OTP Code
+                    </label>
+                    <div className="relative">
+                      <KeyRound size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        placeholder="6-digit code"
+                        value={otp}
+                        onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        required
+                        className="w-full pl-10 pr-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-900/30"
+                  >
+                    {loading
+                      ? <><Loader2 size={17} className="animate-spin" /> Verifying...</>
+                      : <><LogIn size={17} /> Verify & Login</>}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={loading}
+                    className="w-full py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:bg-[#1a2234] hover:text-white transition-all disabled:opacity-50"
+                  >
+                    Resend OTP
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Public Access Link */}
         <div className="mt-6">
           <a
-                        href="/job-status"
+            href="/job-status"
             className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-slate-400 text-xs font-bold hover:bg-[#1a2234] hover:text-white transition-all"
           >
             <Globe size={14} />
