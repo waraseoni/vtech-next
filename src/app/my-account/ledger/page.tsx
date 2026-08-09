@@ -159,28 +159,30 @@ ${el.innerHTML}
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5 flex items-center gap-4">
-        <Link href="/my-account" className="p-2 rounded-xl bg-[#111520] border border-[#21293d] text-slate-400 hover:text-white transition-colors">
-          <ArrowLeft size={16} />
-        </Link>
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center flex-shrink-0">
-          <BookOpen size={22} className="text-white" />
-        </div>
-        <div className="flex-1">
-          <h1 className="text-xl font-black text-white">Meri Ledger</h1>
-          <p className="text-slate-500 text-xs mt-1">Mera pura hisaab — repairs, sales, payments aur running balance</p>
+      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <Link href="/my-account" className="p-2 rounded-xl bg-[#111520] border border-[#21293d] text-slate-400 hover:text-white transition-colors flex-shrink-0">
+            <ArrowLeft size={16} />
+          </Link>
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center flex-shrink-0">
+            <BookOpen size={22} className="text-white" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-black text-white leading-tight">Meri Ledger</h1>
+            <p className="text-slate-500 text-[11px] sm:text-xs mt-0.5">Mera pura hisaab — repairs, sales, payments aur running balance</p>
+          </div>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setFilterOpen(v => !v)}
-            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all border ${filterOpen || isFiltered ? "bg-blue-600 border-blue-600 text-white" : "bg-[#111520] border-[#21293d] text-slate-400 hover:text-white"}`}
+            className={`flex-1 sm:flex-none items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all border whitespace-nowrap ${filterOpen || isFiltered ? "bg-blue-600 border-blue-600 text-white" : "bg-[#111520] border-[#21293d] text-slate-400 hover:text-white"}`}
           >
             <Filter size={13} /> Filters {isFiltered && "•"} {filterOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
           <button
             onClick={handlePrint}
             disabled={loading || !data}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-extrabold bg-gradient-to-br from-indigo-500 to-purple-700 text-white disabled:opacity-50"
+            className="flex-1 sm:flex-none items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-extrabold bg-gradient-to-br from-indigo-500 to-purple-700 text-white disabled:opacity-50 whitespace-nowrap"
           >
             <Printer size={13} /> Print
           </button>
