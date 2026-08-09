@@ -11,7 +11,7 @@ import {
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
   DollarSign, Truck, CreditCard, Clock, Briefcase, Coins, Receipt,
   Toolbox, FolderOpen, UsersRound, Database, Settings2, MessageSquare,
-  ChevronDown, ChevronRight, X, Menu, ArrowLeft, BarChart2, RefreshCw, Sun, Moon, History, Activity,
+  ChevronDown, ChevronRight, X, Menu, ArrowLeft, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen,
 } from "lucide-react";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
@@ -314,6 +314,11 @@ function SidebarNav({
           <li>
             <Link href="/my-account/payments" className={navLinkCls(pathname === "/my-account/payments")} onClick={onNavClick}>
               <Receipt size={16} /><span>Meri Payments</span>
+            </Link>
+          </li>
+          <li>
+            <Link href="/my-account/ledger" className={navLinkCls(pathname === "/my-account/ledger")} onClick={onNavClick}>
+              <BookOpen size={16} /><span>Meri Ledger</span>
             </Link>
           </li>
         </ul>

@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Wrench, Loader2, AlertCircle, Phone, Mail, Inbox, Clock } from "lucide-react";
+import Link from "next/link";
+import { Wrench, Loader2, AlertCircle, Phone, Mail, Inbox, Clock, BookOpen, TrendingUp, TrendingDown, Wallet } from "lucide-react";
 
 type ClientInfo = {
-  id: number; name: string; contact: string; email: string; opening_balance: number;
+  id: number; name: string; contact: string; email: string; opening_balance: number; due: number;
 };
 
 type Job = {
@@ -97,6 +98,53 @@ export default function MyAccountPage() {
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Total Repairs</p>
           <p className="text-3xl font-black text-white">{jobs.length}</p>
         </div>
+      </div>
+
+      {/* Due / Advance summary + Ledger link */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className={`rounded-2xl p-5 border ${
+          !client || client.due === 0
+            ? "bg-[#161b27] border-[#21293d]"
+            : client.due > 0
+              ? "bg-red-500/10 border-red-500/30"
+              : "bg-emerald-500/10 border-emerald-500/30"
+        }`}>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+              {client && client.due > 0 ? "Due Amount" : client && client.due < 0 ? "Advance (Aapka Balance)" : "Due Amount"}
+            </p>
+            {client && client.due !== 0 && (
+              client.due > 0
+                ? <TrendingUp size={16} className="text-red-400" />
+                : <TrendingDown size={16} className="text-emerald-400" />
+            )}
+          </div>
+          {loading ? (
+            <p className="text-3xl font-black text-white mt-1">…</p>
+          ) : (
+            <p className={`text-3xl font-black mt-1 ${client && client.due < 0 ? "text-emerald-400" : client && client.due > 0 ? "text-red-400" : "text-white"}`}>
+              {inr(client?.due ?? 0)}
+            </p>
+          )}
+          <p className="text-[11px] text-slate-600 mt-1.5">
+            Opening + Repairs + Sales + Loans − Payments
+          </p>
+        </div>
+
+        <Link href="/my-account/ledger" className="group">
+          <div className="rounded-2xl p-5 border border-[#21293d] bg-[#161b27] hover:border-blue-500/40 hover:bg-[#1a2234] transition-all h-full flex flex-col justify-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center">
+                <BookOpen size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="font-black text-white">Meri Ledger</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Apna pura hisaab-kitaab dekhein / print karein</p>
+              </div>
+            </div>
+            <p className="text-xs font-bold text-blue-400 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">Kholen →</p>
+          </div>
+        </Link>
       </div>
 
       {error && (
