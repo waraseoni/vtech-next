@@ -282,7 +282,8 @@ ${el.innerHTML}
             </div>
 
             {/* Table */}
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, color: "#333" }}>
+            <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", minWidth: 760, borderCollapse: "collapse", fontSize: 11, color: "#333" }}>
               <thead>
                 <tr style={{ background: "#001f3f", color: "#fff" }}>
                   <th style={{ padding: "6px 5px", border: "1px solid #ddd", textAlign: "left" }}>Date</th>
@@ -325,6 +326,7 @@ ${el.innerHTML}
                 </tr>
               </tfoot>
             </table>
+            </div>
 
             <div style={{ fontSize: 10, color: "#6c757d", marginTop: 10 }}>
               Balance = Opening + Repairs + Direct Sales + Loans − Payments (incl. discount). {data.totals.loans > 0 ? `Loan total: ${inr(data.totals.loans)}. ` : ""}{data.totals.discount > 0 ? `Total discount: ${inr(data.totals.discount)}.` : ""}
