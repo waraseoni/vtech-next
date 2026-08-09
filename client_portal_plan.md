@@ -2,6 +2,7 @@
 *Created: 08 Aug 2026 · Status: CORE IMPLEMENTED — migration apply + SMTP setup pending · Updated: 09 Aug 2026 (security review + hardening + email OTP)*
 *Source: current auth model analysis*
 *⚠️ 09 Aug (diagnostic): `profiles_role_check` CHECK constraint sirf admin/staff allow karta hai — `role='client'` insert live me FAIL (`violates check constraint profiles_role_check`). Fix migration me section 5 me add — SQL editor me run karna hai. Email collision: client #2 (`coolguy.1595@gmail.com`) aur #3 (`vik.vtech@gmail.com`) ke emails pehle se staff auth accounts hain → unse portal login par staff UI milegi. Test ke liye non-conflicting email (e.g. #4 `preetijn65@gmail.com`).*
+*⚠️ 09 Aug (root cause #2): Supabase ka auto-profile trigger (on_auth_user_created/handle_new_user) OTP signup (shouldCreateUser) par bhi `role='staff'` ki zombie profile bana deta hai → onboard role='staff' dekh kar staff UI deta tha. Fix: onboard ab zombie staff → client convert karta hai (jab email client_list+login_allowed me ho) + migration `20260809_drop_auth_profile_trigger.sql` (trigger drop — profiles ab sirf explicit insert se).*
 
 ## Goal
 Client ko login dekar **sirf uski apni** repairs/payments/loan details dekhne ki suvidha. Na koi aur client ka data, na internal pages.

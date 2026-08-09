@@ -17,14 +17,14 @@ export async function POST() {
   const email = user.email?.toLowerCase().trim();
   if (!email) return NextResponse.json({ error: "Email nahi mila" }, { status: 400 });
 
-  // Existing profile — agar admin/staff hai to client mat banao (escalation nahi).
+  // Existing profile — admin kabhi client nahi banta (escalation guard).
   const { data: existing } = await supabaseAdmin
     .from("profiles")
     .select("role, client_id")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (existing?.role === "admin" || existing?.role === "staff") {
+  if (existing?.role === "admin") {
     return NextResponse.json({ success: true, redirect: "/" });
   }
 
@@ -43,7 +43,10 @@ export async function POST() {
     );
   }
 
-  // Email se client_list me dhoondo (login_allowed hona zaroori hai)
+  // Email se client_list me dhoondo (login_allowed hona zaroori hai).
+  // NOTE: profile nahi bani ho YA role='staff' (Supabase ke auto-profile trigger
+  // se OTP signup par zombie staff row ban jaati hai) — dono case me yahi lookup
+  // decide karta hai ki ye email portal client hai ya nahi.
   const { data: client, error: clientErr } = await supabaseAdmin
     .from("client_list")
     .select("id, firstname, middlename, lastname, contact, email, opening_balance, login_allowed")
@@ -57,12 +60,20 @@ export async function POST() {
   }
 
   if (!client || !client.login_allowed) {
+    // Role='staff' aur email portal-assigned nahi → ye real staff account hai,
+    // client tab se login kar raha hai → staff UI hi sahi hai.
+    if (existing?.role === "staff") {
+      return NextResponse.json({ success: true, redirect: "/" });
+    }
     return NextResponse.json(
       { error: "Aapko portal access nahi hai. Dukaan se contact karke email confirm karein." },
       { status: 403 }
     );
   }
 
+  // client_list me ye email portal client hai → profile create karo (agar nahi
+  // hai) YA zombie staff row ko client me convert karo (downgrade hai, escalation
+  // nahi — client_list + login_allowed hi authoritative source hai).
   const fullName = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ").trim();
 
   const { error: upsertErr } = await supabaseAdmin
