@@ -10,6 +10,7 @@ import {
   Eye, Wrench, FileText, MessageSquare
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
+import { todayIST } from "@/lib/dateUtils";
 
 type Mechanic = {
   id: number;
@@ -160,13 +161,20 @@ export default function MechanicsPage() {
         commission_percent: commission,
         status: editing ? editing.status : 1,
       };
+      const today = todayIST();
       if (editing) {
         const { error } = await supabase.from("mechanic_list").update(payload).eq("id", editing.id);
         if (error) throw error;
+        if (salary !== editing.daily_salary) {
+          const { error: histErr } = await supabase.from("mechanic_salary_history").insert([{ mechanic_id: editing.id, salary, effective_date: today }]);
+          if (histErr) throw histErr;
+        }
         await logActivity('Updated Staff Member', 'Mechanics', editing.id, `Updated profile for: ${payload.firstname} ${payload.lastname}`);
       } else {
         const { data, error } = await supabase.from("mechanic_list").insert([{ ...payload, delete_flag: 0 }]).select("id").single();
         if (error) throw error;
+        const { error: histErr } = await supabase.from("mechanic_salary_history").insert([{ mechanic_id: data.id, salary, effective_date: today }]);
+        if (histErr) throw histErr;
         await logActivity('Added Staff Member', 'Mechanics', data.id, `Created profile for: ${payload.firstname} ${payload.lastname}`);
       }
       setShowModal(false);

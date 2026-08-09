@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   const mechData = await fetchAll(
     supabase
       .from("mechanic_list")
-      .select("id, firstname, middlename, lastname, salary_per_day, designation")
+      .select("id, firstname, middlename, lastname, daily_salary, designation")
       .eq("status", 1)
       .eq("delete_flag", 0)
       .order("firstname")
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
 
   const salaryRows = typedMechs.map((m) => {
     const name = [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ");
-    const defaultSal = m.salary_per_day || 0;
+    const defaultSal = m.daily_salary || 0;
 
     let earnedPrev = 0;
     attList.filter((a: any) => a.mechanic_id === m.id && a.curr_date < monthStart).forEach((a: any) => {
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     const currentAdv = advList.filter((a: any) => a.mechanic_id === m.id && a.date_paid >= monthStart && a.date_paid < nextMonthStart).reduce((s: number, a: any) => s + (a.amount || 0), 0);
     const netFinal = oldBalance + currentFix + currentComm - currentAdv;
 
-    return { id: m.id, name, salary_per_day: defaultSal, present_count: presentCount, half_day_count: halfDayCount, current_fix: currentFix, current_comm: currentComm, old_balance: oldBalance, current_adv: currentAdv, net_final: netFinal };
+    return { id: m.id, name, daily_salary: defaultSal, present_count: presentCount, half_day_count: halfDayCount, current_fix: currentFix, current_comm: currentComm, old_balance: oldBalance, current_adv: currentAdv, net_final: netFinal };
   });
 
   const summaryTotals = salaryRows.reduce((acc, row) => ({

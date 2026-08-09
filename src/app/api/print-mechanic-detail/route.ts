@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
   const { data: mechanic } = await supabase
     .from("mechanic_list")
-    .select("id, firstname, middlename, lastname, contact, designation, salary_per_day, commission_percent, status")
+    .select("id, firstname, middlename, lastname, contact, designation, daily_salary, commission_percent, status")
     .eq("id", parseInt(id))
     .single();
 
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
   const totalAdv = advances.reduce((s, a) => s + (a.amount || 0), 0);
   const presentDays = attendance.filter(a => a.status === 1).length;
   const halfDays = attendance.filter(a => a.status === 3).length;
-  const salaryDue = (presentDays + halfDays * 0.5) * (mechanic.salary_per_day || 0);
+  const salaryDue = (presentDays + halfDays * 0.5) * (mechanic.daily_salary || 0);
 
   const periodLabel = from && to ? `${fmtDate(from)} - ${fmtDate(to)}` : "All Time";
   const statusLabel = mechanic.status === 1 ? 'Active' : 'Inactive';
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
     </div>
     <div class="mechanic-info">
       <div class="mechanic-name">${name}</div>
-      <div class="mechanic-detail">${mechanic.designation || 'Mechanic'} | ${mechanic.contact || '-'} | Salary: ${inr(mechanic.salary_per_day)}/day | Status: ${statusLabel}</div>
+      <div class="mechanic-detail">${mechanic.designation || 'Mechanic'} | ${mechanic.contact || '-'} | Salary: ${inr(mechanic.daily_salary)}/day | Status: ${statusLabel}</div>
     </div>
     <div class="stats">
       <div class="stat">

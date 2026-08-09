@@ -260,7 +260,7 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
                     .gte("curr_date", from)
                     .lte("curr_date", to),
                 supabase.from("mechanic_list")
-                    .select("id, salary_per_day, daily_salary")
+                    .select("id, daily_salary")
             ]);
 
             // Revenue: Job Income + Walk-in Sales + Client Sales
@@ -271,7 +271,7 @@ export async function executeGeminiTool(functionCall: any): Promise<any> {
             // Expenses: Salaries + Commissions + Shop Expenses + EMI + Discounts
             const mechanicMap: Record<number, number> = {};
             (mechanicRes.data || []).forEach(m => {
-                mechanicMap[m.id] = Number(m.salary_per_day) || Number(m.daily_salary) || 0;
+                mechanicMap[m.id] = Number(m.daily_salary) || 0;
             });
 
             const salaries = (attendanceRes.data || []).reduce((sum, a) => {

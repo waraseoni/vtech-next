@@ -650,8 +650,8 @@ export default function Dashboard() {
       let salary = 0;
       if (attD?.length) {
         const mIds = [...new Set(attD.map((a: any) => a.mechanic_id).filter(Boolean))];
-        const { data: mechs } = await supabase.from("mechanic_list").select("id, salary_per_day, daily_salary").in("id", mIds);
-        const sMap = Object.fromEntries((mechs ?? []).map((m: any) => [m.id, n(m.salary_per_day) || n(m.daily_salary)]));
+        const { data: mechs } = await supabase.from("mechanic_list").select("id, daily_salary").in("id", mIds);
+        const sMap = Object.fromEntries((mechs ?? []).map((m: any) => [m.id, n(m.daily_salary)]));
         salary = attD.reduce((s: number, a: any) => {
           const d = sMap[a.mechanic_id] ?? 0;
           return s + (a.status === 1 ? d : a.status === 3 ? d / 2 : 0);

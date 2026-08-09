@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     loanPaymentsRes,
   ] = await Promise.all([
     pageAll(fetchAll(supabase.from('client_list').select('id, firstname, middlename, lastname, contact, opening_balance').eq('delete_flag', 0))),
-    pageAll(fetchAll(supabase.from('mechanic_list').select('id, firstname, middlename, lastname, salary_per_day, commission_percent').eq('delete_flag', 0))),
+    pageAll(fetchAll(supabase.from('mechanic_list').select('id, firstname, middlename, lastname, daily_salary, commission_percent').eq('delete_flag', 0))),
     pageAll(fetchAll(supabase.from('product_list').select('id, name, description, price').eq('delete_flag', 0))),
     pageAll(fetchAll(supabase.from('lender_list').select('*').eq('delete_flag', 0))),
     pageAll(fetchAll(supabase.from('transaction_list').select('id, client_name, amount, date_completed, status').eq('status', 5))),
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
   (mechanics || []).forEach((m: any) => {
     mechMap[m.id] = {
       name: `${m.firstname} ${m.middlename || ''} ${m.lastname || ''}`.trim(),
-      salary: m.salary_per_day || 0,
+      salary: m.daily_salary || 0,
       comm: m.commission_percent || 0,
     };
   });
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
   for (const m of mechanics || []) {
     const worked = (allAttendance || []).filter((a: any) => a.mechanic_id === m.id).length;
     const daysWorked = (periodAttendance || []).filter((a: any) => a.mechanic_id === m.id).length;
-    const salary = (m.salary_per_day || 0) * (worked + daysWorked * 0.5);
+    const salary = (m.daily_salary || 0) * (worked + daysWorked * 0.5);
     const comm = (allTxns || []).filter((t: any) => t.mechanic_id === m.id).reduce((s: number, t: any) => s + (t.mechanic_commission_amount || 0), 0);
     const adv = (allAdvances || []).filter((a: any) => a.mechanic_id === m.id).reduce((s: number, a: any) => s + (a.amount || 0), 0);
     const balance = salary + comm - adv;

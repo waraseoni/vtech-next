@@ -15,7 +15,6 @@ type Mechanic = {
   middlename: string | null;
   lastname: string;
   daily_salary: number | null;
-  salary_per_day: number | null;
 };
 
 type Attendance = { curr_date: string; status: number };
@@ -37,11 +36,8 @@ function money(n: number) {
 }
 
 function pickBaseRate(m: Mechanic): number {
-  const a = Number(m.salary_per_day ?? NaN);
   const b = Number(m.daily_salary ?? NaN);
-  if (!Number.isNaN(a) && a > 0) return a;
-  if (!Number.isNaN(b) && b > 0) return b;
-  return 0;
+  return !Number.isNaN(b) && b > 0 ? b : 0;
 }
 
 function rateForDate(history: SalaryHist[], baseRate: number, date: string) {
@@ -97,7 +93,7 @@ export default function MechanicLedgerPage() {
       try {
         const mechRes = await supabase
           .from("mechanic_list")
-          .select("id, firstname, middlename, lastname, daily_salary, salary_per_day")
+          .select("id, firstname, middlename, lastname, daily_salary")
           .eq("id", mechId)
           .single();
         if (mechRes.error) throw mechRes.error;
