@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { todayIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+import { pageAll } from "@/lib/fetch-all";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 const num = (v: any) => Number(v) || 0;
@@ -54,17 +55,17 @@ function AccountingDashboardContent() {
         { data: jobCust },
         { data: clients },
       ] = await Promise.all([
-        supabase.from("transaction_list").select("amount").eq("status", 5).gte("date_completed", sTs).lte("date_completed", eTs).limit(5000),
-        supabase.from("direct_sales").select("total_amount, client_id").gte("date_created", sTs).lte("date_created", eTs).limit(5000),
-        supabase.from("transaction_list").select("mechanic_commission_amount").eq("status", 5).gte("date_completed", sTs).lte("date_completed", eTs).limit(5000),
-        supabase.from("attendance_list").select("mechanic_id, curr_date, status").gte("curr_date", from).lte("curr_date", to).in("status", [1, 3]).limit(5000),
+        pageAll(supabase.from("transaction_list").select("amount").eq("status", 5).gte("date_completed", sTs).lte("date_completed", eTs)),
+        pageAll(supabase.from("direct_sales").select("total_amount, client_id").gte("date_created", sTs).lte("date_created", eTs)),
+        pageAll(supabase.from("transaction_list").select("mechanic_commission_amount").eq("status", 5).gte("date_completed", sTs).lte("date_completed", eTs)),
+        pageAll(supabase.from("attendance_list").select("mechanic_id, curr_date, status").gte("curr_date", from).lte("curr_date", to).in("status", [1, 3])),
         supabase.from("mechanic_list").select("id, daily_salary"),
         supabase.from("mechanic_salary_history").select("mechanic_id, salary, effective_date"),
-        supabase.from("client_payments").select("amount, discount").gte("payment_date", sTs).lte("payment_date", eTs).limit(5000),
-        supabase.from("expense_list").select("amount, category").gte("date_created", sTs).lte("date_created", eTs).limit(5000),
-        supabase.from("advance_payments").select("amount").gte("date_paid", sTs).lte("date_paid", eTs).limit(5000),
-        supabase.from("loan_payments").select("amount_paid").gte("payment_date", sTs).lte("payment_date", eTs).limit(5000),
-        supabase.from("transaction_list").select("client_name, amount").eq("status", 5).gte("date_completed", sTs).lte("date_completed", eTs).limit(5000),
+        pageAll(supabase.from("client_payments").select("amount, discount").gte("payment_date", sTs).lte("payment_date", eTs)),
+        pageAll(supabase.from("expense_list").select("amount, category").gte("date_created", sTs).lte("date_created", eTs)),
+        pageAll(supabase.from("advance_payments").select("amount").gte("date_paid", sTs).lte("date_paid", eTs)),
+        pageAll(supabase.from("loan_payments").select("amount_paid").gte("payment_date", sTs).lte("payment_date", eTs)),
+        pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5).gte("date_completed", sTs).lte("date_completed", eTs)),
         supabase.from("client_list").select("id, firstname, lastname"),
       ]);
 
@@ -128,25 +129,25 @@ function AccountingDashboardContent() {
         { data: openBal }, { data: jobAll }, { data: dsAll }, { data: loans }, { data: payAll2 },
         { data: lenders }, { data: allLoanPays }, { data: invAllStock },
       ] = await Promise.all([
-        supabase.from("client_payments").select("amount").lte("payment_date", eTs).limit(5000),
-        supabase.from("direct_sales").select("total_amount").lte("date_created", eTs).is("client_id", null).limit(5000),
-        supabase.from("expense_list").select("amount").lte("date_created", eTs).limit(5000),
-        supabase.from("advance_payments").select("amount").lte("date_paid", eTs).limit(5000),
-        supabase.from("loan_payments").select("amount_paid").lte("payment_date", eTs).limit(5000),
-        supabase.from("inventory_list").select("quantity, product_id").lte("stock_date", eTs).limit(5000),
+        pageAll(supabase.from("client_payments").select("amount").lte("payment_date", eTs)),
+        pageAll(supabase.from("direct_sales").select("total_amount").lte("date_created", eTs).is("client_id", null)),
+        pageAll(supabase.from("expense_list").select("amount").lte("date_created", eTs)),
+        pageAll(supabase.from("advance_payments").select("amount").lte("date_paid", eTs)),
+        pageAll(supabase.from("loan_payments").select("amount_paid").lte("payment_date", eTs)),
+        pageAll(supabase.from("inventory_list").select("quantity, product_id").lte("stock_date", eTs)),
         supabase.from("product_list").select("id, price"),
         supabase.from("client_list").select("opening_balance").eq("delete_flag", 0),
-        supabase.from("transaction_list").select("amount").eq("status", 5).lte("date_completed", eTs).limit(5000),
-        supabase.from("direct_sales").select("total_amount").lte("date_created", eTs).limit(5000),
-        supabase.from("client_loans").select("total_payable").eq("status", 1).lte("loan_date", eTs).limit(5000),
-        supabase.from("client_payments").select("amount, discount").lte("payment_date", eTs).limit(5000),
+        pageAll(supabase.from("transaction_list").select("amount").eq("status", 5).lte("date_completed", eTs)),
+        pageAll(supabase.from("direct_sales").select("total_amount").lte("date_created", eTs)),
+        pageAll(supabase.from("client_loans").select("total_payable").eq("status", 1).lte("loan_date", eTs)),
+        pageAll(supabase.from("client_payments").select("amount, discount").lte("payment_date", eTs)),
         supabase.from("lender_list").select("loan_amount").eq("status", 1),
-        supabase.from("loan_payments").select("amount_paid").limit(5000),
+        pageAll(supabase.from("loan_payments").select("amount_paid")),
         supabase.from("inventory_list").select("quantity, product_id"),
       ]);
 
       // Walk-in direct sales (client_id null OR 0 OR '') — fetch only null ones above, combine with 0/''
-      const walkinAll2 = await supabase.from("direct_sales").select("total_amount").lte("date_created", eTs).or("client_id.eq.0,client_id.eq.''").limit(5000);
+      const walkinAll2 = await pageAll(supabase.from("direct_sales").select("total_amount").lte("date_created", eTs).or("client_id.eq.0,client_id.eq.''"));
 
       const cashOnHand =
         (payAll || []).reduce((s: number, r: any) => s + num(r.amount), 0)

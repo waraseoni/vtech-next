@@ -14,6 +14,7 @@ import {
   QrCode, X,
 } from "lucide-react";
 import QRCode from "qrcode";
+import { pageAll } from "@/lib/fetch-all";
 import Navbar from "./components/Navbar";
 
 // ─── PUBLIC WEBSITE (shown when not logged in) ─────────────────────────────
@@ -413,10 +414,10 @@ export default function Dashboard() {
           supabase.from("client_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0),
           supabase.from("mechanic_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0).eq("status", 1),
           // Low stock — products with alert level
-          supabase.from("product_list").select("id, name, alert_quantity").eq("delete_flag", 0).gt("alert_quantity", 0).limit(5000),
-          supabase.from("inventory_list").select("product_id, quantity, place").limit(5000),
-          supabase.from("transaction_products").select("product_id, qty, transaction_id").limit(5000),
-          supabase.from("direct_sale_items").select("product_id, qty").limit(5000),
+          pageAll(supabase.from("product_list").select("id, name, alert_quantity").eq("delete_flag", 0).gt("alert_quantity", 0)),
+          pageAll(supabase.from("inventory_list").select("product_id, quantity, place")),
+          pageAll(supabase.from("transaction_products").select("product_id, qty, transaction_id")),
+          pageAll(supabase.from("direct_sale_items").select("product_id, qty")),
           supabase.from("transaction_list").select("id, job_id, client_name, item, amount, status").eq("del_status", 0).order("id", { ascending: false }).limit(5),
           supabase.from("client_payments").select("id, amount, payment_mode, payment_date, client_id").order("payment_date", { ascending: false }).order("id", { ascending: false }).limit(10),
         ]);
@@ -485,8 +486,8 @@ export default function Dashboard() {
           const end = `${endOfMonthIST(md)}T23:59:59+05:30`;
           
           const [{data: repMonth}, {data: dirMonth}] = await Promise.all([
-             supabase.from("transaction_list").select("amount").eq("status", 5).eq("del_status", 0).gte("date_completed", start).lte("date_completed", end).limit(5000),
-             supabase.from("direct_sales").select("total_amount").gte("date_created", start).lte("date_created", end).limit(5000)
+             pageAll(supabase.from("transaction_list").select("amount").eq("status", 5).eq("del_status", 0).gte("date_completed", start).lte("date_completed", end)),
+             pageAll(supabase.from("direct_sales").select("total_amount").gte("date_created", start).lte("date_created", end))
           ]);
 
           pts.push({
@@ -568,11 +569,11 @@ export default function Dashboard() {
     (async () => {
       try {
         const [{ data: clients }, { data: repairs }, { data: sales }, { data: loans }, { data: payments }] = await Promise.all([
-          supabase.from("client_list").select("id, opening_balance, payment_due_date").eq("delete_flag", 0).limit(5000),
-          supabase.from("transaction_list").select("client_name, amount").eq("status", 5).limit(5000),
-          supabase.from("direct_sales").select("client_id, total_amount").limit(5000),
-          supabase.from("client_loans").select("client_id, total_payable").limit(5000),
-          supabase.from("client_payments").select("client_id, amount, discount").limit(5000),
+          supabase.from("client_list").select("id, opening_balance, payment_due_date").eq("delete_flag", 0),
+          pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
+          pageAll(supabase.from("direct_sales").select("client_id, total_amount")),
+          pageAll(supabase.from("client_loans").select("client_id, total_payable")),
+          pageAll(supabase.from("client_payments").select("client_id, amount, discount")),
         ]);
         const sumBy = (arr: any[] | null, key: string, fn: (r: any) => number) => {
           const m = new Map<number, number>();
@@ -616,14 +617,14 @@ export default function Dashboard() {
         { data: discD }, { data: attD },
         { data: loanD }, { data: expD },
       ] = await Promise.all([
-        supabase.from("transaction_list").select("amount").eq("status", 5).eq("del_status", 0).gte("date_completed", f0).lte("date_completed", t0).limit(5000),
-        supabase.from("direct_sales").select("total_amount").gte("date_created", f0).lte("date_created", t0).limit(5000),
-        supabase.from("transaction_list").select("id").eq("status", 5).eq("del_status", 0).gte("date_completed", f0).lte("date_completed", t0).limit(5000),
-        supabase.from("direct_sales").select("id").gte("date_created", f0).lte("date_created", t0).limit(5000),
-        supabase.from("client_payments").select("discount").gte("payment_date", from).lte("payment_date", to).limit(5000),
-        supabase.from("attendance_list").select("status, mechanic_id").gte("curr_date", from).lte("curr_date", to).in("status", [1, 3]).limit(5000),
-        supabase.from("loan_payments").select("amount_paid").gte("payment_date", from).lte("payment_date", to).limit(5000),
-        supabase.from("expense_list").select("amount").gte("date_created", f0).lte("date_created", t0).limit(5000),
+        pageAll(supabase.from("transaction_list").select("amount").eq("status", 5).eq("del_status", 0).gte("date_completed", f0).lte("date_completed", t0)),
+        pageAll(supabase.from("direct_sales").select("total_amount").gte("date_created", f0).lte("date_created", t0)),
+        pageAll(supabase.from("transaction_list").select("id").eq("status", 5).eq("del_status", 0).gte("date_completed", f0).lte("date_completed", t0)),
+        pageAll(supabase.from("direct_sales").select("id").gte("date_created", f0).lte("date_created", t0)),
+        pageAll(supabase.from("client_payments").select("discount").gte("payment_date", from).lte("payment_date", to)),
+        pageAll(supabase.from("attendance_list").select("status, mechanic_id").gte("curr_date", from).lte("curr_date", to).in("status", [1, 3])),
+        pageAll(supabase.from("loan_payments").select("amount_paid").gte("payment_date", from).lte("payment_date", to)),
+        pageAll(supabase.from("expense_list").select("amount").gte("date_created", f0).lte("date_created", t0)),
       ]);
 
       const repairInc = (tD ?? []).reduce((s: number, t: any) => s + n(t.amount), 0);

@@ -69,3 +69,35 @@
 - `implementation_plan.md` — dependency update plan
 - `src/app/reports/comparison_report.md` — PHP vs Next.js comparison
 - `supabase/migrations/` — schema migrations
+
+## Data Bug Fix (10 Aug 2026) — Supabase 1000-row cap
+**Root cause:** PostgREST har request max **1000 rows** deta hai (server max-rows). `.limit(5000)` likhne par bhi sirf 1000 aati hain — baaki silently drop. `src/lib/fetch-all.ts` (`pageAll`/`fetchAll`) isi liye bana tha, par dashboard me old `.limit(5000)` queries bachi hui thin.
+
+**Jagah aur asar (live DB se reproduce):**
+| Location | Query | Before | After |
+|---|---|---|---|
+| `src/app/page.tsx` due-reminders widget | `transaction_list` status=5 (1410 rows) | ₹1,03,500 / 29 clients | ₹1,53,050 / 44 clients |
+| `src/app/reports/accounting-dashboard/page.tsx` all-time cumulative | `transaction_list` status=5 sum | ₹10,23,620 | ₹14,91,050 (₹4,67,430 farak) |
+| `src/app/page.tsx` financial widget (date-range) | "This Year" → 1046 tx | truncate | full |
+| `src/app/page.tsx` revenue chart (monthly) | per-month targeted | safe (defensive fix) | pageAll |
+| `src/app/page.tsx` low-stock widget | `transaction_products`/`direct_sale_items` full scans | truncate risk | pageAll |
+
+**Fix (committed):** sab `.limit(5000)` → `pageAll(...)` wrap (`{ data }` shape same, destructuring unaffected). Affected files: `src/app/page.tsx`, `src/app/reports/accounting-dashboard/page.tsx`. `pageAll` paginates via `.range()` → har chunk 1000 rows, sab milati hai.
+
+**Lesson:** `<1000` row tables (`client_list` 437, `client_payments` 624, `attendance_list` 814) safe hain; koi bhi aggregate query jo table 1000+ ho sakti hai wahan `.limit(5000)` kabhi use nahi karna — hamesha `pageAll`/`fetchAll` use karo.
+
+## PWA Loader-Atak Bug Fix (10 Aug 2026) — stale SW HTML/RSC cache
+**Symptom:** Page refresh / login ke baad kabhi-kabhi "V-TECH Secure Boot" loader par atak jata hai; sirf **Ctrl+F5** (hard refresh) se load hota hai.
+
+**Root cause:** Service worker (Serwist `defaultCache`) HTML + RSC/Flight payloads ko **NetworkFirst (3s timeout)** cache karta tha + `navigationPreload: true` on.
+1. Har navigation/RSC request par `src/proxy.ts` me `supabase.auth.getUser()` chalta hai (network round-trip). Response >~3s slow → SW stale cache se **purane build ka HTML/RSC** serve kar deta hai.
+2. Purana HTML/RSC naye build ke chunk URLs nahi jaanta → chunk 404 → App Router hydration fail → loader hamesha ke liye atakta hai.
+3. Ctrl+F5 SW bypass karta hai → fresh HTML+chunks → load hota hai (isi liye sirf tabhi kaam karta tha).
+
+**Fix (committed):**
+- `src/app/sw.ts` — `defaultCache` hata, custom `runtimeCaching`: **HTML navigation + RSC → `NetworkOnly`** (online hamesha fresh, offline precache fallback); `/_next/static/*.js`/images/fonts/css → hashed URLs cache (fast); `/api/*` → `NetworkOnly`; `navigationPreload: false`; `activate` par purane `pages`/`pages-rsc`/`apis`/`others` caches delete.
+- `src/app/layout.tsx` — 2 safety nets: (a) **loader watchdog** — 12s tak loader atka → ek baar auto hard-reload (`vtech_boot_reloaded` sessionStorage guard); (b) **chunk-error auto-reload** — chunk load fail → 30s cooldown ke saath auto reload.
+
+**Verify:** `tsc --noEmit` clean, `npm run build` success, generated `/serwist/sw.js` me custom matchers confirm kiye.
+
+**Lesson:** Next.js 16 App Router + Supabase SSR + PWA me SW se HTML/RSC kabhi cache nahi karna — sirf content-hashed static assets cache karo. Auth proxy (`getUser()` har request par) navigation/RSC ko slow kar deta hai jo NetworkFirst stale-cache fallback trigger karta hai.

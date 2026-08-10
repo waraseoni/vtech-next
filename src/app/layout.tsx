@@ -485,6 +485,40 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // ← empty deps: intentional, auth only on mount
 
+  // BUG FIX: loader (V-TECH Secure Boot) atak jata hai jab stale SW cache purana
+  // HTML/chunk serve karta hai ya auth call hang ho jati hai. Manual Ctrl+F5 ke
+  // bina auto-recover: 12s tak loader atka raha → ek baar auto hard reload.
+  // sessionStorage guard → ek hi baar reload hoga (infinite loop nahi).
+  useEffect(() => {
+    if (!loading) return;
+    const t = setTimeout(() => {
+      try {
+        if (sessionStorage.getItem("vtech_boot_reloaded")) return;
+        sessionStorage.setItem("vtech_boot_reloaded", "1");
+      } catch { /* ignore */ }
+      window.location.reload();
+    }, 12000);
+    return () => clearTimeout(t);
+  }, [loading]);
+
+  // BUG FIX: Next.js kabhi-kabhi chunk load fail hone par router stuck chhod deta
+  // hai (loader hamesha ke liye). Chunk error → cooldown ke saath auto hard reload.
+  useEffect(() => {
+    const onErr = (e: ErrorEvent) => {
+      const m = e.message || "";
+      if (!/Failed to fetch dynamically imported module|ChunkLoadError|loading chunk|Importing a module script failed/i.test(m)) return;
+      try {
+        const k = "vtech_chunk_reload";
+        const last = Number(sessionStorage.getItem(k) || "0");
+        if (Date.now() - last < 30000) return; // 30s cooldown — loop guard
+        sessionStorage.setItem(k, String(Date.now()));
+      } catch { /* ignore */ }
+      window.location.reload();
+    };
+    window.addEventListener("error", onErr);
+    return () => window.removeEventListener("error", onErr);
+  }, []);
+
   // Client role → sirf /my-account/* access. Baaki pages par redirect.
   useEffect(() => {
     if (profile?.role === "client" && !pathname.startsWith("/my-account")) {
