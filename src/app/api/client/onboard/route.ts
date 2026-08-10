@@ -59,14 +59,23 @@ export async function POST() {
     return NextResponse.json({ error: clientErr.message }, { status: 500 });
   }
 
-  if (!client || !client.login_allowed) {
-    // Role='staff' aur email portal-assigned nahi → ye real staff account hai,
-    // client tab se login kar raha hai → staff UI hi sahi hai.
+  if (!client) {
+    // Email client_list me NAHI hai → genuine staff account (client tab se
+    // login kar raha hai) → staff UI. Portal client nahi hai.
     if (existing?.role === "staff") {
       return NextResponse.json({ success: true, redirect: "/" });
     }
     return NextResponse.json(
       { error: "Aapko portal access nahi hai. Dukaan se contact karke email confirm karein." },
+      { status: 403 }
+    );
+  }
+
+  // Email client_list me hai par login_allowed=false → ye client hai, bas
+  // portal access band hai. Staff profile ho tab bhi kabhi staff UI mat do.
+  if (!client.login_allowed) {
+    return NextResponse.json(
+      { error: "Aapka portal access band hai. Dukaan se contact karein." },
       { status: 403 }
     );
   }
