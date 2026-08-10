@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireStaff } from "@/lib/api-auth";
-import { fetchAll, pageAll } from "@/lib/fetch-all";
+import { pageAll } from "@/lib/fetch-all";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -43,18 +43,18 @@ export async function GET(request: NextRequest) {
     expensesRaw,
     loanPaymentsRaw,
   ] = await Promise.all([
-    pageAll(fetchAll(supabase.from('client_list').select('id, firstname, middlename, lastname'))),
-    pageAll(fetchAll(supabase.from('mechanic_list').select('id, firstname, lastname, daily_salary'))),
-    pageAll(fetchAll(supabase.from('product_list').select('id, name, price'))),
-    pageAll(fetchAll(supabase.from('mechanic_salary_history').select('mechanic_id, effective_date, salary'))),
-    pageAll(fetchAll(supabase.from('transaction_list').select('id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id').eq('status', 5).gte('date_completed', start).lte('date_completed', end))),
-    pageAll(fetchAll(supabase.from('direct_sales').select('id, sale_code, total_amount, date_created, client_id').or('client_id.is.null,client_id.eq.0').gte('date_created', start).lte('date_created', end))),
-    pageAll(fetchAll(supabase.from('direct_sales').select('id, sale_code, total_amount, date_created, client_id').not('client_id', 'eq', 0).not('client_id', 'is', null).gte('date_created', start).lte('date_created', end))),
-    pageAll(fetchAll(supabase.from('client_payments').select('id, client_id, amount, discount, payment_date').gte('payment_date', from).lte('payment_date', to))),
-    pageAll(fetchAll(supabase.from('attendance_list').select('mechanic_id, curr_date, status').in('status', [1, 3]).gte('curr_date', from).lte('curr_date', to))),
-    pageAll(fetchAll(supabase.from('advance_payments').select('mechanic_id, amount, date_paid').gte('date_paid', from).lte('date_paid', to))),
-    pageAll(fetchAll(supabase.from('expense_list').select('category, amount, date_created').gte('date_created', start).lte('date_created', end))),
-    pageAll(fetchAll(supabase.from('loan_payments').select('lender_id, amount_paid, payment_date').gte('payment_date', from).lte('payment_date', to))),
+    pageAll(supabase.from('client_list').select('id, firstname, middlename, lastname')),
+    pageAll(supabase.from('mechanic_list').select('id, firstname, lastname, daily_salary')),
+    pageAll(supabase.from('product_list').select('id, name, price')),
+    pageAll(supabase.from('mechanic_salary_history').select('mechanic_id, effective_date, salary')),
+    pageAll(supabase.from('transaction_list').select('id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id').eq('status', 5).gte('date_completed', start).lte('date_completed', end)),
+    pageAll(supabase.from('direct_sales').select('id, sale_code, total_amount, date_created, client_id').or('client_id.is.null,client_id.eq.0').gte('date_created', start).lte('date_created', end)),
+    pageAll(supabase.from('direct_sales').select('id, sale_code, total_amount, date_created, client_id').not('client_id', 'eq', 0).not('client_id', 'is', null).gte('date_created', start).lte('date_created', end)),
+    pageAll(supabase.from('client_payments').select('id, client_id, amount, discount, payment_date').gte('payment_date', from).lte('payment_date', to)),
+    pageAll(supabase.from('attendance_list').select('mechanic_id, curr_date, status').in('status', [1, 3]).gte('curr_date', from).lte('curr_date', to)),
+    pageAll(supabase.from('advance_payments').select('mechanic_id, amount, date_paid').gte('date_paid', from).lte('date_paid', to)),
+    pageAll(supabase.from('expense_list').select('category, amount, date_created').gte('date_created', start).lte('date_created', end)),
+    pageAll(supabase.from('loan_payments').select('lender_id, amount_paid, payment_date').gte('payment_date', from).lte('payment_date', to)),
   ]);
 
   const clientMap: Record<number, string> = {};

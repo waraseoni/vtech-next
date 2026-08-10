@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { pageAll } from "@/lib/fetch-all";
 import {
   Loader2, Calendar, Printer, TrendingUp, TrendingDown, Wallet,
   ArrowDownCircle, ArrowUpCircle, Info, ChevronLeft, ChevronRight, X
@@ -51,85 +52,85 @@ function DailyIncomeContent() {
       const end   = `${to}T23:59:59+05:30`;
 
       // 1. Repair jobs revenue (status 5, date_completed in range)
-      const { data: repairs } = await supabase
+      const { data: repairs } = await pageAll(supabase
         .from("transaction_list")
         .select("job_id, item, client_name, mechanic_id, amount, date_completed")
         .eq("status", 5)
         .gte("date_completed", start)
-        .lte("date_completed", end);
+        .lte("date_completed", end));
 
       // 2. Direct sales (date_created in range)
-      const { data: sales } = await supabase
+      const { data: sales } = await pageAll(supabase
         .from("direct_sales")
         .select("id, sale_code, client_id, total_amount, payment_mode, remarks, date_created")
         .gte("date_created", start)
-        .lte("date_created", end);
+        .lte("date_created", end));
 
       // 3. Attendance based salary earned
-      const { data: attendance } = await supabase
+      const { data: attendance } = await pageAll(supabase
         .from("attendance_list")
         .select("mechanic_id, curr_date, status")
         .in("status", [1, 3])
         .gte("curr_date", from)
-        .lte("curr_date", to);
-      const { data: mechanics } = await supabase
+        .lte("curr_date", to));
+      const { data: mechanics } = await pageAll(supabase
         .from("mechanic_list")
-        .select("id, firstname, lastname, daily_salary");
-      const { data: salaryHistory } = await supabase
+        .select("id, firstname, lastname, daily_salary"));
+      const { data: salaryHistory } = await pageAll(supabase
         .from("mechanic_salary_history")
-        .select("mechanic_id, salary, effective_date");
+        .select("mechanic_id, salary, effective_date"));
 
       // 4. Commission (status 5, date_completed in range)
-      const { data: commRows } = await supabase
+      const { data: commRows } = await pageAll(supabase
         .from("transaction_list")
         .select("job_id, mechanic_id, amount, mechanic_commission_amount, date_completed")
         .eq("status", 5)
         .gte("date_completed", start)
-        .lte("date_completed", end);
+        .lte("date_completed", end));
 
       // 5. Discounts (client_payments, discount > 0, payment_date in range)
-      const { data: discRows } = await supabase
+      const { data: discRows } = await pageAll(supabase
         .from("client_payments")
         .select("amount, discount, client_id, payment_date")
         .gt("discount", 0)
         .gte("payment_date", from)
-        .lte("payment_date", to);
+        .lte("payment_date", to));
 
       // 6. General expenses
-      const { data: expenseRows } = await supabase
+      const { data: expenseRows } = await pageAll(supabase
         .from("expense_list")
         .select("id, amount, category, remarks, payment_mode, date_created")
         .gte("date_created", start)
-        .lte("date_created", end);
+        .lte("date_created", end));
 
       // 7. Loan EMI paid to lenders
-      const { data: loanRows } = await supabase
+      const { data: loanRows } = await pageAll(supabase
         .from("loan_payments")
         .select("lender_id, amount_paid, payment_date, remarks")
         .gte("payment_date", from)
-        .lte("payment_date", to);
+        .lte("payment_date", to));
 
       // 8. Client payments (all, cash inflow)
-      const { data: payRows } = await supabase
+      const { data: payRows } = await pageAll(supabase
         .from("client_payments")
         .select("client_id, amount, payment_mode, remarks, payment_date")
         .gte("payment_date", from)
-        .lte("payment_date", to);
+        .lte("payment_date", to));
 
       // 9. Staff advances
-      const { data: advRows } = await supabase
+      const { data: advRows } = await pageAll(supabase
         .from("advance_payments")
         .select("mechanic_id, amount, reason, date_paid")
         .gte("date_paid", from)
-        .lte("date_paid", to);
+        .lte("date_paid", to));
 
       // Meta lookups
-      const { data: clients } = await supabase
+      const { data: clients } = await pageAll(supabase
         .from("client_list")
-        .select("id, firstname, middlename, lastname");
-      const { data: lenders } = await supabase
+        .select("id, firstname, middlename, lastname"));
+      const { data: lenders } = await pageAll(supabase
         .from("lender_list")
-        .select("id, fullname");
+        .select("id, fullname"));
 
       const clientName = (id: any) => {
         const c = (clients || []).find((x: any) => x.id === id);

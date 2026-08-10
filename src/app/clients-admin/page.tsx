@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
+import { pageAll } from "@/lib/fetch-all";
 import {
   AlertCircle,
   CheckCircle2,
@@ -112,9 +113,9 @@ export default function ClientAmtPage() {
 
       const ids = clientList.map((client) => client.id);
       const [repairRes, saleRes, paymentRes] = await Promise.all([
-        supabase.from("transaction_list").select("client_name, amount").eq("status", 5),
-        supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids),
-        supabase.from("client_payments").select("client_id, amount, discount").in("client_id", ids),
+        pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
+        pageAll(supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids)),
+        pageAll(supabase.from("client_payments").select("client_id, amount, discount").in("client_id", ids)),
       ]);
 
       const repairMap = new Map<number, number>();

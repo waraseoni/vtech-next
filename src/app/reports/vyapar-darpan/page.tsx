@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { pageAll } from "@/lib/fetch-all";
 import {
   Loader2, Calendar, Printer, Store, TrendingUp, TrendingDown,
   Scale, PieChart, Info, AlertTriangle, CheckCircle2, ArrowLeft,
@@ -46,8 +47,8 @@ function VyaparDarpanContent() {
 
       // Pre-fetch parent IDs to avoid broken PostgREST !inner joins
       const [deliveredTxRes, dsRangeRes] = await Promise.all([
-        supabase.from("transaction_list").select("id").eq("status", 5).gte("date_completed", start).lte("date_completed", end),
-        supabase.from("direct_sales").select("id").gte("date_created", start).lte("date_created", end),
+        pageAll(supabase.from("transaction_list").select("id").eq("status", 5).gte("date_completed", start).lte("date_completed", end)),
+        pageAll(supabase.from("direct_sales").select("id").gte("date_created", start).lte("date_created", end)),
       ]);
       const deliveredTxIds = (deliveredTxRes.data || []).map(t => String(t.id));
       const dsRangeIds     = (dsRangeRes.data || []).map(d => String(d.id));
@@ -60,36 +61,36 @@ function VyaparDarpanContent() {
         stockRes, lendersRes, loanPaysRes
       ] = await Promise.all([
         // 1. Repair Income
-        supabase.from("transaction_list").select("amount").eq("status", 5).gte("date_completed", start).lte("date_completed", end),
+        pageAll(supabase.from("transaction_list").select("amount").eq("status", 5).gte("date_completed", start).lte("date_completed", end)),
         // 2. Direct Sales
-        supabase.from("direct_sales").select("total_amount").gte("date_created", start).lte("date_created", end),
+        pageAll(supabase.from("direct_sales").select("total_amount").gte("date_created", start).lte("date_created", end)),
         // 3. Repair Parts Value (use pre-fetched IDs)
         deliveredTxIds.length > 0
-          ? supabase.from("transaction_products").select("qty, price").in("transaction_id", deliveredTxIds)
+          ? pageAll(supabase.from("transaction_products").select("qty, price").in("transaction_id", deliveredTxIds))
           : Promise.resolve({ data: [] }),
         // 4. Direct Sale Items Value (use pre-fetched IDs)
         dsRangeIds.length > 0
-          ? supabase.from("direct_sale_items").select("qty, price").in("sale_id", dsRangeIds)
+          ? pageAll(supabase.from("direct_sale_items").select("qty, price").in("sale_id", dsRangeIds))
           : Promise.resolve({ data: [] }),
         // 5. Shop Expenses
-        supabase.from("expense_list").select("amount").gte("date_created", start).lte("date_created", end),
+        pageAll(supabase.from("expense_list").select("amount").gte("date_created", start).lte("date_created", end)),
         // 6. EMI Paid
-        supabase.from("loan_payments").select("amount_paid").gte("payment_date", start).lte("payment_date", end),
+        pageAll(supabase.from("loan_payments").select("amount_paid").gte("payment_date", start).lte("payment_date", end)),
         // 7. Staff Salary (Attendance Based)
-        supabase.from("attendance_list").select("status, mechanic_list(daily_salary)").gte("curr_date", from).lte("curr_date", to),
+        pageAll(supabase.from("attendance_list").select("status, mechanic_list(daily_salary)").gte("curr_date", from).lte("curr_date", to)),
         // 8. Discounts
-        supabase.from("client_payments").select("discount").gte("payment_date", start).lte("payment_date", end),
+        pageAll(supabase.from("client_payments").select("discount").gte("payment_date", start).lte("payment_date", end)),
         // 9. Current Stock (Simplified)
-        supabase.from("product_list").select("id, price").eq("delete_flag", 0),
+        pageAll(supabase.from("product_list").select("id, price").eq("delete_flag", 0)),
         // 10. Loans
-        supabase.from("lender_list").select("id, loan_amount").eq("status", 1),
-        supabase.from("loan_payments").select("lender_id, amount_paid")
+        pageAll(supabase.from("lender_list").select("id, loan_amount").eq("status", 1)),
+        pageAll(supabase.from("loan_payments").select("lender_id, amount_paid"))
       ]);
 
       // Process Stock (simplified fetch since full tracking is expensive)
-      const {data: invAll} = await supabase.from("inventory_list").select("product_id, quantity");
-      const {data: soldAll} = await supabase.from("transaction_products").select("product_id, qty");
-      const {data: dsAll} = await supabase.from("direct_sale_items").select("product_id, qty");
+      const {data: invAll} = await pageAll(supabase.from("inventory_list").select("product_id, quantity"));
+      const {data: soldAll} = await pageAll(supabase.from("transaction_products").select("product_id, qty"));
+      const {data: dsAll} = await pageAll(supabase.from("direct_sale_items").select("product_id, qty"));
       
       const invMap: any = {}; (invAll || []).forEach(r => invMap[r.product_id] = (invMap[r.product_id] || 0) + (r.quantity || 0));
       const soldMap: any = {}; 

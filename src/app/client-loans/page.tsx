@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
+import { pageAll } from "@/lib/fetch-all";
 import { formatIST, toISTDatePart } from "@/lib/dateUtils";
 import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Eye, CreditCard } from "lucide-react";
 
@@ -64,7 +65,7 @@ export default function ClientLoansPage() {
       const [loanRes, clientRes, paymentsRes] = await Promise.all([
         supabase.from("client_loans").select("*").order("loan_date", { ascending: false }).limit(500),
         supabase.from("client_list").select("id, firstname, middlename, lastname, contact").eq("delete_flag", 0).order("firstname"),
-        supabase.from("client_payments").select("id, loan_id, amount, discount").not("loan_id", "is", null),
+        pageAll(supabase.from("client_payments").select("id, loan_id, amount, discount").not("loan_id", "is", null)),
       ]);
       if (loanRes.error) throw loanRes.error;
       if (clientRes.error) throw clientRes.error;

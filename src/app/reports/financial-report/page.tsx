@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { pageAll } from "@/lib/fetch-all";
 import {
   Loader2, Calendar, Printer, BarChart2, PieChart, TrendingUp,
   Package, Landmark, ShieldCheck, AlertCircle, Info, ArrowLeft
@@ -45,12 +46,12 @@ function FinancialReportContent() {
       const end   = `${to}T23:59:59+05:30`;
 
       // First get the transactions in range
-      const { data: txRangeData } = await supabase
+      const { data: txRangeData } = await pageAll(supabase
         .from("transaction_list")
         .select("id")
         .eq("status", 5)
         .gte("date_completed", start)
-        .lte("date_completed", end);
+        .lte("date_completed", end));
       const txRangeIds = (txRangeData || []).map(t => String(t.id));
 
       const [
@@ -64,22 +65,22 @@ function FinancialReportContent() {
       ] = await Promise.all([
         // Service Revenue (status 5 delivered)
         txRangeIds.length > 0 
-          ? supabase.from("transaction_services").select("price").in("transaction_id", txRangeIds)
+          ? pageAll(supabase.from("transaction_services").select("price").in("transaction_id", txRangeIds))
           : Promise.resolve({ data: [] }),
         // Parts Revenue (status 5 delivered)
         txRangeIds.length > 0 
-          ? supabase.from("transaction_products").select("qty, price").in("transaction_id", txRangeIds)
+          ? pageAll(supabase.from("transaction_products").select("qty, price").in("transaction_id", txRangeIds))
           : Promise.resolve({ data: [] }),
         // Direct Sales
-        supabase.from("direct_sales").select("total_amount").gte("date_created", start).lte("date_created", end),
+        pageAll(supabase.from("direct_sales").select("total_amount").gte("date_created", start).lte("date_created", end)),
         // Expenses
-        supabase.from("expense_list").select("amount").gte("date_created", start).lte("date_created", end),
+        pageAll(supabase.from("expense_list").select("amount").gte("date_created", start).lte("date_created", end)),
         // Loan EMIs Paid
-        supabase.from("loan_payments").select("amount_paid").gte("payment_date", start).lte("payment_date", end),
+        pageAll(supabase.from("loan_payments").select("amount_paid").gte("payment_date", start).lte("payment_date", end)),
         // Advances Paid
-        supabase.from("advance_payments").select("amount").gte("date_paid", start).lte("date_paid", end),
+        pageAll(supabase.from("advance_payments").select("amount").gte("date_paid", start).lte("date_paid", end)),
         // Stock Added Value (Selling Price)
-        supabase.from("inventory_list").select("product_id, quantity, stock_date").gte("stock_date", start).lte("stock_date", end),
+        pageAll(supabase.from("inventory_list").select("product_id, quantity, stock_date").gte("stock_date", start).lte("stock_date", end)),
       ]);
 
       // Resolve stock added value via product price map (avoid embed FK dependency)

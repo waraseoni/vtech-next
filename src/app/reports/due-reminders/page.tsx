@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { todayIST, parseISTDate, toLocalStr } from "@/lib/dateUtils";
 import { substituteTemplate, firmVars } from "@/lib/whatsapp";
+import { pageAll } from "@/lib/fetch-all";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
@@ -98,13 +99,13 @@ function DueRemindersContent() {
 
       const ids = clients.map(c => c.id);
 
-      // Aggregates (batch)
+      // Aggregates (batch, paginated to bypass the 1000-row PostgREST cap)
       const [repairs, sales, loans, payments, reminders] = await Promise.all([
-        supabase.from("transaction_list").select("client_name, amount").eq("status", 5),
-        supabase.from("direct_sales").select("client_id, total_amount"),
-        supabase.from("client_loans").select("client_id, total_payable"),
-        supabase.from("client_payments").select("client_id, amount, discount"),
-        supabase.from("payment_reminders").select("client_id, reminder_date"),
+        pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
+        pageAll(supabase.from("direct_sales").select("client_id, total_amount")),
+        pageAll(supabase.from("client_loans").select("client_id, total_payable")),
+        pageAll(supabase.from("client_payments").select("client_id, amount, discount")),
+        pageAll(supabase.from("payment_reminders").select("client_id, reminder_date")),
       ]);
 
       const sumBy = (arr: any[] | null, key: string, valFn: (r: any) => number) => {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { pageAll } from "@/lib/fetch-all";
 import { 
   BarChart3, TrendingUp, DollarSign, Calendar, 
   ArrowUpRight, ArrowDownRight, Package, Users, Receipt, 
@@ -62,15 +63,15 @@ export default function MonthlyProfitReport() {
           { data: clients },
           { data: lenders }
         ] = await Promise.all([
-          supabase.from("transaction_list").select("id, code, client_name, amount, mechanic_commission_amount, date_completed").eq("status", 5).gte("date_completed", start).lte("date_completed", endTz),
-          supabase.from("direct_sales").select("id, sale_code, client_id, total_amount, date_created").gte("date_created", start).lte("date_created", end),
-          supabase.from("client_payments").select("id, client_id, amount, discount, remarks, created_at").gte("created_at", start).lte("created_at", end),
-          supabase.from("expense_list").select("id, amount, date_created, category, remarks, payment_mode").gte("date_created", start).lte("date_created", end),
-          supabase.from("loan_payments").select("id, lender_id, amount_paid, payment_date, remarks").gte("payment_date", start).lte("payment_date", end),
-          supabase.from("attendance_list").select("mechanic_id, curr_date, status").gte("curr_date", start).lte("curr_date", end),
-          supabase.from("mechanic_list").select("id, firstname, middlename, lastname, daily_salary"),
-          supabase.from("client_list").select("id, firstname, middlename, lastname"),
-          supabase.from("lender_list").select("id, fullname")
+          pageAll(supabase.from("transaction_list").select("id, code, client_name, amount, mechanic_commission_amount, date_completed").eq("status", 5).gte("date_completed", start).lte("date_completed", endTz)),
+          pageAll(supabase.from("direct_sales").select("id, sale_code, client_id, total_amount, date_created").gte("date_created", start).lte("date_created", end)),
+          pageAll(supabase.from("client_payments").select("id, client_id, amount, discount, remarks, created_at").gte("created_at", start).lte("created_at", end)),
+          pageAll(supabase.from("expense_list").select("id, amount, date_created, category, remarks, payment_mode").gte("date_created", start).lte("date_created", end)),
+          pageAll(supabase.from("loan_payments").select("id, lender_id, amount_paid, payment_date, remarks").gte("payment_date", start).lte("payment_date", end)),
+          pageAll(supabase.from("attendance_list").select("mechanic_id, curr_date, status").gte("curr_date", start).lte("curr_date", end)),
+          pageAll(supabase.from("mechanic_list").select("id, firstname, middlename, lastname, daily_salary")),
+          pageAll(supabase.from("client_list").select("id, firstname, middlename, lastname")),
+          pageAll(supabase.from("lender_list").select("id, fullname"))
         ]);
 
         const months = eachMonthOfInterval({ start: new Date(year, 0, 1), end: new Date(year, 11, 31) });

@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
   const ids = cls.map((c) => c.id);
 
   const [{ data: repairs }, { data: dirSales }, { data: payments }, { data: loans }] = await Promise.all([
-    pageAll(fetchAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5))),
+    pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
     fetchAllIn((ids: number[]) => supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids), ids).then(rows => ({ data: rows })),
     fetchAllIn((ids: number[]) => supabase.from("client_payments").select("client_id, amount, discount").in("client_id", ids), ids).then(rows => ({ data: rows })),
     fetchAllIn((ids: number[]) => supabase.from("client_loans").select("client_id, total_payable").in("client_id", ids), ids).then(rows => ({ data: rows })),

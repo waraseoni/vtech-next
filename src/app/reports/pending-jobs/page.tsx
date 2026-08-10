@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { pageAll } from "@/lib/fetch-all";
 import { 
   Clock, Search, Printer, Filter, MessageSquare, 
   ChevronRight, ArrowLeft, Loader2, Calendar, Wrench, 
@@ -51,9 +52,8 @@ function PendingJobsContent() {
         query = query.eq("status", parseInt(status));
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      
+      const { data } = await pageAll(query);
+
       const pendingJobs = data || [];
       if (pendingJobs.length === 0) {
         setJobs([]);

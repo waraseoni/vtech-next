@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
+import { pageAll } from "@/lib/fetch-all";
 import { Loader2, ArrowLeft, Printer, FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate, toISTDatePart } from "@/lib/dateUtils";
@@ -100,62 +101,54 @@ export default function MechanicLedgerPage() {
         setMech(mechRes.data as Mechanic);
 
         const [histRes, prevAttRes, prevCommRes, prevAdvRes, attRes, commRes, advRes] = await Promise.all([
-          supabase
+          pageAll(supabase
             .from("mechanic_salary_history")
             .select("id, salary, effective_date")
             .eq("mechanic_id", mechId)
             .lte("effective_date", to)
             .order("effective_date", { ascending: false })
-            .order("id", { ascending: false }),
+            .order("id", { ascending: false })),
 
-          supabase
+          pageAll(supabase
             .from("attendance_list")
             .select("curr_date, status")
             .eq("mechanic_id", mechId)
             .in("status", [1, 3])
-            .lte("curr_date", prevDateLimit),
+            .lte("curr_date", prevDateLimit)),
 
-          supabase
+          pageAll(supabase
             .from("transaction_list")
             .select("mechanic_commission_amount, date_created")
             .eq("mechanic_id", mechId)
-            .lte("date_created", `${prevDateLimit}T23:59:59`),
+            .lte("date_created", `${prevDateLimit}T23:59:59`)),
 
-          supabase
+          pageAll(supabase
             .from("advance_payments")
             .select("amount, date_paid")
             .eq("mechanic_id", mechId)
-            .lte("date_paid", prevDateLimit),
+            .lte("date_paid", prevDateLimit)),
 
-          supabase
+          pageAll(supabase
             .from("attendance_list")
             .select("curr_date, status")
             .eq("mechanic_id", mechId)
             .gte("curr_date", from)
-            .lte("curr_date", to),
+            .lte("curr_date", to)),
 
-          supabase
+          pageAll(supabase
             .from("transaction_list")
             .select("mechanic_commission_amount, date_created")
             .eq("mechanic_id", mechId)
             .gte("date_created", `${from}T00:00:00`)
-            .lte("date_created", `${to}T23:59:59`),
+            .lte("date_created", `${to}T23:59:59`)),
 
-          supabase
+          pageAll(supabase
             .from("advance_payments")
             .select("amount, date_paid")
             .eq("mechanic_id", mechId)
             .gte("date_paid", from)
-            .lte("date_paid", to),
+            .lte("date_paid", to)),
         ]);
-
-        if (histRes.error) throw histRes.error;
-        if (prevAttRes.error) throw prevAttRes.error;
-        if (prevCommRes.error) throw prevCommRes.error;
-        if (prevAdvRes.error) throw prevAdvRes.error;
-        if (attRes.error) throw attRes.error;
-        if (commRes.error) throw commRes.error;
-        if (advRes.error) throw advRes.error;
 
         setHist((histRes.data || []) as SalaryHist[]);
         setPrevAtt((prevAttRes.data || []) as Attendance[]);

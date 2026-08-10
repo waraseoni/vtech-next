@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { pageAll } from "@/lib/fetch-all";
 import { Loader2, Printer, ShoppingCart, Calendar } from "lucide-react";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -34,21 +35,21 @@ function MonthlySalesContent() {
       const lastDay = new Date(year, m, 0).getDate();
       const to = `${month}-${String(lastDay).padStart(2, "0")}T23:59:59+05:30`;
 
-      const { data: txns } = await supabase
+      const { data: txns } = await pageAll(supabase
         .from("transaction_list").select("id, code, client_name, status, date_updated")
-        .gte("date_updated", from).lte("date_updated", to).neq("status", 4);
+        .gte("date_updated", from).lte("date_updated", to).neq("status", 4));
 
       const txnIds = [...new Set(txns?.map((t) => t.id) || [])];
       const { data: tpData } = txnIds.length
-        ? await supabase.from("transaction_products").select("transaction_id, product_id, product_name, price, qty").in("transaction_id", txnIds)
+        ? await pageAll(supabase.from("transaction_products").select("transaction_id, product_id, product_name, price, qty").in("transaction_id", txnIds))
         : { data: [] };
 
-      const { data: clients } = await supabase
+      const { data: clients } = await pageAll(supabase
         .from("client_list").select("id, firstname, middlename, lastname")
-        .eq("delete_flag", 0);
+        .eq("delete_flag", 0));
 
-      const { data: products } = await supabase
-        .from("product_list").select("id, name").eq("delete_flag", 0);
+      const { data: products } = await pageAll(supabase
+        .from("product_list").select("id, name").eq("delete_flag", 0));
 
       const saleRows: SaleRow[] = [];
       for (const tp of tpData || []) {

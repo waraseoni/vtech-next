@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { pageAll } from "@/lib/fetch-all";
 import { Loader2, Printer, CreditCard, TrendingUp } from "lucide-react";
 
 import { todayIST, currentMonthIST, formatIST, parseISTDate } from "@/lib/dateUtils";
@@ -37,18 +38,18 @@ function LoanReportContent() {
       const lastDay = new Date(y, m, 0).getDate();
       const monthEnd = `${month}-${String(lastDay).padStart(2, "0")}`;
 
-      const { data: loans } = await supabase
+      const { data: loans } = await pageAll(supabase
         .from("client_loans").select("id, client_id, loan_date, principal_amount, interest_rate, total_payable, emi_amount, status")
         .lte("loan_date", monthEnd)
-        .gte("status", 0);
+        .gte("status", 0));
 
-      const { data: clients } = await supabase
-        .from("client_list").select("id, firstname, middlename, lastname").eq("delete_flag", 0);
+      const { data: clients } = await pageAll(supabase
+        .from("client_list").select("id, firstname, middlename, lastname").eq("delete_flag", 0));
 
-      const { data: payments } = await supabase
+      const { data: payments } = await pageAll(supabase
         .from("client_payments").select("loan_id, amount, discount, payment_date")
         .not("loan_id", "is", null)
-        .lte("payment_date", monthEnd);
+        .lte("payment_date", monthEnd));
 
       const loanRows: LoanRow[] = [];
       for (const l of loans || []) {
