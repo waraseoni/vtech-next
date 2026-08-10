@@ -97,6 +97,10 @@ structure.txt
 src/app/backup/page_100%*
 src/app/salary/*page - Copy.tsx*
 
-# 16. Misc sensitive txt files
+# 16. DB backups & sync scratch files (do not commit)
+vtech_backup_*.json
+sync_plan.md
+
+# 17. Misc sensitive txt files
 *.7z
 db folder/
