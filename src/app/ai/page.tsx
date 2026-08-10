@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Loader2, Send, Sparkles, X, Bot, User, Trash2, Cpu, Zap, Activity, MessageSquare } from "lucide-react";
+import { Loader2, Send, Sparkles, X, Bot, User, Trash2, Cpu, Zap, Activity, MessageSquare, Bell, ChevronDown, AlertTriangle, PackageX, CalendarClock, UserCheck, Wallet } from "lucide-react";
+
+type NotificationItem = { [key: string]: any };
+type AlertGroup = { type: string; severity: string; title: string; items: NotificationItem[] };
+type AlertsResponse = { count: number; alerts: AlertGroup[]; note?: string; generated_at?: string };
 
 type Message = {
   id: string;
@@ -58,8 +62,8 @@ function FormattedMessage({ content }: { content: string }) {
             const text = line.replace(/^#{1,3}\s/, '');
             const Tag = `h${level}` as any;
             const sizes = { 
-              1: "text-2xl font-black mt-8 mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400", 
-              2: "text-xl font-bold mt-6 mb-3 text-white", 
+              1: "text-2xl font-black mt-8 mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500", 
+              2: "text-xl font-bold mt-6 mb-3 text-slate-200", 
               3: "text-lg font-bold mt-5 mb-2 text-slate-200" 
             };
             result.push(<Tag key={`h-${i}`} className={`${sizes[level as keyof typeof sizes]} tracking-tight`}>{parseInline(text)}</Tag>);
@@ -89,13 +93,13 @@ function parseInline(text: string) {
   const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} className="font-extrabold text-white">{part.slice(2, -2)}</strong>;
+      return <strong key={i} className="font-extrabold text-slate-200">{part.slice(2, -2)}</strong>;
     }
     if (part.startsWith('*') && part.endsWith('*')) {
       return <em key={i} className="text-slate-400 not-italic font-medium">{part.slice(1, -1)}</em>;
     }
     if (part.startsWith('`') && part.endsWith('`')) {
-      return <code key={i} className="bg-[#1c2231] text-blue-300 px-1.5 py-0.5 rounded leading-none font-mono text-[13px] border border-[#2d3748] mx-0.5">{part.slice(1, -1)}</code>;
+      return <code key={i} className="bg-[#1c2231] text-blue-500 px-1.5 py-0.5 rounded leading-none font-mono text-[13px] border border-[#2d3748] mx-0.5">{part.slice(1, -1)}</code>;
     }
     return <span key={i}>{part}</span>;
   });
@@ -116,8 +120,21 @@ export default function AIChatPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [aiProvider, setAiProvider] = useState("groq");
+  const [role, setRole] = useState<string>("");
+  const [notifs, setNotifs] = useState<AlertsResponse | null>(null);
+  const [showNotifs, setShowNotifs] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    fetch("/api/ai/alerts")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.role) setRole(data.role);
+        if (data?.alerts?.alerts) setNotifs(data.alerts);
+      })
+      .catch(() => {});
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -199,13 +216,14 @@ export default function AIChatPage() {
     { title: "Dashboard Stats", q: "Is month ka total profit aur revenue kya hai?", icon: <Activity size={14} /> },
     { title: "Client Dues", q: "Top 5 customers with maximum pending balance?", icon: <User size={14} /> },
     { title: "Weekly Report", q: "Please summarize this week's jobs and attendance.", icon: <MessageSquare size={14} /> },
+    { title: "Notifications", q: "Aaj ke notifications kya hain?", icon: <Bell size={14} /> },
   ];
 
   return (
     <div className="min-h-screen bg-[#090b10] flex flex-col font-sans overflow-hidden pattern-bg">
       <style dangerouslySetInnerHTML={{__html: `
         .pattern-bg {
-           background-image: radial-gradient(circle at center, #1b213b 0%, #090b10 100%);
+           background-image: radial-gradient(circle at center, var(--ai-glow, #1b213b) 0%, var(--ai-bg, #090b10) 100%);
         }
         @keyframes message-appear {
           0% { opacity: 0; transform: translateY(15px) scale(0.98); }
@@ -215,10 +233,16 @@ export default function AIChatPage() {
           animation: message-appear 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .glass-panel {
-          background: rgba(22, 27, 39, 0.6);
+          background: var(--ai-glass, rgba(22, 27, 39, 0.6));
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--ai-glass-border, rgba(255, 255, 255, 0.05));
+        }
+        html[data-theme="light"] {
+          --ai-bg: #f8f9fc;
+          --ai-glow: #e0e7ef;
+          --ai-glass: rgba(255, 255, 255, 0.8);
+          --ai-glass-border: rgba(15, 23, 42, 0.1);
         }
         .typing-dot {
           animation: typing-dot 1.4s infinite ease-in-out both;
@@ -242,7 +266,7 @@ export default function AIChatPage() {
               </div>
             </div>
             <div>
-              <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">V-Tech Copilot</h1>
+              <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">V-Tech Copilot</h1>
               <div className="flex items-center mt-0.5 gap-2">
                 <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#0d1117]/80 border border-[#21293d] shadow-inner">
                   <Cpu size={10} className="text-purple-400" />
@@ -257,6 +281,11 @@ export default function AIChatPage() {
                   </select>
                 </div>
                 <div className="flex items-center gap-1">
+                  {role && (
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest border ${role === "admin" ? "bg-amber-500/10 text-amber-500 border-amber-500/30" : "bg-sky-500/10 text-sky-500 border-sky-500/30"}`}>
+                      {role === "admin" ? "Admin" : "Staff"}
+                    </span>
+                  )}
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Online</span>
                 </div>
@@ -272,6 +301,59 @@ export default function AIChatPage() {
           </button>
         </div>
       </div>
+
+      {/* Notifications Banner */}
+      {notifs && notifs.alerts && notifs.alerts.length > 0 && (
+        <div className="max-w-4xl mx-auto w-full px-4 md:px-6 pt-4 shrink-0 z-10">
+          <div className={`glass-panel rounded-2xl overflow-hidden border ${notifs.alerts.some(a => a.severity === "warning") ? "border-amber-500/30" : "border-sky-500/30"}`}>
+            <button onClick={() => setShowNotifs(v => !v)} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.03] transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Bell size={18} className="text-amber-400" />
+                  <span className="absolute -top-1.5 -right-2 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center">
+                    {notifs.alerts.reduce((a, g) => a + (g.items?.length || 0), 0)}
+                  </span>
+                </div>
+                <span className="text-sm font-black text-slate-200">Notifications & Alerts</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{notifs.count} groups</span>
+              </div>
+              <ChevronDown size={16} className={`text-slate-400 transition-transform ${showNotifs ? "rotate-180" : ""}`} />
+            </button>
+
+            {showNotifs && (
+              <div className="px-5 pb-4 space-y-3 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-[#21293d]">
+                {notifs.alerts.map((group, gi) => {
+                  const isWarn = group.severity === "warning";
+                  const Icon = group.type === "low_stock" ? PackageX : group.type === "pending_jobs" ? CalendarClock : group.type === "attendance_missing" ? UserCheck : (group.type === "high_outstanding" || group.type === "active_loans") ? Wallet : AlertTriangle;
+                  return (
+                    <div key={gi} className="rounded-xl bg-[#0d1117]/80 border border-[#21293d] p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Icon size={14} className={isWarn ? "text-amber-400" : "text-sky-400"} />
+                        <span className="text-xs font-bold text-slate-200">{group.title}</span>
+                        <span className="ml-auto text-[10px] font-black text-slate-500">{group.items.length}</span>
+                      </div>
+                      <div className="space-y-1">
+                        {group.items.slice(0, 4).map((it, ii) => {
+                          const label = it.name || `${it.firstname || ""} ${it.lastname || ""}`.trim() || it.job_id || it.item || `#${it.product_id || it.mechanic_id || it.client_id || it.loan_id || ""}`;
+                          const sub = it.quantity !== undefined ? `Qty ${it.quantity} (alert ${it.alert_quantity})` : it.days_pending !== undefined ? `${it.days_pending}d` : it.outstanding !== undefined ? `₹${Number(it.outstanding).toLocaleString("en-IN")}` : it.due_date || it.contact || (it.opening_balance !== undefined ? `₹${Number(it.opening_balance).toLocaleString("en-IN")}` : it.total_payable !== undefined ? `₹${Number(it.total_payable).toLocaleString("en-IN")}` : "");
+                          return (
+                            <div key={ii} className="flex items-center justify-between gap-2 text-xs text-slate-400">
+                              <span className="truncate">{label}</span>
+                              {sub && <span className="shrink-0 font-bold text-slate-500">{sub}</span>}
+                            </div>
+                          );
+                        })}
+                        {group.items.length > 4 && <div className="text-[10px] font-bold text-slate-500">+{group.items.length - 4} more...</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+                {notifs.note && <div className="text-[10px] text-slate-500 italic">{notifs.note}</div>}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth">
@@ -358,7 +440,7 @@ export default function AIChatPage() {
                   className="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#090b10]/80 border border-[#21293d] hover:border-purple-500/50 transition-all shadow-sm hover:shadow-[0_0_15px_rgba(168,85,247,0.15)]"
                 >
                   <span className="text-purple-400 group-hover:text-purple-300">{q.icon}</span>
-                  <span className="text-xs font-bold text-slate-300 group-hover:text-white">{q.title}</span>
+                  <span className="text-xs font-bold text-slate-300 group-hover:text-slate-200">{q.title}</span>
                 </button>
               ))}
             </div>
@@ -378,7 +460,7 @@ export default function AIChatPage() {
                   }
                 }}
                 placeholder="Ask your AI Assistant anything about the business..."
-                className="flex-1 max-h-48 px-4 py-3 bg-transparent text-white placeholder-slate-500 outline-none resize-none overflow-y-auto scrollbar-thin scrollbar-thumb-[#21293d] text-[15px] sm:text-[16px] leading-relaxed"
+                className="flex-1 max-h-48 px-4 py-3 bg-transparent text-slate-200 placeholder-slate-500 outline-none resize-none overflow-y-auto scrollbar-thin scrollbar-thumb-[#21293d] text-[15px] sm:text-[16px] leading-relaxed"
                 rows={1}
                 disabled={loading}
               />

@@ -11,7 +11,7 @@ import {
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
   DollarSign, Truck, CreditCard, Clock, Briefcase, Coins, Receipt,
   Toolbox, FolderOpen, UsersRound, Database, Settings2, MessageSquare,
-  ChevronDown, ChevronRight, X, Menu, ArrowLeft, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen,
+  ChevronDown, ChevronRight, X, Menu, ArrowLeft, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock,
 } from "lucide-react";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
@@ -383,6 +383,7 @@ function SidebarNav({
               <li><Link href="/reports"                 className={subLinkCls(pathname === "/reports")}                onClick={onNavClick}><Sparkles size={12} className="text-blue-400" />All Reports</Link></li>
               <li><Link href="/reports/balancesheet"    className={subLinkCls(pathname === "/reports/balancesheet")}    onClick={onNavClick}><BarChart2 size={12} />Balance Sheet</Link></li>
               <li><Link href="/reports/delivered"      className={subLinkCls(pathname === "/reports/delivered")}      onClick={onNavClick}><Truck size={12} />Delivered Report</Link></li>
+              <li><Link href="/reports/due-reminders"  className={subLinkCls(pathname === "/reports/due-reminders")}  onClick={onNavClick}><CalendarClock size={12} className="text-red-400" />Due Reminders</Link></li>
               <li><Link href="/reports/monthly-profit" className={subLinkCls(pathname === "/reports/monthly-profit")} onClick={onNavClick}><BarChart2 size={12} className="text-emerald-400" />Monthly Profit</Link></li>
               <li><Link href="/reports/cash-flow"      className={subLinkCls(pathname === "/reports/cash-flow")}      onClick={onNavClick}><TrendingUp size={12} />Cash Flow</Link></li>
               <li><Link href="/reports/ledger"         className={subLinkCls(pathname === "/reports/ledger")}         onClick={onNavClick}><DollarSign size={12} />Business Ledger</Link></li>
@@ -606,6 +607,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   const isAdmin     = profile?.role === "admin";
   const isClient    = profile?.role === "client";
+  const isAiPage    = pathname === "/ai";
   const displayName = profile?.full_name ?? "User";
   const initials    = displayName.slice(0, 2).toUpperCase();
 
@@ -616,7 +618,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <PWAHead />
 
       {/* ══════════════════════ DESKTOP SIDEBAR ══════════════════════ */}
-        {isMobile === false && (
+        {isMobile === false && !isAiPage && (
           <aside className="fixed top-0 left-0 h-full w-[260px] theme-sidebar border-r border-[#21293d] flex flex-col z-50 theme-sidebar">
             {/* Brand */}
             <div className="relative overflow-hidden px-5 py-4 border-b border-[#1a2234]">
@@ -645,7 +647,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
 
         {/* ══════════════════════ MOBILE DRAWER ══════════════════════ */}
-        {isMobile === true && (
+        {isMobile === true && !isAiPage && (
           <>
             {/* Backdrop */}
             <div
@@ -714,9 +716,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
 
         {/* ══════════════════════ MAIN CONTENT ══════════════════════ */}
-        <div className={`${isMobile === false ? "lg:ml-[260px]" : "ml-0"} flex-1 min-h-screen flex flex-col`}>
+        <div className={`${isMobile === false && !isAiPage ? "lg:ml-[260px]" : "ml-0"} flex-1 min-h-screen flex flex-col`}>
 
           {/* ── TOPBAR ── */}
+          {!isAiPage && (
           <header className="sticky top-0 z-40 h-14 theme-topbar backdrop-blur border-b border-[#21293d] flex items-center justify-between px-4 gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               {/* Mobile: hamburger menu */}
@@ -825,9 +828,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               )}
             </div>
           </header>
+          )}
 
           {/* ── PAGE CONTENT ── */}
-          <main className="flex-1 p-3 sm:p-5 theme-body">
+          <main className={`flex-1 ${isAiPage ? "p-0" : "p-3 sm:p-5 theme-body"}`}>
             {isClient && !pathname.startsWith("/my-account")
               ? (
                 <div className="h-[60vh] flex flex-col items-center justify-center gap-3 text-slate-600">
@@ -840,19 +844,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         {/* ── AI ASSISTANT RIGHT DRAWER ── */}
-        {isAdmin && (
+        {!isClient && (
           <>
-            {/* Floating Button Group - Bottom Right */}
-            <div className="fixed bottom-20 right-4 z-40 flex flex-col gap-3">
-              {/* AI Assistant Button - positioned above Jobs FAB */}
-              <button
-                onClick={() => setAiDrawerOpen(true)}
-                className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg shadow-purple-500/30 flex items-center justify-center text-white hover:scale-110 transition-transform"
-                title="AI Assistant"
-              >
-                <Sparkles size={20} />
-              </button>
-            </div>
+            {/* Floating Button Group - Bottom Right (hidden while AI window is open) */}
+            {!aiDrawerOpen && !isAiPage && (
+              <div className="fixed bottom-20 right-4 z-40 flex flex-col gap-3">
+                {/* AI Assistant Button - positioned above Jobs FAB */}
+                <button
+                  onClick={() => setAiDrawerOpen(true)}
+                  className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg shadow-purple-500/30 flex items-center justify-center text-white hover:scale-110 transition-transform"
+                  title="AI Assistant"
+                >
+                  <Sparkles size={20} />
+                </button>
+              </div>
+            )}
 
             {/* Right Drawer */}
             <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-[#0d1117] border-l border-[#21293d] z-[100] transition-transform duration-300 ease-out ${aiDrawerOpen ? "translate-x-0" : "translate-x-full"}`}>

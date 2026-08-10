@@ -1,6 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { geminiTools, executeGeminiTool } from "./gemini-tools";
-import { todayIST } from "./dateUtils";
+import { geminiTools, executeGeminiTool, buildSystemPrompt, type AiRole } from "./gemini-tools";
 
 export type ChatMessage = {
   role: "user" | "model" | "assistant" | "function" | "system";
@@ -10,7 +9,8 @@ export type ChatMessage = {
 export async function getChatResponse(
   messages: ChatMessage[],
   apiKey?: string,
-  modelName?: string
+  modelName?: string,
+  role: AiRole = "admin"
 ): Promise<string> {
   const key = apiKey || process.env.GEMINI_API_KEY || "API_KEY_MISSING";
   if (key === "API_KEY_MISSING" || key.trim() === "") {
@@ -19,16 +19,7 @@ export async function getChatResponse(
   const genAI = new GoogleGenerativeAI(key);
   const modelId = modelName || "gemini-2.0-flash";
 
-  const systemInstruction = `
-Namaste! You are the intelligent, helpful business assistant for V-Technologies (V-TECH PRO).
-Always greet the user politely and answer their questions precisely.
-Today's date is: ${new Date().toLocaleDateString('en-GB')} (YYYY-MM-DD for tool usage: ${todayIST()}).
-You have access to their Supabase database via tools to check total profit, customers, recent jobs, and mechanic performance.
-Whenever the user asks about profit, clients, or jobs, ALWAYS use the function calling tools to get real data. Do not make up data.
-When they ask for this month's data, use the get_job_statistics tool with the correct start_date and end_date of this month.
-If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). Otherwise, reply in English.
-Be concise with your outputs. Do not return markdown that cannot be read well. Use bullet points where necessary.
-`;
+  const systemInstruction = buildSystemPrompt(role);
 
   try {
     const model = genAI.getGenerativeModel({ 
@@ -75,7 +66,7 @@ Be concise with your outputs. Do not return markdown that cannot be read well. U
         console.debug(`Gemini requested tool: ${call.name}`, call.args);
         
         // Execute our internal function
-        const apiResponse = await executeGeminiTool(call);
+        const apiResponse = await executeGeminiTool(call, role);
         
         // 3. Send the API response back to the model so it can answer the user
         result = await chat.sendMessage([{

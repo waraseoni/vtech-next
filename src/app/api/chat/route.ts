@@ -3,12 +3,16 @@ import { getChatResponse, generateWhatsAppReply } from "@/lib/gemini";
 import { getGroqChatResponse } from "@/lib/groq";
 import type { ChatMessage } from "@/lib/gemini";
 import { getAiSettings } from "@/lib/ai-settings";
-import { requireStaff } from "@/lib/api-auth";
+import { requireStaff, getSessionRole } from "@/lib/api-auth";
+import type { AiRole } from "@/lib/gemini-tools";
 
 export async function POST(request: NextRequest) {
   try {
     const user = await requireStaff();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const sessionRole = await getSessionRole();
+    const role: AiRole = sessionRole === "admin" ? "admin" : "staff";
 
     const body = await request.json();
     const { message, messages, type, context, provider } = body;
@@ -30,9 +34,9 @@ export async function POST(request: NextRequest) {
 
     if (type === "chat" && messages) {
       if (activeProvider === "groq") {
-         responseText = await getGroqChatResponse(messages, apiKey, modelName);
+         responseText = await getGroqChatResponse(messages, apiKey, modelName, role);
       } else {
-         responseText = await getChatResponse(messages as ChatMessage[], apiKey, modelName);
+         responseText = await getChatResponse(messages as ChatMessage[], apiKey, modelName, role);
       }
     } else if (type === "whatsapp") {
       responseText = await generateWhatsAppReply(
@@ -44,7 +48,7 @@ export async function POST(request: NextRequest) {
       );
     } else {
       const prompt = message || (messages && messages[messages.length - 1]?.content) || "";
-      responseText = await getChatResponse([{ role: "user", content: prompt }], apiKey, modelName);
+      responseText = await getChatResponse([{ role: "user", content: prompt }], apiKey, modelName, role);
     }
 
     return NextResponse.json({ response: responseText });

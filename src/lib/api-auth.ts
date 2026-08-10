@@ -89,3 +89,20 @@ export async function requireAdmin() {
   if (profile?.role !== "admin") return null;
   return { user, profile };
 }
+
+/** Returns the logged-in user's profile role ("admin" | "staff" | "client") or null. */
+export async function getSessionRole(): Promise<string | null> {
+  const supabase = await getServerSupabase();
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    return profile?.role ?? null;
+  } catch {
+    return null;
+  }
+}

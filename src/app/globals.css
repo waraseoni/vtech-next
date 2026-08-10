@@ -198,6 +198,13 @@ html[data-theme="light"] {
   .bg-\[\#253048\] { background-color: #e3e8f0 !important; }
   .bg-\[\#252f45\] { background-color: #e3e8f0 !important; }
   .bg-\[\#1e2030\] { background-color: #e9edf4 !important; }
+
+  /* AI Copilot / chat surfaces */
+  .bg-\[\#090b10\] { background-color: #f8f9fc !important; }
+  .bg-\[\#090b10\]\/80 { background-color: rgba(255, 255, 255, 0.85) !important; }
+  .bg-\[\#0d1117\]\/80 { background-color: rgba(241, 245, 249, 0.9) !important; }
+  .bg-\[\#10141d\] { background-color: #eef2f7 !important; }
+  .bg-\[\#1c2231\] { background-color: #e2e8f0 !important; }
   
   /* Visibility fix for stats: Ensure text is dark and background is vibrant or high-contrast in light mode */
   .bg-\[\#111520\].rounded-2xl.p-4 {
@@ -230,6 +237,8 @@ html[data-theme="light"] {
   .border-b.border-\[\#1a2234\] { border-bottom-color: var(--app-border-2) !important; }
   .border-\[\#2a3550\] { border-color: #cbd5e1 !important; }
   .border-\[\#334155\] { border-color: #94a3b8 !important; }
+  .border-\[\#2d3748\] { border-color: #cbd5e1 !important; }
+  .border-\[\#21293d\]\/50 { border-color: rgba(203, 213, 225, 0.5) !important; }
   
   /* Text colors - ensure good contrast in light mode */
   .text-slate-100, .text-slate-200, .text-slate-300 { color: #0f172a !important; }

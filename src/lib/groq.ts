@@ -1,5 +1,5 @@
 import Groq from "groq-sdk";
-import { geminiTools, executeGeminiTool } from "./gemini-tools";
+import { geminiTools, executeGeminiTool, buildSystemPrompt, type AiRole } from "./gemini-tools";
 
 const groqTools = geminiTools.map((t: any) => ({
     type: "function",
@@ -10,7 +10,7 @@ const groqTools = geminiTools.map((t: any) => ({
     }
 }));
 
-export async function getGroqChatResponse(messages: any[], apiKey?: string, modelName?: string): Promise<string> {
+export async function getGroqChatResponse(messages: any[], apiKey?: string, modelName?: string, role: AiRole = "admin"): Promise<string> {
     const key = apiKey || process.env.GROQ_API_KEY || "API_KEY_MISSING";
     if (key === "API_KEY_MISSING" || key.trim() === "") {
         return "ERROR: Groq API Key missing. Settings page se API key daalein ya .env.local mein GROQ_API_KEY set karein.";
@@ -18,23 +18,7 @@ export async function getGroqChatResponse(messages: any[], apiKey?: string, mode
     const groq = new Groq({ apiKey: key });
     const modelId = modelName || "llama-3.3-70b-versatile";
 
-    const systemInstruction = `
-Namaste! You are the intelligent, helpful business assistant for V-Technologies (V-TECH PRO).
-Always greet the user politely and answer their questions precisely.
-Today's date is: ${new Date().toLocaleDateString("en-GB")} (YYYY-MM-DD for tool usage: ${new Date().toISOString().split("T")[0]}).
-You have access to their Supabase database via tools to check total profit, customers, recent jobs, and mechanic performance.
-Whenever the user asks about profit, revenue, or cash in, ALWAYS use the function calling tools.
-- **Revenue**: Use get_financial_report. It includes BOTH Repairs and Direct Product Sales.
-- **Cash In**: Use get_financial_report.  - Revenue (कमाई): Sum of Job Amounts (for jobs with Status 5 ONLY) + All Direct Sales.
-  - Cash In (नकद आय): Sum of Received Payments + Walk-in Cash Sales (where client_id is 0/null).
-  - Profit (लाभ): Total Revenue minus (Salaries + Commission + Shop Expenses + EMI + Discounts).
-  - Single Day Logic: If the user asks for data for a specific day (e.g., '23 March'), you MUST call tools with start_date and end_date BOTH set to that exact date (e.g., '2026-03-23'). Do NOT include previous days unless a range is asked.
-  - Context: User's business is V-TECH. Dates are in YYYY-MM-DD format. Offset is IST (+05:30).
-- **Monthly stats**: Always use a full month range (e.g., 2024-03-01 to 2024-03-31) when asked about "this month".
-- **Job Status**: Always use the "status_label" (e.g., 'Delivered') instead of the number (e.g., 5) when replying.
-- **Tool Usage**: Use the native JSON tool calling provided by the API. If you absolutely must use the text fallback, use format: <function=tool_name,{"param":"value"}></function>.
-If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). Otherwise, reply in English.
-`;
+    const systemInstruction = buildSystemPrompt(role);
 
     const lastMessageObj = messages[messages.length - 1];
     const initialPrompt = lastMessageObj.content;
@@ -76,7 +60,7 @@ If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). O
                 const apiResponse = await executeGeminiTool({
                     name: toolCall.function.name,
                     args: functionArgs
-                });
+                }, role);
 
                 // Send back the tool result using strict standard
                 formattedHistory.push({
@@ -111,7 +95,7 @@ If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). O
                 }
 
                 console.debug(`Groq text fallback tool request: ${name}`, args);
-                const apiResponse = await executeGeminiTool({ name, args });
+                        const apiResponse = await executeGeminiTool({ name, args }, role);
 
                 // INSTEAD of throwing a native tool message (which causes 400 Bad Request if ID is fake),
                 // we tell the model it performed an action and give it the result directly via user prompt.
@@ -156,7 +140,7 @@ If they speak in Hindi or Hinglish, reply in Hindi/Hinglish (roman perfectly). O
                         let args = {};
                         try { args = JSON.parse(argsMatch[0]); } catch(e) {}
                         
-                        const apiResponse = await executeGeminiTool({ name, args });
+                const apiResponse = await executeGeminiTool({ name, args }, role);
                         
                         const fallbackHistory = [...formattedHistory];
                         
