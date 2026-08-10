@@ -731,7 +731,7 @@ export default function ViewClientProfile() {
                   className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-300 hover:bg-blue-500/25 transition-colors no-underline">
                   <Phone size={11} /> Call
                 </a>
-                {client.payment_due_date && (
+                {client.payment_due_date && netBalance > 0 && (
                   <span className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${
                     (new Date(client.payment_due_date).getTime() < Date.now())
                       ? 'bg-red-500/15 border-red-500/25 text-red-300'
@@ -924,7 +924,7 @@ export default function ViewClientProfile() {
         )}
 
         {/* ── PAYMENT REMINDERS LOG ── */}
-        {reminders.length > 0 && (
+        {reminders.length > 0 && netBalance > 0 && (
           <div className="rounded-2xl border overflow-hidden theme-card">
             <div className="px-5 py-4 border-b flex items-center justify-between theme-panel-2">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
