@@ -252,5 +252,5 @@ DELETE /clear-ip → body: { ip } (flooded IP unblock)
 5. ✅ (done 10 Aug) Login page rewire (supabase → fetch API), Hindi messages, 3 handlers API se
 6. ✅ (done 10 Aug) `/api/admin/throttle/route.ts` + admin UI (`/settings/throttle`, unlock modal + search)
 7. ✅ (done 10 Aug) Test checklist (#9) — live DB: RLS closed (anon deny sab CRUD), 5 fail→15m lock, 6th block, escalation→30m, reset. **Bug fix**: escalation logic `login-throttle.ts` me (windowExpired pe increment — pehle kabhi trigger nahi hota tha). `tsc` + `build` pass
-8. [ ] Deploy (git push → Vercel) — migration pehle se apply hai
+8. ✅ (done 10 Aug) Deploy — `a965c5b` pushed → Vercel (migration pehle se apply)
 9. [ ] (Phase 2) Alert/audit/captcha/cleanup — jab requirement aaye

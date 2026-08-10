@@ -1,6 +1,8 @@
 # Client Portal Plan (Client Login → Sirf Apni Details)
-*Created: 08 Aug 2026 · Status: CORE IMPLEMENTED — migration apply + SMTP setup pending · Updated: 09 Aug 2026 (security review + hardening + email OTP)*
-*Source: current auth model analysis*
+*Created: 08 Aug 2026 · Status: ✅ COMPLETE + USER-TESTED (10 Aug) — SQL applied, Gmail SMTP set, client OTP login verified, admin toggle ON/OFF verified · Updated: 10 Aug 2026*
+*✅ 10 Aug (USER TESTED): SQL run kiya, Gmail SMTP set kiya, client email se OTP generate kiya, OTP se login kiya, admin se portal access ON/OFF toggle karke check kiya — SAB SAHI KAAM KAR RAHA HAI.*
+*✅ 10 Aug (live verify): `profiles_role_check` me `client` ALREADY present (role=client upsert OK). `client_list.login_allowed` ✅, `profiles.client_id` ✅, RLS transaction_list + client_payments CLOSED ✅. Section 5 migration applied tha — plan item #5/#108 outdated.*
+*⚠️ 10 Aug (data audit): Portal-enabled clients sirf 2 — #79 `hemantmehra0316@gmail.com` (email OK) aur #196 `Nihal Dehriya Palari` (email EMPTY → OTP kabhi nahi jayega). 450 clients me ~350 ke paas email hi nahi. Kaun-se clients portal payenge + unke emails — business owner ka decision hai (main invent nahi kar sakta).*
 *⚠️ 09 Aug (diagnostic): `profiles_role_check` CHECK constraint sirf admin/staff allow karta hai — `role='client'` insert live me FAIL (`violates check constraint profiles_role_check`). Fix migration me section 5 me add — SQL editor me run karna hai. Email collision: client #2 (`coolguy.1595@gmail.com`) aur #3 (`vik.vtech@gmail.com`) ke emails pehle se staff auth accounts hain → unse portal login par staff UI milegi. Test ke liye non-conflicting email (e.g. #4 `preetijn65@gmail.com`).*
 *⚠️ 09 Aug (root cause #2): Supabase ka auto-profile trigger (on_auth_user_created/handle_new_user) OTP signup (shouldCreateUser) par bhi `role='staff'` ki zombie profile bana deta hai → onboard role='staff' dekh kar staff UI deta tha. Fix: onboard ab zombie staff → client convert karta hai (jab email client_list+login_allowed me ho) + migration `20260809_drop_auth_profile_trigger.sql` (trigger drop — profiles ab sirf explicit insert se).*
 *✅ 09 Aug (due + ledger): `/api/client/ledger` (own client_id, opening+repairs+direct sales+loans−payments=due, running balance, from/to filter), `/api/client/me` me `due`, `/my-account` me due/advance card, naya `/my-account/ledger` (date filter + print popup), sidebar me "Meri Ledger" link.*
@@ -103,14 +105,55 @@ Client ko login dekar **sirf uski apni** repairs/payments/loan details dekhne ki
 2. ✅ **Unauth/public endpoints lock** (done 09 Aug) — reports/ledger, reports/balancesheet, job-status client_name
 3. ✅ **requireStaff() + data route guards** (done 09 Aug) — print/export/chat/reports + photo uploads + signature
 4. ✅ **Phase 2 (Email OTP login) + Phase 4 client API guards** (done 09 Aug) — login tabs, onboard/me/jobs/payments, requireClient
-5. ⬜ **Phase 1 (RLS/migrations) apply** — `20260809_client_portal.sql` Supabase me run karna (user action), fir E2E test
-   - ✅ `login_allowed` + `profiles.client_id` column **live me applied** (diag confirm)
-   - ⚠️ **Section 5 baaki:** `profiles_role_check` constraint me `client` add (abhi SQL editor me run karna hai) — bina iske `role='client'` insert fail karta hai
-6. ⬜ **SMTP setup** (user action) + client emails set + portal toggle ON
+5. ✅ **Phase 1 (RLS/migrations) apply** — `20260809_client_portal.sql` live me APPLIED (verified 10 Aug: login_allowed ✓, client_id ✓, RLS transaction_list ✓, RLS client_payments ✓, profiles_role_check 'client' ✓). Migration ke baad E2E test baaki.
+6. ⬜ **SMTP setup** (user action — Gmail app password / Zoho / Brevo / Resend) + client emails set + portal toggle ON. **Abhi: #196 email empty set karna hai (Edit Client se), #79 OK hai**
 7. ⬜ Phase 3 polish (optional WhatsApp link per job) + Phase 5 production test
 8. ⬜ Deploy: git push → Vercel
 
+## SMTP Setup Guide (user action — Supabase Auth me custom SMTP)
+
+Portal email OTP ke liye Supabase Auth ko custom SMTP chahiye (nahi to hosted email use hoga — free par rate-limited + spam risk). Steps:
+
+### Option A — Gmail (recommended, free ~500/day)
+1. Gmail → Google Account → **Security** → **2-Step Verification ON** (zaroori)
+2. **Search "App Passwords"** → create app password (select "Mail" / "Other") → 16-char code milta hai
+3. Supabase Dashboard → Project → **Authentication → SMTP Settings**
+4. Fill karo:
+   - Host: `smtp.gmail.com`
+   - Port: `465` (SSL) — agar 465 na chale to `587` + Enable SSL off/TLS on
+   - Username: aapka Gmail (e.g. `hemantmehra0316@gmail.com`)
+   - Password: 16-char **App Password** (normal Gmail password NAHI)
+   - Sender name: `V-Technologies` / Sender email: same Gmail
+5. Save → "Send test email" se verify karo
+
+### Option B — Zoho Mail (free plan)
+- Host `smtp.zoho.com`, port `465`, apna Zoho email + app-specific password
+
+### Option C — Brevo (free 300/day) / Resend (free 3000/month)
+- Brevo: `smtp-relay.brevo.com:587`, SMTP key (Master password nahi, SMTP key banani hoti hai)
+- Resend: API key se `resend.com` (REST) — Supabase SMTP form me `smtp.resend.com:465`, username `resend`, password = API key
+
+### Verify
+- OTP email subject/body: Supabase Dashboard → Authentication → **Email Templates → OTP** me customize kar sakte ho
+- Client login test: `/login` → Client tab → email → OTP code → `/my-account`
+
+## Client Portal Launch Checklist (user)
+
+1. ✅ Migration applied + verified (10 Aug)
+2. ✅ SMTP setup (Gmail) — user done
+3. ✅ Client email set + portal toggle ON — user done (OTP login + toggle ON/OFF tested OK)
+4. ✅ Test: client login → repairs/payments dekhna — user verified
+5. ✅ Deploy — client portal code deployed (a965c5b)
+
+
+- Phase 1: ~1-2 ghante (migration + dashboard RLS apply)
+- Phase 2: ~1-2 ghante (+ SMTP setup alag)
+- Phase 4: ~2-3 ghante (skip mat karna)
+- Phase 3: ~2-4 ghante
+- **Total: ~1-2 din**
+
 ## Effort Estimate
+
 - Phase 1: ~1-2 ghante (migration + dashboard RLS apply)
 - Phase 2: ~1-2 ghante (+ SMTP setup alag)
 - Phase 4: ~2-3 ghante (skip mat karna)
