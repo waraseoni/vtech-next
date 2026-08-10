@@ -51,14 +51,15 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const { error: authErr } = await supabase.auth.signInWithPassword({ email, password });
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "password", email, password }),
+    });
+    const data = await res.json();
 
-    if (authErr) {
-      setError(
-        authErr.message.includes("Invalid login")
-          ? "Email ya password galat hai!"
-          : authErr.message
-      );
+    if (!res.ok) {
+      setError(data.error || "Login fail hua. Dobara try karein.");
       setLoading(false);
       return;
     }
@@ -81,15 +82,15 @@ export default function LoginPage() {
     setInfo("");
     setLoading(true);
 
-    const { error: otpErr } = await supabase.auth.signInWithOtp({
-      email: clientEmail.trim().toLowerCase(),
-      options: { shouldCreateUser: true },
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "otp", email: clientEmail.trim().toLowerCase() }),
     });
+    const data = await res.json();
 
-    if (otpErr) {
-      setError(otpErr.message.includes("rate") || otpErr.message.includes("limit")
-        ? "Thodi der ruk kar dobara try karein (OTP limit)."
-        : otpErr.message);
+    if (!res.ok) {
+      setError(data.error || "OTP bhejna fail hua. Dobara try karein.");
       setLoading(false);
       return;
     }
@@ -106,33 +107,32 @@ export default function LoginPage() {
     setInfo("");
     setLoading(true);
 
-    const { error: verifyErr } = await supabase.auth.verifyOtp({
-      email: clientEmail.trim().toLowerCase(),
-      token: otp.trim(),
-      type: "email",
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "verify-otp", email: clientEmail.trim().toLowerCase(), token: otp.trim() }),
     });
+    const data = await res.json();
 
-    if (verifyErr) {
-      setError(verifyErr.message.includes("code")
-        ? "OTP galat hai ya expire ho gaya. Dobara try karein."
-        : verifyErr.message);
+    if (!res.ok) {
+      setError(data.error || "OTP verify fail hua. Dobara try karein.");
       setLoading(false);
       return;
     }
 
     // Profile (role=client, client_id) service-role API se banao
-    const res = await fetch("/api/client/onboard", { method: "POST" });
-    const data = await res.json();
+    const onboardRes = await fetch("/api/client/onboard", { method: "POST" });
+    const onboardData = await onboardRes.json();
 
-    if (!res.ok) {
-      setError(data.error || "Account setup nahi hua.");
+    if (!onboardRes.ok) {
+      setError(onboardData.error || "Account setup nahi hua.");
       await supabase.auth.signOut();
       setLoading(false);
       setOtpStep("request");
       return;
     }
 
-    window.location.href = data.redirect === "/" ? "/" : "/my-account";
+    window.location.href = onboardData.redirect === "/" ? "/" : "/my-account";
   };
 
   const switchTab = (t: Tab) => {

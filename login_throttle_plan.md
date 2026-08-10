@@ -246,11 +246,11 @@ DELETE /clear-ip → body: { ip } (flooded IP unblock)
 ## ⚡ EXECUTION ORDER (jab implement karna ho — ye hi TODO hai)
 
 1. ✅ (done) Design review + plan document
-2. [ ] Migration file: `20260810_login_throttle.sql` + Supabase apply
-3. [ ] `src/lib/login-throttle.ts` (config, IP normalize, lock/fail/reset, escalation)
-4. [ ] `/api/auth/login/route.ts` (password + otp + verify-otp modes, 429/401 messages)
-5. [ ] Login page rewire (supabase → fetch API), Hindi messages
-6. [ ] `/api/admin/throttle/route.ts` + admin UI (unlock list + button)
-7. [ ] Test checklist (#9) + `tsc` + `build`
-8. [ ] Deploy
+2. ✅ (done 10 Aug) Migration file: `supabase/migrations/20260810_login_throttle.sql` bana — **Supabase SQL editor me apply baaki** (`lock_repeats` escalation column included)
+3. ✅ (done 10 Aug) `src/lib/login-throttle.ts` (config, IP normalize, lock/fail/reset, escalation)
+4. ✅ (done 10 Aug) `/api/auth/login/route.ts` (password + otp + verify-otp modes, 429/401 messages)
+5. ✅ (done 10 Aug) Login page rewire (supabase → fetch API), Hindi messages, 3 handlers API se
+6. ✅ (done 10 Aug) `/api/admin/throttle/route.ts` + admin UI (`/settings/throttle`, unlock modal + search)
+7. ✅ (done 10 Aug) Test checklist (#9) — live DB: RLS closed (anon deny sab CRUD), 5 fail→15m lock, 6th block, escalation→30m, reset. **Bug fix**: escalation logic `login-throttle.ts` me (windowExpired pe increment — pehle kabhi trigger nahi hota tha). `tsc` + `build` pass
+8. [ ] Deploy (git push → Vercel) — migration pehle se apply hai
 9. [ ] (Phase 2) Alert/audit/captcha/cleanup — jab requirement aaye
