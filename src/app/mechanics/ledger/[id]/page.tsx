@@ -162,6 +162,7 @@ export default function MechanicLedger() {
     }
   }, [mid, from, to]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch mount effect; setLoading sync init legit hai
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const changeMonth = (offset: number) => {
@@ -179,7 +180,7 @@ export default function MechanicLedger() {
   };
 
   const handlePrint = () => {
-    window.open(`/api/print-mechanic-ledger?id=${mid}&from=${from}&to=${to}`, "_blank");
+    window.open(`/api/print-mechanic-ledger?id=${mid}&from=${from}&to=${to}&mode=created`, "_blank");
   };
 
   if (loading && !mechanic) {
