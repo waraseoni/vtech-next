@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     pageAll(supabase.from("transaction_list").select("mechanic_commission_amount").eq("mechanic_id", id).eq("status", 5).lte("date_completed", prevLimitStr + " 23:59:59")),
     pageAll(supabase.from("advance_payments").select("amount").eq("mechanic_id", id).lte("date_paid", prevLimitStr)),
     pageAll(supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", id).gte("curr_date", from).lte("curr_date", to)),
-    pageAll(supabase.from("transaction_list").select("id, job_id, item, mechanic_commission_amount, status, date_created").eq("mechanic_id", id).gte("date_created", from + " 00:00:00").lte("date_created", to + " 23:59:59")),
+    pageAll(supabase.from("transaction_list").select("id, job_id, item, mechanic_commission_amount, status, date_completed").eq("mechanic_id", id).eq("status", 5).gte("date_completed", from + " 00:00:00").lte("date_completed", to + " 23:59:59")),
     pageAll(supabase.from("advance_payments").select("amount, date_paid").eq("mechanic_id", id).gte("date_paid", from).lte("date_paid", to))
   ]);
 
@@ -115,12 +115,11 @@ export async function GET(request: NextRequest) {
       else if (att.status === 3) { statusLabel = "Half Day"; wage = rate / 2; }
     }
 
-    // Jobs
-    const dayJobs = (allComm.data || []).filter(j => j.date_created.startsWith(dStr));
+    // Jobs (PHP salary logic: commission counted on delivery date, status=5 only)
+    const dayJobs = (allComm.data || []).filter(j => (j.date_completed || "").startsWith(dStr));
     let commPay = 0;
     dayJobs.forEach(j => {
-        const val = parseFloat(j.mechanic_commission_amount) || 0;
-        if (j.status === 5) commPay += val;
+        commPay += parseFloat(j.mechanic_commission_amount) || 0;
     });
 
     // Advance

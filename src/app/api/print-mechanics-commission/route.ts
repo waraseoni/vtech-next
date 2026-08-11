@@ -32,24 +32,28 @@ export async function GET(request: NextRequest) {
   const month = url.searchParams.get("month") || "";
   const mechanicId = url.searchParams.get("mechanic_id") || "all";
 
-  const from = month ? `${month}-01T00:00:00` : "";
-  const toDate = month ? new Date(month + "-01") : new Date();
-  toDate.setMonth(toDate.getMonth() + 1);
-  const to = month ? toDate.toISOString().split("T")[0] + "T23:59:59" : "";
+  const from = month ? `${month}-01T00:00:00+05:30` : "";
+  let to = "";
+  if (month) {
+    const [y, m] = month.split("-").map(Number);
+    const lastDay = new Date(y, m, 0).getDate();
+    to = `${month}-${String(lastDay).padStart(2, "0")}T23:59:59+05:30`;
+  }
 
   const mechData = await fetchAll(
     supabase
       .from("mechanic_list")
-      .select("id, firstname, middlename, lastname")
-      .eq("delete_flag", 0)
+      .select("id, firstname, middlename, lastname, commission_percent")
       .order("firstname")
   );
 
+  // PHP commission_history: only DELIVERED jobs (status=5) by date_completed
   let q = supabase
     .from("transaction_list")
-    .select("id, job_id, code, date_created, mechanic_id, mechanic_commission_amount")
-    .gte("date_created", from)
-    .lte("date_created", to);
+    .select("id, job_id, code, item, client_name, date_created, date_completed, mechanic_id, mechanic_commission_amount")
+    .eq("status", 5)
+    .gte("date_completed", from)
+    .lte("date_completed", to);
   if (mechanicId && mechanicId !== "all") q = q.eq("mechanic_id", parseInt(mechanicId));
   const txns = await fetchAll(q);
 
@@ -64,27 +68,78 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const mechMap = new Map(mechData?.map(m => [m.id, [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ")]) ?? []);
+  const mechMap = new Map(mechData?.map(m => [m.id, {
+    name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+    rate: m.commission_percent || 0,
+  }]) ?? []);
+
+  // Client names (PHP: LEFT JOIN client_list on client_name)
+  const clientIds = [...new Set(txns.map(t => Number(t.client_name)).filter(Boolean))];
+  const clientMap = new Map<number, string>();
+  if (clientIds.length > 0) {
+    const { data: clRows } = await supabase.from("client_list").select("id, firstname, middlename, lastname").in("id", clientIds);
+    (clRows || []).forEach(c => clientMap.set(c.id, [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ")));
+  }
+
+  // Service amounts (PHP: SUM(transaction_services.price))
+  const txnIds = txns.map(t => t.id);
+  const svcMap: Record<number, number> = {};
+  if (txnIds.length > 0) {
+    const { data: svcs } = await supabase.from("transaction_services").select("transaction_id, price").in("transaction_id", txnIds);
+    svcs?.forEach(s => { svcMap[s.transaction_id] = (svcMap[s.transaction_id] || 0) + (s.price || 0); });
+  }
+
+  // Effective rate per job (PHP: latest history with effective_date <= job's date_created)
+  const mechIds = [...new Set(txns.map(t => t.mechanic_id))];
+  const histByMech: Record<number, { effective_date: string; id: number; commission_percent: number }[]> = {};
+  if (mechIds.length > 0) {
+    const { data: histRows } = await supabase.from("mechanic_commission_history")
+      .select("id, mechanic_id, commission_percent, effective_date").in("mechanic_id", mechIds);
+    (histRows || []).forEach(h => {
+      if (!histByMech[h.mechanic_id]) histByMech[h.mechanic_id] = [];
+      histByMech[h.mechanic_id].push({ effective_date: h.effective_date, id: h.id, commission_percent: h.commission_percent });
+    });
+    Object.values(histByMech).forEach(arr =>
+      arr.sort((a, b) => (a.effective_date < b.effective_date ? 1 : a.effective_date > b.effective_date ? -1 : b.id - a.id))
+    );
+  }
+  const effRateFor = (mechId: number, onDate: string, fallback: number): number => {
+    const on = (onDate || "").slice(0, 10);
+    const hist = histByMech[mechId] || [];
+    for (const h of hist) {
+      if (h.effective_date <= on) return h.commission_percent;
+    }
+    return fallback;
+  };
 
   const enriched = [];
   for (const t of txns) {
+    const mech = mechMap.get(t.mechanic_id);
     enriched.push({
       id: t.id,
       job_id: t.job_id || String(t.id),
       code: t.code || null,
+      item: t.item || "",
+      client_name: clientMap.get(Number(t.client_name)) || "",
       date_created: t.date_created,
+      date_completed: t.date_completed,
       mechanic_id: t.mechanic_id,
-      m_name: mechMap.get(t.mechanic_id) || "Unknown",
+      m_name: mech?.name || "Unknown",
+      rate: effRateFor(t.mechanic_id, t.date_created, mech?.rate || 0),
+      service_amount: svcMap[t.id] || 0,
       mechanic_commission_amount: t.mechanic_commission_amount || 0,
     });
   }
 
-  enriched.sort((a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime());
-  
-  const rows = enriched.filter((r) => r.mechanic_commission_amount > 0);
+  // PHP sorts by date_completed DESC
+  enriched.sort((a, b) =>
+    new Date(b.date_completed || b.date_created).getTime() - new Date(a.date_completed || a.date_created).getTime()
+  );
+
+  const rows = enriched;
   const totalComm = rows.reduce((s, r) => s + r.mechanic_commission_amount, 0);
   const monthLabel = month ? new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" }) : "All Records";
-  const staffLabel = mechanicId && mechanicId !== "all" ? mechMap.get(parseInt(mechanicId)) || "Staff" : "All Staff";
+  const staffLabel = mechanicId && mechanicId !== "all" ? mechMap.get(parseInt(mechanicId))?.name || "Staff" : "All Staff";
 
   const byMechanic = rows.reduce<Record<number, { name: string; total: number; jobs: number }>>(
     (acc, r) => {
@@ -100,9 +155,13 @@ export async function GET(request: NextRequest) {
     const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
     return `<tr style="background:${rowBg}">
       <td style="padding:7px 8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:12px">${i + 1}</td>
-      <td style="padding:7px 8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(r.date_created)}</td>
+      <td style="padding:7px 8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(r.date_completed || r.date_created)}</td>
       <td style="padding:7px 8px;border:1px solid #dee2e6;font-weight:700;color:#1971c2;font-size:12px">#${r.job_id}</td>
+      <td style="padding:7px 8px;border:1px solid #dee2e6;font-size:12px">${r.item || "—"}</td>
+      <td style="padding:7px 8px;border:1px solid #dee2e6;font-size:12px">${r.client_name || "—"}</td>
       <td style="padding:7px 8px;border:1px solid #dee2e6;font-weight:600;font-size:12px">${r.m_name}</td>
+      <td style="padding:7px 8px;border:1px solid #dee2e6;text-align:center;font-size:12px">${r.rate.toFixed(0)}%</td>
+      <td style="padding:7px 8px;border:1px solid #dee2e6;text-align:right;font-weight:600;font-size:12px">${inr(r.service_amount)}</td>
       <td style="padding:7px 8px;border:1px solid #dee2e6;text-align:right;font-weight:700;color:#2f9e44;font-size:12px">${inr(r.mechanic_commission_amount)}</td>
     </tr>`;
   }).join("");
@@ -167,17 +226,21 @@ export async function GET(request: NextRequest) {
     <table>
       <thead>
         <tr>
-          <th style="width:5%">#</th>
-          <th style="width:12%">Date</th>
-          <th style="width:10%">Job ID</th>
-          <th style="width:25%">Staff</th>
+          <th style="width:4%">#</th>
+          <th style="width:10%">Date</th>
+          <th style="width:8%">Job ID</th>
+          <th style="width:14%">Item</th>
+          <th style="width:15%">Client</th>
+          <th style="width:13%">Staff</th>
+          <th style="width:6%">Rate</th>
+          <th style="width:15%">Service Amt</th>
           <th style="width:15%">Commission</th>
         </tr>
       </thead>
       <tbody>${rowsHtml}</tbody>
       <tfoot>
         <tr style="background:#f0f4ff;font-weight:700">
-          <td colspan="4" style="padding:9px 8px;border:1px solid #dee2e6;text-align:right;font-size:12px">Total (${rows.length} records):</td>
+          <td colspan="8" style="padding:9px 8px;border:1px solid #dee2e6;text-align:right;font-size:12px">Total (${rows.length} records):</td>
           <td style="padding:9px 8px;border:1px solid #dee2e6;text-align:right;font-size:13px;color:#2f9e44">${inr(totalComm)}</td>
         </tr>
       </tfoot>

@@ -8,7 +8,7 @@ import {
   CreditCard, Edit3
 } from "lucide-react";
 import Link from "next/link";
-import { format, startOfMonth, endOfMonth, addMonths, subMonths, endOfDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
 import { logActivity } from "@/lib/activity";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -56,12 +56,14 @@ export default function SalaryManagement() {
       if (activeTab === "report") {
         const start = format(startOfMonth(new Date(month)), "yyyy-MM-dd");
         const end = format(endOfMonth(new Date(month)), "yyyy-MM-dd");
-        const prevMonthEnd = format(endOfDay(subMonths(new Date(start), 1)), "yyyy-MM-dd");
+        // PHP: $prev_month_end = date('Y-m-t', strtotime($month . " -1 month"))
+        const prevMonthEnd = format(endOfMonth(subMonths(new Date(month + "-01"), 1)), "yyyy-MM-dd");
 
         const { data: mechs } = await supabase.from("mechanic_list").select("id, firstname, lastname, daily_salary").eq("status", 1).eq("delete_flag", 0);
         if (!mechs) return;
 
-        const { data: salaryHist } = await supabase.from("mechanic_salary_history").select("*").order("effective_date", { ascending: false });
+        // PHP: ORDER BY effective_date DESC, id DESC — latest rate wins, id breaks ties
+        const { data: salaryHist } = await supabase.from("mechanic_salary_history").select("*").order("effective_date", { ascending: false }).order("id", { ascending: false });
 
         const getRate = (mid: number, dateStr: string, defaultRate: number) => {
           const hist = (salaryHist || []).find(h => h.mechanic_id === mid && h.effective_date <= dateStr);
@@ -124,7 +126,8 @@ export default function SalaryManagement() {
       } else {
         // Master Tab
         const { data: mechs } = await supabase.from("mechanic_list").select("*").eq("status", 1).eq("delete_flag", 0).order("firstname");
-        const { data: hist } = await supabase.from("mechanic_salary_history").select("mechanic_id, date_created").order("date_created", { ascending: false });
+        // PHP: ORDER BY id desc LIMIT 1 (latest inserted entry)
+        const { data: hist } = await supabase.from("mechanic_salary_history").select("mechanic_id, date_created").order("id", { ascending: false });
         
         const formatted = (mechs || []).map(m => ({
           ...m,

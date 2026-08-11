@@ -64,33 +64,49 @@ export default function MechanicLedgerPage() {
     if (!mechanic) return;
     setLoading(true);
 
-    // Calculate opening balance (before fromDate)
+    // PHP: per-day rate from mechanic_salary_history (effective_date <= day)
+    const { data: salaryHistData } = await supabase
+      .from("mechanic_salary_history")
+      .select("salary, effective_date")
+      .eq("mechanic_id", mechanic.id)
+      .order("effective_date", { ascending: false })
+      .order("id", { ascending: false });
+    const hist = salaryHistData || [];
+    const getDailyRate = (dateStr: string) => {
+      const h = hist.find(x => x.effective_date <= dateStr);
+      return h ? parseFloat(h.salary) : (mechanic.daily_salary || 0);
+    };
+
+    // Calculate opening balance (before fromDate) — PHP salary logic:
+    // attendance(status 1,3) w/ history rate + commission(status=5, date_completed) - advance(date_paid)
     const d = parseISTDate(fromDate);
     d.setDate(d.getDate() - 1);
     const prevDateStr = toISTDatePart(d);
 
     const { data: prevAtt } = await supabase
       .from("attendance_list")
-      .select("status")
-      .eq("mechanic_id", id)
+      .select("curr_date, status")
+      .eq("mechanic_id", mechanic.id)
       .in("status", [1, 3])
       .lte("curr_date", prevDateStr);
 
     const { data: prevComm } = await supabase
       .from("transaction_list")
       .select("mechanic_commission_amount")
-      .eq("mechanic_id", id)
-      .lte("date_created", `${prevDateStr} 23:59:59`);
+      .eq("mechanic_id", mechanic.id)
+      .eq("status", 5)
+      .lte("date_completed", `${prevDateStr}T23:59:59+05:30`);
 
     const { data: prevAdv } = await supabase
       .from("advance_payments")
       .select("amount")
-      .eq("mechanic_id", id)
+      .eq("mechanic_id", mechanic.id)
       .lte("date_paid", prevDateStr);
 
     let opening = 0;
     (prevAtt || []).forEach(a => {
-      opening += a.status === 1 ? (mechanic.daily_salary || 0) : (mechanic.daily_salary || 0) / 2;
+      const rate = getDailyRate(a.curr_date);
+      opening += a.status === 1 ? rate : rate / 2;
     });
     opening += (prevComm || []).reduce((s: number, c) => s + (c.mechanic_commission_amount || 0), 0);
     opening -= (prevAdv || []).reduce((s: number, a) => s + (a.amount || 0), 0);
@@ -100,16 +116,16 @@ export default function MechanicLedgerPage() {
     const [periodAtt, periodComm, periodAdv] = await Promise.all([
       supabase.from("attendance_list")
         .select("curr_date, status")
-        .eq("mechanic_id", id).in("status", [1, 3])
+        .eq("mechanic_id", mechanic.id).in("status", [1, 3])
         .gte("curr_date", fromDate).lte("curr_date", toDate),
       supabase.from("transaction_list")
-        .select("date_created, mechanic_commission_amount")
-        .eq("mechanic_id", id)
-        .gte("date_created", `${fromDate}T00:00:00+05:30`)
-        .lte("date_created", `${toDate}T23:59:59+05:30`),
+        .select("date_completed, mechanic_commission_amount")
+        .eq("mechanic_id", mechanic.id).eq("status", 5)
+        .gte("date_completed", `${fromDate}T00:00:00+05:30`)
+        .lte("date_completed", `${toDate}T23:59:59+05:30`),
       supabase.from("advance_payments")
         .select("date_paid, amount")
-        .eq("mechanic_id", id)
+        .eq("mechanic_id", mechanic.id)
         .gte("date_paid", fromDate).lte("date_paid", toDate),
     ]);
 
@@ -117,7 +133,7 @@ export default function MechanicLedgerPage() {
     (periodAtt.data || []).forEach(a => { attMap[a.curr_date] = a.status; });
     const commMap: Record<string, number> = {};
     (periodComm.data || []).forEach(c => {
-      const ds = toISTDatePart(c.date_created);
+      const ds = toISTDatePart(c.date_completed);
       commMap[ds] = (commMap[ds] || 0) + (c.mechanic_commission_amount || 0);
     });
     const advMap: Record<string, number> = {};
@@ -146,11 +162,11 @@ export default function MechanicLedgerPage() {
       let statusClass = "bg-red-500/10 text-red-400";
 
       if (attStatus === 1) {
-        dailyEarned = mechanic.daily_salary || 0;
+        dailyEarned = getDailyRate(dateStr);
         status = "Full Day";
         statusClass = "bg-emerald-500/10 text-emerald-400";
       } else if (attStatus === 3) {
-        dailyEarned = (mechanic.daily_salary || 0) / 2;
+        dailyEarned = getDailyRate(dateStr) / 2;
         status = "Half Day";
         statusClass = "bg-amber-500/10 text-amber-400";
       }
@@ -177,7 +193,7 @@ export default function MechanicLedgerPage() {
     setClosingBalance(runningBalance);
     setTotals({ earned: totalEarned, commission: totalCommission, advance: totalAdvance });
     setLoading(false);
-  }, [id, mechanic, fromDate, toDate]);
+  }, [mechanic, fromDate, toDate]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch mount effect; setLoading sync init legit hai
   useEffect(() => { fetchMechanic(); }, [fetchMechanic]);

@@ -8,9 +8,10 @@ import {
   Loader2, ArrowLeft, Calendar, DollarSign, TrendingUp, Users,
   Wrench, FileText, Clock, CheckCircle, XCircle,
   ChevronLeft, ChevronRight, MessageSquare, Printer,
-  Camera, Trash2
+  Camera, Trash2, CreditCard, IndianRupee
 } from "lucide-react";
 import { compressImage } from "@/lib/imageCompression";
+import { logActivity } from "@/lib/activity";
 
 type Mechanic = {
   id: number;
@@ -32,7 +33,9 @@ type Job = {
   amount: number;
   mechanic_commission_amount: number;
   date_updated: string;
+  date_completed: string;
   status: number;
+  service_amount: number;
 };
 
 type Advance = {
@@ -122,6 +125,47 @@ export default function MechanicDetailPage() {
     absentDays: 0,
   });
 
+  // ── SALARY RATE HISTORY ─────────────────────────────────────────
+  const [salaryHist, setSalaryHist] = useState<{ effective_date: string; salary: string }[]>([]);
+
+  // PHP: latest rate with effective_date <= day (ORDER effective_date DESC, id DESC)
+  const getRate = (dateStr: string) => {
+    const h = salaryHist.find(x => x.effective_date <= dateStr);
+    return h ? parseFloat(h.salary) : (mechanic?.daily_salary || 0);
+  };
+
+  // ── ADD PAYMENT ─────────────────────────────────────────────────
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payAmount, setPayAmount] = useState("");
+  const [payDate, setPayDate] = useState(() => todayIST());
+  const [payReason, setPayReason] = useState("");
+  const [savingPay, setSavingPay] = useState(false);
+
+  const handleAddPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mechanic || !payAmount) return;
+    setSavingPay(true);
+    try {
+      const amt = parseFloat(payAmount);
+      const { error } = await supabase.from("advance_payments").insert([{
+        mechanic_id: mechanic.id,
+        amount: amt,
+        date_paid: payDate,
+        reason: payReason || `Advance Payment`
+      }]);
+      if (error) throw error;
+      await logActivity("Staff Payment", "Mechanics", mechanic.id, `Paid ${inr(amt)} to ${name}`);
+      setShowPayModal(false);
+      setPayAmount("");
+      setPayReason("");
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingPay(false);
+    }
+  };
+
   // ── MECHANIC PHOTO ─────────────────────────────────────────
   const [photoSaving, setPhotoSaving] = useState(false);
   const [photoErr,    setPhotoErr]    = useState("");
@@ -190,18 +234,49 @@ export default function MechanicDetailPage() {
     if (!mechanic) return;
     setLoading(true);
 
-    const fromTs = `${fromDate} 00:00:00`;
-    const toTs = `${toDate} 23:59:59`;
+    const fromTs = `${fromDate}T00:00:00+05:30`;
+    const toTs = `${toDate}T23:59:59+05:30`;
 
-    // Fetch jobs for this mechanic
+    // PHP view_mechanic: only DELIVERED (status=5), filtered by date_completed.
+    // Display date column uses date_updated (PHP: date("d M, Y", strtotime(date_updated))).
     const { data: jobsData } = await supabase
       .from("transaction_list")
-      .select("id, job_id, item, amount, mechanic_commission_amount, date_updated, status")
+      .select("id, job_id, item, amount, mechanic_commission_amount, date_updated, date_completed, status")
       .eq("mechanic_id", id)
-      .in("status", [3, 5])
-      .gte("date_updated", fromTs)
-      .lte("date_updated", toTs)
-      .order("date_updated", { ascending: false });
+      .eq("status", 5)
+      .gte("date_completed", fromTs)
+      .lte("date_completed", toTs)
+      .order("date_completed", { ascending: false });
+
+    const jobs = jobsData || [];
+
+    // PHP: Service Charge = SUM(transaction_services.price)
+    const svcMap: Record<number, number> = {};
+    if (jobs.length > 0) {
+      const { data: svcs } = await supabase
+        .from("transaction_services")
+        .select("transaction_id, price")
+        .in("transaction_id", jobs.map(j => j.id));
+      (svcs || []).forEach(s => {
+        svcMap[s.transaction_id] = (svcMap[s.transaction_id] || 0) + (s.price || 0);
+      });
+    }
+    const jobsWithSvc = jobs.map(j => ({ ...j, service_amount: svcMap[j.id] || 0 }));
+
+    // PHP: per-day rate from mechanic_salary_history (effective_date <= day)
+    const { data: salaryHistData } = await supabase
+      .from("mechanic_salary_history")
+      .select("salary, effective_date")
+      .eq("mechanic_id", id)
+      .order("effective_date", { ascending: false })
+      .order("id", { ascending: false });
+    const hist = salaryHistData || [];
+    setSalaryHist(hist);
+
+    const localGetRate = (dateStr: string) => {
+      const h = hist.find(x => x.effective_date <= dateStr);
+      return h ? parseFloat(h.salary) : (mechanic.daily_salary || 0);
+    };
 
     // Fetch advances
     const { data: advData } = await supabase
@@ -221,39 +296,36 @@ export default function MechanicDetailPage() {
       .lte("curr_date", toDate)
       .order("curr_date", { ascending: false });
 
-    setJobs(jobsData || []);
+    setJobs(jobsWithSvc);
     setAdvances(advData || []);
     setAttendance(attData || []);
 
-    // Calculate stats
-    const totalCommission = (jobsData || []).reduce((s, j) => s + (j.mechanic_commission_amount || 0), 0);
+    // ── Period stats (PHP: history-aware salary, status=5 commission) ──
+    const totalCommission = jobsWithSvc.reduce((s, j) => s + (j.mechanic_commission_amount || 0), 0);
     const fullDays = (attData || []).filter(a => a.status === 1).length;
     const halfDays = (attData || []).filter(a => a.status === 3).length;
-    const totalSalary = fullDays * (mechanic.daily_salary || 0) + halfDays * ((mechanic.daily_salary || 0) / 2);
+    let totalSalary = 0;
+    (attData || []).forEach(att => {
+      const rate = localGetRate(att.curr_date);
+      totalSalary += att.status === 1 ? rate : rate / 2;
+    });
     const totalAdvance = (advData || []).reduce((s, a) => s + (a.amount || 0), 0);
     const totalEarned = totalSalary + totalCommission;
     const periodBalance = totalEarned - totalAdvance;
 
-    // Overall balance (lifetime)
-    const { data: allJobs } = await supabase
-      .from("transaction_list")
-      .select("mechanic_commission_amount")
-      .eq("mechanic_id", id);
-    const { data: allAtt } = await supabase
-      .from("attendance_list")
-      .select("status")
-      .eq("mechanic_id", id)
-      .in("status", [1, 3]);
-    const { data: allAdv } = await supabase
-      .from("advance_payments")
-      .select("amount")
-      .eq("mechanic_id", id);
-
-    const allComm = (allJobs || []).reduce((s, j) => s + (j.mechanic_commission_amount || 0), 0);
-    const allFull = (allAtt || []).filter(a => a.status === 1).length;
-    const allHalf = (allAtt || []).filter(a => a.status === 3).length;
-    const allSal = allFull * (mechanic.daily_salary || 0) + allHalf * ((mechanic.daily_salary || 0) / 2);
-    const allAdvTotal = (allAdv || []).reduce((s, a) => s + (a.amount || 0), 0);
+    // ── Overall balance (lifetime) ──
+    const [allJobs, allAtt, allAdv] = await Promise.all([
+      supabase.from("transaction_list").select("mechanic_commission_amount").eq("mechanic_id", id),
+      supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", id).in("status", [1, 3]),
+      supabase.from("advance_payments").select("amount").eq("mechanic_id", id),
+    ]);
+    const allComm = (allJobs.data || []).reduce((s, j) => s + (j.mechanic_commission_amount || 0), 0);
+    let allSal = 0;
+    (allAtt.data || []).forEach(att => {
+      const rate = localGetRate(att.curr_date);
+      allSal += att.status === 1 ? rate : rate / 2;
+    });
+    const allAdvTotal = (allAdv.data || []).reduce((s, a) => s + (a.amount || 0), 0);
     const overallBalance = (allSal + allComm) - allAdvTotal;
 
     setStats({
@@ -263,7 +335,7 @@ export default function MechanicDetailPage() {
       totalAdvance,
       periodBalance,
       overallBalance,
-      jobCount: (jobsData || []).length,
+      jobCount: jobsWithSvc.length,
       workingDays: fullDays + halfDays,
       fullDays,
       halfDays,
@@ -273,6 +345,7 @@ export default function MechanicDetailPage() {
     setLoading(false);
   }, [id, mechanic, fromDate, toDate]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch mount effect; setLoading sync init legit hai
   useEffect(() => { fetchMechanic(); }, [fetchMechanic]);
   useEffect(() => { if (mechanic) fetchData(); }, [mechanic, fetchData]);
 
@@ -359,6 +432,10 @@ export default function MechanicDetailPage() {
             {photoErr && <p className="text-[11px] text-red-400 font-semibold mt-1.5">{photoErr}</p>}
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => setShowPayModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-xl text-xs font-bold transition">
+              <CreditCard size={13}/> Add Payment
+            </button>
             <button onClick={shareWhatsApp}
               className="flex items-center gap-1.5 px-3 py-2 bg-[#25D366]/10 border border-[#25D366]/20 text-[#25D366] hover:bg-[#25D366]/20 rounded-xl text-xs font-bold transition">
               <MessageSquare size={13}/> WhatsApp
@@ -463,6 +540,8 @@ export default function MechanicDetailPage() {
               {activeTab === "work" && (() => {
                 const totalJobPages = Math.ceil(jobs.length / itemsPerPage);
                 const paginatedJobs = itemsPerPage === -1 ? jobs : jobs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+                const totalSvc = jobs.reduce((s, j) => s + (j.service_amount || 0), 0);
+                const totalComm = jobs.reduce((s, j) => s + (j.mechanic_commission_amount || 0), 0);
                 return (
                 <div>
                   <div className="overflow-x-auto">
@@ -472,7 +551,7 @@ export default function MechanicDetailPage() {
                           <th className="text-left px-4 py-3">Date</th>
                           <th className="text-left px-4 py-3">Job ID</th>
                           <th className="text-left px-4 py-3">Item/Service</th>
-                          <th className="text-right px-4 py-3">Total Amount</th>
+                          <th className="text-right px-4 py-3">Service Charge</th>
                           <th className="text-right px-4 py-3">Commission</th>
                           <th className="text-center px-4 py-3">Status</th>
                         </tr>
@@ -496,7 +575,7 @@ export default function MechanicDetailPage() {
                               </Link>
                             </td>
                             <td className="px-4 py-3 text-slate-400">{job.item}</td>
-                            <td className="px-4 py-3 text-right font-bold text-white">{inr(job.amount || 0)}</td>
+                            <td className="px-4 py-3 text-right font-bold text-white">{inr(job.service_amount || 0)}</td>
                             <td className="px-4 py-3 text-right font-bold text-emerald-400">{inr(job.mechanic_commission_amount)}</td>
                             <td className="px-4 py-3 text-center">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400">
@@ -506,6 +585,16 @@ export default function MechanicDetailPage() {
                           </tr>
                         ))}
                       </tbody>
+                      {jobs.length > 0 && (
+                        <tfoot>
+                          <tr className="bg-[#111520] text-[10px] font-black uppercase tracking-widest text-slate-500">
+                            <td colSpan={3} className="text-right px-4 py-3 text-slate-600">Period Total ({jobs.length} jobs):</td>
+                            <td className="text-right px-4 py-3 text-white">{inr(totalSvc)}</td>
+                            <td className="text-right px-4 py-3 text-emerald-400">{inr(totalComm)}</td>
+                            <td></td>
+                          </tr>
+                        </tfoot>
+                      )}
                     </table>
                   </div>
                   {totalJobPages > 1 && (
@@ -620,7 +709,7 @@ export default function MechanicDetailPage() {
                             </td>
                           </tr>
                         ) : attendance.map(att => {
-                          const dayRate = mechanic?.daily_salary || 0;
+                          const dayRate = getRate(att.curr_date);
                           let daySalary = 0;
                           let statusClass = "bg-slate-500/10 text-slate-500";
                           let statusText = "Absent";
@@ -662,6 +751,48 @@ export default function MechanicDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Add Payment Modal */}
+      {showPayModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) setShowPayModal(false); }}>
+          <div className="bg-[#161b27] border border-[#21293d] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="px-6 py-5 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center justify-between">
+              <h3 className="text-lg font-black text-emerald-400 flex items-center gap-2"><CreditCard size={20}/> New Payment</h3>
+              <button onClick={() => setShowPayModal(false)} className="text-slate-600 hover:text-white transition-colors">
+                <ChevronLeft className="rotate-180" />
+              </button>
+            </div>
+            <form onSubmit={handleAddPayment} className="p-6 space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Staff Member</label>
+                <input value={name} readOnly className="w-full px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-300 font-bold outline-none" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Amount (₹)</label>
+                <div className="relative">
+                  <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500" size={16} />
+                  <input type="number" step="1" value={payAmount} onChange={e => setPayAmount(e.target.value)} required placeholder="0.00"
+                    className="w-full pl-10 pr-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl text-xl font-black text-white outline-none focus:border-emerald-500 transition-all" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Payment Date</label>
+                <input type="date" value={payDate} onChange={e => setPayDate(e.target.value)} required
+                  className="w-full px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-emerald-500 transition-all [color-scheme:dark]" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Remarks</label>
+                <textarea value={payReason} onChange={e => setPayReason(e.target.value)} placeholder="e.g. Advance, Salary for July 2026"
+                  className="w-full px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-emerald-500 transition-all resize-none h-20" />
+              </div>
+              <button type="submit" disabled={savingPay} className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-emerald-600/25 flex items-center justify-center gap-2">
+                {savingPay ? <Loader2 className="animate-spin" size={18} /> : "Save Payment"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

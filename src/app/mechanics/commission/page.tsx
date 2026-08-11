@@ -18,9 +18,13 @@ type CommRow = {
   id: number;
   job_id: string;
   code: string | null;
+  item: string;
+  client_name: string;
   date_created: string;
+  date_completed: string | null;
   mechanic_id: number;
   m_name: string;
+  rate: number;
   service_amount: number;
   mechanic_commission_amount: number;
 };
@@ -37,7 +41,7 @@ type RateHistory = {
   mechanic_id: number;
   commission_percent: number;
   effective_date: string;
-  date_added: string;
+  date_created: string;
 };
 
 function CommissionContent() {
@@ -106,9 +110,13 @@ function CommissionContent() {
         const to = `${month}-${String(lastDay).padStart(2, "0")}T23:59:59+05:30`;
 
         const [mechRes, txnRes] = await Promise.all([
-          supabase.from("mechanic_list").select("id, firstname, middlename, lastname").eq("delete_flag", 0).order("firstname"),
+          supabase.from("mechanic_list").select("id, firstname, middlename, lastname, commission_percent, delete_flag").order("firstname"),
           (() => {
-            let q = supabase.from("transaction_list").select("id, job_id, code, date_created, mechanic_id, mechanic_commission_amount").gte("date_created", from).lte("date_created", to);
+            // PHP commission_history: only DELIVERED jobs (status=5) by date_completed
+            let q = supabase.from("transaction_list")
+              .select("id, job_id, code, item, client_name, date_created, date_completed, mechanic_id, mechanic_commission_amount")
+              .eq("status", 5)
+              .gte("date_completed", from).lte("date_completed", to);
             if (mechanicId !== "all") q = q.eq("mechanic_id", parseInt(mechanicId));
             return q;
           })()
@@ -117,7 +125,14 @@ function CommissionContent() {
         const mechData = mechRes.data || [];
         const txns = txnRes.data || [];
 
-        setMechanics(mechData.map((m) => ({ id: m.id, name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ") })));
+        // Dropdown me sirf active mechanics (PHP dropdown: delete_flag = 0), par
+        // name/rate mapping me sab (PHP INNER JOIN mechanic_list — deleted wale bhi)
+        setMechanics(mechData.filter((m) => m.delete_flag === 0).map((m) => ({ id: m.id, name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ") })));
+
+        const mechMap = new Map(mechData.map((m) => [m.id, {
+          name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+          rate: m.commission_percent || 0,
+        }]));
 
         const txnIds = txns.map(t => t.id);
         const svcMap: Record<number, number> = {};
@@ -126,38 +141,92 @@ function CommissionContent() {
           svcs?.forEach(s => { svcMap[s.transaction_id] = (svcMap[s.transaction_id] || 0) + (s.price || 0); });
         }
 
+        // Client names (PHP: LEFT JOIN client_list on client_name)
+        const clientIds = [...new Set(txns.map(t => Number(t.client_name)).filter(Boolean))];
+        const clientMap = new Map<number, string>();
+        if (clientIds.length > 0) {
+          const { data: clRows } = await supabase.from("client_list").select("id, firstname, middlename, lastname").in("id", clientIds);
+          (clRows || []).forEach(c => clientMap.set(c.id, [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ")));
+        }
+
+        // Effective rate per job (PHP: latest history row with effective_date <= job's
+        // date_created, order effective_date DESC, id DESC; fallback = mechanic_list rate)
+        const mechIds = [...new Set(txns.map(t => t.mechanic_id))];
+        const histByMech: Record<number, { effective_date: string; id: number; commission_percent: number }[]> = {};
+        if (mechIds.length > 0) {
+          const { data: histRows } = await supabase.from("mechanic_commission_history")
+            .select("id, mechanic_id, commission_percent, effective_date").in("mechanic_id", mechIds);
+          (histRows || []).forEach(h => {
+            if (!histByMech[h.mechanic_id]) histByMech[h.mechanic_id] = [];
+            histByMech[h.mechanic_id].push({ effective_date: h.effective_date, id: h.id, commission_percent: h.commission_percent });
+          });
+          Object.values(histByMech).forEach(arr =>
+            arr.sort((a, b) => (a.effective_date < b.effective_date ? 1 : a.effective_date > b.effective_date ? -1 : b.id - a.id))
+          );
+        }
+        const effRateFor = (mechId: number, onDate: string, fallback: number): number => {
+          const on = (onDate || "").slice(0, 10);
+          const hist = histByMech[mechId] || [];
+          for (const h of hist) {
+            if (h.effective_date <= on) return h.commission_percent;
+          }
+          return fallback;
+        };
+
         const enriched: CommRow[] = txns.map((t) => {
-          const mech = mechData.find((m) => m.id === t.mechanic_id);
+          const mech = mechMap.get(t.mechanic_id);
           return {
             id: t.id,
             job_id: t.job_id || String(t.id),
             code: t.code || null,
+            item: t.item || "",
+            client_name: clientMap.get(Number(t.client_name)) || "",
             date_created: t.date_created,
+            date_completed: t.date_completed,
             mechanic_id: t.mechanic_id,
-            m_name: mech ? [mech.firstname, mech.middlename, mech.lastname].filter(Boolean).join(" ") : "Unknown",
+            m_name: mech?.name || "Unknown",
+            rate: effRateFor(t.mechanic_id, t.date_created, mech?.rate || 0),
             service_amount: svcMap[t.id] || 0,
             mechanic_commission_amount: t.mechanic_commission_amount || 0,
           };
         });
 
-        enriched.sort((a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime());
-        setRows(enriched.filter((r) => r.mechanic_commission_amount > 0));
+        // PHP sorts by date_completed DESC
+        enriched.sort((a, b) =>
+          new Date(b.date_completed || b.date_created).getTime() - new Date(a.date_completed || a.date_created).getTime()
+        );
+        setRows(enriched);
         setCurrentPage(1);
       } else {
-        // Master Tab: Fetch current rates
+        // Master Tab: Fetch current rates + last update (PHP: latest history date_created)
         const { data } = await supabase
           .from("mechanic_list")
           .select("id, firstname, middlename, lastname, commission_percent")
           .eq("delete_flag", 0)
           .order("firstname");
         
-        if (data) {
-          setMechRates(data.map(m => ({
-            id: m.id,
-            name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
-            current_rate: m.commission_percent || 0
-          })));
+        const mechs = data || [];
+        let lastUpd: Record<number, string> = {};
+        if (mechs.length > 0) {
+          const { data: hist } = await supabase
+            .from("mechanic_commission_history")
+            .select("id, mechanic_id, effective_date, date_created")
+            .in("mechanic_id", mechs.map(m => m.id));
+          const map = new Map<number, { eff: string; id: number; created: string }>();
+          (hist || []).forEach(h => {
+            const cur = map.get(h.mechanic_id);
+            if (!cur || h.effective_date > cur.eff || (h.effective_date === cur.eff && h.id > cur.id))
+              map.set(h.mechanic_id, { eff: h.effective_date, id: h.id, created: h.date_created });
+          });
+          lastUpd = Object.fromEntries([...map.entries()].map(([k, v]) => [k, v.created]));
         }
+
+        setMechRates(mechs.map(m => ({
+          id: m.id,
+          name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+          current_rate: m.commission_percent || 0,
+          last_updated: lastUpd[m.id] || undefined,
+        })));
       }
     } catch (e) {
       console.error(e);
@@ -361,7 +430,7 @@ function CommissionContent() {
                   <table className="w-full">
                     <thead>
                       <tr className="bg-[#111520]">
-                        {["#", "Date", "Job ID / Code", "Staff", "Service Amt", "Commission", ""].map((h) => (
+                        {["#", "Date", "Job ID", "Item", "Client", "Staff", "Rate", "Service Amt", "Commission", ""].map((h) => (
                           <th key={h} className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left last:text-center">
                             {h}
                           </th>
@@ -373,13 +442,18 @@ function CommissionContent() {
                         <tr key={r.id} className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors">
                           <td className="px-3 py-2.5 text-xs text-slate-500">{(currentPage - 1) * rowsPerPage + i + 1}</td>
                           <td className="px-3 py-2.5 text-xs text-slate-400 whitespace-nowrap">
-                            {new Date(r.date_created).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                            {new Date(r.date_completed || r.date_created).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                           </td>
                           <td className="px-3 py-2.5">
                             <div className="text-xs font-bold text-blue-400">#{r.job_id}</div>
                             {r.code && <div className="text-[10px] text-slate-600">{r.code}</div>}
                           </td>
+                          <td className="px-3 py-2.5 text-xs text-slate-400">{r.item || "—"}</td>
+                          <td className="px-3 py-2.5 text-xs text-slate-400">{r.client_name || "—"}</td>
                           <td className="px-3 py-2.5 text-xs font-bold text-slate-200">{r.m_name}</td>
+                          <td className="px-3 py-2.5 text-xs text-center">
+                            <span className="inline-flex px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold">{r.rate.toFixed(0)}%</span>
+                          </td>
                           <td className="px-3 py-2.5 text-xs text-right text-slate-300">{inr(r.service_amount)}</td>
                           <td className="px-3 py-2.5 text-xs text-right font-black text-emerald-400">{inr(r.mechanic_commission_amount)}</td>
                           <td className="px-3 py-2.5 text-center">
@@ -435,7 +509,7 @@ function CommissionContent() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-[#111520]">
-                    {["Mechanic Name", "Current Rate (%)", "Actions"].map(h => (
+                    {["Mechanic Name", "Current Rate (%)", "Last Updated", "Actions"].map(h => (
                       <th key={h} className="px-5 py-3 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left first:pl-6">{h}</th>
                     ))}
                   </tr>
@@ -455,6 +529,11 @@ function CommissionContent() {
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-black text-sm">
                           {m.current_rate.toFixed(1)}%
                         </span>
+                      </td>
+                      <td className="px-5 py-4 text-xs text-slate-500">
+                        {m.last_updated
+                          ? new Date(m.last_updated).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                          : "—"}
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
@@ -576,7 +655,7 @@ function CommissionContent() {
                           <span className="font-black text-emerald-400">{h.commission_percent.toFixed(1)}%</span>
                         </td>
                         <td className="px-5 py-3.5 text-right text-[10px] text-slate-600 uppercase">
-                          {new Date(h.date_added).toLocaleDateString("en-IN", { day: '2-digit', month: 'short' })}
+                          {new Date(h.date_created).toLocaleDateString("en-IN", { day: '2-digit', month: 'short' })}
                         </td>
                       </tr>
                     ))}
