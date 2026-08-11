@@ -647,6 +647,34 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
+  // Public site is hardcoded dark-only. Yahan app ka saved light theme apply
+  // mat karo — warna globals.css ke `html[data-theme="light"]` overrides public
+  // ke dark colors par chal jate hain (text near-black on dark navy = unreadable,
+  // sirf un browsers me dikhta hai jahan `vtech_theme=light` saved hai).
+  useEffect(() => {
+    const pub = pathname === "/" ||
+      ["/login", "/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"]
+        .some(p => pathname === p || pathname.startsWith(p + "/"));
+    try {
+      if (pub) {
+        document.documentElement.removeAttribute("data-theme");
+        document.body.style.backgroundColor = "#070714";
+        document.body.style.color = "#e2e8f0";
+        setTheme("dark");
+      } else {
+        const saved = localStorage.getItem("vtech_theme") as "dark" | "light" | null;
+        if (saved) {
+          document.documentElement.setAttribute("data-theme", saved);
+          document.body.style.backgroundColor = saved === "dark" ? "#0d1117" : "#f8f9fc";
+          document.body.style.color = saved === "dark" ? "#e2e8f0" : "#0f172a";
+          setTheme(saved);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [pathname]);
+
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next = (prev || "dark") === "dark" ? "light" : "dark";
