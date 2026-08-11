@@ -46,7 +46,12 @@
 
 WhatsApp auto-reply tooling (`generateWhatsAppReply`) build ho chuka tha par koi UI use nahi karta tha. Inquiries module par integrate kiya:
 - ✅ `InquiryModal.tsx` — "AI Reply" section: customer ke message par professional WhatsApp reply generate karta hai (`/api/chat` `type=whatsapp` → `generateWhatsAppReply`), editable textarea, Regenerate / Copy / Open WhatsApp (`wa.me/91<contact>?text=`) actions.
-- ⏳ Next: stock alerts / overdue reminders surface karna, ya auto-reply scheduling.
+- ✅ **Live context enrichment** — `getLiveContext(role)` (`gemini-tools.ts`): har chat request me fresh shop snapshot inject hota hai — low stock items (reorder), pending jobs count + oldest, top 5 customers by outstanding balance; admin ko extra: aaj ke delivered jobs + revenue, total client outstanding, active loans count. Role-aware (staff ko financials nahi dikhti).
+  - `/api/chat` chaaron branches me wired (chat/whatsapp/default) — common questions ka jawab bina tool-call round-trip ke grounded milta hai.
+  - `generateWhatsAppReply` me `role` param add (admin/staff policy whatsapp replies par bhi apply) + prompt ab customer-facing (internal suggestions/staff notes strip).
+- ✅ **Live test (11 Aug 2026)** — `getLiveContext` admin/staff dono sahi (low stock, 147 pending jobs, top 5 outstanding, admin financials). Groq prod path (llama-3.3-70b-versatile) + Gemini whatsapp reply (gemini-2.5-flash) dono live pass.
+- ✅ **Gemini model deprecation fix** — `gemini-2.0-flash` ab 404 (no longer available). Defaults + settings list → `gemini-2.5-flash` / `-lite` / `-pro` (`gemini.ts`, `ai-settings.ts`, `settings/page.tsx`). Prod DB `groq` + `llama-3.3-70b-versatile` hi hai, isliye isse koi disruption nahi.
+- ⏳ Next: stock alerts / overdue reminders dashboard par surface karna, ya auto-reply scheduling.
 
 ## P5 — Mechanics PHP Parity (FULLY DONE, verified vs MySQL dump 11 Aug 2026)
 

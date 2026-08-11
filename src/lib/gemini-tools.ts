@@ -852,3 +852,84 @@ export async function executeGeminiTool(functionCall: { name: string; args?: obj
         return { error: (error as Error).message };
     }
 }
+
+/**
+ * Fresh live shop snapshot injected into every chat request so the AI answers are
+ * grounded in current data (no tool-call round-trip for common queries).
+ * Role-aware: financial numbers (today's revenue, outstanding sum, loans) only for admin.
+ */
+export async function getLiveContext(role: AiRole): Promise<string> {
+    const today = todayIST();
+    const isAdmin = role === "admin";
+
+    const [txAll, invRes, prodRes, clientsRes, dirRes, payRes, loanRes] = await Promise.all([
+        pageAll(supabase.from("transaction_list")
+            .select("job_id, client_name, item, status, amount, date_created, date_completed")
+            .eq("del_status", 0)),
+        pageAll(supabase.from("inventory_list").select("product_id, quantity")),
+        pageAll(supabase.from("product_list").select("id, name, alert_quantity").eq("delete_flag", 0)),
+        pageAll(supabase.from("client_list").select("id, firstname, lastname, contact, opening_balance").eq("delete_flag", 0)),
+        pageAll(supabase.from("direct_sales").select("client_id, total_amount")),
+        pageAll(supabase.from("client_payments").select("client_id, amount, discount")),
+        pageAll(supabase.from("client_loans").select("client_id, total_payable, status")),
+    ]);
+
+    const lines: string[] = [];
+
+    // 1. Low / out-of-stock items
+    const qty: Record<number, number> = {};
+    (invRes.data || []).forEach((i) => { qty[i.product_id] = (qty[i.product_id] || 0) + (Number(i.quantity) || 0); });
+    const lowStock = (prodRes.data || [])
+        .map((p) => ({ name: p.name, quantity: qty[p.id] || 0, alert: Number(p.alert_quantity) || 0 }))
+        .filter((p) => p.alert > 0 && p.quantity <= p.alert)
+        .sort((a, b) => a.quantity - b.quantity)
+        .slice(0, 8);
+    if (lowStock.length) {
+        lines.push(`- Low stock (reorder needed): ${lowStock.map((p) => `${p.name} (${p.quantity}/${p.alert})`).join(", ")}`);
+    } else {
+        lines.push("- Low stock: none (all items above reorder point)");
+    }
+
+    // 2. Pending jobs (status 0/1) — count + oldest
+    const jobs = txAll.data || [];
+    const pending = jobs.filter((j) => j.status === 0 || j.status === 1)
+        .sort((a, b) => (a.date_created > b.date_created ? 1 : -1));
+    lines.push(pending.length
+        ? `- Pending jobs: ${pending.length} (oldest: "${pending[0].item}" #${pending[0].job_id} from ${String(pending[0].date_created).slice(0, 10)})`
+        : "- Pending jobs: 0");
+
+    // 3. Top 5 clients by outstanding balance (shared balance formula)
+    const repairBilled: Record<number, number> = {};
+    (jobs).forEach((t) => { if (t.status === 5) { const id = Number(t.client_name); if (id) repairBilled[id] = (repairBilled[id] || 0) + (Number(t.amount) || 0); } });
+    const directBilled: Record<number, number> = {};
+    (dirRes.data || []).forEach((d) => { if (d.client_id) directBilled[d.client_id] = (directBilled[d.client_id] || 0) + (Number(d.total_amount) || 0); });
+    const loanGiven: Record<number, number> = {};
+    (loanRes.data || []).forEach((l) => { if (l.client_id) loanGiven[l.client_id] = (loanGiven[l.client_id] || 0) + (Number(l.total_payable) || 0); });
+    const totalPaid: Record<number, number> = {};
+    (payRes.data || []).forEach((p) => { totalPaid[p.client_id] = (totalPaid[p.client_id] || 0) + (Number(p.amount) || 0) + (Number(p.discount) || 0); });
+    const outstanding = (clientsRes.data || [])
+        .map((c) => ({
+            id: c.id,
+            name: `${c.firstname} ${c.lastname}`.trim(),
+            contact: c.contact,
+            net: Math.round(((Number(c.opening_balance) || 0) + (repairBilled[c.id] || 0) + (directBilled[c.id] || 0) + (loanGiven[c.id] || 0) - (totalPaid[c.id] || 0)) * 100) / 100,
+        }))
+        .filter((c) => c.net > 0);
+    const topClients = outstanding.slice().sort((a, b) => b.net - a.net).slice(0, 5);
+    lines.push(topClients.length
+        ? `- Top customers by outstanding balance: ${topClients.map((c) => `${c.name} (₹${c.net.toLocaleString("en-IN")}${c.contact ? ", " + c.contact : ""})`).join("; ")}`
+        : "- Top customers by outstanding balance: none");
+
+    // 4. Admin-only financial snapshot
+    if (isAdmin) {
+        const deliveredToday = jobs.filter((j) => j.status === 5 && String(j.date_completed || "").startsWith(today));
+        const todayRevenue = deliveredToday.reduce((s, j) => s + (Number(j.amount) || 0), 0);
+        lines.push(`- Today delivered jobs: ${deliveredToday.length} (revenue ₹${todayRevenue.toLocaleString("en-IN")})`);
+        const totalOutstanding = Math.round(outstanding.reduce((s, c) => s + c.net, 0) * 100) / 100;
+        lines.push(`- Total client outstanding: ₹${totalOutstanding.toLocaleString("en-IN")}`);
+        const activeLoans = (loanRes.data || []).filter((l) => l.status === 1).length;
+        lines.push(`- Active client loans: ${activeLoans}`);
+    }
+
+    return `LIVE CONTEXT (fresh snapshot, ${today}, role ${role}):\n${lines.join("\n")}`;
+}

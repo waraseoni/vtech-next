@@ -69,13 +69,13 @@ export default function SettingsPage() {
   const [aiProvider, setAiProvider] = useState("gemini");
   const [aiApiKey, setAiApiKey] = useState("");
   const [aiKeyConfigured, setAiKeyConfigured] = useState(false);
-  const [aiModel, setAiModel] = useState("gemini-2.0-flash");
+  const [aiModel, setAiModel] = useState("gemini-2.5-flash");
   const [showAiKey, setShowAiKey] = useState(false);
   const [aiTesting, setAiTesting] = useState(false);
   const [aiTestResult, setAiTestResult] = useState("");
 
   const groqModels = ["llama-3.3-70b-versatile","llama-3.3-70b-specdec","llama3-70b-8192","mixtral-8x7b-32768","llama3-8b-8192"];
-  const geminiModels = ["gemini-2.0-flash","gemini-2.0-flash-lite","gemini-1.5-flash"];
+  const geminiModels = ["gemini-2.5-flash","gemini-2.5-flash-lite","gemini-2.5-pro"];
 
   useEffect(() => {
     if (!toast) return;
@@ -140,7 +140,7 @@ export default function SettingsPage() {
       setAiProvider(info.ai_provider || "gemini");
       setAiKeyConfigured(!!info.ai_api_key);
       setAiApiKey("");
-      setAiModel(info.ai_model || "gemini-2.0-flash");
+      setAiModel(info.ai_model || "gemini-2.5-flash");
 
       setLoading(false);
     })();
@@ -874,7 +874,7 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className={labelCls}>Provider</label>
-                  <select value={aiProvider} onChange={e => { setAiProvider(e.target.value); setAiModel(e.target.value === "groq" ? "llama-3.3-70b-versatile" : "gemini-2.0-flash"); }}
+                  <select value={aiProvider} onChange={e => { setAiProvider(e.target.value); setAiModel(e.target.value === "groq" ? "llama-3.3-70b-versatile" : "gemini-2.5-flash"); }}
                     className={inputCls}>
                     <option value="groq">Groq (Free)</option>
                     <option value="gemini">Gemini</option>

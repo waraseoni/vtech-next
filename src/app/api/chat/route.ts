@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getChatResponse, generateWhatsAppReply } from "@/lib/gemini";
+import { getChatResponse, generateWhatsAppReply, type ChatMessage } from "@/lib/gemini";
 import { getGroqChatResponse } from "@/lib/groq";
-import type { ChatMessage } from "@/lib/gemini";
 import { getAiSettings } from "@/lib/ai-settings";
 import { requireStaff, getSessionRole } from "@/lib/api-auth";
-import type { AiRole } from "@/lib/gemini-tools";
+import { getLiveContext, type AiRole } from "@/lib/gemini-tools";
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,24 +29,36 @@ export async function POST(request: NextRequest) {
     const apiKey = aiSettings.apiKey;
     const modelName = aiSettings.model;
 
+    // Fresh shop snapshot (role-aware) so replies are grounded in current data
+    const liveContext = await getLiveContext(role);
+
     let responseText: string;
 
     if (type === "chat" && messages) {
+      const enrichedMessages = [
+        ...messages.slice(0, -1),
+        {
+          ...messages[messages.length - 1],
+          content: `${messages[messages.length - 1].content}\n\n[${liveContext}]\nYe fresh snapshot hai — common questions ka seedha jawab isse do; tools sirf deep/filtered data ke liye call karo.`,
+        },
+      ];
       if (activeProvider === "groq") {
-         responseText = await getGroqChatResponse(messages, apiKey, modelName, role);
+         responseText = await getGroqChatResponse(enrichedMessages, apiKey, modelName, role);
       } else {
-         responseText = await getChatResponse(messages as ChatMessage[], apiKey, modelName, role);
+         responseText = await getChatResponse(enrichedMessages as ChatMessage[], apiKey, modelName, role);
       }
     } else if (type === "whatsapp") {
       responseText = await generateWhatsAppReply(
         message,
         context?.customerName,
-        context,
+        { ...context, liveContext },
         apiKey,
-        modelName
+        modelName,
+        role
       );
     } else {
-      const prompt = message || (messages && messages[messages.length - 1]?.content) || "";
+      const prompt = (message || (messages && messages[messages.length - 1]?.content) || "")
+        + `\n\n[${liveContext}]`;
       responseText = await getChatResponse([{ role: "user", content: prompt }], apiKey, modelName, role);
     }
 

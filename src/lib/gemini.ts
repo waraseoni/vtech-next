@@ -17,7 +17,7 @@ export async function getChatResponse(
     return "ERROR: Gemini API Key missing. Settings page se API key daalein ya .env.local mein GEMINI_API_KEY set karein.";
   }
   const genAI = new GoogleGenerativeAI(key);
-  const modelId = modelName || "gemini-2.0-flash";
+  const modelId = modelName || "gemini-2.5-flash";
 
   const systemInstruction = buildSystemPrompt(role);
 
@@ -97,7 +97,7 @@ export async function getChatResponse(
   }
 }
 
-export async function generateWhatsAppReply(msg: string, customerName?: string, context?: unknown, apiKey?: string, modelName?: string) {
-  const prompt = `Generate a polite and professional WhatsApp reply for this message: "${msg}". Customer Name: ${customerName || 'Unknown'}. Context provided: ${JSON.stringify(context || {})}`;
-  return await getChatResponse([{ role: "user", content: prompt }], apiKey, modelName);
+export async function generateWhatsAppReply(msg: string, customerName?: string, context?: unknown, apiKey?: string, modelName?: string, role?: AiRole) {
+  const prompt = `Generate a polite and professional WhatsApp reply for this message: "${msg}". Customer Name: ${customerName || 'Unknown'}. Context provided: ${JSON.stringify(context || {})}\n\nRules: Reply DIRECTLY to the customer in friendly Hinglish/Hindi. It will be sent AS-IS to the customer, so do NOT include any internal notes, suggestions, meta-commentary, placeholders or instructions aimed at staff. Never mention "I have no data" or internal context. Keep it short, warm and actionable.`;
+  return await getChatResponse([{ role: "user", content: prompt }], apiKey, modelName, role || "admin");
 }

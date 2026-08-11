@@ -26,6 +26,6 @@ export async function getAiSettings(): Promise<AiSettings> {
   return {
     provider,
     apiKey: envKey || info.ai_api_key || "",
-    model: info.ai_model || "gemini-2.0-flash",
+    model: info.ai_model || "gemini-2.5-flash",
   };
 }
