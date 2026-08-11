@@ -51,7 +51,8 @@ WhatsApp auto-reply tooling (`generateWhatsAppReply`) build ho chuka tha par koi
   - `generateWhatsAppReply` me `role` param add (admin/staff policy whatsapp replies par bhi apply) + prompt ab customer-facing (internal suggestions/staff notes strip).
 - ✅ **Live test (11 Aug 2026)** — `getLiveContext` admin/staff dono sahi (low stock, 147 pending jobs, top 5 outstanding, admin financials). Groq prod path (llama-3.3-70b-versatile) + Gemini whatsapp reply (gemini-2.5-flash) dono live pass.
 - ✅ **Gemini model deprecation fix** — `gemini-2.0-flash` ab 404 (no longer available). Defaults + settings list → `gemini-2.5-flash` / `-lite` / `-pro` (`gemini.ts`, `ai-settings.ts`, `settings/page.tsx`). Prod DB `groq` + `llama-3.3-70b-versatile` hi hai, isliye isse koi disruption nahi.
-- ⏳ Next: stock alerts / overdue reminders dashboard par surface karna, ya auto-reply scheduling.
+- ✅ **Dashboard AI Alerts widget** — `src/app/components/AIAlertsWidget.tsx`, `page.tsx` hero header ke neeche. `/api/ai/alerts` (`get_business_alerts`) se fresh alerts fetch karta hai (role-aware): collapsible panel, count badge, severity colors, per-type icons (low_stock/pending_jobs/attendance_missing/high_outstanding/active_loans/due_payment_date), refresh + AI Sahayak link. Bina alerts / not-logged-in → widget hidden.
+- ⏳ Next: unread inquiries ka AI auto-reply batch action, ya auto-reply scheduling.
 
 ## P5 — Mechanics PHP Parity (FULLY DONE, verified vs MySQL dump 11 Aug 2026)
 

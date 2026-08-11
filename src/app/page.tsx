@@ -16,6 +16,7 @@ import {
 import QRCode from "qrcode";
 import { pageAll } from "@/lib/fetch-all";
 import Navbar from "./components/Navbar";
+import AIAlertsWidget from "./components/AIAlertsWidget";
 
 // ─── PUBLIC WEBSITE (shown when not logged in) ─────────────────────────────
 function PublicWebsite() {
@@ -314,6 +315,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as unknown as { standalone?: boolean }).standalone) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- install state browser API se sync karna hai
       setIsInstalled(true);
     }
     const handler = (e: Event) => {
@@ -692,7 +694,7 @@ export default function Dashboard() {
     }
   }, [from, to, profile]);
 
-  useEffect(() => { fetchFinancial(); }, [fetchFinancial]);
+  useEffect(() => { fetchFinancial(); }, [fetchFinancial]); // eslint-disable-line react-hooks/set-state-in-effect -- mount par financial init fetch
 
   // BUG FIX 1 applied in resetDates too
   const resetDates = () => {
@@ -786,6 +788,9 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ AI ALERTS */}
+      <AIAlertsWidget />
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ FILTER */}
       <section className="bg-[#161b27] rounded-2xl border border-[#21293d] p-4">
