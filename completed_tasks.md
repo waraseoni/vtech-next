@@ -42,4 +42,16 @@
 
 ## P3 — Business Value (pending)
 
+## P5 — Mechanics PHP Parity (FULLY DONE, verified vs MySQL dump 11 Aug 2026)
+
+Mechanics module ko legacy PHP (`admin/mechanics/*`, `admin/attendance/*`, `admin/salery/*`) ke exact logic par port/verify kiya:
+- ✅ `mechanics/salary` — salary_report.php parity: per-day rate from `mechanic_salary_history` (effective_date <= day), attendance status 1=full/3=half, commission by `status=5` + `date_completed` range, advance period, closing balance. Data-verified vs `vikram_db_100826.sql` (mechanic 1, Aug 2026).
+- ✅ `mechanics/commission` — commission report + rate master (Master tab: update `mechanic_list.commission_percent` + insert `mechanic_commission_history`).
+- ✅ `mechanics/[id]` (view_mechanic.php) — work history (status=5, date_completed range, `svc_total` = Σ transaction_services.price), stats (job_count, days_count), Add Payment modal (advance_payments insert + activity log). Data-verified: 5 jobs / ₹3700 svc / ₹370 comm — MySQL == Supabase.
+- ✅ `mechanics/[id]/ledger` — opening balance + period ab salary_report semantics (date_completed + status=5 + rate history), PHP `old_balance` ke barabar reconcile.
+- ✅ `mechanics/ledger/[id]` — rich daily ledger (date_created attribution, pending jobs shown, delivered-only in balance). Print ab `mode=created`.
+- ✅ `/api/print-mechanic-ledger` — `mode` param: `completed` (default, `mechanics/[id]/ledger`) / `created` (`mechanics/ledger/[id]`); opening = attendance + comm(date_completed, status=5) − advance, rate history.
+- ✅ Salary report → ledger navigation: `?month=yyyy-MM` ab ledger page par respect hota hai.
+- ⚠️ Pending-jobs report intentionally uses `date_created` (correct semantics) — no change.
+
 ## P4 — Sync Project (pending)
