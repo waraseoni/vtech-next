@@ -1,6 +1,6 @@
 # V-Tech Frontend — Project Review (Audit: 10 Aug 2026)
 
-*Status: ARCHIVE / REFERENCE — isme se koi code change nahi karna. Future kaam me guided hoga.*
+*Status: ARCHIVE / REFERENCE — isme se koi code change nahi karna. Future kaam me guided hoga. Completed tasks ka record → `completed_tasks.md`.*
 
 ## Tech Stack
 - Next.js 16.3 (Turbopack + React Compiler), React 19, TypeScript 5.9
@@ -41,10 +41,10 @@
 - 1 API route bina auth: `device-info/route.ts` (harmless dev helper — documented)
 
 ## Pending / Risks
-1. **Client portal migration apply nahi hua** — `20260809_client_portal.sql` SQL editor me run pending
-2. **SMTP setup pending** (free: Gmail app password / Zoho / Brevo / Resend)
-3. **Client emails set + `login_allowed` toggle** pending
-4. **RLS rollout** ya browser-writes → API routes shift (security debt)
+1. ~~**Client portal migration apply nahi hua**~~ → ✅ DONE (applied + tested, `completed_tasks.md`)
+2. ~~**SMTP setup pending**~~ → ✅ DONE (Gmail SMTP set)
+3. ~~**Client emails set + `login_allowed` toggle**~~ → ✅ DONE (working email + OTP login + toggle ON/OFF tested)
+4. ~~**RLS rollout (7 tables)**~~ → ✅ DONE (migration applied + live verified 11 Aug). ⚠️ Baaki security debt: 414 browser-side `supabase.from()` calls + 102 direct writes ab bhi API-guards-primary pattern par hain (defense-in-depth RLS rollout baaki hai — optional)
 5. **615 lint errors** cleanup
 6. **6 unused/archived migrations** me confusion possible
 7. README/docs nahi hai
@@ -58,8 +58,8 @@
 6. **Code hygiene sprint** — lint cleanup, README, unused migrations archive.
 
 ## Recommended Priority Order
-1. Portal live karo (migration + SMTP + test) — 1-2 din, documented, ready
-2. RLS complete ya browser-writes shift — security
+1. ~~Portal live karo (migration + SMTP + test)~~ → ✅ DONE (10-11 Aug)
+2. ~~RLS hardening (7 tables)~~ → ✅ DONE (11 Aug, migration applied + live verified)
 3. WhatsApp/AI expansion — jab business ready
 4. Sync plan — sirf jab offline-first requirement pakki (sabse bada project)
 

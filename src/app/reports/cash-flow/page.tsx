@@ -23,17 +23,19 @@ type LedgerEntry = {
   client_fullname?: string;
 };
 
+type DbRow = ReturnType<typeof JSON.parse>;
+
 type LedgerData = {
   clientPaymentsReceived: number;
   walkinIncome: number;
   totalAdvanceGiven: number;
   totalOtherExpenses: number;
   totalEmiPaid: number;
-  clientPayments: any[];
-  walkinSales: any[];
-  advancePayments: any[];
-  expenses: any[];
-  loanPayments: any[];
+  clientPayments: DbRow[];
+  walkinSales: DbRow[];
+  advancePayments: DbRow[];
+  expenses: DbRow[];
+  loanPayments: DbRow[];
   ledgerEntries: LedgerEntry[];
 };
 
@@ -82,7 +84,7 @@ function CashFlowPageInner() {
 
   // Detect theme for chart colors only
   useEffect(() => {
-    const check = () => setTheme((document.documentElement.getAttribute("data-theme") as any) || "dark");
+    const check = () => setTheme((document.documentElement.getAttribute("data-theme") as "dark" | "light") || "dark");
     check();
     const obs = new MutationObserver(check);
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
@@ -306,7 +308,7 @@ function CashFlowPageInner() {
                       <RechartsTooltip
                         contentStyle={{ backgroundColor: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: '14px', color: tooltipColor, boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}
                         labelFormatter={l => formatIST(String(l), { dateStyle: 'medium' })}
-                        formatter={(v: any) => [rupee(Number(v)), '']}
+                        formatter={(v) => [rupee(Number(v)), '']}
                       />
                       <Area type="monotone" dataKey="inflow" stroke="#10b981" fillOpacity={1} fill="url(#colorInflow)" strokeWidth={3} dot={{ r: 3, fill: '#10b981', strokeWidth: 0 }} activeDot={{ r: 5 }} />
                       <Area type="monotone" dataKey="net"    stroke="#3b82f6" fillOpacity={1} fill="url(#colorNet)"    strokeWidth={3} dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }} activeDot={{ r: 5 }} />
@@ -331,7 +333,7 @@ function CashFlowPageInner() {
                       </Pie>
                       <RechartsTooltip
                         contentStyle={{ backgroundColor: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: '12px', fontSize: '12px', color: tooltipColor }}
-                        formatter={(v: any) => rupee(Number(v))}
+                        formatter={(v) => rupee(Number(v))}
                       />
                     </PieChart>
                   </ResponsiveContainer>

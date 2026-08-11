@@ -2,7 +2,18 @@ import { Phone, Edit3, Trash2, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { getBalanceMeta } from "./helpers";
 
-export function ClientCard({ client, userRole, handleDelete, openWaModal }: any) {
+type Client = {
+  id: number; name: string; contact: string; address: string;
+  balance: number; last_txn_date: string | null;
+};
+type ClientCardProps = {
+  client: Client;
+  userRole: string;
+  handleDelete: (id: number, name: string) => void;
+  openWaModal: (client: Client) => void;
+};
+
+export function ClientCard({ client, userRole, handleDelete, openWaModal }: ClientCardProps) {
   const meta = getBalanceMeta(client.balance, client.last_txn_date);
   return (
     <div key={client.id} className={`bg-[#161b27] rounded-2xl border border-[#21293d] overflow-hidden ${meta.rowCls}`}>

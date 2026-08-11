@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Search, ChevronRight, Printer, Share2, ArrowLeft, RotateCcw } from "lucide-react";
+import { Loader2, Search, Printer, RotateCcw } from "lucide-react";
 import Navbar from "../components/Navbar";
 
 type JobData = {
@@ -96,8 +96,8 @@ export default function JobStatusPage() {
       setServices(data.services || []);
       setProducts(data.products || []);
 
-    } catch (err: any) {
-      setError(err.message || "Search mein error aayi!");
+    } catch (e) {
+      setError((e instanceof Error && e.message ? e.message : "") || "Search mein error aayi!");
     } finally {
       setLoading(false);
     }

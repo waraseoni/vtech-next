@@ -11,7 +11,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X, Check, Clock, UserX, Save, Eraser, LogIn, LogOut } from 'lucide-react';
-import { deriveStatusFromTimes, hoursBetweenIST, fmtTimeIST } from '@/lib/dateUtils';
+import { deriveStatusFromTimes, hoursBetweenIST } from '@/lib/dateUtils';
 
 interface Props {
   mechanicId: number;

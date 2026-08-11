@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
-} from "recharts";
+import { ResponsiveContainer } from "recharts";
 
 interface ThemeChartProps {
   children: React.ReactElement | React.ReactElement[];
@@ -13,8 +11,7 @@ interface ThemeChartProps {
 
 export const ThemeChart: React.FC<ThemeChartProps> = ({ 
   children, 
-  height = 350, 
-  margin = { top: 10, right: 10, left: -20, bottom: 0 } 
+  height = 350
 }) => {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
@@ -40,23 +37,24 @@ export const ThemeChart: React.FC<ThemeChartProps> = ({
   const themedChildren = React.Children.map(children, (child) => {
     if (!React.isValidElement(child)) return child;
 
-    const childType = (child.type as any).displayName || (child.type as any).name;
+    const el = child as React.ReactElement<Record<string, unknown>>;
+    const childType = (el.type as { displayName?: string; name?: string }).displayName || (el.type as { displayName?: string; name?: string }).name;
 
     if (childType === "CartesianGrid") {
-      return React.cloneElement(child as any, { stroke: chartColors.grid });
+      return React.cloneElement(el, { stroke: chartColors.grid });
     }
 
     if (childType === "XAxis" || childType === "YAxis") {
-      return React.cloneElement(child as any, { 
+      return React.cloneElement(el, { 
         tick: { fill: chartColors.text, fontSize: 10, fontWeight: 900 },
         axisLine: false,
         tickLine: false,
-        ...(childType === "XAxis" ? { minTickGap: 30 } : { tickFormatter: (v: any) => `₹${Number(v)/1000}k` })
+        ...(childType === "XAxis" ? { minTickGap: 30 } : { tickFormatter: (v: number) => `₹${Number(v)/1000}k` })
       });
     }
 
     if (childType === "Tooltip" || childType === "RechartsTooltip") {
-      return React.cloneElement(child as any, {
+      return React.cloneElement(el, {
         contentStyle: {
           backgroundColor: chartColors.tooltipBg,
           border: `1px solid ${chartColors.tooltipBorder}`,
@@ -67,17 +65,17 @@ export const ThemeChart: React.FC<ThemeChartProps> = ({
           fontWeight: "black",
           padding: "12px"
         },
-        ...(child.props as any)
+        ...el.props
       });
     }
 
-    return child;
+    return el;
   });
 
   return (
     <div className="w-full" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
-        {themedChildren as any}
+        {themedChildren}
       </ResponsiveContainer>
     </div>
   );

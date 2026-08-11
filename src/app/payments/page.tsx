@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { 
   AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, IndianRupee, 
   Loader2, Pencil, Plus, Receipt, RotateCcw, Search, Trash2, X,
-  Calendar, Filter, Users, DollarSign, CreditCard
+  Calendar, DollarSign
 } from "lucide-react";
 import { todayIST, formatIST, startOfMonthIST, endOfMonthIST, parseISTDate, toISTDatePart } from "@/lib/dateUtils";
 import { exportToCSV, printTable } from "@/lib/exportUtils";
@@ -143,7 +143,7 @@ function PaymentsPageInner() {
       if (error) throw error;
       setToast({ type: "success", msg: "Deleted" });
       await loadData();
-    } catch (e) { setToast({ type: "error", msg: "Delete failed" }); }
+    } catch { setToast({ type: "error", msg: "Delete failed" }); }
   };
 
   const viewReceipt = (p: PaymentRow) => { setReceiptPayment(p); setReceiptOpen(true); };

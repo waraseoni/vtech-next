@@ -13,7 +13,7 @@ const SHOP = {
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
-function formatIST(iso: string, opts?: any) {
+function formatIST(iso: string, opts?: Intl.DateTimeFormatOptions) {
   return Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", ...opts }).format(new Date(iso));
 }
 
@@ -62,20 +62,20 @@ export async function GET(request: NextRequest) {
 
   const clientIds = [...new Set(txData.map(t => t.client_name).filter(id => id != null))];
 
-  const [{ data: clientsData }, { data: clientNamesData }] = await Promise.all([
+  const [, { data: clientNamesData }] = await Promise.all([
     clientIds.length > 0 ? fetchAllIn((ids: number[]) => supabase.from('client_list').select('id, firstname, middlename, lastname').in('id', ids), clientIds).then(rows => ({ data: rows })) : Promise.resolve({ data: [] }),
     clientIds.length > 0 ? fetchAllIn((ids: number[]) => supabase.from('client_list').select('id, firstname, middlename, lastname, contact').in('id', ids), clientIds).then(rows => ({ data: rows })) : Promise.resolve({ data: [] })
   ]);
 
-  const clientMap: Record<number, any> = {};
-  (clientNamesData || []).forEach((c: any) => {
+  const clientMap: Record<number, { name: string; contact: string }> = {};
+  (clientNamesData || []).forEach((c) => {
     clientMap[c.id] = {
       name: `${c.firstname} ${c.middlename || ''} ${c.lastname || ''}`.replace(/\s+/g, ' ').trim(),
       contact: c.contact || '',
     };
   });
 
-  const transactions = txData.map((t: any) => ({
+  const transactions = txData.map((t) => ({
     id: t.id,
     job_id: t.job_id,
     date_completed: t.date_completed,

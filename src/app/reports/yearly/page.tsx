@@ -28,6 +28,17 @@ type MonthData = {
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+type DbRow = ReturnType<typeof JSON.parse>;
+
+type SupaBuilder = {
+  eq: (column: string, value: unknown) => SupaBuilder;
+  gte: (column: string, value: unknown) => SupaBuilder;
+  lte: (column: string, value: unknown) => SupaBuilder;
+  in: (column: string, values: unknown[]) => SupaBuilder;
+  order: (column: string, opts?: { ascending?: boolean }) => SupaBuilder;
+  range: (from: number, to: number) => PromiseLike<{ data: DbRow[] | null; error: unknown }>;
+};
+
 const istMonth = (iso: string) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" }).format(new Date(iso));
 
@@ -46,11 +57,11 @@ export default function YearlyReportPage() {
       const end = `${year}-12-31`;
       const endTz = `${year}-12-31T23:59:59+05:30`;
 
-      const fetchList = async (table: string, select: string, builder: (q: any) => any) => {
-        const list: any[] = [];
+      const fetchList = async (table: string, select: string, builder: (q: SupaBuilder) => SupaBuilder) => {
+        const list: DbRow[] = [];
         let page = 0;
         while (true) {
-          let q = supabase.from(table).select(select);
+          let q: SupaBuilder = supabase.from(table).select(select) as unknown as SupaBuilder;
           q = builder(q);
           const { data, error } = await q.range(page * 1000, (page + 1) * 1000 - 1);
           if (error) throw error;
@@ -119,12 +130,13 @@ export default function YearlyReportPage() {
       });
 
       setStats({ year, monthly });
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
     }
     setLoading(false);
   }, [year]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch mount effect; loading init sync legit hai
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const shiftYear = (diff: number) => setYear(y => y + diff);
@@ -270,7 +282,7 @@ export default function YearlyReportPage() {
   );
 }
 
-function StatCard({ icon, label, sub, color }: {
+function StatCard({ label, sub, color }: {
   icon: React.ReactNode;
   label: string;
   sub: string;

@@ -249,6 +249,12 @@ type RecentPayment = { id: number; amount: number; payment_mode: string; payment
 type LowStockItem = { name: string; quantity: number; place: string; alert: number };
 type RevenuePoint = { month: string; revenue: number };
 type StatusPoint = { name: string; value: number; color: string };
+type TooltipItem = { value?: number | string; payload?: unknown };
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
 
 const STATUS_META = [
   { label: "Pending", color: "#94a3b8" },
@@ -259,7 +265,7 @@ const STATUS_META = [
   { label: "Delivered", color: "#3b82f6" },
 ];
 
-import { todayIST, formatIST, startOfMonthIST, endOfMonthIST, toISTDatePart, parseISTDate } from "@/lib/dateUtils";
+import { todayIST, formatIST, startOfMonthIST, endOfMonthIST, parseISTDate } from "@/lib/dateUtils";
 
 // ─── Timezone-safe helpers ────────────────────────────────────────────────────
 // BUG FIX 4: fmtDate — new Date('YYYY-MM-DD') parses as UTC midnight.
@@ -276,7 +282,7 @@ const inr = (v: number, digits = 0) =>
   "₹" + v.toLocaleString("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
 // ─── Recharts custom tooltips ─────────────────────────────────────────────────
-const RevTooltip = ({ active, payload, label }: any) => {
+const RevTooltip = ({ active, payload, label }: { active?: boolean; payload?: TooltipItem[]; label?: string | number }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-[#111520] border border-[#21293d] rounded-xl px-3 py-2 shadow-xl text-xs">
@@ -285,7 +291,7 @@ const RevTooltip = ({ active, payload, label }: any) => {
     </div>
   );
 };
-const StatusTooltip = ({ active, payload }: any) => {
+const StatusTooltip = ({ active, payload }: { active?: boolean; payload?: TooltipItem[] }) => {
   if (!active || !payload?.length) return null;
   const d = payload[0]?.payload as StatusPoint;
   return (
@@ -300,19 +306,19 @@ const StatusTooltip = ({ active, payload }: any) => {
 export default function Dashboard() {
   const [authChecked, setAuthChecked] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [qrUrl, setQrUrl] = useState("");
 
   useEffect(() => {
-    if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
+    if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as unknown as { standalone?: boolean }).standalone) {
       setIsInstalled(true);
     }
     const handler = (e: Event) => {
       e.preventDefault();
-      setInstallPrompt(e);
+      setInstallPrompt(e as BeforeInstallPromptEvent);
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
@@ -512,12 +518,12 @@ export default function Dashboard() {
 
         // Recent jobs — resolve client names
         if (recentTransRaw?.length) {
-          const cIds = [...new Set(recentTransRaw.map((t: any) => parseInt(t.client_name)).filter((x: number) => !isNaN(x)))];
+          const cIds = [...new Set(recentTransRaw.map((t) => parseInt(t.client_name)).filter((x: number) => !isNaN(x)))];
           const { data: cls } = cIds.length
             ? await supabase.from("client_list").select("id, firstname, lastname").in("id", cIds)
             : { data: [] };
-          const cMap = Object.fromEntries((cls ?? []).map((c: any) => [c.id, `${c.firstname ?? ""} ${c.lastname ?? ""}`.trim()]));
-          setRecentJobs(recentTransRaw.map((t: any) => ({
+          const cMap = Object.fromEntries((cls ?? []).map((c) => [c.id, `${c.firstname ?? ""} ${c.lastname ?? ""}`.trim()]));
+          setRecentJobs(recentTransRaw.map((t) => ({
             ...t, amount: n(t.amount),
             client_name: cMap[parseInt(t.client_name)] || "Walk-in",
           })));
@@ -525,12 +531,12 @@ export default function Dashboard() {
 
         // Recent payments — resolve client names
         if (paymentsRaw?.length) {
-          const cIds2 = [...new Set(paymentsRaw.map((p: any) => p.client_id).filter(Boolean))];
+          const cIds2 = [...new Set(paymentsRaw.map((p) => p.client_id).filter(Boolean))];
           const { data: cls2 } = cIds2.length
             ? await supabase.from("client_list").select("id, firstname, lastname").in("id", cIds2)
             : { data: [] };
-          const cMap2 = Object.fromEntries((cls2 ?? []).map((c: any) => [c.id, `${c.firstname ?? ""} ${c.lastname ?? ""}`.trim()]));
-          setRecentPayments(paymentsRaw.map((p: any) => ({
+          const cMap2 = Object.fromEntries((cls2 ?? []).map((c) => [c.id, `${c.firstname ?? ""} ${c.lastname ?? ""}`.trim()]));
+          setRecentPayments(paymentsRaw.map((p) => ({
             id: p.id, amount: n(p.amount), payment_mode: p.payment_mode ?? "Cash",
             payment_date: p.payment_date, client_name: cMap2[p.client_id] ?? "Unknown",
           })));
@@ -538,32 +544,32 @@ export default function Dashboard() {
 
         // Low stock — compute available stock (in − sold) vs alert_quantity
         if ((lowProds || []).length) {
-          const txnIds = [...new Set((lowJobItems || []).map((i: any) => i.transaction_id))];
+          const txnIds = [...new Set((lowJobItems || []).map((i) => i.transaction_id))];
           let validTxnSet = new Set<number>();
           if (txnIds.length) {
             const { data: txns } = await supabase
               .from("transaction_list").select("id").in("id", txnIds).neq("status", 4);
-            validTxnSet = new Set((txns || []).map((t: any) => t.id));
+            validTxnSet = new Set((txns || []).map((t) => t.id));
           }
           const stockMap = new Map<number, number>();
-          (lowInvAll || []).forEach((i: any) => stockMap.set(i.product_id, (stockMap.get(i.product_id) || 0) + n(i.quantity)));
+          (lowInvAll || []).forEach((i) => stockMap.set(i.product_id, (stockMap.get(i.product_id) || 0) + n(i.quantity)));
           const soldJobMap = new Map<number, number>();
-          (lowJobItems || []).forEach((i: any) => {
+          (lowJobItems || []).forEach((i) => {
             if (validTxnSet.has(i.transaction_id)) soldJobMap.set(i.product_id, (soldJobMap.get(i.product_id) || 0) + n(i.qty));
           });
           const soldSaleMap = new Map<number, number>();
-          (lowSaleItems || []).forEach((i: any) => soldSaleMap.set(i.product_id, (soldSaleMap.get(i.product_id) || 0) + n(i.qty)));
+          (lowSaleItems || []).forEach((i) => soldSaleMap.set(i.product_id, (soldSaleMap.get(i.product_id) || 0) + n(i.qty)));
 
           const placeMap = new Map<number, string>();
-          (lowInvAll || []).forEach((i: any) => { if (i.place && !placeMap.has(i.product_id)) placeMap.set(i.product_id, i.place); });
+          (lowInvAll || []).forEach((i) => { if (i.place && !placeMap.has(i.product_id)) placeMap.set(i.product_id, i.place); });
 
           const builtLow = (lowProds || [])
-            .map((p: any) => {
+            .map((p) => {
               const available = (stockMap.get(p.id) || 0) - (soldJobMap.get(p.id) || 0) - (soldSaleMap.get(p.id) || 0);
               return { name: p.name, quantity: available, place: placeMap.get(p.id) || "—", alert: n(p.alert_quantity) };
             })
-            .filter((x: any) => x.quantity < x.alert)
-            .sort((a: any, b: any) => (a.quantity - a.alert) - (b.quantity - b.alert));
+            .filter((x) => x.quantity < x.alert)
+            .sort((a, b) => (a.quantity - a.alert) - (b.quantity - b.alert));
 
           lowStock = builtLow.length;
           setLowStockItems(builtLow.slice(0, 12));
@@ -589,7 +595,7 @@ export default function Dashboard() {
           pageAll(supabase.from("client_loans").select("client_id, total_payable")),
           pageAll(supabase.from("client_payments").select("client_id, amount, discount")),
         ]);
-        const sumBy = (arr: any[] | null, key: string, fn: (r: any) => number) => {
+        const sumBy = <T,>(arr: T[] | null, key: keyof T, fn: (r: T) => number) => {
           const m = new Map<number, number>();
           (arr || []).forEach(r => { const id = Number(r[key]); if (id) m.set(id, (m.get(id) || 0) + fn(r)); });
           return m;
@@ -600,7 +606,7 @@ export default function Dashboard() {
         const pM = sumBy(payments, "client_id", r => n(r.amount) + n(r.discount));
         const today = parseISTDate(todayIST()).getTime();
         let overdue = 0, todayC = 0, upcoming = 0, amount = 0;
-        (clients || []).forEach((c: any) => {
+        (clients || []).forEach((c) => {
           const bal = n(c.opening_balance) + (rM.get(c.id) || 0) + (sM.get(c.id) || 0) + (lM.get(c.id) || 0) - (pM.get(c.id) || 0);
           if (bal <= 0.01) return;
           amount += bal;
@@ -641,40 +647,40 @@ export default function Dashboard() {
         pageAll(supabase.from("expense_list").select("amount").gte("date_created", f0).lte("date_created", t0)),
       ]);
 
-      const repairInc = (tD ?? []).reduce((s: number, t: any) => s + n(t.amount), 0);
-      const directInc = (dD ?? []).reduce((s: number, d: any) => s + n(d.total_amount), 0);
+      const repairInc = (tD ?? []).reduce((s: number, t) => s + n(t.amount), 0);
+      const directInc = (dD ?? []).reduce((s: number, d) => s + n(d.total_amount), 0);
       const totalSales = repairInc + directInc;
 
-      const txList = (txIds ?? []).map((t: any) => t.id);
+      const txList = (txIds ?? []).map((t) => t.id);
       let partsTrans = 0;
       if (txList.length) {
         const { data: tp } = await supabase.from("transaction_products").select("qty, price").in("transaction_id", txList);
-        partsTrans = (tp ?? []).reduce((s: number, r: any) => s + n(r.qty) * n(r.price), 0);
+        partsTrans = (tp ?? []).reduce((s: number, r) => s + n(r.qty) * n(r.price), 0);
       }
-      const dList = (dIds ?? []).map((d: any) => d.id);
+      const dList = (dIds ?? []).map((d) => d.id);
       let partsDirect = 0;
       if (dList.length) {
         const { data: di } = await supabase.from("direct_sale_items").select("qty, price").in("sale_id", dList);
-        partsDirect = (di ?? []).reduce((s: number, r: any) => s + n(r.qty) * n(r.price), 0);
+        partsDirect = (di ?? []).reduce((s: number, r) => s + n(r.qty) * n(r.price), 0);
       }
 
       const partsCost = (partsTrans + partsDirect) * 0.9;
       const grossProfit = totalSales - partsCost;
-      const discounts = (discD ?? []).reduce((s: number, p: any) => s + n(p.discount), 0);
+      const discounts = (discD ?? []).reduce((s: number, p) => s + n(p.discount), 0);
 
       let salary = 0;
       if (attD?.length) {
-        const mIds = [...new Set(attD.map((a: any) => a.mechanic_id).filter(Boolean))];
+        const mIds = [...new Set(attD.map((a) => a.mechanic_id).filter(Boolean))];
         const { data: mechs } = await supabase.from("mechanic_list").select("id, daily_salary").in("id", mIds);
-        const sMap = Object.fromEntries((mechs ?? []).map((m: any) => [m.id, n(m.daily_salary)]));
-        salary = attD.reduce((s: number, a: any) => {
+        const sMap = Object.fromEntries((mechs ?? []).map((m) => [m.id, n(m.daily_salary)]));
+        salary = attD.reduce((s: number, a) => {
           const d = sMap[a.mechanic_id] ?? 0;
           return s + (a.status === 1 ? d : a.status === 3 ? d / 2 : 0);
         }, 0);
       }
 
-      const loanPaid = (loanD ?? []).reduce((s: number, l: any) => s + n(l.amount_paid), 0);
-      const expenses = (expD ?? []).reduce((s: number, e: any) => s + n(e.amount), 0);
+      const loanPaid = (loanD ?? []).reduce((s: number, l) => s + n(l.amount_paid), 0);
+      const expenses = (expD ?? []).reduce((s: number, e) => s + n(e.amount), 0);
       const totalOutflow = discounts + salary + loanPaid + expenses;
       const netProfit = grossProfit - totalOutflow;
 

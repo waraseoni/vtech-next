@@ -4,22 +4,13 @@ import { supabase } from "@/lib/supabase";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Printer, X, Filter, ChevronDown, ChevronUp,
-  TrendingDown, TrendingUp, Minus, Calendar,
-  RefreshCw, AlertTriangle, CheckCircle,
+  Calendar,
+  AlertTriangle,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // IST TIMEZONE HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
-function todayIST(): string {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
-  }).formatToParts(new Date());
-  const p: Record<string, string> = {};
-  parts.forEach(x => { p[x.type] = x.value; });
-  return `${p.year}-${p.month}-${p.day}`;
-}
-
 function fmtDate(iso: string): string {
   if (!iso) return "—";
   try {
@@ -336,8 +327,8 @@ export default function LedgerPrintPage({
       });
 
       setRows(ledger);
-    } catch (err: any) {
-      console.error("ledger fetch:", err?.message ?? JSON.stringify(err));
+    } catch (err) {
+      console.error("ledger fetch:", err instanceof Error ? err.message : JSON.stringify(err));
     } finally {
       setLoading(false);
     }

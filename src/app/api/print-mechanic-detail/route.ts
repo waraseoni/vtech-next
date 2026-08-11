@@ -5,6 +5,8 @@ import { fetchAll } from "@/lib/fetch-all";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
+type DbRow = ReturnType<typeof JSON.parse>;
+
 const SHOP = {
   name: "V-Technologies",
   address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
@@ -43,9 +45,9 @@ export async function GET(request: NextRequest) {
 
   const name = [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ");
 
-  let jobs: any[] = [];
-  let advances: any[] = [];
-  let attendance: any[] = [];
+  let jobs: DbRow[] = [];
+  let advances: DbRow[] = [];
+  let attendance: DbRow[] = [];
 
   if (from && to) {
     const start = `${from}T00:00:00`;
@@ -81,7 +83,6 @@ export async function GET(request: NextRequest) {
   const totalAdv = advances.reduce((s, a) => s + (a.amount || 0), 0);
   const presentDays = attendance.filter(a => a.status === 1).length;
   const halfDays = attendance.filter(a => a.status === 3).length;
-  const salaryDue = (presentDays + halfDays * 0.5) * (mechanic.daily_salary || 0);
 
   const periodLabel = from && to ? `${fmtDate(from)} - ${fmtDate(to)}` : "All Time";
   const statusLabel = mechanic.status === 1 ? 'Active' : 'Inactive';

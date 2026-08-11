@@ -2,12 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2,
-  Check, AlertCircle, User, Users, DollarSign, TrendingUp, Calendar,
-  Eye, Wrench, FileText, MessageSquare
+  Check, AlertCircle, Users, DollarSign, TrendingUp,
+  Eye, Wrench, FileText
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
 import { todayIST } from "@/lib/dateUtils";
@@ -60,7 +59,6 @@ function StatCard({ icon, label, value, sub, color }: {
 }
 
 export default function MechanicsPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Mechanic[]>([]);
   const [search, setSearch] = useState("");
@@ -179,8 +177,8 @@ export default function MechanicsPage() {
       }
       setShowModal(false);
       fetchData();
-    } catch (err: any) {
-      setFormErr(err.message || "Save mein galti!");
+    } catch (e) {
+      setFormErr((e instanceof Error && e.message ? e.message : "") || "Save mein galti!");
     } finally {
       setSaving(false);
     }

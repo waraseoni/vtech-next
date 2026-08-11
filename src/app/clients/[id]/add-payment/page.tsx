@@ -146,8 +146,8 @@ export default function AddPaymentPage({
           .order("date_created", { ascending: false });
         setDirectSales(salesData || []);
 
-      } catch (err: any) {
-        console.error("fetchData:", err?.message ?? JSON.stringify(err));
+      } catch (err) {
+        console.error("fetchData:", err instanceof Error ? err.message : JSON.stringify(err));
       } finally {
         setFetchingMeta(false);
       }
@@ -195,9 +195,9 @@ export default function AddPaymentPage({
       // BUG FIX 11: don't push + refresh (causes warning on unmounted component)
       // Use replace — navigates cleanly without stacking history
       setTimeout(() => router.replace(`/clients/${clientId}/view`), 1000);
-    } catch (err: any) {
-      console.error("insert error:", err?.message ?? JSON.stringify(err));
-      setToast({ type: "error", msg: err?.message ?? "Payment save mein galti!" });
+    } catch (err) {
+      console.error("insert error:", err instanceof Error ? err.message : JSON.stringify(err));
+      setToast({ type: "error", msg: err instanceof Error ? err.message : "Payment save mein galti!" });
     } finally {
       setLoading(false);
     }

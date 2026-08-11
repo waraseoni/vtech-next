@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Save, Search, User, Wrench, Hash,
-  Loader2, AlertTriangle, CheckCircle, Trash2, RefreshCw, Users,
+  Loader2, AlertTriangle, CheckCircle, RefreshCw, Users,
 } from "lucide-react";
 
 // ─── IST Helper ───────────────────────────────────────────────────────────────
@@ -97,7 +97,7 @@ export default function BulkEditPage() {
         .order("id", { ascending: false })
         .limit(1000);
       if (error) throw error;
-      const tRows: TxnRow[] = (data || []).map((t: any) => ({
+      const tRows: TxnRow[] = (data || []).map(t => ({
         id: t.id,
         job_id: t.job_id,
         client_id: t.client_name ?? "",

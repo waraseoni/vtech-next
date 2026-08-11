@@ -8,7 +8,7 @@ import { addMonths, subMonths } from "date-fns";
 import {
   BarChart3, TrendingUp, TrendingDown, Wallet, PiggyBank,
   ChevronLeft, ChevronRight, RefreshCw, Eye, Printer,
-  Info, Package, X, Loader2, AlertTriangle, ChevronRight as CRight,
+  Info, Package, X, AlertTriangle, ChevronRight as CRight,
   ArrowUpRight, ArrowDownRight, Wrench, ShoppingCart, Users,
   CreditCard, Award, Building2, Receipt, Tag, Landmark,
 } from "lucide-react";
@@ -620,7 +620,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                   <tbody>
                     {rows.length === 0
                       ? <tr><td colSpan={3} className="py-8 text-center text-slate-600 text-xs">{empty}</td></tr>
-                      : rows.map((r: any, i) => renderRow(r, i))
+                      : rows.map((r, i) => renderRow(r as Expense & AdvancePayment, i))
                     }
                   </tbody>
                   {rows.length > 0 && (

@@ -8,7 +8,6 @@ import { formatIST, toISTDatePart } from "@/lib/dateUtils";
 import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Eye, CreditCard } from "lucide-react";
 
 type Client = { id: number; firstname: string; middlename: string | null; lastname: string; contact: string | null };
-type Payment = { id: number; loan_id: number; amount: number; discount: number };
 type Loan = {
   id: number;
   client_id: number;
@@ -83,8 +82,8 @@ export default function ClientLoansPage() {
       }));
       setRows(loans as Loan[]);
       setClients((clientRes.data || []) as Client[]);
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
     }
     setLoading(false);
   }, []);
@@ -184,8 +183,8 @@ export default function ClientLoansPage() {
       }
       setShowModal(false);
       fetchData();
-    } catch (err: any) {
-      setFormErr(err.message || "Save mein galti!");
+    } catch (err) {
+      setFormErr((err instanceof Error ? err.message : String(err)) || "Save mein galti!");
     } finally {
       setSaving(false);
     }

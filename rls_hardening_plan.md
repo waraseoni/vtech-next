@@ -1,6 +1,6 @@
 # RLS Hardening (Security Debt) — Implementation Plan & TODO
 
-*Status: MIGRATION READY — SQL editor me apply hone ke baad live verify.*
+*Status: ✅ COMPLETE — migration applied + live verified (11 Aug 2026). Details → `completed_tasks.md`.*
 *Created: 10 Aug 2026 · Source: live anon-key audit (verify-rls.cjs + write tests)*
 
 ## 1. Why (Problem Statement)
@@ -78,5 +78,5 @@
 2. ✅ (done 10 Aug) App-impact analysis — public pages whitelist, staff pages safe, signature route + gemini anon fallback found
 3. ✅ (done 10 Aug) `supabase/migrations/20260910_rls_hardening.sql` likha (7 tables, idempotent)
 4. ✅ (done 10 Aug) `api/settings/signature` → service-role; `gemini-tools` anon fallback hata; `tsc` + `build` pass
-5. [ ] **Supabase SQL editor me migration apply kariye**
-6. [ ] Live verify checklist (#6) + deploy code
+5. ✅ (done 11 Aug) Supabase SQL editor me migration apply kariya (user) + live RLS verify (anon REST tests pass — `completed_tasks.md` dekho)
+6. ✅ (done 11 Aug) Regression: client portal API service-role safe, public pages name/cover whitelisted, ai-settings service-role — sab verified

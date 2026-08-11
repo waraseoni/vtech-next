@@ -57,12 +57,12 @@ export default function DailyDoneReportPage() {
         .order("firstname");
       if (error) throw error;
       if (data) {
-        setMechanics(data.map((m: any) => ({
+        setMechanics(data.map((m) => ({
           id: m.id.toString(),
           name: `${m.firstname} ${m.lastname}`.trim()
         })));
       }
-    } catch (e: any) {
+    } catch (e) {
       console.error("Error fetching mechanics:", e);
     }
   };
@@ -125,8 +125,8 @@ export default function DailyDoneReportPage() {
       }).filter(Boolean) as DailyDoneItem[];
 
       setItems(mapped);
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
     }
     setLoading(false);
   }, [date, selectedMechanic]);
@@ -260,7 +260,7 @@ export default function DailyDoneReportPage() {
               <div className="p-4 bg-white/5 rounded-full mb-3">
                 <CheckSquare size={32} className="text-slate-600" />
               </div>
-              <p className="text-slate-300 font-bold">No jobs were marked as "Done" on this date.</p>
+              <p className="text-slate-300 font-bold">No jobs were marked as &quot;Done&quot; on this date.</p>
               <p className="text-xs text-slate-500 mt-1">Try selecting a different date or mechanic.</p>
             </div>
           ) : (

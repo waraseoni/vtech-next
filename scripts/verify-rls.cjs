@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // scripts/verify-rls.cjs
 // Client portal RLS verification — behavioral (read-only, plus ek throwaway
 // auth user jo banata hai aur khud delete kar deta hai).

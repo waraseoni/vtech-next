@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { requireStaff, getSessionRole } from "@/lib/api-auth";
 import { executeGeminiTool, type AiRole } from "@/lib/gemini-tools";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const user = await requireStaff();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -13,10 +13,10 @@ export async function GET(request: NextRequest) {
     const alerts = await executeGeminiTool({ name: "get_business_alerts", args: {} }, role);
 
     return NextResponse.json({ role, alerts });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Alerts API Error:", error);
     return NextResponse.json(
-      { error: "Failed to load alerts", details: error?.message || String(error) },
+      { error: "Failed to load alerts", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

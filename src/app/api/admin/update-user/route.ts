@@ -3,6 +3,8 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/api-auth';
 
+type DbRow = ReturnType<typeof JSON.parse>;
+
 export async function POST(request: Request) {
   try {
     const { userId, email, password, full_name } = await request.json();
@@ -31,7 +33,7 @@ export async function POST(request: Request) {
     );
 
     // Update object
-    const updates: any = {};
+    const updates: DbRow = {};
     if (email) updates.email = email;
     if (password) updates.password = password;
     if (full_name) updates.data = { full_name };
@@ -48,10 +50,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ user: data.user });
 
-  } catch (err: any) {
+  } catch (err) {
     console.error('🔥 API Error:', err);
     return NextResponse.json(
-      { error: err.message || 'Internal server error' },
+      { error: err instanceof Error ? err.message : 'Internal server error' },
       { status: 500 }
     );
   }

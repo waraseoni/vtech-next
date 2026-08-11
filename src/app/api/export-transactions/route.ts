@@ -100,34 +100,6 @@ export async function GET(req: NextRequest) {
   // EXCEL (XLS via HTML table — opens directly in Excel)
   // ══════════════════════════════════════════════════════════════════════════
   if (format !== "csv") {
-    const totalAmount = txns.reduce((s, t) => s + (t.amount || 0), 0);
-
-    const rows = txns.map((t, i) => {
-      const cid    = Number(t.client_name);
-      const client = clientMap.get(cid);
-      const cName  = client
-        ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
-        : `Client #${cid}`;
-      const mName  = t.mechanic_id ? (mechMap.get(t.mechanic_id) || "") : "";
-      return `<tr>
-        <td>${i + 1}</td>
-        <td>${fmtDateTime(t.date_created)}</td>
-        <td style="font-weight:bold;color:#1565C0">#${t.job_id}</td>
-        <td>${t.code || ""}</td>
-        <td style="font-weight:bold">${cName}</td>
-        <td>${client?.contact || ""}</td>
-        <td>${client?.address || ""}</td>
-        <td>${t.item || ""}</td>
-        <td style="color:#c62828">${t.fault || ""}</td>
-        <td>${t.uniq_id || ""}</td>
-        <td>${t.remark || ""}</td>
-        <td>${mName}</td>
-        <td style="text-align:right;font-weight:bold">₹${(t.amount || 0).toFixed(2)}</td>
-        <td>${STATUS_MAP[t.status] || ""}</td>
-        <td>${fmtDate(t.date_completed)}</td>
-      </tr>`;
-    }).join("");
-
     const xls = `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"

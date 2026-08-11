@@ -3,9 +3,9 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
-  Package, Search, Loader2, Eye, Printer, MapPin,
+  Package, Search, Eye, Printer, MapPin,
   TrendingDown, AlertTriangle, CheckCircle, XCircle,
-  BarChart3, RefreshCw, ChevronDown, ArrowUpDown, X,
+  BarChart3, RefreshCw, ArrowUpDown, X,
   Layers, Zap, ShoppingCart, Boxes,
 } from "lucide-react";
 

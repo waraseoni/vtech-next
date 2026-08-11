@@ -3,13 +3,16 @@ import { useState, useEffect, useCallback, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { Loader2, ChevronLeft, ChevronRight, Printer, X, Coins, Edit2, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Activity, History, Trash2, Check, RotateCcw } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Printer, X, Edit2, DollarSign, Wallet, ArrowUpRight, ArrowDownRight, Activity, History, Trash2, Check, RotateCcw } from "lucide-react";
 import { todayIST, currentMonthIST, parseISTDate, toISTString } from "@/lib/dateUtils";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 type SalaryHistory = { id: number; mechanic_id: number; salary: number; effective_date: string };
 type Mechanic = { id: number; firstname: string; middlename: string | null; lastname: string; daily_salary: number; designation: string | null; last_updated?: string | null };
+
+type DbRow = ReturnType<typeof JSON.parse>;
+type RangeQuery = { range: (from: number, to: number) => PromiseLike<{ data: DbRow[] | null; error: unknown }> };
 
 type SalaryRow = {
   id: number; name: string; daily_salary: number;
@@ -40,9 +43,9 @@ function SalaryContent() {
   const [showLedgerModal, setShowLedgerModal] = useState(false);
   const [ledgerTarget, setLedgerTarget] = useState<{ id: number; name: string; default_salary: number } | null>(null);
   const [ledgerLoading, setLedgerLoading] = useState(false);
-  const [ledgerData, setLedgerData] = useState<any[]>([]);
+  const [ledgerData, setLedgerData] = useState<DbRow[]>([]);
   const [ledgerFrom, setLedgerFrom] = useState("");
-  const [ledgerTo, setLedgerTo] = useState("");
+  const [, setLedgerTo] = useState("");
   
   const [salaryRateModal, setSalaryRateModal] = useState(false);
   const [salaryTarget, setSalaryTarget] = useState<{ id: number; name: string; salary: number } | null>(null);
@@ -84,8 +87,8 @@ function SalaryContent() {
       const nextMonthStart = `${month}-${String(lastDay).padStart(2, "0")}T23:59:59+05:30`;
 
       // Helper to fully exhaust pagination
-      const fetchAllData = async (queryBuilder: any) => {
-        let allData: any[] = [];
+      const fetchAllData = async (queryBuilder: RangeQuery) => {
+        const allData: DbRow[] = [];
         let from = 0;
         let hasMore = true;
         while (hasMore) {
@@ -211,8 +214,8 @@ function SalaryContent() {
       const { data: histList } = await supabase.from("mechanic_salary_history").select("*").eq("mechanic_id", r.id).order("effective_date", { ascending: false });
       const history = histList || [];
 
-      const fetchAllData = async (queryBuilder: any) => {
-        let allData: any[] = [];
+      const fetchAllData = async (queryBuilder: RangeQuery) => {
+        const allData: DbRow[] = [];
         let from = 0;
         let hasMore = true;
         while (hasMore) {
@@ -249,7 +252,7 @@ function SalaryContent() {
       const ap = advPrev?.reduce((s, x) => s + (x.amount || 0), 0) || 0;
       
       let running = ep + cp - ap;
-      const entries: any[] = [];
+      const entries: DbRow[] = [];
       if (running !== 0) entries.push({ date: "Opening", status: "—", wage: running, comm: 0, adv: 0, balance: running, type: "opening" });
 
       const dates = new Set([...(attAll?.map((a) => a.curr_date) || []), ...(commAll?.map((c) => toISTString(new Date(c.date_completed)).split("T")[0]) || []), ...(advAll?.map((a) => a.date_paid) || [])]);

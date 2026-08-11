@@ -8,6 +8,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+type DbRow = ReturnType<typeof JSON.parse>;
+
 // ─── Helper: fetch system info ────────────────────────────────────────────────
 async function fetchShopInfo() {
   const { data } = await supabase.from("system_info").select("meta_field, meta_value");
@@ -90,7 +92,7 @@ export async function GET(req: NextRequest) {
   }
 
   // ── Fetch transaction ──────────────────────────────────────────────────────
-  let txnRaw: Record<string, any> | null = null;
+  let txnRaw: DbRow | null = null;
 
   const r1 = await supabase.from("transaction_list").select("*").eq("job_id", jobIdStr).single();
   if (r1.data) txnRaw = r1.data;
@@ -111,7 +113,7 @@ export async function GET(req: NextRequest) {
   if (!txnRaw) {
     return new NextResponse(`Job ID ${jobIdStr} not found`, { status: 404 });
   }
-  const txn: Record<string, any> = txnRaw;
+  const txn: DbRow = txnRaw;
 
   // ── Fetch client ───────────────────────────────────────────────────────────
   const { data: client } = await supabase

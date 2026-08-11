@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import {
-  X, Save, Package, MapPin, Calendar, Plus, Minus,
+  X, Save, MapPin, Calendar, Plus, Minus,
   CheckCircle2, AlertCircle, Loader2, ArrowDownToLine, Edit3,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
@@ -78,8 +78,8 @@ export default function StockModal({ productId, stock, onClose, onSaved, product
       // Show success flash briefly
       setSuccess(true);
       setTimeout(() => onSaved(), 700);
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
       setSaving(false);
     }
   };

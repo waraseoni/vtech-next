@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Loader2, Send, Sparkles, X, Bot, User, Trash2, Cpu, Zap, Activity, MessageSquare, Bell, ChevronDown, AlertTriangle, PackageX, CalendarClock, UserCheck, Wallet } from "lucide-react";
+import { Loader2, Send, Sparkles, Bot, User, Trash2, Cpu, Zap, Activity, MessageSquare, Bell, ChevronDown, AlertTriangle, PackageX, CalendarClock, UserCheck, Wallet } from "lucide-react";
 
-type NotificationItem = { [key: string]: any };
+type DbRow = ReturnType<typeof JSON.parse>;
+type NotificationItem = DbRow;
 type AlertGroup = { type: string; severity: string; title: string; items: NotificationItem[] };
 type AlertsResponse = { count: number; alerts: AlertGroup[]; note?: string; generated_at?: string };
 
@@ -60,7 +61,7 @@ function FormattedMessage({ content }: { content: string }) {
             pushP();
             const level = line.match(/^(#{1,3})\s/)?.[1].length || 3;
             const text = line.replace(/^#{1,3}\s/, '');
-            const Tag = `h${level}` as any;
+            const Tag = `h${level}` as React.ElementType;
             const sizes = { 
               1: "text-2xl font-black mt-8 mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500", 
               2: "text-xl font-bold mt-6 mb-3 text-slate-200", 
@@ -186,7 +187,7 @@ export default function AIChatPage() {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
+    } catch {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",

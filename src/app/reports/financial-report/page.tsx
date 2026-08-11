@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
 import {
   Loader2, Calendar, Printer, BarChart2, PieChart, TrendingUp,
-  Package, Landmark, ShieldCheck, AlertCircle, Info, ArrowLeft
+  Package, Landmark, ShieldCheck, Info, ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
 
@@ -85,9 +85,9 @@ function FinancialReportContent() {
 
       // Resolve stock added value via product price map (avoid embed FK dependency)
       const { data: priceList } = await supabase.from("product_list").select("id, price");
-      const priceMap = new Map((priceList || []).map((p: any) => [p.id, p.price || 0]));
+      const priceMap = new Map((priceList || []).map((p) => [p.id, p.price || 0]));
       const stock_added_val = (stockAddRes.data || []).reduce(
-        (s: number, r: any) => s + ((r.quantity || 0) * (priceMap.get(r.product_id) || 0)), 0
+        (s: number, r) => s + ((r.quantity || 0) * (priceMap.get(r.product_id) || 0)), 0
       );
 
       // 2. Current Stock Value & Loan Pending (Overall, not range filtered)
@@ -106,8 +106,8 @@ function FinancialReportContent() {
           supabase.from("direct_sale_items").select("product_id, qty")
       ]);
 
-      const invMap: any = {}; (invAll || []).forEach(r => invMap[r.product_id] = (invMap[r.product_id] || 0) + (r.quantity || 0));
-      const soldMap: any = {}; 
+      const invMap: Record<number, number> = {}; (invAll || []).forEach(r => invMap[r.product_id] = (invMap[r.product_id] || 0) + (r.quantity || 0));
+      const soldMap: Record<number, number> = {}; 
       (tpAll || []).forEach(r => soldMap[r.product_id] = (soldMap[r.product_id] || 0) + (r.qty || 0));
       (dsAll || []).forEach(r => soldMap[r.product_id] = (soldMap[r.product_id] || 0) + (r.qty || 0));
 
@@ -119,7 +119,7 @@ function FinancialReportContent() {
 
       // Calculate Debt
       let loanPending = 0;
-      const paysByLender: any = {};
+      const paysByLender: Record<number, number> = {};
       (loanPaysRes.data || []).forEach(p => paysByLender[p.lender_id] = (paysByLender[p.lender_id] || 0) + (p.amount_paid || 0));
       (lendersRes.data || []).forEach(l => {
           const totalToPay = (l.emi_amount || 0) * (l.tenure_months || 0);

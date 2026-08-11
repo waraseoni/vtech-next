@@ -1,7 +1,35 @@
-import { createClient } from "@supabase/supabase-js";
-import { FunctionDeclaration } from "@google/generative-ai";
+﻿import { createClient } from "@supabase/supabase-js";
 import { todayIST } from "./dateUtils";
 import { pageAll } from "./fetch-all";
+
+type ToolParam = {
+    type: string;
+    description?: string;
+};
+
+type ToolSchema = {
+    type: string;
+    properties: Record<string, ToolParam>;
+    required?: string[];
+};
+
+type AiTool = {
+    name: string;
+    description: string;
+    parameters: ToolSchema;
+};
+
+type JobRow = {
+    job_id: number | string;
+    client_name: string | number | null;
+    item: string;
+    fault: string | null;
+    status: number;
+    amount: number | null;
+    date_created: string;
+    actual_client_name?: string;
+    status_label?: string;
+};
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -27,40 +55,40 @@ export const ADMIN_ONLY_TOOLS = new Set([
     "get_loan_status",
 ]);
 
-/** Shared system prompt — VTech persona + business rules + role policy. */
+/** Shared system prompt â€” VTech persona + business rules + role policy. */
 export function buildSystemPrompt(role: AiRole): string {
     const isAdmin = role === "admin";
-    return `Namaste! You are "VTech Sahayak" — the senior business assistant of V-Technologies (V-TECH PRO), an electronics repair & equipment shop in Jabalpur, owned by Vikram Jain. You behave like a sharp, trusted senior of the shop: dukaan ka hisaab, customers aur kaam — sab yaad rakhte ho. Answers bilkul seedhe, sahi numbers ke saath.
+    return `Namaste! You are "VTech Sahayak" â€” the senior business assistant of V-Technologies (V-TECH PRO), an electronics repair & equipment shop in Jabalpur, owned by Vikram Jain. You behave like a sharp, trusted senior of the shop: dukaan ka hisaab, customers aur kaam â€” sab yaad rakhte ho. Answers bilkul seedhe, sahi numbers ke saath.
 Today's date is: ${new Date().toLocaleDateString("en-GB")} (YYYY-MM-DD for tool usage: ${todayIST()}).
 Current logged-in user role: ${isAdmin ? "ADMIN" : "STAFF"}.
 
 BUSINESS FACTS:
-- Location: F4, Hotel Plaza, Beside Jayanti Complex, Marhatal, Jabalpur – 482002. Phone: 9179105875. Hours: 10 AM – 8 PM.
+- Location: F4, Hotel Plaza, Beside Jayanti Complex, Marhatal, Jabalpur â€“ 482002. Phone: 9179105875. Hours: 10 AM â€“ 8 PM.
 - Main services: SMPS / Power Supply Repair, EV Charger Repair, Stage Light Repair, DMX Controller Repair, electronic gadget service, and product sales.
 - Promos: 10% off first service, 15% off old customers (follow-up), 20% off offers, free diagnosis + emergency repair.
-- Money: all amounts in Indian Rupees. Always format with ₹ and Indian numbering (en-IN, e.g. ₹1,20,000).
+- Money: all amounts in Indian Rupees. Always format with â‚¹ and Indian numbering (en-IN, e.g. â‚¹1,20,000).
 
 WORKFLOW & DATA MODEL:
 - Repair jobs live in transaction_list; client_name column stores the client id. Status: 0=Pending (kaam shuru nahi), 1=On-Progress (kaam chal raha), 2=Done (kaam pura), 3=Paid (bill chuka), 4=Cancelled, 5=Delivered (item mil gaya).
-- Job grand total = services (price) + products (qty × price). Job code = YYYYMMDD+daily sequence; job_id = global number.
+- Job grand total = services (price) + products (qty Ã— price). Job code = YYYYMMDD+daily sequence; job_id = global number.
 - Revenue (repairs) = job amounts for Delivered (status 5) jobs, counted by date_completed. Cash In = client payments + walk-in direct sales.
 - Direct sales in direct_sales (code SALE + 6 digits); client_id 0/null means walk-in customer.
-- Stock: available = inventory quantities − items used in active jobs − direct sale items. Thresholds: ≤0 Out of Stock, ≤5 Low, else In stock. alert_quantity = reorder point.
+- Stock: available = inventory quantities âˆ’ items used in active jobs âˆ’ direct sale items. Thresholds: â‰¤0 Out of Stock, â‰¤5 Low, else In stock. alert_quantity = reorder point.
 - Mechanic commission: job-level mechanic_commission_amount (auto = commission_percent % of services total).
 - Payment modes: Cash, UPI (PhonePe/GPay), Bank Transfer, Card. A payment settles amount + discount.
-- Attendance: status 1 = Present, 3 = Half Day (<6 hours work). Salary = full days × daily_salary + half days × (daily_salary/2).
+- Attendance: status 1 = Present, 3 = Half Day (<6 hours work). Salary = full days Ã— daily_salary + half days Ã— (daily_salary/2).
 - GST on bills: CGST 9% + SGST 9% = 18%.
 
 FINANCIAL RULES:
-- Client balance = opening_balance + repair_billed (Delivered jobs) + direct_sales_billed + loan_given (Σ client loan total_payable) − total_paid (Σ payments incl. discount).
-- Profit = Revenue − (salaries + mechanic commissions + shop expenses + EMI + discounts). Don't double-count walk-in sales as revenue when they are only cash-in.
+- Client balance = opening_balance + repair_billed (Delivered jobs) + direct_sales_billed + loan_given (Î£ client loan total_payable) âˆ’ total_paid (Î£ payments incl. discount).
+- Profit = Revenue âˆ’ (salaries + mechanic commissions + shop expenses + EMI + discounts). Don't double-count walk-in sales as revenue when they are only cash-in.
 - Loans: client loans (money shop lent to customers) status 1 = Active; lender loans (shop's own debts) with EMI instalments.
 
 ROLE POLICY (follow strictly):
 ${isAdmin
-    ? "- You are ADMIN: you can see and answer EVERYTHING — profit, revenue, expenses, salaries, loans, business summary and all financial data."
+    ? "- You are ADMIN: you can see and answer EVERYTHING â€” profit, revenue, expenses, salaries, loans, business summary and all financial data."
     : "- You are STAFF: you can answer about clients, jobs, inventory, attendance and customer balances. You must NOT reveal admin-only data (profit, revenue, expenses, salaries, loans, business summary). If the user asks about profit, revenue, salaries, expenses, loans or admin settings, politely reply: \"Ye jaankari sirf Admin dekh sakta hai. Iske liye Admin se baat karein.\" and DO NOT call admin-only tools. Never invent numbers."}
-- If a tool is blocked or returns nothing, say so honestly — never make up data.
+- If a tool is blocked or returns nothing, say so honestly â€” never make up data.
 
 BEHAVIOUR:
 - When the user asks about profit/revenue/cash-in/clients/jobs/alerts/stock/attendance, use the tools (if your role allows). Prefer tools over guessing.
@@ -70,7 +98,7 @@ BEHAVIOUR:
 }
 
 // 1. Definition of Tools (Functions) that Gemini/Groq can call
-export const geminiTools: any[] = [
+export const geminiTools: AiTool[] = [
   {
     name: "get_business_summary",
     description: "Fetches a quick high-level summary of the business including total clients, total jobs, and total revenue.",
@@ -78,7 +106,7 @@ export const geminiTools: any[] = [
       type: "object",
       properties: {},
       required: [],
-    } as any,
+    },
   },
   {
     name: "get_top_customers",
@@ -92,7 +120,7 @@ export const geminiTools: any[] = [
         },
       },
       required: [],
-    } as any,
+    },
   },
   {
     name: "get_recent_jobs",
@@ -110,7 +138,7 @@ export const geminiTools: any[] = [
         },
       },
       required: [],
-    } as any,
+    },
   },
   {
     name: "get_job_statistics",
@@ -131,7 +159,7 @@ export const geminiTools: any[] = [
       type: "object",
       properties: {},
       required: [],
-    } as any,
+    },
   },
   {
     name: "get_customer_details_by_name",
@@ -145,7 +173,7 @@ export const geminiTools: any[] = [
         },
       },
       required: ["customer_name"],
-    } as any,
+    },
   },
   {
     name: "get_job_details_by_id",
@@ -159,7 +187,7 @@ export const geminiTools: any[] = [
         },
       },
       required: ["job_id"],
-    } as any,
+    },
   },
   {
     name: "get_financial_report",
@@ -177,7 +205,7 @@ export const geminiTools: any[] = [
         },
       },
       required: ["from", "to"],
-    } as any,
+    },
   },
   {
     name: "get_business_alerts",
@@ -186,7 +214,7 @@ export const geminiTools: any[] = [
       type: "object",
       properties: {},
       required: [],
-    } as any,
+    },
   },
   {
     name: "get_inventory_status",
@@ -195,7 +223,7 @@ export const geminiTools: any[] = [
       type: "object",
       properties: {},
       required: [],
-    } as any,
+    },
   },
   {
     name: "get_client_outstanding",
@@ -209,7 +237,7 @@ export const geminiTools: any[] = [
         },
       },
       required: [],
-    } as any,
+    },
   },
   {
     name: "get_expense_report",
@@ -227,7 +255,7 @@ export const geminiTools: any[] = [
         },
       },
       required: ["from", "to"],
-    } as any,
+    },
   },
   {
     name: "get_attendance_report",
@@ -245,7 +273,7 @@ export const geminiTools: any[] = [
         },
       },
       required: ["from", "to"],
-    } as any,
+    },
   },
   {
     name: "get_loan_status",
@@ -254,14 +282,14 @@ export const geminiTools: any[] = [
       type: "object",
       properties: {},
       required: [],
-    } as any,
+    },
   },
 ];
 
 // 2. Execution Logic for the Tools
-export async function executeGeminiTool(functionCall: any, role: AiRole = "admin"): Promise<any> {
+export async function executeGeminiTool(functionCall: { name: string; args?: object }, role: AiRole = "admin"): Promise<Record<string, unknown>> {
     const name = functionCall.name;
-    const args = functionCall.args;
+    const args = (functionCall.args || {}) as Record<string, unknown>;
 
     // Role gate: staff must not see admin-only financial/staff data.
     if (ADMIN_ONLY_TOOLS.has(name) && role !== "admin") {
@@ -285,7 +313,7 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
         }
         
         if (name === "get_top_customers") {
-            const limit = args?.limit || 5;
+            const limit = Number(args?.limit) || 5;
             // Fetch customers with opening balance or general activity
             const { data } = await supabase.from("client_list")
                 .select("firstname, lastname, contact, opening_balance")
@@ -296,7 +324,7 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
         }
 
         if (name === "get_recent_jobs") {
-            const limit = parseInt(args?.limit) || 5;
+            const limit = Number(args?.limit) || 5;
             let query = supabase.from("transaction_list")
                 .select("job_id, client_name, item, fault, status, amount, date_created")
                 .eq("del_status", 0)
@@ -304,22 +332,22 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                 .limit(limit);
                 
             if (args?.status !== undefined && args?.status !== "") {
-                query = query.eq("status", parseInt(args.status));
+                query = query.eq("status", Number(args.status));
             }
             
             const { data } = await query;
-            const jobs = data || [];
+            const jobs = (data || []) as JobRow[];
             
             // Map IDs to original names dynamically
             for (const job of jobs) {
                 if (job.client_name) {
                     const { data: clientInfo } = await supabase.from("client_list").select("firstname, lastname").eq("id", job.client_name).maybeSingle();
                     if (clientInfo) {
-                        (job as any).actual_client_name = `${clientInfo.firstname || ''} ${clientInfo.lastname || ''}`.trim();
+                        job.actual_client_name = `${clientInfo.firstname || ''} ${clientInfo.lastname || ''}`.trim();
                     }
                 }
                 // Add status label
-                (job as any).status_label = STATUS_MAP[job.status] || "Unknown";
+                job.status_label = STATUS_MAP[job.status] || "Unknown";
             }
             
             return { recent_jobs: jobs };
@@ -461,7 +489,7 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
         }
 
         if (name === "get_customer_details_by_name") {
-            const customerName = (args?.customer_name || "").trim();
+            const customerName = String(args?.customer_name || "").trim();
             if (!customerName) return { error: "Customer name is required" };
 
             // Multi-word names ("Vikash Mehra", "ghansor wale vijay") are common.
@@ -472,10 +500,10 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
             const sanitize = (t: string) => t.replace(/[,%().]/g, "").trim();
             const tokens = customerName.toLowerCase().split(/[\s,._-]+/).map(sanitize).filter((t: string) => t && !STOP_WORDS.has(t));
 
-            let customers: any[] | null = null;
+            let customers: Record<string, unknown>[] | null = null;
 
             if (tokens.length === 1) {
-                // Single word → PostgREST OR across all name/address fields
+                // Single word â†’ PostgREST OR across all name/address fields
                 const conds = searchableFields.map(f => `${f}.ilike.%${tokens[0]}%`).join(",");
                 const { data } = await pageAll(supabase.from("client_list")
                     .select("*")
@@ -483,13 +511,13 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                     .or(conds));
                 customers = data;
             } else if (tokens.length > 1) {
-                // Multi-word → fetch active clients and score token matches in JS (small dataset)
+                // Multi-word â†’ fetch active clients and score token matches in JS (small dataset)
                 const { data: all } = await pageAll(supabase.from("client_list")
                     .select("*")
                     .eq("delete_flag", 0));
-                const norm = (v: any) => (v ? String(v).toLowerCase() : "");
+                const norm = (v: unknown) => (v ? String(v).toLowerCase() : "");
                 const threshold = Math.max(1, Math.ceil(tokens.length / 2));
-                const score = (c: any) => {
+                const score = (c: Record<string, unknown>) => {
                     const hay = searchableFields.map(f => norm(c[f]));
                     const matched = tokens.filter((t: string) => hay.some(x => x.includes(t))).length;
                     if (matched < threshold) return 0;
@@ -542,7 +570,7 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
         }
 
         if (name === "get_job_details_by_id") {
-            const jobId = args?.job_id;
+            const jobId = String(args?.job_id || "");
             if (!jobId) return { error: "Job ID or Search text is required" };
 
             const isNumeric = /^\d+$/.test(jobId);
@@ -565,7 +593,8 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                 return { result: `Koi bhi job, jiska id ya keyword '${jobId}' ho, wo nahi mila.` };
             }
 
-            for (const job of jobs) {
+            const jobRows = jobs as JobRow[];
+            for (const job of jobRows) {
                 if (job.client_name) {
                     // Fetch the actual client name based on ID
                     const { data: clientInfo } = await supabase.from("client_list")
@@ -574,14 +603,14 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                         .maybeSingle();
 
                     if (clientInfo) {
-                        (job as any).actual_client_name = `${clientInfo.firstname || ''} ${clientInfo.lastname || ''}`.trim();
+                        job.actual_client_name = `${clientInfo.firstname || ''} ${clientInfo.lastname || ''}`.trim();
                     } else {
-                        (job as any).actual_client_name = "Unknown Client";
+                        job.actual_client_name = "Unknown Client";
                     }
                 }
                 
                 // Add status label
-                (job as any).status_label = STATUS_MAP[job.status] || "Unknown";
+                job.status_label = STATUS_MAP[job.status] || "Unknown";
             }
 
             return isNumeric ? { job_details: jobs[0] } : { matching_jobs: jobs };
@@ -590,7 +619,7 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
         if (name === "get_business_alerts") {
             const today = todayIST(); // YYYY-MM-DD
             const isAdmin = role === "admin";
-            const alerts: any[] = [];
+            const alerts: Record<string, unknown>[] = [];
 
             // 1. Low stock (quantity across entries vs alert_quantity)
             const [invRes, prodRes] = await Promise.all([
@@ -598,11 +627,11 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                 pageAll(supabase.from("product_list").select("id, name, alert_quantity").eq("delete_flag", 0)),
             ]);
             const qty: Record<number, number> = {};
-            (invRes.data || []).forEach((i: any) => { qty[i.product_id] = (qty[i.product_id] || 0) + (Number(i.quantity) || 0); });
+            (invRes.data || []).forEach((i) => { qty[i.product_id] = (qty[i.product_id] || 0) + (Number(i.quantity) || 0); });
             const lowStock = (prodRes.data || [])
-                .filter((p: any) => (Number(p.alert_quantity) || 0) > 0 && (qty[p.id] || 0) <= Number(p.alert_quantity))
-                .map((p: any) => ({ product_id: p.id, name: p.name, quantity: qty[p.id] || 0, alert_quantity: Number(p.alert_quantity) }));
-            if (lowStock.length) alerts.push({ type: "low_stock", severity: "warning", title: "Low Stock — Reorder Needed", items: lowStock });
+                .filter((p) => (Number(p.alert_quantity) || 0) > 0 && (qty[p.id] || 0) <= Number(p.alert_quantity))
+                .map((p) => ({ product_id: p.id, name: p.name, quantity: qty[p.id] || 0, alert_quantity: Number(p.alert_quantity) }));
+            if (lowStock.length) alerts.push({ type: "low_stock", severity: "warning", title: "Low Stock â€” Reorder Needed", items: lowStock });
 
             // 2. Pending jobs older than 2 days
             const { data: pendJobs } = await pageAll(supabase.from("transaction_list")
@@ -610,22 +639,22 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                 .in("status", [0, 1])
                 .eq("del_status", 0)
                 .order("date_created", { ascending: true }));
-            const pending = (pendJobs || []).map((j: any) => ({
+            const pending = (pendJobs || []).map((j) => ({
                 job_id: j.job_id,
                 item: j.item,
                 status_label: STATUS_MAP[j.status] || "Unknown",
                 days_pending: Math.max(0, Math.floor((Date.now() - new Date(j.date_created).getTime()) / 86400000)),
-            })).filter((j: any) => j.days_pending >= 2).slice(0, 10);
+            })).filter((j) => j.days_pending >= 2).slice(0, 10);
             if (pending.length) alerts.push({ type: "pending_jobs", severity: "info", title: "Pending Jobs (2+ days old)", items: pending });
 
-            // 3. Clients whose payment_due_date crossed — only if balance is still outstanding
+            // 3. Clients whose payment_due_date crossed â€” only if balance is still outstanding
             const { data: dueClients } = await pageAll(supabase.from("client_list")
                 .select("id, firstname, lastname, contact, payment_due_date, opening_balance")
                 .not("payment_due_date", "is", null));
-            const crossed = (dueClients || []).filter((c: any) => c.payment_due_date && c.payment_due_date <= today);
-            let dueDate: any[] = [];
+            const crossed = (dueClients || []).filter((c) => c.payment_due_date && c.payment_due_date <= today);
+            let dueDate: Record<string, unknown>[] = [];
             if (crossed.length) {
-                const ids = crossed.map((c: any) => c.id);
+                const ids = crossed.map((c) => c.id);
                 const [txRes, dirRes, payRes, loanRes] = await Promise.all([
                     pageAll(supabase.from("transaction_list").select("client_name, amount").eq("del_status", 0).eq("status", 5).in("client_name", ids.map(String))),
                     pageAll(supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids)),
@@ -633,29 +662,29 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                     pageAll(supabase.from("client_loans").select("client_id, total_payable").in("client_id", ids)),
                 ]);
                 const repairBilled: Record<number, number> = {};
-                (txRes.data || []).forEach((t: any) => { const id = Number(t.client_name); if (id) repairBilled[id] = (repairBilled[id] || 0) + (Number(t.amount) || 0); });
+                (txRes.data || []).forEach((t) => { const id = Number(t.client_name); if (id) repairBilled[id] = (repairBilled[id] || 0) + (Number(t.amount) || 0); });
                 const directBilled: Record<number, number> = {};
-                (dirRes.data || []).forEach((d: any) => { if (d.client_id) directBilled[d.client_id] = (directBilled[d.client_id] || 0) + (Number(d.total_amount) || 0); });
+                (dirRes.data || []).forEach((d) => { if (d.client_id) directBilled[d.client_id] = (directBilled[d.client_id] || 0) + (Number(d.total_amount) || 0); });
                 const loanGiven: Record<number, number> = {};
-                (loanRes.data || []).forEach((l: any) => { if (l.client_id) loanGiven[l.client_id] = (loanGiven[l.client_id] || 0) + (Number(l.total_payable) || 0); });
+                (loanRes.data || []).forEach((l) => { if (l.client_id) loanGiven[l.client_id] = (loanGiven[l.client_id] || 0) + (Number(l.total_payable) || 0); });
                 const totalPaid: Record<number, number> = {};
-                (payRes.data || []).forEach((p: any) => { totalPaid[p.client_id] = (totalPaid[p.client_id] || 0) + (Number(p.amount) || 0) + (Number(p.discount) || 0); });
-                dueDate = crossed.map((c: any) => ({
+                (payRes.data || []).forEach((p) => { totalPaid[p.client_id] = (totalPaid[p.client_id] || 0) + (Number(p.amount) || 0) + (Number(p.discount) || 0); });
+                dueDate = crossed.map((c) => ({
                     client_id: c.id,
                     name: `${c.firstname} ${c.lastname}`.trim(),
                     contact: c.contact,
                     due_date: c.payment_due_date,
                     outstanding: Math.round(((Number(c.opening_balance) || 0) + (repairBilled[c.id] || 0) + (directBilled[c.id] || 0) + (loanGiven[c.id] || 0) - (totalPaid[c.id] || 0)) * 100) / 100,
-                })).filter((c: any) => c.outstanding > 0);
+                })).filter((c) => c.outstanding > 0);
             }
             if (dueDate.length) alerts.push({ type: "due_payment_date", severity: "warning", title: "Payment Due Date Crossed", items: dueDate });
 
             // 4. Today's attendance pending
             const { data: mechs } = await pageAll(supabase.from("mechanic_list").select("id, firstname, lastname").eq("delete_flag", 0));
             const { data: attToday } = await pageAll(supabase.from("attendance_list").select("mechanic_id").eq("curr_date", today));
-            const presentIds = new Set((attToday || []).map((a: any) => a.mechanic_id));
-            const missing = (mechs || []).filter((m: any) => !presentIds.has(m.id))
-                .map((m: any) => ({ mechanic_id: m.id, name: `${m.firstname} ${m.lastname}`.trim() }));
+            const presentIds = new Set((attToday || []).map((a) => a.mechanic_id));
+            const missing = (mechs || []).filter((m) => !presentIds.has(m.id))
+                .map((m) => ({ mechanic_id: m.id, name: `${m.firstname} ${m.lastname}`.trim() }));
             if (missing.length) alerts.push({ type: "attendance_missing", severity: "info", title: "Attendance Pending Today", items: missing });
 
             // 5-6. Admin-only financial alerts
@@ -668,20 +697,20 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                     pageAll(supabase.from("client_loans").select("client_id, total_payable")),
                 ]);
                 const repairBilled: Record<number, number> = {};
-                (txRes.data || []).forEach((t: any) => { const id = Number(t.client_name); if (id) repairBilled[id] = (repairBilled[id] || 0) + (Number(t.amount) || 0); });
+                (txRes.data || []).forEach((t) => { const id = Number(t.client_name); if (id) repairBilled[id] = (repairBilled[id] || 0) + (Number(t.amount) || 0); });
                 const directBilled: Record<number, number> = {};
-                (dirRes.data || []).forEach((d: any) => { if (d.client_id) directBilled[d.client_id] = (directBilled[d.client_id] || 0) + (Number(d.total_amount) || 0); });
+                (dirRes.data || []).forEach((d) => { if (d.client_id) directBilled[d.client_id] = (directBilled[d.client_id] || 0) + (Number(d.total_amount) || 0); });
                 const loanGiven: Record<number, number> = {};
-                (loanRes.data || []).forEach((l: any) => { if (l.client_id) loanGiven[l.client_id] = (loanGiven[l.client_id] || 0) + (Number(l.total_payable) || 0); });
+                (loanRes.data || []).forEach((l) => { if (l.client_id) loanGiven[l.client_id] = (loanGiven[l.client_id] || 0) + (Number(l.total_payable) || 0); });
                 const totalPaid: Record<number, number> = {};
-                (payRes.data || []).forEach((p: any) => { totalPaid[p.client_id] = (totalPaid[p.client_id] || 0) + (Number(p.amount) || 0) + (Number(p.discount) || 0); });
+                (payRes.data || []).forEach((p) => { totalPaid[p.client_id] = (totalPaid[p.client_id] || 0) + (Number(p.amount) || 0) + (Number(p.discount) || 0); });
                 const ob = (clientsRes.data || [])
-                    .map((c: any) => ({
+                    .map((c) => ({
                         id: c.id, firstname: c.firstname, lastname: c.lastname, contact: c.contact, opening_balance: Number(c.opening_balance) || 0,
                         outstanding: Math.round(((Number(c.opening_balance) || 0) + (repairBilled[c.id] || 0) + (directBilled[c.id] || 0) + (loanGiven[c.id] || 0) - (totalPaid[c.id] || 0)) * 100) / 100,
                     }))
-                    .filter((c: any) => c.outstanding > 0)
-                    .sort((a: any, b: any) => b.outstanding - a.outstanding)
+                    .filter((c) => c.outstanding > 0)
+                    .sort((a, b) => b.outstanding - a.outstanding)
                     .slice(0, 5);
                 if (ob.length) alerts.push({ type: "high_outstanding", severity: "warning", title: "High Outstanding (Admin)", items: ob });
 
@@ -705,17 +734,17 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                 pageAll(supabase.from("product_list").select("id, name, alert_quantity, price").eq("delete_flag", 0)),
             ]);
             const qty: Record<number, number> = {};
-            (invRes.data || []).forEach((i: any) => { qty[i.product_id] = (qty[i.product_id] || 0) + (Number(i.quantity) || 0); });
-            const items = (prodRes.data || []).map((p: any) => {
+            (invRes.data || []).forEach((i) => { qty[i.product_id] = (qty[i.product_id] || 0) + (Number(i.quantity) || 0); });
+            const items = (prodRes.data || []).map((p) => {
                 const quantity = qty[p.id] || 0;
                 const alert = Number(p.alert_quantity) || 0;
                 return { product_id: p.id, name: p.name, price: Number(p.price) || 0, quantity, alert_quantity: alert, low_stock: alert > 0 && quantity <= alert };
             });
-            return { total_products: items.length, low_stock_count: items.filter((x: any) => x.low_stock).length, inventory: items };
+            return { total_products: items.length, low_stock_count: items.filter((x) => x.low_stock).length, inventory: items };
         }
 
         if (name === "get_client_outstanding") {
-            const limit = parseInt(args?.limit) || 15;
+            const limit = Number(args?.limit) || 15;
             const [clientsRes, txRes, dirRes, payRes, loanRes] = await Promise.all([
                 pageAll(supabase.from("client_list").select("id, firstname, middlename, lastname, contact, opening_balance").eq("delete_flag", 0)),
                 pageAll(supabase.from("transaction_list").select("client_name, amount").eq("del_status", 0).eq("status", 5)),
@@ -724,15 +753,15 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                 pageAll(supabase.from("client_loans").select("client_id, total_payable")),
             ]);
             const repairBilled: Record<number, number> = {};
-            (txRes.data || []).forEach((t: any) => { const id = Number(t.client_name); if (id) repairBilled[id] = (repairBilled[id] || 0) + (Number(t.amount) || 0); });
+            (txRes.data || []).forEach((t) => { const id = Number(t.client_name); if (id) repairBilled[id] = (repairBilled[id] || 0) + (Number(t.amount) || 0); });
             const directBilled: Record<number, number> = {};
-            (dirRes.data || []).forEach((d: any) => { if (d.client_id) directBilled[d.client_id] = (directBilled[d.client_id] || 0) + (Number(d.total_amount) || 0); });
+            (dirRes.data || []).forEach((d) => { if (d.client_id) directBilled[d.client_id] = (directBilled[d.client_id] || 0) + (Number(d.total_amount) || 0); });
             const loanGiven: Record<number, number> = {};
-            (loanRes.data || []).forEach((l: any) => { if (l.client_id) loanGiven[l.client_id] = (loanGiven[l.client_id] || 0) + (Number(l.total_payable) || 0); });
+            (loanRes.data || []).forEach((l) => { if (l.client_id) loanGiven[l.client_id] = (loanGiven[l.client_id] || 0) + (Number(l.total_payable) || 0); });
             const totalPaid: Record<number, number> = {};
-            (payRes.data || []).forEach((p: any) => { totalPaid[p.client_id] = (totalPaid[p.client_id] || 0) + (Number(p.amount) || 0) + (Number(p.discount) || 0); });
+            (payRes.data || []).forEach((p) => { totalPaid[p.client_id] = (totalPaid[p.client_id] || 0) + (Number(p.amount) || 0) + (Number(p.discount) || 0); });
             const list = (clientsRes.data || [])
-                .map((c: any) => {
+                .map((c) => {
                     const ob = Number(c.opening_balance) || 0;
                     const rep = repairBilled[c.id] || 0;
                     const dir = directBilled[c.id] || 0;
@@ -740,8 +769,8 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                     const paid = totalPaid[c.id] || 0;
                     return { client_id: c.id, name: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ").trim(), contact: c.contact, opening_balance: ob, repair_billed: rep, direct_sales_billed: dir, loan_given: loan, total_paid: paid, net_balance: Math.round((ob + rep + dir + loan - paid) * 100) / 100 };
                 })
-                .filter((x: any) => x.net_balance > 0)
-                .sort((a: any, b: any) => b.net_balance - a.net_balance)
+                .filter((x) => x.net_balance > 0)
+                .sort((a, b) => b.net_balance - a.net_balance)
                 .slice(0, limit);
             return { outstanding_clients: list, note: "Balance = opening balance + delivered repairs + direct sales + loans given - total payments (incl. discounts)." };
         }
@@ -756,7 +785,7 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                 .lte("date_created", `${to}T23:59:59+05:30`));
             const byCat: Record<string, number> = {};
             let total = 0;
-            (data || []).forEach((e: any) => {
+            (data || []).forEach((e) => {
                 const amt = Number(e.amount) || 0;
                 total += amt;
                 const cat = e.category || "Other";
@@ -767,7 +796,7 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                 total_expense: Math.round(total * 100) / 100,
                 by_category: Object.entries(byCat)
                     .map(([category, amount]) => ({ category, amount }))
-                    .sort((a: any, b: any) => b.amount - a.amount),
+                    .sort((a, b) => b.amount - a.amount),
             };
         }
 
@@ -780,9 +809,9 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                 pageAll(supabase.from("mechanic_list").select("id, firstname, lastname").eq("delete_flag", 0)),
             ]);
             const mechName: Record<number, string> = {};
-            (mechRes.data || []).forEach((m: any) => { mechName[m.id] = `${m.firstname} ${m.lastname}`.trim(); });
-            const perMech: Record<number, any> = {};
-            (attRes.data || []).forEach((a: any) => {
+            (mechRes.data || []).forEach((m) => { mechName[m.id] = `${m.firstname} ${m.lastname}`.trim(); });
+            const perMech: Record<number, { mechanic_id: number; name: string; present_days: number; half_days: number; total_days: number }> = {};
+            (attRes.data || []).forEach((a) => {
                 if (!perMech[a.mechanic_id]) perMech[a.mechanic_id] = { mechanic_id: a.mechanic_id, name: mechName[a.mechanic_id] || `#${a.mechanic_id}`, present_days: 0, half_days: 0, total_days: 0 };
                 perMech[a.mechanic_id].total_days++;
                 if (a.status === 1) perMech[a.mechanic_id].present_days++;
@@ -799,15 +828,15 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
                 pageAll(supabase.from("client_list").select("id, firstname, lastname")),
             ]);
             const paid: Record<number, number> = {};
-            (loanPaysRes.data || []).forEach((p: any) => { paid[p.lender_id] = (paid[p.lender_id] || 0) + (Number(p.amount_paid) || 0); });
-            const lenderLoans = (lendersRes.data || []).map((l: any) => {
+            (loanPaysRes.data || []).forEach((p) => { paid[p.lender_id] = (paid[p.lender_id] || 0) + (Number(p.amount_paid) || 0); });
+            const lenderLoans = (lendersRes.data || []).map((l) => {
                 const amt = Number(l.loan_amount) || 0;
                 const paidAmt = paid[l.id] || 0;
                 return { lender_id: l.id, fullname: l.fullname, contact: l.contact, loan_amount: amt, paid: Math.round(paidAmt * 100) / 100, remaining: Math.round((amt - paidAmt) * 100) / 100, status: l.status };
             });
             const clientName: Record<number, string> = {};
-            (clientsRes.data || []).forEach((c: any) => { clientName[c.id] = `${c.firstname} ${c.lastname}`.trim(); });
-            const clientLoans = (cLoansRes.data || []).filter((l: any) => l.status === 1).map((l: any) => ({
+            (clientsRes.data || []).forEach((c) => { clientName[c.id] = `${c.firstname} ${c.lastname}`.trim(); });
+            const clientLoans = (cLoansRes.data || []).filter((l) => l.status === 1).map((l) => ({
                 loan_id: l.id,
                 client_name: clientName[l.client_id] || `#${l.client_id}`,
                 principal_amount: l.principal_amount,
@@ -818,8 +847,8 @@ export async function executeGeminiTool(functionCall: any, role: AiRole = "admin
         }
 
         return { error: "Unknown function call" };
-    } catch (error: any) {
+    } catch (error) {
         console.error("Tool Execution Error:", error);
-        return { error: error.message };
+        return { error: (error as Error).message };
     }
 }

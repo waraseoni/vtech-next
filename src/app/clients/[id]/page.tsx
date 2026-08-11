@@ -2,20 +2,19 @@
 import React, { useState, useEffect, use, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Edit3, Phone, Mail, MapPin, Loader2, IndianRupee,
-  Plus, Wallet, CreditCard, Printer, ExternalLink, MessageCircle,
-  ChevronRight, X, Save, Calendar, Percent, Clock, CheckCircle2,
-  AlertTriangle, TrendingUp, ShieldCheck, Wrench, Package,
-  FileText, Eye, Trash2, History, MessageSquare,
+  ArrowLeft, Edit3, Phone, Mail, MapPin, Loader2,
+  Plus, Wallet, CreditCard, Printer, MessageCircle,
+  X, Save, CheckCircle2,
+  AlertTriangle, TrendingUp, Wrench, Package,
+  Eye, Trash2, MessageSquare,
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const toNum = (v: unknown) => { const x = Number(v); return isNaN(x) ? 0 : x; };
 const inr = (v: number, sign = true) => `${sign && v < 0 ? "−" : ""}₹${Math.abs(v).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "N/A";
-const fmtDateTime = (d: string | null) => d ? new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) : "N/A";
 import { todayIST } from "@/lib/dateUtils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -34,8 +33,6 @@ const STATUS_MAP: Record<number, string> = { 0: "Pending", 1: "On-Progress", 2: 
 const STATUS_COLORS: Record<number, string> = { 0: "bg-slate-600", 1: "bg-blue-600", 2: "bg-cyan-600", 3: "bg-emerald-600", 4: "bg-red-600", 5: "bg-purple-600" };
 
 // ─── FIRM DETAILS ─────────────────────────────────────────────────────────────
-const FIRM = { name: "V-Technologies", phone: "9179105875", owner: "Vikram Jain", address: "Jabalpur, MP" };
-
 export default function ViewClientPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
@@ -125,9 +122,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
   const saleBilled = directSales.reduce((s, d) => s + toNum(d.total_amount), 0);
   const totalBilled = repairBilled + saleBilled;
   const totalPaid = payments.reduce((s, p) => s + toNum(p.amount) + toNum(p.discount), 0);
-  const serviceBalance = (toNum(client?.opening_balance) || 0) + repairBilled - totalPaid;
   const loanGiven = loans.reduce((s, l) => s + toNum(l.total_payable), 0);
-  const loanPaid = payments.filter(p => p.loan_id).reduce((s, p) => s + toNum(p.amount) + toNum(p.discount), 0);
   const loanBalance = loans.filter(l => l.status === 1).reduce((s, l) => {
     const p = payments.filter(pay => pay.loan_id === l.id).reduce((acc, pay) => acc + toNum(pay.amount) + toNum(pay.discount), 0);
     return s + (toNum(l.total_payable) - p);

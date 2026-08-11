@@ -5,8 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
-  Loader2, ArrowLeft, ChevronLeft, ChevronRight, Calendar,
-  FileText, Printer, Download, DollarSign, TrendingUp, CheckCircle,
+  Loader2, ArrowLeft, ChevronLeft, ChevronRight,
+  Printer, Download, CheckCircle,
   Clock, XCircle
 } from "lucide-react";
 
@@ -18,7 +18,7 @@ type Mechanic = {
   daily_salary: number;
 };
 
-import { todayIST, startOfMonthIST, endOfMonthIST, formatIST, parseISTDate, toISTDatePart } from "@/lib/dateUtils";
+import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate, toISTDatePart } from "@/lib/dateUtils";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
@@ -89,11 +89,11 @@ export default function MechanicLedgerPage() {
       .lte("date_paid", prevDateStr);
 
     let opening = 0;
-    (prevAtt || []).forEach((a: any) => {
+    (prevAtt || []).forEach(a => {
       opening += a.status === 1 ? (mechanic.daily_salary || 0) : (mechanic.daily_salary || 0) / 2;
     });
-    opening += (prevComm || []).reduce((s: number, c: any) => s + (c.mechanic_commission_amount || 0), 0);
-    opening -= (prevAdv || []).reduce((s: number, a: any) => s + (a.amount || 0), 0);
+    opening += (prevComm || []).reduce((s: number, c) => s + (c.mechanic_commission_amount || 0), 0);
+    opening -= (prevAdv || []).reduce((s: number, a) => s + (a.amount || 0), 0);
     setOpeningBalance(opening);
 
     // Bulk-fetch the whole range in 3 queries (was N+1: 3 queries × every day ≈ 93 round-trips/month)
@@ -114,14 +114,14 @@ export default function MechanicLedgerPage() {
     ]);
 
     const attMap: Record<string, number> = {};
-    (periodAtt.data || []).forEach((a: any) => { attMap[a.curr_date] = a.status; });
+    (periodAtt.data || []).forEach(a => { attMap[a.curr_date] = a.status; });
     const commMap: Record<string, number> = {};
-    (periodComm.data || []).forEach((c: any) => {
+    (periodComm.data || []).forEach(c => {
       const ds = toISTDatePart(c.date_created);
       commMap[ds] = (commMap[ds] || 0) + (c.mechanic_commission_amount || 0);
     });
     const advMap: Record<string, number> = {};
-    (periodAdv.data || []).forEach((a: any) => {
+    (periodAdv.data || []).forEach(a => {
       advMap[a.date_paid] = (advMap[a.date_paid] || 0) + (a.amount || 0);
     });
 
@@ -144,18 +144,15 @@ export default function MechanicLedgerPage() {
       let dailyEarned = 0;
       let status = "Absent";
       let statusClass = "bg-red-500/10 text-red-400";
-      let icon = <XCircle size={11}/>;
 
       if (attStatus === 1) {
         dailyEarned = mechanic.daily_salary || 0;
         status = "Full Day";
         statusClass = "bg-emerald-500/10 text-emerald-400";
-        icon = <CheckCircle size={11}/>;
       } else if (attStatus === 3) {
         dailyEarned = (mechanic.daily_salary || 0) / 2;
         status = "Half Day";
         statusClass = "bg-amber-500/10 text-amber-400";
-        icon = <Clock size={11}/>;
       }
 
       runningBalance += dailyEarned + dailyComm - dailyAdv;
@@ -182,7 +179,9 @@ export default function MechanicLedgerPage() {
     setLoading(false);
   }, [id, mechanic, fromDate, toDate]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch mount effect; setLoading sync init legit hai
   useEffect(() => { fetchMechanic(); }, [fetchMechanic]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch; loading init sync legit hai
   useEffect(() => { if (mechanic) fetchLedger(); }, [mechanic, fetchLedger]);
 
   const shiftMonth = (dir: -1 | 1) => {

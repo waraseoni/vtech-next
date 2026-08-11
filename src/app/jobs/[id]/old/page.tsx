@@ -6,8 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Save, Plus, X, Wrench, Package, Settings2,
-  User, Hash, FileText, Loader2, AlertTriangle, CheckCircle,
-  RefreshCw, UserPlus, IndianRupee,
+  User, Hash, Loader2, AlertTriangle, CheckCircle,
+  UserPlus, IndianRupee,
 } from "lucide-react";
 
 // ─── IST Helpers ─────────────────────────────────────────────────────────────
@@ -52,7 +52,7 @@ export default function ManageJobPage() {
   const [services,  setServices]  = useState<Service[]>([]);
   const [products,  setProducts]  = useState<Product[]>([]);
   const [userRole,  setUserRole]  = useState("staff");
-  const [userMechId,setUserMechId]= useState<number | null>(null);
+  const [,setUserMechId]= useState<number | null>(null);
 
   // Form fields
   const [clientId,    setClientId]    = useState("");
@@ -111,7 +111,7 @@ export default function ManageJobPage() {
     setProducts(pRes.data || []);
 
     // Old entry page: Job ID manually entered by user — do NOT auto-fill from counter
-  }, [isEdit]);
+  }, []);
 
   // ── Fetch existing job for edit ────────────────────────────────────────────
   const fetchJob = useCallback(async () => {

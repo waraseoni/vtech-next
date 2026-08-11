@@ -1,12 +1,22 @@
 "use client";
 import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Printer, Users, TrendingUp, Star, BarChart2, X } from "lucide-react";
-import { todayIST, formatIST, parseISTDate, toISTString, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+import { Loader2, Printer, Star, X } from "lucide-react";
+import { todayIST, formatIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0 });
+
+type DbRow = ReturnType<typeof JSON.parse>;
+
+type SupaBuilder = {
+  eq: (column: string, value: unknown) => SupaBuilder;
+  gte: (column: string, value: unknown) => SupaBuilder;
+  lte: (column: string, value: unknown) => SupaBuilder;
+  in: (column: string, values: unknown[]) => SupaBuilder;
+  order: (column: string, opts?: { ascending?: boolean }) => SupaBuilder;
+  range: (from: number, to: number) => PromiseLike<{ data: DbRow[] | null; error: unknown }>;
+};
 
 type TopCustomer = {
   client_id: number;
@@ -20,8 +30,6 @@ type TopCustomer = {
 };
 
 function TopCustomersContent() {
-  const searchParams = useSearchParams();
-
   const today = todayIST();
   const currentYear = parseInt(today.slice(0, 4));
   const currentMonth = parseInt(today.slice(5, 7));
@@ -32,7 +40,7 @@ function TopCustomersContent() {
   const [rows, setRows] = useState<TopCustomer[]>([]);
 
   const [modalClient, setModalClient] = useState<{ id: number; name: string; type: "revenue" | "payment" } | null>(null);
-  const [modalData, setModalData] = useState<any[]>([]);
+  const [modalData, setModalData] = useState<DbRow[]>([]);
   const [modalLoading, setModalLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -51,11 +59,11 @@ function TopCustomersContent() {
         to = "2099-12-31T23:59:59+05:30";
       }
 
-      const fetchList = async (table: string, select: string, queryModifier: (q: any) => any) => {
-        const list: any[] = [];
+      const fetchList = async (table: string, select: string, queryModifier: (q: SupaBuilder) => SupaBuilder) => {
+        const list: DbRow[] = [];
         let page = 0;
         while (true) {
-          let q = supabase.from(table).select(select);
+          let q: SupaBuilder = supabase.from(table).select(select) as unknown as SupaBuilder;
           q = queryModifier(q);
           const { data } = await q.range(page * 1000, (page + 1) * 1000 - 1);
           if (data) list.push(...data);
@@ -154,9 +162,9 @@ function TopCustomersContent() {
             supabase.from("direct_sales").select("id, total_amount, date_created, sale_code").eq("client_id", modalClient.id).gte("date_created", from).lte("date_created", to)
           ]);
           
-          const combined: any[] = [];
-          if (txnsRes.data) combined.push(...txnsRes.data.map((t: any) => ({ ...t, source: "job" })));
-          if (salesRes.data) combined.push(...salesRes.data.map((s: any) => ({ id: s.id, amount: s.total_amount, date_created: s.date_created, code: s.sale_code, source: "sale" })));
+          const combined: DbRow[] = [];
+          if (txnsRes.data) combined.push(...txnsRes.data.map((t) => ({ ...t, source: "job" })));
+          if (salesRes.data) combined.push(...salesRes.data.map((s) => ({ id: s.id, amount: s.total_amount, date_created: s.date_created, code: s.sale_code, source: "sale" })));
           
           combined.sort((a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime());
           setModalData(combined);
@@ -202,7 +210,7 @@ function TopCustomersContent() {
         <div className="flex flex-wrap items-end gap-3">
           <div>
             <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">Filter</label>
-            <select value={filterType} onChange={(e) => setFilterType(e.target.value as any)}
+            <select value={filterType} onChange={(e) => setFilterType(e.target.value as "monthly" | "yearly" | "all")}
               className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50">
               <option value="all">All Time</option>
               <option value="yearly">Yearly</option>

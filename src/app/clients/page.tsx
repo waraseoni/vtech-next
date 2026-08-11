@@ -9,7 +9,7 @@ import {
   MessageCircle, TrendingUp, AlertTriangle, CheckCircle,
   RotateCcw, IndianRupee, Printer, FileSpreadsheet, FileText, X,
   ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, SlidersHorizontal,
-  CheckSquare, Square, Send, MessageSquare,
+  CheckSquare, Square, Send,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -23,6 +23,11 @@ type Client = {
   repair_billed: number; direct_sales_billed: number;
   total_loan_given: number; total_paid: number; balance: number;
   last_txn_date: string | null; image_path?: string; login_allowed: boolean;
+};
+type DbRow = ReturnType<typeof JSON.parse>;
+type Queryable = {
+  eq: (column: string, value: unknown) => Queryable;
+  range: (from: number, to: number) => PromiseLike<{ data: DbRow[] | null; error: unknown }>;
 };
 type SortField = "name" | "balance" | "date_created" | "total_paid";
 type SortDir   = "asc" | "desc";
@@ -80,7 +85,7 @@ function buildAutoMsg(c: Client): string {
 }
 
 // ─── Chart Tooltip ────────────────────────────────────────────────────────────
-const BarTooltip = ({ active, payload, label }: any) => {
+const BarTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string | number }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-[#1a2035] border border-[#2e3a55] rounded-xl px-4 py-3 shadow-2xl">
@@ -147,12 +152,12 @@ export default function ClientsPage() {
         for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
         return out;
       };
-      const fetchByClient = async (table: string, select: string, field: string, ids: (number | string)[], extra: (q: any) => any = (q) => q) => {
-        const list: any[] = [];
+      const fetchByClient = async (table: string, select: string, field: string, ids: (number | string)[], extra: (q: Queryable) => Queryable = (q) => q) => {
+        const list: DbRow[] = [];
         for (const batch of inBatches(ids)) {
           let page = 0;
           while (true) {
-            let q = supabase.from(table).select(select).in(field, batch);
+            let q: Queryable = supabase.from(table).select(select).in(field, batch);
             q = extra(q);
             const { data } = await q.range(page * 1000, (page + 1) * 1000 - 1);
             if (data) list.push(...data);
@@ -226,7 +231,7 @@ export default function ClientsPage() {
 
   const openWaModal = (client: Client) => {
     const at = client.balance>0?"reminder":daysSince(client.last_txn_date)>30?"followup":"welcome";
-    setWaClient(client); setWaMsgType(at as any); setWaText(buildAutoMsg(client)); setWaModal(true);
+    setWaClient(client); setWaMsgType(at as typeof waMsgType); setWaText(buildAutoMsg(client)); setWaModal(true);
   };
   const handleWaTypeChange = (type: typeof waMsgType) => {
     if (!waClient) return; setWaMsgType(type);
@@ -972,7 +977,7 @@ export default function ClientsPage() {
 
 // ─── ActionDropdown ───────────────────────────────────────────────────────────
 // Opens upward if near bottom of viewport to prevent clipping
-function ActionDropdown({clientId,clientName,userRole,onDelete,onWhatsApp,hasContact,loginAllowed,onToggleLogin}:{
+function ActionDropdown({clientId,userRole,onDelete,onWhatsApp,hasContact,loginAllowed,onToggleLogin}:{
   clientId:number;clientName:string;userRole:string;
   onDelete:()=>void;onWhatsApp:()=>void;hasContact:boolean;
   loginAllowed?:boolean;onToggleLogin?:()=>void;

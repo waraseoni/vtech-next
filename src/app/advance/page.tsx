@@ -2,9 +2,9 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { Loader2, ChevronLeft, ChevronRight, Printer, Plus, Edit2, Trash2, DollarSign, X, Filter } from "lucide-react";
+import { Loader2, Printer, Plus, Edit2, Trash2, DollarSign, X } from "lucide-react";
 
-import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate } from "@/lib/dateUtils";
+import { todayIST, startOfMonthIST } from "@/lib/dateUtils";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

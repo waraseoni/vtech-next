@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // scripts/client-emails.cjs
 // Client emails bulk tool — CSV se export/import. Portal login ke liye client
 // ka REAL inbox email chahiye (OTP usi par jata hai) — phone / "not given"

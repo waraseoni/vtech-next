@@ -49,8 +49,8 @@ export default function DailySalesReportPage() {
         return;
       }
 
-      const txIds = txList.map((t: any) => t.id);
-      const txMap = new Map(txList.map((t: any) => [t.id, t]));
+      const txIds = txList.map((t) => t.id);
+      const txMap = new Map(txList.map((t) => [t.id, t]));
 
       // Step 2: Get products for those transactions
       const { data: tpData, error: tpErr } = await supabase
@@ -67,24 +67,24 @@ export default function DailySalesReportPage() {
       }
 
       // Step 3: Get product names and client names
-      const prodIds = [...new Set(itemsData.map((d: any) => d.product_id))];
+      const prodIds = [...new Set(itemsData.map((d) => d.product_id))];
       const { data: prodData } = await supabase
         .from("product_list")
         .select("id, name")
         .in("id", prodIds);
-      const prodMap = new Map(prodData?.map((p: any) => [p.id, p]) || []);
+      const prodMap = new Map(prodData?.map((p) => [p.id, p]) || []);
 
-      const clientIds = [...new Set(txList.map((t: any) => t.client_name).filter(Boolean))];
+      const clientIds = [...new Set(txList.map((t) => t.client_name).filter(Boolean))];
       const { data: clientData } = await supabase
         .from("client_list")
         .select("id, firstname, middlename, lastname")
         .in("id", clientIds);
-      const clientMap = new Map(clientData?.map((c: any) => [c.id, c]) || []);
+      const clientMap = new Map(clientData?.map((c) => [c.id, c]) || []);
 
-      const mapped = itemsData.map((item: any, i: number) => {
-        const tx  = txMap.get(item.transaction_id) as any;
-        const prod = prodMap.get(item.product_id) as any;
-        const client = clientMap.get(tx?.client_name) as any;
+      const mapped = itemsData.map((item, i) => {
+        const tx  = txMap.get(item.transaction_id);
+        const prod = prodMap.get(item.product_id);
+        const client = clientMap.get(tx?.client_name);
         return {
           id: i,
           product_name: prod?.name || "Unknown",
@@ -99,8 +99,8 @@ export default function DailySalesReportPage() {
       }) as SaleItem[];
 
       setItems(mapped);
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
     }
     setLoading(false);
   }, [date]);

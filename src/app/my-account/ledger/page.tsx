@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Printer, X, Filter, ChevronDown, ChevronUp, Calendar,
+  Printer, Filter, ChevronDown, ChevronUp,
   Loader2, AlertCircle, BookOpen, ArrowLeft,
 } from "lucide-react";
 

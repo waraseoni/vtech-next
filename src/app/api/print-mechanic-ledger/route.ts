@@ -5,6 +5,8 @@ import { fetchAll, pageAll } from "@/lib/fetch-all";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
+type DbRow = ReturnType<typeof JSON.parse>;
+
 const SHOP = {
   name: "V-Technologies",
   address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
@@ -91,7 +93,7 @@ export async function GET(request: NextRequest) {
   opening -= (prevAdv.data || []).reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
 
   // 4. Build Ledger Grid
-  const entries: any[] = [];
+  const entries: DbRow[] = [];
   let running = opening;
   let totalEarned = 0, totalComm = 0, totalAdv = 0;
 
@@ -115,10 +117,9 @@ export async function GET(request: NextRequest) {
 
     // Jobs
     const dayJobs = (allComm.data || []).filter(j => j.date_created.startsWith(dStr));
-    let commGen = 0, commPay = 0;
+    let commPay = 0;
     dayJobs.forEach(j => {
         const val = parseFloat(j.mechanic_commission_amount) || 0;
-        commGen += val;
         if (j.status === 5) commPay += val;
     });
 
@@ -148,7 +149,7 @@ export async function GET(request: NextRequest) {
 
   const ledgerRows = entries.map((e, i) => {
     const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    const jobDetails = (e.jobs || []).map((j: any) => `
+    const jobDetails = (e.jobs || []).map((j: DbRow) => `
       <div style="font-size:9px;color:#666;border-bottom:1px solid #eee;padding:2px 0">
         <span style="color:#007bff;font-weight:bold">#${j.job_id}</span> ${j.item} 
         <span style="float:right;font-weight:bold">₹${(parseFloat(j.mechanic_commission_amount) || 0).toFixed(0)}</span>

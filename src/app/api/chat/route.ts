@@ -53,12 +53,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ response: responseText });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("Chat API Error:", error);
     return NextResponse.json(
       { 
         error: "Failed to get response", 
-        details: error?.message || String(error) 
+        details: error instanceof Error ? error.message : String(error) 
       },
       { status: 500 }
     );

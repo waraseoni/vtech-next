@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
 import { 
-  BarChart3, TrendingUp, DollarSign, Calendar, 
-  ArrowUpRight, ArrowDownRight, Package, Users, Receipt, 
-  Printer, Loader2
+  BarChart3, TrendingUp, DollarSign, 
+  Package, Receipt, 
+  Printer
 } from "lucide-react";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -34,6 +34,8 @@ type MonthlyData = {
   margin: number;
 };
 
+type DbRow = ReturnType<typeof JSON.parse>;
+
 const istMonth = (iso: string) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" }).format(new Date(iso));
 
@@ -41,8 +43,8 @@ export default function MonthlyProfitReport() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<MonthlyData[]>([]);
-  const [rawData, setRawData] = useState<any>({});
-  const [modalConfig, setModalConfig] = useState<{title: string, type: string, data: any[]} | null>(null);
+  const [rawData, setRawData] = useState<Record<string, DbRow[]>>({});
+  const [modalConfig, setModalConfig] = useState<{title: string, type: string, data: DbRow[]} | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -171,39 +173,39 @@ export default function MonthlyProfitReport() {
   const openModal = (type: string, monthNum: number, monthName: string) => {
     const mStr = monthNum.toString().padStart(2, '0');
     const prefix = `${year}-${mStr}`;
-    let detailData: any[] = [];
+    let detailData: DbRow[] = [];
     let title = "";
 
     if (type === 'repair_jobs') {
       title = `Repair Jobs (Delivered) - ${monthName} ${year}`;
-      detailData = (rawData.transactions || []).map((t: any) => {
-        const client = (rawData.clients || []).find((c: any) => c.id === t.client_name);
+      detailData = (rawData.transactions || []).map((t) => {
+        const client = (rawData.clients || []).find((c) => c.id === t.client_name);
         return { ...t, client_name: client ? `${client.firstname} ${client.middlename || ''} ${client.lastname || ''}`.replace(/\s+/g, ' ').trim() : 'Walk-in' };
-      }).filter((t: any) => istMonth(t.date_completed) === prefix);
+      }).filter((t) => istMonth(t.date_completed) === prefix);
     } else if (type === 'commission') {
       title = `Mechanic Commission - ${monthName} ${year}`;
-      detailData = (rawData.transactions || []).map((t: any) => {
-        const client = (rawData.clients || []).find((c: any) => c.id === t.client_name);
+      detailData = (rawData.transactions || []).map((t) => {
+        const client = (rawData.clients || []).find((c) => c.id === t.client_name);
         return { ...t, client_name: client ? `${client.firstname} ${client.middlename || ''} ${client.lastname || ''}`.replace(/\s+/g, ' ').trim() : 'Walk-in' };
-      }).filter((t: any) => istMonth(t.date_completed) === prefix && parseFloat(t.mechanic_commission_amount) > 0);
+      }).filter((t) => istMonth(t.date_completed) === prefix && parseFloat(t.mechanic_commission_amount) > 0);
     } else if (type === 'walkin_sales') {
       title = `Walk-in Direct Sales - ${monthName} ${year}`;
-      detailData = (rawData.directSales || []).filter((d: any) => String(d.date_created).startsWith(prefix) && (!d.client_id || d.client_id === 0 || d.client_id === ""));
+      detailData = (rawData.directSales || []).filter((d) => String(d.date_created).startsWith(prefix) && (!d.client_id || d.client_id === 0 || d.client_id === ""));
     } else if (type === 'client_sales') {
       title = `Client Direct Sales - ${monthName} ${year}`;
-      detailData = (rawData.directSales || []).map((d: any) => {
-        const client = (rawData.clients || []).find((c: any) => c.id === d.client_id);
+      detailData = (rawData.directSales || []).map((d) => {
+        const client = (rawData.clients || []).find((c) => c.id === d.client_id);
         return { ...d, client_name: client ? `${client.firstname} ${client.middlename || ''} ${client.lastname || ''}`.replace(/\s+/g, ' ').trim() : 'Unknown Client' };
-      }).filter((d: any) => String(d.date_created).startsWith(prefix) && d.client_id && d.client_id !== 0 && d.client_id !== "");
+      }).filter((d) => String(d.date_created).startsWith(prefix) && d.client_id && d.client_id !== 0 && d.client_id !== "");
     } else if (type === 'expenses') {
       title = `Shop Expenses - ${monthName} ${year}`;
-      detailData = (rawData.expenses || []).filter((e: any) => String(e.date_created).startsWith(prefix));
+      detailData = (rawData.expenses || []).filter((e) => String(e.date_created).startsWith(prefix));
     } else if (type === 'salaries') {
       title = `Staff Salaries - ${monthName} ${year}`;
-      const mAtt = (rawData.attendance || []).filter((a: any) => String(a.curr_date).startsWith(prefix));
-      const mechMap: any = {};
-      mAtt.forEach((att: any) => {
-        const mech = (rawData.mechanics || []).find((me: any) => me.id === att.mechanic_id);
+      const mAtt = (rawData.attendance || []).filter((a) => String(a.curr_date).startsWith(prefix));
+      const mechMap: Record<number, { name: string; full: number; half: number; rate: number }> = {};
+      mAtt.forEach((att) => {
+        const mech = (rawData.mechanics || []).find((me) => me.id === att.mechanic_id);
         if (!mech) return;
         if (!mechMap[mech.id]) {
           mechMap[mech.id] = { name: [mech.firstname, mech.middlename, mech.lastname].filter(Boolean).join(" ") || `Mechanic #${mech.id}`, full: 0, half: 0, rate: mech.daily_salary || 0 };
@@ -211,19 +213,19 @@ export default function MonthlyProfitReport() {
         if (att.status === 1) mechMap[mech.id].full += 1;
         else if (att.status === 3) mechMap[mech.id].half += 1;
       });
-      detailData = Object.values(mechMap).filter((m: any) => m.full > 0 || m.half > 0);
+      detailData = Object.values(mechMap).filter((m) => m.full > 0 || m.half > 0);
     } else if (type === 'emi') {
       title = `Loan EMI Payments - ${monthName} ${year}`;
-      detailData = (rawData.loanPayments || []).map((lp: any) => {
-        const lender = (rawData.lenders || []).find((l: any) => l.id === lp.lender_id);
+      detailData = (rawData.loanPayments || []).map((lp) => {
+        const lender = (rawData.lenders || []).find((l) => l.id === lp.lender_id);
         return { ...lp, lender_name: lender ? lender.fullname : 'Unknown Lender' };
-      }).filter((lp: any) => String(lp.payment_date).startsWith(prefix));
+      }).filter((lp) => String(lp.payment_date).startsWith(prefix));
     } else if (type === 'discounts') {
       title = `Customer Discounts - ${monthName} ${year}`;
-      detailData = (rawData.clientPayments || []).map((cp: any) => {
-        const client = (rawData.clients || []).find((c: any) => c.id === cp.client_id);
+      detailData = (rawData.clientPayments || []).map((cp) => {
+        const client = (rawData.clients || []).find((c) => c.id === cp.client_id);
         return { ...cp, client_name: client ? `${client.firstname} ${client.middlename || ''} ${client.lastname || ''}`.replace(/\s+/g, ' ').trim() : 'Unknown Client' };
-      }).filter((cp: any) => String(cp.created_at).startsWith(prefix) && parseFloat(cp.discount) > 0);
+      }).filter((cp) => String(cp.created_at).startsWith(prefix) && parseFloat(cp.discount) > 0);
     }
 
     setModalConfig({ title, type, data: detailData });
@@ -273,7 +275,7 @@ export default function MonthlyProfitReport() {
             <Tooltip
               contentStyle={{ backgroundColor: '#0d1117', border: '1px solid #1f2937', borderRadius: '12px' }}
               itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-              formatter={(v: any) => [inr(Number(v) || 0), ""]}
+              formatter={(v) => [inr(Number(v) || 0), ""]}
             />
             <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ paddingBottom: '20px', fontSize: '12px', fontWeight: 'bold' }} />
             <Bar dataKey="revenue" name="Total Revenue" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={40} />
@@ -405,7 +407,7 @@ export default function MonthlyProfitReport() {
                       )}
                     </thead>
                     <tbody className="divide-y divide-[#21293d]">
-                      {modalConfig.data.map((row: any, i: number) => {
+                      {modalConfig.data.map((row, i) => {
                         if (['repair_jobs', 'commission'].includes(modalConfig.type)) return (
                           <tr key={i} className="hover:bg-white/[0.02]">
                             <td className="px-4 py-3 text-white">{new Date(row.date_completed).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" })}</td>
@@ -470,7 +472,7 @@ export default function MonthlyProfitReport() {
                       <tr>
                         <td colSpan={modalConfig.type === 'salaries' ? 5 : 4} className="px-4 py-4 text-right text-[10px] uppercase tracking-widest text-slate-500 font-black">Total</td>
                         <td className="px-4 py-4 text-right text-rose-500 font-black text-base">
-                          {inr(modalConfig.data.reduce((sum: number, row: any) => {
+                          {inr(modalConfig.data.reduce((sum: number, row) => {
                             if (modalConfig.type === 'repair_jobs') return sum + (parseFloat(row.amount) || 0);
                             if (modalConfig.type === 'commission') return sum + (parseFloat(row.mechanic_commission_amount) || 0);
                             if (modalConfig.type === 'walkin_sales' || modalConfig.type === 'client_sales') return sum + (parseFloat(row.total_amount) || 0);
@@ -494,8 +496,8 @@ export default function MonthlyProfitReport() {
   );
 }
 
-function StatCard({ icon, label, value, color, isProfit }: { icon: any, label: string, value: number, color: string, isProfit?: boolean }) {
-  const colors: any = {
+function StatCard({ icon, label, value, color, isProfit }: { icon: ReactNode, label: string, value: number, color: string, isProfit?: boolean }) {
+  const colors: Record<string, string> = {
     blue: "from-blue-500 to-blue-700 shadow-blue-500/20",
     indigo: "from-indigo-500 to-indigo-700 shadow-indigo-500/20",
     rose: "from-rose-500 to-rose-700 shadow-rose-500/20",

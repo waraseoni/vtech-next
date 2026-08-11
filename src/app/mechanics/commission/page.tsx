@@ -6,7 +6,7 @@ import {
   Loader2, ChevronLeft, ChevronRight,
   Printer, TrendingUp, Eye, FileText, Calendar,
   Settings, History, Plus, Check, X, AlertCircle,
-  Wrench, DollarSign, ArrowRight, Trash2, Edit3
+  Edit3
 } from "lucide-react";
 
 const inr = (n: number) =>
@@ -45,7 +45,7 @@ function CommissionContent() {
   const router       = useRouter();
 
   const currentMonth = currentMonthIST();
-  const [activeTab,  setActiveTab]  = useState<"statement" | "master">( (searchParams.get("tab") as any) || "statement");
+  const [activeTab,  setActiveTab]  = useState<"statement" | "master">( (searchParams.get("tab") as "statement" | "master") || "statement");
   const [month,      setMonthState] = useState(searchParams.get("month")       || currentMonth);
   const [mechanicId, setMechState]  = useState(searchParams.get("mechanic_id") || "all");
   const [loading,    setLoading]    = useState(true);
@@ -54,7 +54,7 @@ function CommissionContent() {
   const [rows,       setRows]       = useState<CommRow[]>([]);
   const [mechanics,  setMechanics]  = useState<{ id: number; name: string }[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage] = useState(25);
 
   // Master State
   const [mechRates,     setMechRates]     = useState<MechanicRate[]>([]);
@@ -145,7 +145,7 @@ function CommissionContent() {
         setCurrentPage(1);
       } else {
         // Master Tab: Fetch current rates
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("mechanic_list")
           .select("id, firstname, middlename, lastname, commission_percent")
           .eq("delete_flag", 0)
@@ -206,8 +206,8 @@ function CommissionContent() {
       
       setShowUpdateModal(false);
       fetchData();
-    } catch (err: any) {
-      setRateErr(err.message || "Update failed!");
+    } catch (e) {
+      setRateErr((e instanceof Error && e.message ? e.message : "") || "Update failed!");
     } finally {
       setSavingRate(false);
     }
@@ -219,7 +219,7 @@ function CommissionContent() {
     setHistoryLoading(true);
     setShowHistoryModal(true);
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("mechanic_commission_history")
         .select("*")
         .eq("mechanic_id", m.id)

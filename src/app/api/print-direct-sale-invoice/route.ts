@@ -94,15 +94,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Sale not found" }, { status: 404 });
   }
 
-  const [{ data: items }, { data: client }, { data: staff }, { data: editor }] = await Promise.all([
+  const [{ data: items }, { data: client }, { data: staff }] = await Promise.all([
     supabase.from("direct_sale_items").select("product_id, product_name, qty, price").eq("sale_id", sale.id),
     sale.client_id ? supabase.from("client_list").select("contact, address, firstname, middlename, lastname").eq("id", sale.client_id).single() : Promise.resolve({ data: null }),
     sale.created_by ? supabase.from("mechanic_list").select("firstname, lastname").eq("id", sale.created_by).single() : Promise.resolve({ data: null }),
-    sale.last_edited_by ? supabase.from("profiles").select("full_name").eq("id", sale.last_edited_by).single() : Promise.resolve({ data: null }),
   ]);
 
   // ── Fetch HSN/SAC codes for sold products ──────────────────────────────────
-  const prodIds = [...new Set((items || []).map((it: any) => it.product_id).filter(Boolean))];
+  const prodIds = [...new Set((items || []).map((it) => it.product_id).filter(Boolean))];
   const { data: prodRows } = prodIds.length
     ? await supabase.from("product_list").select("id, hsn").in("id", prodIds)
     : { data: [] };
@@ -112,9 +111,8 @@ export async function GET(request: NextRequest) {
   const clientContact = client?.contact || null;
   const clientAddress = client?.address || null;
   const staffName = staff ? `${staff.firstname} ${staff.lastname}`.trim() : "Unknown";
-  const editorName = editor?.full_name || null;
 
-  const saleItems = (items || []).map((it: any) => ({
+  const saleItems = (items || []).map((it) => ({
     product_name: it.product_name,
     hsn: hsnMap[it.product_id] || "—",
     qty: it.qty,

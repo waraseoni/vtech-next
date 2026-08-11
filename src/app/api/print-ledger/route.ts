@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireStaff } from "@/lib/api-auth";
 import { pageAll } from "@/lib/fetch-all";
@@ -7,11 +7,11 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env
 
 const SHOP = {
   name: "V-Technologies",
-  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
+  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur â€“ 482002",
   mobile: "9179105875",
 };
 
-const rupee = (n: number, decimals = 0) => "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+const rupee = (n: number, decimals = 0) => "â‚¹" + n.toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 
 function fmtDate(iso: string): string {
   return new Intl.DateTimeFormat("en-IN", {
@@ -32,39 +32,35 @@ export async function GET(request: NextRequest) {
   const [
     { data: allClients },
     { data: allMechanics },
-    { data: allProducts },
     { data: salaryHistory },
     repairJobsRaw,
     walkinRaw,
     clientSalesRaw,
     clientPaymentsRaw,
     attendance,
-    advancesRaw,
     expensesRaw,
     loanPaymentsRaw,
   ] = await Promise.all([
     pageAll(supabase.from('client_list').select('id, firstname, middlename, lastname')),
     pageAll(supabase.from('mechanic_list').select('id, firstname, lastname, daily_salary')),
-    pageAll(supabase.from('product_list').select('id, name, price')),
     pageAll(supabase.from('mechanic_salary_history').select('mechanic_id, effective_date, salary')),
     pageAll(supabase.from('transaction_list').select('id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id').eq('status', 5).gte('date_completed', start).lte('date_completed', end)),
     pageAll(supabase.from('direct_sales').select('id, sale_code, total_amount, date_created, client_id').or('client_id.is.null,client_id.eq.0').gte('date_created', start).lte('date_created', end)),
     pageAll(supabase.from('direct_sales').select('id, sale_code, total_amount, date_created, client_id').not('client_id', 'eq', 0).not('client_id', 'is', null).gte('date_created', start).lte('date_created', end)),
     pageAll(supabase.from('client_payments').select('id, client_id, amount, discount, payment_date').gte('payment_date', from).lte('payment_date', to)),
     pageAll(supabase.from('attendance_list').select('mechanic_id, curr_date, status').in('status', [1, 3]).gte('curr_date', from).lte('curr_date', to)),
-    pageAll(supabase.from('advance_payments').select('mechanic_id, amount, date_paid').gte('date_paid', from).lte('date_paid', to)),
     pageAll(supabase.from('expense_list').select('category, amount, date_created').gte('date_created', start).lte('date_created', end)),
     pageAll(supabase.from('loan_payments').select('lender_id, amount_paid, payment_date').gte('payment_date', from).lte('payment_date', to)),
   ]);
 
   const clientMap: Record<number, string> = {};
-  (allClients || []).forEach((c: any) => { clientMap[c.id] = `${c.firstname} ${c.middlename || ''} ${c.lastname || ''}`.trim(); });
+  (allClients || []).forEach((c) => { clientMap[c.id] = `${c.firstname} ${c.middlename || ''} ${c.lastname || ''}`.trim(); });
 
-  const mechMap: Record<number, any> = {};
-  (allMechanics || []).forEach((m: any) => { mechMap[m.id] = { name: `${m.firstname} ${m.lastname}`.trim(), daily: Number(m.daily_salary) || 0 }; });
+  const mechMap: Record<number, { name: string; daily: number }> = {};
+  (allMechanics || []).forEach((m) => { mechMap[m.id] = { name: `${m.firstname} ${m.lastname}`.trim(), daily: Number(m.daily_salary) || 0 }; });
 
   const salaryHistoryMap: Record<number, { effective_date: string; salary: number }[]> = {};
-  (salaryHistory || []).forEach((h: any) => {
+  (salaryHistory || []).forEach((h) => {
     if (!salaryHistoryMap[h.mechanic_id]) salaryHistoryMap[h.mechanic_id] = [];
     salaryHistoryMap[h.mechanic_id].push({ effective_date: h.effective_date, salary: Number(h.salary) || 0 });
   });
@@ -81,28 +77,28 @@ export async function GET(request: NextRequest) {
     return rate;
   };
 
-  const repairJobs = (repairJobsRaw.data || []).map((t: any) => ({
+  const repairJobs = (repairJobsRaw.data || []).map((t) => ({
     job_id: t.job_id, date: t.date_completed, item: t.item, amount: t.amount, comm: t.mechanic_commission_amount,
     client: clientMap[t.client_name] || 'Unknown', mechanic: mechMap[t.mechanic_id]?.name || 'Unknown'
   }));
 
-  const walkinSales = (walkinRaw.data || []).map((s: any) => ({ code: s.sale_code, date: s.date_created, amount: s.total_amount }));
-  const clientSales = (clientSalesRaw.data || []).map((s: any) => ({ code: s.sale_code, date: s.date_created, amount: s.total_amount, client: clientMap[s.client_id] || 'Unknown' }));
-  const payments = (clientPaymentsRaw.data || []).map((p: any) => ({ date: p.payment_date, client: clientMap[p.client_id] || 'Unknown', amount: p.amount, discount: p.discount }));
+  const walkinSales = (walkinRaw.data || []).map((s) => ({ code: s.sale_code, date: s.date_created, amount: s.total_amount }));
+  const clientSales = (clientSalesRaw.data || []).map((s) => ({ code: s.sale_code, date: s.date_created, amount: s.total_amount, client: clientMap[s.client_id] || 'Unknown' }));
+  const payments = (clientPaymentsRaw.data || []).map((p) => ({ date: p.payment_date, client: clientMap[p.client_id] || 'Unknown', amount: p.amount, discount: p.discount }));
 
-  const totalRepair = repairJobs.reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
-  const totalWalkin = walkinSales.reduce((s: number, s_: any) => s + Number(s_.amount || 0), 0);
-  const totalClientSales = clientSales.reduce((s: number, s_: any) => s + Number(s_.amount || 0), 0);
-  const totalPayments = payments.reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+  const totalRepair = repairJobs.reduce((s: number, t) => s + Number(t.amount || 0), 0);
+  const totalWalkin = walkinSales.reduce((s: number, s_) => s + Number(s_.amount || 0), 0);
+  const totalClientSales = clientSales.reduce((s: number, s_) => s + Number(s_.amount || 0), 0);
+  const totalPayments = payments.reduce((s: number, p) => s + Number(p.amount || 0), 0);
 
-  const totalComm = repairJobs.reduce((s: number, t: any) => s + Number(t.comm || 0), 0);
-  const totalSalary = (attendance.data || []).reduce((s: number, a: any) => {
+  const totalComm = repairJobs.reduce((s: number, t) => s + Number(t.comm || 0), 0);
+  const totalSalary = (attendance.data || []).reduce((s: number, a) => {
     const rate = historyRateFor(a.mechanic_id, a.curr_date) ?? (mechMap[a.mechanic_id]?.daily || 0);
     return s + (a.status === 3 ? rate / 2 : rate);
   }, 0);
-  const totalExpenses = (expensesRaw.data || []).reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
-  const totalEmi = (loanPaymentsRaw.data || []).reduce((s: number, p: any) => s + Number(p.amount_paid || 0), 0);
-  const totalDiscount = payments.reduce((s: number, p: any) => s + Number(p.discount || 0), 0);
+  const totalExpenses = (expensesRaw.data || []).reduce((s: number, e) => s + Number(e.amount || 0), 0);
+  const totalEmi = (loanPaymentsRaw.data || []).reduce((s: number, p) => s + Number(p.amount_paid || 0), 0);
+  const totalDiscount = payments.reduce((s: number, p) => s + Number(p.discount || 0), 0);
 
   const totalIncome = totalRepair + totalWalkin + totalClientSales;
   const totalExpense = totalComm + totalSalary + totalExpenses + totalEmi + totalDiscount;
@@ -140,7 +136,7 @@ export async function GET(request: NextRequest) {
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Business Ledger — ${monthLabel}</title>
+  <title>Business Ledger â€” ${monthLabel}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Arial,sans-serif;font-size:13px;background:#f0f2f5;padding:20px;color:#212529}
@@ -176,7 +172,7 @@ export async function GET(request: NextRequest) {
 <div class="wrap">
   <div class="card">
     <div class="hdr">
-      <h1>📒 ${SHOP.name} — Business Ledger</h1>
+      <h1>ðŸ“’ ${SHOP.name} â€” Business Ledger</h1>
       <p>Period: ${monthLabel} | Generated: ${fmtDate(new Date().toISOString())} | ${SHOP.mobile}</p>
     </div>
     <div class="stats">
@@ -223,8 +219,8 @@ export async function GET(request: NextRequest) {
 
   <div class="card">
     <div class="actions">
-      <button onclick="window.print()" class="btn btn-print">🖨 Print</button>
-      <button onclick="window.close()" class="btn btn-close">✕ Close</button>
+      <button onclick="window.print()" class="btn btn-print">ðŸ–¨ Print</button>
+      <button onclick="window.close()" class="btn btn-close">âœ• Close</button>
     </div>
   </div>
   <div class="footer">${SHOP.name} | ${SHOP.address} | ${SHOP.mobile}</div>

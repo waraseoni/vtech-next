@@ -2,7 +2,20 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 
-export default function UserEditModal({ user, onClose, onSaved }: any) {
+interface UserRow {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+}
+
+interface UserEditModalProps {
+  user: UserRow;
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+export default function UserEditModal({ user, onClose, onSaved }: UserEditModalProps) {
   const [email, setEmail] = useState(user.email || '');
   const [fullName, setFullName] = useState(user.full_name || '');
   const [role, setRole] = useState(user.role || 'staff');
@@ -43,8 +56,8 @@ export default function UserEditModal({ user, onClose, onSaved }: any) {
       alert('User updated successfully!');
       onSaved(); // पैरेंट को रिफ्रेश करने के लिए कहें
       onClose();
-    } catch (err: any) {
-      alert('Error: ' + err.message);
+    } catch (err) {
+      alert('Error: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }

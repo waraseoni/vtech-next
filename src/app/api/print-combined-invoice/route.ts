@@ -209,7 +209,7 @@ export async function GET(req: NextRequest) {
   const grandTotal = grandSubtotal + cgstAmt + sgstAmt;
 
   // ── Build HTML sections for each job ──────────────────────────────────────
-  const jobSections = jobRows.map((job, jobIdx) => {
+  const jobSections = jobRows.map((job) => {
     const sc = STATUS_COLOR[job.status] || "#94a3b8";
     const statusLabel = STATUS[job.status] || "—";
 

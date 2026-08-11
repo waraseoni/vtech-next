@@ -4,12 +4,12 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   History, Search, Filter, RefreshCw, 
-  User as UserIcon, Calendar, Info, 
+  User as UserIcon, Info, 
   ChevronLeft, ChevronRight, Activity
 } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
-import { ExternalLink, Trash2, PlusCircle, Edit3, ShieldAlert, Eraser } from "lucide-react";
+import { ExternalLink, Trash2, PlusCircle, Edit3, Eraser } from "lucide-react";
 
 
 type LogEntry = {
@@ -91,7 +91,7 @@ export default function ActivityLogPage() {
       // 2. Fetch User Profiles to map names (Manually mapping to avoid SQL Join complexity/errors)
       const userIds = Array.from(new Set(data?.map(l => l.user_id).filter(Boolean)));
       
-      let profilesMap: Record<string, string> = {};
+      const profilesMap: Record<string, string> = {};
       if (userIds.length > 0) {
         const { data: profData } = await supabase
           .from("profiles")
@@ -117,10 +117,11 @@ export default function ActivityLogPage() {
         setModules(uniqueMods);
       }
 
-    } catch (err: any) {
-      console.error("Error fetching logs:", err.message || err);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Error fetching logs:", msg || err);
       // Extra check: If error contains 'relation "activity_logs" does not exist'
-      if (err.message?.includes('activity_logs')) {
+      if (msg.includes('activity_logs')) {
          alert("Error: 'activity_logs' table is missing in Supabase. Please run the SQL command provided in the previous step.");
       }
     } finally {

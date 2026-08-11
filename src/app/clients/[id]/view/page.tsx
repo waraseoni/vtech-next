@@ -10,7 +10,7 @@ import {
   Printer, MessageCircle, ExternalLink, Trash2,
   PencilLine, IndianRupee, RefreshCw, MessageSquare,
   CheckSquare, Square, Copy, Send, FileText,
-  Camera, Upload, Loader,
+  Camera, Loader,
 } from 'lucide-react';
 
 import { todayIST, formatIST, parseISTDate, toISTString, toLocalStr } from "@/lib/dateUtils";
@@ -651,8 +651,8 @@ export default function ViewClientProfile() {
       setClient({ ...client, payment_due_date: dueForm.due_date, payment_due_remarks: dueForm.due_remarks.trim() || null });
       setDueModal(false);
       await logActivity('Set Promised Due Date', 'Clients', client.id, `Client: ${client.fullName}`);
-    } catch (err: any) {
-      alert('Error: ' + err.message);
+    } catch (err) {
+      alert('Error: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSavingDue(false);
     }
@@ -1366,7 +1366,7 @@ export default function ViewClientProfile() {
                     </div>
                   </div>
                   
-                  {p.remarks && <p className="text-xs text-slate-400 mt-2 mb-2 italic">"{p.remarks}"</p>}
+                  {p.remarks && <p className="text-xs text-slate-400 mt-2 mb-2 italic">&ldquo;{p.remarks}&rdquo;</p>}
                   
                   <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-600 mt-2 p-2 bg-[#0d1117] rounded-lg">
                     <span>{fmtDate(p.payment_date)}</span>

@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
 import { Loader2, ArrowLeft, Printer, FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react";
 
-import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate, toISTDatePart } from "@/lib/dateUtils";
+import { startOfMonthIST, endOfMonthIST, parseISTDate, toISTDatePart } from "@/lib/dateUtils";
 
 type Mechanic = {
   id: number;
@@ -157,8 +157,8 @@ export default function MechanicLedgerPage() {
         setAtt((attRes.data || []) as Attendance[]);
         setComm((commRes.data || []) as TxnComm[]);
         setAdv((advRes.data || []) as Advance[]);
-      } catch (e: any) {
-        setErr(e?.message || "Failed to load ledger");
+      } catch (e) {
+        setErr((e instanceof Error && e.message ? e.message : "") || "Failed to load ledger");
       } finally {
         setLoading(false);
       }

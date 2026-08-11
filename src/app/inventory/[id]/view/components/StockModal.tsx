@@ -84,8 +84,8 @@ export default function StockModal({ productId, stock, onClose, onSaved }: Stock
       // Show success flash briefly
       setSuccess(true);
       setTimeout(() => onSaved(), 700);
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
       setSaving(false);
     }
   };

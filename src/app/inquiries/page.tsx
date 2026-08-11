@@ -5,12 +5,12 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
   Search, ChevronLeft, ChevronRight, RefreshCw, Eye, Trash2,
-  Phone, Mail, MessageSquare, CheckCircle2, Loader2,
+  Phone, Mail, MessageSquare, CheckCircle2,
   Inbox, CalendarDays, Filter, X, MailOpen, Clock, Plus,
 } from "lucide-react";
 import InquiryModal from "./components/InquiryModal";
 
-import { todayIST, formatIST, parseISTDate, toISTString, toLocalStr, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+import { formatIST, parseISTDate, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Inquiry {
@@ -43,7 +43,7 @@ function InquiriesPageInner() {
   const [fromDate,     setFromDate]     = useState(searchParams.get("from") || firstOfMon());
   const [toDate,       setToDate]       = useState(searchParams.get("to")   || lastOfMon());
   const [statusFilter, setStatusFilter] = useState<"all" | "unread" | "read">(
-    (searchParams.get("status") as any) || "all"
+    (searchParams.get("status") as "all" | "unread" | "read") || "all"
   );
 
   // BUG FIX: useState initializes only once on mount — when router.push changes
@@ -51,7 +51,7 @@ function InquiriesPageInner() {
   useEffect(() => {
     setFromDate(searchParams.get("from") || firstOfMon());
     setToDate(searchParams.get("to")     || lastOfMon());
-    setStatusFilter((searchParams.get("status") as any) || "all");
+    setStatusFilter((searchParams.get("status") as "all" | "unread" | "read") || "all");
   }, [searchParams]);
   const [inquiries,    setInquiries]    = useState<Inquiry[]>([]);
   const [loading,      setLoading]      = useState(true);
@@ -69,7 +69,7 @@ function InquiriesPageInner() {
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
-    const h  = (e: any) => setIsMobile(e.matches);
+    const h  = (e: MediaQueryList | MediaQueryListEvent) => setIsMobile(e.matches);
     h(mq); mq.addEventListener("change", h);
     return () => mq.removeEventListener("change", h);
   }, []);

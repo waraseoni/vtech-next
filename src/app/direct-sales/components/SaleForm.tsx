@@ -28,6 +28,8 @@ interface SaleFormProps {
   mode: "new" | "edit";
   saleId?: number;
 }
+type DbRow = ReturnType<typeof JSON.parse>;
+type SaleItemRow = { product_id: number; qty: number; price: number };
 
 // ─── Payment modes ────────────────────────────────────────────────────────────
 const PAYMENT_MODES = [
@@ -71,7 +73,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
   const [selectedProductId, setSelectedProductId] = useState<number | "">("");
   const [productSearch,    setProductSearch]    = useState("");
   const [totalAmount,      setTotalAmount]      = useState(0);
-  const [originalSaleData, setOriginalSaleData] = useState<any>(null);
+  const [originalSaleData, setOriginalSaleData] = useState<DbRow | null>(null);
   const [formError,        setFormError]        = useState<string | null>(null);
 
   // Keep a stable ref to products so fetchSaleData can read the latest value
@@ -91,7 +93,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
     setPageLoading(true);
     try {
       // Run independent fetches in parallel
-      const [role, mid] = await fetchUserRoleAndId();
+      await fetchUserRoleAndId();
       await Promise.all([
         fetchClients(),
         fetchMechanics(),     // BUG FIX 3: originally only fetched if userRole==='admin' at mount
@@ -123,7 +125,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
     const { data } = await supabase
       .from("client_list").select("id, firstname, middlename, lastname")
       .eq("delete_flag", 0).order("firstname");
-    setClients((data || []).map((c: any) => ({
+    setClients((data || []).map((c) => ({
       id: c.id,
       name: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" "),
     })));
@@ -133,7 +135,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
     const { data } = await supabase
       .from("mechanic_list").select("id, firstname, lastname")
       .eq("status", 1).order("firstname");
-    setMechanics((data || []).map((m: any) => ({ id: m.id, name: `${m.firstname} ${m.lastname}` })));
+    setMechanics((data || []).map((m) => ({ id: m.id, name: `${m.firstname} ${m.lastname}` })));
   };
 
   // BUG FIX 4: Original had N+1 queries — one Supabase call per product
@@ -154,12 +156,12 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
     ]);
 
     // Get valid (non-cancelled) transaction IDs
-    const allTxnIds = [...new Set((txnProdRes.data || []).map((r: any) => r.transaction_id))];
+    const allTxnIds = [...new Set((txnProdRes.data || []).map((r) => r.transaction_id))];
     let validTxnSet = new Set<number>();
     if (allTxnIds.length) {
       const { data: validTxns } = await supabase
         .from("transaction_list").select("id").in("id", allTxnIds).neq("status", 4);
-      validTxnSet = new Set((validTxns || []).map((t: any) => t.id));
+      validTxnSet = new Set((validTxns || []).map((t) => t.id));
     }
 
     // Aggregate per product
@@ -167,15 +169,15 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
     const soldJobs   = new Map<number, number>();
     const soldDirect = new Map<number, number>();
 
-    (stockRes.data || []).forEach((r: any) =>
+    (stockRes.data || []).forEach((r) =>
       stockIn.set(r.product_id, (stockIn.get(r.product_id) || 0) + r.quantity));
 
-    (txnProdRes.data || []).forEach((r: any) => {
+    (txnProdRes.data || []).forEach((r) => {
       if (validTxnSet.has(r.transaction_id))
         soldJobs.set(r.product_id, (soldJobs.get(r.product_id) || 0) + r.qty);
     });
 
-    (directRes.data || []).forEach((r: any) => {
+    (directRes.data || []).forEach((r) => {
       // BUG FIX 5: In edit mode, the current sale's items were included in soldDirect
       // making available_stock appear lower than actual → wrong stock validation
       if (mode === "edit" && saleId && r.sale_id === saleId) return;
@@ -206,15 +208,15 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
     setPaymentMode(sale.payment_mode || "Cash");
     setRemarks(sale.remarks || "");
 
-    const productIds = (sale.items || []).map((i: any) => i.product_id);
+    const productIds = (sale.items || []).map((i: SaleItemRow) => i.product_id);
     const pMap = new Map<number, string>();
     if (productIds.length) {
       const { data: pData } = await supabase
         .from("product_list").select("id, name").in("id", productIds);
-      (pData || []).forEach((p: any) => pMap.set(p.id, p.name));
+      (pData || []).forEach((p) => pMap.set(p.id, p.name));
     }
 
-    const loadedItems: SaleItem[] = (sale.items || []).map((i: any) => ({
+    const loadedItems: SaleItem[] = (sale.items || []).map((i: SaleItemRow) => ({
       product_id:      i.product_id,
       product_name:    pMap.get(i.product_id) || "Unknown Product",
       qty:             i.qty,
@@ -325,7 +327,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
 
       const lastEditedBy = userRole === "staff" && mechanicId ? mechanicId : 0;
 
-      const salePayload: any = {
+      const salePayload: DbRow = {
         client_id:        selectedClient || null,
         payment_mode:     paymentMode,
         remarks:          remarks.trim() || null,
@@ -390,8 +392,8 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
       }
 
       router.push(`/direct-sales/${resultId}/view`);
-    } catch (err: any) {
-      setFormError("Save failed: " + (err?.message || "Unknown error"));
+    } catch (err) {
+      setFormError("Save failed: " + (err instanceof Error ? err.message : "Unknown error"));
     } finally {
       setSaving(false);
     }

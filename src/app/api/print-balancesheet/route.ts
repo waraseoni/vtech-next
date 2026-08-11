@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireStaff } from "@/lib/api-auth";
 import { pageAll } from "@/lib/fetch-all";
@@ -7,11 +7,11 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env
 
 const SHOP = {
   name: "V-Technologies",
-  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
+  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur â€“ 482002",
   mobile: "9179105875",
 };
 
-const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const inr = (n: number) => "â‚¹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 function fmtDate(iso: string): string {
   return new Intl.DateTimeFormat("en-IN", {
@@ -34,14 +34,14 @@ export async function GET(request: NextRequest) {
     allTxnsRes,
     periodTxnsRes,
     allPaymentsRes,
-    periodPaymentsRes,
+    ,
     allAttendanceRes,
     periodAttendanceRes,
     allAdvancesRes,
-    periodAdvancesRes,
+    ,
     inventoryRes,
     directSalesRes,
-    allExpensesRes,
+    ,
     periodExpensesRes,
     loanPaymentsRes,
   ] = await Promise.all([
@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
     pageAll(supabase.from('mechanic_list').select('id, firstname, middlename, lastname, daily_salary, commission_percent').eq('delete_flag', 0)),
     pageAll(supabase.from('product_list').select('id, name, description, price').eq('delete_flag', 0)),
     pageAll(supabase.from('lender_list').select('*').eq('delete_flag', 0)),
-    pageAll(supabase.from('transaction_list').select('id, client_name, amount, date_completed, status').eq('status', 5)),
-    pageAll(supabase.from('transaction_list').select('id, client_name, amount, date_completed, status').eq('status', 5).eq('del_status', 0).gte('date_completed', `${from} 00:00:00`).lte('date_completed', `${to} 23:59:59`)),
+    pageAll(supabase.from('transaction_list').select('id, client_name, amount, date_completed, status, mechanic_id, mechanic_commission_amount').eq('status', 5)),
+    pageAll(supabase.from('transaction_list').select('id, client_name, amount, date_completed, status, mechanic_id, mechanic_commission_amount').eq('status', 5).eq('del_status', 0).gte('date_completed', `${from} 00:00:00`).lte('date_completed', `${to} 23:59:59`)),
     pageAll(supabase.from('client_payments').select('id, client_id, amount, discount, payment_date')),
     pageAll(supabase.from('client_payments').select('id, client_id, amount, discount, payment_date').gte('payment_date', from).lte('payment_date', to)),
     pageAll(supabase.from('attendance_list').select('mechanic_id, curr_date, status')),
@@ -67,19 +67,15 @@ export async function GET(request: NextRequest) {
   const allTxns = allTxnsRes.data || [];
   const periodTxns = periodTxnsRes.data || [];
   const allPayments = allPaymentsRes.data || [];
-  const periodPayments = periodPaymentsRes.data || [];
   const allAttendance = allAttendanceRes.data || [];
   const periodAttendance = periodAttendanceRes.data || [];
   const allAdvances = allAdvancesRes.data || [];
-  const periodAdvances = periodAdvancesRes.data || [];
   const inventory = inventoryRes.data || [];
-  const directSales = directSalesRes.data || [];
-  const allExpenses = allExpensesRes.data || [];
   const periodExpenses = periodExpensesRes.data || [];
   const loanPayments = loanPaymentsRes.data || [];
 
-  const clientMap: Record<number, any> = {};
-  (clients || []).forEach((c: any) => {
+  const clientMap: Record<number, { name: string; contact: string; ob: number }> = {};
+  (clients || []).forEach((c) => {
     clientMap[c.id] = {
       name: `${c.firstname} ${c.middlename || ''} ${c.lastname || ''}`.trim(),
       contact: c.contact,
@@ -87,8 +83,8 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  const mechMap: Record<number, any> = {};
-  (mechanics || []).forEach((m: any) => {
+  const mechMap: Record<number, { name: string; salary: number; comm: number }> = {};
+  (mechanics || []).forEach((m) => {
     mechMap[m.id] = {
       name: `${m.firstname} ${m.middlename || ''} ${m.lastname || ''}`.trim(),
       salary: m.daily_salary || 0,
@@ -96,33 +92,33 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  const prodMap: Record<number, any> = {};
-  (products || []).forEach((p: any) => {
+  const prodMap: Record<number, { name: string; price: number }> = {};
+  (products || []).forEach((p) => {
     prodMap[p.id] = { name: p.name, price: p.price || 0 };
   });
 
-  const lenderMap: Record<number, any> = {};
-  (lenders || []).forEach((l: any) => {
+  const lenderMap: Record<number, { name: string; amount: number; rate: number }> = {};
+  (lenders || []).forEach((l) => {
     lenderMap[l.id] = { name: l.lender_name, amount: l.loan_amount || 0, rate: l.interest_rate || 0 };
   });
 
   const invMap: Record<number, number> = {};
-  (inventory || []).forEach((i: any) => { invMap[i.product_id] = i.quantity || 0; });
+  (inventory || []).forEach((i) => { invMap[i.product_id] = i.quantity || 0; });
 
-  const totalIncome = periodTxns.reduce((s: number, t: any) => s + (t.amount || 0), 0) + (directSalesRes.data || []).filter((d: any) => d.date_created >= `${from}T00:00:00` && d.date_created <= `${to}T23:59:59`).reduce((s: number, d: any) => s + (d.total_amount || 0), 0);
-  const totalExpenses = periodExpenses.reduce((s: number, e: any) => s + (e.amount || 0), 0);
+  const totalIncome = periodTxns.reduce((s: number, t) => s + (t.amount || 0), 0) + (directSalesRes.data || []).filter((d) => d.date_created >= `${from}T00:00:00` && d.date_created <= `${to}T23:59:59`).reduce((s: number, d) => s + (d.total_amount || 0), 0);
+  const totalExpenses = periodExpenses.reduce((s: number, e) => s + (e.amount || 0), 0);
   const netProfit = totalIncome - totalExpenses;
 
-  const totalStockValue = (products || []).reduce((s: number, p: any) => s + ((prodMap[p.id]?.price || 0) * (invMap[p.id] || 0)), 0);
+  const totalStockValue = (products || []).reduce((s: number, p) => s + ((prodMap[p.id]?.price || 0) * (invMap[p.id] || 0)), 0);
 
   let totalMechBalance = 0;
   const mechBalances: { name: string; balance: number }[] = [];
   for (const m of mechanics || []) {
-    const worked = (allAttendance || []).filter((a: any) => a.mechanic_id === m.id).length;
-    const daysWorked = (periodAttendance || []).filter((a: any) => a.mechanic_id === m.id).length;
+    const worked = (allAttendance || []).filter((a) => a.mechanic_id === m.id).length;
+    const daysWorked = (periodAttendance || []).filter((a) => a.mechanic_id === m.id).length;
     const salary = (m.daily_salary || 0) * (worked + daysWorked * 0.5);
-    const comm = (allTxns || []).filter((t: any) => t.mechanic_id === m.id).reduce((s: number, t: any) => s + (t.mechanic_commission_amount || 0), 0);
-    const adv = (allAdvances || []).filter((a: any) => a.mechanic_id === m.id).reduce((s: number, a: any) => s + (a.amount || 0), 0);
+    const comm = (allTxns || []).filter((t) => t.mechanic_id === m.id).reduce((s: number, t) => s + (t.mechanic_commission_amount || 0), 0);
+    const adv = (allAdvances || []).filter((a) => a.mechanic_id === m.id).reduce((s: number, a) => s + (a.amount || 0), 0);
     const balance = salary + comm - adv;
     totalMechBalance += balance;
     if (balance !== 0) mechBalances.push({ name: mechMap[m.id]?.name || 'Unknown', balance });
@@ -131,7 +127,7 @@ export async function GET(request: NextRequest) {
   let totalLoanBalance = 0;
   const loanData: { name: string; amount: number; paid: number; balance: number }[] = [];
   for (const l of lenders || []) {
-    const paid = (loanPayments || []).filter((p: any) => p.lender_id === l.id).reduce((s: number, p: any) => s + (p.amount_paid || 0), 0);
+    const paid = (loanPayments || []).filter((p) => p.lender_id === l.id).reduce((s: number, p) => s + (p.amount_paid || 0), 0);
     const balance = (l.loan_amount || 0) - paid;
     totalLoanBalance += balance;
     if (balance !== 0) loanData.push({ name: l.lender_name, amount: l.loan_amount || 0, paid, balance });
@@ -139,13 +135,13 @@ export async function GET(request: NextRequest) {
 
   const customerLedger: { name: string; ob: number; repair: number; payment: number; balance: number }[] = [];
   for (const c of clients || []) {
-    const repair = (allTxns || []).filter((t: any) => t.client_name === c.id).reduce((s: number, t: any) => s + (t.amount || 0), 0);
-    const payment = (allPayments || []).filter((p: any) => p.client_id === c.id).reduce((s: number, p: any) => s + (p.amount || 0) + (p.discount || 0), 0);
+    const repair = (allTxns || []).filter((t) => t.client_name === c.id).reduce((s: number, t) => s + (t.amount || 0), 0);
+    const payment = (allPayments || []).filter((p) => p.client_id === c.id).reduce((s: number, p) => s + (p.amount || 0) + (p.discount || 0), 0);
     const balance = (c.opening_balance || 0) + repair - payment;
     if (balance !== 0) customerLedger.push({ name: clientMap[c.id]?.name || 'Unknown', ob: c.opening_balance || 0, repair, payment, balance });
   }
 
-  const expenseByCategory = periodExpenses.reduce((acc: Record<string, number>, e: any) => {
+  const expenseByCategory = periodExpenses.reduce((acc: Record<string, number>, e) => {
     acc[e.category || 'Other'] = (acc[e.category || 'Other'] || 0) + (e.amount || 0);
     return acc;
   }, {} as Record<string, number>);
@@ -197,7 +193,7 @@ export async function GET(request: NextRequest) {
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Balance Sheet — ${dateRangeLabel}</title>
+  <title>Balance Sheet â€” ${dateRangeLabel}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Arial,sans-serif;font-size:13px;background:#f0f2f5;padding:20px;color:#212529}
@@ -233,7 +229,7 @@ export async function GET(request: NextRequest) {
 <div class="wrap">
   <div class="card">
     <div class="hdr">
-      <h1>📊 ${SHOP.name} — Balance Sheet</h1>
+      <h1>ðŸ“Š ${SHOP.name} â€” Balance Sheet</h1>
       <p>Period: ${dateRangeLabel} | Generated: ${fmtDate(new Date().toISOString())} | ${SHOP.mobile}</p>
     </div>
     <div class="stats">
@@ -327,8 +323,8 @@ export async function GET(request: NextRequest) {
 
   <div class="card">
     <div class="actions">
-      <button onclick="window.print()" class="btn btn-print">🖨 Print</button>
-      <button onclick="window.close()" class="btn btn-close">✕ Close</button>
+      <button onclick="window.print()" class="btn btn-print">ðŸ–¨ Print</button>
+      <button onclick="window.close()" class="btn btn-close">âœ• Close</button>
     </div>
   </div>
   <div class="footer">${SHOP.name} | ${SHOP.address} | ${SHOP.mobile}</div>

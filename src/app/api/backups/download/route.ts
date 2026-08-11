@@ -4,7 +4,6 @@ import path from "node:path";
 import { requireAdmin } from "@/lib/api-auth";
 
 const rootDir = process.cwd();
-const mariadbDir = path.join(rootDir, "php-ref", "db");
 const ALLOWED = ["vikram_db_supabase.txt"];
 
 function safeResolve(relativePath: string) {

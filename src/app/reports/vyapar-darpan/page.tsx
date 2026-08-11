@@ -13,6 +13,8 @@ import Link from "next/link";
 const inr = (n: number) =>
   "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+type DbRow = ReturnType<typeof JSON.parse>;
+
 function VyaparDarpanContent() {
   const searchParams = useSearchParams();
   const router       = useRouter();
@@ -92,8 +94,8 @@ function VyaparDarpanContent() {
       const {data: soldAll} = await pageAll(supabase.from("transaction_products").select("product_id, qty"));
       const {data: dsAll} = await pageAll(supabase.from("direct_sale_items").select("product_id, qty"));
       
-      const invMap: any = {}; (invAll || []).forEach(r => invMap[r.product_id] = (invMap[r.product_id] || 0) + (r.quantity || 0));
-      const soldMap: any = {}; 
+      const invMap: Record<number, number> = {}; (invAll || []).forEach(r => invMap[r.product_id] = (invMap[r.product_id] || 0) + (r.quantity || 0));
+      const soldMap: Record<number, number> = {}; 
       (soldAll || []).forEach(r => soldMap[r.product_id] = (soldMap[r.product_id] || 0) + (r.qty || 0));
       (dsAll || []).forEach(r => soldMap[r.product_id] = (soldMap[r.product_id] || 0) + (r.qty || 0));
       
@@ -105,7 +107,7 @@ function VyaparDarpanContent() {
 
       // Calculate Debt
       let loanPending = 0;
-      const paysByLender: any = {};
+      const paysByLender: Record<number, number> = {};
       (loanPaysRes.data || []).forEach(p => paysByLender[p.lender_id] = (paysByLender[p.lender_id] || 0) + (p.amount_paid || 0));
       (lendersRes.data || []).forEach(l => {
           loanPending += ((l.loan_amount || 0) - (paysByLender[l.id] || 0));
@@ -113,7 +115,7 @@ function VyaparDarpanContent() {
 
       // Calculate Salary
       let salaryTotal = 0;
-      (salaryRes.data || []).forEach((a: any) => {
+      (salaryRes.data || []).forEach((a: DbRow) => {
           const daily = a.mechanic_list?.daily_salary || 0;
           if (a.status === 1) salaryTotal += daily;
           else if (a.status === 3) salaryTotal += (daily / 2);

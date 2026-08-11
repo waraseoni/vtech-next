@@ -6,8 +6,25 @@ import { LogIn, Mail, Lock, Loader2, ShieldCheck, Eye, EyeOff, AlertCircle, Glob
 
 type Tab = "staff" | "client";
 
+function TabButton({ t, icon, label, active, onSelect }: { t: Tab; icon: React.ReactNode; label: string; active: boolean; onSelect: (t: Tab) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(t)}
+      className={`flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+        active
+          ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
+          : "bg-[#111520] text-slate-500 hover:text-slate-300"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
 export default function LoginPage() {
-  const router = useRouter();
+  useRouter();
   const [tab,          setTab]          = useState<Tab>("staff");
   const [email,        setEmail]        = useState("");
   const [password,     setPassword]     = useState("");
@@ -27,6 +44,7 @@ export default function LoginPage() {
     const savedEmail    = localStorage.getItem("vtech_email");
     const savedRemember = localStorage.getItem("vtech_remember") === "true";
     if (savedRemember && savedEmail) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage SSR me exist nahi karta; mount-time init hi sahi hai
       setEmail(savedEmail);
       setRememberMe(true);
     }
@@ -37,6 +55,7 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const reason = params.get("reason");
     if (reason === "revoked") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- URL params sirf browser me hote hain; render me read nahi kar sakte
       setTab("client");
       setError("Aapki portal access band kar di gayi hai. Dobara access ke liye shop se sampark karein.");
     } else if (reason === "idle") {
@@ -143,21 +162,6 @@ export default function LoginPage() {
     setOtp("");
   };
 
-  const TabButton = ({ t, icon, label }: { t: Tab; icon: React.ReactNode; label: string }) => (
-    <button
-      type="button"
-      onClick={() => switchTab(t)}
-      className={`flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-        tab === t
-          ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
-          : "bg-[#111520] text-slate-500 hover:text-slate-300"
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-
   return (
     <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-4">
       {/* Background glow */}
@@ -184,8 +188,8 @@ export default function LoginPage() {
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-7 shadow-2xl">
           {/* Tabs */}
           <div className="flex gap-2 mb-6">
-            <TabButton t="staff"  icon={<UserRound size={13} />} label="Staff" />
-            <TabButton t="client" icon={<Smartphone size={13} />} label="Client" />
+            <TabButton t="staff"  icon={<UserRound size={13} />} label="Staff" active={tab === "staff"} onSelect={switchTab} />
+            <TabButton t="client" icon={<Smartphone size={13} />} label="Client" active={tab === "client"} onSelect={switchTab} />
           </div>
 
           <div className="mb-5">

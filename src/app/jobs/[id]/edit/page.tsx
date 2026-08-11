@@ -214,26 +214,26 @@ export default function ManageJobPage({
         .from("transaction_list")
         .select("id")
         .eq("status", 4);
-      const cancelledIds = new Set((cancelledJobs || []).map((j: any) => j.id));
+      const cancelledIds = new Set((cancelledJobs || []).map(j => j.id));
 
       // Build lookup maps
       const invMap: Record<number, number> = {};
-      (invData || []).forEach((r: any) => {
+      (invData || []).forEach(r => {
         invMap[r.product_id] = (invMap[r.product_id] || 0) + (r.quantity || 0);
       });
 
       const jobSoldMap: Record<number, number> = {};
-      (tpData || []).forEach((r: any) => {
+      (tpData || []).forEach(r => {
         if (!cancelledIds.has(r.transaction_id))
           jobSoldMap[r.product_id] = (jobSoldMap[r.product_id] || 0) + (r.qty || 0);
       });
 
       const saleSoldMap: Record<number, number> = {};
-      (dsiData || []).forEach((r: any) => {
+      (dsiData || []).forEach(r => {
         saleSoldMap[r.product_id] = (saleSoldMap[r.product_id] || 0) + (r.qty || 0);
       });
 
-      const withStock: Product[] = (pData || []).map((p: any) => ({
+      const withStock: Product[] = (pData || []).map(p => ({
         id:              p.id,
         name:            p.name,
         price:           p.price,
@@ -305,8 +305,8 @@ export default function ManageJobPage({
           price:        p.price        ?? 0,
         })));
 
-      } catch (err: any) {
-        console.error("load job:", err?.message ?? JSON.stringify(err));
+      } catch (e) {
+        console.error("load job:", e instanceof Error ? e.message : JSON.stringify(e));
         setToast({ type: "error", msg: "Job load karne mein galti!" });
         router.push("/jobs");
       } finally {
@@ -374,9 +374,9 @@ export default function ManageJobPage({
       setNewClientForm({ firstname: "", middlename: "", lastname: "", contact: "", email: "", address: "" });
       setToast({ type: "success", msg: "Naya client add ho gaya! ✅" });
 
-    } catch (err: any) {
-      console.error("save client error:", err?.message ?? err);
-      setToast({ type: "error", msg: "Client save nahi hua: " + (err?.message ?? "Unknown error") });
+    } catch (e) {
+      console.error("save client error:", e instanceof Error ? e.message : e);
+      setToast({ type: "error", msg: "Client save nahi hua: " + (e instanceof Error ? e.message : "Unknown error") });
     } finally {
       setSavingClient(false);
     }
@@ -583,9 +583,9 @@ export default function ManageJobPage({
       setToast({ type: "success", msg: isEdit ? "Job update ho gaya! ✅" : "Naya job create ho gaya! ✅" });
       setTimeout(() => router.push(`/jobs/${txnId}/view`), 1000);
 
-    } catch (err: any) {
-      console.error("save error:", err?.message ?? JSON.stringify(err));
-      setToast({ type: "error", msg: err?.message ?? "Save karne mein galti!" });
+    } catch (e) {
+      console.error("save error:", e instanceof Error ? e.message : JSON.stringify(e));
+      setToast({ type: "error", msg: e instanceof Error ? e.message : "Save karne mein galti!" });
     } finally {
       setSaving(false);
     }

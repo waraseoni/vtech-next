@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
-  CalendarClock, Search, Filter, MessageCircle, Loader2, ArrowLeft,
+  CalendarClock, Search, MessageCircle, Loader2, ArrowLeft,
   AlertTriangle, CalendarOff, Clock, CheckCircle2, Calendar, X, ExternalLink, Save,
 } from "lucide-react";
 import Link from "next/link";
@@ -97,8 +97,6 @@ function DueRemindersContent() {
       if (error) throw error;
       if (!clients || clients.length === 0) { setRows([]); return; }
 
-      const ids = clients.map(c => c.id);
-
       // Aggregates (batch, paginated to bypass the 1000-row PostgREST cap)
       const [repairs, sales, loans, payments, reminders] = await Promise.all([
         pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
@@ -108,7 +106,7 @@ function DueRemindersContent() {
         pageAll(supabase.from("payment_reminders").select("client_id, reminder_date")),
       ]);
 
-      const sumBy = (arr: any[] | null, key: string, valFn: (r: any) => number) => {
+      const sumBy = (arr: ReturnType<typeof JSON.parse>[] | null, key: string, valFn: (r: ReturnType<typeof JSON.parse>) => number) => {
         const m = new Map<number, number>();
         (arr || []).forEach(r => {
           const id = Number(r[key]);
@@ -257,8 +255,8 @@ function DueRemindersContent() {
       if (error) throw error;
       setDueModal(null);
       fetchData();
-    } catch (err: any) {
-      alert("Error: " + err.message);
+    } catch (err) {
+      alert("Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSavingDue(false);
     }

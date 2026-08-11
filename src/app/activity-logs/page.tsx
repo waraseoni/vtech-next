@@ -2,9 +2,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import {
-  History, Search, Loader2, Calendar, User, Info,
-  ChevronLeft, ChevronRight, Filter, X, Smartphone,
-  UserCog, Package, LayoutDashboard, ShoppingCart, Banknote
+  History, Search, Loader2, User, Info,
+  ChevronLeft, ChevronRight, X,
+  UserCog, Package, ShoppingCart
 } from "lucide-react";
 import { formatIST } from "@/lib/dateUtils";
 

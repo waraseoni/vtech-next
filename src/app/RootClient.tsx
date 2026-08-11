@@ -5,12 +5,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
-  LayoutDashboard, Users, Package, Settings, Wrench, Search, Phone,
+  LayoutDashboard, Users, Package, Settings, Wrench, Search,
   User, LogOut, Sparkles, Loader2, ShieldCheck, CalendarCheck,
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
   DollarSign, Truck, CreditCard, Clock, Briefcase, Coins, Receipt,
   Toolbox, FolderOpen, UsersRound, Database, Settings2, MessageSquare,
-  ChevronDown, ChevronRight, X, Menu, ArrowLeft, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert,
+  ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert,
 } from "lucide-react";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
@@ -502,7 +502,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // loader isliye atka nahi hai. (8s watchdog tabhi reload karta hai jab ye
   // set NAHIN hota — matlab hydration hi fail ho gaya tha.)
   useEffect(() => {
-    try { (window as any).__VTECH_BOOTED__ = true; } catch { /* ignore */ }
+    try { (window as unknown as { __VTECH_BOOTED__: boolean }).__VTECH_BOOTED__ = true; } catch { /* ignore */ }
   }, []);
 
   // BUG FIX: loader (V-TECH Secure Boot) atak jata hai jab stale SW cache purana

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
   ShieldAlert, Loader2, RefreshCw, Unlock, Search,
-  CheckCircle, AlertCircle, Ban, Timer,
+  CheckCircle, AlertCircle, Timer,
 } from "lucide-react";
 
 interface ThrottleRow {

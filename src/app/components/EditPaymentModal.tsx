@@ -3,10 +3,18 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X } from 'lucide-react';
 
-export default function EditPaymentModal({ paymentId, onClose, onSaved }: any) {
-  const [payment, setPayment] = useState<any>(null);
+type DbRow = ReturnType<typeof JSON.parse>;
+
+interface EditPaymentModalProps {
+  paymentId: number;
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+export default function EditPaymentModal({ paymentId, onClose, onSaved }: EditPaymentModalProps) {
+  const [, setPayment] = useState<DbRow | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [, setSaving] = useState(false);
 
   // Form fields
   const [amount, setAmount] = useState('');
@@ -54,8 +62,8 @@ export default function EditPaymentModal({ paymentId, onClose, onSaved }: any) {
       if (error) throw error;
       onSaved();
       onClose();
-    } catch (err: any) {
-      alert('Error: ' + err.message);
+    } catch (err) {
+      alert('Error: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -68,8 +76,8 @@ export default function EditPaymentModal({ paymentId, onClose, onSaved }: any) {
       await supabase.from('client_payments').delete().eq('id', paymentId);
       onSaved();
       onClose();
-    } catch (err: any) {
-      alert('Error: ' + err.message);
+    } catch (err) {
+      alert('Error: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 

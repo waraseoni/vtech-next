@@ -7,7 +7,7 @@ import { numberToWords } from "@/lib/utils";
 import { substituteTemplate, firmVars } from "@/lib/whatsapp";
 import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
 import {
-  ArrowLeft, Edit3, Printer, Phone, User, Loader2,
+  ArrowLeft, Edit3, Printer, Phone, User,
   ShoppingBag, MapPin, Calendar, Clock, Hash, UserCog,
   Package, IndianRupee, Banknote, CreditCard, Smartphone,
   Building2, ChevronRight, CheckCircle2, Send, FileText,
@@ -116,13 +116,13 @@ export default function ViewSalePage() {
       const editorName = sd.last_edited_by === 0 ? "Admin"
         : editorRes.data ? `${editorRes.data.firstname} ${editorRes.data.lastname}` : null;
 
-      const productIds = (itemsRes.data || []).map((i: any) => i.product_id);
+      const productIds = (itemsRes.data || []).map((i) => i.product_id);
       const pMap = new Map<number, string>();
       if (productIds.length) {
         const { data: prods } = await supabase.from("product_list").select("id, name").in("id", productIds);
-        prods?.forEach((p: any) => pMap.set(p.id, p.name));
+        prods?.forEach((p) => pMap.set(p.id, p.name));
       }
-      const items: SaleItem[] = (itemsRes.data || []).map((i: any) => ({
+      const items: SaleItem[] = (itemsRes.data || []).map((i) => ({
         ...i, product_name: pMap.get(i.product_id) || "Unknown", total: i.qty * i.price,
       }));
 

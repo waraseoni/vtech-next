@@ -4,8 +4,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
-  ArrowLeft, Package, Plus, Edit3, Trash2, Loader2,
-  TrendingDown, TrendingUp, Boxes, MapPin, Calendar,
+  ArrowLeft, Package, Plus, Edit3, Trash2,
+  Boxes, MapPin, Calendar,
   Wrench, ShoppingCart, IndianRupee, BarChart3, Hash,
   ArrowDownToLine, ArrowUpFromLine, ExternalLink, Info,
   ChevronRight, Zap, CircleDot,
@@ -62,12 +62,6 @@ const getStockStatus = (avail: number) => {
 
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-
-const fmtDateTime = (d: string) =>
-  new Date(d).toLocaleString("en-IN", {
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
-  });
 
 // ─── Mini radial-like progress ring using SVG ─────────────────────────────────
 function StockRing({ available, totalIn }: { available: number; totalIn: number }) {
@@ -220,7 +214,6 @@ export default function ProductDetailPage() {
 
   // ── Computed ───────────────────────────────────────────────────────────────
   const st  = getStockStatus(stats.available);
-  const pct = stats.totalIn > 0 ? Math.max(0, Math.min(100, (stats.available / stats.totalIn) * 100)) : 0;
 
   // Monthly movement chart data (last 6 months)
   const monthlyOut = useMemo(() => {

@@ -1,5 +1,5 @@
 # Client Portal Plan (Client Login → Sirf Apni Details)
-*Created: 08 Aug 2026 · Status: ✅ COMPLETE + USER-TESTED (10 Aug) — SQL applied, Gmail SMTP set, client OTP login verified, admin toggle ON/OFF verified · Updated: 10 Aug 2026*
+*Created: 08 Aug 2026 · Status: ✅ COMPLETE — fully user-tested + OTP login with working email verified + admin portal toggle ON/OFF tested (11 Aug 2026). Completed task record → `completed_tasks.md`.*
 *✅ 10 Aug (USER TESTED): SQL run kiya, Gmail SMTP set kiya, client email se OTP generate kiya, OTP se login kiya, admin se portal access ON/OFF toggle karke check kiya — SAB SAHI KAAM KAR RAHA HAI.*
 *✅ 10 Aug (live verify): `profiles_role_check` me `client` ALREADY present (role=client upsert OK). `client_list.login_allowed` ✅, `profiles.client_id` ✅, RLS transaction_list + client_payments CLOSED ✅. Section 5 migration applied tha — plan item #5/#108 outdated.*
 *⚠️ 10 Aug (data audit): Portal-enabled clients sirf 2 — #79 `hemantmehra0316@gmail.com` (email OK) aur #196 `Nihal Dehriya Palari` (email EMPTY → OTP kabhi nahi jayega). 450 clients me ~350 ke paas email hi nahi. Kaun-se clients portal payenge + unke emails — business owner ka decision hai (main invent nahi kar sakta).*

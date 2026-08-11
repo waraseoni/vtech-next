@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, type FunctionDeclaration } from "@google/generative-ai";
 import { geminiTools, executeGeminiTool, buildSystemPrompt, type AiRole } from "./gemini-tools";
 
 export type ChatMessage = {
@@ -24,7 +24,7 @@ export async function getChatResponse(
   try {
     const model = genAI.getGenerativeModel({ 
       model: modelId,
-      tools: [{ functionDeclarations: geminiTools }],
+      tools: [{ functionDeclarations: geminiTools as FunctionDeclaration[] }],
       systemInstruction: systemInstruction
     });
 
@@ -78,10 +78,10 @@ export async function getChatResponse(
     }
 
     return result.response.text();
-  } catch (error: any) {
+  } catch (error) {
     console.error("Gemini Execution Error:", error);
     
-    const errorMessage = error.message || JSON.stringify(error);
+    const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
     
     // Rate limit hit / quota exceeded
     if (errorMessage.includes("429") || errorMessage.includes("Too Many Requests") || errorMessage.includes("quota")) {
@@ -97,7 +97,7 @@ export async function getChatResponse(
   }
 }
 
-export async function generateWhatsAppReply(msg: string, customerName?: string, context?: any, apiKey?: string, modelName?: string) {
+export async function generateWhatsAppReply(msg: string, customerName?: string, context?: unknown, apiKey?: string, modelName?: string) {
   const prompt = `Generate a polite and professional WhatsApp reply for this message: "${msg}". Customer Name: ${customerName || 'Unknown'}. Context provided: ${JSON.stringify(context || {})}`;
   return await getChatResponse([{ role: "user", content: prompt }], apiKey, modelName);
 }

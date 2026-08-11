@@ -4,11 +4,11 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
-  Plus, Search, Loader2, Eye, Edit3, Trash2, Filter, X,
+  Plus, Search, Eye, Edit3, Trash2, Filter, X,
   ChevronLeft, ChevronRight, Printer, FileSpreadsheet,
-  Phone, User, ShoppingBag, IndianRupee, TrendingUp,
-  Banknote, CreditCard, Smartphone, Building2, BarChart3,
-  CalendarDays, Send, Hash, Clock, ChevronDown,
+  User, ShoppingBag, IndianRupee, TrendingUp,
+  Banknote, Smartphone, BarChart3,
+  CalendarDays, Send, Clock,
 } from "lucide-react";
 import { todayIST, startOfMonthIST, endOfMonthIST, formatIST, parseISTDate } from "@/lib/dateUtils";
 import { logActivity } from "@/lib/activity";
@@ -30,7 +30,7 @@ interface DirectSale {
 }
 
 // ─── Configuration ────────────────────────────────────────────────────────────
-const PAYMENT_CONFIG: Record<string, { icon: any; color: string; bg: string; border: string }> = {
+const PAYMENT_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string; border: string }> = {
   Cash: { icon: Banknote, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/25" },
   UPI:  { icon: Smartphone, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/25" },
 };
@@ -40,7 +40,6 @@ const getPayConfig = (mode: string) =>
 
 const fmtDate     = (d: string) => formatIST(d, { day: "2-digit", month: "short", year: "numeric" });
 const fmtDateTime = (d: string) => formatIST(d, { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit", hour12: true });
-const money       = (v: number) => "₹" + (v || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 // ─── Payment Badge ────────────────────────────────────────────────────────────
 const PayBadge = ({ mode }: { mode: string }) => {
@@ -135,12 +134,12 @@ function DirectSalesPageInner() {
         editorIds.length  ? supabase.from("mechanic_list").select("id, firstname, lastname").in("id", editorIds) : Promise.resolve({ data: [] }),
       ]);
 
-      const cMap = new Map((clientsRes.data || []).map((c: any) => [c.id, {
+      const cMap = new Map((clientsRes.data || []).map((c) => [c.id, {
         name: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" "),
         contact: c.contact, image_path: c.image_path,
       }]));
-      const mMap = new Map((mechsRes.data   || []).map((m: any) => [m.id, `${m.firstname} ${m.lastname}`]));
-      const eMap = new Map((editorsRes.data || []).map((e: any) => [e.id, `${e.firstname} ${e.lastname}`]));
+      const mMap = new Map((mechsRes.data   || []).map((m) => [m.id, `${m.firstname} ${m.lastname}`]));
+      const eMap = new Map((editorsRes.data || []).map((e) => [e.id, `${e.firstname} ${e.lastname}`]));
 
       const formatted: DirectSale[] = salesData.map(s => {
         const c = cMap.get(s.client_id);
@@ -343,8 +342,6 @@ function DirectSalesPageInner() {
         {/* Mobile cards */}
         <div className="px-3 pt-3 space-y-2.5">
           {filteredSales.map(s => {
-            const pc = getPayConfig(s.payment_mode);
-            const PI = pc.icon;
             return (
               <div key={s.id} className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
                 <div className={`h-0.5 w-full ${

@@ -190,9 +190,9 @@ export default function AddDirectSalePage({
       // BUG FIX: router.replace instead of push+refresh (avoids unmount warning)
       setTimeout(() => router.replace(`/clients/${clientId}/view`), 1000);
 
-    } catch (err: any) {
-      console.error("sale error:", err?.message ?? JSON.stringify(err));
-      setToast({ type: "error", msg: err?.message ?? "Sale save karne mein galti!" });
+    } catch (err) {
+      console.error("sale error:", err instanceof Error ? err.message : JSON.stringify(err));
+      setToast({ type: "error", msg: err instanceof Error ? err.message : "Sale save karne mein galti!" });
     } finally {
       setLoading(false);
     }

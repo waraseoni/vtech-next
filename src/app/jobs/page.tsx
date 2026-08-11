@@ -20,7 +20,7 @@
 // ✅ remark field added to Transaction type + displayed in mobile card
 // ═══════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect, useMemo, useCallback, Suspense, useRef } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -30,7 +30,7 @@ import {
   Filter, Printer, FileSpreadsheet, History, Layers,
   ChevronLeft, ChevronRight, AlertCircle, ChevronDown, X,
   TrendingUp, Clock, CheckCircle2, IndianRupee, MessageSquare,
-  Square, CheckSquare, Zap, GitBranch, ArrowRight, User, PenSquare,
+  Square, CheckSquare, Zap, ArrowRight, User, PenSquare,
   FileText, Copy, Send, MessageCircle, Truck, LayoutGrid, List,
 } from "lucide-react";
 import { substituteTemplate, firmVars } from "@/lib/whatsapp";
@@ -157,7 +157,6 @@ function JobsListContent() {
 
   // Dropdown
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // FAB (mobile)
   const [fabOpen, setFabOpen] = useState(false);
@@ -329,11 +328,11 @@ function JobsListContent() {
       }
 
       // Step 3: Fetch related data ONLY for the current page's clients (Extremely fast!)
-      const clientIdsNum = [...new Set(pageTxns.map((t: any) => Number(t.client_name)))];
+      const clientIdsNum = [...new Set(pageTxns.map(t => Number(t.client_name)))];
       const clientIdsStr = clientIdsNum.map(String);
 
       // Fetch status change timestamps from activity_logs
-      const jobIdList = pageTxns.map((t: any) => t.job_id).filter(Boolean);
+      const jobIdList = pageTxns.map(t => t.job_id).filter(Boolean);
       const logPromise = jobIdList.length > 0
         ? supabase
             .from("activity_logs")
@@ -356,7 +355,7 @@ function JobsListContent() {
 
       // Build latest status change map (activity_logs returns ordered desc, keep first per job)
       const statusChangeMap = new Map<string, string>();
-      for (const log of (logsRes as any)?.data || []) {
+      for (const log of logsRes?.data || []) {
         if (!statusChangeMap.has(log.meta_id)) {
           statusChangeMap.set(log.meta_id, log.date_created);
         }
@@ -377,7 +376,7 @@ function JobsListContent() {
       });
       const clientMap = new Map(clientsRes.data?.map(c => [c.id, c]) ?? []);
 
-      setTransactions(pageTxns.map((txn: any) => {
+      setTransactions(pageTxns.map(txn => {
         const cid    = Number(txn.client_name);
         const client = clientMap.get(cid);
         const statusDate = txn.status === 5 ? txn.date_completed
@@ -639,8 +638,8 @@ function JobsListContent() {
           .eq("status", 1)
           .order("firstname"),
       ]);
-      if (clientsRes.data) setQuickClients(clientsRes.data as any[]);
-      if (mechanicsRes.data) setQuickMechanics(mechanicsRes.data as any[]);
+      if (clientsRes.data) setQuickClients(clientsRes.data);
+      if (mechanicsRes.data) setQuickMechanics(mechanicsRes.data);
     };
     if (showQuickCreate) loadClientsAndMechanics();
   }, [showQuickCreate]);
@@ -699,8 +698,8 @@ function JobsListContent() {
       setQuickClientId(null);
       fetchTransactions();
       router.push(`/jobs/${data.id}/edit`);
-    } catch (err: any) {
-      alert("Error: " + (err?.message || "Unknown error"));
+    } catch (e) {
+      alert("Error: " + ((e instanceof Error && e.message) ? e.message : "Unknown error"));
     } finally {
       setQuickCreateLoading(false);
     }

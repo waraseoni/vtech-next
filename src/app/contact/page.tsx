@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import { Loader2, CheckCircle, Send } from "lucide-react";
+import { Loader2, CheckCircle } from "lucide-react";
 import Navbar from "../components/Navbar";
 
 export default function ContactPage() {
@@ -29,8 +29,8 @@ export default function ContactPage() {
         status: 0,
       }]);
       setSent(true);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSending(false);
     }

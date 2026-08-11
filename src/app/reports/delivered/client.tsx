@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import {
-  Package, Calendar, Users, TrendingUp, DollarSign, Printer,
+  Package, Users, TrendingUp, DollarSign, Printer,
   ChevronLeft, ChevronRight, RefreshCw, Eye, MessageCircle,
-  X, Loader2, Filter, CheckCircle2, ArrowUpDown, Receipt
+  X, Loader2, Filter, CheckCircle2, Receipt
 } from 'lucide-react';
-import { todayIST, formatIST, parseISTDate } from '@/lib/dateUtils';
+import { todayIST, formatIST } from '@/lib/dateUtils';
 
 type Transaction = {
   id: number;
@@ -75,7 +75,7 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
         .select('id, firstname, middlename, lastname')
         .order('firstname');
       if (data) {
-        setClientsList(data.map((c: any) => ({
+        setClientsList(data.map((c) => ({
           id: c.id,
           name: `${c.firstname} ${c.middlename || ''} ${c.lastname || ''}`.replace(/\s+/g, ' ').trim(),
         })));
@@ -126,8 +126,8 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
         clientIds.length > 0 ? supabase.from('direct_sales').select('client_id, total_amount').in('client_id', clientIds) : Promise.resolve({ data: [] }),
       ]);
 
-      const clientMap: Record<number, any> = {};
-      (clientsData || []).forEach((c: any) => {
+      const clientMap: Record<number, { name: string; contact: string; opening_balance: number }> = {};
+      (clientsData || []).forEach((c) => {
         clientMap[c.id] = {
           name: `${c.firstname} ${c.middlename || ''} ${c.lastname || ''}`.replace(/\s+/g, ' ').trim(),
           contact: c.contact || '',
@@ -136,17 +136,17 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
       });
 
       const billedMap: Record<number, number> = {};
-      (billedData || []).forEach((b: any) => {
+      (billedData || []).forEach((b) => {
         billedMap[b.client_name] = (billedMap[b.client_name] || 0) + (b.amount || 0);
       });
 
       const paidMap: Record<number, number> = {};
-      (paymentsData || []).forEach((p: any) => {
+      (paymentsData || []).forEach((p) => {
         paidMap[p.client_id] = (paidMap[p.client_id] || 0) + (p.amount || 0) + (p.discount || 0);
       });
 
       const salesMap: Record<number, number> = {};
-      (salesData || []).forEach((s: any) => {
+      (salesData || []).forEach((s) => {
         salesMap[s.client_id] = (salesMap[s.client_id] || 0) + (s.total_amount || 0);
       });
 
@@ -160,7 +160,7 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
       });
       setClientTotals(totals);
 
-      setTransactions(txData.map((t: any) => {
+      setTransactions(txData.map((t) => {
         const client = clientMap[t.client_name] || { name: 'Unknown', contact: '', opening_balance: 0 };
         return {
           id: t.id,

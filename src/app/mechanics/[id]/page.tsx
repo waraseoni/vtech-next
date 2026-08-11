@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
   Loader2, ArrowLeft, Calendar, DollarSign, TrendingUp, Users,
-  Wrench, FileText, Clock, CheckCircle, XCircle, AlertCircle,
-  ChevronLeft, ChevronRight, Eye, MessageSquare, Printer,
+  Wrench, FileText, Clock, CheckCircle, XCircle,
+  ChevronLeft, ChevronRight, MessageSquare, Printer,
   Camera, Trash2
 } from "lucide-react";
 import { compressImage } from "@/lib/imageCompression";
@@ -83,7 +83,7 @@ function StatCard({ icon, label, value, sub, color }: {
   );
 }
 
-import { todayIST, startOfMonthIST, endOfMonthIST, formatIST, parseISTDate } from "@/lib/dateUtils";
+import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate } from "@/lib/dateUtils";
 
 export default function MechanicDetailPage() {
   const params = useParams();

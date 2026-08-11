@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr';
+﻿import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { fetchAll, pageAll } from '@/lib/fetch-all';
@@ -33,11 +33,11 @@ export async function GET(request: Request) {
 
   try {
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     //  MASTER LOOKUP MAPS
     //  Supabase foreign key joins kaam nahi karte (schema cache mein nahi),
     //  isliye sab data pehle fetch karke manually map karo
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     const [
       { data: allClients },
@@ -52,12 +52,12 @@ export async function GET(request: Request) {
     ]);
 
     const clientMap: Record<number, { firstname: string; middlename: string; lastname: string }> = {};
-    allClients?.forEach((c: any) => {
+    allClients?.forEach((c) => {
       clientMap[c.id] = { firstname: c.firstname || '', middlename: c.middlename || '', lastname: c.lastname || '' };
     });
 
     const mechanicMap: Record<number, { firstname: string; lastname: string; daily: number }> = {};
-    allMechanics?.forEach((m: any) => {
+    allMechanics?.forEach((m) => {
       mechanicMap[m.id] = {
         firstname: m.firstname || '',
         lastname:  m.lastname  || '',
@@ -67,7 +67,7 @@ export async function GET(request: Request) {
 
     // Salary history (PHP: latest effective_date <= attendance date, else daily_salary)
     const salaryHistoryMap: Record<number, { effective_date: string; salary: number }[]> = {};
-    (salaryHistory || []).forEach((h: any) => {
+    (salaryHistory || []).forEach((h) => {
       if (!salaryHistoryMap[h.mechanic_id]) salaryHistoryMap[h.mechanic_id] = [];
       salaryHistoryMap[h.mechanic_id].push({
         effective_date: h.effective_date,
@@ -90,13 +90,13 @@ export async function GET(request: Request) {
     };
 
     const productMap: Record<number, { name: string; price: number }> = {};
-    allProducts?.forEach((p: any) => {
+    allProducts?.forEach((p) => {
       productMap[p.id] = { name: p.name || '', price: Number(p.price) || 0 };
     });
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  PARALLEL DATA FETCH — sab ek saath
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    //  PARALLEL DATA FETCH â€” sab ek saath
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     const [
       { data: repairJobsRaw },
@@ -114,7 +114,7 @@ export async function GET(request: Request) {
       { data: allAttRaw },
       { data: allAdvRaw },
     ] = await Promise.all([
-      // 1. Repair jobs (PHP: status=5 + date range — no del_status filter)
+      // 1. Repair jobs (PHP: status=5 + date range â€” no del_status filter)
       pageAll(supabase.from('transaction_list')
         .select('id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id')
         .eq('status', 5)
@@ -182,16 +182,16 @@ export async function GET(request: Request) {
       pageAll(supabase.from('advance_payments').select('mechanic_id, amount')),
     ]);
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  SALE ITEMS — walkin aur client sales ke liye alag fetch
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    //  SALE ITEMS â€” walkin aur client sales ke liye alag fetch
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     const allSaleIds = [
-      ...(walkinRaw || []).map((s: any) => s.id),
-      ...(clientSalesRaw || []).map((s: any) => s.id),
+      ...(walkinRaw || []).map((s) => s.id),
+      ...(clientSalesRaw || []).map((s) => s.id),
     ];
 
-    const saleItemsMap: Record<number, any[]> = {};
+    const saleItemsMap: Record<number, { product_id: number; qty: number; price: number }[]> = {};
     for (let i = 0; i < allSaleIds.length; i += 500) {
       const saleItems = await fetchAll(
         supabase
@@ -199,18 +199,18 @@ export async function GET(request: Request) {
           .select('sale_id, product_id, qty, price')
           .in('sale_id', allSaleIds.slice(i, i + 500))
       );
-      saleItems?.forEach((item: any) => {
+      saleItems?.forEach((item) => {
         if (!saleItemsMap[item.sale_id]) saleItemsMap[item.sale_id] = [];
         saleItemsMap[item.sale_id].push(item);
       });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     //  DATA SHAPING
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     // Repair Jobs
-    const repairJobs = (repairJobsRaw || []).map((j: any) => {
+    const repairJobs = (repairJobsRaw || []).map((j) => {
       const cid    = parseInt(j.client_name);
       const client = !isNaN(cid) ? clientMap[cid] : null;
       const mech   = mechanicMap[j.mechanic_id] || null;
@@ -230,7 +230,7 @@ export async function GET(request: Request) {
     });
 
     // Walk-in Sales
-    const walkinSales = (walkinRaw || []).map((s: any) => {
+    const walkinSales = (walkinRaw || []).map((s) => {
       const items     = saleItemsMap[s.id] || [];
       const firstItem = items[0];
       const prod      = firstItem ? productMap[firstItem.product_id] : null;
@@ -247,7 +247,7 @@ export async function GET(request: Request) {
     });
 
     // Client Sales
-    const clientSales = (clientSalesRaw || []).map((s: any) => {
+    const clientSales = (clientSalesRaw || []).map((s) => {
       const client    = clientMap[s.client_id] || null;
       const items     = saleItemsMap[s.id] || [];
       const firstItem = items[0];
@@ -267,7 +267,7 @@ export async function GET(request: Request) {
     });
 
     // Client Payments
-    const clientPayments = (clientPaymentsRaw || []).map((p: any) => {
+    const clientPayments = (clientPaymentsRaw || []).map((p) => {
       const client = clientMap[p.client_id] || null;
       return {
         id:               p.id,
@@ -283,7 +283,7 @@ export async function GET(request: Request) {
     });
 
     // Advance Payments
-    const advancePayments = (advancesRaw || []).map((a: any) => {
+    const advancePayments = (advancesRaw || []).map((a) => {
       const mech = mechanicMap[a.mechanic_id];
       return {
         date_paid:     a.date_paid,
@@ -295,7 +295,7 @@ export async function GET(request: Request) {
     });
 
     // Expenses
-    const expenses = (expensesRaw || []).map((e: any) => ({
+    const expenses = (expensesRaw || []).map((e) => ({
       date_created: e.date_created,
       category:     e.category,
       remarks:      e.remarks || '',
@@ -304,11 +304,11 @@ export async function GET(request: Request) {
       reference:    null,
     }));
 
-    // Stock Items (inventory_list → product_list manual join)
+    // Stock Items (inventory_list â†’ product_list manual join)
     // PHP Balance Sheet: SUM(p.price*i.quantity) over ALL inventory rows
     // PHP detail table: only quantity > 0 rows
     const stockSumMap: Record<number, number> = {};
-    (inventoryRaw || []).forEach((i: any) => {
+    (inventoryRaw || []).forEach((i) => {
       stockSumMap[i.product_id] = (stockSumMap[i.product_id] || 0) + (Number(i.quantity) || 0);
     });
     const stockValue = Object.entries(stockSumMap)
@@ -322,13 +322,13 @@ export async function GET(request: Request) {
       .filter(i => i.name !== '');
 
     // Loan Outstanding (all-time)
-    const totalLoan        = (lenders || []).reduce((s, l: any) => s + (Number(l.loan_amount) || 0), 0);
-    const totalLoanPaidAll = (allLoanPaid || []).reduce((s, l: any) => s + (Number(l.amount_paid) || 0), 0);
+    const totalLoan        = (lenders || []).reduce((s, l) => s + (Number(l.loan_amount) || 0), 0);
+    const totalLoanPaidAll = (allLoanPaid || []).reduce((s, l) => s + (Number(l.amount_paid) || 0), 0);
     const loanOutstanding  = Math.max(0, totalLoan - totalLoanPaidAll);
 
     // Salary Calculation
     const salaryMap: Record<number, { name: string; full: number; half: number; daily: number }> = {};
-    (attendance || []).forEach((a: any) => {
+    (attendance || []).forEach((a) => {
       const mid = a.mechanic_id;
       if (!salaryMap[mid]) {
         const mech = mechanicMap[mid];
@@ -351,36 +351,36 @@ export async function GET(request: Request) {
     }));
 
     // P&L salary (PHP: per attendance row, salary_history rate <= curr_date, else daily_salary)
-    const totalSalary = (attendance || []).reduce((sum, a: any) => {
+    const totalSalary = (attendance || []).reduce((sum, a) => {
       const rate = historyRateFor(a.mechanic_id, a.curr_date) ?? (mechanicMap[a.mechanic_id]?.daily || 0);
       return sum + (a.status === 3 ? rate / 2 : rate);
     }, 0);
 
-    // Staff Liability (all-time) — PHP: ALL mechanics (no delete_flag filter),
+    // Staff Liability (all-time) â€” PHP: ALL mechanics (no delete_flag filter),
     // earned_sal uses salary_history rate (fallback 0), earned_comm all status=5
     let staffLiability = 0;
-    (allMechanics || []).forEach((m: any) => {
+    (allMechanics || []).forEach((m) => {
       const earnedComm = (allRepairsRaw || [])
-        .filter((r: any) => r.mechanic_id === m.id)
-        .reduce((s, r: any) => s + (Number(r.mechanic_commission_amount) || 0), 0);
+        .filter((r) => r.mechanic_id === m.id)
+        .reduce((s, r) => s + (Number(r.mechanic_commission_amount) || 0), 0);
 
       const earnedSal = (allAttRaw || [])
-        .filter((a: any) => a.mechanic_id === m.id)
-        .reduce((s, a: any) => {
+        .filter((a) => a.mechanic_id === m.id)
+        .reduce((s, a) => {
           const rate = historyRateFor(m.id, a.curr_date) ?? 0;
           return s + (a.status === 3 ? rate / 2 : rate);
         }, 0);
 
       const paid = (allAdvRaw || [])
-        .filter((a: any) => a.mechanic_id === m.id)
-        .reduce((s, a: any) => s + (Number(a.amount) || 0), 0);
+        .filter((a) => a.mechanic_id === m.id)
+        .reduce((s, a) => s + (Number(a.amount) || 0), 0);
 
       staffLiability += (earnedComm + earnedSal) - paid;
     });
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     //  TOTALS
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     const jobIncome              = repairJobs.reduce((s, j) => s + j.amount, 0);
     const walkinIncome           = walkinSales.reduce((s, j) => s + j.total_amount, 0);
@@ -390,13 +390,23 @@ export async function GET(request: Request) {
     const totalCommission        = repairJobs.reduce((s, j) => s + j.mechanic_commission_amount, 0);
     const totalAdvanceGiven      = advancePayments.reduce((s, a) => s + a.amount, 0);
     const totalOtherExpenses     = expenses.reduce((s, e) => s + e.amount, 0);
-    const totalEmiPaid           = (loanPaymentsRaw || []).reduce((s, l: any) => s + (Number(l.amount_paid) || 0), 0);
+    const totalEmiPaid           = (loanPaymentsRaw || []).reduce((s, l) => s + (Number(l.amount_paid) || 0), 0);
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     //  LEDGER ENTRIES
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-    const ledgerEntries: any[] = [];
+    type LedgerEntry = {
+      date: string;
+      category: string;
+      details: string;
+      type: 'Cash In' | 'Cash Out';
+      net_amount: number;
+      discount_amount?: number;
+      client_id?: number | null;
+      client_fullname?: string;
+    };
+    const ledgerEntries: LedgerEntry[] = [];
 
     clientPayments.forEach(p => ledgerEntries.push({
       date:            p.payment_date,
@@ -430,7 +440,7 @@ export async function GET(request: Request) {
       net_amount: e.amount,
     }));
 
-    (loanPaymentsRaw || []).forEach((lp: any) => ledgerEntries.push({
+    (loanPaymentsRaw || []).forEach((lp) => ledgerEntries.push({
       date:       lp.payment_date,
       category:   'Loan EMI',
       details:    lp.remarks || 'EMI Payment',
@@ -448,9 +458,9 @@ export async function GET(request: Request) {
 
     ledgerEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     //  RESPONSE
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     return NextResponse.json({
       repairJobs,
@@ -485,8 +495,8 @@ export async function GET(request: Request) {
       loanOutstanding,
     });
 
-  } catch (err: any) {
+  } catch (err) {
     console.error('Ledger API error:', err);
-    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }

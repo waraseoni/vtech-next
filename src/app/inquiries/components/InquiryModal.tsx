@@ -35,9 +35,11 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
   const [marking,  setMarking]  = useState(false);
   // BUG FIX 1: Local status state so badge updates instantly without full refetch
   const [isRead,   setIsRead]   = useState(false);
+  const [receivedAgo, setReceivedAgo] = useState("");
 
-  // BUG FIX 2: onClose was in useEffect deps but is recreated each render
-  // causing the effect to re-run on every parent render → infinite fetches
+  // BUG FIX 2: onClose/onUpdate intentionally NOT in deps — parent re-creates them
+  // each render → including them would re-run the effect on every parent render
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- deps intentionally scoped to inquiryId
   const fetchInquiry = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -51,6 +53,8 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
     setInquiry(data);
     setIsRead(data.status === 1);
     setLoading(false);
+    const diff = Math.floor((Date.now() - new Date(data.date_created).getTime()) / 86400000);
+    setReceivedAgo(diff === 0 ? "Today" : diff === 1 ? "Yesterday" : `${diff}d ago`);
 
     // BUG FIX 3: Original auto-marked as read but never updated local state
     // so badge still showed "Unread" until re-fetch. Fixed: update isRead immediately
@@ -63,6 +67,7 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
   }, [inquiryId]); // BUG FIX 2: removed onClose from deps
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount par data fetch; setLoading init sync legit
     fetchInquiry();
   }, [fetchInquiry]);
 
@@ -197,10 +202,7 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
             </div>
             <div className="ml-auto flex items-center gap-1 text-[10px] text-slate-700">
               <Clock size={9} />
-              {(() => {
-                const diff = Math.floor((Date.now() - new Date(inquiry.date_created).getTime()) / 86400000);
-                return diff === 0 ? "Today" : diff === 1 ? "Yesterday" : `${diff}d ago`;
-              })()}
+              {receivedAgo}
             </div>
           </div>
 

@@ -50,8 +50,9 @@ export default function DailyServiceReportPage() {
         .order("date_created", { ascending: true });
       if (error) throw error;
       setJobs((data || []) as Job[]);
-    } catch (e: any) {
-      setErr(e?.message || e?.details || JSON.stringify(e));
+    } catch (e) {
+      const err = e as { message?: string; details?: string };
+      setErr(err.message || err.details || JSON.stringify(e));
     }
     setLoading(false);
   }, [date]);

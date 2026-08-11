@@ -1,7 +1,8 @@
-import Groq from "groq-sdk";
+﻿import Groq from "groq-sdk";
+import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 import { geminiTools, executeGeminiTool, buildSystemPrompt, type AiRole } from "./gemini-tools";
 
-const groqTools = geminiTools.map((t: any) => ({
+const groqTools = geminiTools.map((t) => ({
     type: "function",
     function: {
         name: t.name,
@@ -10,7 +11,7 @@ const groqTools = geminiTools.map((t: any) => ({
     }
 }));
 
-export async function getGroqChatResponse(messages: any[], apiKey?: string, modelName?: string, role: AiRole = "admin"): Promise<string> {
+export async function getGroqChatResponse(messages: ChatCompletionMessageParam[], apiKey?: string, modelName?: string, role: AiRole = "admin"): Promise<string> {
     const key = apiKey || process.env.GROQ_API_KEY || "API_KEY_MISSING";
     if (key === "API_KEY_MISSING" || key.trim() === "") {
         return "ERROR: Groq API Key missing. Settings page se API key daalein ya .env.local mein GROQ_API_KEY set karein.";
@@ -23,9 +24,9 @@ export async function getGroqChatResponse(messages: any[], apiKey?: string, mode
     const lastMessageObj = messages[messages.length - 1];
     const initialPrompt = lastMessageObj.content;
 
-    let formattedHistory: any[] = [{ role: "system", content: systemInstruction }];
+    let formattedHistory: unknown[] = [{ role: "system", content: systemInstruction }];
     const pastMessages = messages.slice(0, -1).map(msg => ({
-        role: (msg.role === 'assistant' || msg.role === 'model') ? 'assistant' : 'user',
+        role: (String(msg.role) === 'assistant' || String(msg.role) === 'model') ? 'assistant' : 'user',
         content: msg.content
     }));
     formattedHistory = [...formattedHistory, ...pastMessages, { role: "user", content: initialPrompt }];
@@ -33,8 +34,7 @@ export async function getGroqChatResponse(messages: any[], apiKey?: string, mode
     try {
         const response = await groq.chat.completions.create({
             model: modelId,
-            messages: formattedHistory,
-            // @ts-ignore
+            messages: formattedHistory as unknown as ChatCompletionMessageParam[],
             tools: groqTools,
             tool_choice: "auto",
         });
@@ -74,7 +74,7 @@ export async function getGroqChatResponse(messages: any[], apiKey?: string, mode
             // Get final response from Groq
             const finalResponse = await groq.chat.completions.create({
                 model: modelId,
-                messages: formattedHistory,
+                messages: formattedHistory as unknown as ChatCompletionMessageParam[],
             });
 
             return finalResponse.choices[0]?.message?.content || "No response generated.";
@@ -107,7 +107,7 @@ export async function getGroqChatResponse(messages: any[], apiKey?: string, mode
 
                 const finalResponse = await groq.chat.completions.create({
                     model: modelId,
-                    messages: formattedHistory,
+                    messages: formattedHistory as unknown as ChatCompletionMessageParam[],
                 });
 
                 return finalResponse.choices[0]?.message?.content || "No response generated.";
@@ -116,10 +116,10 @@ export async function getGroqChatResponse(messages: any[], apiKey?: string, mode
 
         return content || "No response generated.";
 
-    } catch (error: any) {
+    } catch (error) {
         console.error("Groq Execution Error:", error);
         
-        const errorMessage = error.message || JSON.stringify(error);
+        const errorMessage = (error instanceof Error ? error.message : String(error)) || JSON.stringify(error);
 
         // Advanced Fallback: Catch 400 errors where Groq intercepted Llama's malformed XML tool string natively
         try {
@@ -138,7 +138,7 @@ export async function getGroqChatResponse(messages: any[], apiKey?: string, mode
                     if (nameMatch && argsMatch) {
                         const name = nameMatch[1];
                         let args = {};
-                        try { args = JSON.parse(argsMatch[0]); } catch(e) {}
+                        try { args = JSON.parse(argsMatch[0]); } catch {}
                         
                 const apiResponse = await executeGeminiTool({ name, args }, role);
                         
@@ -146,7 +146,8 @@ export async function getGroqChatResponse(messages: any[], apiKey?: string, mode
                         
                         // CRITICAL: Prevent secondary hallucinations (Llama-3 recursively trying to call another tool 
                         // when it sees the data isn't enough, which throws another 400 Error that hides the real answer).
-                        if (fallbackHistory.length > 0 && fallbackHistory[0].role === "system") {
+                        const firstMsg = fallbackHistory[0] as Record<string, unknown> | undefined;
+                        if (fallbackHistory.length > 0 && firstMsg && firstMsg.role === "system") {
                             fallbackHistory[0] = { 
                                 role: "system", 
                                 content: "You are the V-Tech Assistant. You must answer the user's prompt based ONLY on the data in the System Alert below in conversational language. DO NOT request more data. DO NOT attempt to use tools. NO <function> tags." 
@@ -161,19 +162,19 @@ export async function getGroqChatResponse(messages: any[], apiKey?: string, mode
                         
                         const finalResponse = await groq.chat.completions.create({
                             model: modelId,
-                            messages: fallbackHistory,
+                            messages: fallbackHistory as unknown as ChatCompletionMessageParam[],
                         });
                         return finalResponse.choices[0]?.message?.content || "No response generated.";
                     }
                 }
             }
-        } catch (recoverError: any) {
+        } catch (recoverError) {
             console.error("Failed to recover from 400 Error:", recoverError);
-            return `Data fetched successfully, but AI failed to generate final response. (Inner Error: ${recoverError.message || recoverError})`;
+            return `Data fetched successfully, but AI failed to generate final response. (Inner Error: ${recoverError instanceof Error ? recoverError.message : String(recoverError)})`;
         }
 
         if (errorMessage.includes("429") || errorMessage.includes("Rate limit")) {
-            return "Aapki Groq API request limit poori ho gayi hai. Kripya thodi der baad try karein. ⏳";
+            return "Aapki Groq API request limit poori ho gayi hai. Kripya thodi der baad try karein. â³";
         }
         return `Groq API Error: ${errorMessage}`;
     }

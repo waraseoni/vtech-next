@@ -81,8 +81,8 @@ export default function LendersPage() {
       if (paymentRes.error) throw paymentRes.error;
       setRows((lenderRes.data || []) as Lender[]);
       setPayments((paymentRes.data || []) as LoanPayment[]);
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
     }
     setLoading(false);
   }, []);
@@ -194,8 +194,8 @@ export default function LendersPage() {
       }
       setShowModal(false);
       fetchData();
-    } catch (err: any) {
-      setFormErr(err.message || "Save mein galti!");
+    } catch (err) {
+      setFormErr((err instanceof Error ? err.message : String(err)) || "Save mein galti!");
     } finally {
       setSaving(false);
     }
@@ -218,8 +218,8 @@ export default function LendersPage() {
       if (error) throw error;
       setShowPayModal(false);
       fetchData();
-    } catch (err: any) {
-      setPayErr(err.message || "EMI payment save nahi hui!");
+    } catch (err) {
+      setPayErr((err instanceof Error ? err.message : String(err)) || "EMI payment save nahi hui!");
     } finally {
       setSaving(false);
     }
@@ -313,7 +313,7 @@ export default function LendersPage() {
               </thead>
               <tbody className="divide-y divide-[#1a2234]">
                 {filtered.map(lender => {
-                  const { totalPaid, totalToPay, balance } = getLenderTotals(lender);
+                  const { totalPaid, balance } = getLenderTotals(lender);
                   return (
                     <tr key={lender.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-3.5">

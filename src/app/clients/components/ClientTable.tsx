@@ -1,8 +1,24 @@
-import { ArrowUpDown, ArrowUp, ArrowDown, Edit3, Trash2, MessageCircle } from "lucide-react";
+import { Edit3, Trash2, MessageCircle } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { getBalanceMeta, inr } from "./helpers";
 
-export function ClientTable({ paginatedClients, sortField, toggleSort, SortIcon, userRole, handleDelete, openWaModal }: any) {
+type SortField = "name" | "balance" | "total_paid" | "date_created";
+type Client = {
+  id: number; name: string; contact: string; email: string; address: string;
+  balance: number; last_txn_date: string | null; total_paid: number; date_created: string;
+};
+type ClientTableProps = {
+  paginatedClients: Client[];
+  sortField: string;
+  toggleSort: (f: SortField) => void;
+  SortIcon: (props: { field: SortField }) => ReactNode;
+  userRole: string;
+  handleDelete: (id: number, name: string) => void;
+  openWaModal: (client: Client) => void;
+};
+
+export function ClientTable({ paginatedClients, toggleSort, SortIcon, userRole, handleDelete, openWaModal }: ClientTableProps) {
   return (
     <div className="hidden md:block bg-[#161b27] border border-[#21293d] rounded-2xl overflow-x-auto">
       <table className="w-full min-w-[1200px]">
@@ -18,7 +34,7 @@ export function ClientTable({ paginatedClients, sortField, toggleSort, SortIcon,
           </tr>
         </thead>
         <tbody className="divide-y divide-[#21293d]">
-          {paginatedClients.map((client: any) => {
+          {paginatedClients.map((client) => {
             const meta = getBalanceMeta(client.balance, client.last_txn_date);
             return (
               <tr key={client.id} className={`hover:bg-white/5 transition-colors ${meta.rowCls}`}>

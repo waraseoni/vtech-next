@@ -45,7 +45,6 @@ export async function GET(request: NextRequest) {
     const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
     const loanPmts = payments?.filter((p: { loan_id: number }) => p.loan_id === l.id) || [];
     const received = loanPmts.reduce((s: number, p: { amount: number; discount: number }) => s + (p.amount || 0) + (p.discount || 0), 0);
-    const interestVal = (l.total_payable || 0) - (l.principal_amount || 0);
     const targetEmi = l.emi_amount || 0;
     const pending = Math.max(0, targetEmi - received);
 

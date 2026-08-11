@@ -76,8 +76,8 @@ export default function ServicesPage() {
       }
       setShowModal(false);
       fetchData();
-    } catch (err: any) {
-      setFormErr(err.message || "Save mein galti!");
+    } catch (err) {
+      setFormErr(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }

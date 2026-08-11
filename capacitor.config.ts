@@ -1,5 +1,4 @@
-// @ts-ignore: Capacitor CLI types not installed in this environment
-const config: any = {
+const config: Record<string, unknown> = {
   appId: 'com.vtech.pro',
   appName: 'V-Tech PRO',
   webDir: 'out',

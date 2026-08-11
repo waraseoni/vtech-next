@@ -5,11 +5,11 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
-  ArrowLeft, Wrench, User, Phone, MapPin, Calendar, Clock,
-  Package, Settings2, Hash, AlertTriangle, CheckCircle2,
-  IndianRupee, Printer, MessageSquare, Edit, Trash2,
-  Loader2, Box, Hammer, Tag, Locate, ChevronRight,
-  ShieldAlert, Banknote, UserCog, Send,
+  ArrowLeft, Wrench, User, Clock,
+  Package, Settings2, AlertTriangle, CheckCircle2,
+  IndianRupee, Printer, Edit, Trash2,
+  Loader2, Box,
+  Banknote, Send,
   Plus, X, CheckCircle, FileText,
   RefreshCw, Image as ImageIcon, Upload, Loader,
 } from "lucide-react";

@@ -287,7 +287,6 @@ export default function BackupPage() {
       const orderedTables = [...BACKUP_TABLES_ORDERED].sort((a, b) => a.order - b.order);
 
       let totalRestored = 0;
-      let totalDeleted  = 0;
       const tableResults: TableResult[] = [];
 
       // ── Step 0: Validate all backup data before restoring ─────────────────
@@ -600,12 +599,6 @@ export default function BackupPage() {
     setDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file) loadFileAndDiff(file);
-  };
-
-  // Legacy helper kept for dry-run button compatibility
-  const previewBackupFile = async (file: File) => {
-    await loadFileAndDiff(file);
-    return loadedBackup;
   };
 
   const getRowCount = (table: string) => {
@@ -992,7 +985,7 @@ export default function BackupPage() {
             toh Supabase SQL Editor mein ye query run karein:
           </p>
           <code className="block mt-2 p-2 bg-[#0d1117] rounded-lg text-[10px] text-emerald-400 font-mono overflow-x-auto">
-            SELECT setval('table_name_id_seq', (SELECT MAX(id) FROM table_name) + 1, false);
+            {"SELECT setval('table_name_id_seq', (SELECT MAX(id) FROM table_name) + 1, false);"}
           </code>
         </div>
 

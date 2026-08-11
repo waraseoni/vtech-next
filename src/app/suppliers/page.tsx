@@ -82,8 +82,8 @@ export default function SuppliersPage() {
       }
       setShowModal(false);
       fetchData();
-    } catch (error: any) {
-      setFormErr(error.message || "Save mein galti!");
+    } catch (error) {
+      setFormErr(error instanceof Error ? error.message : String(error));
     } finally {
       setSaving(false);
     }

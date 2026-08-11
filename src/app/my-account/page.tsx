@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Wrench, Loader2, AlertCircle, Phone, Mail, Inbox, Clock, BookOpen, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { Wrench, Loader2, AlertCircle, Phone, Mail, Inbox, Clock, BookOpen, TrendingUp, TrendingDown } from "lucide-react";
 
 type ClientInfo = {
   id: number; name: string; contact: string; email: string; opening_balance: number; due: number;

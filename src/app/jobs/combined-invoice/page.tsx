@@ -11,8 +11,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
   Users, Search, CheckSquare, Square, Printer, ArrowLeft,
-  Loader2, FileText, ChevronRight, X, IndianRupee, Clock,
-  CheckCircle2, AlertCircle,
+  Loader2, FileText, ChevronRight, X,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -131,6 +130,7 @@ export default function CombinedInvoicePage() {
   }, [statusFilter]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- client select hone par jobs fetch; loading init sync legit
     if (selectedClient) loadJobs(selectedClient.id);
   }, [selectedClient, loadJobs]);
 
@@ -454,7 +454,6 @@ export default function CombinedInvoicePage() {
                     {[...selectedIds].map(id => {
                       const j = jobs.find(x => x.id === id);
                       if (!j) return null;
-                      const sc = STATUS_MAP[j.status];
                       return (
                         <div key={id} className="flex items-center gap-1.5 bg-[#161b27] border border-[#21293d] rounded-lg px-2.5 py-1.5">
                           <span className="text-blue-400 font-black text-xs">#{j.job_id}</span>

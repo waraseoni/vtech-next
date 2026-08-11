@@ -12,6 +12,7 @@ const inr = (n: number) =>
   "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 type ModalType = "payments" | "spot" | "advances" | "expenses" | "loan" | "salary" | "commission" | "discount" | "repairs" | "sales";
+type DbRow = ReturnType<typeof JSON.parse>;
 
 function DailyIncomeContent() {
   const searchParams = useSearchParams();
@@ -43,7 +44,7 @@ function DailyIncomeContent() {
     net_profit: 0,
   });
 
-  const [details, setDetails] = useState<Record<string, any[]>>({});
+  const [details, setDetails] = useState<Record<string, DbRow[]>>({});
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -132,31 +133,31 @@ function DailyIncomeContent() {
         .from("lender_list")
         .select("id, fullname"));
 
-      const clientName = (id: any) => {
-        const c = (clients || []).find((x: any) => x.id === id);
+      const clientName = (id: number | string) => {
+        const c = (clients || []).find((x) => x.id === id);
         return c ? [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ") : "Walk-in";
       };
-      const mechName = (id: any) => {
-        const m = (mechanics || []).find((x: any) => x.id === id);
+      const mechName = (id: number | string) => {
+        const m = (mechanics || []).find((x) => x.id === id);
         return m ? `${m.firstname} ${m.lastname}`.trim() : "Unknown";
       };
-      const lenderName = (id: any) => {
-        const l = (lenders || []).find((x: any) => x.id === id);
+      const lenderName = (id: number | string) => {
+        const l = (lenders || []).find((x) => x.id === id);
         return l ? l.fullname : "Unknown Lender";
       };
 
       // Salary earned (mirror PHP: rate from history <= curr_date, half day = rate/2)
       const histByMech: Record<number, { salary: number; effective_date: string }[]> = {};
-      (salaryHistory || []).forEach((h: any) => {
+      (salaryHistory || []).forEach((h) => {
         (histByMech[h.mechanic_id] = histByMech[h.mechanic_id] || []).push(h);
       });
       Object.values(histByMech).forEach((list) => list.sort((a, b) => a.effective_date.localeCompare(b.effective_date)));
 
       let salary_earned = 0;
-      const salary_detail: any[] = [];
-      (attendance || []).forEach((a: any) => {
-        const m = (mechanics || []).find((x: any) => x.id === a.mechanic_id);
-        const history = (histByMech[a.mechanic_id] || []).filter((h: any) => h.effective_date <= a.curr_date);
+      const salary_detail: DbRow[] = [];
+      (attendance || []).forEach((a) => {
+        const m = (mechanics || []).find((x) => x.id === a.mechanic_id);
+        const history = (histByMech[a.mechanic_id] || []).filter((h) => h.effective_date <= a.curr_date);
         const rate = history.length > 0 ? history[history.length - 1].salary : m?.daily_salary || 0;
         const earned = a.status === 3 ? rate / 2 : rate;
         salary_earned += earned;
@@ -170,7 +171,7 @@ function DailyIncomeContent() {
       const expenses = (expenseRows || []).reduce((s, r) => s + (r.amount || 0), 0);
       const loan_emi = (loanRows || []).reduce((s, r) => s + (r.amount_paid || 0), 0);
       const cash_payments = (payRows || []).reduce((s, r) => s + (r.amount || 0), 0);
-      const spotSales = (sales || []).filter((s: any) => s.client_id == null || s.client_id === 0 || s.client_id === "");
+      const spotSales = (sales || []).filter((s) => s.client_id == null || s.client_id === 0 || s.client_id === "");
       const cash_spot_sales = spotSales.reduce((s, r) => s + (r.total_amount || 0), 0);
       const staff_advances = (advRows || []).reduce((s, r) => s + (r.amount || 0), 0);
 
@@ -189,16 +190,16 @@ function DailyIncomeContent() {
       });
 
       setDetails({
-        repairs: (repairs || []).map((r: any) => ({ ...r, client_name: clientName(r.client_name), mechanic_name: mechName(r.mechanic_id) })),
-        sales: (sales || []).map((r: any) => ({ ...r, client_name: r.client_id == null || r.client_id === 0 || r.client_id === "" ? "Walk-in" : clientName(r.client_id) })),
+        repairs: (repairs || []).map((r) => ({ ...r, client_name: clientName(r.client_name), mechanic_name: mechName(r.mechanic_id) })),
+        sales: (sales || []).map((r) => ({ ...r, client_name: r.client_id == null || r.client_id === 0 || r.client_id === "" ? "Walk-in" : clientName(r.client_id) })),
         salary: salary_detail,
-        commission: (commRows || []).map((r: any) => ({ ...r, mechanic_name: mechName(r.mechanic_id) })),
-        discounts: (discRows || []).map((r: any) => ({ ...r, client_name: clientName(r.client_id) })),
+        commission: (commRows || []).map((r) => ({ ...r, mechanic_name: mechName(r.mechanic_id) })),
+        discounts: (discRows || []).map((r) => ({ ...r, client_name: clientName(r.client_id) })),
         expenses: (expenseRows || []),
-        loan: (loanRows || []).map((r: any) => ({ ...r, lender_name: lenderName(r.lender_id) })),
-        payments: (payRows || []).map((r: any) => ({ ...r, client_name: clientName(r.client_id) })),
-        spot: spotSales.map((r: any) => ({ ...r, client_name: "Walk-in" })),
-        advances: (advRows || []).map((r: any) => ({ ...r, staff_name: mechName(r.mechanic_id) })),
+        loan: (loanRows || []).map((r) => ({ ...r, lender_name: lenderName(r.lender_id) })),
+        payments: (payRows || []).map((r) => ({ ...r, client_name: clientName(r.client_id) })),
+        spot: spotSales.map((r) => ({ ...r, client_name: "Walk-in" })),
+        advances: (advRows || []).map((r) => ({ ...r, staff_name: mechName(r.mechanic_id) })),
       });
     } catch (e) {
       console.error(e);
@@ -493,7 +494,7 @@ function DailyIncomeContent() {
                           {modal === "sales" && <tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Sale Code</th><th className="px-4 py-3">Client</th><th className="px-4 py-3">Pay Mode</th><th className="px-4 py-3 text-right">Amount</th></tr>}
                         </thead>
                         <tbody className="divide-y divide-[#21293d]">
-                          {(details[modal] || []).map((row: any, i: number) => {
+                          {(details[modal] || []).map((row, i) => {
                             const d = (v: string) => v?.split("T")[0] || v?.split(" ")[0] || v || "";
                             if (modal === "payments") return <tr key={i} className="hover:bg-white/[0.02]"><td className="px-4 py-3 text-white">{d(row.payment_date)}</td><td className="px-4 py-3 text-indigo-300 font-bold">{row.client_name}</td><td className="px-4 py-3 text-slate-400">{row.payment_mode || "Cash"}</td><td className="px-4 py-3 text-slate-400">{row.remarks || "-"}</td><td className="px-4 py-3 text-right text-emerald-400 font-bold">{inr(row.amount)}</td></tr>;
                             if (modal === "spot") return <tr key={i} className="hover:bg-white/[0.02]"><td className="px-4 py-3 text-white">{d(row.date_created)}</td><td className="px-4 py-3 text-slate-300"><code>{row.sale_code}</code></td><td className="px-4 py-3 text-slate-400">{row.payment_mode || "Cash"}</td><td className="px-4 py-3 text-slate-400">{row.remarks || "-"}</td><td className="px-4 py-3 text-right text-emerald-400 font-bold">{inr(row.total_amount)}</td></tr>;
@@ -512,13 +513,13 @@ function DailyIncomeContent() {
                           {modal === "commission" ? (
                             <tr>
                               <td colSpan={3} className="px-4 py-4 text-right text-[10px] uppercase tracking-widest text-slate-500 font-black">Totals</td>
-                              <td className="px-4 py-4 text-right font-black text-slate-200">{inr((modalTotal("commission") as any).job)}</td>
-                              <td className="px-4 py-4 text-right font-black text-amber-400">{inr((modalTotal("commission") as any).comm)}</td>
+                              <td className="px-4 py-4 text-right font-black text-slate-200">{inr((modalTotal("commission") as { job: number; comm: number }).job)}</td>
+                              <td className="px-4 py-4 text-right font-black text-amber-400">{inr((modalTotal("commission") as { job: number; comm: number }).comm)}</td>
                             </tr>
                           ) : (
                             <tr>
                               <td colSpan={modal === "repairs" ? 5 : modal === "payments" || modal === "spot" || modal === "advances" || modal === "expenses" ? 4 : 3} className="px-4 py-4 text-right text-[10px] uppercase tracking-widest text-slate-500 font-black">Grand Total</td>
-                              <td className="px-4 py-4 text-right font-black text-base text-white">{inr(modalTotal(modal) as any)}</td>
+                              <td className="px-4 py-4 text-right font-black text-base text-white">{inr(modalTotal(modal) as number)}</td>
                             </tr>
                           )}
                         </tfoot>

@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
-import { Loader2, Printer, CreditCard, TrendingUp } from "lucide-react";
+import { Loader2, Printer, CreditCard } from "lucide-react";
 
-import { todayIST, currentMonthIST, formatIST, parseISTDate } from "@/lib/dateUtils";
+import { currentMonthIST, formatIST } from "@/lib/dateUtils";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
@@ -58,7 +58,6 @@ function LoanReportContent() {
         const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
         const loanPmts = payments?.filter((p) => p.loan_id === l.id) || [];
         const received = loanPmts.reduce((s, p) => s + (p.amount || 0) + (p.discount || 0), 0);
-        const interestVal = (l.total_payable || 0) - (l.principal_amount || 0);
         const targetEmi = l.emi_amount || 0;
         const pending = Math.max(0, targetEmi - received);
 

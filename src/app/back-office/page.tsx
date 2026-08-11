@@ -1,25 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { 
   Wrench, Package, Users, ShieldCheck, Database, Settings, 
-  Search, Briefcase, DollarSign, Wallet, Percent, Coins, 
-  Receipt, Landmark, Handshake, ScrollText, Download,
-  ExternalLink, ArrowRight, Star
+  Search, DollarSign, Wallet, Percent, 
+  Landmark, Handshake, ScrollText, Download,
+  ArrowRight
 } from "lucide-react";
 import Link from "next/link";
 
 type OfficeItem = {
   name: string;
   href: string;
-  icon: any;
+  icon: ReactNode;
   color: string;
   desc: string;
 };
 
 type Section = {
   title: string;
-  icon: any;
+  icon: ReactNode;
   items: OfficeItem[];
 };
 
@@ -127,7 +127,7 @@ export default function BackOfficeDashboard() {
           <div className="w-16 h-16 bg-[#161b27] border border-[#21293d] rounded-2xl flex items-center justify-center text-slate-700 mx-auto">
             <Search size={32} />
           </div>
-          <h3 className="text-lg font-black text-slate-400">No masters found for "{query}"</h3>
+          <h3 className="text-lg font-black text-slate-400">No masters found for &quot;{query}&quot;</h3>
           <button onClick={() => setQuery("")} className="text-blue-500 font-bold hover:underline">Clear search filter</button>
         </div>
       )}
@@ -136,7 +136,7 @@ export default function BackOfficeDashboard() {
 }
 
 function ModuleCard({ item }: { item: OfficeItem }) {
-  const colorMap: any = {
+  const colorMap: Record<string, string> = {
     rose: "from-rose-500 to-rose-700 shadow-rose-500/20 text-rose-400 border-rose-500/20",
     emerald: "from-emerald-500 to-emerald-700 shadow-emerald-500/20 text-emerald-400 border-emerald-500/20",
     blue: "from-blue-500 to-blue-700 shadow-blue-500/20 text-blue-400 border-blue-500/20",

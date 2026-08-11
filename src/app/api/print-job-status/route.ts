@@ -78,14 +78,14 @@ export async function GET(request: NextRequest) {
     .select("service_id, price")
     .eq("transaction_id", txn.id);
 
-  const serviceIds = (svcData || []).map((s: any) => s.service_id).filter(Boolean);
+  const serviceIds = (svcData || []).map((s) => s.service_id).filter(Boolean);
   const serviceNames: Record<number, string> = {};
   if (serviceIds.length > 0) {
     const { data: services } = await supabase.from("service_list").select("id, name").in("id", serviceIds);
-    if (services) services.forEach((s: any) => { serviceNames[s.id] = s.name; });
+    if (services) services.forEach((s) => { serviceNames[s.id] = s.name; });
   }
 
-  const services = (svcData || []).map((s: any) => ({
+  const services = (svcData || []).map((s) => ({
     service_name: serviceNames[s.service_id] || "Unknown",
     price: s.price,
   }));
@@ -95,14 +95,14 @@ export async function GET(request: NextRequest) {
     .select("product_id, qty, price")
     .eq("transaction_id", txn.id);
 
-  const productIds = (prodData || []).map((p: any) => p.product_id).filter(Boolean);
+  const productIds = (prodData || []).map((p) => p.product_id).filter(Boolean);
   const productNames: Record<number, string> = {};
   if (productIds.length > 0) {
     const { data: products } = await supabase.from("product_list").select("id, name").in("id", productIds);
-    if (products) products.forEach((p: any) => { productNames[p.id] = p.name; });
+    if (products) products.forEach((p) => { productNames[p.id] = p.name; });
   }
 
-  const products = (prodData || []).map((p: any) => ({
+  const products = (prodData || []).map((p) => ({
     product_name: productNames[p.product_id] || "Unknown",
     qty: p.qty,
     price: p.price,

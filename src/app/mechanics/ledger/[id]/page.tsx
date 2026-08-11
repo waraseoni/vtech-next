@@ -6,10 +6,10 @@ import { supabase } from "@/lib/supabase";
 import { 
   Loader2, ArrowLeft, Calendar, Printer, FileText, 
   ChevronLeft, ChevronRight, TrendingUp, Wallet,
-  Info, CheckCircle, Clock, AlertCircle, IndianRupee
+  Info, CheckCircle, IndianRupee
 } from "lucide-react";
 import Link from "next/link";
-import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachDayOfInterval, isSameDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachDayOfInterval } from "date-fns";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -21,13 +21,15 @@ type Mechanic = {
   daily_salary: number;
 };
 
+type JobRow = { id: number; job_id: string; item: string; mechanic_commission_amount: string; status: number; date_created: string };
+
 type LedgerRow = {
   date: Date;
   dateStr: string;
   attStatus: string;
   attValue: number;
   wage: number;
-  jobs: any[];
+  jobs: JobRow[];
   commGenerated: number;
   commPayable: number;
   advance: number;
@@ -358,7 +360,7 @@ export default function MechanicLedger() {
 }
 
 function SummaryCard({ label, value, icon, color, sub }: { label: string, value: number, icon: React.ReactNode, color: string, sub?: string }) {
-  const colors: any = {
+  const colors: Record<string, string> = {
     blue: "text-blue-400 bg-blue-500/10 border-blue-500/20",
     emerald: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
     amber: "text-amber-400 bg-amber-500/10 border-amber-500/20",

@@ -5,8 +5,8 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Save, Plus, X, Wrench, User,
-  Loader2, AlertTriangle, CheckCircle, Hash, Trash2, RefreshCw,
+  ArrowLeft, Save, Plus, Wrench,
+  Loader2, AlertTriangle, CheckCircle, Hash, Trash2,
 } from "lucide-react";
 
 // ─── IST Helper ───────────────────────────────────────────────────────────────
@@ -162,7 +162,7 @@ export default function BulkJobPage() {
         const code = await genCode(i);
         const jobIdStr = String(nextJobId + i);
 
-        const { data: ins, error } = await supabase.from("transaction_list").insert({
+        const { error } = await supabase.from("transaction_list").insert({
           client_name:               String(clientId),
           job_id:                    jobIdStr,
           code,

@@ -65,6 +65,7 @@ export default function ClientPaymentReportPage() {
   useEffect(() => {
     if (allRows.length > 0 && !fromDate && !toDate) {
       const { from, to } = getCurrentMonthRange();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- first load par default month range set karna; render me nahi ho sakta (allRows depend)
       setFromDate(from);
       setToDate(to);
     }

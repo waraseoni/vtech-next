@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import AdminPage from "@/app/components/AdminPage";
 import {
   Save, RotateCcw, History, ChevronDown, ChevronUp,
-  Loader2, Check, AlertCircle, Eye, Copy, MessageSquare, Trash2, X,
+  Loader2, Check, AlertCircle, Eye, MessageSquare, X,
 } from "lucide-react";
 import { DEFAULT_TEMPLATES, TEMPLATE_LABELS, PLACEHOLDERS } from "@/lib/whatsappTemplates";
 
@@ -17,6 +17,14 @@ type HistoryRow = {
   new_value: string | null;
   changed_by: string | null;
   changed_at: string;
+};
+
+type HistoryInsert = {
+  template_key: string;
+  action: "update" | "reset";
+  old_value: string;
+  new_value: string;
+  changed_by: string;
 };
 
 export default function WhatsAppTemplatesPage() {
@@ -42,7 +50,7 @@ export default function WhatsAppTemplatesPage() {
     ]);
 
     const infoMap: Record<string, string> = {};
-    (infoRes.data || []).forEach((r: any) => { infoMap[r.meta_field] = r.meta_value; });
+    (infoRes.data || []).forEach((r) => { infoMap[r.meta_field] = r.meta_value; });
     setSystemInfo(infoMap);
     setHistory((histRes.data || []) as HistoryRow[]);
   }, []);
@@ -72,7 +80,7 @@ export default function WhatsAppTemplatesPage() {
       const { data: profile } = await supabase.from("profiles").select("firstname, lastname").eq("id", user!.id).single();
       const userName = [profile?.firstname, profile?.lastname].filter(Boolean).join(" ") || "Admin";
 
-      const histInserts: any[] = [];
+      const histInserts: HistoryInsert[] = [];
 
       for (const [key, newValue] of Object.entries(templates)) {
         const oldValue = getCurrentValue(key);
@@ -104,8 +112,8 @@ export default function WhatsAppTemplatesPage() {
 
       setToast({ type: "success", msg: applyCurrent ? "Templates saved + applied!" : "Defaults saved!" });
       fetchData();
-    } catch (err: any) {
-      setToast({ type: "error", msg: err.message || "Save failed!" });
+    } catch (err) {
+      setToast({ type: "error", msg: err instanceof Error ? err.message : String(err) });
     } finally {
       setSaving(false);
     }
@@ -119,7 +127,7 @@ export default function WhatsAppTemplatesPage() {
       const { data: profile } = await supabase.from("profiles").select("firstname, lastname").eq("id", user!.id).single();
       const userName = [profile?.firstname, profile?.lastname].filter(Boolean).join(" ") || "Admin";
 
-      const histInserts: any[] = [];
+      const histInserts: HistoryInsert[] = [];
 
       for (const [key, defaultValue] of Object.entries(DEFAULT_TEMPLATES)) {
         const oldDefault = templates[key];
@@ -147,8 +155,8 @@ export default function WhatsAppTemplatesPage() {
       setTemplates({ ...DEFAULT_TEMPLATES });
       setToast({ type: "success", msg: "Factory defaults restored!" });
       fetchData();
-    } catch (err: any) {
-      setToast({ type: "error", msg: err.message || "Restore failed!" });
+    } catch (err) {
+      setToast({ type: "error", msg: err instanceof Error ? err.message : String(err) });
     } finally {
       setSaving(false);
     }

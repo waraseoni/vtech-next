@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
@@ -8,11 +8,11 @@ import {
   PiggyBank, TrendingDown, ArrowDownCircle, ArrowUpCircle, Scale, Package,
 } from "lucide-react";
 import Link from "next/link";
-import { todayIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+import { todayIST, startOfMonthIST } from "@/lib/dateUtils";
 import { pageAll } from "@/lib/fetch-all";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
-const num = (v: any) => Number(v) || 0;
+const num = (v: unknown) => Number(v) || 0;
 
 type Tab = "summary" | "performance" | "cash" | "assets" | "inventory";
 
@@ -69,34 +69,34 @@ function AccountingDashboardContent() {
         supabase.from("client_list").select("id, firstname, lastname"),
       ]);
 
-      const serviceRevenue = (serviceRev || []).reduce((s: number, r: any) => s + num(r.amount), 0);
-      const salesRevenue = (directSales || []).reduce((s: number, r: any) => s + num(r.total_amount), 0);
-      const walkinSales = (directSales || []).filter((r: any) => r.client_id === null || r.client_id === 0 || r.client_id === "").reduce((s: number, r: any) => s + num(r.total_amount), 0);
+      const serviceRevenue = (serviceRev || []).reduce((s: number, r) => s + num(r.amount), 0);
+      const salesRevenue = (directSales || []).reduce((s: number, r) => s + num(r.total_amount), 0);
+      const walkinSales = (directSales || []).filter((r) => r.client_id === null || r.client_id === 0 || r.client_id === "").reduce((s: number, r) => s + num(r.total_amount), 0);
       const totalRevenue = serviceRevenue + salesRevenue;
-      const commission = (commissions || []).reduce((s: number, r: any) => s + num(r.mechanic_commission_amount), 0);
+      const commission = (commissions || []).reduce((s: number, r) => s + num(r.mechanic_commission_amount), 0);
 
       // Salary earned — attendance-based with salary history override
       const mechRate = new Map<number, number>();
-      (mechanics || []).forEach((m: any) => mechRate.set(m.id, num(m.daily_salary)));
+      (mechanics || []).forEach((m) => mechRate.set(m.id, num(m.daily_salary)));
       const histMap = new Map<number, { salary: number; effective_date: string }[]>();
-      (salaryHist || []).forEach((h: any) => {
+      (salaryHist || []).forEach((h) => {
         const arr = histMap.get(h.mechanic_id) || [];
         arr.push({ salary: num(h.salary), effective_date: h.effective_date || "" });
         histMap.set(h.mechanic_id, arr);
       });
       histMap.forEach(arr => arr.sort((a, b) => (b.effective_date || "").localeCompare(a.effective_date || "")));
       let salaryEarned = 0;
-      (attendance || []).forEach((a: any) => {
+      (attendance || []).forEach((a) => {
         const hist = histMap.get(a.mechanic_id) || [];
         const rate = hist.find(h => !h.effective_date || h.effective_date <= a.curr_date)?.salary ?? mechRate.get(a.mechanic_id) ?? 0;
         salaryEarned += a.status === 3 ? rate / 2 : rate;
       });
 
-      const collections = (collectionRows || []).reduce((s: number, r: any) => s + num(r.amount), 0);
-      const discounts = (collectionRows || []).reduce((s: number, r: any) => s + num(r.discount), 0);
-      const shopExpenses = (expenseAll || []).reduce((s: number, r: any) => s + num(r.amount), 0);
-      const staffAdvances = (advances || []).reduce((s: number, r: any) => s + num(r.amount), 0);
-      const loanEmis = (loanEmi || []).reduce((s: number, r: any) => s + num(r.amount_paid), 0);
+      const collections = (collectionRows || []).reduce((s: number, r) => s + num(r.amount), 0);
+      const discounts = (collectionRows || []).reduce((s: number, r) => s + num(r.discount), 0);
+      const shopExpenses = (expenseAll || []).reduce((s: number, r) => s + num(r.amount), 0);
+      const staffAdvances = (advances || []).reduce((s: number, r) => s + num(r.amount), 0);
+      const loanEmis = (loanEmi || []).reduce((s: number, r) => s + num(r.amount_paid), 0);
 
       const totalBusinessExpense = salaryEarned + commission + shopExpenses + loanEmis + discounts;
       const grossProfit = totalRevenue - commission;
@@ -106,14 +106,14 @@ function AccountingDashboardContent() {
 
       // Expense breakdown by category
       const catMap = new Map<string, number>();
-      (expenseAll || []).forEach((r: any) => catMap.set(r.category || "Other", (catMap.get(r.category || "Other") || 0) + num(r.amount)));
+      (expenseAll || []).forEach((r) => catMap.set(r.category || "Other", (catMap.get(r.category || "Other") || 0) + num(r.amount)));
       const expenseCategories = [...catMap.entries()].map(([category, total]) => ({ category, total })).sort((a, b) => b.total - a.total);
 
       // Top 5 customers
       const custMap = new Map<string, number>();
       const clientName = new Map<number, string>();
-      (clients || []).forEach((c: any) => clientName.set(c.id, [c.firstname, c.lastname].filter(Boolean).join(" ").trim()));
-      (jobCust || []).forEach((r: any) => {
+      (clients || []).forEach((c) => clientName.set(c.id, [c.firstname, c.lastname].filter(Boolean).join(" ").trim()));
+      (jobCust || []).forEach((r) => {
         const id = String(r.client_name);
         custMap.set(id, (custMap.get(id) || 0) + num(r.amount));
       });
@@ -135,7 +135,7 @@ function AccountingDashboardContent() {
         pageAll(supabase.from("advance_payments").select("amount").lte("date_paid", eTs)),
         pageAll(supabase.from("loan_payments").select("amount_paid").lte("payment_date", eTs)),
         pageAll(supabase.from("inventory_list").select("quantity, product_id").lte("stock_date", eTs)),
-        supabase.from("product_list").select("id, price"),
+        supabase.from("product_list").select("id, price, name"),
         supabase.from("client_list").select("opening_balance").eq("delete_flag", 0),
         pageAll(supabase.from("transaction_list").select("amount").eq("status", 5).lte("date_completed", eTs)),
         pageAll(supabase.from("direct_sales").select("total_amount").lte("date_created", eTs)),
@@ -150,33 +150,33 @@ function AccountingDashboardContent() {
       const walkinAll2 = await pageAll(supabase.from("direct_sales").select("total_amount").lte("date_created", eTs).or("client_id.eq.0,client_id.eq.''"));
 
       const cashOnHand =
-        (payAll || []).reduce((s: number, r: any) => s + num(r.amount), 0)
-        + (walkinAll || []).reduce((s: number, r: any) => s + num(r.total_amount), 0)
-        + (walkinAll2.data || []).reduce((s: number, r: any) => s + num(r.total_amount), 0)
-        - (expAll2 || []).reduce((s: number, r: any) => s + num(r.amount), 0)
-        - (advAll2 || []).reduce((s: number, r: any) => s + num(r.amount), 0)
-        - (loanPayAll || []).reduce((s: number, r: any) => s + num(r.amount_paid), 0);
+        (payAll || []).reduce((s: number, r) => s + num(r.amount), 0)
+        + (walkinAll || []).reduce((s: number, r) => s + num(r.total_amount), 0)
+        + (walkinAll2.data || []).reduce((s: number, r) => s + num(r.total_amount), 0)
+        - (expAll2 || []).reduce((s: number, r) => s + num(r.amount), 0)
+        - (advAll2 || []).reduce((s: number, r) => s + num(r.amount), 0)
+        - (loanPayAll || []).reduce((s: number, r) => s + num(r.amount_paid), 0);
 
       const prodPrice = new Map<number, number>();
-      (prodAll || []).forEach((p: any) => prodPrice.set(p.id, num(p.price)));
-      const inventoryValue = (invAll || []).reduce((s: number, r: any) => s + num(r.quantity) * (prodPrice.get(r.product_id) || 0), 0);
+      (prodAll || []).forEach((p) => prodPrice.set(p.id, num(p.price)));
+      const inventoryValue = (invAll || []).reduce((s: number, r) => s + num(r.quantity) * (prodPrice.get(r.product_id) || 0), 0);
 
       const accountsReceivable =
-        (openBal || []).reduce((s: number, r: any) => s + num(r.opening_balance), 0)
-        + (jobAll || []).reduce((s: number, r: any) => s + num(r.amount), 0)
-        + (dsAll || []).reduce((s: number, r: any) => s + num(r.total_amount), 0)
-        + (loans || []).reduce((s: number, r: any) => s + num(r.total_payable), 0)
-        - (payAll2 || []).reduce((s: number, r: any) => s + num(r.amount) + num(r.discount), 0);
+        (openBal || []).reduce((s: number, r) => s + num(r.opening_balance), 0)
+        + (jobAll || []).reduce((s: number, r) => s + num(r.amount), 0)
+        + (dsAll || []).reduce((s: number, r) => s + num(r.total_amount), 0)
+        + (loans || []).reduce((s: number, r) => s + num(r.total_payable), 0)
+        - (payAll2 || []).reduce((s: number, r) => s + num(r.amount) + num(r.discount), 0);
 
       const loansPayable =
-        (lenders || []).reduce((s: number, r: any) => s + num(r.loan_amount), 0)
-        - (allLoanPays || []).reduce((s: number, r: any) => s + num(r.amount_paid), 0);
+        (lenders || []).reduce((s: number, r) => s + num(r.loan_amount), 0)
+        - (allLoanPays || []).reduce((s: number, r) => s + num(r.amount_paid), 0);
 
       // Inventory health — top 5 stock items
       const prodName = new Map<number, string>();
-      (prodAll || []).forEach((p: any) => prodName.set(p.id, p.name || "Unknown"));
+      (prodAll || []).forEach((p) => prodName.set(p.id, p.name || "Unknown"));
       const stockMap = new Map<number, number>();
-      (invAllStock || []).forEach((r: any) => stockMap.set(r.product_id, (stockMap.get(r.product_id) || 0) + num(r.quantity)));
+      (invAllStock || []).forEach((r) => stockMap.set(r.product_id, (stockMap.get(r.product_id) || 0) + num(r.quantity)));
       const stockItems = [...stockMap.entries()]
         .filter(([, qty]) => qty > 0)
         .map(([pid, qty]) => ({ name: prodName.get(pid) || "Unknown", qty, price: prodPrice.get(pid) || 0, value: qty * (prodPrice.get(pid) || 0) }))

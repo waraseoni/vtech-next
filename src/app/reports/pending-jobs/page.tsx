@@ -5,16 +5,17 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
 import { 
-  Clock, Search, Printer, Filter, MessageSquare, 
-  ChevronRight, ArrowLeft, Loader2, Calendar, Wrench, 
-  AlertCircle, CheckCircle2, TrendingUp, Sparkles, User, Smartphone
+  Clock, Search, Printer, MessageSquare, 
+  ChevronRight, ArrowLeft, Loader2, Calendar, Smartphone
 } from "lucide-react";
 import Link from "next/link";
 import { formatIST, todayIST, startOfMonthIST } from "@/lib/dateUtils";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
-const STATUS_MAP: any = {
+type DbRow = ReturnType<typeof JSON.parse>;
+
+const STATUS_MAP: Record<number, { label: string; class: string }> = {
   0: { label: "Just Pending", class: "bg-slate-500/10 text-slate-400 border-slate-500/20" },
   1: { label: "In Progress", class: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
   2: { label: "Finished", class: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20" },
@@ -29,7 +30,7 @@ function PendingJobsContent() {
   const [to, setTo] = useState(searchParams.get("to") || todayIST());
   const [status, setStatus] = useState(searchParams.get("status") || "all");
   const [loading, setLoading] = useState(true);
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<DbRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchData = useCallback(async () => {
@@ -61,9 +62,9 @@ function PendingJobsContent() {
         return;
       }
 
-      const clientIdsNum = [...new Set(pendingJobs.map((t: any) => Number(t.client_name)).filter(id => !isNaN(id)))];
+      const clientIdsNum = [...new Set(pendingJobs.map((t) => Number(t.client_name)).filter(id => !isNaN(id)))];
       
-      let clientMap = new Map();
+      const clientMap = new Map();
       if (clientIdsNum.length > 0) {
         const { data: clients, error: clientErr } = await supabase
           .from("client_list")
@@ -110,7 +111,7 @@ function PendingJobsContent() {
 
   const totalAmount = filteredJobs.reduce((s, j) => s + (parseFloat(j.amount) || 0), 0);
 
-  const sendWhatsApp = (job: any) => {
+  const sendWhatsApp = (job: DbRow) => {
     const phone = (job.client?.contact || "").replace(/\D/g, "");
     if (phone.length < 10) return alert("Valid mobile number nahi mila!");
 

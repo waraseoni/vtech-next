@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Users, UserPlus, Shield, ShieldCheck, KeyRound,
   Loader2, X, Eye, EyeOff, CheckCircle, AlertCircle,
-  RefreshCw, Wrench, Edit3, Trash2, Calendar,
+  RefreshCw, Wrench, Edit3, Trash2,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -253,7 +253,7 @@ export default function UsersPage() {
               <Users size={36} className="mx-auto text-slate-700"/>
               <p className="text-slate-600 text-sm font-bold">Koi user nahi mila</p>
               <p className="text-slate-700 text-xs">
-                "Create New" se pehla user banao, ya profiles table check karo
+                &quot;Create New&quot; se pehla user banao, ya profiles table check karo
               </p>
               <Link href="/users/new"
                 className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black no-underline transition-all">

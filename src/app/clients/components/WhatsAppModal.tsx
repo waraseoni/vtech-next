@@ -1,6 +1,19 @@
 import { X, Send } from "lucide-react";
 
-export function WhatsAppModal({ waModal, setWaModal, waClient, waMsgType, handleWaTypeChange, waText, setWaText, sendWhatsApp }: any) {
+type WaType = "welcome" | "reminder" | "followup" | "offer" | "custom";
+
+type WhatsAppModalProps = {
+  waModal: boolean;
+  setWaModal: (v: boolean) => void;
+  waClient: { name: string } | null;
+  waMsgType: WaType;
+  handleWaTypeChange: (t: WaType) => void;
+  waText: string;
+  setWaText: (v: string) => void;
+  sendWhatsApp: () => void;
+};
+
+export function WhatsAppModal({ waModal, setWaModal, waClient, waMsgType, handleWaTypeChange, waText, setWaText, sendWhatsApp }: WhatsAppModalProps) {
   if (!waModal) return null;
 
   return (

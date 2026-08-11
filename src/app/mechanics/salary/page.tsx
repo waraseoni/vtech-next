@@ -3,16 +3,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { 
-  Loader2, Calculator, Wallet, TrendingUp, History, 
+  Loader2, Calculator, History, 
   Calendar, ChevronLeft, ChevronRight, IndianRupee,
-  CreditCard, ExternalLink, Printer, Edit3, CheckCircle,
-  AlertCircle, DollarSign, Users, Plus
+  CreditCard, Edit3
 } from "lucide-react";
 import Link from "next/link";
-import { format, startOfMonth, endOfMonth, addMonths, subMonths, startOfDay, endOfDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, endOfDay } from "date-fns";
 import { logActivity } from "@/lib/activity";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+type DbRow = ReturnType<typeof JSON.parse>;
 
 type SalaryRecord = {
   id: number;
@@ -27,14 +28,6 @@ type SalaryRecord = {
   netTotal: number;
 };
 
-type SalaryHistory = {
-  id: number;
-  mechanic_id: number;
-  salary: number;
-  effective_date: string;
-  date_created: string;
-};
-
 export default function SalaryManagement() {
   const [activeTab, setActiveTab] = useState<"report" | "master">("report");
   const [loading, setLoading] = useState(true);
@@ -44,16 +37,16 @@ export default function SalaryManagement() {
   const [reportData, setReportData] = useState<SalaryRecord[]>([]);
   
   // Master State
-  const [mechanics, setMechanics] = useState<any[]>([]);
+  const [mechanics, setMechanics] = useState<DbRow[]>([]);
   const [showRateModal, setShowRateModal] = useState(false);
-  const [editingMech, setEditingMech] = useState<any>(null);
+  const [editingMech, setEditingMech] = useState<DbRow | null>(null);
   const [newRate, setNewRate] = useState("");
   const [effectiveDate, setEffectiveDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [saving, setSaving] = useState(false);
 
   // Payout Modal
   const [showPayoutModal, setShowPayoutModal] = useState(false);
-  const [payoutData, setPayoutData] = useState<any>(null);
+  const [payoutData, setPayoutData] = useState<DbRow | null>(null);
   const [payoutAmount, setPayoutAmount] = useState("");
   const [payoutReason, setPayoutReason] = useState("");
 

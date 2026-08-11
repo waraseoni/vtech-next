@@ -79,10 +79,10 @@ function BalanceSheetContent() {
   const [topCustomers, setTopCustomers] = useState<TopCustomer[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
 
-  const [selectedClient, setSelectedClient] = useState<{ id: number; name: string; opening_balance: number } | null>(null);
-  const [detailedLedger, setDetailedLedger] = useState<LedgerEntry[]>([]);
+  const [selectedClient] = useState<{ id: number; name: string; opening_balance: number } | null>(null);
+  const [detailedLedger] = useState<LedgerEntry[]>([]);
   const [showLedgerModal, setShowLedgerModal] = useState(false);
-  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [ledgerLoading] = useState(false);
 
   const fetchData = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -102,8 +102,8 @@ function BalanceSheetContent() {
       setLoanLedger(data.loanLedger || []);
       setTopCustomers(data.topCustomers || []);
       setSummary(data.summary || null);
-    } catch (e: any) {
-      setErr(e.message || "Failed to load data");
+    } catch (e) {
+      setErr(e instanceof Error ? (e.message || "Failed to load data") : String(e));
     } finally {
       setLoading(false);
       setRefreshing(false);

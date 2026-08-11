@@ -80,8 +80,8 @@ export default function ManageClientPage() {
           address:         data.address         || '',
           opening_balance: data.opening_balance?.toString() || '0.00',
         });
-      } catch (err: any) {
-        alert('Error loading client: ' + err.message);
+      } catch (err) {
+        alert('Error loading client: ' + (err instanceof Error ? err.message : String(err)));
         router.back();
       } finally {
         setFetchLoading(false);
@@ -200,8 +200,8 @@ export default function ManageClientPage() {
         await logActivity('Created New Client', 'Clients', data.id, `Client: ${clientName}`);
       }
       router.push('/clients');
-    } catch (err: any) {
-      alert('Error: ' + err.message);
+    } catch (err) {
+      alert('Error: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }

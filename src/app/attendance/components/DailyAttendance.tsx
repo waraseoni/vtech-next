@@ -206,8 +206,8 @@ export default function DailyAttendance({
       }
       await fetchSelf();
       await fetchAttendance();
-    } catch (err: any) {
-      setSelfMsg({ type: 'err', text: err.message || 'Error performing check-in/out.' });
+    } catch (err) {
+      setSelfMsg({ type: 'err', text: (err instanceof Error ? err.message : String(err)) || 'Error performing check-in/out.' });
     } finally {
       setSelfBusy(null);
     }
@@ -273,8 +273,8 @@ export default function DailyAttendance({
         }
       }));
       setSaveMsg({ type: 'ok', text: 'Attendance saved successfully!' });
-    } catch (err: any) {
-      setSaveMsg({ type: 'err', text: err.message || 'Error saving attendance.' });
+    } catch (err) {
+      setSaveMsg({ type: 'err', text: (err instanceof Error ? err.message : String(err)) || 'Error saving attendance.' });
     } finally {
       setSaving(false);
     }

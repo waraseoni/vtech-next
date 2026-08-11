@@ -97,7 +97,7 @@ export default function MonthlyReport({
     });
     setMechanicsData(result);
     setLoading(false);
-  }, [month, userRole, mechanicId, refreshKey]);
+  }, [month, userRole, mechanicId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -158,8 +158,6 @@ export default function MonthlyReport({
     </div>
   );
 
-  const [y, m]      = month.split('-').map(Number);
-  const daysInMonth = new Date(y, m, 0).getDate();
   const firstDay    = parseISTDate(month + '-01').getDay(); // 0=Sun
 
   const monthName   = parseISTDate(month + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });

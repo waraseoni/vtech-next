@@ -112,8 +112,8 @@ export default function ManageClientPage() {
           address:         data.address         || "",
           opening_balance: data.opening_balance?.toString() || "0.00",
         });
-      } catch (err: any) {
-        console.error("fetch error:", err?.message ?? JSON.stringify(err));
+      } catch (err) {
+        console.error("fetch error:", err instanceof Error ? err.message : JSON.stringify(err));
         setToast({ type: "error", msg: "Client details load nahi ho paye!" });
         router.push("/clients");
       } finally {
@@ -203,9 +203,9 @@ export default function ManageClientPage() {
         setToast({ type: "success", msg: "New client add ho gaya! ✅" });
         setTimeout(() => router.push("/clients"), 1000);
       }
-    } catch (err: any) {
-      console.error("save error:", err?.message ?? JSON.stringify(err));
-      setToast({ type: "error", msg: err?.message ?? "Save karne mein galti!" });
+    } catch (err) {
+      console.error("save error:", err instanceof Error ? err.message : JSON.stringify(err));
+      setToast({ type: "error", msg: err instanceof Error ? err.message : "Save karne mein galti!" });
     } finally {
       setLoading(false);
     }

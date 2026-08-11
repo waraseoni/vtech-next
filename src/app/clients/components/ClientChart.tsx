@@ -1,7 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { useMemo } from "react";
 
-const BarTooltip = ({ active, payload, label }: any) => {
+const BarTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string | number }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="dark:bg-[#1a2035] bg-white dark:border-[#2e3a55] border-gray-200 rounded-xl px-4 py-3 shadow-2xl">
@@ -11,7 +11,9 @@ const BarTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-export function ClientChart({ clients }: any) {
+type Client = { id: number; name: string; balance: number };
+
+export function ClientChart({ clients }: { clients: Client[] }) {
   const chartData=useMemo(()=>[...clients].filter(c=>c.balance>0).sort((a,b)=>b.balance-a.balance).slice(0,8).map(c=>({name:c.name.split(" ")[0],balance:c.balance,full:c.name})),[clients]);
   const CHART_COLORS=["#ef4444","#f97316","#f59e0b","#eab308","#84cc16","#22c55e","#06b6d4","#3b82f6"];
 

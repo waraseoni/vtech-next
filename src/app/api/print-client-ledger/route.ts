@@ -18,10 +18,6 @@ function fmtDate(d: string | null) {
   return d ? new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(new Date(d)) : "N/A";
 }
 
-function fmtDateShort(d: string | null) {
-  return d ? new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short" }).format(new Date(d)) : "N/A";
-}
-
 const STATUS_MAP: Record<number, string> = { 0: "Pending", 1: "On-Progress", 2: "Done", 3: "Paid", 4: "Cancelled", 5: "Delivered" };
 
 export async function GET(request: NextRequest) {

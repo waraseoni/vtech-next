@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
-import { Loader2, Printer, ShoppingCart, Calendar } from "lucide-react";
+import { Loader2, Printer, ShoppingCart } from "lucide-react";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
