@@ -44,8 +44,19 @@ export default function MechanicLedger() {
 
   // Date Logic
   const today = new Date();
-  const [from, setFrom] = useState(searchParams.get("from") || format(startOfMonth(today), "yyyy-MM-01"));
-  const [to, setTo] = useState(searchParams.get("to") || format(endOfMonth(today), "yyyy-MM-dd"));
+  const monthParam = searchParams.get("month");
+  const [from, setFrom] = useState(() => {
+    const f = searchParams.get("from");
+    if (f) return f;
+    if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) return format(startOfMonth(new Date(monthParam + "-01")), "yyyy-MM-dd");
+    return format(startOfMonth(today), "yyyy-MM-01");
+  });
+  const [to, setTo] = useState(() => {
+    const t = searchParams.get("to");
+    if (t) return t;
+    if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) return format(endOfMonth(new Date(monthParam + "-01")), "yyyy-MM-dd");
+    return format(endOfMonth(today), "yyyy-MM-dd");
+  });
 
   const [loading, setLoading] = useState(true);
   const [mechanic, setMechanic] = useState<Mechanic | null>(null);
