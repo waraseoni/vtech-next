@@ -93,7 +93,7 @@ export default function LoginPage() {
 
     // Intentional full reload: login ke baad RootClient session state fresh initialize hota hai
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.href = "/";
+    window.location.href = "/dashboard";
   };
 
   // ── Client OTP: send code ──────────────────────────────────────────────
@@ -153,7 +153,9 @@ export default function LoginPage() {
       return;
     }
 
-    window.location.href = onboardData.redirect === "/" ? "/" : "/my-account";
+    // Intentional full reload: onboarding ke baad RootClient session state fresh initialize hota hai
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = "/my-account";
   };
 
   const switchTab = (t: Tab) => {

@@ -463,7 +463,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     (async () => {
       try {
         // Public routes — redirect mat karo
-        const PUBLIC_PAGES = ["/", "/about", "/contact", "/job-status", "/login"];
+        const PUBLIC_PAGES = ["/", "/about", "/contact", "/job-status", "/login", "/stage-lighting", "/industrial", "/power-supply"];
         const isPublicPage = PUBLIC_PAGES.some(p => pathname === p || pathname.startsWith(p + "/"));
 
         // BUG FIX: getUser() kabhi-kabhi network par hang ho jata hai → "V-TECH
@@ -667,9 +667,20 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
   // Public pages — no sidebar, no dashboard chrome
-  const PUBLIC_PAGES = ["/login", "/about", "/contact", "/job-status"];
+  const PUBLIC_PAGES = ["/login", "/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"];
   const isPublicPage = PUBLIC_PAGES.includes(pathname) || pathname === "/";
-  if (isPublicPage && !profile) return <>{children}</>;
+
+  // Logged-in user on a public page → dashboard (public site logged-in users ke liye nahi)
+  useEffect(() => {
+    if (profile && isPublicPage) router.replace("/dashboard");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, pathname]);
+
+  if (isPublicPage) {
+    if (!profile) return <>{children}</>;
+    // Logged in — redirect effect `/dashboard` par bhejega; flash avoid karo
+    return <div className="min-h-screen bg-[#0d1117]" />;
+  }
 
   if (loading) {
     return (

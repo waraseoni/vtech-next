@@ -826,3 +826,35 @@ html[data-theme="dark"] {
   .dark\:bg-\[\#161b27\]        { background-color: #161b27 !important; }
   .dark\:bg-\[\#1a2035\]        { background-color: #1a2035 !important; }
 }
+
+/* ============================================
+   PUBLIC SITE — premium display font (Outfit)
+   ============================================ */
+.font-display { font-family: var(--font-outfit), system-ui, sans-serif; }
+
+/* Mobile-first public site helpers */
+.tap-target { min-height: 44px; min-width: 44px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-float { animation: none !important; }
+  .anim-fade { animation: none !important; }
+  * { scroll-behavior: auto !important; }
+}
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-14px); }
+}
+.anim-float { animation: floatY 7s ease-in-out infinite; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.anim-fade { animation: fadeUp 0.6s ease-out both; }
+
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.anim-scale { animation: popIn 0.25s cubic-bezier(0.2, 0.8, 0.3, 1) both; }

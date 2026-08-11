@@ -1,6 +1,10 @@
 import "./globals.css";
 import Script from "next/script";
 import RootClient from "./RootClient";
+import { Outfit, Inter } from "next/font/google";
+
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: "swap" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 // ─── Boot Guard (pre-hydration) ──────────────────────────────────────────────
 // Firefox me stale HTML → missing chunks → scripts fail → React KABHI hydrate
@@ -35,7 +39,7 @@ const BOOT_GUARD = `(function(){
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="h-full">
-      <body className="h-full m-0 font-sans antialiased text-slate-200 bg-[#0d1117] overflow-x-hidden theme-dark">
+      <body className={`h-full m-0 font-sans antialiased text-slate-200 bg-[#0d1117] overflow-x-hidden theme-dark ${outfit.variable} ${inter.variable}`}>
         <Script id="vtech-boot-guard" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: BOOT_GUARD }} />
         <RootClient>{children}</RootClient>
       </body>

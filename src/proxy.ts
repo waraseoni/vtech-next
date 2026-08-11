@@ -41,7 +41,7 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   // ✅ PUBLIC routes — no login required
-  const isPublic = ["/", "/about", "/contact", "/job-status", "/track", "/login"].some(r =>
+  const isPublic = ["/", "/about", "/contact", "/job-status", "/track", "/login", "/stage-lighting", "/industrial", "/power-supply"].some(r =>
     path === r || path.startsWith(r + "/")
   );
 
