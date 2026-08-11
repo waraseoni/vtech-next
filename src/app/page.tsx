@@ -365,6 +365,9 @@ export default function Dashboard() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setIsLoggedIn(!!user);
       setAuthChecked(true);
+    }).catch(() => {
+      setIsLoggedIn(false);
+      setAuthChecked(true);
     });
   }, []);
 
@@ -374,11 +377,21 @@ export default function Dashboard() {
 
   // ── MAIN DATA FETCH ──────────────────────────────────────────────────────
   useEffect(() => {
+    // BUG FIX: koi bhi Supabase query network par atak jaye to bhi loader
+    // hamesha nahi rukega — 10s baad page vese bhi dikha do (data partial).
+    const watchdog = setTimeout(() => setLoading(false), 10000);
     (async () => {
       try {
         setLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
+
+        // BUG FIX: logged-out user par heavy dashboard queries (transactions,
+        // 12-month revenue loop ~24 calls, counts...) bilkul mat chalao — koi
+        // query atak jaye to "V-TECH Loading…" hamesha ke liye ruk jata tha.
+        // Logged out → turant loading khatam → (public) website dikhao.
+        if (!user) return;
+
+        {
           const { data: pd } = await supabase
             .from("profiles").select("full_name, role").eq("id", user.id).single();
           setProfile(pd ?? {
@@ -559,6 +572,7 @@ export default function Dashboard() {
       } catch (e) {
         console.error("Dashboard fetch error:", e);
       } finally {
+        clearTimeout(watchdog);
         setLoading(false);
       }
     })();

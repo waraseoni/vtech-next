@@ -28,11 +28,14 @@ declare const self: ServiceWorkerGlobalScope;
 const CUSTOM_CACHE: RuntimeCaching[] = [
   // ⛔ HTML navigation (page load / hard refresh / login ke baad) — kabhi cache
   //    nahi. Online → hamesha fresh network HTML. Offline → precache fallback.
+  //    `cache:"no-store"` SW ke andar bhi browser HTTP cache bypass karta hai —
+  //    warna restart/deploy ke baad purana HTML (purane chunk URLs) serve hota
+  //    tha → chunk 404 → loader atak jata tha.
   {
     matcher: ({ request }) => request.mode === "navigate",
     handler: async ({ request }) => {
       try {
-        const res = await fetch(request);
+        const res = await fetch(request, { cache: "no-store" });
         if (res && (res.ok || res.status === 304)) return res;
       } catch {
         const url = new URL(request.url);
@@ -41,7 +44,7 @@ const CUSTOM_CACHE: RuntimeCaching[] = [
           (await serwist.matchPrecache("/"));
         if (fallback) return fallback;
       }
-      return fetch(request);
+      return fetch(request, { cache: "no-store" });
     },
   },
   // ⛔ RSC / Flight payloads (soft-navigation data) — kabhi cache nahi.
@@ -103,15 +106,40 @@ const serwist = new Serwist({
   runtimeCaching: CUSTOM_CACHE,
 });
 
-// Purane defaultCache runtime caches (jo stale HTML/RSC pin karte the) ek baar
-// naye SW ke activate par delete kar do — sab users next update par clean ho.
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    (async () => {
-      const stale = ["pages", "pages-rsc-prefetch", "pages-rsc", "next-data", "apis", "others", "cross-origin"];
-      await Promise.all(stale.map((name) => caches.delete(name)));
-    })()
-  );
-});
+// ─────────────────────────────────────────────────────────────────────────────
+// Fix: Firefox "loader par atak jata hai" — stale SW (13 Aug 2026)
+// ─────────────────────────────────────────────────────────────────────────────
+// PWAHead SW ko sirf PRODUCTION me register karta hai, isliye `next start` ke
+// baad localhost:3000 par purani SW registration browser me reh jati hai. Wo
+// purana SW (old build ka HTML/RSC cache karta tha) dev me STALE HTML serve
+// karta hai → purane chunk URLs → script fail → React hydrate nahi hota →
+// loader atak jata hai. Ctrl+F5 SW bypass karta hai isliye wahi theek lagta.
+// Ab: localhost/dev par SW khud ko unregister + caches saaf kar de. Isse stale
+// SW AUTOMATICALLY hat jata hai — user ko kuch karna nahi padta. (Browser har
+// navigation par sw.js ka update check karta hai, isliye ye naya code tab bhi
+// chalke jayega jab purana SW page control kar raha ho.)
+if (self.location.hostname === "localhost" || self.location.hostname === "127.0.0.1") {
+  self.addEventListener("install", () => {
+    self.skipWaiting();
+    self.registration
+      .unregister()
+      .catch(() => {});
+    if (self.caches) {
+      self.caches.keys().then((keys) => Promise.all(keys.map((k) => self.caches.delete(k).catch(() => {})))).catch(() => {});
+    }
+  });
+} else {
+  // Production: Purane defaultCache runtime caches (jo stale HTML/RSC pin karte
+  // the) ek baar naye SW ke activate par delete kar do — sab users next update
+  // par clean ho.
+  self.addEventListener("activate", (event) => {
+    event.waitUntil(
+      (async () => {
+        const stale = ["pages", "pages-rsc-prefetch", "pages-rsc", "next-data", "apis", "others", "cross-origin"];
+        await Promise.all(stale.map((name) => caches.delete(name)));
+      })()
+    );
+  });
+}
 
 serwist.addEventListeners();
