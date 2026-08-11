@@ -42,6 +42,12 @@
 
 ## P3 — Business Value (pending)
 
+## P6 — AI Expansion (in progress)
+
+WhatsApp auto-reply tooling (`generateWhatsAppReply`) build ho chuka tha par koi UI use nahi karta tha. Inquiries module par integrate kiya:
+- ✅ `InquiryModal.tsx` — "AI Reply" section: customer ke message par professional WhatsApp reply generate karta hai (`/api/chat` `type=whatsapp` → `generateWhatsAppReply`), editable textarea, Regenerate / Copy / Open WhatsApp (`wa.me/91<contact>?text=`) actions.
+- ⏳ Next: stock alerts / overdue reminders surface karna, ya auto-reply scheduling.
+
 ## P5 — Mechanics PHP Parity (FULLY DONE, verified vs MySQL dump 11 Aug 2026)
 
 Mechanics module ko legacy PHP (`admin/mechanics/*`, `admin/attendance/*`, `admin/salery/*`) ke exact logic par port/verify kiya:

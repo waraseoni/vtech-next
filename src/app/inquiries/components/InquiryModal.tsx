@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   X, User, Phone, Mail, Calendar, MessageSquare,
-  CheckCircle2, Clock, Send, Loader2, Inbox,
+  CheckCircle2, Clock, Send, Loader2, Inbox, Sparkles, Copy, RefreshCw,
 } from "lucide-react";
 
 interface Inquiry {
@@ -36,6 +36,9 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
   // BUG FIX 1: Local status state so badge updates instantly without full refetch
   const [isRead,   setIsRead]   = useState(false);
   const [receivedAgo, setReceivedAgo] = useState("");
+  const [aiReply,  setAiReply]  = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError,  setAiError]  = useState<string | null>(null);
 
   // BUG FIX 2: onClose/onUpdate intentionally NOT in deps — parent re-creates them
   // each render → including them would re-run the effect on every parent render
@@ -82,6 +85,38 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
       onUpdate(); // refresh parent list
     }
     setMarking(false);
+  };
+
+  // ── AI Reply (WhatsApp) ───────────────────────────────────────────────────
+  const generateReply = async () => {
+    if (!inquiry || aiLoading) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: inquiry.message,
+          type: "whatsapp",
+          context: { customerName: inquiry.fullname },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.details || data.error || "Reply generate nahi ho paya");
+      setAiReply(data.response || "");
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "Reply generate nahi ho paya");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const copyReply = async () => {
+    if (!aiReply) return;
+    try {
+      await navigator.clipboard.writeText(aiReply);
+    } catch { /* clipboard unavailable — ignore */ }
   };
 
   // Escape key close
@@ -218,6 +253,61 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
             <div className="px-4 py-3.5 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">
               {inquiry.message}
             </div>
+          </div>
+
+          {/* ── AI Reply (WhatsApp) ── */}
+          <div className="bg-[#111520] border border-[#21293d] rounded-xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#21293d]">
+              <Sparkles size={11} className="text-purple-400" />
+              <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600">AI Reply</span>
+              {!aiReply && !aiLoading && !aiError && (
+                <button onClick={generateReply}
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/25 text-purple-300 rounded-lg text-[10px] font-extrabold transition-all">
+                  <Sparkles size={10} /> Generate Reply
+                </button>
+              )}
+            </div>
+
+            {aiLoading ? (
+              <div className="px-4 py-6 flex flex-col items-center gap-2">
+                <Loader2 size={18} className="animate-spin text-purple-400" />
+                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">AI reply likh raha hai...</p>
+              </div>
+            ) : aiError ? (
+              <div className="px-4 py-4">
+                <p className="text-xs text-red-400 mb-2">{aiError}</p>
+                <button onClick={generateReply}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/25 text-purple-300 rounded-lg text-[10px] font-extrabold transition-all">
+                  <RefreshCw size={10} /> Retry
+                </button>
+              </div>
+            ) : aiReply ? (
+              <div className="p-3 space-y-2">
+                <textarea
+                  value={aiReply}
+                  onChange={e => setAiReply(e.target.value)}
+                  rows={4}
+                  className="w-full bg-[#0d1117] border border-[#21293d] focus:border-purple-500/40 text-slate-200 rounded-lg px-3 py-2.5 text-xs leading-relaxed outline-none resize-y"
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <button onClick={generateReply}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#161b27] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-purple-300 rounded-lg text-[10px] font-extrabold transition-all">
+                    <RefreshCw size={10} /> Regenerate
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={copyReply}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#161b27] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-white rounded-lg text-[10px] font-extrabold transition-all">
+                      <Copy size={10} /> Copy
+                    </button>
+                    <a href={`https://wa.me/91${inquiry.contact.replace(/\D/g, "")}?text=${encodeURIComponent(aiReply)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/25 text-emerald-300 rounded-lg text-[10px] font-extrabold transition-all">
+                      <Send size={10} /> Open WhatsApp
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
 
