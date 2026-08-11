@@ -30,7 +30,7 @@
 ## Stats
 - 184 TS/TSX files, ~55k lines, 55 commits last 2 months (41 Jan 2026 me)
 - 0 TypeScript errors (achha)
-- 615 lint errors (577 `no-explicit-any`) + 300 warnings — cleanup pending
+- ~~615 lint errors~~ → ✅ **0 ESLint errors** (616 `no-explicit-any` errors eliminated), 48 warnings remaining (`completed_tasks.md`)
 - README default create-next-app hai — koi onboarding docs nahi
 
 ## Security Review
@@ -45,7 +45,7 @@
 2. ~~**SMTP setup pending**~~ → ✅ DONE (Gmail SMTP set)
 3. ~~**Client emails set + `login_allowed` toggle**~~ → ✅ DONE (working email + OTP login + toggle ON/OFF tested)
 4. ~~**RLS rollout (7 tables)**~~ → ✅ DONE (migration applied + live verified 11 Aug). ⚠️ Baaki security debt: 414 browser-side `supabase.from()` calls + 102 direct writes ab bhi API-guards-primary pattern par hain (defense-in-depth RLS rollout baaki hai — optional)
-5. **615 lint errors** cleanup
+5. ~~**615 lint errors cleanup**~~ → ✅ DONE (0 ESLint errors, 48 warnings, 11 Aug)
 6. **6 unused/archived migrations** me confusion possible
 7. README/docs nahi hai
 
