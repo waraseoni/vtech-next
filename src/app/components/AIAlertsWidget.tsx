@@ -67,7 +67,6 @@ export default function AIAlertsWidget() {
 
   useEffect(() => {
     if (dismissed) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount par alerts fetch karna hi intent hai
     load();
   }, [dismissed, load]);
 

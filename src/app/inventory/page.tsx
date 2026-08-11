@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import {
   Package, Search, Eye, Printer, MapPin,
@@ -424,7 +425,8 @@ export default function InventoryPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {p.image_path ? (
-                            <img src={p.image_path} alt={p.name}
+                            <Image src={p.image_path} alt={p.name}
+                              width={48} height={48} unoptimized
                               className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
                               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                           ) : (
@@ -551,7 +553,8 @@ export default function InventoryPage() {
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex items-center gap-3 min-w-0">
                       {p.image_path ? (
-                        <img src={p.image_path} alt={p.name}
+                        <Image src={p.image_path} alt={p.name}
+                          width={48} height={48} unoptimized
                           className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
                           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                       ) : (

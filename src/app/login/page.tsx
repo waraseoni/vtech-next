@@ -91,6 +91,8 @@ export default function LoginPage() {
       localStorage.removeItem("vtech_remember");
     }
 
+    // Intentional full reload: login ke baad RootClient session state fresh initialize hota hai
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = "/";
   };
 

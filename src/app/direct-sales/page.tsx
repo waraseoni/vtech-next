@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState, useEffect, useMemo } from "react";
+import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -104,10 +104,8 @@ function DirectSalesPageInner() {
     return () => mq.removeEventListener("change", h);
   }, []);
 
-  useEffect(() => { fetchSales(); }, [dateFrom, dateTo, paymentFilter]);
-
   // ── Fetch ──────────────────────────────────────────────────────────────────
-  const fetchSales = async () => {
+  const fetchSales = useCallback(async () => {
     setLoading(true);
     try {
       let query = supabase
@@ -164,7 +162,9 @@ function DirectSalesPageInner() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateFrom, dateTo, paymentFilter]);
+
+  useEffect(() => { fetchSales(); }, [fetchSales]);
 
   // ── Filtered (mobile) ─────────────────────────────────────────────────────
   const filteredSales = useMemo(() => {

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Users, UserPlus, Shield, ShieldCheck, KeyRound,
   Loader2, X, Eye, EyeOff, CheckCircle, AlertCircle,
@@ -185,7 +186,8 @@ export default function UsersPage() {
   // ── Avatar initials ───────────────────────────────────────────────────────
   const avatar = (name: string | null, role: string | null, avatarUrl?: string | null) => (
     avatarUrl
-      ? <img src={avatarUrl} alt={name || "User"}
+      ? <Image src={avatarUrl} alt={name || "User"}
+          width={36} height={36} unoptimized
           className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}/>
       : <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-xs flex-shrink-0 ${

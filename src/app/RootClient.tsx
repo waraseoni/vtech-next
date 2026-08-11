@@ -3,6 +3,7 @@ import PWAHead from "../components/PWAHead";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import {
   LayoutDashboard, Users, Package, Settings, Wrench, Search,
@@ -450,6 +451,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
+    // Intentional full reload: RootClient ke stale in-memory state ko puri tarah reset karta hai
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = "/login";
   }, []);
 
@@ -576,6 +579,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // 2) Idle timeout → kuchh der browser na chalane par auto-logoff.
   const forceClientLogout = useCallback(async (reason: "revoked" | "idle") => {
     try { await supabase.auth.signOut(); } catch { /* ignore */ }
+    // Intentional full reload: client session state clean karna zaroori hai
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = "/login?reason=" + reason;
   }, []);
 
@@ -766,7 +771,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               <div className="px-3 py-3 border-t border-[#1a2234]">
                 <div className="flex items-center gap-3 px-3 py-2.5 bg-[#111520] rounded-xl">
                   {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt={displayName}
+                    <Image src={profile.avatar_url} alt={displayName}
+                      width={32} height={32} unoptimized
                       className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-white/10"
                       onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                   ) : (
@@ -864,7 +870,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                   <p className="text-[9px] font-bold text-blue-400 uppercase mt-0.5">{profile?.role}</p>
                 </div>
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt={displayName}
+                  <Image src={profile.avatar_url} alt={displayName}
+                    width={36} height={36} unoptimized
                     className="w-9 h-9 rounded-xl object-cover shadow-md flex-shrink-0 border border-white/10"
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                 ) : (

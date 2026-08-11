@@ -131,6 +131,7 @@ export default function ActivityLogPage() {
 
   useEffect(() => {
     fetchLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchLogs also called by manual search (handleSearch); useCallback would refetch on every searchTerm keystroke
   }, [moduleFilter]);
 
   const handleSearch = (e: React.FormEvent) => {

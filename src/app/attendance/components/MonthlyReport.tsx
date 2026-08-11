@@ -41,14 +41,14 @@ export default function MonthlyReport({
     if (monthParam && monthParam !== month) {
       setMonth(monthParam);
     }
-  }, [monthParam]);
+  }, [monthParam, month]);
 
   const [mechanicsData, setMechanicsData] = useState<MechanicMonthData[]>([]);
   const [loading, setLoading]         = useState(true);
   const [modalOpen, setModalOpen]     = useState(false);
   const [selected, setSelected]       = useState<{ mechanicId: number; mechanicName: string; date: string; timeIn?: string; timeOut?: string } | null>(null);
   // BUG FIX 3: trigger refetch without hard reload
-  const [refreshKey, setRefreshKey]   = useState(0);
+  const [, setRefreshKey]                 = useState(0);
 
   const fetchData = useCallback(async () => {
     setLoading(true);

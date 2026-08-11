@@ -87,7 +87,7 @@ export default function ManageClientPage() {
         setFetchLoading(false);
       }
     })();
-  }, [clientId]);
+  }, [clientId, isEdit, router]);
 
   // ── FIELD CHANGE ───────────────────────────────────────
   const handleChange = (field: keyof FormState, value: string) => {

@@ -173,7 +173,6 @@ export default function MechanicLedger() {
     }
   }, [mid, from, to]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch mount effect; setLoading sync init legit hai
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const changeMonth = (offset: number) => {

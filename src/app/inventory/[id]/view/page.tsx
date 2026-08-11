@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import {
   ArrowLeft, Package, Plus, Edit3, Trash2,
@@ -104,10 +105,8 @@ export default function ProductDetailPage() {
   const [stats,        setStats]        = useState({ totalIn: 0, totalSold: 0, available: 0, revenue: 0, stockValue: 0 });
   const [activeTab,    setActiveTab]    = useState<"in" | "out">("in");
 
-  useEffect(() => { fetchData(); }, [productId]);
-
   // ── Fetch ──────────────────────────────────────────────────────────────────
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       // Product
@@ -203,7 +202,9 @@ export default function ProductDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [productId]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleDeleteStock = async (id: number) => {
     if (!confirm("Delete this stock entry?")) return;
@@ -294,7 +295,8 @@ export default function ProductDetailPage() {
               <div className="flex items-start gap-3">
                 {product.image_path ? (
                   <div className="relative flex-shrink-0">
-                    <img src={product.image_path} alt={product.name}
+                    <Image src={product.image_path} alt={product.name}
+                      width={64} height={64} unoptimized
                       className="w-16 h-16 rounded-2xl object-cover border border-[#21293d]" />
                     <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-[#0d1117] ${st.bar}`} />
                   </div>

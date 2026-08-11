@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { supabase } from "@/lib/supabase";
 import { todayIST } from "@/lib/dateUtils";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Users, UserPlus, User, Search, Phone, Mail,
   Eye, Edit3, Trash2, Loader2, ShieldCheck,
@@ -528,7 +529,8 @@ export default function ClientsPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-3">
                         {client.image_path ? (
-                          <img src={client.image_path} alt={client.name}
+                          <Image src={client.image_path} alt={client.name}
+                            width={56} height={56} unoptimized
                             className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
                             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                         ) : (
@@ -698,7 +700,8 @@ export default function ClientsPage() {
                       <td className="px-3 py-3.5 align-middle">
                         <div className="flex items-center gap-2 min-w-0">
                           {client.image_path ? (
-                            <img src={client.image_path} alt={client.name}
+                            <Image src={client.image_path} alt={client.name}
+                              width={48} height={48} unoptimized
                               className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
                               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                           ) : (

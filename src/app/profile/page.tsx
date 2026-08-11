@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   User, Mail, Shield, ShieldCheck, Save, KeyRound,
   Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Wrench,
@@ -210,7 +211,8 @@ export default function ProfilePage() {
           {/* Avatar circle */}
           <div className="relative flex-shrink-0">
             {avatarUrl ? (
-              <img src={avatarUrl} alt={fullName || "User"}
+              <Image src={avatarUrl} alt={fullName || "User"}
+                width={64} height={64} unoptimized
                 className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 shadow-lg border border-white/10"
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
             ) : (

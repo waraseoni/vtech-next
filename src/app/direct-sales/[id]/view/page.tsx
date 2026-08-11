@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -80,18 +80,16 @@ export default function ViewSalePage() {
   const [loading,     setLoading]     = useState(true);
   const [sysInfo,     setSysInfo]     = useState<Record<string, string>>({});
 
-  useEffect(() => { fetchSale(); fetchCompanyInfo(); }, [saleId]);
-
-  const fetchCompanyInfo = async () => {
+  const fetchCompanyInfo = useCallback(async () => {
     const { data } = await supabase.from("system_info").select("meta_field, meta_value");
     if (data) {
       const info: Record<string, string> = {};
       data.forEach(r => { info[r.meta_field] = r.meta_value; });
       setSysInfo(info);
     }
-  };
+  }, []);
 
-  const fetchSale = async () => {
+  const fetchSale = useCallback(async () => {
     setLoading(true);
     try {
       const { data: sd, error: se } = await supabase.from("direct_sales").select("*").eq("id", saleId).single();
@@ -130,7 +128,12 @@ export default function ViewSalePage() {
         client_address: c?.address || null, staff_name: mechName, last_editor_name: editorName, items });
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  };
+  }, [saleId]);
+
+  useEffect(() => {
+    fetchSale();
+    fetchCompanyInfo();
+  }, [fetchSale, fetchCompanyInfo]);
 
   const printInvoice = () => {
     if (!sale) return;

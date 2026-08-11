@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import {
   Loader2, ArrowLeft, Calendar, DollarSign, TrendingUp, Users,
@@ -345,7 +346,6 @@ export default function MechanicDetailPage() {
     setLoading(false);
   }, [id, mechanic, fromDate, toDate]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch mount effect; setLoading sync init legit hai
   useEffect(() => { fetchMechanic(); }, [fetchMechanic]);
   useEffect(() => { if (mechanic) fetchData(); }, [mechanic, fetchData]);
 
@@ -395,7 +395,8 @@ export default function MechanicDetailPage() {
           </Link>
           <div className="relative flex-shrink-0">
             {mechanic?.image_path ? (
-              <img src={mechanic.image_path} alt={name}
+              <Image src={mechanic.image_path} alt={name}
+                width={56} height={56} unoptimized
                 className="w-14 h-14 rounded-xl object-cover shadow-lg border border-white/10 flex-shrink-0"
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
             ) : (

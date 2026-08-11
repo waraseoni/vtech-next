@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState, useEffect, useMemo } from "react";
+import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -74,10 +74,8 @@ function InquiriesPageInner() {
     return () => mq.removeEventListener("change", h);
   }, []);
 
-  useEffect(() => { fetchInquiries(); }, [fromDate, toDate, statusFilter]);
-
   // ── Fetch ──────────────────────────────────────────────────────────────────
-  const fetchInquiries = async () => {
+  const fetchInquiries = useCallback(async () => {
     setLoading(true);
     try {
       // BUG FIX 2: date filter was using plain toDate string (e.g. "2024-03-31")
@@ -110,7 +108,9 @@ function InquiriesPageInner() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fromDate, toDate, statusFilter]);
+
+  useEffect(() => { fetchInquiries(); }, [fetchInquiries]);
 
   const handleDelete = async (id: number) => {
     if (!confirm("Is inquiry ko permanently delete karna chahte hain?")) return;

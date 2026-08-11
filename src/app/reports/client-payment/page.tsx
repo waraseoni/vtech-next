@@ -69,7 +69,7 @@ export default function ClientPaymentReportPage() {
       setFromDate(from);
       setToDate(to);
     }
-  }, [allRows]);
+  }, [allRows, fromDate, toDate]);
 
   // Filter + Pagination Logic
   const filteredAndPaginated = useMemo(() => {

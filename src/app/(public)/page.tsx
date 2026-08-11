@@ -2,19 +2,21 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
 
 // ── Auto-redirect to dashboard if logged in ────────────────────────────────
 export default function HomePage() {
   const [ready, setReady] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) { window.location.href = "/dashboard"; return; }
+      if (user) { router.replace("/dashboard"); return; }
       setReady(true);
     });
-  }, []);
+  }, [router]);
 
   if (!ready) return (
     <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center">

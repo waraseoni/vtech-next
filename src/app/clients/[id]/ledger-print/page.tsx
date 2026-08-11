@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, use, useCallback } from "react";
+import React, { useEffect, useState, use, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -112,9 +112,12 @@ export default function LedgerPrintPage({
   const fromDate = searchParams.get("from") || "";
   const toDate   = searchParams.get("to")   || "";
   const rawStatusParam = searchParams.get("status") || "";
-  const activeStatuses: (string | number)[] = rawStatusParam
-    ? rawStatusParam.split(",").map(s => (isNaN(Number(s)) ? s : Number(s)))
-    : [];
+  const activeStatuses: (string | number)[] = useMemo(
+    () => rawStatusParam
+      ? rawStatusParam.split(",").map(s => (isNaN(Number(s)) ? s : Number(s)))
+      : [],
+    [rawStatusParam]
+  );
 
   // ── STATE ─────────────────────────────────────────────────────────────
   const [client,   setClient]   = useState<ClientInfo | null>(null);
@@ -332,7 +335,7 @@ export default function LedgerPrintPage({
     } finally {
       setLoading(false);
     }
-  }, [clientId, fromDate, toDate, rawStatusParam]);
+  }, [clientId, fromDate, toDate, activeStatuses]);
 
   useEffect(() => { fetchLedger(); }, [fetchLedger]);
 

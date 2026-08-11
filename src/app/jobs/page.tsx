@@ -733,6 +733,8 @@ function JobsListContent() {
     const p = new URLSearchParams();
     if (dateFrom) p.append("date_from", dateFrom);
     if (dateTo)   p.append("date_to", dateTo);
+    // Download trigger (file response), page navigation nahi — isliye window.location intentional
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = `/api/export-transactions?${p}`;
   };
 

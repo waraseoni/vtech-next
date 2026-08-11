@@ -131,6 +131,29 @@ function ManageJobPageInner({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // ── CLIENT BALANCE ────────────────────────────────────────────────────
+  // Balance = Opening + All Billed (repairs + direct sales) - All Settled (payments + discounts)
+  // matches Client List and Ledger Print calculation
+  const fetchClientBalance = useCallback(async (cid: number) => {
+    const [{ data: txns }, { data: sales }, { data: pays }] = await Promise.all([
+      supabase.from("transaction_list").select("amount").eq("client_name", String(cid)),
+      supabase.from("direct_sales").select("total_amount").eq("client_id", cid),
+      supabase.from("client_payments").select("amount, discount").eq("client_id", cid).is("loan_id", null),
+    ]);
+    const { data: cd } = await supabase.from("client_list").select("opening_balance").eq("id", cid).single();
+    const ob  = cd?.opening_balance || 0;
+    const dr  = (txns  || []).reduce((s, r) => s + (r.amount || 0), 0)
+              + (sales || []).reduce((s, r) => s + (r.total_amount || 0), 0);
+    // FIXED: credit = amount + discount (both clear the balance)
+    const cr  = (pays  || []).reduce((s, p) => s + (p.amount || 0) + (p.discount || 0), 0);
+    const bal = ob + dr - cr;
+    setClientBalance(
+      bal > 0.005  ? { amount: bal, label: "Due",     type: "due"      } :
+      bal < -0.005 ? { amount: Math.abs(bal), label: "Advance", type: "advance"  } :
+                     { amount: 0,   label: "Settled",  type: "settled"  }
+    );
+  }, []);
+
   // ── FETCH MASTER DATA ─────────────────────────────────────────────────
   useEffect(() => {
     const loadMaster = async () => {
@@ -255,7 +278,7 @@ function ManageJobPageInner({
       setProducts(withStock);
     };
     loadMaster();
-  }, [presetClientId, isEdit]);
+  }, [presetClientId, isEdit, fetchClientBalance]);
 
   // ── FETCH JOB (edit mode) ─────────────────────────────────────────────
   useEffect(() => {
@@ -327,30 +350,7 @@ function ManageJobPageInner({
       }
     };
     loadJob();
-  }, [jobId, isEdit]);
-
-  // ── CLIENT BALANCE ────────────────────────────────────────────────────
-  // Balance = Opening + All Billed (repairs + direct sales) - All Settled (payments + discounts)
-  // matches Client List and Ledger Print calculation
-  const fetchClientBalance = useCallback(async (cid: number) => {
-    const [{ data: txns }, { data: sales }, { data: pays }] = await Promise.all([
-      supabase.from("transaction_list").select("amount").eq("client_name", String(cid)),
-      supabase.from("direct_sales").select("total_amount").eq("client_id", cid),
-      supabase.from("client_payments").select("amount, discount").eq("client_id", cid).is("loan_id", null),
-    ]);
-    const { data: cd } = await supabase.from("client_list").select("opening_balance").eq("id", cid).single();
-    const ob  = cd?.opening_balance || 0;
-    const dr  = (txns  || []).reduce((s, r) => s + (r.amount || 0), 0)
-              + (sales || []).reduce((s, r) => s + (r.total_amount || 0), 0);
-    // FIXED: credit = amount + discount (both clear the balance)
-    const cr  = (pays  || []).reduce((s, p) => s + (p.amount || 0) + (p.discount || 0), 0);
-    const bal = ob + dr - cr;
-    setClientBalance(
-      bal > 0.005  ? { amount: bal, label: "Due",     type: "due"      } :
-      bal < -0.005 ? { amount: Math.abs(bal), label: "Advance", type: "advance"  } :
-                     { amount: 0,   label: "Settled",  type: "settled"  }
-    );
-  }, []);
+  }, [jobId, isEdit, fetchClientBalance, router]);
 
   // ── ADD NEW CLIENT ─────────────────────────────────────────────────────
   const handleSaveNewClient = async () => {

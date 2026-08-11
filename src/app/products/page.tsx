@@ -5,6 +5,7 @@ import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Package, Camera, ChevronDown } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { compressImage } from "@/lib/imageCompression";
 
 type Product = {
@@ -268,7 +269,8 @@ export default function ProductsPage() {
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
                           {p.image_path ? (
-                              <img src={p.image_path} alt={p.name}
+                              <Image src={p.image_path} alt={p.name}
+                                width={48} height={48} unoptimized
                                 className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
                                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                           ) : (
@@ -365,7 +367,7 @@ export default function ProductsPage() {
                 <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4">
                   <div className="flex items-center gap-4 flex-wrap">
                       {imgPreview ? (
-                        <img src={imgPreview} alt="Product" className="w-28 h-28 rounded-xl object-cover border border-[#21293d]" />
+                        <Image src={imgPreview} alt="Product" width={112} height={112} unoptimized className="w-28 h-28 rounded-xl object-cover border border-[#21293d]" />
                       ) : (
                         <div className="w-28 h-28 rounded-xl bg-white/5 border border-dashed border-[#2a3450] flex items-center justify-center">
                           <Package size={28} className="text-slate-600" />

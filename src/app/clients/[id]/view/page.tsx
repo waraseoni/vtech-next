@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, Edit3, Phone, MapPin, Loader2, User, Calendar,
@@ -167,9 +168,10 @@ function StatCard({
 function ClientAvatar({ name, imagePath }: { name: string; imagePath?: string }) {
   if (imagePath) {
     return (
-      <img
+      <Image
         src={imagePath}
         alt={name}
+        width={144} height={144} unoptimized
         className="w-28 h-28 md:w-36 md:h-36 rounded-2xl object-cover flex-shrink-0 shadow-lg border border-white/10"
         onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
       />

@@ -51,12 +51,6 @@ async function restGet(token, table, qs) {
   return { status: r.status, count: Array.isArray(body) ? body.length : null, body };
 }
 
-function countFromContentRange(r) {
-  const cr = r.headers.get("content-range") || "";
-  const m = cr.match(/\/(\d+)$/);
-  return m ? Number(m[1]) : null;
-}
-
 async function prompt(q) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((res) => rl.question(q, (a) => { rl.close(); res(a.trim()); }));

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2,
   Check, AlertCircle, Users, DollarSign, TrendingUp,
@@ -291,7 +292,8 @@ export default function MechanicsPage() {
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
                           {m.image_path ? (
-                            <img src={m.image_path} alt={name}
+                            <Image src={m.image_path} alt={name}
+                              width={36} height={36} unoptimized
                               className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
                               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                           ) : (

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   ArrowLeft, Wrench, User, Clock,
   Package, Settings2, AlertTriangle, CheckCircle2,
@@ -685,7 +686,8 @@ ${svcHtml}${prodHtml}
                         {images.map((img) => (
                           <div key={img.id} className="relative group">
                             <a href={img.image_path} target="_blank" rel="noreferrer">
-                              <img src={img.image_path} alt="Item"
+                              <Image src={img.image_path} alt="Item"
+                                width={640} height={128} unoptimized
                                 className="w-full h-32 object-cover rounded-lg border border-[#21293d] hover:opacity-80 transition-opacity cursor-pointer"
                                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}/>
                             </a>

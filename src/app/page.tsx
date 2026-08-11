@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import Image from "next/image";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, PieChart, Pie,
@@ -134,9 +135,11 @@ function PublicWebsite() {
                   onMouseEnter={e => (e.currentTarget.style.borderColor = "#22c55e")}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = "#22c55e33")}>
                   <div style={{ position: "relative", height: "240px", overflow: "hidden" }}>
-                    <img
+                    <Image
                       src={photo.src}
                       alt={photo.label + " - V-Technologies Jabalpur"}
+                      width={640}
+                      height={240}
                       style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.4s" }}
                       onMouseEnter={e => ((e.target as HTMLImageElement).style.transform = "scale(1.08)")}
                       onMouseLeave={e => ((e.target as HTMLImageElement).style.transform = "scale(1)")}
@@ -315,7 +318,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as unknown as { standalone?: boolean }).standalone) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- install state browser API se sync karna hai
       setIsInstalled(true);
     }
     const handler = (e: Event) => {
@@ -694,7 +696,7 @@ export default function Dashboard() {
     }
   }, [from, to, profile]);
 
-  useEffect(() => { fetchFinancial(); }, [fetchFinancial]); // eslint-disable-line react-hooks/set-state-in-effect -- mount par financial init fetch
+  useEffect(() => { fetchFinancial(); }, [fetchFinancial]);
 
   // BUG FIX 1 applied in resetDates too
   const resetDates = () => {
@@ -1183,7 +1185,7 @@ export default function Dashboard() {
               <button onClick={() => setQrOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"><X size={16} /></button>
             </div>
             {qrDataUrl ? (
-              <img src={qrDataUrl} alt="Site QR Code" className="mx-auto rounded-xl bg-white p-2" width={220} height={220} />
+              <Image src={qrDataUrl} alt="Site QR Code" className="mx-auto rounded-xl bg-white p-2" width={220} height={220} unoptimized />
             ) : (
               <div className="h-[220px] flex items-center justify-center"><Loader2 className="animate-spin text-slate-600" /></div>
             )}

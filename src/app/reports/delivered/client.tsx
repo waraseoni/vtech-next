@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
@@ -84,7 +84,7 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
     fetchClients();
   }, []);
 
-  const fetchData = async (isRefresh = false) => {
+  const fetchData = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
 
@@ -180,11 +180,11 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [from, to, selectedClientId]);
 
   useEffect(() => {
     fetchData();
-  }, [from, to, selectedClientId]);
+  }, [fetchData]);
 
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault();

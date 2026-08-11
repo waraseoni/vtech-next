@@ -109,13 +109,13 @@ export default function LendersPage() {
     );
   });
 
-  const getLenderTotals = (lender: Lender) => {
+  const getLenderTotals = useCallback((lender: Lender) => {
     const lPayments = paymentsByLender.get(lender.id) || [];
     const totalPaid = lPayments.reduce((s, p) => s + (p.amount_paid || 0), 0);
     const totalToPay = (lender.emi_amount || 0) * (lender.tenure_months || 0);
     const balance = totalToPay - totalPaid;
     return { totalPaid, totalToPay, balance };
-  };
+  }, [paymentsByLender]);
 
   const openAdd = () => {
     setEditing(null);
@@ -256,7 +256,7 @@ export default function LendersPage() {
       balance += t.balance;
     });
     return { principal, paid, balance };
-  }, [rows, paymentsByLender]);
+  }, [rows, getLenderTotals]);
 
   return (
     <AdminPage title="Lenders" subtitle="Loan liye hue lenders se">

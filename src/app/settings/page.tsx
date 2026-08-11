@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Settings2, Save, Loader2, CheckCircle, AlertCircle,
   Building2, Phone, Mail, MapPin, Tag, ShieldCheck,
@@ -560,7 +561,7 @@ export default function SettingsPage() {
                 <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4">
                   <div className="flex items-center gap-4 flex-wrap">
                     {logo ? (
-                      <img src={logo} alt="Logo" className="max-h-16 max-w-[200px] object-contain bg-white rounded-lg p-1" />
+                      <Image src={logo} alt="Logo" width={200} height={64} unoptimized className="max-h-16 max-w-[200px] object-contain bg-white rounded-lg p-1" />
                     ) : (
                       <div className="w-24 h-16 rounded-lg bg-white/5 border border-dashed border-[#2a3450] flex items-center justify-center">
                         <ImageIcon size={20} className="text-slate-600" />
@@ -600,7 +601,7 @@ export default function SettingsPage() {
                 <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4">
                   <div className="flex items-center gap-4 flex-wrap">
                     {cover ? (
-                      <img src={cover} alt="Cover" className="max-h-28 max-w-[260px] object-cover rounded-lg border border-[#21293d]" />
+                      <Image src={cover} alt="Cover" width={260} height={112} unoptimized className="max-h-28 max-w-[260px] object-cover rounded-lg border border-[#21293d]" />
                     ) : (
                       <div className="w-36 h-24 rounded-lg bg-white/5 border border-dashed border-[#2a3450] flex items-center justify-center">
                         <ImageIcon size={20} className="text-slate-600" />
@@ -800,7 +801,7 @@ export default function SettingsPage() {
               {/* Current signature preview */}
               {signature && (
                 <div className="flex items-center gap-4 p-4 bg-[#0d1117] rounded-xl border border-[#21293d]">
-                  <img src={signature} alt="Signature" className="max-h-16 object-contain" />
+                  <Image src={signature} alt="Signature" width={200} height={64} unoptimized className="max-h-16 object-contain" />
                   <button type="button" onClick={removeSignature} disabled={sigSaving}
                     className="ml-auto text-red-400 hover:text-red-300 text-xs flex items-center gap-1">
                     <Trash2 size={14}/> Remove
@@ -917,7 +918,7 @@ export default function SettingsPage() {
           <div className="bg-[#0d1f35] border border-blue-500/20 rounded-2xl p-5">
             <p className="text-[10px] font-black uppercase tracking-wider text-slate-600 mb-3">Preview — Bills & Reports mein aise dikhega</p>
             <div className="space-y-1">
-              {logo && <img src={logo} alt="Logo" className="max-h-12 max-w-[160px] object-contain bg-white rounded-lg p-0.5" />}
+              {logo && <Image src={logo} alt="Logo" width={160} height={48} unoptimized className="max-h-12 max-w-[160px] object-contain bg-white rounded-lg p-0.5" />}
               <p className="text-white font-black text-base">{name || "System Name"}</p>
               {shortName && <p className="text-blue-400 text-xs font-bold">{shortName}</p>}
               <p className="text-slate-400 text-xs">{address || "Address"}</p>

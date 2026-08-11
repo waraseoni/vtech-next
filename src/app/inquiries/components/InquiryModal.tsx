@@ -42,7 +42,6 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
 
   // BUG FIX 2: onClose/onUpdate intentionally NOT in deps — parent re-creates them
   // each render → including them would re-run the effect on every parent render
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- deps intentionally scoped to inquiryId
   const fetchInquiry = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -67,10 +66,10 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
       // Notify parent so list updates unread count — but don't close modal
       onUpdate();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- BUG FIX 2: onClose/onUpdate are recreated each parent render; including them would refetch on every render
   }, [inquiryId]); // BUG FIX 2: removed onClose from deps
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount par data fetch; setLoading init sync legit
     fetchInquiry();
   }, [fetchInquiry]);
 
