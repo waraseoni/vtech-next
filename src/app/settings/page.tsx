@@ -7,7 +7,7 @@ import {
   Settings2, Save, Loader2, CheckCircle, AlertCircle,
   Building2, Phone, Mail, MapPin, Tag, ShieldCheck,
   Clock, Pen, Trash2, Upload, Eye, EyeOff, User, Image as ImageIcon,
-  History,
+  History, KeyRound,
 } from "lucide-react";
 
 const inputCls  = "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
@@ -78,6 +78,14 @@ export default function SettingsPage() {
   const groqModels = ["llama-3.3-70b-versatile","llama-3.3-70b-specdec","llama3-70b-8192","mixtral-8x7b-32768","llama3-8b-8192"];
   const geminiModels = ["gemini-2.5-flash","gemini-2.5-flash-lite","gemini-2.5-pro"];
 
+  // License
+  const [license, setLicense] = useState<{
+    activated: boolean; configured: boolean; plan?: string; shopName?: string;
+    keyMasked?: string; activatedAt?: string; expiresAt?: string | null; error?: string;
+  } | null>(null);
+  const [licenseKey, setLicenseKey] = useState("");
+  const [licenseBusy, setLicenseBusy] = useState(false);
+
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 3500);
@@ -144,6 +152,12 @@ export default function SettingsPage() {
       setAiModel(info.ai_model || "gemini-2.5-flash");
 
       setLoading(false);
+
+      // License status (silent — fail par ignore)
+      try {
+        const licRes = await fetch("/api/license/status", { cache: "no-store" });
+        if (licRes.ok) setLicense(await licRes.json());
+      } catch { /* ignore */ }
     })();
   }, [router]);
 
@@ -484,6 +498,32 @@ export default function SettingsPage() {
   };
 
   const availableModels = aiProvider === "groq" ? groqModels : geminiModels;
+
+  // ── License activation ────────────────────────────────────
+  const handleActivateLicense = async (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
+    if (!licenseKey.trim()) { setToast({ type: "error", msg: "License key daalein!" }); return; }
+    setLicenseBusy(true);
+    try {
+      const res = await fetch("/api/license/activate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: licenseKey.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Activation failed");
+      setToast({ type: "success", msg: "License activate ho gaya ✅" });
+      setLicenseKey("");
+      setLicense({
+        activated: true, configured: true, plan: json.plan, shopName: json.shopName,
+        expiresAt: json.expiresAt, activatedAt: new Date().toISOString(),
+      });
+    } catch (err: unknown) {
+      setToast({ type: "error", msg: err instanceof Error ? err.message : "Activation failed" });
+    } finally {
+      setLicenseBusy(false);
+    }
+  };
 
   if (loading) return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 bg-[#0d1117]">
@@ -911,6 +951,73 @@ export default function SettingsPage() {
                   Save AI Settings
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* License Activation */}
+          <div className={fieldsets}>
+            <div className={`${fHdr} from-emerald-600/20 to-transparent`}>
+              <KeyRound size={14} className="text-emerald-400"/>
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">License Activation</h3>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className={`rounded-xl border p-4 flex items-start gap-3 ${
+                license?.activated
+                  ? "border-emerald-500/25 bg-emerald-500/5"
+                  : "border-amber-500/25 bg-amber-500/5"
+              }`}>
+                {license?.activated ? (
+                  <CheckCircle size={18} className="text-emerald-400 mt-0.5 shrink-0"/>
+                ) : (
+                  <AlertCircle size={18} className="text-amber-400 mt-0.5 shrink-0"/>
+                )}
+                <div>
+                  <p className="text-xs font-black text-slate-300">
+                    {license?.activated
+                      ? "Active ✅"
+                      : license === null
+                        ? "Checking..."
+                        : "Trial / Not activated"}
+                  </p>
+                  {license?.activated ? (
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Plan: <span className="text-emerald-400 font-bold uppercase">{license.plan}</span>
+                      {license.shopName && <> · {license.shopName}</>}
+                      {license.keyMasked && <span className="font-mono"> · {license.keyMasked}</span>}
+                      {license.expiresAt && <> · Expires: {new Date(license.expiresAt).toLocaleDateString()}</>}
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      License key daalein aur Activate dabaein. Key seller se milegi.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {!license?.activated && (
+                <div className="space-y-3">
+                  <div>
+                    <label className={labelCls}>License Key</label>
+                    <input
+                      type="text"
+                      value={licenseKey}
+                      onChange={e => setLicenseKey(e.target.value.toUpperCase())}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleActivateLicense(); } }}
+                      placeholder="VTC-XXXX-XXXX-XXXX-XXXX"
+                      className={`${inputCls} font-mono tracking-widest uppercase`}
+                    />
+                  </div>
+                  <button type="button" onClick={handleActivateLicense} disabled={licenseBusy || license?.configured === false}
+                    className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg disabled:opacity-50 inline-flex items-center gap-1.5 transition-all">
+                    {licenseBusy ? <><Loader2 size={12} className="animate-spin"/> Activating...</> : <><KeyRound size={12}/> Activate License</>}
+                  </button>
+                  {license && !license.configured && (
+                    <p className="text-[10px] text-amber-400">
+                      License service setup nahi hai — LICENSE_SERVICE_URL / LICENSE_SERVICE_ANON_KEY env add karein.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

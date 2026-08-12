@@ -23,6 +23,7 @@ dist/
 .env
 .env.local
 .env.*.local
+.env.production
 .env*.7z
 .env*_*
 !.env.example
@@ -104,3 +105,7 @@ sync_plan.md
 # 17. Misc sensitive txt files
 *.7z
 db folder/
+
+# 18. Client packages & per-client secrets (generate karo, kabhi push mat karo)
+packages/
+scripts/clients.json

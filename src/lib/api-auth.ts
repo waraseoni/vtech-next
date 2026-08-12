@@ -43,7 +43,7 @@ export async function requireStaff() {
       .select("role")
       .eq("id", user.id)
       .maybeSingle();
-    if (profile?.role !== "admin" && profile?.role !== "staff") return null;
+    if (profile?.role !== "admin" && profile?.role !== "staff" && profile?.role !== "developer") return null;
     return user;
   } catch {
     return null;
@@ -86,8 +86,14 @@ export async function requireAdmin() {
   }
   if (!user) return null;
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-  if (profile?.role !== "admin") return null;
+  // Developer role admin ke barabar trusted hota hai (V-TECH dev team ke liye).
+  if (profile?.role !== "admin" && profile?.role !== "developer") return null;
   return { user, profile };
+}
+
+/** Admin YA developer role — dono ko allow karta hai (seller/dev portals ke liye). */
+export async function requireAdminOrDeveloper() {
+  return requireAdmin();
 }
 
 /** Returns the logged-in user's profile role ("admin" | "staff" | "client") or null. */

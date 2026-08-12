@@ -1,5 +1,7 @@
 "use client";
 import PWAHead from "../components/PWAHead";
+import LicenseGate from "../components/LicenseGate";
+import type { LicenseStatus } from "@/lib/license";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -11,7 +13,7 @@ import {
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
   DollarSign, Truck, CreditCard, Clock, Briefcase, Coins, Receipt,
   Toolbox, FolderOpen, UsersRound, Database, Settings2, MessageSquare,
-  ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert,
+  ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert, KeyRound, Code2,
 } from "lucide-react";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
@@ -295,9 +297,10 @@ const subLinkCls = (active: boolean) =>
 
 // ─── Sidebar nav (shared by desktop + mobile drawer) ─────────────────────────
 function SidebarNav({
-  pathname, isAdmin, isClient, onNavClick,
+  pathname, isAdmin, isClient, onNavClick, sellerEnabled, devEnabled,
 }: {
   pathname: string; isAdmin: boolean; isClient?: boolean; onNavClick?: () => void;
+  sellerEnabled?: boolean; devEnabled?: boolean;
 }) {
   const lk = (href: string, exact = false) =>
     exact ? pathname === href : pathname.startsWith(href);
@@ -424,6 +427,28 @@ function SidebarNav({
               <li><Link href="/settings/throttle" className={subLinkCls(pathname === "/settings/throttle")} onClick={onNavClick}><ShieldAlert size={12} className="text-red-400" />Login Throttle</Link></li>
               <li><Link href="/settings/whatsapp-templates" className={subLinkCls(pathname === "/settings/whatsapp-templates")} onClick={onNavClick}><MessageSquare size={12} className="text-green-400" />WA Templates</Link></li>
             </SubMenu>
+
+            {(sellerEnabled || devEnabled) && (
+              <>
+                <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+                  Licensing
+                </li>
+                {sellerEnabled && (
+                  <li>
+                    <Link href="/seller" className={navLinkCls(pathname === "/seller")} onClick={onNavClick}>
+                      <KeyRound size={16} className="text-amber-400" /><span>Seller Portal</span>
+                    </Link>
+                  </li>
+                )}
+                {devEnabled && (
+                  <li>
+                    <Link href="/developer" className={navLinkCls(pathname === "/developer")} onClick={onNavClick}>
+                      <Code2 size={16} className="text-indigo-400" /><span>Developer</span>
+                    </Link>
+                  </li>
+                )}
+              </>
+            )}
           </>
         )}
       </ul>
@@ -448,6 +473,19 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   const [drawerOpen,   setDrawerOpen]   = useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const [theme,        setTheme]        = useState<"dark" | "light" | null>(null);
+  const [license,      setLicense]      = useState<LicenseStatus | null>(null);
+
+  // License status fetch — login ke baad har non-public page par.
+  // Gate (LicenseGate) isi state ko dekh kar render hota hai.
+  const refreshLicense = useCallback(async () => {
+    try {
+      const res = await fetch("/api/license/status", { cache: "no-store" });
+      if (!res.ok) { setLicense(null); return; }
+      setLicense(await res.json());
+    } catch {
+      setLicense(null);
+    }
+  }, []);
 
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
@@ -463,7 +501,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     (async () => {
       try {
         // Public routes — redirect mat karo
-        const PUBLIC_PAGES = ["/", "/about", "/contact", "/job-status", "/login", "/stage-lighting", "/industrial", "/power-supply"];
+        const PUBLIC_PAGES = ["/", "/about", "/contact", "/job-status", "/login", "/setup", "/stage-lighting", "/industrial", "/power-supply"];
         const isPublicPage = PUBLIC_PAGES.some(p => pathname === p || pathname.startsWith(p + "/"));
 
         // BUG FIX: getUser() kabhi-kabhi network par hang ho jata hai → "V-TECH
@@ -574,6 +612,17 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     }
   }, [profile?.role, pathname, router]);
 
+  // LICENSE GATE: profile milne ke baad non-public page par license status fetch.
+  // Login hamesha allowed hai — isliye har baar profile set hone par chalta hai.
+  useEffect(() => {
+    if (!profile) return;
+    const pub = pathname === "/" ||
+      ["/login", "/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"]
+        .some(p => pathname === p || pathname.startsWith(p + "/"));
+    if (pub) return;
+    refreshLicense();
+  }, [profile, pathname, refreshLicense]);
+
   // ── Client portal session security ──────────────────────────────────────
   // 1) Access revoked (login_allowed=false) → auto-logoff.
   // 2) Idle timeout → kuchh der browser na chalane par auto-logoff.
@@ -653,7 +702,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // sirf un browsers me dikhta hai jahan `vtech_theme=light` saved hai).
   useEffect(() => {
     const pub = pathname === "/" ||
-      ["/login", "/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"]
+      ["/login", "/setup", "/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"]
         .some(p => pathname === p || pathname.startsWith(p + "/"));
     try {
       if (pub) {
@@ -695,7 +744,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
   // Public pages — no sidebar, no dashboard chrome
-  const PUBLIC_PAGES = ["/login", "/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"];
+  const PUBLIC_PAGES = ["/login", "/setup", "/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"];
   const isPublicPage = PUBLIC_PAGES.includes(pathname) || pathname === "/";
 
   // Logged-in user on a public page → dashboard (public site logged-in users ke liye nahi)
@@ -726,8 +775,24 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     );
   }
 
-  const isAdmin     = profile?.role === "admin";
-  const isClient    = profile?.role === "client";
+  const isAdmin  = profile?.role === "admin" || profile?.role === "developer";
+  const isClient = profile?.role === "client";
+
+  // ── LICENSE GATE ──
+  // License invalid (trial mode / expired / disabled) → pura dashboard block,
+  // full-screen gate dikhao jisme admin naya key daal sake. Login hamesha
+  // allowed hai, isliye yahan kabhi deadlock nahi hota.
+  if (license && !license.valid) {
+    return (
+      <LicenseGate
+        status={license}
+        isAdmin={isAdmin}
+        onActivated={refreshLicense}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   const isAiPage    = pathname === "/ai";
   const displayName = profile?.full_name ?? "User";
   const initials    = displayName.slice(0, 2).toUpperCase();
@@ -756,7 +821,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               </div>
             </div>
 
-            <SidebarNav pathname={pathname} isAdmin={isAdmin} isClient={isClient} />
+            <SidebarNav pathname={pathname} isAdmin={isAdmin} isClient={isClient} sellerEnabled={license?.sellerEnabled} devEnabled={license?.devEnabled} />
 
             <div className="px-4 py-3 border-t border-[#1a2234] flex items-center justify-between">
               <span className="text-[9px] text-slate-500 dark:text-slate-300 font-black tracking-widest uppercase">V-TECH PRO v4.2</span>
@@ -804,7 +869,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               </div>
 
               {/* Same full nav as desktop */}
-              <SidebarNav pathname={pathname} isAdmin={isAdmin} isClient={isClient} onNavClick={() => setDrawerOpen(false)} />
+              <SidebarNav pathname={pathname} isAdmin={isAdmin} isClient={isClient} onNavClick={() => setDrawerOpen(false)} sellerEnabled={license?.sellerEnabled} devEnabled={license?.devEnabled} />
 
               {/* User info at drawer bottom */}
               <div className="px-3 py-3 border-t border-[#1a2234]">

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Users, UserPlus, Shield, ShieldCheck, KeyRound,
+  Users, UserPlus, Shield, ShieldCheck, KeyRound, Code2,
   Loader2, X, Eye, EyeOff, CheckCircle, AlertCircle,
   RefreshCw, Wrench, Edit3, Trash2,
 } from "lucide-react";
@@ -178,6 +178,11 @@ export default function UsersPage() {
     if (role === "staff") return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-blue-500/10 text-blue-400 border border-blue-500/20">
         <Shield size={9}/> Staff
+      </span>
+    );
+    if (role === "developer") return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-500/15 text-indigo-400 border border-indigo-500/25">
+        <Code2 size={9}/> Developer
       </span>
     );
     return <span className="text-slate-600 text-xs">—</span>;

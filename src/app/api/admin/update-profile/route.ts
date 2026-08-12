@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     const updates: Record<string, unknown> = {};
     if (typeof full_name === "string") updates.full_name = full_name;
-    if (role === "admin" || role === "staff") updates.role = role;
+    if (role === "admin" || role === "staff" || role === "developer") updates.role = role;
     if (mechanic_id === null || (typeof mechanic_id === "number" && !Number.isNaN(mechanic_id))) {
       updates.mechanic_id = mechanic_id;
     }

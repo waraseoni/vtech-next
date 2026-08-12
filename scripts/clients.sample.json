@@ -1,0 +1,15 @@
+{
+  "_comment": "Is file ko clients.json ke naam se copy karo, values bharein, phir: node scripts/make-client-package.mjs. clients.json git-ignored hai.",
+  "clients": [
+    {
+      "slug": "sharma-mobile-repair",
+      "shopName": "Sharma Mobile Repair",
+      "appUrl": "https://sharma-mobile.vercel.app",
+      "supabaseUrl": "https://CLIENT_PROJECT_REF.supabase.co",
+      "supabaseAnonKey": "eyJ...CLIENT_ANON_KEY...",
+      "supabaseServiceRoleKey": "eyJ...CLIENT_SERVICE_ROLE_KEY...",
+      "licenseKey": "VTC-XXXX-XXXX-XXXX-XXXX",
+      "setupToken": "optional-setup-token"
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Save, ArrowLeft, User, Mail, Shield, ShieldCheck,
+  Save, ArrowLeft, User, Mail, Shield, ShieldCheck, Code2,
   Loader2, CheckCircle, AlertCircle, Wrench, Eye, EyeOff, KeyRound,
   Camera, Trash2,
 } from "lucide-react";
@@ -296,13 +296,16 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 {[
                   { val: "staff", icon: Shield,      label: "Staff",  sub: "Limited Access", color: "blue"  },
                   { val: "admin", icon: ShieldCheck,  label: "Admin",  sub: "Full Access",    color: "amber" },
+                  { val: "developer", icon: Code2,    label: "Developer", sub: "Dev + Licensing", color: "indigo" },
                 ].map(({ val, icon: Icon, label, sub, color }) => (
                   <button key={val} type="button" onClick={() => setRole(val)}
                     className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all text-left ${
                       role === val
                         ? color === "blue"
                           ? "bg-blue-500/10 border-blue-500/50 text-blue-400"
-                          : "bg-amber-500/10 border-amber-500/50 text-amber-400"
+                          : color === "amber"
+                            ? "bg-amber-500/10 border-amber-500/50 text-amber-400"
+                            : "bg-indigo-500/10 border-indigo-500/50 text-indigo-400"
                         : "bg-[#0d1117] border-[#21293d] text-slate-500 hover:border-slate-500"
                     }`}>
                     <Icon size={18} className="flex-shrink-0"/>
