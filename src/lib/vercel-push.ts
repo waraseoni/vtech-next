@@ -87,20 +87,60 @@ export async function triggerVercelDeploy(
   token: string,
   projectIdOrName: string
 ): Promise<{ url: string; readyState: string }> {
+  // Latest PRODUCTION deployment dhoondo. List endpoint ab /v7 hai (v6 deprecated) aur
+  // deployment ID `id` ya `uid` dono me aa sakti hai — dono handle karo.
   const listRes = await fetch(
-    `https://api.vercel.com/v6/deployments?projectId=${encodeURIComponent(projectIdOrName)}&limit=1`,
+    `https://api.vercel.com/v7/deployments?projectId=${encodeURIComponent(projectIdOrName)}&limit=1&target=production`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
   if (!listRes.ok) {
     const d = await listRes.json().catch(() => ({}));
     throw new Error((d?.error?.message as string) || `Vercel deployments list fail (${listRes.status})`);
   }
-  const data = await listRes.json();
+  const data = await listRes.json().catch(() => ({}));
   const last = data?.deployments?.[0];
-  if (!last?.id) {
-    throw new Error(
-      "Is Vercel project ka koi deployment nahi hai — pehle code push karo (git) taaki project ek baar build ho, phir ye dobara dabao."
+  const lastId = last?.id || last?.uid;
+
+  // Redeploy target: koi deployment mila → usse redeploy (latest commit ke saath).
+  // Nahi mila (naya project / list API mismatch) → connected Git repo se naya deploy trigger.
+  let body: Record<string, unknown>;
+  if (lastId) {
+    // POST /v13/deployments me `name` required hai — redeploy par bhi. 
+    // List response me deployment ka project name milta hai.
+    body = {
+      name: last?.name || projectIdOrName,
+      deploymentId: lastId,
+      target: "production",
+      withLatestCommit: true,
+    };
+  } else {
+    const projRes = await fetch(
+      `https://api.vercel.com/v9/projects/${encodeURIComponent(projectIdOrName)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
     );
+    if (!projRes.ok) {
+      const d = await projRes.json().catch(() => ({}));
+      throw new Error((d?.error?.message as string) || `Vercel project lookup fail (${projRes.status})`);
+    }
+    const proj = await projRes.json().catch(() => ({}));
+    const link = proj?.link;
+    if (link?.type === "github" && link.org && link.repo) {
+      body = {
+        name: proj.name || projectIdOrName,
+        gitSource: {
+          type: "github",
+          org: link.org,
+          repo: link.repo,
+          ref: link.productionBranch || "main",
+        },
+        target: "production",
+      };
+    } else {
+      throw new Error(
+        "Is project ka koi deployment nahi mila aur Git repo (GitHub) bhi connect nahi hai. " +
+        "Pehle code push karke ek build hone do, phir ye dobara dabao."
+      );
+    }
   }
 
   const res = await fetch("https://api.vercel.com/v13/deployments", {
@@ -109,11 +149,7 @@ export async function triggerVercelDeploy(
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      deploymentId: last.id,
-      target: "production",
-      withLatestCommit: true,
-    }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     const d = await res.json().catch(() => ({}));
