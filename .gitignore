@@ -101,6 +101,7 @@ src/app/salary/*page - Copy.tsx*
 # 16. DB backups & sync scratch files (do not commit)
 vtech_backup_*.json
 sync_plan.md
+backups/
 
 # 17. Misc sensitive txt files
 *.7z
