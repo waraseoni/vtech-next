@@ -159,7 +159,7 @@ export default function DeveloperPage() {
       const res = await fetch(`/api/developer/setup-kit/${kitFor.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ appUrl, supabaseUrl, anonKey, serviceRoleKey, setupToken, saveCreds, vercelProjectUrl, vercelProjectId, vercelToken, customDomain }),
+        body: JSON.stringify({ appUrl, supabaseUrl, supabaseAnonKey: anonKey, supabaseServiceRoleKey: serviceRoleKey, setupToken, saveCreds, vercelProjectUrl, vercelProjectId, vercelToken, customDomain }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -193,7 +193,7 @@ export default function DeveloperPage() {
       const res = await fetch(`/api/developer/setup-kit/${kitFor.id}/push`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ appUrl, supabaseUrl, anonKey, serviceRoleKey, setupToken, vercelProjectUrl, vercelProjectId, vercelToken, customDomain }),
+        body: JSON.stringify({ appUrl, supabaseUrl, supabaseAnonKey: anonKey, supabaseServiceRoleKey: serviceRoleKey, setupToken, vercelProjectUrl, vercelProjectId, vercelToken, customDomain }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setPushMsg(data.error || "Push fail hua"); return; }
