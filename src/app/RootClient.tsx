@@ -13,7 +13,7 @@ import {
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
   DollarSign, Truck, CreditCard, Clock, Briefcase, Coins, Receipt,
   Toolbox, FolderOpen, UsersRound, Database, Settings2, MessageSquare,
-  ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert, KeyRound, Code2,
+  ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert, KeyRound, Code2, Images,
 } from "lucide-react";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
@@ -423,6 +423,7 @@ function SidebarNav({
               <li><Link href="/lenders"        className={subLinkCls(pathname === "/lenders")}        onClick={onNavClick}><History size={12} />Lenders</Link></li>
               <li><Link href="/users"         className={subLinkCls(pathname === "/users")}         onClick={onNavClick}><ShieldCheck size={12} />Users</Link></li>
               <li><Link href="/backup"        className={subLinkCls(pathname === "/backup")}        onClick={onNavClick}><Database size={12} />Backup</Link></li>
+              <li><Link href="/images"        className={subLinkCls(pathname === "/images")}        onClick={onNavClick}><Images size={12} className="text-amber-400" />Images</Link></li>
               <li><Link href="/settings"      className={subLinkCls(pathname === "/settings")}      onClick={onNavClick}><Settings2 size={12} />Settings</Link></li>
               <li><Link href="/settings/throttle" className={subLinkCls(pathname === "/settings/throttle")} onClick={onNavClick}><ShieldAlert size={12} className="text-red-400" />Login Throttle</Link></li>
               <li><Link href="/settings/whatsapp-templates" className={subLinkCls(pathname === "/settings/whatsapp-templates")} onClick={onNavClick}><MessageSquare size={12} className="text-green-400" />WA Templates</Link></li>
@@ -474,6 +475,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const [theme,        setTheme]        = useState<"dark" | "light" | null>(null);
   const [license,      setLicense]      = useState<LicenseStatus | null>(null);
+  const [brandLogo,    setBrandLogo]    = useState<string | null>(null);
 
   // License status fetch — login ke baad har non-public page par.
   // Gate (LicenseGate) isi state ko dekh kar render hota hai.
@@ -538,6 +540,23 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // ← empty deps: intentional, auth only on mount
+
+  // Brand logo (system_info) — settings mein save hua logo sidebar brand area
+  // mein dikhega. Save nahi kiya to default Sparkles icon hi rahega.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("system_info")
+          .select("meta_value")
+          .eq("meta_field", "logo")
+          .maybeSingle();
+        if (!cancelled && data?.meta_value) setBrandLogo(String(data.meta_value));
+      } catch { /* ignore — default logo use hoga */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // BUG FIX: Boot-guard inline script ko signal — React mount/hydrate ho gaya,
   // loader isliye atka nahi hai. (8s watchdog tabhi reload karta hai jab ye
@@ -811,8 +830,12 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             <div className="relative overflow-hidden px-5 py-4 border-b border-[#1a2234]">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-700/15 to-transparent pointer-events-none" />
               <Link href="/" title="Public Website" className="relative flex items-center gap-3 group">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 flex-shrink-0 group-hover:scale-105 group-hover:from-blue-500 group-hover:to-cyan-600 transition-all">
-                  <Sparkles size={20} className="text-white" />
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-900/50 transition-all group-hover:scale-105 ${brandLogo ? "bg-white" : "bg-gradient-to-br from-blue-500 to-blue-700 group-hover:from-blue-500 group-hover:to-cyan-600"}`}>
+                  {brandLogo ? (
+                    <Image src={brandLogo} alt="Logo" width={40} height={40} unoptimized className="w-full h-full object-contain rounded-xl" />
+                  ) : (
+                    <Sparkles size={20} className="text-white" />
+                  )}
                 </div>
                 <div>
                   <div className="text-lg font-black tracking-tight leading-none">
@@ -853,8 +876,12 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               <div className="relative overflow-hidden px-4 py-4 border-b border-[#1a2234] flex items-center justify-between">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-700/15 to-transparent pointer-events-none" />
                 <Link href="/" onClick={() => setDrawerOpen(false)} className="relative flex items-center gap-3 group">
-                  <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 group-hover:from-blue-500 group-hover:to-cyan-600 transition-all">
-                    <Sparkles size={18} className="text-white" />
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 transition-all group-hover:scale-105 ${brandLogo ? "bg-white" : "bg-gradient-to-br from-blue-500 to-blue-700 group-hover:from-blue-500 group-hover:to-cyan-600"}`}>
+                    {brandLogo ? (
+                      <Image src={brandLogo} alt="Logo" width={36} height={36} unoptimized className="w-full h-full object-contain rounded-xl" />
+                    ) : (
+                      <Sparkles size={18} className="text-white" />
+                    )}
                   </div>
                   <div>
                     <div className="text-base font-black tracking-tight text-white leading-none">

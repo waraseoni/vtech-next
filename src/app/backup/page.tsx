@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   Download, Upload, Database, CheckCircle, AlertCircle,
-  Loader2, ShieldAlert, FileJson, RefreshCw, Table2, Rows3,
+  Loader2, ShieldAlert, FileJson, RefreshCw, Table2, Rows3, Images,
 } from "lucide-react";
 
 // ─── Backup tables in RESTORE ORDER (FK dependencies matter!) ─────────────────
@@ -121,6 +121,7 @@ export default function BackupPage() {
   const [loadedBackup, setLoadedBackup] = useState<BackupData | null>(null);
   const [diffData, setDiffData] = useState<DiffRow[] | null>(null);
   const [diffLoading, setDiffLoading] = useState(false);
+  const [repairing, setRepairing] = useState(false);
 
   const showToast = (type: Toast["type"], msg: string) => {
     setToast({ type, msg });
@@ -140,6 +141,32 @@ export default function BackupPage() {
   };
 
   useEffect(() => { fetchTableStats(); }, []);
+
+  // ── REPAIR IMAGES ──────────────────────────────────────────────────────────
+  // Restore (MariaDB conversion) ke baad image_path/avatar_url me dead paths
+  // aa gaye hote hain, par files storage bucket me maujood rehti hain. Ye button
+  // storage files ko DB rows se wapas link karta hai — sirf broken rows fix
+  // hoti hain, pehle se sahi chal rahi images kabhi nahi badalti.
+  const handleRepairImages = async () => {
+    if (!confirm("Storage files se broken image links repair karun? Sirf unhi rows fix hongi jinki image_path/avatar_url kharab (null/dead path) hai — jo images abhi sahi dikh rahi hain wo untouched rahengi.")) return;
+    setRepairing(true);
+    setProgress("Storage files scan + broken links repair ho rahe hain...");
+    try {
+      const res = await fetch("/api/repair-images", { method: "POST" });
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.msg || "Repair failed");
+      setProgress("");
+      const parts = Object.entries(json.report as Record<string, { files: number; fixed: number; skipped: number }>)
+        .map(([bucket, r]) => `${bucket}: ${r.fixed} fixed / ${r.skipped} skip`)
+        .join(" · ");
+      showToast("success", `✅ ${parts}`);
+    } catch (err: unknown) {
+      setProgress("");
+      showToast("error", err instanceof Error ? err.message : "Repair failed!");
+    } finally {
+      setRepairing(false);
+    }
+  };
 
   // ── BACKUP ────────────────────────────────────────────────────────────────
   const handleBackup = async () => {
@@ -243,6 +270,23 @@ export default function BackupPage() {
   // In tables mein sirf upsert karengen (existing rows update, naye add honge)
   const NO_DELETE_TABLES = ["mechanic_list"];
 
+  // ── Restore-free tables ───────────────────────────────────────────────────
+  // system_info = license key + business info/settings. MariaDB-dump conversion
+  // se bane backup JSON me ye rows missing hoti hain (unme thi hi nahi), isliye
+  // restore ke waqt inhe kabhi clear ya overwrite nahi karte — live values hi
+  // waisi rahengi. warna license row delete ho jati aur app phir license mangta.
+  const RESTORE_FREE_TABLES = ["system_info"];
+
+  // ── Image columns — sirf valid Supabase Storage URL hi restore hogi ────────
+  // MariaDB conversion ke backup me image paths purane/dead hote hain (jaise
+  // "uploads/...") jo is Supabase environment me kaam nahi karte. Restore se
+  // pehle live image URLs ka snapshot lete hain aur invalid path ko live value
+  // se preserve karte hain — warna client/mechanic/product/job ke photos toot
+  // jate. Is app ke legit backup me URLs valid (storage/v1/object/public) hote
+  // hain → unka hamesha normal restore hota hai.
+  const IMAGE_COLUMNS = ["image_path", "avatar", "avatar_url"];
+  const STORAGE_URL_MARKER = "/storage/v1/object/public/";
+
   // ── Small delay helper (Supabase rate limit se bachne ke liye) ───────────────
   const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
@@ -308,11 +352,37 @@ export default function BackupPage() {
       // Clear preview after successful restore start
       setPreview(null);
 
-      // ── Step 0a: Clear existing data in REVERSE ORDER (avoiding FK violations) ──
+      // ── Step 0a: Live image URLs ka snapshot (photos protect karne ke liye) ──
+      // Restore ke waqt invalid/dead image paths (MariaDB conversion wale) ko
+      // in live values se replace karengi, taaki images/photos/avatars nahi toote.
+      setProgress("Live image URLs snapshot ho rahi hain...");
+      const liveImages: Record<string, Map<string, Record<string, unknown>>> = {};
+      for (const { table } of orderedTables) {
+        const imgCols = (TABLE_COLUMNS[table] || []).filter(c => IMAGE_COLUMNS.includes(c));
+        if (imgCols.length === 0) continue;
+        const m = new Map<string, Record<string, unknown>>();
+        try {
+          const PAGE = 1000;
+          for (let from = 0; ; from += PAGE) {
+            const { data, error } = await supabase
+              .from(table)
+              .select(`id, ${imgCols.join(", ")}`)
+              .range(from, from + PAGE - 1);
+            if (error || !data || data.length === 0) break;
+            (data as unknown as Record<string, unknown>[]).forEach(row => {
+              if (row.id != null) m.set(String(row.id), row);
+            });
+            if (data.length < PAGE) break;
+          }
+        } catch { /* snapshot fail → ignore, images protection skip hoga */ }
+        liveImages[table] = m;
+      }
+
+      // ── Step 0b: Clear existing data in REVERSE ORDER (avoiding FK violations) ──
       setProgress("Clearing existing data (reverse order)...");
       const reverseOrderedTables = [...orderedTables].reverse();
       for (const { table } of reverseOrderedTables) {
-        if (!NO_DELETE_TABLES.includes(table)) {
+        if (!NO_DELETE_TABLES.includes(table) && !RESTORE_FREE_TABLES.includes(table)) {
           setProgress(`Clearing table: ${table}...`);
           let delErr = null;
           if (COMPOSITE_KEY_TABLES.includes(table)) {
@@ -345,6 +415,12 @@ export default function BackupPage() {
       }
 
       for (const { table } of orderedTables) {
+        if (RESTORE_FREE_TABLES.includes(table)) {
+          setProgress(`${table}: protected — restore-free, skip`);
+          await new Promise(r => setTimeout(r, 50));
+          continue;
+        }
+
         const rawRows = backup[table];
         if (!rawRows || rawRows.length === 0) {
           setProgress(`${table}: koi data nahi — skip`);
@@ -354,6 +430,8 @@ export default function BackupPage() {
 
         // ── Strip GENERATED columns (DB auto-calculates these) ────────────────
         const genCols = GENERATED_COLS[table] || [];
+        // ── Image columns jo is table mein hain (protection ke liye) ───────────
+        const imgCols = (TABLE_COLUMNS[table] || []).filter(c => IMAGE_COLUMNS.includes(c));
         // ── Skip rows with invalid FK references ──────────────────────────────
         const fkRule = SKIP_INVALID_FK[table];
         const rows = (rawRows as Record<string, unknown>[])
@@ -394,6 +472,22 @@ export default function BackupPage() {
             for (const key of Object.keys(r)) {
               if (typeof r[key] === "string" && (r[key] as string).startsWith("0000-00-00")) {
                 r[key] = null;
+              }
+            }
+            // ── Image protection: live working image hamesha preserve ─────────
+            // Restore kabhi bhi kisi working image/photo/avatar ko nahi todoega:
+            // live snapshot me valid storage URL hai to wahi rakhte hain (chahe
+            // backup me dead path, empty ya null kuchh bhi ho). Backup me dead
+            // MariaDB path ho aur live bhi na ho → column hatao (default).
+            for (const imgCol of imgCols) {
+              const liveVal = liveImages[table]?.get(String(r.id))?.[imgCol];
+              if (typeof liveVal === "string" && liveVal.includes(STORAGE_URL_MARKER)) {
+                r[imgCol] = liveVal;
+                continue;
+              }
+              const v = r[imgCol];
+              if (typeof v === "string" && v.trim() !== "" && !v.includes(STORAGE_URL_MARKER)) {
+                delete r[imgCol];
               }
             }
             return r;
@@ -679,10 +773,16 @@ export default function BackupPage() {
                 </p>
               </div>
             </div>
-            <button onClick={fetchTableStats} disabled={loadingStats}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 rounded-lg text-xs font-bold transition">
-              <RefreshCw size={12} className={loadingStats ? "animate-spin" : ""}/> Refresh
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={handleRepairImages} disabled={repairing || busy}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-400 rounded-lg text-xs font-bold transition disabled:opacity-50">
+                <Images size={12} className={repairing ? "animate-pulse" : ""}/> Repair Images
+              </button>
+              <button onClick={fetchTableStats} disabled={loadingStats}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 rounded-lg text-xs font-bold transition">
+                <RefreshCw size={12} className={loadingStats ? "animate-spin" : ""}/> Refresh
+              </button>
+            </div>
           </div>
         </div>
 
@@ -786,6 +886,7 @@ export default function BackupPage() {
                 <li>2. Parent tables phle restore honge (FK dependencies)</li>
                 <li>3. Child tables baad mein restore honge</li>
                 <li>4. Sequences auto-adjust honge</li>
+                <li>5. system_info protected hai — clear/overwrite nahi hogi (license + settings safe)</li>
               </ol>
             </div>
 
