@@ -12,14 +12,16 @@ import Link from "next/link";
 // ─────────────────────────────────────────────────────────────────────────────
 // TIMEZONE HELPER
 // ─────────────────────────────────────────────────────────────────────────────
-function todayIST(): string {
+function nowIST(): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",
     year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false,
   }).formatToParts(new Date());
   const p: Record<string, string> = {};
   parts.forEach(x => { p[x.type] = x.value; });
-  return `${p.year}-${p.month}-${p.day}`;
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}+05:30`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -156,7 +158,7 @@ export default function AddDirectSalePage({
           total_amount:     totalAmount,
           // mechanic_id:   null,  // nullable per schema — set if needed
           // last_edited_by, last_edited_by_name etc. — optional
-          date_created:     `${todayIST()}T00:00:00+05:30`,
+          date_created:     nowIST(),
         }])
         .select("id")
         .single();
