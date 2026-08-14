@@ -342,19 +342,27 @@ export default function DailyAttendance({
                 type="button"
                 onClick={() => handleSelfAction('in')}
                 disabled={!!selfStatus.time_in || selfBusy !== null}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-[#001f3f] hover:bg-white/90 text-xs font-extrabold transition-all disabled:opacity-40"
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-extrabold transition-all disabled:cursor-not-allowed ${
+                  selfStatus.time_in
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 cursor-default'
+                    : 'bg-white text-[#001f3f] hover:bg-white/90'
+                } ${selfBusy ? 'opacity-60' : ''}`}
               >
-                <LogIn size={13} />
-                Check In
+                {selfStatus.time_in ? <Check size={13} /> : <LogIn size={13} />}
+                {selfStatus.time_in ? 'Checked In' : 'Check In'}
               </button>
               <button
                 type="button"
                 onClick={() => handleSelfAction('out')}
                 disabled={!selfStatus.time_in || !!selfStatus.time_out || selfBusy !== null}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#f44336] hover:bg-[#ff5252] text-white text-xs font-extrabold transition-all disabled:opacity-40"
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-extrabold transition-all disabled:cursor-not-allowed ${
+                  !selfStatus.time_in || selfStatus.time_out
+                    ? 'bg-white/10 text-white/60 border border-white/20 cursor-default'
+                    : 'bg-[#f44336] hover:bg-[#ff5252] text-white'
+                } ${selfBusy ? 'opacity-60' : ''}`}
               >
-                <LogOut size={13} />
-                Check Out
+                {selfStatus.time_out ? <Check size={13} /> : <LogOut size={13} />}
+                {selfStatus.time_out ? 'Checked Out' : 'Check Out'}
               </button>
             </div>
           </div>

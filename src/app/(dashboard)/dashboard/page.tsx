@@ -482,7 +482,7 @@ export default function Dashboard() {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#0d1117]">
+      <div className="dashboard-page min-h-screen flex flex-col items-center justify-center gap-4 bg-[#0d1117]">
         <div className="relative">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-600/40">
             <Wrench className="text-white" size={30} />
@@ -498,7 +498,7 @@ export default function Dashboard() {
   // in case the dashboard is ever opened directly while signed out.
   if (authChecked && !isLoggedIn) {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center">
+      <div className="dashboard-page min-h-screen bg-[#0d1117] flex items-center justify-center">
         <Loader2 size={24} className="animate-spin text-slate-600" />
       </div>
     );
@@ -511,7 +511,7 @@ export default function Dashboard() {
 
   // ═══════════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white space-y-4 font-sans">
+    <div className="dashboard-page min-h-screen bg-[#0d1117] text-white space-y-4 font-sans">
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ HERO HEADER */}
       <header className="relative overflow-hidden rounded-3xl border border-[#21293d] bg-[#0d1117]">

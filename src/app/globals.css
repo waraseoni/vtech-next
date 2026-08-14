@@ -795,6 +795,50 @@ html[data-theme="light"] {
   /* ---- hover to solid colored bg keeps white text ---- */
   [class*="hover:bg-"][class*="text-white"]:hover,
   [class*="hover:bg-"][class*="text-white"]:hover * { color: #ffffff !important; }
+
+  /* ---- ATTENDANCE PAGE — always-dark design, keep its text light
+         in light mode (globals remaps text-white/slate to dark) ----
+         Inputs are excluded: they are theme-aware (light bg + dark text). */
+  .attendance-page { color: #e2e8f0 !important; }
+  .attendance-page.text-white { color: #ffffff !important; }
+  .attendance-page .text-white:not(input):not(textarea):not(select) { color: #ffffff !important; }
+  .attendance-page .text-white\/40:not(input):not(textarea):not(select) { color: rgba(255,255,255,0.4) !important; }
+  .attendance-page .text-white\/60:not(input):not(textarea):not(select) { color: rgba(255,255,255,0.6) !important; }
+  .attendance-page .text-white\/70:not(input):not(textarea):not(select) { color: rgba(255,255,255,0.7) !important; }
+  .attendance-page .text-white\/85:not(input):not(textarea):not(select) { color: rgba(255,255,255,0.85) !important; }
+  .attendance-page .text-slate-100  { color: #f1f5f9 !important; }
+  .attendance-page .text-slate-200  { color: #e2e8f0 !important; }
+  .attendance-page .text-slate-300  { color: #cbd5e1 !important; }
+  .attendance-page .text-slate-400  { color: #94a3b8 !important; }
+  .attendance-page .text-slate-500  { color: #64748b !important; }
+  .attendance-page .text-slate-600  { color: #475569 !important; }
+  .attendance-page .text-blue-400   { color: #60a5fa !important; }
+  .attendance-page .text-emerald-300 { color: #6ee7b7 !important; }
+  .attendance-page .text-emerald-400 { color: #34d399 !important; }
+  .attendance-page .text-red-300    { color: #fca5a5 !important; }
+  .attendance-page .text-red-400    { color: #f87171 !important; }
+  .attendance-page .text-red-500    { color: #f87171 !important; }
+  .attendance-page .text-amber-400  { color: #fbbf24 !important; }
+  .attendance-page .hover\:text-white:hover     { color: #ffffff !important; }
+  .attendance-page .hover\:text-slate-300:hover { color: #cbd5e1 !important; }
+  /* Check In button (white bg) keeps its dark navy text */
+  .attendance-page .bg-white   { color: #001f3f !important; }
+  .attendance-page .bg-white * { color: #001f3f !important; }
+
+  /* ---- DASHBOARD PAGE — hardcoded dark backgrounds/borders get
+         remapped to LIGHT in light mode so the page reads like the
+         rest of the app. Text colors are handled by the global light
+         overrides (text-white/slate -> dark, -400 shades -> darker). ---- */
+  .dashboard-page { background-color: #f8f9fc !important; }
+  .dashboard-page .bg-\[\#0d1117\]  { background-color: #ffffff !important; }
+  .dashboard-page .bg-\[\#111520\]  { background-color: #ffffff !important; }
+  .dashboard-page .bg-\[\#161b27\]  { background-color: #ffffff !important; }
+  .dashboard-page .bg-\[\#21293d\]  { background-color: #e2e8f0 !important; }
+  .dashboard-page .bg-slate-900\/50 { background-color: #f1f5f9 !important; }
+  .dashboard-page .border-\[\#0d1117\]  { border-color: #f8f9fc !important; }
+  .dashboard-page .border-\[\#21293d\]  { border-color: #e2e8f0 !important; }
+  .dashboard-page .border-slate-800 { border-color: #e2e8f0 !important; }
+  .dashboard-page .border-slate-600 { border-color: #cbd5e1 !important; }
 }
 
 /* ============================================

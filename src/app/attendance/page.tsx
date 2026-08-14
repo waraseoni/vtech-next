@@ -52,7 +52,7 @@ function AttendanceContent() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+      <div className="attendance-page min-h-[60vh] flex flex-col items-center justify-center gap-3">
         <Loader2 className="animate-spin text-blue-500" size={36} />
         <p className="text-slate-600 text-xs font-extrabold uppercase tracking-[0.25em]">Loading...</p>
       </div>
@@ -101,7 +101,7 @@ function AttendanceContent() {
 // ── Page wrapper — Suspense required for useSearchParams ─────────
 export default function AttendancePage() {
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white font-sans p-4 md:p-6">
+    <div className="attendance-page min-h-screen bg-[#0d1117] text-white font-sans p-4 md:p-6">
       <Suspense fallback={
         <div className="min-h-[60vh] flex items-center justify-center">
           <Loader2 className="animate-spin text-blue-500" size={40} />
