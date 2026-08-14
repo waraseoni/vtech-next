@@ -9,6 +9,7 @@ import {
   Loader2, X, Eye, EyeOff, CheckCircle, AlertCircle,
   RefreshCw, Wrench, Edit3, Trash2,
 } from "lucide-react";
+import { openImageLightbox } from "@/components/ImageLightbox";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Profile {
@@ -193,7 +194,8 @@ export default function UsersPage() {
     avatarUrl
       ? <Image src={avatarUrl} alt={name || "User"}
           width={36} height={36} unoptimized
-          className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
+          className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+          onDoubleClick={(e) => { e.stopPropagation(); openImageLightbox(avatarUrl, name || "User"); }}
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}/>
       : <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-xs flex-shrink-0 ${
           role === "admin" ? "bg-gradient-to-br from-amber-500 to-amber-700" : "bg-gradient-to-br from-blue-500 to-blue-700"

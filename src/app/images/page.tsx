@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
@@ -243,7 +244,7 @@ export default function ImagesPage() {
                         Orphan
                       </span>
                     )}
-                    <Image src={f.url} alt={f.name} fill unoptimized className="w-full h-full object-contain p-1" sizes="200px" />
+                    <Image src={f.url} alt={f.name} fill unoptimized className="w-full h-full object-contain p-1 cursor-zoom-in" sizes="200px" onDoubleClick={() => openImageLightbox(f.url, f.name)} />
                     <input
                       type="checkbox"
                       checked={checked}

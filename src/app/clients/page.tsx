@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { todayIST } from "@/lib/dateUtils";
 import Link from "next/link";
 import Image from "next/image";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import {
   Users, UserPlus, User, Search, Phone, Mail,
   Eye, Edit3, Trash2, Loader2, ShieldCheck,
@@ -531,7 +532,8 @@ export default function ClientsPage() {
                         {client.image_path ? (
                           <Image src={client.image_path} alt={client.name}
                             width={56} height={56} unoptimized
-                            className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
+                            className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+                            onDoubleClick={(e) => { e.stopPropagation(); openImageLightbox(client.image_path, client.name); }}
                             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                         ) : (
                           <div className="w-14 h-14 rounded-xl bg-[#1e2637] border border-[#2a3550] flex items-center justify-center flex-shrink-0">
@@ -702,7 +704,8 @@ export default function ClientsPage() {
                           {client.image_path ? (
                             <Image src={client.image_path} alt={client.name}
                               width={48} height={48} unoptimized
-                              className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
+                              className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+                              onDoubleClick={(e) => { e.stopPropagation(); openImageLightbox(client.image_path, client.name); }}
                               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                           ) : (
                             <div className={`w-3 h-3 rounded-full flex-shrink-0 ${meta.dot}`}/>

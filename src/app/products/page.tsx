@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Package, Camera, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import { compressImage } from "@/lib/imageCompression";
 
 type Product = {
@@ -271,7 +272,8 @@ export default function ProductsPage() {
                           {p.image_path ? (
                               <Image src={p.image_path} alt={p.name}
                                 width={48} height={48} unoptimized
-                                className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
+                                className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+                                onDoubleClick={(e) => { e.stopPropagation(); openImageLightbox(p.image_path, p.name); }}
                                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                           ) : (
                             <Package size={14} className="text-amber-500 flex-shrink-0" />

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import { supabase } from "@/lib/supabase";
 import {
   Loader2, ArrowLeft, Calendar, DollarSign, TrendingUp, Users,
@@ -397,7 +398,8 @@ export default function MechanicDetailPage() {
             {mechanic?.image_path ? (
               <Image src={mechanic.image_path} alt={name}
                 width={56} height={56} unoptimized
-                className="w-14 h-14 rounded-xl object-cover shadow-lg border border-white/10 flex-shrink-0"
+                className="w-14 h-14 rounded-xl object-cover shadow-lg border border-white/10 flex-shrink-0 cursor-zoom-in"
+                onDoubleClick={() => openImageLightbox(mechanic.image_path, name)}
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
             ) : (
               <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black text-lg">

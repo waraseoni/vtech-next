@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import { supabase } from "@/lib/supabase";
 import {
   ArrowLeft, Package, Plus, Edit3, Trash2,
@@ -301,7 +302,8 @@ export default function ProductDetailPage() {
                   <div className="relative flex-shrink-0">
                     <Image src={product.image_path} alt={product.name}
                       width={64} height={64} unoptimized
-                      className="w-16 h-16 rounded-2xl object-cover border border-[#21293d]" />
+                      className="w-16 h-16 rounded-2xl object-cover border border-[#21293d] cursor-zoom-in"
+                      onDoubleClick={() => openImageLightbox(product.image_path, product.name)} />
                     <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-[#0d1117] ${st.bar}`} />
                   </div>
                 ) : (

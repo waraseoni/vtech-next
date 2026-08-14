@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import {
   Settings2, Save, Loader2, CheckCircle, AlertCircle,
   Building2, Phone, Mail, MapPin, Tag, ShieldCheck,
@@ -601,7 +602,7 @@ export default function SettingsPage() {
                 <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4">
                   <div className="flex items-center gap-4 flex-wrap">
                     {logo ? (
-                      <Image src={logo} alt="Logo" width={200} height={64} unoptimized className="max-h-16 max-w-[200px] object-contain bg-white rounded-lg p-1" />
+                      <Image src={logo} alt="Logo" width={200} height={64} unoptimized className="max-h-16 max-w-[200px] object-contain bg-white rounded-lg p-1 cursor-zoom-in" onDoubleClick={() => openImageLightbox(logo, "System Logo")} />
                     ) : (
                       <div className="w-24 h-16 rounded-lg bg-white/5 border border-dashed border-[#2a3450] flex items-center justify-center">
                         <ImageIcon size={20} className="text-slate-600" />
@@ -641,7 +642,7 @@ export default function SettingsPage() {
                 <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4">
                   <div className="flex items-center gap-4 flex-wrap">
                     {cover ? (
-                      <Image src={cover} alt="Cover" width={260} height={112} unoptimized className="max-h-28 max-w-[260px] object-cover rounded-lg border border-[#21293d]" />
+                      <Image src={cover} alt="Cover" width={260} height={112} unoptimized className="max-h-28 max-w-[260px] object-cover rounded-lg border border-[#21293d] cursor-zoom-in" onDoubleClick={() => openImageLightbox(cover, "Website Cover")} />
                     ) : (
                       <div className="w-36 h-24 rounded-lg bg-white/5 border border-dashed border-[#2a3450] flex items-center justify-center">
                         <ImageIcon size={20} className="text-slate-600" />
@@ -841,7 +842,7 @@ export default function SettingsPage() {
               {/* Current signature preview */}
               {signature && (
                 <div className="flex items-center gap-4 p-4 bg-[#0d1117] rounded-xl border border-[#21293d]">
-                  <Image src={signature} alt="Signature" width={200} height={64} unoptimized className="max-h-16 object-contain" />
+                  <Image src={signature} alt="Signature" width={200} height={64} unoptimized className="max-h-16 object-contain cursor-zoom-in" onDoubleClick={() => openImageLightbox(signature, "Invoice Signature")} />
                   <button type="button" onClick={removeSignature} disabled={sigSaving}
                     className="ml-auto text-red-400 hover:text-red-300 text-xs flex items-center gap-1">
                     <Trash2 size={14}/> Remove

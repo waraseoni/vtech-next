@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import {
   ArrowLeft, Wrench, User, Clock,
   Package, Settings2, AlertTriangle, CheckCircle2,
@@ -589,12 +590,11 @@ ${svcHtml}${prodHtml}
                     <Fieldset title={`Item Photos (${images.length})`} icon={ImageIcon} color="primary">
                       <div className="grid grid-cols-3 gap-2">
                         {images.map((img) => (
-                          <a key={img.id} href={img.image_path} target="_blank" rel="noreferrer">
-                            <Image src={img.image_path} alt="Item"
-                              width={640} height={80} unoptimized
-                              className="w-full h-20 object-cover rounded border border-[#21293d] hover:opacity-80 transition-opacity cursor-pointer"
-                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}/>
-                          </a>
+                          <Image key={img.id} src={img.image_path} alt="Item"
+                            width={640} height={80} unoptimized
+                            className="w-full h-20 object-cover rounded border border-[#21293d] hover:opacity-80 transition-opacity cursor-zoom-in"
+                            onDoubleClick={() => openImageLightbox(img.image_path, "Job Photo")}
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}/>
                         ))}
                       </div>
                     </Fieldset>

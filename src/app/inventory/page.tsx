@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import { supabase } from "@/lib/supabase";
 import {
   Package, Search, Eye, Printer, MapPin,
@@ -427,7 +428,8 @@ export default function InventoryPage() {
                           {p.image_path ? (
                             <Image src={p.image_path} alt={p.name}
                               width={48} height={48} unoptimized
-                              className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
+                              className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+                              onDoubleClick={(e) => { e.stopPropagation(); openImageLightbox(p.image_path, p.name); }}
                               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                           ) : (
                             <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 border ${st.bg}`}>
@@ -555,7 +557,8 @@ export default function InventoryPage() {
                       {p.image_path ? (
                         <Image src={p.image_path} alt={p.name}
                           width={48} height={48} unoptimized
-                          className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
+                          className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+                          onDoubleClick={(e) => { e.stopPropagation(); openImageLightbox(p.image_path, p.name); }}
                           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                       ) : (
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border ${st.bg}`}>

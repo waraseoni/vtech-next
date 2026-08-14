@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import {
   User, Mail, Shield, ShieldCheck, Save, KeyRound,
   Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Wrench,
@@ -213,7 +214,8 @@ export default function ProfilePage() {
             {avatarUrl ? (
               <Image src={avatarUrl} alt={fullName || "User"}
                 width={64} height={64} unoptimized
-                className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 shadow-lg border border-white/10"
+                className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 shadow-lg border border-white/10 cursor-zoom-in"
+                onDoubleClick={() => openImageLightbox(avatarUrl, fullName || "User")}
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
             ) : (
               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-xl flex-shrink-0 shadow-lg ${

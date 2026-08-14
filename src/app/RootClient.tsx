@@ -1,6 +1,7 @@
 "use client";
 import PWAHead from "../components/PWAHead";
 import LicenseGate from "../components/LicenseGate";
+import { ImageLightbox, openImageLightbox } from "../components/ImageLightbox";
 import type { LicenseStatus } from "@/lib/license";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
@@ -822,6 +823,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   return (
     <>
       <PWAHead />
+      <ImageLightbox />
 
       {/* ══════════════════════ DESKTOP SIDEBAR ══════════════════════ */}
         {isMobile === false && !isAiPage && (
@@ -907,7 +909,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                   {profile?.avatar_url ? (
                     <Image src={profile.avatar_url} alt={displayName}
                       width={32} height={32} unoptimized
-                      className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-white/10"
+                      className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-white/10 cursor-zoom-in"
+                      onDoubleClick={(e) => { e.stopPropagation(); openImageLightbox(profile.avatar_url, displayName); }}
                       onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                   ) : (
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center text-white font-black text-xs flex-shrink-0">
@@ -1006,7 +1009,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                 {profile?.avatar_url ? (
                   <Image src={profile.avatar_url} alt={displayName}
                     width={36} height={36} unoptimized
-                    className="w-9 h-9 rounded-xl object-cover shadow-md flex-shrink-0 border border-white/10"
+                    className="w-9 h-9 rounded-xl object-cover shadow-md flex-shrink-0 border border-white/10 cursor-zoom-in"
+                    onDoubleClick={(e) => { e.stopPropagation(); openImageLightbox(profile.avatar_url, displayName); }}
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                 ) : (
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center font-black shadow-md text-xs">

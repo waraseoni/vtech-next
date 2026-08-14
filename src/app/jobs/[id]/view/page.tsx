@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import {
   ArrowLeft, Wrench, User, Clock,
   Package, Settings2, AlertTriangle, CheckCircle2,
@@ -685,12 +686,11 @@ ${svcHtml}${prodHtml}
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {images.map((img) => (
                           <div key={img.id} className="relative group">
-                            <a href={img.image_path} target="_blank" rel="noreferrer">
-                              <Image src={img.image_path} alt="Item"
-                                width={640} height={128} unoptimized
-                                className="w-full h-32 object-cover rounded-lg border border-[#21293d] hover:opacity-80 transition-opacity cursor-pointer"
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}/>
-                            </a>
+                            <Image src={img.image_path} alt="Item"
+                              width={640} height={128} unoptimized
+                              className="w-full h-32 object-cover rounded-lg border border-[#21293d] hover:opacity-80 transition-opacity cursor-zoom-in"
+                              onDoubleClick={() => openImageLightbox(img.image_path, "Job Photo")}
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}/>
                             <button
                               onClick={() => handleImageDelete(img)}
                               className="absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors"

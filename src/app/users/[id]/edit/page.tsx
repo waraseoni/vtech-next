@@ -10,6 +10,7 @@ import {
   Camera, Trash2,
 } from "lucide-react";
 import { compressImage } from "@/lib/imageCompression";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import SearchableSelect from "@/components/SearchableSelect";
 
 const inputCls = "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all";
@@ -225,7 +226,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
             {avatarUrl ? (
               <Image src={avatarUrl} alt={fullName || "User"}
                 width={40} height={40} unoptimized
-                className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-white/10"
+                className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-white/10 cursor-zoom-in"
+                onDoubleClick={() => openImageLightbox(avatarUrl, fullName || "User")}
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
             ) : (
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm ${

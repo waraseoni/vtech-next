@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import {
   Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2,
   Check, AlertCircle, Users, DollarSign, TrendingUp,
@@ -294,7 +295,8 @@ export default function MechanicsPage() {
                           {m.image_path ? (
                             <Image src={m.image_path} alt={name}
                               width={36} height={36} unoptimized
-                              className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-[#21293d]"
+                              className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+                              onDoubleClick={(e) => { e.stopPropagation(); openImageLightbox(m.image_path, name); }}
                               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                           ) : (
                             <div className="w-9 h-9 rounded-xl bg-[#1a2234] flex items-center justify-center text-slate-400 font-black text-sm">
