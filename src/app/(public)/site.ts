@@ -19,6 +19,11 @@ const SITE_PHONE =
   (process.env.NEXT_PUBLIC_SITE_PHONE || "+91 91791 05875").trim();
 const SITE_PHONE_DIGITS = digitsOnly(SITE_PHONE);
 
+// Client-branded mode: NEXT_PUBLIC_SITE_NAME set hone par client ki APNI
+// minimal public site dikhti hai. Nahi set (seller ka default deployment) →
+// puri original (seller) site. Direct access chahiye — see note upar.
+export const IS_BRANDED = !!process.env.NEXT_PUBLIC_SITE_NAME;
+
 export const SITE = {
   name: SITE_NAME,
   shortName: (

@@ -1,4 +1,5 @@
-import { PageHero, EquipmentGrid, ProcessSteps, RepairHighlights, CtaBand } from "../components/blocks";
+import { PageHero, EquipmentGrid, ProcessSteps, RepairHighlights, CtaBand, BrandedServicePage } from "../components/blocks";
+import { IS_BRANDED } from "../site";
 
 const EQUIPMENT = [
   { art: "plc" as const, name: "PLC Repair", detail: "Programmable logic controllers — power, I/O and processor section fix." },
@@ -27,6 +28,16 @@ const POINTS = [
 ];
 
 export default function IndustrialPage() {
+  if (IS_BRANDED) {
+    return (
+      <BrandedServicePage
+        badge="Industrial Electronics"
+        title="Industrial"
+        highlight="Electronics Repair"
+        subtitle="PLC, HMI, control panels, VFD drives, servo, SCADA aur machine PCBs — component-level industrial electronics repair jo production line ka downtime kam kare."
+      />
+    );
+  }
   return (
     <>
       <PageHero

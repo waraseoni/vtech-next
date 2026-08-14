@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { BatteryCharging, ShieldCheck, CircuitBoard, Gauge, Zap, Phone } from "lucide-react";
-import { SITE } from "../site";
-import { PageHero, EquipmentGrid, ProcessSteps, RepairHighlights, CtaBand } from "../components/blocks";
+import { SITE, IS_BRANDED } from "../site";
+import { PageHero, EquipmentGrid, ProcessSteps, RepairHighlights, CtaBand, BrandedServicePage } from "../components/blocks";
 
 const EQUIPMENT = [
   { art: "smps" as const, name: "SMPS (All Types)", detail: "Computer, CCTV, LED, industrial SMPS — component-level repair.", badge: "available" as const },
@@ -26,6 +26,16 @@ const POINTS = [
 ];
 
 export default function PowerSupplyPage() {
+  if (IS_BRANDED) {
+    return (
+      <BrandedServicePage
+        badge="Power Supply"
+        title="Power Supply"
+        highlight="Repair Specialists"
+        subtitle="SMPS, EV chargers, UPS, inverters, battery chargers aur LED drivers — power supply repair ka specialist center. Component-level fix jo naya kharidne se kaafi sasta padta hai."
+      />
+    );
+  }
   return (
     <>
       <PageHero

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Star, Quote, Phone, MessageCircle, MapPin, HeartHandshake, Trophy, ShieldCheck } from "lucide-react";
-import { SITE, WHATSAPP_LINK } from "../site";
+import { Star, Quote, Phone, MessageCircle, MapPin, HeartHandshake, Trophy, ShieldCheck, Mail, Clock } from "lucide-react";
+import { SITE, WHATSAPP_LINK, IS_BRANDED } from "../site";
 
 function StatChip({ value, suffix, label }: { value: number; suffix: string; label: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -46,7 +46,90 @@ function StatChip({ value, suffix, label }: { value: number; suffix: string; lab
   );
 }
 
+/* ─── Client-branded minimal about ──────────────────────────────────────────── */
+function BrandedAbout() {
+  return (
+    <>
+      <section className="relative overflow-hidden border-b border-white/[0.06]">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(37,99,235,0.18),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(6,182,212,0.10),transparent_50%)]" />
+        <div className="relative mx-auto max-w-7xl px-4 py-14 sm:py-20">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px] font-bold uppercase tracking-widest mb-5">
+            <HeartHandshake size={13} /> About Us
+          </span>
+          <h1 className="font-display text-3xl sm:text-5xl font-black tracking-tight leading-[1.1] max-w-3xl">
+            {SITE.name} —{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+              {SITE.tagline}
+            </span>
+          </h1>
+          <p className="mt-4 text-[14px] sm:text-base text-slate-400 leading-relaxed max-w-2xl">
+            {SITE.owner && <>Hamare yahan <strong className="text-blue-400">{SITE.owner}</strong> ki leadership mein </>}
+            equipment repair aur maintenance ke liye bharosemand service milti hai — genuine parts aur fair pricing ke saath.
+          </p>
+        </div>
+      </section>
+
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-4xl px-4">
+          <div className="rounded-3xl p-6 sm:p-8 bg-white/[0.03] border border-white/[0.08]">
+            <h2 className="font-display text-xl sm:text-2xl font-black text-center mb-6">Contact Information</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <a href={SITE.phoneHref} className="flex items-start gap-3 rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06] active:scale-[0.99] transition-transform">
+                <Phone size={18} className="text-emerald-400 shrink-0 mt-0.5" />
+                <span>
+                  <span className="block text-[13px] font-bold text-white">{SITE.phone}</span>
+                  <span className="text-[11px] text-slate-500">Call for repair / estimate</span>
+                </span>
+              </a>
+              <a href={`mailto:${SITE.email}`} className="flex items-start gap-3 rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06] active:scale-[0.99] transition-transform">
+                <Mail size={18} className="text-blue-400 shrink-0 mt-0.5" />
+                <span>
+                  <span className="block text-[13px] font-bold text-white break-all">{SITE.email}</span>
+                  <span className="text-[11px] text-slate-500">Email</span>
+                </span>
+              </a>
+              <div className="flex items-start gap-3 rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06]">
+                <MapPin size={18} className="text-cyan-400 shrink-0 mt-0.5" />
+                <p className="text-[13px] text-slate-400 leading-relaxed">{SITE.address}</p>
+              </div>
+              <div className="flex items-start gap-3 rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06]">
+                <Clock size={18} className="text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-[13px] font-bold text-white">Mon–Sat · 9:00 AM – 8:00 PM</p>
+              </div>
+            </div>
+            <a href={SITE.whatsapp} target="_blank" rel="noopener noreferrer"
+              className="mt-5 flex items-center justify-center gap-2 px-4 py-4 rounded-2xl bg-[#25D366]/15 border border-[#25D366]/25 text-[#4ade80] text-[14px] font-black active:scale-[0.99] transition-transform">
+              <MessageCircle size={17} /> WhatsApp par turant baat karein
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-4xl px-4">
+          <div className="relative overflow-hidden rounded-3xl p-7 sm:p-10 text-center bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-700">
+            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white_1px,transparent_1px)] [background-size:22px_22px]" />
+            <div className="relative">
+              <h3 className="font-display text-2xl sm:text-3xl font-black tracking-tight">Ready to Get Your Equipment Repaired?</h3>
+              <p className="mt-2 text-[14px] text-blue-100/90">Aaj hi call karo — free diagnostic assessment.</p>
+              <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
+                <a href={SITE.phoneHref} className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white text-blue-700 text-[14px] font-black shadow-xl active:scale-95 transition-transform">
+                  <Phone size={16} /> Call Now
+                </a>
+                <a href={WHATSAPP_LINK("Hello, repair ke liye inquiry hai.")} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#25D366] text-[#04170c] text-[14px] font-black shadow-xl active:scale-95 transition-transform">
+                  <MessageCircle size={16} /> WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
 export default function AboutPage() {
+  if (IS_BRANDED) return <BrandedAbout />;
   return (
     <>
       {/* ═══ HERO ═════════════════════════════════════════════════════════ */}

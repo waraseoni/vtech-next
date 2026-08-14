@@ -1,4 +1,5 @@
-import { PageHero, EquipmentGrid, ProcessSteps, RepairHighlights, CtaBand } from "../components/blocks";
+import { PageHero, EquipmentGrid, ProcessSteps, RepairHighlights, CtaBand, BrandedServicePage } from "../components/blocks";
+import { IS_BRANDED } from "../site";
 
 const EQUIPMENT = [
   { art: "moving-head" as const, name: "Sharpy / Moving Head — 16 CH", detail: "Beam, color wheel, gobo, motors, power supply — full repair.", badge: "available" as const },
@@ -29,6 +30,16 @@ const POINTS = [
 ];
 
 export default function StageLightingPage() {
+  if (IS_BRANDED) {
+    return (
+      <BrandedServicePage
+        badge="Stage Lighting"
+        title="Stage Lighting"
+        highlight="Repair & Service"
+        subtitle="Moving heads, par lights, DMX controllers, lasers, LED walls aur fog machines — component-level repair. DJs aur event companies ke liye fast turnaround."
+      />
+    );
+  }
   return (
     <>
       <PageHero

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, MessageCircle, Phone, BadgeCheck, Clock, CheckCircle2 } from "lucide-react";
+import { ChevronRight, MessageCircle, Phone, BadgeCheck, Clock, CheckCircle2, Wrench } from "lucide-react";
 import { SITE, WHATSAPP_LINK } from "../site";
 import { EquipmentArt, type ArtKind } from "./equipment-art";
 
@@ -130,5 +130,45 @@ export function CtaBand() {
         </div>
       </div>
     </section>
+  );
+}
+
+// Client-branded minimal service page — sirf service ka naam + desc + CTA.
+// Seller-specific equipment lists / pricing / steps is template me nahi dikhte.
+export function BrandedServicePage({
+  badge, title, highlight, subtitle,
+}: {
+  badge: string;
+  title: string;
+  highlight: string;
+  subtitle: string;
+}) {
+  return (
+    <>
+      <PageHero badge={badge} title={title} highlight={highlight} subtitle={subtitle} />
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-3xl px-4 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { icon: <MessageCircle size={20} />, title: "Bhejo & Diagnose", desc: "Equipment shop par lao ya photo bhejo — free diagnosis." },
+              { icon: <Wrench size={20} />, title: "Component-Level Repair", desc: "Actual faulty part change hota hai, board replace nahi." },
+              { icon: <BadgeCheck size={20} />, title: "Load Test & Warranty", desc: "Full load test ke baad hi equipment return hota hai." },
+            ].map((f, i) => (
+              <div key={i} className="rounded-3xl p-6 bg-white/[0.03] border border-white/[0.06]">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/15 flex items-center justify-center text-cyan-400 mx-auto mb-4">
+                  {f.icon}
+                </div>
+                <h3 className="text-[15px] font-bold mb-1.5">{f.title}</h3>
+                <p className="text-[13px] text-slate-400 leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-[14px] text-slate-400 leading-relaxed mt-10">
+            Kisi bhi repair ke liye {SITE.phone} par call karein ya WhatsApp karein.
+          </p>
+        </div>
+      </section>
+      <CtaBand />
+    </>
   );
 }

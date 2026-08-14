@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  Phone, MessageCircle, Sparkles,
+  Phone, MessageCircle, Sparkles, Mail, MapPin,
   ShieldCheck, Clock, IndianRupee, Wrench, ArrowRight, Star, BadgeCheck,
   Gauge, HandCoins,
 } from "lucide-react";
-import { SITE, WHATSAPP_LINK, SERVICES } from "./site";
+import { SITE, WHATSAPP_LINK, SERVICES, IS_BRANDED } from "./site";
 import { EquipmentArt } from "./components/equipment-art";
 
 /* ─── Particles (fixed positions — no random at render → no hydration mismatch) ── */
@@ -72,7 +72,145 @@ function Stat({ value, suffix, label }: { value: number; suffix: string; label: 
   );
 }
 
+/* ─── Client-branded minimal home ─────────────────────────────────────────────
+ * NEXT_PUBLIC_SITE_NAME set hone par (client ka apna deployment) sirf client ki
+ * branding dikhti hai — stats, testimonials, seller story sab skip.
+ */
+function BrandedHome() {
+  return (
+    <>
+      {/* HERO */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(37,99,235,0.16),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(6,182,212,0.10),transparent_50%)]" />
+        <div className="absolute inset-0 opacity-[0.35] bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.08)_1px,transparent_0)] [background-size:28px_28px]" />
+        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:py-28">
+          <div className="max-w-3xl">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px] font-bold uppercase tracking-widest mb-5">
+              <Sparkles size={13} /> {SITE.tagline}
+            </span>
+            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.08] tracking-tight">
+              Welcome to{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+                {SITE.name}
+              </span>
+            </h1>
+            <p className="mt-5 text-[15px] sm:text-lg text-slate-400 leading-relaxed max-w-xl">
+              {SITE.tagline}. Component-level repair, genuine parts, fast service.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row gap-3">
+              <a href={WHATSAPP_LINK("Hello, mujhe repair service chahiye.")} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1fb959] text-[#04170c] text-[15px] font-black shadow-lg shadow-[#25D366]/25 transition-all active:scale-95">
+                <MessageCircle size={18} /> WhatsApp karein
+              </a>
+              <a href={SITE.phoneHref}
+                className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-white/[0.06] border border-white/12 hover:bg-white/[0.1] text-white text-[15px] font-bold transition-all active:scale-95">
+                <Phone size={18} className="text-emerald-400" /> {SITE.phone}
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SERVICES */}
+      {SERVICES.length > 0 && (
+        <section className="py-12 sm:py-16">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
+              <p className="text-[11px] font-black uppercase tracking-widest text-cyan-400 mb-2">Our Services</p>
+              <h2 className="font-display text-2xl sm:text-4xl font-black tracking-tight">
+                What We Repair
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {SERVICES.map((s) => (
+                <Link key={s.href} href={s.href}
+                  className="group rounded-3xl overflow-hidden bg-white/[0.03] border border-white/[0.08] hover:border-blue-500/40 transition-all hover:-translate-y-1">
+                  <div className="relative h-28 sm:h-32 overflow-hidden border-b border-white/[0.06]">
+                    <EquipmentArt kind={s.art} className="h-full w-full transition-transform duration-500 group-hover:scale-105" />
+                  </div>
+                  <div className="p-5 sm:p-6">
+                    <h3 className="font-display text-lg font-bold mb-1.5">{s.label}</h3>
+                    <p className="text-[13px] text-slate-400 leading-relaxed mb-4 line-clamp-2">{s.desc}</p>
+                    <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-blue-400 group-hover:gap-2.5 transition-all">
+                      Explore <ArrowRight size={14} />
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* CONTACT STRIP */}
+      <section className="py-12 sm:py-16 bg-[#0a0a18]/60 border-y border-white/[0.05]">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="text-center max-w-2xl mx-auto mb-8">
+            <p className="text-[11px] font-black uppercase tracking-widest text-cyan-400 mb-2">Contact</p>
+            <h2 className="font-display text-2xl sm:text-3xl font-black tracking-tight">
+              Repair book karein
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <a href={SITE.phoneHref}
+              className="rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] hover:border-emerald-500/30 transition-all text-center">
+              <Phone size={20} className="text-emerald-400 mx-auto mb-3" />
+              <h4 className="text-[13px] font-bold text-white">{SITE.phone}</h4>
+              <p className="text-[11px] text-slate-500 mt-1">Call / WhatsApp</p>
+            </a>
+            <a href={`mailto:${SITE.email}`}
+              className="rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] hover:border-blue-500/30 transition-all text-center">
+              <Mail size={20} className="text-blue-400 mx-auto mb-3" />
+              <h4 className="text-[13px] font-bold text-white break-all">{SITE.email}</h4>
+              <p className="text-[11px] text-slate-500 mt-1">Email</p>
+            </a>
+            <div className="rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] text-center">
+              <MapPin size={20} className="text-cyan-400 mx-auto mb-3" />
+              <h4 className="text-[13px] font-bold text-white leading-snug">{SITE.address}</h4>
+              <p className="text-[11px] text-slate-500 mt-1">Location</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-4xl px-4">
+          <div className="relative overflow-hidden rounded-3xl p-7 sm:p-12 text-center bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-700">
+            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white_1px,transparent_1px)] [background-size:22px_22px]" />
+            <div className="relative">
+              <h2 className="font-display text-2xl sm:text-4xl font-black tracking-tight">
+                Need Urgent Repair?
+              </h2>
+              <p className="mt-3 text-[14px] sm:text-base text-blue-100/90 max-w-lg mx-auto">
+                Call karo ya WhatsApp par photo bhejo — free estimate.
+              </p>
+              <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
+                <a href={SITE.phoneHref}
+                  className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-white text-blue-700 text-[15px] font-black shadow-xl active:scale-95 transition-transform">
+                  <Phone size={17} /> Call Now
+                </a>
+                <a href={WHATSAPP_LINK("Hello, repair ke liye inquiry hai.")} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-[#25D366] text-[#04170c] text-[15px] font-black shadow-xl active:scale-95 transition-transform">
+                  <MessageCircle size={17} /> WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FLOATING WhatsApp */}
+      <a href={SITE.whatsapp} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
+        className="fixed bottom-5 right-4 z-40 w-14 h-14 rounded-full bg-[#25D366] flex items-center justify-center shadow-2xl shadow-black/40 active:scale-90 transition-transform">
+        <MessageCircle size={26} className="text-[#04170c]" />
+      </a>
+    </>
+  );
+}
+
 export default function PublicHome() {
+  if (IS_BRANDED) return <BrandedHome />;
   return (
     <>
       {/* ═══ HERO ═════════════════════════════════════════════════════════ */}
