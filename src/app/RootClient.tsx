@@ -333,7 +333,7 @@ function SidebarNav({
     <nav className="flex-1 overflow-y-auto py-3 px-2 scrollbar-hide">
       <ul className="space-y-0.5">
         <li>
-          <Link href="/" className={navLinkCls(pathname === "/")} onClick={onNavClick}>
+          <Link href="/dashboard" className={navLinkCls(pathname === "/dashboard")} onClick={onNavClick}>
             <LayoutDashboard size={16} /><span>Dashboard</span>
           </Link>
         </li>
@@ -743,20 +743,23 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // Auto-close drawer on route change
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
-  // Public pages — no sidebar, no dashboard chrome
+  // Public pages — no sidebar, no dashboard chrome. Marketing pages (/, /about,
+  // /contact, /job-status, services) logged-in user bhi dekh sakta hai — sidebar
+  // ke "V-TECH PRO" brand se yahan aata hai, navbar ke "Dashboard" button se wapas.
   const PUBLIC_PAGES = ["/login", "/setup", "/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"];
   const isPublicPage = PUBLIC_PAGES.includes(pathname) || pathname === "/";
 
-  // Logged-in user on a public page → dashboard (public site logged-in users ke liye nahi)
+  // Logged-in user /login aur /setup par nahi reh sakta (already authenticated).
+  const isAuthPage = pathname === "/login" || pathname === "/setup";
   useEffect(() => {
-    if (profile && isPublicPage) router.replace("/dashboard");
+    if (profile && isAuthPage) router.replace("/dashboard");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, pathname]);
 
   if (isPublicPage) {
-    if (!profile) return <>{children}</>;
-    // Logged in — redirect effect `/dashboard` par bhejega; flash avoid karo
-    return <div className="min-h-screen bg-[#0d1117]" />;
+    // Auth pages par logged-in user ko flash na dikhe — blank while redirect.
+    if (profile && isAuthPage) return <div className="min-h-screen bg-[#0d1117]" />;
+    return <>{children}</>;
   }
 
   if (loading) {
@@ -804,11 +807,11 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       {/* ══════════════════════ DESKTOP SIDEBAR ══════════════════════ */}
         {isMobile === false && !isAiPage && (
           <aside className="fixed top-0 left-0 h-full w-[260px] theme-sidebar border-r border-[#21293d] flex flex-col z-50 theme-sidebar">
-            {/* Brand */}
+            {/* Brand — click karo → public website (logged-in user bhi) */}
             <div className="relative overflow-hidden px-5 py-4 border-b border-[#1a2234]">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-700/15 to-transparent pointer-events-none" />
-              <div className="relative flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 flex-shrink-0">
+              <Link href="/" title="Public Website" className="relative flex items-center gap-3 group">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 flex-shrink-0 group-hover:scale-105 group-hover:from-blue-500 group-hover:to-cyan-600 transition-all">
                   <Sparkles size={20} className="text-white" />
                 </div>
                 <div>
@@ -816,9 +819,9 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   <span className="vtech-brand">V-TECH</span>{' '}
   <span className="vtech-pro font-light">PRO</span>
 </div>
-                  <div className="text-[8px] text-slate-500 dark:text-slate-300 font-black uppercase tracking-widest mt-0.5">Management System</div>
+                  <div className="text-[8px] text-slate-500 dark:text-slate-300 font-black uppercase tracking-widest mt-0.5">Management System · Click → Website</div>
                 </div>
-              </div>
+              </Link>
             </div>
 
             <SidebarNav pathname={pathname} isAdmin={isAdmin} isClient={isClient} sellerEnabled={license?.sellerEnabled} devEnabled={license?.devEnabled} />
@@ -846,20 +849,20 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                 drawerOpen ? "translate-x-0" : "-translate-x-full"
               }`}
             >
-              {/* Drawer header */}
+              {/* Drawer header — brand click → public website */}
               <div className="relative overflow-hidden px-4 py-4 border-b border-[#1a2234] flex items-center justify-between">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-700/15 to-transparent pointer-events-none" />
-                <div className="relative flex items-center gap-3">
-                  <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50">
+                <Link href="/" onClick={() => setDrawerOpen(false)} className="relative flex items-center gap-3 group">
+                  <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 group-hover:from-blue-500 group-hover:to-cyan-600 transition-all">
                     <Sparkles size={18} className="text-white" />
                   </div>
                   <div>
                     <div className="text-base font-black tracking-tight text-white leading-none">
                       V-TECH <span className="text-blue-400 font-light">PRO</span>
                     </div>
-                    <div className="text-[8px] text-slate-600 font-black uppercase tracking-widest mt-0.5">Management System</div>
+                    <div className="text-[8px] text-slate-600 font-black uppercase tracking-widest mt-0.5">Management System · Website</div>
                   </div>
-                </div>
+                </Link>
                 <button
                   onClick={() => setDrawerOpen(false)}
                   className="relative w-8 h-8 flex items-center justify-center bg-[#1a2234] hover:bg-[#21293d] rounded-lg text-slate-500 hover:text-white transition-all"

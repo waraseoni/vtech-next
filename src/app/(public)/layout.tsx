@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Phone, Menu, X, ChevronDown, Zap, MessageCircle, MapPin, Mail, Clock, LogIn, QrCode,
+  Phone, Menu, X, ChevronDown, Zap, MessageCircle, MapPin, Mail, Clock, LogIn, QrCode, LayoutDashboard,
 } from "lucide-react";
 import { SITE, SERVICES } from "./site";
 import { QrShareModal } from "./components/qr-share";
+import { supabase } from "@/lib/supabase";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -15,6 +16,51 @@ const NAV_LINKS = [
   { href: "/job-status", label: "Track Repair" },
   { href: "/contact", label: "Contact" },
 ];
+
+// Logged-in user → "Dashboard" button (wapas app), warna "Login".
+// Logged-in staff public site bhi dekh sakta hai — isliye login ke bajaye
+// Dashboard dikhata hai taaki app par wapas a saken.
+function AuthAwareAction({ mobile = false }: { mobile?: boolean }) {
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth
+      .getUser()
+      .then(({ data }) => { if (!cancelled) setLoggedIn(!!data.user); })
+      .catch(() => { if (!cancelled) setLoggedIn(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const is = loggedIn === true;
+  const href = is ? "/dashboard" : "/login";
+  const label = is ? "Dashboard" : "Login";
+  const Icon = is ? LayoutDashboard : LogIn;
+
+  if (mobile) {
+    return (
+      <Link href={href}
+        className={`mt-1 flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl text-sm font-bold active:scale-95 transition-transform ${
+          is
+            ? "bg-emerald-500/15 border border-emerald-500/25 text-emerald-300"
+            : "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-600/25"
+        }`}>
+        <Icon size={16} /> {label}
+      </Link>
+    );
+  }
+
+  return (
+    <Link href={href}
+      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold transition-all active:scale-95 ${
+        is
+          ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25"
+          : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-lg shadow-blue-600/25"
+      }`}>
+      <Icon size={14} /> {label}
+    </Link>
+  );
+}
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -121,13 +167,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               <Phone size={14} className="text-emerald-400" />
               Call Now
             </a>
-            <Link href="/login"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-[13px] font-bold shadow-lg shadow-blue-600/25 transition-all active:scale-95">
-              <LogIn size={14} />
-              Login
-            </Link>
+            <AuthAwareAction />
           </div>
-
           {/* Mobile actions */}
           <div className="flex md:hidden items-center gap-1.5">
             <button onClick={() => setQrOpen(true)} aria-label="Scan &amp; share website QR"
@@ -204,10 +245,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 <MessageCircle size={16} /> WhatsApp
               </a>
             </div>
-            <Link href="/login"
-              className="mt-1 flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-sm font-bold shadow-lg shadow-blue-600/25 active:scale-95 transition-transform">
-              <LogIn size={16} /> Staff / Client Login
-            </Link>
+            <AuthAwareAction mobile />
           </nav>
         </div>
       )}
