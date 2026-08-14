@@ -113,7 +113,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               <Zap size={18} className="text-white" fill="currentColor" />
             </div>
             <span className="font-display text-[15px] font-bold tracking-tight leading-none truncate">
-              V-<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Technologies</span>
+              {SITE.name}
             </span>
           </Link>
 
@@ -264,11 +264,11 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   <Zap size={18} className="text-white" fill="currentColor" />
                 </div>
                 <span className="font-display text-[15px] font-bold">
-                  V-<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Technologies</span>
+                  {SITE.name}
                 </span>
               </div>
               <p className="text-[13px] text-slate-500 leading-relaxed">
-                {SITE.tagline} — Jabalpur&apos;s trusted repair center since 2007. Fast repairs, genuine parts, fair rates.
+                {SITE.tagline} — Fast repairs, genuine parts, fair rates.
               </p>
             </div>
 
@@ -325,7 +325,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
           {/* Bottom bar */}
           <div className="mt-8 pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-[12px] text-slate-600">© {new Date().getFullYear()} {SITE.name} · Made in Jabalpur</p>
+            <p className="text-[12px] text-slate-600">© {new Date().getFullYear()} {SITE.name}</p>
             <div className="flex items-center gap-4">
               <button onClick={() => setQrOpen(true)} className="flex items-center gap-1.5 text-[12px] font-bold text-slate-500 hover:text-cyan-400 transition-colors">
                 <QrCode size={13} /> Scan / Share

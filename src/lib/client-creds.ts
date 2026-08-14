@@ -24,6 +24,14 @@ export type ClientCredsInput = {
   vercel_password?: string;
   custom_domain?: string;
   notes?: string;
+  // Public site branding (per-client public site ke liye — plain, secret nahi)
+  site_name?: string;
+  site_tagline?: string;
+  site_phone?: string;
+  site_email?: string;
+  site_address?: string;
+  site_owner?: string;
+  site_services?: string;
 };
 
 export type ClientCreds = {
@@ -45,6 +53,13 @@ export type ClientCreds = {
   vercel_password: string | null;
   custom_domain: string | null;
   notes: string | null;
+  site_name: string | null;
+  site_tagline: string | null;
+  site_phone: string | null;
+  site_email: string | null;
+  site_address: string | null;
+  site_owner: string | null;
+  site_services: string | null;
   updated_at: string | null;
 };
 
@@ -75,6 +90,13 @@ type RawRow = {
   vercel_password: string | null;
   custom_domain: string | null;
   notes: string | null;
+  site_name: string | null;
+  site_tagline: string | null;
+  site_phone: string | null;
+  site_email: string | null;
+  site_address: string | null;
+  site_owner: string | null;
+  site_services: string | null;
   updated_at: string | null;
 };
 
@@ -118,6 +140,13 @@ export async function upsertClientCredentials(
     vercel_email: input.vercel_email || null,
     custom_domain: input.custom_domain || null,
     notes: input.notes || null,
+    site_name: input.site_name || null,
+    site_tagline: input.site_tagline || null,
+    site_phone: input.site_phone || null,
+    site_email: input.site_email || null,
+    site_address: input.site_address || null,
+    site_owner: input.site_owner || null,
+    site_services: input.site_services || null,
     updated_at: new Date().toISOString(),
   };
   // Sensitive fields: hamesha encrypt karke store karo.

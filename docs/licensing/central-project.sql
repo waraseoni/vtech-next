@@ -205,6 +205,14 @@ create table if not exists public.client_credentials (
   vercel_password                text,
   custom_domain                  text,
   notes                          text,
+  -- Public site branding (per-client alag public site ke liye)
+  site_name                      text,
+  site_tagline                   text,
+  site_phone                     text,
+  site_email                     text,
+  site_address                   text,
+  site_owner                     text,
+  site_services                  text,
   updated_at                     timestamptz not null default now()
 );
 
@@ -217,6 +225,13 @@ alter table public.client_credentials add column if not exists github_password  
 alter table public.client_credentials add column if not exists vercel_email     text;
 alter table public.client_credentials add column if not exists vercel_password  text;
 alter table public.client_credentials add column if not exists custom_domain    text;
+alter table public.client_credentials add column if not exists site_name        text;
+alter table public.client_credentials add column if not exists site_tagline     text;
+alter table public.client_credentials add column if not exists site_phone       text;
+alter table public.client_credentials add column if not exists site_email       text;
+alter table public.client_credentials add column if not exists site_address     text;
+alter table public.client_credentials add column if not exists site_owner       text;
+alter table public.client_credentials add column if not exists site_services    text;
 
 alter table public.client_credentials enable row level security;
 revoke all on table public.client_credentials from anon, authenticated;

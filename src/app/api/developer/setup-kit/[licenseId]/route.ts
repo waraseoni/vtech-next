@@ -63,6 +63,14 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   const vercelProjectId = str(body.vercelProjectId);
   const vercelToken = str(body.vercelToken);
   const customDomain = str(body.customDomain).toLowerCase().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  // Public site branding (optional)
+  const siteName = str(body.siteName);
+  const siteTagline = str(body.siteTagline);
+  const sitePhone = str(body.sitePhone);
+  const siteEmail = str(body.siteEmail);
+  const siteAddress = str(body.siteAddress);
+  const siteOwner = str(body.siteOwner);
+  const siteServices = str(body.siteServices);
 
   const missing: string[] = [];
   if (!supabaseUrl) missing.push("Supabase URL");
@@ -89,6 +97,13 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         vercel_project_id: vercelProjectId,
         vercel_token: vercelToken,
         custom_domain: customDomain,
+        site_name: siteName,
+        site_tagline: siteTagline,
+        site_phone: sitePhone,
+        site_email: siteEmail,
+        site_address: siteAddress,
+        site_owner: siteOwner,
+        site_services: siteServices,
       });
     }
 
@@ -102,6 +117,13 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       supabaseAnonKey,
       supabaseServiceRoleKey,
       setupToken,
+      siteName,
+      siteTagline,
+      sitePhone,
+      siteEmail,
+      siteAddress,
+      siteOwner,
+      siteServices,
     });
 
     return new NextResponse(new Uint8Array(zip), {

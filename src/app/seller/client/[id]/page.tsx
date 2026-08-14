@@ -45,6 +45,13 @@ type Creds = {
   vercel_password: string | null;
   custom_domain: string | null;
   notes: string | null;
+  site_name: string | null;
+  site_tagline: string | null;
+  site_phone: string | null;
+  site_email: string | null;
+  site_address: string | null;
+  site_owner: string | null;
+  site_services: string | null;
   updated_at?: string | null;
 };
 
@@ -119,6 +126,8 @@ export default function ClientDetailPage() {
     github_repo: "", github_token: "", github_username: "", github_password: "",
     vercel_project_url: "", vercel_project_id: "", vercel_token: "",
     vercel_email: "", vercel_password: "", custom_domain: "", notes: "",
+    site_name: "", site_tagline: "", site_phone: "", site_email: "",
+    site_address: "", site_owner: "", site_services: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -156,6 +165,13 @@ export default function ClientDetailPage() {
         vercel_password: cr?.vercel_password ?? "",
         custom_domain: cr?.custom_domain ?? "",
         notes: cr?.notes ?? "",
+        site_name: cr?.site_name ?? "",
+        site_tagline: cr?.site_tagline ?? "",
+        site_phone: cr?.site_phone ?? "",
+        site_email: cr?.site_email ?? "",
+        site_address: cr?.site_address ?? "",
+        site_owner: cr?.site_owner ?? "",
+        site_services: cr?.site_services ?? "",
       });
     } catch {
       setErr("Server se connect nahi ho paya.");
@@ -199,6 +215,13 @@ export default function ClientDetailPage() {
         vercel_password: data.vercel_password ?? "",
         custom_domain: data.custom_domain ?? "",
         notes: data.notes ?? "",
+        site_name: data.site_name ?? "",
+        site_tagline: data.site_tagline ?? "",
+        site_phone: data.site_phone ?? "",
+        site_email: data.site_email ?? "",
+        site_address: data.site_address ?? "",
+        site_owner: data.site_owner ?? "",
+        site_services: data.site_services ?? "",
       });
       setSavedAt(new Date().toLocaleTimeString());
     } catch {
@@ -212,7 +235,7 @@ export default function ClientDetailPage() {
     if (!confirm("Client ke saare credentials delete karein? (License delete nahi hoga)")) return;
     const res = await fetch(`/api/seller/creds/${id}`, { method: "DELETE" });
     if (!res.ok) { const d = await res.json().catch(() => ({})); setErr(d.error || "Delete failed"); return; }
-    setCreds({ license_id: id, app_url: "", supabase_url: "", supabase_anon_key: "", supabase_service_role_key: "", supabase_email: "", supabase_password: "", github_repo: "", github_token: "", github_username: "", github_password: "", vercel_project_url: "", vercel_project_id: "", vercel_token: "", vercel_email: "", vercel_password: "", custom_domain: "", notes: "" });
+    setCreds({ license_id: id, app_url: "", supabase_url: "", supabase_anon_key: "", supabase_service_role_key: "", supabase_email: "", supabase_password: "", github_repo: "", github_token: "", github_username: "", github_password: "", vercel_project_url: "", vercel_project_id: "", vercel_token: "", vercel_email: "", vercel_password: "", custom_domain: "", notes: "", site_name: "", site_tagline: "", site_phone: "", site_email: "", site_address: "", site_owner: "", site_services: "" });
   };
 
   const supabaseDash = useMemo(() => {
@@ -492,6 +515,45 @@ export default function ClientDetailPage() {
               <div>
                 <label className={labelCls}>Notes</label>
                 <textarea className={`${inputCls} font-sans`} rows={3} value={creds.notes ?? ""} onChange={set("notes")} placeholder="Koi bhi extra detail — bil, renewal reminders, server creds, etc." />
+
+                <div className="rounded-2xl border border-blue-500/25 bg-blue-500/5 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">
+                    Public Site Branding (optional)
+                  </p>
+                  <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
+                    Client ki alag public site — ye details uske Vercel project par env vars ke roop mein set hoti hain. Khali chhoro to default (V-Technologies) branding dikhegi.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Site Name</label>
+                      <input className={inputCls} value={creds.site_name ?? ""} onChange={set("site_name")} placeholder="e.g. Kamal Light House" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Tagline</label>
+                      <input className={inputCls} value={creds.site_tagline ?? ""} onChange={set("site_tagline")} placeholder="e.g. Stage Light Repair Experts" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Phone</label>
+                      <input className={inputCls} value={creds.site_phone ?? ""} onChange={set("site_phone")} placeholder="+91 98765 43210" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Email</label>
+                      <input className={inputCls} value={creds.site_email ?? ""} onChange={set("site_email")} placeholder="info@kamalshop.com" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Owner Name</label>
+                      <input className={inputCls} value={creds.site_owner ?? ""} onChange={set("site_owner")} placeholder="e.g. Kamal Verma" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Services (comma-separated)</label>
+                      <input className={inputCls} value={creds.site_services ?? ""} onChange={set("site_services")} placeholder="stage-lighting,industrial" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className={labelCls}>Address</label>
+                      <input className={inputCls} value={creds.site_address ?? ""} onChange={set("site_address")} placeholder="Shop no., Street, City, State, PIN" />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {savedAt && (

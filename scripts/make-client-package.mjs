@@ -82,6 +82,13 @@ function buildPackage(c, env) {
     setupToken: c.setupToken,
     licenseServiceUrl: env.LICENSE_SERVICE_URL,
     licenseServiceAnonKey: env.LICENSE_SERVICE_ANON_KEY,
+    siteName: c.siteName,
+    siteTagline: c.siteTagline,
+    sitePhone: c.sitePhone,
+    siteEmail: c.siteEmail,
+    siteAddress: c.siteAddress,
+    siteOwner: c.siteOwner,
+    siteServices: c.siteServices,
   });
 
   for (const [name, content] of Object.entries(files)) {

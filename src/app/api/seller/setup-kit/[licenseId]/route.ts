@@ -47,6 +47,13 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
       supabaseAnonKey,
       supabaseServiceRoleKey,
       setupToken: deriveSetupToken(id),
+      siteName: creds?.site_name?.trim() || undefined,
+      siteTagline: creds?.site_tagline?.trim() || undefined,
+      sitePhone: creds?.site_phone?.trim() || undefined,
+      siteEmail: creds?.site_email?.trim() || undefined,
+      siteAddress: creds?.site_address?.trim() || undefined,
+      siteOwner: creds?.site_owner?.trim() || undefined,
+      siteServices: creds?.site_services?.trim() || undefined,
     });
 
     return new NextResponse(new Uint8Array(zip), {

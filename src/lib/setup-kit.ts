@@ -16,6 +16,14 @@ export type SetupKitInput = {
   setupToken?: string;
   licenseServiceUrl?: string;
   licenseServiceAnonKey?: string;
+  // Public site branding (optional) — NEXT_PUBLIC_SITE_* env vars package me.
+  siteName?: string;
+  siteTagline?: string;
+  sitePhone?: string;
+  siteEmail?: string;
+  siteAddress?: string;
+  siteOwner?: string;
+  siteServices?: string;
 };
 
 export type SetupKitFiles = Record<string, string>;
@@ -52,6 +60,15 @@ function envContent(c: SetupKitInput): string {
     "",
     "# Optional: setup page ko sirf is token se admin banane do",
     c.setupToken ? `SETUP_TOKEN=${c.setupToken}` : "# SETUP_TOKEN=",
+    "",
+    "# Public site branding (optional) — har client ko apni alag public site",
+    c.siteName     ? `NEXT_PUBLIC_SITE_NAME=${c.siteName}`     : "# NEXT_PUBLIC_SITE_NAME=V-Technologies",
+    c.siteTagline  ? `NEXT_PUBLIC_SITE_TAGLINE=${c.siteTagline}` : "# NEXT_PUBLIC_SITE_TAGLINE=Repair & Service Experts",
+    c.sitePhone    ? `NEXT_PUBLIC_SITE_PHONE=${c.sitePhone}`   : "# NEXT_PUBLIC_SITE_PHONE=+91 91791 05875",
+    c.siteEmail    ? `NEXT_PUBLIC_SITE_EMAIL=${c.siteEmail}`   : "# NEXT_PUBLIC_SITE_EMAIL=vtech.jbp@gmail.com",
+    c.siteAddress  ? `NEXT_PUBLIC_SITE_ADDRESS=${c.siteAddress}` : "# NEXT_PUBLIC_SITE_ADDRESS=...",
+    c.siteOwner    ? `NEXT_PUBLIC_SITE_OWNER=${c.siteOwner}`   : "# NEXT_PUBLIC_SITE_OWNER=Vikram Jain",
+    c.siteServices ? `NEXT_PUBLIC_SITE_SERVICES=${c.siteServices}` : "# NEXT_PUBLIC_SITE_SERVICES=stage-lighting,industrial,power-supply",
     "",
     "# WARNING: Is package mein SELLER PORTAL vars nahi daalein:",
     "#    (LICENSE_SERVICE_SERVICE_ROLE_KEY, SELLER_PORTAL_PASSWORD, DEV_PORTAL_PASSWORD)",
@@ -146,6 +163,15 @@ export function buildSetupKitFiles(c: SetupKitInput): SetupKitFiles {
           supabaseUrl: c.supabaseUrl,
           licenseServiceConfigured: !!(c.licenseServiceUrl && c.licenseServiceAnonKey),
           setupTokenSet: !!c.setupToken,
+          branding: {
+            siteName: c.siteName || "",
+            siteTagline: c.siteTagline || "",
+            sitePhone: c.sitePhone || "",
+            siteEmail: c.siteEmail || "",
+            siteAddress: c.siteAddress || "",
+            siteOwner: c.siteOwner || "",
+            siteServices: c.siteServices || "",
+          },
           generatedAt: new Date().toISOString(),
         },
         null,
@@ -164,6 +190,13 @@ export function buildSetupKitZip(params: {
   supabaseAnonKey: string;
   supabaseServiceRoleKey: string;
   setupToken: string;
+  siteName?: string;
+  siteTagline?: string;
+  sitePhone?: string;
+  siteEmail?: string;
+  siteAddress?: string;
+  siteOwner?: string;
+  siteServices?: string;
 }): Uint8Array {
   return zipFiles(
     buildSetupKitFiles({
@@ -177,6 +210,13 @@ export function buildSetupKitZip(params: {
       setupToken: params.setupToken,
       licenseServiceUrl: process.env.LICENSE_SERVICE_URL,
       licenseServiceAnonKey: process.env.LICENSE_SERVICE_ANON_KEY,
+      siteName: params.siteName,
+      siteTagline: params.siteTagline,
+      sitePhone: params.sitePhone,
+      siteEmail: params.siteEmail,
+      siteAddress: params.siteAddress,
+      siteOwner: params.siteOwner,
+      siteServices: params.siteServices,
     })
   );
 }

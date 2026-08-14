@@ -74,7 +74,7 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
     if (navigator.share) {
       const textData: ShareData = {
         title: `${SITE.name} — Website`,
-        text: "Scan karke website kholo ya link par tap karo. Repair & Service Experts, Jabalpur.",
+        text: `Scan karke website kholo ya link par tap karo. ${SITE.tagline}.`,
         url: siteUrl,
       };
       // QR image file bhi share karo agar browser allow karta hai (Android Chrome / iOS Safari)
@@ -93,7 +93,7 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
   };
 
   const shareMsg = () => {
-    const text = "Namaste! V-Technologies website — Repair & Service Experts, Jabalpur.";
+    const text = `Namaste! ${SITE.name} website — ${SITE.tagline}.`;
     const url = siteUrl || window.location.origin;
     return { text, url };
   };

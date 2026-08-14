@@ -66,6 +66,13 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
       vercel_password: str(body.vercel_password),
       custom_domain: str(body.custom_domain),
       notes: str(body.notes),
+      site_name: str(body.site_name),
+      site_tagline: str(body.site_tagline),
+      site_phone: str(body.site_phone),
+      site_email: str(body.site_email),
+      site_address: str(body.site_address),
+      site_owner: str(body.site_owner),
+      site_services: str(body.site_services),
     });
     return NextResponse.json(row);
   } catch (err: unknown) {

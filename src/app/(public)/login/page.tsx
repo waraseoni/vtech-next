@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { LogIn, Mail, Lock, Loader2, ShieldCheck, Eye, EyeOff, AlertCircle, Globe, Smartphone, KeyRound, ArrowLeft, UserRound } from "lucide-react";
+import { SITE } from "../site";
 
 type Tab = "staff" | "client";
 
@@ -398,7 +399,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-slate-700 text-[11px] mt-5 font-medium">
-          V-Technologies · Jabalpur · 9179105875
+          {SITE.name} · {SITE.phone}
         </p>
       </div>
     </div>

@@ -57,7 +57,7 @@ export default function AboutPage() {
             <Trophy size={13} /> Since 2007
           </span>
           <h1 className="font-display text-3xl sm:text-5xl font-black tracking-tight leading-[1.1] max-w-3xl">
-            V-<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Technologies</span> — Jabalpur ka most trusted repair hub
+            V-<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Technologies</span> — {SITE.tagline}
           </h1>
           <p className="mt-4 text-[14px] sm:text-base text-slate-400 leading-relaxed max-w-2xl">
             DJ systems, moving heads, laser lights, LED walls, processors aur SMPS — Central India ka sabse bada aur bharosemand repair center.
@@ -80,7 +80,7 @@ export default function AboutPage() {
               </h2>
               <div className="mt-5 space-y-4 text-[14px] sm:text-[15px] text-slate-400 leading-relaxed">
                 <p>
-                  Hi, I&apos;m <strong className="text-blue-400">Vikram Jain</strong>. In 2007, maine yeh journey shuru ki — bas ek chhoti si table, kuch tools, aur cheezein theek karne ka junoon.
+                  Hi, I&apos;m <strong className="text-blue-400">{SITE.owner}</strong>. In 2007, maine yeh journey shuru ki — bas ek chhoti si table, kuch tools, aur cheezein theek karne ka junoon.
                 </p>
                 <p>
                   Aaj hum proudly hain — Central India ka <strong className="text-blue-400">largest aur most trusted</strong> repair center for DJ systems, moving heads, laser lights, LED walls, processors aur SMPS.

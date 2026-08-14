@@ -43,6 +43,14 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   const vercelProjectId = str(body.vercelProjectId);
   const vercelToken = str(body.vercelToken);
   const customDomain = str(body.customDomain).toLowerCase().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  // Public site branding (optional)
+  const siteName = str(body.siteName);
+  const siteTagline = str(body.siteTagline);
+  const sitePhone = str(body.sitePhone);
+  const siteEmail = str(body.siteEmail);
+  const siteAddress = str(body.siteAddress);
+  const siteOwner = str(body.siteOwner);
+  const siteServices = str(body.siteServices);
 
   const missing: string[] = [];
   if (!supabaseUrl) missing.push("Supabase URL");
@@ -72,6 +80,13 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       vercel_project_id: vercelProjectId,
       vercel_token: vercelToken,
       custom_domain: customDomain,
+      site_name: siteName,
+      site_tagline: siteTagline,
+      site_phone: sitePhone,
+      site_email: siteEmail,
+      site_address: siteAddress,
+      site_owner: siteOwner,
+      site_services: siteServices,
     });
 
     // Kuch values seller ke env se aati hain (license service) — same for all clients.
@@ -91,6 +106,14 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       { key: "LICENSE_SERVICE_URL", value: licenseServiceUrl },
       { key: "LICENSE_SERVICE_ANON_KEY", value: licenseServiceAnonKey },
       { key: "SETUP_TOKEN", value: setupToken },
+      // Public site branding — empty value se env var bhi nahi banta (fallback use hota hai).
+      ...(siteName ? [{ key: "NEXT_PUBLIC_SITE_NAME", value: siteName }] : []),
+      ...(siteTagline ? [{ key: "NEXT_PUBLIC_SITE_TAGLINE", value: siteTagline }] : []),
+      ...(sitePhone ? [{ key: "NEXT_PUBLIC_SITE_PHONE", value: sitePhone }] : []),
+      ...(siteEmail ? [{ key: "NEXT_PUBLIC_SITE_EMAIL", value: siteEmail }] : []),
+      ...(siteAddress ? [{ key: "NEXT_PUBLIC_SITE_ADDRESS", value: siteAddress }] : []),
+      ...(siteOwner ? [{ key: "NEXT_PUBLIC_SITE_OWNER", value: siteOwner }] : []),
+      ...(siteServices ? [{ key: "NEXT_PUBLIC_SITE_SERVICES", value: siteServices }] : []),
     ];
 
     const pushed = await pushEnvToVercel(vercelToken, vercelProjectId, env);

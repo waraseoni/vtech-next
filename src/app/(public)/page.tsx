@@ -88,7 +88,7 @@ export default function PublicHome() {
         <div className="relative mx-auto max-w-7xl px-4 w-full py-16">
           <div className="max-w-3xl">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px] font-bold uppercase tracking-widest mb-5">
-              <Sparkles size={13} /> Jabalpur&apos;s Repair Experts · Since 2007
+              <Sparkles size={13} /> {SITE.tagline}
             </span>
 
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.08] tracking-tight">

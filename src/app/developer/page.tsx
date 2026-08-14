@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Loader2, RefreshCw, ShieldCheck, Store, Clock, Ban, AlertTriangle, Users,
-  Package, Download, X, Eye, EyeOff, Rocket,
+  Package, Download, X, Eye, EyeOff, Rocket, Globe,
 } from "lucide-react";
 import PortalGate from "@/components/PortalGate";
 
@@ -43,6 +43,13 @@ type KitPrefill = {
     vercel_project_id: string | null;
     vercel_token: string | null;
     custom_domain: string | null;
+    site_name: string | null;
+    site_tagline: string | null;
+    site_phone: string | null;
+    site_email: string | null;
+    site_address: string | null;
+    site_owner: string | null;
+    site_services: string | null;
   } | null;
   setupToken: string;
 };
@@ -104,6 +111,13 @@ export default function DeveloperPage() {
   const [vercelProjectId, setVercelProjectId] = useState("");
   const [vercelToken, setVercelToken] = useState("");
   const [customDomain, setCustomDomain] = useState("");
+  const [siteName, setSiteName] = useState("");
+  const [siteTagline, setSiteTagline] = useState("");
+  const [sitePhone, setSitePhone] = useState("");
+  const [siteEmail, setSiteEmail] = useState("");
+  const [siteAddress, setSiteAddress] = useState("");
+  const [siteOwner, setSiteOwner] = useState("");
+  const [siteServices, setSiteServices] = useState("");
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMsg, setPushMsg] = useState("");
 
@@ -131,6 +145,7 @@ export default function DeveloperPage() {
     setPrefillLoading(true);
     setAppUrl(""); setSupabaseUrl(""); setAnonKey(""); setServiceRoleKey(""); setSetupToken(""); setSaveCreds(true);
     setVercelProjectUrl(""); setVercelProjectId(""); setVercelToken(""); setCustomDomain("");
+    setSiteName(""); setSiteTagline(""); setSitePhone(""); setSiteEmail(""); setSiteAddress(""); setSiteOwner(""); setSiteServices("");
     try {
       const res = await fetch(`/api/developer/setup-kit/${row.id}`, { cache: "no-store" });
       const data = await res.json();
@@ -145,6 +160,13 @@ export default function DeveloperPage() {
       setVercelProjectId(data.creds?.vercel_project_id ?? "");
       setVercelToken(data.creds?.vercel_token ?? "");
       setCustomDomain(data.creds?.custom_domain ?? "");
+      setSiteName(data.creds?.site_name ?? "");
+      setSiteTagline(data.creds?.site_tagline ?? "");
+      setSitePhone(data.creds?.site_phone ?? "");
+      setSiteEmail(data.creds?.site_email ?? "");
+      setSiteAddress(data.creds?.site_address ?? "");
+      setSiteOwner(data.creds?.site_owner ?? "");
+      setSiteServices(data.creds?.site_services ?? "");
     } catch {
       setKitMsg("Prefill load fail hua.");
     } finally {
@@ -159,7 +181,7 @@ export default function DeveloperPage() {
       const res = await fetch(`/api/developer/setup-kit/${kitFor.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ appUrl, supabaseUrl, supabaseAnonKey: anonKey, supabaseServiceRoleKey: serviceRoleKey, setupToken, saveCreds, vercelProjectUrl, vercelProjectId, vercelToken, customDomain }),
+        body: JSON.stringify({ appUrl, supabaseUrl, supabaseAnonKey: anonKey, supabaseServiceRoleKey: serviceRoleKey, setupToken, saveCreds, vercelProjectUrl, vercelProjectId, vercelToken, customDomain, siteName, siteTagline, sitePhone, siteEmail, siteAddress, siteOwner, siteServices }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -193,7 +215,7 @@ export default function DeveloperPage() {
       const res = await fetch(`/api/developer/setup-kit/${kitFor.id}/push`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ appUrl, supabaseUrl, supabaseAnonKey: anonKey, supabaseServiceRoleKey: serviceRoleKey, setupToken, vercelProjectUrl, vercelProjectId, vercelToken, customDomain }),
+        body: JSON.stringify({ appUrl, supabaseUrl, supabaseAnonKey: anonKey, supabaseServiceRoleKey: serviceRoleKey, setupToken, vercelProjectUrl, vercelProjectId, vercelToken, customDomain, siteName, siteTagline, sitePhone, siteEmail, siteAddress, siteOwner, siteServices }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setPushMsg(data.error || "Push fail hua"); return; }
@@ -407,6 +429,49 @@ export default function DeveloperPage() {
                   <input type="checkbox" checked={saveCreds} onChange={(e) => setSaveCreds(e.target.checked)} className="w-4 h-4 accent-indigo-500" />
                   <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Credentials ko portal mein save karo (encrypted at rest) — dobara package banane ke liye ready</span>
                 </label>
+
+                <div className="pt-2 border-t border-slate-200 dark:border-[#1a2234]">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Globe size={13} className="text-blue-600 dark:text-blue-400" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">Public Site Branding (optional)</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-600 mb-3">
+                    Khali chhorne par default seller branding (V-Technologies) dikhegi. Bhare to client ko apni alag public site milegi — push par ye env vars client ke Vercel project par set hote hain.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Site Name</label>
+                      <input className={inputCls} value={siteName} onChange={(e) => setSiteName(e.target.value)} placeholder="e.g. Kamal Light House" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Tagline</label>
+                      <input className={inputCls} value={siteTagline} onChange={(e) => setSiteTagline(e.target.value)} placeholder="e.g. Stage Light Repair Experts" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Phone</label>
+                      <input className={inputCls} value={sitePhone} onChange={(e) => setSitePhone(e.target.value)} placeholder="+91 98765 43210" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Email</label>
+                      <input className={inputCls} value={siteEmail} onChange={(e) => setSiteEmail(e.target.value)} placeholder="info@kamalshop.com" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Owner Name</label>
+                      <input className={inputCls} value={siteOwner} onChange={(e) => setSiteOwner(e.target.value)} placeholder="e.g. Kamal Verma" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Services (comma-separated)</label>
+                      <input className={inputCls} value={siteServices} onChange={(e) => setSiteServices(e.target.value)} placeholder="stage-lighting,industrial" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className={labelCls}>Address</label>
+                      <input className={inputCls} value={siteAddress} onChange={(e) => setSiteAddress(e.target.value)} placeholder="Shop no., Street, City, State, PIN" />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-600 mt-2">
+                    Services allowed: <span className="font-mono">stage-lighting</span>, <span className="font-mono">industrial</span>, <span className="font-mono">power-supply</span>. Khali/unknown values skip ho jayengi.
+                  </p>
+                </div>
 
                 <div className="pt-2 border-t border-slate-200 dark:border-[#1a2234]">
                   <div className="flex items-center gap-2 mb-3">
