@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Phone, Menu, X, ChevronDown, Zap, MessageCircle, MapPin, Mail, Clock, LogIn, QrCode, LayoutDashboard,
 } from "lucide-react";
-import { SITE, SERVICES } from "./site";
+import { SITE, SERVICES, getSiteInfo, type SiteInfo } from "./site";
 import { QrShareModal } from "./components/qr-share";
 import { supabase } from "@/lib/supabase";
 
@@ -64,10 +64,37 @@ function AuthAwareAction({ mobile = false }: { mobile?: boolean }) {
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  // Live business details (client apne Settings se) — SITE (env) fallback.
+  const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getSiteInfo().then((d) => { if (!cancelled) setSiteInfo(d); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // First-run auto-redirect: naya client deployment (abhi koi admin nahi bana)
+  // → /setup par bhej do. Admin bante hi needsSetup=false ho jata hai.
+  useEffect(() => {
+    if (pathname === "/setup") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/setup/status", { cache: "no-store" });
+        const data = await res.json();
+        if (cancelled || !res.ok) return;
+        if (data.needsSetup && !data.loggedIn) router.replace("/setup");
+      } catch {
+        /* network fail — redirect skip (site phir bhi render ho jayegi) */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [pathname, router]);
 
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 8);
@@ -91,6 +118,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
+  const info = siteInfo || ({} as SiteInfo);
+
   const linkCls = (href: string, exact = false) => {
     const active = exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
     return `relative text-[13px] font-semibold transition-colors ${
@@ -113,7 +142,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               <Zap size={18} className="text-white" fill="currentColor" />
             </div>
             <span className="font-display text-[15px] font-bold tracking-tight leading-none truncate">
-              {SITE.name}
+              {info.shop_name || SITE.name}
             </span>
           </Link>
 
@@ -162,7 +191,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               <QrCode size={15} className="text-cyan-400" />
               <span className="hidden lg:inline">QR</span>
             </button>
-            <a href={SITE.phoneHref}
+            <a href={`tel:+${(info.phone || SITE.phone).replace(/\D/g, "")}`}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.06] border border-white/10 text-[13px] font-bold hover:bg-white/[0.1] transition-colors">
               <Phone size={14} className="text-emerald-400" />
               Call Now
@@ -175,7 +204,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               className="tap-target w-10 h-10 flex items-center justify-center rounded-xl bg-white/[0.06] border border-white/10 text-cyan-400 active:scale-95 transition-transform">
               <QrCode size={18} />
             </button>
-            <a href={SITE.phoneHref} aria-label="Call us"
+            <a href={`tel:+${(info.phone || SITE.phone).replace(/\D/g, "")}`} aria-label="Call us"
               className="tap-target w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 active:scale-95 transition-transform">
               <Phone size={18} />
             </a>
@@ -236,11 +265,11 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
             {/* Actions */}
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <a href={SITE.phoneHref}
+              <a href={`tel:+${(info.phone || SITE.phone).replace(/\D/g, "")}`}
                 className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 text-sm font-bold active:scale-95 transition-transform">
                 <Phone size={16} /> Call Now
               </a>
-              <a href={SITE.whatsapp} target="_blank" rel="noopener noreferrer"
+              <a href={`https://wa.me/${(info.whatsapp || SITE.phone).replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-[#25D366]/15 border border-[#25D366]/25 text-[#4ade80] text-sm font-bold active:scale-95 transition-transform">
                 <MessageCircle size={16} /> WhatsApp
               </a>
@@ -264,11 +293,11 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   <Zap size={18} className="text-white" fill="currentColor" />
                 </div>
                 <span className="font-display text-[15px] font-bold">
-                  {SITE.name}
+                  {info.shop_name || SITE.name}
                 </span>
               </div>
               <p className="text-[13px] text-slate-500 leading-relaxed">
-                {SITE.tagline} — Fast repairs, genuine parts, fair rates.
+                {SITE.tagline} — Trusted repair center since {info.established_year || 2007}. Fast repairs, genuine parts, fair rates.
               </p>
             </div>
 
@@ -298,34 +327,34 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-3">Contact Us</h4>
               <ul className="space-y-3">
                 <li>
-                  <a href={SITE.phoneHref} className="flex items-start gap-2.5 text-[13px] text-slate-400 hover:text-white transition-colors">
-                    <Phone size={15} className="mt-0.5 shrink-0 text-emerald-400" /> {SITE.phone}
+                  <a href={`tel:+${(info.phone || SITE.phone).replace(/\D/g, "")}`} className="flex items-start gap-2.5 text-[13px] text-slate-400 hover:text-white transition-colors">
+                    <Phone size={15} className="mt-0.5 shrink-0 text-emerald-400" /> {info.phone || SITE.phone}
                   </a>
                 </li>
                 <li>
-                  <a href={`mailto:${SITE.email}`} className="flex items-start gap-2.5 text-[13px] text-slate-400 hover:text-white transition-colors">
-                    <Mail size={15} className="mt-0.5 shrink-0 text-blue-400" /> {SITE.email}
+                  <a href={`mailto:${info.email || SITE.email}`} className="flex items-start gap-2.5 text-[13px] text-slate-400 hover:text-white transition-colors">
+                    <Mail size={15} className="mt-0.5 shrink-0 text-blue-400" /> {info.email || SITE.email}
                   </a>
                 </li>
                 <li className="flex items-start gap-2.5 text-[13px] text-slate-400">
-                  <MapPin size={15} className="mt-0.5 shrink-0 text-cyan-400" /> {SITE.address}
+                  <MapPin size={15} className="mt-0.5 shrink-0 text-cyan-400" /> {info.address || SITE.address}
                 </li>
                 <li className="flex items-start gap-2.5 text-[13px] text-slate-400">
-                  <Clock size={15} className="mt-0.5 shrink-0 text-amber-400" /> Mon–Sat · 9:00 AM – 8:00 PM
+                  <Clock size={15} className="mt-0.5 shrink-0 text-amber-400" /> {info.business_hours || "Mon–Sat · 9:00 AM – 8:00 PM"}
                 </li>
               </ul>
             </div>
           </div>
 
           {/* WhatsApp CTA */}
-          <a href={SITE.whatsapp} target="_blank" rel="noopener noreferrer"
+          <a href={`https://wa.me/${(info.whatsapp || SITE.phone).replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
             className="mt-8 flex items-center justify-center gap-2.5 px-4 py-4 rounded-2xl bg-gradient-to-r from-[#25D366]/20 to-[#128C7E]/20 border border-[#25D366]/30 text-[14px] font-bold text-[#4ade80] active:scale-[0.99] transition-transform">
             <MessageCircle size={18} /> WhatsApp par repair book karein — bhejo, hum check karein
           </a>
 
           {/* Bottom bar */}
           <div className="mt-8 pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-[12px] text-slate-600">© {new Date().getFullYear()} {SITE.name}</p>
+            <p className="text-[12px] text-slate-600">© {new Date().getFullYear()} {info.shop_name || SITE.name}</p>
             <div className="flex items-center gap-4">
               <button onClick={() => setQrOpen(true)} className="flex items-center gap-1.5 text-[12px] font-bold text-slate-500 hover:text-cyan-400 transition-colors">
                 <QrCode size={13} /> Scan / Share

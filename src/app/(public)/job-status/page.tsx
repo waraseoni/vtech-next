@@ -181,6 +181,28 @@ export default function JobStatusPage() {
                 E.g. Job ID <button onClick={() => { setSearch("27950"); setSearchType("job_id"); }} className="text-blue-400 hover:underline">27950</button> ya Code{" "}
                 <button onClick={() => { setSearch("2026032001"); setSearchType("code"); }} className="text-blue-400 hover:underline">2026032001</button>
               </p>
+
+              {/* WhatsApp Info Message */}
+              <div className="mt-6 rounded-2xl p-5 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 shrink-0 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+                    <span className="text-xl">📱</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-emerald-300 text-sm mb-2">WhatsApp Message se Job Status Check Karein</h3>
+                    <p className="text-[13px] text-slate-400 leading-relaxed">
+                      Aapke WhatsApp par job status ke message me aapko apna <span className="text-white font-semibold">Job ID</span> aur <span className="text-white font-semibold">Code</span> dono diya gaya hai. Dono me se kisi bhi ek use karke apne job ki details search kar sakte hain.
+                    </p>
+                    <div className="mt-3 p-3 rounded-xl bg-black/30 border border-white/5">
+                      <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mb-2">WhatsApp Message Example:</p>
+                      <div className="text-[12px] text-slate-300 font-mono leading-relaxed">
+                        <p>Job ID: <span className="text-emerald-400">#27950</span></p>
+                        <p>Code: <span className="text-cyan-400">#2026032001</span></p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Recent Jobs for reference */}

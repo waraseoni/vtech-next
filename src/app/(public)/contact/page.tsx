@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   Loader2, CheckCircle, Phone, Mail, MapPin, MessageCircle, Send, Clock,
 } from "lucide-react";
-import { SITE, WHATSAPP_LINK } from "../site";
+import { SITE, WHATSAPP_LINK, getSiteInfo, type SiteInfo } from "../site";
 
 const SERVICE_OPTIONS = [
   "Stage Lighting",
@@ -20,6 +20,16 @@ export default function ContactPage() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  // Live business details (client ke apne Settings se) — SITE (env) fallback.
+  const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getSiteInfo().then((d) => { if (!cancelled) setSiteInfo(d); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const info = siteInfo || ({} as SiteInfo);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +55,7 @@ export default function ContactPage() {
     }
   };
 
-  const waText = `Namaste ${SITE.name}! Main ${form.fullname.trim()} (${form.contact.trim()}).\nService: ${form.service}\n${form.message.trim()}`;
+  const waText = `Namaste ${info.shop_name || SITE.name}! Main ${form.fullname.trim()} (${form.contact.trim()}).\nService: ${form.service}\n${form.message.trim()}`;
 
   const inputCls =
     "w-full min-h-11 px-4 py-3 bg-white/[0.04] border border-white/[0.1] rounded-xl text-[14px] text-white font-medium placeholder:text-slate-600 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all";
@@ -77,22 +87,22 @@ export default function ContactPage() {
               <div className="rounded-3xl p-6 bg-white/[0.03] border border-white/[0.08]">
                 <h2 className="font-display text-lg font-black mb-5">Contact Information</h2>
                 <div className="space-y-3">
-                  <a href={SITE.phoneHref} className="flex items-start gap-3.5 rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06] active:scale-[0.99] transition-transform">
+                  <a href={`tel:+${(info.phone || SITE.phone).replace(/\D/g, "")}`} className="flex items-start gap-3.5 rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06] active:scale-[0.99] transition-transform">
                     <div className="w-10 h-10 shrink-0 rounded-xl bg-emerald-500/15 flex items-center justify-center">
                       <Phone size={17} className="text-emerald-400" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Call / WhatsApp</p>
-                      <p className="text-[14px] font-bold text-white mt-0.5">{SITE.phone}</p>
+                      <p className="text-[14px] font-bold text-white mt-0.5">{info.phone || SITE.phone}</p>
                     </div>
                   </a>
-                  <a href={`mailto:${SITE.email}`} className="flex items-start gap-3.5 rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06] active:scale-[0.99] transition-transform">
+                  <a href={`mailto:${info.email || SITE.email}`} className="flex items-start gap-3.5 rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06] active:scale-[0.99] transition-transform">
                     <div className="w-10 h-10 shrink-0 rounded-xl bg-blue-500/15 flex items-center justify-center">
                       <Mail size={17} className="text-blue-400" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Email</p>
-                      <p className="text-[14px] font-bold text-white mt-0.5 break-all">{SITE.email}</p>
+                      <p className="text-[14px] font-bold text-white mt-0.5 break-all">{info.email || SITE.email}</p>
                     </div>
                   </a>
                   <div className="flex items-start gap-3.5 rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06]">
@@ -101,7 +111,7 @@ export default function ContactPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Location</p>
-                      <p className="text-[13px] text-slate-300 leading-relaxed mt-0.5">{SITE.address}</p>
+                      <p className="text-[13px] text-slate-300 leading-relaxed mt-0.5">{info.address || SITE.address}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3.5 rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06]">
@@ -110,12 +120,12 @@ export default function ContactPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Timing</p>
-                      <p className="text-[13px] font-bold text-white mt-0.5">Mon–Sat · 9:00 AM – 8:00 PM</p>
+                      <p className="text-[13px] font-bold text-white mt-0.5">{info.business_hours || "Mon–Sat · 9:00 AM – 8:00 PM"}</p>
                     </div>
                   </div>
                 </div>
 
-                <a href={SITE.whatsapp} target="_blank" rel="noopener noreferrer"
+                <a href={WHATSAPP_LINK("", info.whatsapp)} target="_blank" rel="noopener noreferrer"
                   className="mt-5 flex items-center justify-center gap-2 px-4 py-4 rounded-2xl bg-[#25D366]/15 border border-[#25D366]/25 text-[#4ade80] text-[14px] font-black active:scale-[0.99] transition-transform">
                   <MessageCircle size={17} /> WhatsApp par turant baat karein
                 </a>
@@ -136,7 +146,7 @@ export default function ContactPage() {
                     <h3 className="font-display text-xl font-black mb-2">Message Sent!</h3>
                     <p className="text-[14px] text-slate-400 mb-6">Hum jaldi aapse sampark karenge. Urgent ho to WhatsApp par bhi follow-up karo.</p>
                     <div className="flex flex-col sm:flex-row justify-center gap-3">
-                      <a href={WHATSAPP_LINK(waText)} target="_blank" rel="noopener noreferrer"
+                      <a href={WHATSAPP_LINK(waText, info.whatsapp)} target="_blank" rel="noopener noreferrer"
                         className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#25D366] text-[#04170c] text-[14px] font-black active:scale-95 transition-transform">
                         <MessageCircle size={16} /> WhatsApp Follow-up
                       </a>

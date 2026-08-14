@@ -17,6 +17,7 @@ import {
 import QRCode from "qrcode";
 import { pageAll } from "@/lib/fetch-all";
 import AIAlertsWidget from "@/app/components/AIAlertsWidget";
+import LicenseInfoCard from "@/app/components/LicenseInfoCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Profile = { full_name: string; role: string };
@@ -569,6 +570,9 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ LICENSE */}
+      <LicenseInfoCard />
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ AI ALERTS */}
       <AIAlertsWidget />

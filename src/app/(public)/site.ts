@@ -53,8 +53,53 @@ export const SITE = {
   ).trim(),
 };
 
-export const WHATSAPP_LINK = (text: string) =>
-  `${SITE.whatsapp}?text=${encodeURIComponent(text)}`;
+export const WHATSAPP_LINK = (text: string, phone?: string) => {
+  const base = phone ? `https://wa.me/${digitsOnly(phone)}` : SITE.whatsapp;
+  return `${base}?text=${encodeURIComponent(text)}`;
+};
+
+// ── Live business details ────────────────────────────────────────────────────
+// Client apne app ke Settings → system_info mein name/contact/address/timing
+// manage karta hai. /api/system-info se ye live values fetch hote hain taaki
+// client bina seller ke env push/redeploy kiye public site update kar sake.
+// Fetch fail ya field khali ho → SITE (env, build-time) fallback.
+//
+// NOTE: yahan dynamic access ka koi issue nahi — ye build-time inline NAHI
+// hota, sirf client-side fetch hai (SSR initial render SITE se hota hai).
+export type SiteInfo = {
+  shop_name?: string;
+  short_name?: string;
+  phone?: string;
+  whatsapp?: string;
+  email?: string;
+  address?: string;
+  business_hours?: string;
+  established_year?: number | null;
+};
+
+let cachedSiteInfo: SiteInfo | null | undefined;
+let fetchPromise: Promise<SiteInfo | null> | null = null;
+
+export function getSiteInfo(): Promise<SiteInfo | null> {
+  if (cachedSiteInfo !== undefined) return Promise.resolve(cachedSiteInfo);
+  if (fetchPromise) return fetchPromise;
+
+  fetchPromise = fetch("/api/system-info", { cache: "no-store" })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data: SiteInfo | null) => {
+      cachedSiteInfo = data;
+      return data;
+    })
+    .catch(() => {
+      cachedSiteInfo = null;
+      return null;
+    })
+    .finally(() => {
+      fetchPromise = null;
+    });
+
+  return fetchPromise;
+}
 
 type ServiceDef = { href: string; label: string; desc: string; art: ArtKind };
 
