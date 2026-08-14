@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireDev } from "@/lib/portal-auth";
 import { isLicenseAdminConfigured, getLicense } from "@/lib/license-admin";
-import { upsertClientCredentials } from "@/lib/client-creds";
+import { patchClientCredentials } from "@/lib/client-creds";
 import { deriveSetupToken } from "@/lib/setup-kit";
 import { pushEnvToVercel, triggerVercelDeploy, addDomainToVercel } from "@/lib/vercel-push";
 
@@ -62,7 +62,8 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     if (!license) return NextResponse.json({ error: "License nahi mila" }, { status: 404 });
 
     // Creds save kar lo (encrypted) — dobara se prefilled aayen.
-    await upsertClientCredentials(id, {
+    // SIRF ye fields update karo — baaki (notes, github, emails...) preserve.
+    await patchClientCredentials(id, {
       app_url: appUrl,
       supabase_url: supabaseUrl,
       supabase_anon_key: supabaseAnonKey,

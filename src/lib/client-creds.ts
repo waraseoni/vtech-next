@@ -149,6 +149,26 @@ export async function upsertClientCredentials(
   };
 }
 
+// Partial update — sirf diye gaye fields update karo; baaki existing values preserve.
+// (Developer page ke push/setup-kit routes sirf subset bhejte hain — bina merge ke
+//  baaki fields null ho jate the: notes, github, emails, vercel email/password...)
+export async function patchClientCredentials(
+  licenseId: number,
+  input: ClientCredsInput
+): Promise<ClientCreds> {
+  const existing = await getClientCredentials(licenseId).catch(() => null);
+  // Sirf string fields merge karo (null/number fields drop) — taaki null
+  // values se unset na ho jayein.
+  const merged: ClientCredsInput = {};
+  if (existing) {
+    (Object.keys(existing) as (keyof ClientCreds)[]).forEach((k) => {
+      const v = existing[k];
+      if (typeof v === "string") (merged as Record<string, unknown>)[k] = v;
+    });
+  }
+  return upsertClientCredentials(licenseId, { ...merged, ...input });
+}
+
 export async function deleteClientCredentials(licenseId: number) {
   const sb = makeClient();
   const { error } = await sb.from("client_credentials").delete().eq("license_id", licenseId);

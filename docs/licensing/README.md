@@ -92,6 +92,10 @@ Key format: `VTC-` + 4 groups of 4 alphanumeric (uppercase), e.g.
 
 ## Client Package + Setup Page (naye client ko kya dena hai)
 
+> **Naye client ka Supabase project banate time schema lagane ke liye
+> [`supabase-cli-guide.md`](./supabase-cli-guide.md) padho** — CLI install se
+> dump nikalne tak, step-by-step (Windows/PowerShell).
+
 Client ke liye ready-to-deploy package banane ka system:
 
 1. **Setup page** (`/setup`) — har client package mein built-in. Pehli baar kholne
@@ -188,6 +192,7 @@ dekh sakta hai.
 ## Files
 
 - `docs/licensing/central-project.sql` — central DB migration (seller ke project par)
+- `docs/licensing/supabase-cli-guide.md` — Supabase CLI install → schema dump → client project guide
 - `src/lib/license.ts` — client + key validation + activation id
 - `src/lib/license-admin.ts` — seller-side CRUD (service role, server-only)
 - `src/lib/portal-auth.ts` — portal password + signed cookie auth

@@ -350,7 +350,7 @@ export default function ClientDetailPage() {
                         </p></div>
                       <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Created</p><p className="font-bold text-slate-200 mt-0.5">{new Date(license.created_at).toLocaleDateString("en-IN")}</p></div>
                       <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Last seen</p><p className="font-bold text-slate-200 mt-0.5">{license.last_seen_at ? new Date(license.last_seen_at).toLocaleString("en-IN") : "—"}</p></div>
-                      <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Notes</p><p className="font-bold text-slate-200 mt-0.5 break-words">{license.notes || "—"}</p></div>
+                      <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Notes</p><p className="font-bold text-slate-200 mt-0.5 break-words">{creds.notes || "—"}</p>{license.notes && <p className="text-[10px] text-slate-500 mt-1 break-words">License: {license.notes}</p>}</div>
                     </div>
                   );
                 })()}

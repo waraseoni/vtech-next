@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireDev } from "@/lib/portal-auth";
 import { isLicenseAdminConfigured, getLicense } from "@/lib/license-admin";
-import { getClientCredentials, upsertClientCredentials } from "@/lib/client-creds";
+import { getClientCredentials, patchClientCredentials } from "@/lib/client-creds";
 import { buildSetupKitZip, deriveSetupToken, slugify } from "@/lib/setup-kit";
 
 type Ctx = { params: Promise<{ licenseId: string }> };
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     if (!license) return NextResponse.json({ error: "License nahi mila" }, { status: 404 });
 
     if (body.saveCreds === true) {
-      await upsertClientCredentials(id, {
+      await patchClientCredentials(id, {
         app_url: appUrl,
         supabase_url: supabaseUrl,
         supabase_anon_key: supabaseAnonKey,

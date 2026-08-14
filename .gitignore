@@ -102,6 +102,7 @@ src/app/salary/*page - Copy.tsx*
 vtech_backup_*.json
 sync_plan.md
 backups/
+.freebuff/
 
 # 17. Misc sensitive txt files
 *.7z
