@@ -1153,13 +1153,13 @@ function JobsListContent() {
           </div>
 
           {/* ── Quick Stats Bar (PHP feature) ── */}
-          <div className="grid grid-cols-5 gap-3">
+          <div className={`grid gap-3 ${userRole === "admin" ? "grid-cols-5" : "grid-cols-4"}`}>
             {[
               { label: "Total Jobs",   value: stats.total,                   icon: TrendingUp,    color: "text-blue-400",    bg: "bg-blue-500/10 border-blue-500/20" },
               { label: "Pending",      value: stats.pending,                  icon: Clock,         color: "text-amber-400",   bg: "bg-amber-500/10 border-amber-500/20" },
               { label: "In Progress",  value: stats.progress,                 icon: Wrench,        color: "text-blue-300",    bg: "bg-blue-500/10 border-blue-400/20" },
               { label: "Completed",    value: stats.completed,                icon: CheckCircle2,  color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-              { label: "Total Amount", value: `₹${stats.totalAmt.toLocaleString("en-IN")}`, icon: IndianRupee, color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
+              ...(userRole === "admin" ? [{ label: "Total Amount", value: `₹${stats.totalAmt.toLocaleString("en-IN")}`, icon: IndianRupee, color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" }] : []),
             ].map(({ label, value, icon: Icon, color, bg }) => (
               <div key={label} className={`${bg} border rounded-xl px-4 py-3 flex items-center gap-3`}>
                 <Icon size={18} className={color} />
@@ -1356,10 +1356,12 @@ function JobsListContent() {
           </div>
         ))}
       </div>
-      <div className="mx-3 mt-2 bg-purple-500/5 border border-purple-500/20 rounded-xl py-2 px-4 flex items-center justify-between">
-        <span className="text-[10px] text-slate-600 font-bold uppercase">Total Amount</span>
-        <span className="text-sm font-black text-purple-400">₹{stats.totalAmt.toLocaleString("en-IN")}</span>
-      </div>
+      {userRole === "admin" && (
+        <div className="mx-3 mt-2 bg-purple-500/5 border border-purple-500/20 rounded-xl py-2 px-4 flex items-center justify-between">
+          <span className="text-[10px] text-slate-600 font-bold uppercase">Total Amount</span>
+          <span className="text-sm font-black text-purple-400">₹{stats.totalAmt.toLocaleString("en-IN")}</span>
+        </div>
+      )}
 
       {/* ── Search results indicator ── */}
       {debouncedSearch && (
