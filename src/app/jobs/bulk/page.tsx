@@ -8,6 +8,7 @@ import {
   ArrowLeft, Save, Plus, Wrench,
   Loader2, AlertTriangle, CheckCircle, Hash, Trash2,
 } from "lucide-react";
+import SearchableSelect from "@/components/SearchableSelect";
 
 // ─── IST Helper ───────────────────────────────────────────────────────────────
 function nowIST(): string {
@@ -17,14 +18,6 @@ function nowIST(): string {
   }).formatToParts(new Date());
   const g = (t: string) => p.find(x => x.type === t)?.value ?? "00";
   return `${g("year")}-${g("month")}-${g("day")}T${g("hour")}:${g("minute")}:${g("second")}+05:30`;
-}
-function todayISTStr(): string {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
-  }).formatToParts(new Date());
-  const p: Record<string, string> = {};
-  parts.forEach(x => { p[x.type] = x.value; });
-  return `${p.year}-${p.month}-${p.day}`;
 }
 async function genCode(offset = 0): Promise<string> {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -154,13 +147,13 @@ export default function BulkJobPage() {
       // Get fresh job counter
       const { data: ctr } = await supabase.from("job_id_counter").select("last_job_id").single();
       const nextJobId = (ctr?.last_job_id || 0) + 1;
-      const today = todayISTStr();
 
       let savedCount = 0;
       for (let i = 0; i < validRows.length; i++) {
         const row = validRows[i];
         const code = await genCode(i);
         const jobIdStr = String(nextJobId + i);
+        const ts = nowIST();
 
         const { error } = await supabase.from("transaction_list").insert({
           client_name:               String(clientId),
@@ -177,8 +170,8 @@ export default function BulkJobPage() {
           mechanic_amount:           0,
           mechanic_commission_amount:0,
           user_id:                   userId,
-          date_created:              `${today}T00:00:00+05:30`,
-          date_updated:              nowIST(),
+          date_created:              ts,
+          date_updated:              ts,
         }).select("id").single();
 
         if (error) throw new Error(`Row ${i+1} save failed: ${error.message}`);
@@ -263,24 +256,28 @@ export default function BulkJobPage() {
               <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                 Client Name <span className="text-red-400">*</span>
               </label>
-              <select value={clientId} onChange={e => setClientId(e.target.value)}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all" required>
-                <option value="">Search Client...</option>
-                {clients.map(c => {
+              <SearchableSelect
+                value={clientId || null}
+                options={clients.map(c => {
                   const name = [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ");
-                  return <option key={c.id} value={c.id}>{name}{c.contact ? ` (${c.contact})` : ""}</option>;
+                  return { id: c.id, label: name, sub: c.contact ? `(${c.contact})` : undefined };
                 })}
-              </select>
+                onSelect={v => setClientId(v)}
+                placeholder="Search Client..."
+                clearLabel="Search Client..."
+              />
             </div>
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                 Default Mechanic (sabhi rows ke liye)
               </label>
-              <select value={globalMech} onChange={e => applyGlobalMech(e.target.value)}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all">
-                <option value="">Select Default Mechanic</option>
-                {mechOptions.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
+              <SearchableSelect
+                value={globalMech || null}
+                options={mechOptions.map(m => ({ id: m.id, label: m.name }))}
+                onSelect={v => applyGlobalMech(v)}
+                placeholder="Select Default Mechanic"
+                clearLabel="Select Default Mechanic"
+              />
             </div>
           </div>
         </div>
@@ -321,12 +318,13 @@ export default function BulkJobPage() {
                       placeholder="Fault" className={iCls} required/>
                   </td>
                   <td className="px-3 py-2.5">
-                    <select value={row.mechanic_id}
-                      onChange={e => updateRow(row.id, "mechanic_id", e.target.value)}
-                      className={iCls}>
-                      <option value="">Select</option>
-                      {mechOptions.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </select>
+                    <SearchableSelect
+                      value={row.mechanic_id}
+                      options={mechOptions.map(m => ({ id: m.id, label: m.name }))}
+                      onSelect={v => updateRow(row.id, "mechanic_id", v)}
+                      placeholder="Select"
+                      clearLabel="Select"
+                    />
                   </td>
                   <td className="px-3 py-2.5">
                     <input type="text" value={row.uniq_id}
@@ -386,12 +384,13 @@ export default function BulkJobPage() {
                 </div>
                 <div>
                   <label className={lCls}>Assign To</label>
-                  <select value={row.mechanic_id}
-                    onChange={e => updateRow(row.id, "mechanic_id", e.target.value)}
-                    className={iCls}>
-                    <option value="">Select Mechanic</option>
-                    {mechOptions.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                  </select>
+                  <SearchableSelect
+                    value={row.mechanic_id}
+                    options={mechOptions.map(m => ({ id: m.id, label: m.name }))}
+                    onSelect={v => updateRow(row.id, "mechanic_id", v)}
+                    placeholder="Select Mechanic"
+                    clearLabel="Select Mechanic"
+                  />
                 </div>
                 <div>
                   <label className={lCls}>Remarks</label>

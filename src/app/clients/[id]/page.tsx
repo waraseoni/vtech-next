@@ -16,6 +16,7 @@ const toNum = (v: unknown) => { const x = Number(v); return isNaN(x) ? 0 : x; };
 const inr = (v: number, sign = true) => `${sign && v < 0 ? "−" : ""}₹${Math.abs(v).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "N/A";
 import { todayIST } from "@/lib/dateUtils";
+import SearchableSelect from "@/components/SearchableSelect";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Client = {
@@ -726,13 +727,16 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
             <div className="p-5 space-y-4">
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5">Select Loan</label>
-                <select value={selectedLoanId || ""} onChange={e => setSelectedLoanId(parseInt(e.target.value) || null)}
-                  className="w-full px-3 py-2.5 theme-panel-2 border border-[#21293d] rounded-xl text-white dark:text-slate-100 text-sm outline-none focus:border-purple-500">
-                  <option value="">Select Loan</option>
-                  {loans.filter(l => l.status === 1).map(l => (
-                    <option key={l.id} value={l.id}>Loan #{l.id} - {inr(toNum(l.emi_amount))}/month</option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  value={selectedLoanId || null}
+                  options={loans.filter(l => l.status === 1).map(l => ({
+                    id: l.id,
+                    label: `Loan #${l.id} - ${inr(toNum(l.emi_amount))}/month`,
+                  }))}
+                  onSelect={v => setSelectedLoanId(parseInt(v) || null)}
+                  placeholder="Select Loan"
+                  clearLabel="Select Loan"
+                />
               </div>
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5">Amount</label>

@@ -10,6 +10,7 @@ import {
   X, Loader2, Filter, CheckCircle2, Receipt
 } from 'lucide-react';
 import { todayIST, formatIST } from '@/lib/dateUtils';
+import SearchableSelect from "@/components/SearchableSelect";
 
 type Transaction = {
   id: number;
@@ -335,13 +336,13 @@ Mob: 9179105875`;
           </div>
           <div className="flex-1 min-w-[180px]">
             <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">Client</label>
-            <select value={selectedClientId} onChange={(e) => setSelectedClientId(e.target.value)}
-              className="w-full px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50">
-              <option value="all">सभी ग्राहक</option>
-              {clientsList.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+            <SearchableSelect
+              value={selectedClientId === 'all' ? null : selectedClientId}
+              options={clientsList.map((c) => ({ id: c.id, label: c.name }))}
+              onSelect={(v) => setSelectedClientId(v || 'all')}
+              placeholder="सभी ग्राहक"
+              clearLabel="सभी ग्राहक"
+            />
           </div>
           <button type="submit"
             className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all">

@@ -10,6 +10,7 @@ import {
   Camera, Trash2,
 } from "lucide-react";
 import { compressImage } from "@/lib/imageCompression";
+import SearchableSelect from "@/components/SearchableSelect";
 
 const inputCls = "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all";
 const labelCls = "block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5";
@@ -324,13 +325,13 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 <label className={labelCls}>
                   <Wrench size={10} className="inline mr-1"/> Link to Mechanic Profile
                 </label>
-                <select value={mechanicId} onChange={e => setMechanicId(e.target.value)}
-                  className={inputCls}>
-                  <option value="">— Select Mechanic —</option>
-                  {mechanics.map(m => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  value={mechanicId || null}
+                  options={mechanics.map(m => ({ id: m.id, label: m.name }))}
+                  onSelect={v => setMechanicId(v)}
+                  placeholder="— Select Mechanic —"
+                  clearLabel="— Select Mechanic —"
+                />
                 <p className="text-[10px] text-slate-700 mt-1">
                   Attendance lagane ke liye staff ko uski profile se link karna zaroori hai।
                 </p>

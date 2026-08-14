@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import SearchableSelect from "@/components/SearchableSelect";
 import {
   Loader2, ChevronLeft, ChevronRight,
   Printer, TrendingUp, Eye, FileText, Calendar,
@@ -376,13 +377,13 @@ function CommissionContent() {
               <div className="h-6 w-px bg-[#21293d] mx-1" />
 
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Staff:</span>
-              <select value={mechanicId} onChange={(e) => setMechanicId(e.target.value)}
-                className="px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500 transition-all">
-                <option value="all">All Staff</option>
-                {mechanics.map((m) => (
-                  <option key={m.id} value={String(m.id)}>{m.name}</option>
-                ))}
-              </select>
+              <SearchableSelect
+                value={mechanicId === "all" ? null : mechanicId}
+                options={mechanics.map((m) => ({ id: m.id, label: m.name }))}
+                onSelect={(v) => setMechanicId(v || "all")}
+                placeholder="All Staff"
+                clearLabel="All Staff"
+              />
 
               <button onClick={() => window.open(`/api/print-mechanics-commission?month=${month}&mechanic_id=${mechanicId}`, "_blank")}
                 className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">

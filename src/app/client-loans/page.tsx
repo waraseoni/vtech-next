@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
 import { formatIST, toISTDatePart } from "@/lib/dateUtils";
 import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Eye, CreditCard } from "lucide-react";
+import SearchableSelect from "@/components/SearchableSelect";
 
 type Client = { id: number; firstname: string; middlename: string | null; lastname: string; contact: string | null };
 type Loan = {
@@ -342,11 +343,18 @@ export default function ClientLoansPage() {
 
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Client <span className="text-red-400">*</span></label>
-                <select value={form.client_id} onChange={e => setForm(p => ({ ...p, client_id: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500">
-                  <option value="">Select client...</option>
-                  {clients.map(c => <option key={c.id} value={String(c.id)}>{clientName(c)}</option>)}
-                </select>
+                <SearchableSelect
+                  value={form.client_id || null}
+                  options={clients.map(c => ({ id: c.id, label: clientName(c), sub: c.contact || undefined }))}
+                  onSelect={v => setForm(p => ({ ...p, client_id: v }))}
+                  placeholder="Select client..."
+                  renderSelected={(opt) => (
+                    <div className="min-w-0">
+                      <div className="font-bold text-white text-sm truncate">{opt.label}</div>
+                      {opt.sub && <div className="text-[10px] text-slate-500 truncate">{opt.sub}</div>}
+                    </div>
+                  )}
+                />
               </div>
 
               <div>

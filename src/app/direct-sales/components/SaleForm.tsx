@@ -3,11 +3,12 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
-  Plus, Trash2, Save, Loader2, Package, User, CreditCard,
+  Plus, Trash2, Save, Loader2, Package, CreditCard,
   Banknote, Smartphone, Building2, MessageSquare, ShoppingCart,
-  AlertTriangle, Minus, ChevronDown, UserCog, Search,
+  AlertTriangle, Minus, UserCog, Search,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
+import SearchableSelect from "@/components/SearchableSelect";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -40,7 +41,6 @@ const PAYMENT_MODES = [
 ];
 
 // ─── Shared input styles ──────────────────────────────────────────────────────
-const selectCls = "w-full bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500/60 transition-all appearance-none [color-scheme:dark]";
 const inputCls  = "w-full bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500/60 transition-all";
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
@@ -445,15 +445,13 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
             </span>
           </div>
           <Field label="Sold By" required>
-            <div className="relative">
-              <select value={selectedMechanic}
-                onChange={e => setSelectedMechanic(e.target.value ? Number(e.target.value) : "")}
-                className={selectCls} required>
-                <option value="">— Select Staff Member —</option>
-                {mechanics.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-              <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
-            </div>
+            <SearchableSelect
+              value={selectedMechanic}
+              options={mechanics.map(m => ({ id: m.id, label: m.name }))}
+              onSelect={v => setSelectedMechanic(v ? Number(v) : "")}
+              placeholder="— Select Staff Member —"
+              clearLabel="— Select Staff Member —"
+            />
           </Field>
         </div>
       )}
@@ -462,16 +460,13 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
       <div className="grid sm:grid-cols-2 gap-4">
         {/* Client */}
         <Field label="Client">
-          <div className="relative">
-            <User size={12} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
-            <select value={selectedClient}
-              onChange={e => setSelectedClient(e.target.value ? Number(e.target.value) : "")}
-              className={`${selectCls} pl-9`}>
-              <option value="">Walk-in Customer</option>
-              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
-          </div>
+          <SearchableSelect
+            value={selectedClient}
+            options={clients.map(c => ({ id: c.id, label: c.name }))}
+            onSelect={v => setSelectedClient(v ? Number(v) : "")}
+            placeholder="Walk-in Customer"
+            clearLabel="Walk-in Customer"
+          />
         </Field>
 
         {/* Payment mode as toggle buttons */}
@@ -510,19 +505,20 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
 
         {/* Dropdown + button */}
         <div className="flex gap-2">
-          <div className="relative flex-1">
-            <select value={selectedProductId}
-              onChange={e => setSelectedProductId(e.target.value ? Number(e.target.value) : "")}
-              className={selectCls}>
-              <option value="">— Select a product —</option>
-              {filteredProducts.map(p => (
-                <option key={p.id} value={p.id} disabled={p.available_stock <= 0}>
-                  {p.name} — ₹{p.price.toLocaleString("en-IN")}
-                  {p.available_stock <= 0 ? " (Out of Stock)" : ` · Stock: ${p.available_stock}`}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+          <div className="flex-1">
+            <SearchableSelect
+              value={selectedProductId}
+              options={filteredProducts.map(p => ({
+                id: p.id,
+                label: p.name,
+                sub: `₹${p.price.toLocaleString("en-IN")} · Stock: ${p.available_stock}`,
+                disabled: p.available_stock <= 0,
+                disabledNote: "Stock khatam hai",
+              }))}
+              onSelect={v => setSelectedProductId(v ? Number(v) : "")}
+              placeholder="— Select a product —"
+              clearLabel="— Select a product —"
+            />
           </div>
           <button type="button" onClick={addProduct}
             className="flex items-center gap-1.5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-extrabold shadow-lg shadow-blue-500/20 transition-all active:scale-95 flex-shrink-0">

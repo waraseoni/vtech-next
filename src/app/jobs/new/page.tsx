@@ -4,12 +4,13 @@ import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
-  Save, ArrowLeft, Search, Check, ChevronDown, Loader2,
+  Save, ArrowLeft, Loader2,
   Wrench, Package, Hash, User, AlertCircle, CheckCircle2,
-  Trash2, Plus, IndianRupee, MapPin, MessageSquare, UserCog,
+  Trash2, IndianRupee, MapPin, MessageSquare, UserCog,
   Smartphone, X,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
+import SearchableSelect from "@/components/SearchableSelect";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STYLES
@@ -98,11 +99,6 @@ function ManageJobPageInner({
   const [commissionAmt,    setCommissionAmt]     = useState<string>("0");
   const tempIdRef = useRef(0);
 
-  // Client search dropdown
-  const [clientOpen,   setClientOpen]   = useState(false);
-  const [clientSearch, setClientSearch] = useState("");
-  const clientDropRef = useRef<HTMLDivElement>(null);
-
   // Add New Client Modal
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [newClientForm, setNewClientForm] = useState({
@@ -110,26 +106,12 @@ function ManageJobPageInner({
   });
   const [savingClient, setSavingClient] = useState(false);
 
-  // Service / Product add selectors
-  const [selService, setSelService] = useState("");
-  const [selProduct, setSelProduct] = useState("");
-
   // ── TOAST auto-dismiss ─────────────────────────────────────────────────
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 3500);
     return () => clearTimeout(t);
   }, [toast]);
-
-  // ── Click outside to close client dropdown ──────────────────────────
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (clientDropRef.current && !clientDropRef.current.contains(e.target as Node))
-        setClientOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   // ── CLIENT BALANCE ────────────────────────────────────────────────────
   // Balance = Opening + All Billed (repairs + direct sales) - All Settled (payments + discounts)
@@ -437,9 +419,8 @@ function ManageJobPageInner({
   }, [isEdit]);
 
   // ── ADD SERVICE ROW ───────────────────────────────────────────────────
-  const addService = () => {
-    if (!selService) return;
-    const svc = services.find(s => s.id === parseInt(selService));
+  const addService = (svcId: number) => {
+    const svc = services.find(s => s.id === svcId);
     if (!svc) return;
     if (serviceRows.some(r => r.service_id === svc.id)) {
       setToast({ type: "error", msg: "Yeh service already add hai!" });
@@ -449,7 +430,6 @@ function ManageJobPageInner({
       tempId: ++tempIdRef.current,
       service_id: svc.id, service_name: svc.name, price: svc.price,
     }]);
-    setSelService("");
   };
 
   const removeService = (tempId: number) =>
@@ -462,9 +442,8 @@ function ManageJobPageInner({
     setServiceRows(prev => prev.map(r => r.tempId === tempId ? { ...r, service_name: val } : r));
 
   // ── ADD PRODUCT ROW ───────────────────────────────────────────────────
-  const addProduct = () => {
-    if (!selProduct) return;
-    const prd = products.find(p => p.id === parseInt(selProduct));
+  const addProduct = (prdId: number) => {
+    const prd = products.find(p => p.id === prdId);
     if (!prd) return;
     if (productRows.some(r => r.product_id === prd.id)) {
       setToast({ type: "error", msg: "Yeh product already add hai!" });
@@ -474,7 +453,6 @@ function ManageJobPageInner({
       tempId: ++tempIdRef.current,
       product_id: prd.id, product_name: prd.name, qty: 1, price: prd.price,
     }]);
-    setSelProduct("");
   };
 
   const removeProduct = (tempId: number) =>
@@ -594,12 +572,6 @@ function ManageJobPageInner({
       setSaving(false);
     }
   };
-
-  // ── FILTERED CLIENTS ───────────────────────────────────────────────────
-  const filteredClients = clients.filter(c =>
-    c.fullname.toLowerCase().includes(clientSearch.toLowerCase()) ||
-    c.contact.includes(clientSearch)
-  );
 
   // ── COMPUTED TOTALS ───────────────────────────────────────────────────
   const serviceTotal = serviceRows.reduce((sum, r) => sum + (r.price || 0), 0);
@@ -792,7 +764,7 @@ function ManageJobPageInner({
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
 
             {/* Client dropdown — col 6 */}
-            <div className="md:col-span-6 relative" ref={clientDropRef}>
+            <div className="md:col-span-6">
               <div className="flex items-center gap-2 mb-1.5">
                 <label className={labelCls}><User size={13} className="text-blue-400" />Client <span className="text-red-400">*</span></label>
                 <button
@@ -803,23 +775,26 @@ function ManageJobPageInner({
                   + Add New Client
                 </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setClientOpen(v => !v)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 bg-[#111520] border rounded-xl text-sm transition-all outline-none text-left ${
-                  clientOpen ? "border-blue-500/60 ring-1 ring-blue-500/20" : "border-[#21293d] hover:border-slate-600"
-                }`}
-              >
-                {selectedClient ? (
+              <SearchableSelect
+                value={selectedClient?.id ?? null}
+                options={clients.map(c => ({ id: c.id, label: c.fullname, sub: c.contact }))}
+                onSelect={id => {
+                  const c = clients.find(x => String(x.id) === id);
+                  if (c) {
+                    setSelectedClient(c);
+                    fetchClientBalance(c.id);
+                  }
+                }}
+                placeholder="Search client (name/contact)…"
+                searchPlaceholder="Name ya contact se search karo…"
+                emptyText="Koi client nahi mila"
+                renderSelected={opt => (
                   <div>
-                    <div className="font-bold text-white text-sm">{selectedClient.fullname}</div>
-                    <div className="text-blue-400 text-xs">{selectedClient.contact}</div>
+                    <div className="font-bold text-white text-sm">{opt.label}</div>
+                    <div className="text-blue-400 text-xs">{opt.sub}</div>
                   </div>
-                ) : (
-                  <span className="text-slate-600 font-medium">Search client (name/contact)…</span>
                 )}
-                <ChevronDown size={16} className="text-slate-500 flex-shrink-0" />
-              </button>
+              />
 
               {/* Client balance chip */}
               {clientBalance && (
@@ -832,44 +807,6 @@ function ManageJobPageInner({
                 }`}>
                   <IndianRupee size={10} />
                   {clientBalance.label}: {inr(clientBalance.amount)}
-                </div>
-              )}
-
-              {/* Dropdown */}
-              {clientOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl z-50 p-3">
-                  <div className="relative mb-2">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={15} />
-                    <input
-                      autoFocus
-                      placeholder="Name ya contact se search karo…"
-                      className="w-full pl-9 pr-3 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-white text-sm outline-none focus:border-blue-500/60 placeholder:text-slate-700"
-                      value={clientSearch}
-                      onChange={e => setClientSearch(e.target.value)}
-                    />
-                  </div>
-                  <div className="max-h-52 overflow-y-auto space-y-0.5">
-                    {filteredClients.length === 0 ? (
-                      <p className="text-slate-600 text-xs text-center py-4">Koi client nahi mila</p>
-                    ) : filteredClients.map(c => (
-                      <div
-                        key={c.id}
-                        onClick={() => {
-                          setSelectedClient(c);
-                          fetchClientBalance(c.id);
-                          setClientOpen(false);
-                          setClientSearch("");
-                        }}
-                        className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/5 cursor-pointer transition-all group"
-                      >
-                        <div>
-                          <div className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">{c.fullname}</div>
-                          <div className="text-xs text-slate-600">{c.contact}</div>
-                        </div>
-                        {selectedClient?.id === c.id && <Check size={15} className="text-emerald-400 flex-shrink-0" />}
-                      </div>
-                    ))}
-                  </div>
                 </div>
               )}
             </div>
@@ -886,18 +823,18 @@ function ManageJobPageInner({
             {/* Mechanic — col 4 */}
             <div className="md:col-span-4">
               <label className={labelCls}><UserCog size={13} className="text-purple-400" />Mechanic <span className="text-red-400">*</span></label>
-              <select
-                value={selectedMechanic}
-                onChange={e => setSelectedMechanic(e.target.value)}
-                className={inputCls}
-              >
-                <option value="">— Select Mechanic —</option>
-                {mechanics.map(m => (
-                  <option key={m.id} value={String(m.id)}>
-                    {m.fullname} {m.commission_percent > 0 ? `(${m.commission_percent}%)` : ""}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect
+                value={selectedMechanic || null}
+                options={mechanics.map(m => ({
+                  id: m.id,
+                  label: m.fullname,
+                  sub: m.commission_percent > 0 ? `${m.commission_percent}% commission` : undefined,
+                }))}
+                onSelect={id => setSelectedMechanic(id)}
+                placeholder="— Select Mechanic —"
+                searchPlaceholder="Mechanic ka naam type karo…"
+                emptyText="Koi mechanic nahi mila"
+              />
             </div>
           </div>
         </div>
@@ -940,22 +877,16 @@ function ManageJobPageInner({
               <span className="text-[10px] font-black text-blue-400">Total: {inr(serviceTotal)}</span>
             </div>
 
-            {/* Add service */}
-            <div className="flex gap-2 mb-3">
-              <select value={selService} onChange={e => setSelService(e.target.value)} className={`${inputCls} flex-1 text-xs`}>
-                <option value="">— Service select karo —</option>
-                {services.map(s => (
-                  <option key={s.id} value={String(s.id)}>
-                    {s.name} ({inr(s.price)})
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button" onClick={addService}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black transition-all flex-shrink-0"
-              >
-                <Plus size={15} />
-              </button>
+            {/* Add service — searchable, add on pick */}
+            <div className="mb-3">
+              <SearchableSelect
+                value={null}
+                options={services.map(s => ({ id: s.id, label: s.name, sub: inr(s.price) }))}
+                onSelect={id => addService(parseInt(id))}
+                placeholder="— Service search karke select karo —"
+                searchPlaceholder="Service ka naam type karo…"
+                emptyText="Koi service nahi mili"
+              />
             </div>
 
             {/* Service table */}
@@ -997,22 +928,22 @@ function ManageJobPageInner({
               <span className="text-[10px] font-black text-emerald-400">Total: {inr(productTotal)}</span>
             </div>
 
-            {/* Add product */}
-            <div className="flex gap-2 mb-3">
-              <select value={selProduct} onChange={e => setSelProduct(e.target.value)} className={`${inputCls} flex-1 text-xs`}>
-                <option value="">— Product select karo —</option>
-                {products.map(p => (
-                  <option key={p.id} value={String(p.id)} disabled={p.available_stock <= 0}>
-                    {p.name} ({inr(p.price)}) — Stock: {p.available_stock}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button" onClick={addProduct}
-                className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-black transition-all flex-shrink-0"
-              >
-                <Plus size={15} />
-              </button>
+            {/* Add product — searchable, add on pick */}
+            <div className="mb-3">
+              <SearchableSelect
+                value={null}
+                options={products.map(p => ({
+                  id: p.id,
+                  label: p.name,
+                  sub: `${inr(p.price)} — Stock: ${p.available_stock}`,
+                  disabled: p.available_stock <= 0,
+                  disabledNote: "Stock khatam hai",
+                }))}
+                onSelect={id => addProduct(parseInt(id))}
+                placeholder="— Product search karke select karo —"
+                searchPlaceholder="Product ka naam type karo…"
+                emptyText="Koi product nahi mila"
+              />
             </div>
 
             {/* Product table */}

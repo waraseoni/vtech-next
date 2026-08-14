@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { todayIST, formatIST, startOfMonthIST, endOfMonthIST, parseISTDate, toISTDatePart } from "@/lib/dateUtils";
 import { exportToCSV, printTable } from "@/lib/exportUtils";
+import SearchableSelect from "@/components/SearchableSelect";
 
 type Client = { id: number; firstname: string; middlename: string | null; lastname: string; contact: string | null };
 type PaymentRow = { id: number; client_id: number; payment_date: string; amount: number; discount: number | null; payment_mode: string; remarks: string | null };
@@ -216,11 +217,19 @@ function PaymentsPageInner() {
           </div>
           <div>
             <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Client</label>
-            <select value={clientFilter} onChange={e => { setClientFilter(e.target.value); setCurrentPage(1); }}
-              className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-purple-500/60 transition-all">
-              <option value="all">All Clients</option>
-              {clients.map(c => <option key={c.id} value={String(c.id)}>{clientName(c)}</option>)}
-            </select>
+            <SearchableSelect
+              value={clientFilter === "all" ? null : clientFilter}
+              options={clients.map(c => ({ id: c.id, label: clientName(c), sub: c.contact || undefined }))}
+              onSelect={v => { setClientFilter(v || "all"); setCurrentPage(1); }}
+              placeholder="All Clients"
+              clearLabel="All Clients"
+              renderSelected={(opt) => (
+                <div className="min-w-0">
+                  <div className="font-bold text-white text-sm truncate">{opt.label}</div>
+                  {opt.sub && <div className="text-[10px] text-slate-500 truncate">{opt.sub}</div>}
+                </div>
+              )}
+            />
           </div>
           <div>
             <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">From Date</label>
@@ -413,11 +422,18 @@ function PaymentsPageInner() {
             <form onSubmit={save} className="space-y-4 px-5 py-5">
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Client</label>
-                <select value={form.client_id} onChange={e => setForm(p => ({ ...p, client_id: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-purple-500/60">
-                  <option value="">Select client...</option>
-                  {clients.map(c => <option key={c.id} value={String(c.id)}>{clientName(c)}</option>)}
-                </select>
+                <SearchableSelect
+                  value={form.client_id || null}
+                  options={clients.map(c => ({ id: c.id, label: clientName(c), sub: c.contact || undefined }))}
+                  onSelect={v => setForm(p => ({ ...p, client_id: v }))}
+                  placeholder="Select client..."
+                  renderSelected={(opt) => (
+                    <div className="min-w-0">
+                      <div className="font-bold text-white text-sm truncate">{opt.label}</div>
+                      {opt.sub && <div className="text-[10px] text-slate-500 truncate">{opt.sub}</div>}
+                    </div>
+                  )}
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

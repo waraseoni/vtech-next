@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate, formatIST } from "@/lib/dateUtils";
+import SearchableSelect from "@/components/SearchableSelect";
 import {
   AlertCircle,
   CheckCircle2,
@@ -702,18 +703,16 @@ function ExpensesPageInner() {
             </div>
             <form onSubmit={saveStaffPayment} className="space-y-4 px-5 py-5">
               <Field title="Staff">
-                <select
-                  value={staffForm.mechanic_id}
-                  onChange={(e) => setStaffForm((prev) => ({ ...prev, mechanic_id: e.target.value }))}
-                  className={input}
-                >
-                  <option value="">Select staff...</option>
-                  {mechanics.map((mechanic) => (
-                    <option key={mechanic.id} value={String(mechanic.id)}>
-                      {mechanicName(mechanic)}
-                    </option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  value={staffForm.mechanic_id || null}
+                  options={mechanics.map((mechanic) => ({
+                    id: mechanic.id,
+                    label: mechanicName(mechanic),
+                  }))}
+                  onSelect={(v) => setStaffForm((prev) => ({ ...prev, mechanic_id: v }))}
+                  placeholder="Select staff..."
+                  clearLabel="Select staff..."
+                />
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field title="Amount">

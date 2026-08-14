@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import SearchableSelect from "@/components/SearchableSelect";
 import { Loader2, Printer, Plus, Edit2, Trash2, DollarSign, X } from "lucide-react";
 
 import { todayIST, startOfMonthIST } from "@/lib/dateUtils";
@@ -132,13 +133,13 @@ function AdvanceLedgerContent() {
           </div>
           <div>
             <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">Staff</label>
-            <select value={mechanicId} onChange={(e) => setMechanicId(e.target.value)}
-              className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50">
-              <option value="all">All Staff</option>
-              {mechanics.map((m) => (
-                <option key={m.id} value={m.id}>{[m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ")}</option>
-              ))}
-            </select>
+            <SearchableSelect
+              value={mechanicId === "all" ? null : mechanicId}
+              options={mechanics.map((m) => ({ id: m.id, label: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ") }))}
+              onSelect={(v) => setMechanicId(v || "all")}
+              placeholder="All Staff"
+              clearLabel="All Staff"
+            />
           </div>
           <button onClick={() => { setFormData({ mechanic_id: "", amount: "", date_paid: todayIST(), reason: "" }); setEditRow(null); setShowModal(true); }}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-bold text-white transition-all">
@@ -215,13 +216,12 @@ function AdvanceLedgerContent() {
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">Staff *</label>
-                <select value={formData.mechanic_id} onChange={(e) => setFormData({ ...formData, mechanic_id: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50">
-                  <option value="">Select Staff</option>
-                  {mechanics.map((m) => (
-                    <option key={m.id} value={m.id}>{[m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ")}</option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  value={formData.mechanic_id || null}
+                  options={mechanics.map((m) => ({ id: m.id, label: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ") }))}
+                  onSelect={(v) => setFormData({ ...formData, mechanic_id: v })}
+                  placeholder="Select Staff"
+                />
               </div>
               <div>
                 <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">Amount *</label>

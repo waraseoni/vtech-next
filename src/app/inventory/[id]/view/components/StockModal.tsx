@@ -6,6 +6,7 @@ import {
   CheckCircle2, AlertCircle, Loader2, ArrowDownToLine, Edit3,
 } from "lucide-react";
 import { todayIST, toISTDatePart } from "@/lib/dateUtils";
+import SearchableSelect from "@/components/SearchableSelect";
 
 interface StockModalProps {
   productId: number;
@@ -232,16 +233,13 @@ export default function StockModal({ productId, stock, onClose, onSaved }: Stock
                     <Package size={10} className="text-slate-700" /> Supplier (Optional)
                   </span>
                 </label>
-                <select
-                  value={supplierId}
-                  onChange={(e) => setSupplierId(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all text-sm"
-                >
-                  <option value="">-- Select Supplier --</option>
-                  {suppliers.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  value={supplierId || null}
+                  options={suppliers.map(s => ({ id: s.id, label: s.name }))}
+                  onSelect={v => setSupplierId(v)}
+                  placeholder="-- Select Supplier --"
+                  clearLabel="-- Select Supplier --"
+                />
               </div>
             )}
 

@@ -5,10 +5,11 @@ import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Save, Plus, X, Wrench, Package, Settings2,
+  ArrowLeft, Save, X, Wrench, Package, Settings2,
   User, Hash, Loader2, AlertTriangle, CheckCircle,
   UserPlus, IndianRupee,
 } from "lucide-react";
+import SearchableSelect from "@/components/SearchableSelect";
 
 // ─── IST Helpers ─────────────────────────────────────────────────────────────
 function todayISTDateTime(): string {
@@ -66,8 +67,6 @@ export default function ManageJobPage() {
   const [mechAmount,  setMechAmount]  = useState("0");
   const [selServices, setSelServices] = useState<SelService[]>([]);
   const [selProducts, setSelProducts] = useState<SelProduct[]>([]);
-  const [selSvc,      setSelSvc]      = useState("");
-  const [selProd,     setSelProd]     = useState("");
 
   // UI state
   const [loading,  setLoading]  = useState(isEdit);
@@ -170,27 +169,23 @@ export default function ManageJobPage() {
   const totalAmount = svcTotal + prodTotal;
 
   // ── Add service ────────────────────────────────────────────────────────────
-  const addService = () => {
-    if (!selSvc) return;
-    const svc = services.find(s => s.id === parseInt(selSvc));
+  const addService = (svcId: number) => {
+    const svc = services.find(s => s.id === svcId);
     if (!svc) return;
     if (selServices.find(s => s.service_id === svc.id)) {
       setToast({ type: "error", msg: "Service already added!" }); return;
     }
     setSelServices(prev => [...prev, { service_id: svc.id, service_name: svc.name, price: svc.price }]);
-    setSelSvc("");
   };
 
   // ── Add product ────────────────────────────────────────────────────────────
-  const addProduct = () => {
-    if (!selProd) return;
-    const prod = products.find(p => p.id === parseInt(selProd));
+  const addProduct = (prdId: number) => {
+    const prod = products.find(p => p.id === prdId);
     if (!prod) return;
     if (selProducts.find(p => p.product_id === prod.id)) {
       setToast({ type: "error", msg: "Product already added!" }); return;
     }
     setSelProducts(prev => [...prev, { product_id: prod.id, product_name: prod.name, qty: 1, price: prod.price }]);
-    setSelProd("");
   };
 
   // ── Generate daily code (YYYYMMDD + 2-digit seq) ──────────────────────────
@@ -358,13 +353,18 @@ export default function ManageJobPage() {
                   <UserPlus size={10}/> New Client
                 </Link>
               </div>
-              <select value={clientId} onChange={e => setClientId(e.target.value)} className={iCls} required>
-                <option value="">Search Client...</option>
-                {clients.map(c => {
-                  const name = [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ");
-                  return <option key={c.id} value={c.id}>{name}{c.contact ? ` (${c.contact})` : ""}</option>;
-                })}
-              </select>
+              <SearchableSelect
+                value={clientId || null}
+                options={clients.map(c => ({
+                  id: c.id,
+                  label: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" "),
+                  sub: c.contact || undefined,
+                }))}
+                onSelect={id => setClientId(id)}
+                placeholder="Search Client..."
+                searchPlaceholder="Client search karo…"
+                emptyText="Koi client nahi mila"
+              />
             </div>
 
             {/* Date */}
@@ -429,14 +429,16 @@ export default function ManageJobPage() {
             </div>
             <div className="p-4 space-y-3">
               <div className="flex gap-2">
-                <select value={selSvc} onChange={e => setSelSvc(e.target.value)} className={`${iCls} flex-1`}>
-                  <option value="">Select Service...</option>
-                  {services.map(s => <option key={s.id} value={s.id}>{s.name} — Rs.{fmtN(s.price)}</option>)}
-                </select>
-                <button onClick={addService}
-                  className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1">
-                  <Plus size={13}/>
-                </button>
+                <div className="flex-1">
+                  <SearchableSelect
+                    value={null}
+                    options={services.map(s => ({ id: s.id, label: s.name, sub: `Rs.${fmtN(s.price)}` }))}
+                    onSelect={id => addService(parseInt(id))}
+                    placeholder="Select Service..."
+                    searchPlaceholder="Service ka naam type karo…"
+                    emptyText="Koi service nahi mili"
+                  />
+                </div>
               </div>
               {selServices.length > 0 ? (
                 <table className="w-full text-xs">
@@ -483,14 +485,16 @@ export default function ManageJobPage() {
             </div>
             <div className="p-4 space-y-3">
               <div className="flex gap-2">
-                <select value={selProd} onChange={e => setSelProd(e.target.value)} className={`${iCls} flex-1`}>
-                  <option value="">Select Product...</option>
-                  {products.map(p => <option key={p.id} value={p.id}>{p.name} — Rs.{fmtN(p.price)}</option>)}
-                </select>
-                <button onClick={addProduct}
-                  className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1">
-                  <Plus size={13}/>
-                </button>
+                <div className="flex-1">
+                  <SearchableSelect
+                    value={null}
+                    options={products.map(p => ({ id: p.id, label: p.name, sub: `Rs.${fmtN(p.price)}` }))}
+                    onSelect={id => addProduct(parseInt(id))}
+                    placeholder="Select Product..."
+                    searchPlaceholder="Product ka naam type karo…"
+                    emptyText="Koi product nahi mila"
+                  />
+                </div>
               </div>
               {selProducts.length > 0 ? (
                 <table className="w-full text-xs">
@@ -557,13 +561,20 @@ export default function ManageJobPage() {
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
                 <User size={13}/> Assign Technician
               </h3>
-              <select value={mechanicId} onChange={e => setMechanicId(e.target.value)} className={`${iCls} mb-3`}>
-                <option value="">Unassigned</option>
-                {mechanics.map(m => {
-                  const n = [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ");
-                  return <option key={m.id} value={m.id}>{n}{m.commission_percent > 0 ? ` (${m.commission_percent}% comm)` : ""}</option>;
-                })}
-              </select>
+              <div className="mb-3">
+                <SearchableSelect
+                  value={mechanicId || null}
+                  options={mechanics.map(m => ({
+                    id: m.id,
+                    label: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+                    sub: m.commission_percent > 0 ? `${m.commission_percent}% comm` : undefined,
+                  }))}
+                  onSelect={id => setMechanicId(id)}
+                  placeholder="Unassigned"
+                  searchPlaceholder="Mechanic ka naam type karo…"
+                  emptyText="Koi mechanic nahi mila"
+                />
+              </div>
               {mechanicId && (
                 <div>
                   <label className={lCls}>Mechanic Amount (Rs.)</label>

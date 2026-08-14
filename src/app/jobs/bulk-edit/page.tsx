@@ -8,6 +8,7 @@ import {
   ArrowLeft, Save, Search, User, Wrench, Hash,
   Loader2, AlertTriangle, CheckCircle, RefreshCw, Users,
 } from "lucide-react";
+import SearchableSelect from "@/components/SearchableSelect";
 
 // ─── IST Helper ───────────────────────────────────────────────────────────────
 function nowIST(): string {
@@ -235,11 +236,13 @@ export default function BulkEditPage() {
               <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                 <span className="inline-flex items-center gap-1"><User size={11}/> Source Client <span className="text-red-400">*</span></span>
               </label>
-              <select value={sourceClient} onChange={e => setSourceClient(e.target.value)}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all" required>
-                <option value="">Search Client...</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{clientLabel(c)}</option>)}
-              </select>
+              <SearchableSelect
+                value={sourceClient || null}
+                options={clients.map(c => ({ id: c.id, label: clientLabel(c) }))}
+                onSelect={v => setSourceClient(v)}
+                placeholder="Search Client..."
+                clearLabel="Search Client..."
+              />
             </div>
             <button onClick={loadTransactions} disabled={rowLoading}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black transition-all disabled:opacity-50 h-[42px]">
@@ -249,11 +252,13 @@ export default function BulkEditPage() {
               <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                 <span className="inline-flex items-center gap-1"><Users size={11}/> Apply New Client to All</span>
               </label>
-              <select value={globalClient} onChange={e => applyGlobalClient(e.target.value)}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all">
-                <option value="">Select Target Client</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{clientLabel(c)}</option>)}
-              </select>
+              <SearchableSelect
+                value={globalClient || null}
+                options={clients.map(c => ({ id: c.id, label: clientLabel(c) }))}
+                onSelect={v => applyGlobalClient(v)}
+                placeholder="Select Target Client"
+                clearLabel="Select Target Client"
+              />
               <p className="text-[10px] text-slate-600 mt-1">Saari rows ka client ek saath badlega.</p>
             </div>
           </div>
@@ -299,16 +304,17 @@ export default function BulkEditPage() {
                       </div>
                     </td>
                     <td className="px-3 py-2.5">
-                      <select value={row.client_id}
-                        onChange={e => {
-                          const c = clients.find(x => x.id === Number(e.target.value));
-                          updateRow(row.id, "client_id", e.target.value);
+                      <SearchableSelect
+                        value={row.client_id}
+                        options={clients.map(c => ({ id: c.id, label: clientLabel(c) }))}
+                        onSelect={v => {
+                          const c = clients.find(x => x.id === Number(v));
+                          updateRow(row.id, "client_id", v);
                           updateRow(row.id, "client_name", c ? clientLabel(c) : "Unknown");
                         }}
-                        className={iCls} required>
-                        <option value="">Select Client</option>
-                        {clients.map(c => <option key={c.id} value={c.id}>{clientLabel(c)}</option>)}
-                      </select>
+                        placeholder="Select Client"
+                        clearLabel="Select Client"
+                      />
                     </td>
                     <td className="px-3 py-2.5">
                       <input type="text" value={row.item}
@@ -321,12 +327,13 @@ export default function BulkEditPage() {
                         placeholder="Fault" className={iCls} required/>
                     </td>
                     <td className="px-3 py-2.5">
-                      <select value={row.mechanic_id}
-                        onChange={e => updateRow(row.id, "mechanic_id", e.target.value)}
-                        className={iCls}>
-                        <option value="">Select</option>
-                        {mechOptions.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                      </select>
+                    <SearchableSelect
+                      value={row.mechanic_id}
+                      options={mechOptions.map(m => ({ id: m.id, label: m.name }))}
+                      onSelect={v => updateRow(row.id, "mechanic_id", v)}
+                      placeholder="Select"
+                      clearLabel="Select"
+                    />
                     </td>
                     <td className="px-3 py-2.5">
                       <input type="text" value={row.uniq_id}
@@ -370,16 +377,17 @@ export default function BulkEditPage() {
                 <div className="space-y-2.5">
                   <div>
                     <label className={lCls}>Target Client *</label>
-                    <select value={row.client_id}
-                      onChange={e => {
-                        const c = clients.find(x => x.id === Number(e.target.value));
-                        updateRow(row.id, "client_id", e.target.value);
+                    <SearchableSelect
+                      value={row.client_id}
+                      options={clients.map(c => ({ id: c.id, label: clientLabel(c) }))}
+                      onSelect={v => {
+                        const c = clients.find(x => x.id === Number(v));
+                        updateRow(row.id, "client_id", v);
                         updateRow(row.id, "client_name", c ? clientLabel(c) : "Unknown");
                       }}
-                      className={iCls} required>
-                      <option value="">Select Client</option>
-                      {clients.map(c => <option key={c.id} value={c.id}>{clientLabel(c)}</option>)}
-                    </select>
+                      placeholder="Select Client"
+                      clearLabel="Select Client"
+                    />
                   </div>
                   <div>
                     <label className={lCls}>Item / Model *</label>
@@ -395,12 +403,13 @@ export default function BulkEditPage() {
                   </div>
                   <div>
                     <label className={lCls}>Assign To</label>
-                    <select value={row.mechanic_id}
-                      onChange={e => updateRow(row.id, "mechanic_id", e.target.value)}
-                      className={iCls}>
-                      <option value="">Select Mechanic</option>
-                      {mechOptions.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </select>
+                    <SearchableSelect
+                      value={row.mechanic_id}
+                      options={mechOptions.map(m => ({ id: m.id, label: m.name }))}
+                      onSelect={v => updateRow(row.id, "mechanic_id", v)}
+                      placeholder="Select Mechanic"
+                      clearLabel="Select Mechanic"
+                    />
                   </div>
                   <div>
                     <label className={lCls}>Remarks</label>
