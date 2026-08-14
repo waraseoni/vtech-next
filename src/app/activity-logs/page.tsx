@@ -24,7 +24,9 @@ const PAGE_SIZES = [10, 25, 50, 100];
 export default function ActivityLogsPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [moduleFilter, setModuleFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -60,9 +62,9 @@ export default function ActivityLogsPage() {
         countQuery = countQuery.lte("date_created", `${dateTo}T23:59:59+05:30`);
         dataQuery = dataQuery.lte("date_created", `${dateTo}T23:59:59+05:30`);
       }
-      if (search) {
-        countQuery = countQuery.or(`action.ilike.%${search}%,details.ilike.%${search}%`);
-        dataQuery = dataQuery.or(`action.ilike.%${search}%,details.ilike.%${search}%`);
+      if (debouncedSearch) {
+        countQuery = countQuery.or(`action.ilike.%${debouncedSearch}%,details.ilike.%${debouncedSearch}%`);
+        dataQuery = dataQuery.or(`action.ilike.%${debouncedSearch}%,details.ilike.%${debouncedSearch}%`);
       }
 
       const [{ count }, { data, error }] = await Promise.all([countQuery, dataQuery]);
@@ -89,9 +91,16 @@ export default function ActivityLogsPage() {
     } catch (err) {
       console.error("Error fetching logs:", err);
     } finally {
+      setHasLoaded(true);
       setLoading(false);
     }
-  }, [moduleFilter, dateFrom, dateTo, search, page, pageSize]);
+  }, [moduleFilter, dateFrom, dateTo, debouncedSearch, page, pageSize]);
+
+  // Debounce search so typing doesn't refetch+blank the table on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   useEffect(() => {
     fetchLogs();
@@ -202,13 +211,18 @@ export default function ActivityLogsPage() {
 
         {/* Logs Table */}
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl">
-          {loading ? (
+          {loading && !hasLoaded ? (
             <div className="p-20 flex flex-col items-center justify-center gap-4">
               <Loader2 size={32} className="animate-spin text-blue-500" />
               <p className="text-slate-600 text-xs font-black uppercase tracking-widest">Fetching Audit Logs...</p>
             </div>
           ) : (
             <>
+            {loading && hasLoaded && (
+              <div className="flex items-center gap-2 text-[11px] font-bold text-blue-400 px-5 py-2.5 bg-[#0d1117]/50 border-b border-[#21293d]">
+                <Loader2 size={12} className="animate-spin" /> Searching...
+              </div>
+            )}
             {/* Desktop Table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm border-collapse">

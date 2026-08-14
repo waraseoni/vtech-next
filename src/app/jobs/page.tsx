@@ -129,6 +129,7 @@ function JobsListContent() {
   const [stats, setStats] = useState({ total: 0, pending: 0, progress: 0, completed: 0, totalAmt: 0 });
   const [userRole,      setUserRole]      = useState<string | null>(null);
   const [loading,       setLoading]       = useState(true);
+  const [hasLoaded,     setHasLoaded]     = useState(false);
   const [isMobile,      setIsMobile]      = useState(false);
   const [sysInfo,       setSysInfo]       = useState<Record<string, string>>({});
 
@@ -242,7 +243,7 @@ function JobsListContent() {
         const { data: matchedClients } = await supabase
           .from("client_list")
           .select("id")
-          .or(`firstname.ilike.%${term}%,lastname.ilike.%${term}%,contact.ilike.%${term}%`);
+          .or(`firstname.ilike.%${term}%,middlename.ilike.%${term}%,lastname.ilike.%${term}%,contact.ilike.%${term}%`);
         matchedClientIds = matchedClients?.map(c => c.id).join(",") || "-1";
       }
 
@@ -298,7 +299,10 @@ function JobsListContent() {
       // ── Execute Page Query ──
       const from = pageIndex * pageSize;
       const to = from + pageSize - 1;
-      query = query.order("date_created", { ascending: false }).range(from, to);
+      // Sort by job_id (newest job first) — date_created ties/backdates and looks "random".
+      // Note: job_id is stored as TEXT; cast sorting (job_id::bigint) is not supported by this
+      // PostgREST version. All job_ids are currently uniform-width numeric so text sort == numeric sort.
+      query = query.order("job_id", { ascending: false }).range(from, to);
 
       const [pageRes, pending, progress, done, totalAmt] = await Promise.all([
         query,
@@ -398,6 +402,7 @@ function JobsListContent() {
     } catch (err) {
       console.error("fetchTransactions error:", err);
     } finally {
+      setHasLoaded(true);
       setLoading(false);
     }
   }, [dateFrom, dateTo, hideDelivered, statusFilter, debouncedSearch, pageIndex, pageSize]);
@@ -914,7 +919,11 @@ function JobsListContent() {
   );
 
   // ── Loading ───────────────────────────────────────────────────────────────
-  if (loading) {
+  // Full-screen spinner ONLY on the very first load. Later refetches (search/
+  // filter changes) keep the page mounted and show a subtle inline indicator
+  // instead — otherwise every keystroke unmounts to a full-screen spinner and
+  // looks like a page reload.
+  if (loading && !hasLoaded) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh] gap-4 bg-[#0d1117]">
         <Loader2 className="animate-spin text-blue-500" size={44} />
@@ -1237,6 +1246,13 @@ function JobsListContent() {
             )}
           </div>
 
+          {/* Subtle inline loading indicator (search/filter refetch — no full reload) */}
+          {loading && hasLoaded && (
+            <div className="flex items-center gap-2 text-[11px] font-bold text-blue-400 px-1 py-1.5">
+              <Loader2 size={12} className="animate-spin" /> Searching...
+            </div>
+          )}
+
           {/* ── Table (shared with mobile card/table toggle) ── */}
           {tableSection}
         </div>
@@ -1295,6 +1311,13 @@ function JobsListContent() {
             <Filter size={13} />
           </button>
         </div>
+
+        {/* Subtle inline loading indicator (search/filter refetch — no full reload) */}
+        {loading && hasLoaded && (
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-blue-400 mt-1.5">
+            <Loader2 size={11} className="animate-spin" /> Searching...
+          </div>
+        )}
 
         <div className="flex items-center justify-between mt-2">
           <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
