@@ -55,7 +55,7 @@ export const SITE = {
 
 export const WHATSAPP_LINK = (text: string, phone?: string) => {
   const base = phone ? `https://wa.me/${digitsOnly(phone)}` : SITE.whatsapp;
-  return `${base}?text=${encodeURIComponent(text)}`;
+  return text ? `${base}?text=${encodeURIComponent(text)}` : base;
 };
 
 // ── Live business details ────────────────────────────────────────────────────

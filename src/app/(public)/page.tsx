@@ -7,7 +7,7 @@ import {
   ShieldCheck, Clock, IndianRupee, Wrench, ArrowRight, Star, BadgeCheck,
   Gauge, HandCoins,
 } from "lucide-react";
-import { SITE, WHATSAPP_LINK, SERVICES, IS_BRANDED } from "./site";
+import { SITE, WHATSAPP_LINK, SERVICES, IS_BRANDED, getSiteInfo, type SiteInfo } from "./site";
 import { EquipmentArt } from "./components/equipment-art";
 
 /* ─── Particles (fixed positions — no random at render → no hydration mismatch) ── */
@@ -77,6 +77,19 @@ function Stat({ value, suffix, label }: { value: number; suffix: string; label: 
  * branding dikhti hai — stats, testimonials, seller story sab skip.
  */
 function BrandedHome() {
+  // Live business details (client ke Settings/system_info se) — SITE (env) fallback.
+  const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getSiteInfo().then((d) => { if (!cancelled) setSiteInfo(d); });
+    return () => { cancelled = true; };
+  }, []);
+  const info = siteInfo || ({} as SiteInfo);
+  const name = info.shop_name || SITE.name;
+  const phone = info.phone || SITE.phone;
+  const email = info.email || SITE.email;
+  const address = info.address || SITE.address;
+
   return (
     <>
       {/* HERO */}
@@ -91,20 +104,20 @@ function BrandedHome() {
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.08] tracking-tight">
               Welcome to{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
-                {SITE.name}
+                {name}
               </span>
             </h1>
             <p className="mt-5 text-[15px] sm:text-lg text-slate-400 leading-relaxed max-w-xl">
               {SITE.tagline}. Component-level repair, genuine parts, fast service.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
-              <a href={WHATSAPP_LINK("Hello, mujhe repair service chahiye.")} target="_blank" rel="noopener noreferrer"
+              <a href={WHATSAPP_LINK("Hello, mujhe repair service chahiye.", info.whatsapp)} target="_blank" rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1fb959] text-[#04170c] text-[15px] font-black shadow-lg shadow-[#25D366]/25 transition-all active:scale-95">
                 <MessageCircle size={18} /> WhatsApp karein
               </a>
-              <a href={SITE.phoneHref}
+              <a href={`tel:+${phone.replace(/\D/g, "")}`}
                 className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-white/[0.06] border border-white/12 hover:bg-white/[0.1] text-white text-[15px] font-bold transition-all active:scale-95">
-                <Phone size={18} className="text-emerald-400" /> {SITE.phone}
+                <Phone size={18} className="text-emerald-400" /> {phone}
               </a>
             </div>
           </div>
@@ -152,21 +165,21 @@ function BrandedHome() {
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <a href={SITE.phoneHref}
+            <a href={`tel:+${phone.replace(/\D/g, "")}`}
               className="rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] hover:border-emerald-500/30 transition-all text-center">
               <Phone size={20} className="text-emerald-400 mx-auto mb-3" />
-              <h4 className="text-[13px] font-bold text-white">{SITE.phone}</h4>
+              <h4 className="text-[13px] font-bold text-white">{phone}</h4>
               <p className="text-[11px] text-slate-500 mt-1">Call / WhatsApp</p>
             </a>
-            <a href={`mailto:${SITE.email}`}
+            <a href={`mailto:${email}`}
               className="rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] hover:border-blue-500/30 transition-all text-center">
               <Mail size={20} className="text-blue-400 mx-auto mb-3" />
-              <h4 className="text-[13px] font-bold text-white break-all">{SITE.email}</h4>
+              <h4 className="text-[13px] font-bold text-white break-all">{email}</h4>
               <p className="text-[11px] text-slate-500 mt-1">Email</p>
             </a>
             <div className="rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] text-center">
               <MapPin size={20} className="text-cyan-400 mx-auto mb-3" />
-              <h4 className="text-[13px] font-bold text-white leading-snug">{SITE.address}</h4>
+              <h4 className="text-[13px] font-bold text-white leading-snug">{address}</h4>
               <p className="text-[11px] text-slate-500 mt-1">Location</p>
             </div>
           </div>
@@ -186,11 +199,11 @@ function BrandedHome() {
                 Call karo ya WhatsApp par photo bhejo — free estimate.
               </p>
               <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
-                <a href={SITE.phoneHref}
+                <a href={`tel:+${phone.replace(/\D/g, "")}`}
                   className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-white text-blue-700 text-[15px] font-black shadow-xl active:scale-95 transition-transform">
                   <Phone size={17} /> Call Now
                 </a>
-                <a href={WHATSAPP_LINK("Hello, repair ke liye inquiry hai.")} target="_blank" rel="noopener noreferrer"
+                <a href={WHATSAPP_LINK("Hello, repair ke liye inquiry hai.", info.whatsapp)} target="_blank" rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-[#25D366] text-[#04170c] text-[15px] font-black shadow-xl active:scale-95 transition-transform">
                   <MessageCircle size={17} /> WhatsApp
                 </a>
@@ -201,7 +214,7 @@ function BrandedHome() {
       </section>
 
       {/* FLOATING WhatsApp */}
-      <a href={SITE.whatsapp} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
+      <a href={WHATSAPP_LINK("", info.whatsapp)} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
         className="fixed bottom-5 right-4 z-40 w-14 h-14 rounded-full bg-[#25D366] flex items-center justify-center shadow-2xl shadow-black/40 active:scale-90 transition-transform">
         <MessageCircle size={26} className="text-[#04170c]" />
       </a>
