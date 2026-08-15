@@ -10,7 +10,7 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, full_name, role, mechanic_id } = await req.json();
+    const { userId, full_name, email, role, mechanic_id } = await req.json();
 
     if (!userId) {
       return NextResponse.json({ error: "userId required" }, { status: 400 });
@@ -23,7 +23,15 @@ export async function POST(req: NextRequest) {
 
     const updates: Record<string, unknown> = {};
     if (typeof full_name === "string") updates.full_name = full_name;
-    if (role === "admin" || role === "staff" || role === "developer") updates.role = role;
+    if (email === null || typeof email === "string") updates.email = email;
+    if (role === "admin" || role === "staff" || role === "developer") {
+      // Developer role sirf dev PC (env vars wale deployment) par set ho sakta hai
+      const devEnabled = !!process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY && !!process.env.DEV_PORTAL_PASSWORD;
+      if (role === "developer" && !devEnabled) {
+        return NextResponse.json({ error: "Developer role sirf dev PC par set ho sakta hai" }, { status: 403 });
+      }
+      updates.role = role;
+    }
     if (mechanic_id === null || (typeof mechanic_id === "number" && !Number.isNaN(mechanic_id))) {
       updates.mechanic_id = mechanic_id;
     }
@@ -40,6 +48,13 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) {
+      // Unique violation — mechanic already linked to another user (1:1 rule)
+      if (error.code === "23505") {
+        return NextResponse.json(
+          { error: "Ye mechanic pehle se kisi aur user se linked hai — pehle wala link hatao" },
+          { status: 409 }
+        );
+      }
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 

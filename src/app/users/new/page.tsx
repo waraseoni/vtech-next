@@ -21,6 +21,7 @@ export default function NewUserPage() {
   const [loading,   setLoading]   = useState(false);
   const [checking,  setChecking]  = useState(true);
   const [myId,      setMyId]      = useState("");
+  const [devEnabled, setDevEnabled] = useState(false);
   const [toast,     setToast]     = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   useEffect(() => {
@@ -38,6 +39,12 @@ export default function NewUserPage() {
       const { data: p } = await supabase.from("profiles").select("role").eq("id", user.id).single();
       if (p?.role !== "admin") { router.push("/"); return; }
       setChecking(false);
+      // Developer role option sirf dev PC (env vars wale deployment) par dikhe
+      const res = await fetch("/api/license/status").catch(() => null);
+      if (res?.ok) {
+        const st = await res.json().catch(() => ({}));
+        setDevEnabled(!!st.devEnabled);
+      }
     })();
   }, [router]);
 
@@ -159,7 +166,7 @@ export default function NewUserPage() {
                 {[
                   { val: "staff", icon: Shield, label: "Staff", sub: "Limited Access", color: "blue" },
                   { val: "admin", icon: ShieldCheck, label: "Admin", sub: "Full Access", color: "amber" },
-                  { val: "developer", icon: Code2, label: "Developer", sub: "Dev + Licensing", color: "indigo" },
+                  ...(devEnabled ? [{ val: "developer", icon: Code2, label: "Developer", sub: "Dev + Licensing", color: "indigo" }] : []),
                 ].map(({ val, icon: Icon, label, sub, color }) => (
                   <button key={val} type="button" onClick={() => setRole(val)}
                     className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all text-left ${

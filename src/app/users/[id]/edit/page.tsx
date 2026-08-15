@@ -24,6 +24,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const router = useRouter();
 
   const [myId,       setMyId]       = useState("");
+  const [devEnabled, setDevEnabled] = useState(false);
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
   const [mechanics,  setMechanics]  = useState<Mechanic[]>([]);
@@ -107,6 +108,13 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         .from("profiles").select("role").eq("id", user.id).single();
       if (myProfile?.role !== "admin") { router.push("/"); return; }
 
+      // Developer role option sirf dev PC (env vars wale deployment) par dikhe
+      const res = await fetch("/api/license/status").catch(() => null);
+      if (res?.ok) {
+        const st = await res.json().catch(() => ({}));
+        setDevEnabled(!!st.devEnabled);
+      }
+
       // Fetch the user being edited
       const { data: profile, error } = await supabase
         .from("profiles")
@@ -152,27 +160,24 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
     setSaving(true);
     try {
-      // 1. Update profiles table (role ke alawa — role service-role API se hota hai)
-      const { error: profileErr } = await supabase
-        .from("profiles")
-        .update({
-          full_name:   fullName.trim(),
-          email:       email.trim() || null,
-          mechanic_id: mechanicId ? parseInt(mechanicId) : null,
-        })
-        .eq("id", userId);
-
-      if (profileErr) throw new Error("Profile update failed: " + profileErr.message);
-
-      // 1b. Role update — service-role API (DB trigger browser ko role change se rokta hai)
-      const roleRes = await fetch("/api/admin/update-profile", {
+      // 1. Profile update (full_name, email, role, mechanic_id) — service-role API.
+      //    RLS profiles par sirf apni row update deta hai (auth.uid() = id), isliye
+      //    admin kisi aur user ka update client se kare to 0 rows silently — API
+      //    service-role se chal ke RLS bypass karta hai.
+      const res = await fetch("/api/admin/update-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, role }),
+        body: JSON.stringify({
+          userId,
+          full_name: fullName.trim(),
+          email: email.trim() || null,
+          role,
+          mechanic_id: mechanicId ? parseInt(mechanicId) : null,
+        }),
       });
-      if (!roleRes.ok) {
-        const errData = await roleRes.json().catch(() => ({}));
-        throw new Error("Role update failed: " + (errData.error || roleRes.status));
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Profile update failed: " + res.status);
       }
 
       // 2. Password change karna ho to — server API use karo (service_role needed)
@@ -299,7 +304,9 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 {[
                   { val: "staff", icon: Shield,      label: "Staff",  sub: "Limited Access", color: "blue"  },
                   { val: "admin", icon: ShieldCheck,  label: "Admin",  sub: "Full Access",    color: "amber" },
-                  { val: "developer", icon: Code2,    label: "Developer", sub: "Dev + Licensing", color: "indigo" },
+                  ...((devEnabled || role === "developer")
+                    ? [{ val: "developer", icon: Code2, label: "Developer", sub: "Dev + Licensing", color: "indigo" }]
+                    : []),
                 ].map(({ val, icon: Icon, label, sub, color }) => (
                   <button key={val} type="button" onClick={() => setRole(val)}
                     className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all text-left ${
@@ -321,8 +328,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               </div>
             </div>
 
-            {/* Mechanic Link (PHP: staff type ke liye) */}
-            {role === "staff" && (
+            {/* Mechanic Link (PHP: staff type ke liye — admin khud mechanic ho to bhi) */}
+            {(role === "staff" || role === "admin") && (
               <div>
                 <label className={labelCls}>
                   <Wrench size={10} className="inline mr-1"/> Link to Mechanic Profile
@@ -335,7 +342,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   clearLabel="— Select Mechanic —"
                 />
                 <p className="text-[10px] text-slate-700 mt-1">
-                  Attendance lagane ke liye staff ko uski profile se link karna zaroori hai।
+                  Attendance lagane ke liye staff/admin ko uski profile se link karna zaroori hai।
                 </p>
               </div>
             )}

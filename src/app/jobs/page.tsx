@@ -22,6 +22,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { todayIST, toISTString, parseISTDate, formatIST } from "@/lib/dateUtils";
@@ -36,6 +37,8 @@ import {
 import { substituteTemplate, firmVars } from "@/lib/whatsapp";
 import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
 import { logActivity } from "@/lib/activity";
+import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
+import { openImageLightbox } from "@/components/ImageLightbox";
 
 // ─── WhatsApp status template keys (PHP: pending=0, repairing=1, ready=2, delivered=3/5, cancelled=4) ─
 const STATUS_WA_KEY: Record<number, string> = {
@@ -69,6 +72,7 @@ interface Transaction {
   client_middlename?: string;
   client_lastname?: string;
   client_contact?: string;
+  client_image?: string;
   client_opening_balance?: number;
   total_billed?: number;
   total_paid?: number;
@@ -99,6 +103,23 @@ const STATUS_BORDER: Record<number, string> = {
 
 const getStatusBadge = (s: number) =>
   `inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${STATUS_COLORS[s] ?? STATUS_COLORS[0]}`;
+
+// Mini client avatar — jobs list cells/cards ke liye (photo ya initials)
+const ClientMiniAvatar = ({ image, name }: { image?: string; name: string }) => {
+  if (image) {
+    return (
+      <Image src={image} alt={name} width={32} height={32} unoptimized
+        className="w-8 h-8 rounded-full object-cover flex-shrink-0 cursor-zoom-in border border-white/10"
+        onDoubleClick={() => openImageLightbox(image, name)}
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+    );
+  }
+  return (
+    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black text-white flex-shrink-0 bg-gradient-to-br from-blue-600 to-blue-800">
+      {name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("")}
+    </div>
+  );
+};
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmtDate = (d: string) =>
@@ -348,7 +369,7 @@ function JobsListContent() {
         : Promise.resolve({ data: [] });
 
       const [clientsRes, billedRes, paidRes, salesRes, logsRes] = await Promise.all([
-        supabase.from("client_list").select("id, firstname, middlename, lastname, contact, opening_balance").in("id", clientIdsNum),
+        supabase.from("client_list").select("id, firstname, middlename, lastname, contact, opening_balance, image_path").in("id", clientIdsNum),
         // Only Delivered (5) & Paid (3) jobs count toward balance — Done (2) items still at shop are NOT billed yet
         supabase.from("transaction_list").select("client_name, amount").in("status", [3, 5]).neq("del_status", 1).in("client_name", clientIdsStr),
         // Exclude loan repayments — matches PHP WHERE loan_id IS NULL OR loan_id = 0
@@ -391,6 +412,7 @@ function JobsListContent() {
           client_middlename:      client?.middlename      || "",
           client_lastname:        client?.lastname        || "",
           client_contact:         client?.contact         || "",
+          client_image:           client?.image_path      || undefined,
           client_opening_balance: client?.opening_balance || 0,
           total_billed:           billedMap.get(cid) || 0,
           total_paid:             paidMap.get(cid)   || 0,
@@ -670,8 +692,7 @@ function JobsListContent() {
         .gte("date_created", todayStr + "T00:00:00+05:30");
       const dailySeq = String((todayCount || 0) + 1).padStart(2, "0");
 
-      const { data: counterRow } = await supabase.from("job_id_counter").select("last_job_id").eq("id", 1).single();
-      const nextJobId = (counterRow?.last_job_id || 28101) + 1;
+      const nextJobId = await getNextJobId();
 
       const { data, error } = await supabase
         .from("transaction_list")
@@ -696,7 +717,7 @@ function JobsListContent() {
       if (error) throw error;
 
       // Update counter
-      await supabase.from("job_id_counter").update({ last_job_id: nextJobId }).eq("id", 1);
+      await bumpJobCounter(nextJobId);
 
       setShowQuickCreate(false);
       setQuickForm({ clientName: "", contact: "", item: "", fault: "", mechanicId: "" });
@@ -1000,22 +1021,27 @@ function JobsListContent() {
                     )}
                   </td>
 
-                  {/* Client with phone number text (PHP feature) */}
+                  {/* Client with avatar + phone number text (PHP feature) */}
                   <td className="px-3 py-2.5">
-                    <Link href={`/clients/${txn.client_name}/view`}
-                      className="font-bold text-slate-200 text-xs hover:text-blue-400 truncate block max-w-[160px] transition-colors"
-                      title={clientName}>
-                      {clientName}
-                    </Link>
-                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                      <BalanceBadge bal={balance} />
-                      {phone && (
-                        <a href={`https://wa.me/91${phone}`} target="_blank"
-                          className="flex items-center gap-0.5 text-emerald-500 hover:text-emerald-400 text-[10px]">
-                          <Phone size={10} />
-                          <span className="hidden xl:inline">{txn.client_contact}</span>
-                        </a>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <ClientMiniAvatar image={txn.client_image} name={clientName} />
+                      <div className="min-w-0">
+                        <Link href={`/clients/${txn.client_name}/view`}
+                          className="font-bold text-slate-200 text-xs hover:text-blue-400 truncate block max-w-[150px] transition-colors"
+                          title={clientName}>
+                          {clientName}
+                        </Link>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <BalanceBadge bal={balance} />
+                          {phone && (
+                            <a href={`https://wa.me/91${phone}`} target="_blank"
+                              className="flex items-center gap-0.5 text-emerald-500 hover:text-emerald-400 text-[10px]">
+                              <Phone size={10} />
+                              <span className="hidden xl:inline">{txn.client_contact}</span>
+                            </a>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </td>
 
@@ -1455,19 +1481,22 @@ function JobsListContent() {
                 </div>
 
                 {/* Client Info */}
-                <div className="px-3 py-2.5 border-t border-[#21293d]">
-                  <Link href={`/clients/${txn.client_name}/view`}
-                    className="font-bold text-sm text-slate-200 hover:text-blue-400 transition-colors block truncate">
-                    {clientName}
-                  </Link>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <BalanceBadge bal={balance} />
-                    {phone && (
-                      <a href={`https://wa.me/91${phone}`} target="_blank"
-                        className="flex items-center gap-1 text-emerald-500 text-[10px] hover:text-emerald-400">
-                        <Phone size={10} /> {txn.client_contact}
-                      </a>
-                    )}
+                <div className="px-3 py-2.5 border-t border-[#21293d] flex items-center gap-2.5">
+                  <ClientMiniAvatar image={txn.client_image} name={clientName} />
+                  <div className="min-w-0 flex-1">
+                    <Link href={`/clients/${txn.client_name}/view`}
+                      className="font-bold text-sm text-slate-200 hover:text-blue-400 transition-colors block truncate">
+                      {clientName}
+                    </Link>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <BalanceBadge bal={balance} />
+                      {phone && (
+                        <a href={`https://wa.me/91${phone}`} target="_blank"
+                          className="flex items-center gap-1 text-emerald-500 text-[10px] hover:text-emerald-400">
+                          <Phone size={10} /> {txn.client_contact}
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
 

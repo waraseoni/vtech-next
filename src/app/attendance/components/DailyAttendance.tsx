@@ -451,7 +451,7 @@ export default function DailyAttendance({
       {userRole === 'admin' && unmarkedCount > 0 && (
         <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400">
           <AlertCircle size={13} />
-          {unmarkedCount} mechanic{unmarkedCount > 1 ? 's' : ''} not yet marked — will default to <strong className="ml-1">Absent</strong> on save.
+          {unmarkedCount} mechanic{unmarkedCount > 1 ? 's' : ''} not yet marked — <strong className="ml-1">will be skipped</strong> (no attendance saved).
         </div>
       )}
 

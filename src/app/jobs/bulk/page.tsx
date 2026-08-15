@@ -9,6 +9,7 @@ import {
   Loader2, AlertTriangle, CheckCircle, Hash, Trash2,
 } from "lucide-react";
 import SearchableSelect from "@/components/SearchableSelect";
+import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 
 // ─── IST Helper ───────────────────────────────────────────────────────────────
 function nowIST(): string {
@@ -72,18 +73,17 @@ export default function BulkJobPage() {
   // ── Fetch master data ──────────────────────────────────────────────────────
   const fetchMaster = useCallback(async () => {
     setLoading(true);
-    const [cRes, mRes, ctrRes] = await Promise.all([
+    const [cRes, mRes] = await Promise.all([
       supabase.from("client_list")
         .select("id, firstname, middlename, lastname, contact")
         .eq("delete_flag", 0).order("firstname"),
       supabase.from("mechanic_list")
         .select("id, firstname, middlename, lastname")
         .eq("status", 1).order("firstname"),
-      supabase.from("job_id_counter").select("last_job_id").single(),
     ]);
     setClients(cRes.data || []);
     setMechanics(mRes.data || []);
-    const nextId = (ctrRes.data?.last_job_id || 27650) + 1;
+    const nextId = await getNextJobId();
     setBaseJobId(nextId);
     // Start with 3 empty rows
     const initial: BulkRow[] = [0,1,2].map(i => ({
@@ -145,8 +145,7 @@ export default function BulkJobPage() {
       const userId = profile?.mechanic_id || 0;
 
       // Get fresh job counter
-      const { data: ctr } = await supabase.from("job_id_counter").select("last_job_id").single();
-      const nextJobId = (ctr?.last_job_id || 0) + 1;
+      const nextJobId = await getNextJobId();
 
       let savedCount = 0;
       for (let i = 0; i < validRows.length; i++) {
@@ -179,8 +178,7 @@ export default function BulkJobPage() {
       }
 
       // Update job_id_counter
-      await supabase.from("job_id_counter")
-        .update({ last_job_id: nextJobId + validRows.length - 1 }).eq("id", 1);
+      await bumpJobCounter(nextJobId + validRows.length - 1);
 
       setToast({ type: "success", msg: `${savedCount} jobs saved successfully!` });
       setTimeout(() => router.push("/jobs"), 1000);

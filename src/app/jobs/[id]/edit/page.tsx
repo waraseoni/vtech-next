@@ -10,6 +10,7 @@ import {
   Smartphone, X,
 } from "lucide-react";
 import SearchableSelect from "@/components/SearchableSelect";
+import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STYLES
@@ -389,14 +390,8 @@ export default function ManageJobPage({
       setTxnCode(`${datePrefix}${dailySeq}`);  // e.g. "2025102401"
 
       // job_id = job_id_counter table se last_job_id + 1
-      // Single-row counter table (id=1) — DB ka authoritative source
-      const { data: counterRow } = await supabase
-        .from("job_id_counter")
-        .select("last_job_id")
-        .eq("id", 1)
-        .single();
-      const nextJobId = (counterRow?.last_job_id || 28101) + 1;
-      setJobCode(String(nextJobId));  // e.g. 28101 → "28102"
+      const nextJobId = await getNextJobId();
+      setJobCode(String(nextJobId));
     };
     genCode();
   }, [isEdit]);
@@ -552,10 +547,7 @@ export default function ManageJobPage({
 
       // Increment job_id_counter after successful save (new job only)
       if (!isEdit) {
-        await supabase
-          .from("job_id_counter")
-          .update({ last_job_id: parseInt(jobCode) })
-          .eq("id", 1);
+        await bumpJobCounter(parseInt(jobCode));
       }
 
       setToast({ type: "success", msg: isEdit ? "Job update ho gaya! ✅" : "Naya job create ho gaya! ✅" });

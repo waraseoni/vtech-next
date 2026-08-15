@@ -10,6 +10,7 @@ import {
   Camera, Trash2,
 } from "lucide-react";
 import { compressImage } from "@/lib/imageCompression";
+import SearchableSelect from "@/components/SearchableSelect";
 
 const inputCls = "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
 const labelCls = "block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5";
@@ -28,6 +29,8 @@ export default function ProfilePage() {
   const [email,       setEmail]       = useState("");
   const [role,        setRole]        = useState("");
   const [mechanicName,setMechanicName]= useState("");
+  const [mechanicId,  setMechanicId]  = useState("");
+  const [mechanics,   setMechanics]   = useState<{ id: number; name: string }[]>([]);
   const [avatarUrl,   setAvatarUrl]   = useState<string | null>(null);
 
   // Avatar photo
@@ -114,18 +117,23 @@ export default function ProfilePage() {
       setAvatarUrl(profile?.avatar_url || null);
       if (profile?.email) setEmail(profile.email);
 
-      // Mechanic name fetch karo agar linked hai
+      // Mechanics list (PHP: mechanic_list WHERE status=1) — dropdown ke liye
+      const { data: mechs } = await supabase
+        .from("mechanic_list")
+        .select("id, firstname, middlename, lastname")
+        .eq("status", 1)
+        .order("firstname");
+      const mechList = (mechs || []).map(m => ({
+        id: m.id,
+        name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+      }));
+      setMechanics(mechList);
+
+      // Mechanic name resolve karo agar linked hai
       if (profile?.mechanic_id) {
-        const { data: mech } = await supabase
-          .from("mechanic_list")
-          .select("firstname, middlename, lastname")
-          .eq("id", profile.mechanic_id)
-          .single();
-        if (mech) {
-          setMechanicName(
-            [mech.firstname, mech.middlename, mech.lastname].filter(Boolean).join(" ")
-          );
-        }
+        setMechanicId(String(profile.mechanic_id));
+        const linked = mechList.find(m => m.id === profile.mechanic_id);
+        if (linked) setMechanicName(linked.name);
       }
 
       setLoading(false);
@@ -140,9 +148,20 @@ export default function ProfilePage() {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ full_name: fullName.trim() })
+        .update({
+          full_name:   fullName.trim(),
+          mechanic_id: mechanicId ? parseInt(mechanicId) : null,
+        })
         .eq("id", userId);
-      if (error) throw error;
+      if (error) {
+        if (error.code === "23505") {
+          throw new Error("Ye mechanic pehle se kisi aur user se linked hai!");
+        }
+        throw error;
+      }
+      // Mechanic badge refresh
+      const linked = mechanics.find(m => String(m.id) === mechanicId);
+      setMechanicName(linked ? linked.name : "");
       setToast({ type: "success", msg: "Profile update ho gayi!" });
     } catch (err: unknown) {
       setToast({ type: "error", msg: err instanceof Error ? err.message : "Update failed!" });
@@ -288,6 +307,25 @@ export default function ProfilePage() {
               </div>
               <p className="text-[10px] text-slate-700 mt-1">Email change nahi ho sakta</p>
             </div>
+
+            {/* Mechanic Link (attendance ke liye — staff/admin khud ko mechanic se link kare) */}
+            {(role === "staff" || role === "admin") && (
+              <div>
+                <label className={labelCls}>
+                  <Wrench size={10} className="inline mr-1"/> Link to Mechanic Profile
+                </label>
+                <SearchableSelect
+                  value={mechanicId || null}
+                  options={mechanics.map(m => ({ id: m.id, label: m.name }))}
+                  onSelect={v => setMechanicId(v)}
+                  placeholder="— Select Mechanic —"
+                  clearLabel="— Select Mechanic —"
+                />
+                <p className="text-[10px] text-slate-700 mt-1">
+                  Attendance lagane ke liye apni profile ko mechanic se link karna zaroori hai।
+                </p>
+              </div>
+            )}
             <button type="submit" disabled={savingInfo}
               className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/30">
               {savingInfo
