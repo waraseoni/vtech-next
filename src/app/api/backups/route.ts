@@ -44,7 +44,7 @@ export async function GET() {
 
     for (const item of extraFiles) {
       try {
-        const stat = await fs.stat(item.fullPath);
+        const stat = await fs.stat(/*turbopackIgnore: true*/ item.fullPath);
         files.push({
           name: path.basename(item.fullPath),
           relativePath: item.relativePath.replace(/\\/g, "/"),

@@ -8,7 +8,7 @@ const ALLOWED = ["vikram_db_supabase.txt"];
 
 function safeResolve(relativePath: string) {
   const normalized = relativePath.replace(/\\/g, "/");
-  const fullPath = path.resolve(rootDir, normalized);
+  const fullPath = path.resolve(/*turbopackIgnore: true*/ rootDir, normalized);
   if (!fullPath.startsWith(rootDir)) {
     throw new Error("Invalid path");
   }
