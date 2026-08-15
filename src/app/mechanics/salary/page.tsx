@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 import { 
   Loader2, Calculator, History, 
   Calendar, ChevronLeft, ChevronRight, IndianRupee,
@@ -13,11 +14,27 @@ import { logActivity } from "@/lib/activity";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+// Mechanic avatar — photo ho to photo, warna 2-letter initials.
+const mechInitials = (name: string) =>
+  name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("") || name.charAt(0);
+
+const MechAvatar = ({ image, name, cls = "w-8 h-8 text-xs" }: { image?: string | null; name: string; cls?: string }) =>
+  image ? (
+    <Image src={image} alt={name} width={32} height={32} unoptimized
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
+      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+  ) : (
+    <div className={`${cls} bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 flex-shrink-0`}>
+      {mechInitials(name)}
+    </div>
+  );
+
 type DbRow = ReturnType<typeof JSON.parse>;
 
 type SalaryRecord = {
   id: number;
   name: string;
+  image: string | null;
   daily_salary: number;
   present: number;
   halfDays: number;
@@ -59,7 +76,7 @@ export default function SalaryManagement() {
         // PHP: $prev_month_end = date('Y-m-t', strtotime($month . " -1 month"))
         const prevMonthEnd = format(endOfMonth(subMonths(new Date(month + "-01"), 1)), "yyyy-MM-dd");
 
-        const { data: mechs } = await supabase.from("mechanic_list").select("id, firstname, lastname, daily_salary").eq("status", 1).eq("delete_flag", 0);
+        const { data: mechs } = await supabase.from("mechanic_list").select("id, firstname, lastname, daily_salary, image_path").eq("status", 1).eq("delete_flag", 0);
         if (!mechs) return;
 
         // PHP: ORDER BY effective_date DESC, id DESC — latest rate wins, id breaks ties
@@ -111,6 +128,7 @@ export default function SalaryManagement() {
           return {
             id: mid,
             name: `${m.firstname} ${m.lastname}`,
+            image: m.image_path || null,
             daily_salary: m.daily_salary,
             present: pCount,
             halfDays: hdCount,
@@ -274,10 +292,15 @@ export default function SalaryManagement() {
                     <tr key={row.id} className="hover:bg-white/[0.02] transition-colors group">
                       <td className="px-6 py-4 text-slate-600 font-bold">{idx + 1}</td>
                       <td className="px-6 py-4">
-                        <Link href={`/mechanics/ledger/${row.id}?month=${month}`} className="text-white font-bold hover:text-blue-400 transition-colors no-underline">
-                          {row.name}
-                        </Link>
-                        <p className="text-[9px] text-slate-600 font-black uppercase mt-0.5">Click for ledger</p>
+                        <div className="flex items-center gap-3">
+                          <MechAvatar image={row.image} name={row.name} />
+                          <div>
+                            <Link href={`/mechanics/ledger/${row.id}?month=${month}`} className="text-white font-bold hover:text-blue-400 transition-colors no-underline">
+                              {row.name}
+                            </Link>
+                            <p className="text-[9px] text-slate-600 font-black uppercase mt-0.5">Click for ledger</p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-center font-bold">
                         <span className="text-emerald-400" title="Present">{row.present}</span>
@@ -335,8 +358,13 @@ export default function SalaryManagement() {
                 ) : mechanics.map(m => (
                   <tr key={m.id} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="px-6 py-4">
-                      <p className="text-white font-bold">{m.firstname} {m.lastname}</p>
-                      <p className="text-[10px] text-slate-600 font-black uppercase">{m.designation || "Mechanic"}</p>
+                      <div className="flex items-center gap-3">
+                        <MechAvatar image={m.image_path} name={`${m.firstname} ${m.lastname}`} />
+                        <div>
+                          <p className="text-white font-bold">{m.firstname} {m.lastname}</p>
+                          <p className="text-[10px] text-slate-600 font-black uppercase">{m.designation || "Mechanic"}</p>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <span className="text-lg font-black text-emerald-400">{inr(m.daily_salary)}</span>

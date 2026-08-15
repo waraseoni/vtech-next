@@ -32,7 +32,7 @@ export default function BackOfficeDashboard() {
       icon: <DollarSign size={18} />,
       items: [
         { name: "Pay Outs", href: "/expenses", icon: <DollarSign />, color: "rose", desc: "Expense management" },
-        { name: "Salary", href: "/salary", icon: <Wallet />, color: "emerald", desc: "Staff wages & payroll" },
+        { name: "Salary", href: "/mechanics/salary", icon: <Wallet />, color: "emerald", desc: "Staff wages & payroll" },
         { name: "Commission", href: "/mechanics/commission", icon: <Percent />, color: "blue", desc: "Rate master & history" },
         { name: "Client Amt", href: "/clients-admin", icon: <Users />, color: "purple", desc: "Client balance management" },
         { name: "Lenders", href: "/lenders", icon: <Landmark />, color: "amber", desc: "Manage loan providers" },

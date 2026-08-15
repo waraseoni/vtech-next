@@ -412,7 +412,7 @@ function SidebarNav({
               <li><Link href="/back-office"   className={subLinkCls(pathname === "/back-office")}   onClick={onNavClick}><Sparkles size={12} className="text-purple-400" />Overview</Link></li>
               <li><Link href="/expenses"      className={subLinkCls(pathname === "/expenses")}      onClick={onNavClick}><DollarSign size={12} />Pay Outs</Link></li>
               <li><Link href="/payments"      className={subLinkCls(pathname === "/payments")}      onClick={onNavClick}><Receipt size={12} />Payments</Link></li>
-              <li><Link href="/salary"        className={subLinkCls(pathname === "/salary")}        onClick={onNavClick}><Coins size={12} />Salary</Link></li>
+              <li><Link href="/mechanics/salary" className={subLinkCls(pathname === "/mechanics/salary")} onClick={onNavClick}><Coins size={12} />Salary</Link></li>
               <li><Link href="/advance"       className={subLinkCls(pathname === "/advance")}       onClick={onNavClick}><DollarSign size={12} />Advance</Link></li>
               <li><Link href="/services"      className={subLinkCls(pathname === "/services")}      onClick={onNavClick}><Toolbox size={12} />Services</Link></li>
               <li><Link href="/products"      className={subLinkCls(pathname === "/products")}      onClick={onNavClick}><Package size={12} />Products</Link></li>

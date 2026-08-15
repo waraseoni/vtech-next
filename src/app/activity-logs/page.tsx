@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 import {
   History, Search, Loader2, User, Info,
   ChevronLeft, ChevronRight, X,
@@ -17,9 +18,22 @@ interface LogEntry {
   details: string | null;
   date_created: string;
   username?: string;
+  user_image?: string | null;
 }
 
 const PAGE_SIZES = [10, 25, 50, 100];
+
+// User avatar — photo ho to photo, warna 1-letter initials (admin amber, staff blue).
+const UserAvatar = ({ image, name, user_id, cls = "w-8 h-8 text-[10px]" }: { image?: string | null; name?: string; user_id: number; cls?: string }) =>
+  image ? (
+    <Image src={image} alt={name || "User"} width={32} height={32} unoptimized
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
+      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+  ) : (
+    <div className={`${cls} rounded-full flex items-center justify-center font-black flex-shrink-0 ${user_id === 0 ? "bg-amber-500/10 text-amber-500" : "bg-blue-500/10 text-blue-500"}`}>
+      {name?.slice(0, 1).toUpperCase()}
+    </div>
+  );
 
 export default function ActivityLogsPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -71,19 +85,20 @@ export default function ActivityLogsPage() {
       if (error) throw error;
 
       const mechIds = [...new Set((data || []).map(l => l.user_id).filter(id => id > 0))];
-      const mechsMap = new Map<number, string>();
+      const mechsMap = new Map<number, { name: string; image: string | null }>();
 
       if (mechIds.length > 0) {
         const { data: mechs } = await supabase
           .from("mechanic_list")
-          .select("id, firstname, lastname")
+          .select("id, firstname, lastname, image_path")
           .in("id", mechIds);
-        mechs?.forEach(m => mechsMap.set(m.id, `${m.firstname} ${m.lastname}`));
+        mechs?.forEach(m => mechsMap.set(m.id, { name: `${m.firstname} ${m.lastname}`, image: m.image_path || null }));
       }
 
       const formatted = (data || []).map(l => ({
         ...l,
-        username: l.user_id === 0 ? "Administrator" : mechsMap.get(l.user_id) || `Staff #${l.user_id}`
+        username: l.user_id === 0 ? "Administrator" : mechsMap.get(l.user_id)?.name || `Staff #${l.user_id}`,
+        user_image: l.user_id === 0 ? null : mechsMap.get(l.user_id)?.image || null
       }));
 
       setLogs(formatted);
@@ -246,11 +261,7 @@ export default function ActivityLogsPage() {
                       </td>
                       <td className="px-5 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] ${
-                            log.user_id === 0 ? "bg-amber-500/10 text-amber-500" : "bg-blue-500/10 text-blue-500"
-                          }`}>
-                            {log.username?.slice(0, 1).toUpperCase()}
-                          </div>
+                          <UserAvatar image={log.user_image} name={log.username} user_id={log.user_id} />
                           <span className="text-slate-300 font-semibold">{log.username}</span>
                         </div>
                       </td>
@@ -288,11 +299,7 @@ export default function ActivityLogsPage() {
                 <div key={log.id} className="p-4 hover:bg-white/[0.02] transition-colors group">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex items-center gap-2">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] ${
-                        log.user_id === 0 ? "bg-amber-500/10 text-amber-500" : "bg-blue-500/10 text-blue-500"
-                      }`}>
-                        {log.username?.slice(0, 1).toUpperCase()}
-                      </div>
+                      <UserAvatar image={log.user_image} name={log.username} user_id={log.user_id} />
                       <div>
                         <span className="text-white font-bold block leading-tight">{log.username}</span>
                         <div className="flex items-center gap-2 mt-1">

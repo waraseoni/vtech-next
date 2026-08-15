@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 import {
   CalendarClock, Search, MessageCircle, Loader2, ArrowLeft,
   AlertTriangle, CalendarOff, Clock, CheckCircle2, Calendar, X, ExternalLink, Save,
@@ -14,9 +15,25 @@ import { pageAll } from "@/lib/fetch-all";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
+// Client avatar — photo ho to photo, warna 2-letter initials.
+const clientInitials = (name: string) =>
+  name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("") || name.charAt(0);
+
+const ClientAvatar = ({ image, name, cls = "w-9 h-9 text-xs" }: { image?: string | null; name: string; cls?: string }) =>
+  image ? (
+    <Image src={image} alt={name} width={36} height={36} unoptimized
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
+      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+  ) : (
+    <div className={`${cls} bg-violet-500/15 border border-violet-500/20 rounded-full flex items-center justify-center font-black text-violet-400 flex-shrink-0`}>
+      {clientInitials(name)}
+    </div>
+  );
+
 type DueRow = {
   id: number;
   name: string;
+  image: string | null;
   contact: string;
   opening_balance: number;
   payment_due_date: string | null;
@@ -92,7 +109,7 @@ function DueRemindersContent() {
       // All clients
       const { data: clients, error } = await supabase
         .from("client_list")
-        .select("id, firstname, middlename, lastname, contact, opening_balance, payment_due_date, payment_due_remarks")
+        .select("id, firstname, middlename, lastname, contact, opening_balance, payment_due_date, payment_due_remarks, image_path")
         .eq("delete_flag", 0);
       if (error) throw error;
       if (!clients || clients.length === 0) { setRows([]); return; }
@@ -149,6 +166,7 @@ function DueRemindersContent() {
         return {
           id: c.id,
           name: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ").trim(),
+          image: c.image_path || null,
           contact: c.contact || "",
           opening_balance: Number(c.opening_balance) || 0,
           payment_due_date: c.payment_due_date || null,
@@ -379,9 +397,12 @@ function DueRemindersContent() {
                 return (
                   <tr key={r.id} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="px-6 py-5">
-                      <div className="flex flex-col">
-                        <Link href={`/clients/${r.id}/view`} className="text-white font-black hover:text-red-400 transition-colors">{r.name}</Link>
-                        <span className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">{r.contact}</span>
+                      <div className="flex items-center gap-3">
+                        <ClientAvatar image={r.image} name={r.name} />
+                        <div className="flex flex-col">
+                          <Link href={`/clients/${r.id}/view`} className="text-white font-black hover:text-red-400 transition-colors">{r.name}</Link>
+                          <span className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">{r.contact}</span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-5 text-right">

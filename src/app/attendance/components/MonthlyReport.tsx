@@ -13,12 +13,13 @@
 // ─────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Calendar, RotateCcw } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import AttendanceModal from './AttendanceModal';
 import { currentMonthIST, parseISTDate, hoursBetweenIST, fmtTimeIST } from '@/lib/dateUtils';
 
-interface Mechanic { id: number; name: string; }
+interface Mechanic { id: number; name: string; image: string | null; }
 interface DayData   { day: number; status: 0 | 1 | 2 | 3; isSunday: boolean; timeIn: string; timeOut: string; hours: string; }
 interface MechanicMonthData {
   mechanic: Mechanic;
@@ -27,6 +28,21 @@ interface MechanicMonthData {
   halfDays: number;
   absentDays: number;
 }
+
+// Mechanic avatar — photo ho to photo, warna 2-letter initials.
+const mechInitials = (name: string) =>
+  name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || name.charAt(0);
+
+const MechAvatar = ({ image, name, cls = "w-8 h-8 text-xs" }: { image?: string | null; name: string; cls?: string }) =>
+  image ? (
+    <Image src={image} alt={name} width={32} height={32} unoptimized
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
+      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+  ) : (
+    <div className={`${cls} bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 flex-shrink-0`}>
+      {mechInitials(name)}
+    </div>
+  );
 
 export default function MonthlyReport({
   userRole, mechanicId,
@@ -46,13 +62,13 @@ export default function MonthlyReport({
   const [mechanicsData, setMechanicsData] = useState<MechanicMonthData[]>([]);
   const [loading, setLoading]         = useState(true);
   const [modalOpen, setModalOpen]     = useState(false);
-  const [selected, setSelected]       = useState<{ mechanicId: number; mechanicName: string; date: string; timeIn?: string; timeOut?: string } | null>(null);
+  const [selected, setSelected]       = useState<{ mechanicId: number; mechanicName: string; mechanicImage: string | null; date: string; timeIn?: string; timeOut?: string } | null>(null);
   // BUG FIX 3: trigger refetch without hard reload
   const [, setRefreshKey]                 = useState(0);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    let mechQuery = supabase.from('mechanic_list').select('id, firstname, lastname').eq('status', 1);
+    let mechQuery = supabase.from('mechanic_list').select('id, firstname, lastname, image_path').eq('status', 1);
     if (userRole === 'staff') {
       mechQuery = mechanicId ? mechQuery.eq('id', mechanicId) : mechQuery.eq('id', 0);
     }
@@ -91,7 +107,7 @@ export default function MonthlyReport({
         days.push({ day: d, status, isSunday: parseISTDate(dateStr).getDay() === 0, timeIn, timeOut, hours: hoursBetweenIST(timeIn || null, timeOut || null) });
       }
       return {
-        mechanic: { id: mech.id, name: `${mech.firstname} ${mech.lastname}`.trim() },
+        mechanic: { id: mech.id, name: `${mech.firstname} ${mech.lastname}`.trim(), image: (mech.image_path as string) || null },
         days, fullDays, halfDays, absentDays,
       };
     });
@@ -114,7 +130,7 @@ export default function MonthlyReport({
     if (userRole !== 'admin') return;
     const md = mechanicsData.find(x => x.mechanic.id === mId);
     const day = md?.days.find(d => `${month}-${d.day.toString().padStart(2, '0')}` === dateStr);
-    setSelected({ mechanicId: mId, mechanicName: mName, date: dateStr, timeIn: day?.timeIn, timeOut: day?.timeOut });
+    setSelected({ mechanicId: mId, mechanicName: mName, mechanicImage: md?.mechanic.image ?? null, date: dateStr, timeIn: day?.timeIn, timeOut: day?.timeOut });
     setModalOpen(true);
   };
 
@@ -218,9 +234,7 @@ export default function MonthlyReport({
             {/* Card Header */}
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 text-xs">
-                  {md.mechanic.name.charAt(0)}
-                </div>
+                <MechAvatar image={md.mechanic.image} name={md.mechanic.name} />
                 <h3 className="font-extrabold text-slate-200 text-sm">{md.mechanic.name}</h3>
               </div>
               <div className="flex gap-1.5 text-[10px]">
@@ -293,6 +307,7 @@ export default function MonthlyReport({
         <AttendanceModal
           mechanicId={selected.mechanicId}
           mechanicName={selected.mechanicName}
+          mechanicImage={selected.mechanicImage}
           date={selected.date}
           initialTimeIn={selected.timeIn}
           initialTimeOut={selected.timeOut}

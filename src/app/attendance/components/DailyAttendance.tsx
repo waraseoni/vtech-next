@@ -12,6 +12,7 @@
 // ─────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import Image from 'next/image';
 import {
   Calendar, Save, Check, Clock, X, AlertCircle, RotateCcw,
   LogIn, LogOut, Fingerprint, ArrowRight,
@@ -24,7 +25,24 @@ interface Mechanic {
   id: number;
   name: string;
   designation: string;
+  image: string | null;
 }
+
+// Mechanic avatar — photo ho to photo, warna 2-letter initials (system logo nahi,
+// kyunki har row me same logo dikh kar identification fail karta).
+const mechInitials = (name: string) =>
+  name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || name.charAt(0);
+
+const MechAvatar = ({ image, name, cls = "w-10 h-10 text-sm" }: { image?: string | null; name: string; cls?: string }) =>
+  image ? (
+    <Image src={image} alt={name} width={40} height={40} unoptimized
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
+      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+  ) : (
+    <div className={`${cls} bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 flex-shrink-0`}>
+      {mechInitials(name)}
+    </div>
+  );
 
 // 0 = not yet marked, 1 = present, 2 = absent, 3 = half day
 interface AttendanceStatus { [mechanicId: number]: 0 | 1 | 2 | 3; }
@@ -67,6 +85,7 @@ export default function DailyAttendance({
   const [selfMsg,  setSelfMsg]  = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   const selfName = mechanicId ? mechanics.find(m => m.id === mechanicId)?.name || '' : '';
+  const selfImage = mechanicId ? mechanics.find(m => m.id === mechanicId)?.image || null : null;
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -80,7 +99,7 @@ export default function DailyAttendance({
     const fetchMechanics = async () => {
       let query = supabase
         .from('mechanic_list')
-        .select('id, firstname, lastname, designation')
+        .select('id, firstname, lastname, designation, image_path')
         .eq('status', 1);
       if (userRole === 'staff' && mechanicId) query = query.eq('id', mechanicId);
       const { data, error } = await query.order('firstname');
@@ -89,6 +108,7 @@ export default function DailyAttendance({
           id: m.id,
           name: `${m.firstname} ${m.lastname}`.trim(),
           designation: m.designation || '',
+          image: (m.image_path as string) || null,
         })));
       }
     };
@@ -304,9 +324,7 @@ export default function DailyAttendance({
         <div className="mb-6 rounded-2xl overflow-hidden bg-gradient-to-r from-[#001f3f] to-[#003d7a] border border-[#1a3a5f] shadow-lg">
           <div className="px-5 py-4 flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center font-black text-white text-lg flex-shrink-0">
-                {selfName.charAt(0)}
-              </div>
+              <MechAvatar image={selfImage} name={selfName} cls="w-11 h-11 text-lg" />
               <div className="min-w-0">
                 <h6 className="text-white font-extrabold text-sm flex items-center gap-1.5">
                   <Fingerprint size={13} className="opacity-70" />
@@ -480,9 +498,7 @@ export default function DailyAttendance({
                   <tr key={mech.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 text-sm">
-                          {mech.name.charAt(0)}
-                        </div>
+                        <MechAvatar image={mech.image} name={mech.name} />
                         <div>
                           <div className="font-bold text-slate-200 text-sm">{mech.name}</div>
                           <div className="text-xs text-slate-600">{mech.designation}</div>
@@ -566,9 +582,7 @@ export default function DailyAttendance({
             return (
               <div key={mech.id} className="bg-[#161b27] border border-[#21293d] p-4 rounded-2xl">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 text-sm">
-                    {mech.name.charAt(0)}
-                  </div>
+                  <MechAvatar image={mech.image} name={mech.name} />
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-slate-200 text-sm truncate">{mech.name}</div>
                     <div className="text-xs text-slate-600">{mech.designation}</div>

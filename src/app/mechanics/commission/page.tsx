@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 import SearchableSelect from "@/components/SearchableSelect";
 import {
   Loader2, ChevronLeft, ChevronRight,
@@ -15,6 +16,21 @@ const inr = (n: number) =>
 import { currentMonthIST, parseISTDate } from "@/lib/dateUtils";
 import { logActivity } from "@/lib/activity";
 
+// Mechanic avatar — photo ho to photo, warna 2-letter initials.
+const mechInitials = (name: string) =>
+  name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("") || name.charAt(0);
+
+const MechAvatar = ({ image, name, cls = "w-8 h-8 text-xs" }: { image?: string | null; name: string; cls?: string }) =>
+  image ? (
+    <Image src={image} alt={name} width={32} height={32} unoptimized
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
+      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+  ) : (
+    <div className={`${cls} bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 flex-shrink-0`}>
+      {mechInitials(name)}
+    </div>
+  );
+
 type CommRow = {
   id: number;
   job_id: string;
@@ -25,6 +41,7 @@ type CommRow = {
   date_completed: string | null;
   mechanic_id: number;
   m_name: string;
+  m_image: string | null;
   rate: number;
   service_amount: number;
   mechanic_commission_amount: number;
@@ -33,6 +50,7 @@ type CommRow = {
 type MechanicRate = {
   id: number;
   name: string;
+  image: string | null;
   current_rate: number;
   last_updated?: string;
 };
@@ -111,7 +129,7 @@ function CommissionContent() {
         const to = `${month}-${String(lastDay).padStart(2, "0")}T23:59:59+05:30`;
 
         const [mechRes, txnRes] = await Promise.all([
-          supabase.from("mechanic_list").select("id, firstname, middlename, lastname, commission_percent, delete_flag").order("firstname"),
+          supabase.from("mechanic_list").select("id, firstname, middlename, lastname, commission_percent, delete_flag, image_path").order("firstname"),
           (() => {
             // PHP commission_history: only DELIVERED jobs (status=5) by date_completed
             let q = supabase.from("transaction_list")
@@ -132,6 +150,7 @@ function CommissionContent() {
 
         const mechMap = new Map(mechData.map((m) => [m.id, {
           name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+          image: m.image_path || null,
           rate: m.commission_percent || 0,
         }]));
 
@@ -186,6 +205,7 @@ function CommissionContent() {
             date_completed: t.date_completed,
             mechanic_id: t.mechanic_id,
             m_name: mech?.name || "Unknown",
+            m_image: mech?.image || null,
             rate: effRateFor(t.mechanic_id, t.date_created, mech?.rate || 0),
             service_amount: svcMap[t.id] || 0,
             mechanic_commission_amount: t.mechanic_commission_amount || 0,
@@ -202,7 +222,7 @@ function CommissionContent() {
         // Master Tab: Fetch current rates + last update (PHP: latest history date_created)
         const { data } = await supabase
           .from("mechanic_list")
-          .select("id, firstname, middlename, lastname, commission_percent")
+          .select("id, firstname, middlename, lastname, commission_percent, image_path")
           .eq("delete_flag", 0)
           .order("firstname");
         
@@ -225,6 +245,7 @@ function CommissionContent() {
         setMechRates(mechs.map(m => ({
           id: m.id,
           name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+          image: m.image_path || null,
           current_rate: m.commission_percent || 0,
           last_updated: lastUpd[m.id] || undefined,
         })));
@@ -451,7 +472,12 @@ function CommissionContent() {
                           </td>
                           <td className="px-3 py-2.5 text-xs text-slate-400">{r.item || "—"}</td>
                           <td className="px-3 py-2.5 text-xs text-slate-400">{r.client_name || "—"}</td>
-                          <td className="px-3 py-2.5 text-xs font-bold text-slate-200">{r.m_name}</td>
+                          <td className="px-3 py-2.5">
+                            <div className="flex items-center gap-2">
+                              <MechAvatar image={r.m_image} name={r.m_name} cls="w-7 h-7 text-[10px]" />
+                              <span className="text-xs font-bold text-slate-200">{r.m_name}</span>
+                            </div>
+                          </td>
                           <td className="px-3 py-2.5 text-xs text-center">
                             <span className="inline-flex px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold">{r.rate.toFixed(0)}%</span>
                           </td>
@@ -520,9 +546,7 @@ function CommissionContent() {
                     <tr key={m.id} className="hover:bg-white/[0.02] transition-colors group">
                       <td className="px-5 py-4 first:pl-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 font-black text-xs uppercase">
-                            {m.name.slice(0, 2)}
-                          </div>
+                          <MechAvatar image={m.image} name={m.name} />
                           <span className="font-bold text-slate-200">{m.name}</span>
                         </div>
                       </td>

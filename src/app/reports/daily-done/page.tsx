@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Printer, ChevronLeft, ChevronRight, Calendar, CheckSquare, Wrench, User, Clock } from "lucide-react";
+import Image from "next/image";
+import { Loader2, Printer, ChevronLeft, ChevronRight, Calendar, CheckSquare, Wrench, Clock } from "lucide-react";
 import Link from "next/link";
 import { todayIST, formatIST, parseISTDate } from "@/lib/dateUtils";
 
@@ -20,12 +21,29 @@ type DailyDoneItem = {
   client_id: string;
   client_name: string;
   mechanic_name: string;
+  mechanic_image: string | null;
 };
 
 type Mechanic = {
   id: string;
   name: string;
+  image: string | null;
 };
+
+// Mechanic avatar — photo ho to photo, warna 2-letter initials.
+const mechInitials = (name: string) =>
+  name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("") || name.charAt(0);
+
+const MechAvatar = ({ image, name, cls = "w-8 h-8 text-xs" }: { image?: string | null; name: string; cls?: string }) =>
+  image ? (
+    <Image src={image} alt={name} width={32} height={32} unoptimized
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
+      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+  ) : (
+    <div className={`${cls} bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 flex-shrink-0`}>
+      {mechInitials(name)}
+    </div>
+  );
 
 const statusMap: Record<number, { label: string; color: string }> = {
   0: { label: "Pending", color: "text-slate-500 bg-slate-500/10 border-slate-500/20" },
@@ -52,14 +70,15 @@ export default function DailyDoneReportPage() {
     try {
       const { data, error } = await supabase
         .from("mechanic_list")
-        .select("id, firstname, lastname")
+        .select("id, firstname, lastname, image_path")
         .eq("status", 1)
         .order("firstname");
       if (error) throw error;
       if (data) {
         setMechanics(data.map((m) => ({
           id: m.id.toString(),
-          name: `${m.firstname} ${m.lastname}`.trim()
+          name: `${m.firstname} ${m.lastname}`.trim(),
+          image: m.image_path || null
         })));
       }
     } catch (e) {
@@ -101,7 +120,7 @@ export default function DailyDoneReportPage() {
 
       // 3. Fetch mechanics for these transactions
       const mechIds = [...new Set(uniqueTransactions.map(t => t.mechanic_id).filter(Boolean))];
-      const { data: mechData } = await supabase.from("mechanic_list").select("id, firstname, lastname").in("id", mechIds);
+      const { data: mechData } = await supabase.from("mechanic_list").select("id, firstname, lastname, image_path").in("id", mechIds);
       const mechMap = new Map(mechData?.map(m => [m.id.toString(), m]) || []);
 
       const mapped: DailyDoneItem[] = uniqueTransactions.map(tx => {
@@ -120,7 +139,8 @@ export default function DailyDoneReportPage() {
           status: tx.status,
           client_id: client?.id?.toString() || "",
           client_name: client ? `${client.firstname} ${client.lastname}`.trim() : "Unknown",
-          mechanic_name: mech ? `${mech.firstname} ${mech.lastname}`.trim() : "Not Assigned"
+          mechanic_name: mech ? `${mech.firstname} ${mech.lastname}`.trim() : "Not Assigned",
+          mechanic_image: mech?.image_path || null
         };
       }).filter(Boolean) as DailyDoneItem[];
 
@@ -308,9 +328,11 @@ export default function DailyDoneReportPage() {
                         <div className="text-xs text-slate-500">{item.item}</div>
                       </td>
                       <td className="px-4 py-3.5">
-                        <div className="px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-xs font-bold text-blue-400 inline-flex items-center gap-1.5 truncate max-w-[140px]">
-                          <User size={12} />
-                          {item.mechanic_name}
+                        <div className="flex items-center gap-2">
+                          <MechAvatar image={item.mechanic_image} name={item.mechanic_name} cls="w-6 h-6 text-[10px]" />
+                          <div className="px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-xs font-bold text-blue-400 inline-flex items-center gap-1.5 truncate max-w-[130px]">
+                            {item.mechanic_name}
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3.5 text-right font-black text-teal-400">

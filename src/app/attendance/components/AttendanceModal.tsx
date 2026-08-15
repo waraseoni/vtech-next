@@ -10,12 +10,14 @@
 // ─────────────────────────────────────────────────────────────────
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import Image from 'next/image';
 import { X, Check, Clock, UserX, Save, Eraser, LogIn, LogOut } from 'lucide-react';
 import { deriveStatusFromTimes, hoursBetweenIST } from '@/lib/dateUtils';
 
 interface Props {
   mechanicId: number;
   mechanicName: string;
+  mechanicImage?: string | null;
   date: string;
   initialTimeIn?: string;
   initialTimeOut?: string;
@@ -32,7 +34,7 @@ const STATUS_OPTIONS = [
 const inputCls =
   "w-full px-2.5 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-white text-sm font-bold text-center focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 outline-none transition-all";
 
-export default function AttendanceModal({ mechanicId, mechanicName, date, initialTimeIn, initialTimeOut, onClose, onUpdate }: Props) {
+export default function AttendanceModal({ mechanicId, mechanicName, mechanicImage, date, initialTimeIn, initialTimeOut, onClose, onUpdate }: Props) {
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
   const [error,      setError]      = useState<string | null>(null);
@@ -131,9 +133,15 @@ export default function AttendanceModal({ mechanicId, mechanicName, date, initia
         {/* Body */}
         <div className="p-5">
           <div className="text-center mb-4">
-            <div className="w-12 h-12 bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 text-lg mx-auto mb-2">
-              {mechanicName.charAt(0)}
-            </div>
+            {mechanicImage ? (
+              <Image src={mechanicImage} alt={mechanicName} width={48} height={48} unoptimized
+                className="w-12 h-12 rounded-full object-cover mx-auto mb-2 border border-white/10"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+            ) : (
+              <div className="w-12 h-12 bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 text-lg mx-auto mb-2">
+                {mechanicName.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || mechanicName.charAt(0)}
+              </div>
+            )}
             <p className="font-bold text-slate-200">{mechanicName}</p>
             <p className="text-xs text-slate-500 mt-0.5">{fmtDate}</p>
             <span className={`inline-block mt-1.5 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full ${

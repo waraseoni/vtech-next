@@ -2,10 +2,26 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 import { Loader2, Printer, Star, X } from "lucide-react";
 import { todayIST, formatIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0 });
+
+// Client avatar — photo ho to photo, warna 2-letter initials.
+const clientInitials = (name: string) =>
+  name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("") || name.charAt(0);
+
+const ClientAvatar = ({ image, name, cls = "w-8 h-8 text-xs" }: { image?: string | null; name: string; cls?: string }) =>
+  image ? (
+    <Image src={image} alt={name} width={32} height={32} unoptimized
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
+      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+  ) : (
+    <div className={`${cls} bg-violet-500/15 border border-violet-500/20 rounded-full flex items-center justify-center font-black text-violet-400 flex-shrink-0`}>
+      {clientInitials(name)}
+    </div>
+  );
 
 type DbRow = ReturnType<typeof JSON.parse>;
 
@@ -21,6 +37,7 @@ type SupaBuilder = {
 type TopCustomer = {
   client_id: number;
   customer_name: string;
+  image: string | null;
   contact: string | null;
   total_jobs: number;
   total_amount: number;
@@ -74,7 +91,7 @@ function TopCustomersContent() {
       };
 
       const [clients, allTxns, allPmts, allDirectSales] = await Promise.all([
-        fetchList("client_list", "id, firstname, middlename, lastname, contact", q => q.eq("delete_flag", 0)),
+        fetchList("client_list", "id, firstname, middlename, lastname, contact, image_path", q => q.eq("delete_flag", 0)),
         fetchList("transaction_list", "client_name, amount", q => q.eq("status", 5).gte("date_created", from).lte("date_created", to)),
         fetchList("client_payments", "client_id, amount, discount", q => q.gte("payment_date", from.split("T")[0]).lte("payment_date", to.split("T")[0])),
         fetchList("direct_sales", "client_id, total_amount", q => q.gte("date_created", from).lte("date_created", to))
@@ -120,7 +137,7 @@ function TopCustomersContent() {
         if (totalAmt > 0 || totalPmt > 0) {
           const name = [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ");
           topRows.push({
-            client_id: c.id, customer_name: name, contact: c.contact,
+            client_id: c.id, customer_name: name, image: c.image_path || null, contact: c.contact,
             total_jobs: tData?.count || 0,
             total_amount: totalAmt, total_payment: totalPmt,
             opening_balance: 0, current_balance: totalAmt - totalPmt,
@@ -281,9 +298,12 @@ function TopCustomersContent() {
                       : <span className="text-slate-500 text-xs font-bold">{i + 1}</span>}
                   </td>
                   <td className="px-3 py-2.5">
-                    <Link href={`/clients/${r.client_id}/view`} className="text-sm font-bold text-blue-400 hover:text-blue-300 hover:underline">
-                      {r.customer_name}
-                    </Link>
+                    <div className="flex items-center gap-2.5">
+                      <ClientAvatar image={r.image} name={r.customer_name} />
+                      <Link href={`/clients/${r.client_id}/view`} className="text-sm font-bold text-blue-400 hover:text-blue-300 hover:underline">
+                        {r.customer_name}
+                      </Link>
+                    </div>
                   </td>
                   <td className="px-3 py-2.5 text-xs text-slate-400">{r.contact || "—"}</td>
                   <td className="px-3 py-2.5 text-xs text-center text-slate-300">{r.total_jobs}</td>
