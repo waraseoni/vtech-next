@@ -81,14 +81,6 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
   const productsRef = useRef<Product[]>([]);
   useEffect(() => { productsRef.current = products; }, [products]);
 
-  // ── BUG FIX 2: Original useEffect had [mode, saleId, userRole] deps ───────
-  // This caused an infinite re-render loop:
-  //   mount → fetchUserRole → setUserRole("admin") → effect re-runs → fetchUserRole again → ...
-  // Fix: run init once on mount; fetch mechanics separately when userRole is confirmed
-  useEffect(() => {
-    initForm();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   const initForm = async () => {
     setPageLoading(true);
     try {
@@ -108,6 +100,14 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
       setPageLoading(false);
     }
   };
+
+  // ── BUG FIX 2: Original useEffect had [mode, saleId, userRole] deps ───────
+  // This caused an infinite re-render loop:
+  //   mount → fetchUserRole → setUserRole("admin") → effect re-runs → fetchUserRole again → ...
+  // Fix: run init once on mount; fetch mechanics separately when userRole is confirmed
+  useEffect(() => {
+    initForm();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Returns [role, mechanicId] so initForm can use them synchronously
   const fetchUserRoleAndId = async (): Promise<["admin" | "staff", number | null]> => {

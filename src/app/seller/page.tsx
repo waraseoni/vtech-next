@@ -66,8 +66,6 @@ export default function SellerPage() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   const copyKey = async (l: License) => {
     try {
       await navigator.clipboard.writeText(l.license_key);
@@ -94,6 +92,7 @@ export default function SellerPage() {
       badge="Seller Portal"
       title="License Manager"
       description="Naye client ke liye key banao, avdhi set karo, renew/revoke karo. Ye portal sirf seller ke deployment par enabled hai."
+      onOpen={load}
     >
       <div className="space-y-5">
         {/* Header */}

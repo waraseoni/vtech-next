@@ -75,3 +75,14 @@ export async function setPortalCookie(scope: PortalScope) {
     maxAge: 6 * 60 * 60,
   });
 }
+
+export async function clearPortalCookie(scope: PortalScope) {
+  const store = await cookies();
+  store.set(COOKIES[scope], "", {
+    httpOnly: true,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  });
+}

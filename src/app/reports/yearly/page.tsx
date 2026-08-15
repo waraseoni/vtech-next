@@ -136,7 +136,7 @@ export default function YearlyReportPage() {
     setLoading(false);
   }, [year]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch mount effect; loading init sync legit hai
+  // data fetch mount effect; loading init sync legit hai
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const shiftYear = (diff: number) => setYear(y => y + diff);

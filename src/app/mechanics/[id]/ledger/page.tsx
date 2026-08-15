@@ -195,9 +195,9 @@ export default function MechanicLedgerPage() {
     setLoading(false);
   }, [mechanic, fromDate, toDate]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch mount effect; setLoading sync init legit hai
+  // data fetch mount effect; setLoading sync init legit hai
   useEffect(() => { fetchMechanic(); }, [fetchMechanic]);
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch; loading init sync legit hai
+  // data fetch; loading init sync legit hai
   useEffect(() => { if (mechanic) fetchLedger(); }, [mechanic, fetchLedger]);
 
   const shiftMonth = (dir: -1 | 1) => {

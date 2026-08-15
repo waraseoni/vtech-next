@@ -45,7 +45,7 @@ export default function LoginPage() {
     const savedEmail    = localStorage.getItem("vtech_email");
     const savedRemember = localStorage.getItem("vtech_remember") === "true";
     if (savedRemember && savedEmail) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage SSR me exist nahi karta; mount-time init hi sahi hai
+      // localStorage SSR me exist nahi karta; mount-time init hi sahi hai
       setEmail(savedEmail);
       setRememberMe(true);
     }
@@ -56,7 +56,7 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const reason = params.get("reason");
     if (reason === "revoked") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- URL params sirf browser me hote hain; render me read nahi kar sakte
+      // URL params sirf browser me hote hain; render me read nahi kar sakte
       setTab("client");
       setError("Aapki portal access band kar di gayi hai. Dobara access ke liye shop se sampark karein.");
     } else if (reason === "idle") {

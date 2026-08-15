@@ -120,6 +120,7 @@ export default function ClientDetailPage() {
   const id = Number(params?.id);
 
   const [license, setLicense] = useState<License | null>(null);
+  const [open, setOpen] = useState(false);
   const [creds, setCreds] = useState<Creds>({
     license_id: id, app_url: "", supabase_url: "", supabase_anon_key: "",
     supabase_service_role_key: "", supabase_email: "", supabase_password: "",
@@ -180,7 +181,10 @@ export default function ClientDetailPage() {
     }
   }, [id]);
 
-  useEffect(() => { if (id) load(); }, [id, load]);
+  // Data tabhi load karo jab portal gate open ho (portal cookie set ho chuka ho).
+  // Pehle ye effect mount par turant chalta tha → cookie nahi milne par 401 aata
+  // tha aur refresh ke baad hi data dikhta tha.
+  useEffect(() => { if (open && id) load(); }, [open, id, load]);
 
   const set = (k: keyof Creds) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setCreds((c) => ({ ...c, [k]: e.target.value }));
@@ -314,6 +318,7 @@ export default function ClientDetailPage() {
       badge="Seller Portal"
       title="Client Details"
       description="Har client ka license, activations aur Supabase/GitHub/Vercel credentials — ek jagah."
+      onOpen={() => setOpen(true)}
     >
       <div className="space-y-5">
         {/* Header */}

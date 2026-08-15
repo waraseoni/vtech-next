@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Loader2, RefreshCw, ShieldCheck, Store, Clock, Ban, AlertTriangle, Users,
   Package, Download, X, Eye, EyeOff, Rocket, Globe,
@@ -135,8 +135,6 @@ export default function DeveloperPage() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   const openKit = useCallback(async (row: Row) => {
     setKitFor(row);
     setPrefill(null);
@@ -251,6 +249,7 @@ export default function DeveloperPage() {
       badge="Developer Portal"
       title="Licensing + Setup Kit"
       description="Clients ke license dekho, aur ek click mein unka Setup Kit (client package) banao aur download karo."
+      onOpen={load}
     >
       <div className="space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">

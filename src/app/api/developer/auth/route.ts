@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
-import { isPortalEnabled, requireDev, setPortalCookie, verifyPortalPassword } from "@/lib/portal-auth";
+import { clearPortalCookie, isPortalEnabled, requireDev, setPortalCookie, verifyPortalPassword } from "@/lib/portal-auth";
 
 // Developer portal password gate — double password ka doosra step.
 // Password #1 = admin/developer login, password #2 = ye env password.
@@ -23,5 +23,11 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   const auth = await requireDev();
   if (!auth) return NextResponse.json({ ok: false }, { status: 401 });
+  return NextResponse.json({ ok: true });
+}
+
+// Portal logout — portal cookie clear (app login intact rahta hai).
+export async function DELETE() {
+  await clearPortalCookie("dev");
   return NextResponse.json({ ok: true });
 }

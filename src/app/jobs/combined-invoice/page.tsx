@@ -130,7 +130,7 @@ export default function CombinedInvoicePage() {
   }, [statusFilter]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- client select hone par jobs fetch; loading init sync legit
+    // client select hone par jobs fetch; loading init sync legit
     if (selectedClient) loadJobs(selectedClient.id);
   }, [selectedClient, loadJobs]);
 
