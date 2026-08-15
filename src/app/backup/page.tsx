@@ -487,7 +487,9 @@ export default function BackupPage() {
               }
               const v = r[imgCol];
               if (typeof v === "string" && v.trim() !== "" && !v.includes(STORAGE_URL_MARKER)) {
-                delete r[imgCol];
+                // DON'T delete the property, otherwise it triggers NOT NULL constraint errors
+                // We keep the dead path so that the 'Repair Images' button can fix it later.
+                r[imgCol] = v; 
               }
             }
             return r;
