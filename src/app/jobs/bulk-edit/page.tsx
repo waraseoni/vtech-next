@@ -163,7 +163,7 @@ export default function BulkEditPage() {
         updated++;
       }
       setToast({ type: "success", msg: `${updated} transactions update ho gaye! ✅` });
-      setTimeout(() => router.push("/jobs"), 1200);
+      setTimeout(() => router.replace("/jobs"), 1200);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Save failed!";
       setToast({ type: "error", msg });

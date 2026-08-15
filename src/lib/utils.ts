@@ -1,3 +1,18 @@
+// Browser history empty hone par (direct URL/bookmark/refresh) router.back() kuch
+// nahi karta — isliye fallback path pe push karte hain taaki "Back" hamesha kaam kare.
+// NOTE: history.length tab-global hai (fresh tab / target=_blank me bhi >1 ho sakta hai),
+// isliye deep-link entry par back() tab ke purane page par le ja sakta hai — fallback
+// sirf history.length <= 1 hone par fire hota hai (rare). Loop risk nahi hai.
+type BackRouter = { back: () => void; push: (url: string) => void };
+
+export function safeBack(router: BackRouter, fallback: string): void {
+  if (typeof window !== "undefined" && window.history.length > 1) {
+    router.back();
+  } else {
+    router.push(fallback);
+  }
+}
+
 export function numberToWords(num: number): string {
   if (num === 0) return 'Zero';
   const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];

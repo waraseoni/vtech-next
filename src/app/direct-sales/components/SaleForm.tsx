@@ -8,6 +8,7 @@ import {
   AlertTriangle, Minus, UserCog, Search,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
+import { safeBack } from "@/lib/utils";
 import SearchableSelect from "@/components/SearchableSelect";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -391,7 +392,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
         await logActivity('Updated Direct Sale', 'Sales', resultId, `Updated Sale #${originalSaleData?.sale_code} (Grand Total: Rs.${totalAmount})`);
       }
 
-      router.push(`/direct-sales/${resultId}/view`);
+      router.replace(`/direct-sales/${resultId}/view`);
     } catch (err) {
       setFormError("Save failed: " + (err instanceof Error ? err.message : "Unknown error"));
     } finally {
@@ -703,7 +704,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
         </div>
 
         <div className="flex gap-2.5">
-          <button type="button" onClick={() => router.back()}
+          <button type="button" onClick={() => safeBack(router, "/direct-sales")}
             className="px-5 py-2.5 bg-[#111520] hover:bg-white/5 border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-sm font-extrabold transition-all">
             Cancel
           </button>

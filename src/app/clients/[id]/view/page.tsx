@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import Image from 'next/image';
 import { openImageLightbox } from '@/components/ImageLightbox';
+import { safeBack } from '@/lib/utils';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, Edit3, Phone, MapPin, Loader2, User, Calendar,
@@ -675,7 +676,7 @@ export default function ViewClientProfile() {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 theme-body">
         <p className="text-red-400 font-bold">{error || 'Client not found'}</p>
-        <button onClick={() => router.back()} className="text-blue-400 hover:underline">Go Back</button>
+        <button onClick={() => safeBack(router, "/clients")} className="text-blue-400 hover:underline">Go Back</button>
       </div>
     );
   }
@@ -803,7 +804,7 @@ export default function ViewClientProfile() {
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all no-underline">
               <Printer size={15} /> Print Ledger
             </Link>
-            <button onClick={() => router.back()}
+            <button onClick={() => safeBack(router, "/clients")}
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all">
               <ArrowLeft size={15} /> Back
             </button>

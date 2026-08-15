@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Save, ArrowLeft, UserPlus, Loader2, Edit3, AlertTriangle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { logActivity } from '@/lib/activity';
+import { safeBack } from '@/lib/utils';
 
 // ── DARK THEME CONSTANTS ──────────────────────────────────
 const inputCls = "w-full px-4 py-3 rounded-xl bg-[#0d1117] border border-[#21293d] text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 outline-none transition-all text-sm font-medium";
@@ -82,7 +83,7 @@ export default function ManageClientPage() {
         });
       } catch (err) {
         alert('Error loading client: ' + (err instanceof Error ? err.message : String(err)));
-        router.back();
+        safeBack(router, '/clients');
       } finally {
         setFetchLoading(false);
       }
@@ -199,7 +200,7 @@ export default function ManageClientPage() {
         if (error) throw error;
         await logActivity('Created New Client', 'Clients', data.id, `Client: ${clientName}`);
       }
-      router.push('/clients');
+      router.replace('/clients');
     } catch (err) {
       alert('Error: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -222,7 +223,7 @@ export default function ManageClientPage() {
 
         {/* ── TOP BAR ── */}
         <div className="flex items-center justify-between">
-          <button onClick={() => router.back()} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-bold">
+          <button onClick={() => safeBack(router, '/clients')} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-bold">
             <ArrowLeft size={18} /> Back
           </button>
           <Link href="/clients" className="text-xs text-slate-600 hover:text-slate-400 transition-colors font-medium">
@@ -397,7 +398,7 @@ export default function ManageClientPage() {
                 }
               </button>
               <button
-                type="button" onClick={() => router.back()}
+                type="button" onClick={() => safeBack(router, '/clients')}
                 className="flex-1 sm:flex-none sm:px-8 py-3 rounded-xl font-bold text-sm bg-[#21293d] hover:bg-[#2a3550] text-slate-300 transition-all"
               >
                 Cancel

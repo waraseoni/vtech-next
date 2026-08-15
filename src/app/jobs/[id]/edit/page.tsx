@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect, use, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { safeBack } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import {
   Save, ArrowLeft, Loader2,
   Wrench, Package, Hash, User, AlertCircle, CheckCircle2,
@@ -551,7 +551,7 @@ export default function ManageJobPage({
       }
 
       setToast({ type: "success", msg: isEdit ? "Job update ho gaya! ✅" : "Naya job create ho gaya! ✅" });
-      setTimeout(() => router.push(`/jobs/${txnId}/view`), 1000);
+      setTimeout(() => router.replace(`/jobs/${txnId}/view`), 1000);
 
     } catch (e) {
       console.error("save error:", e instanceof Error ? e.message : JSON.stringify(e));
@@ -706,12 +706,12 @@ export default function ManageJobPage({
             style={{ backgroundImage: "radial-gradient(circle,#fff 1px,transparent 1px)", backgroundSize: "24px 24px" }} />
           <div className="absolute -top-12 -right-12 w-48 h-48 bg-blue-600/8 rounded-full blur-3xl pointer-events-none" />
           <div className="relative flex items-center gap-4">
-            <Link
-              href={isEdit ? `/jobs/${jobId}/view` : "/jobs"}
+            <button
+              onClick={() => safeBack(router, "/jobs")}
               className="w-10 h-10 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-slate-500 rounded-xl text-slate-500 hover:text-white transition-all flex-shrink-0"
             >
               <ArrowLeft size={17} />
-            </Link>
+            </button>
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 ${
                 isEdit
@@ -1025,12 +1025,12 @@ export default function ManageJobPage({
               ? <><Loader2 size={17} className="animate-spin" />Saving…</>
               : <><Save size={17} strokeWidth={2.5} />{isEdit ? "Update Job" : "Create Job"}</>}
           </button>
-          <Link
-            href={isEdit ? `/jobs/${jobId}/view` : "/jobs"}
-            className="px-6 py-3.5 bg-[#111520] border border-[#21293d] hover:border-slate-500 text-slate-400 hover:text-white rounded-2xl font-bold text-sm transition-all no-underline"
+          <button
+            onClick={() => safeBack(router, "/jobs")}
+            className="px-6 py-3.5 bg-[#111520] border border-[#21293d] hover:border-slate-500 text-slate-400 hover:text-white rounded-2xl font-bold text-sm transition-all"
           >
             Cancel
-          </Link>
+          </button>
         </div>
 
       </div>

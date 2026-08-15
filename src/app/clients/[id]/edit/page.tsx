@@ -7,6 +7,7 @@ import {
   CheckCircle2, AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { safeBack } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STYLE CONSTANTS (dark theme)
@@ -168,7 +169,7 @@ export default function ManageClientPage() {
           .eq("id", clientId);
         if (error) throw error;
         setToast({ type: "success", msg: "Client update ho gaya! ✅" });
-        setTimeout(() => router.push("/clients"), 1000);
+        setTimeout(() => router.replace("/clients"), 1000);
       } else {
         // BUG FIX — DUPLICATE KEY (client_list_pkey):
         // Root cause: MySQL had AUTO_INCREMENT=271 but Supabase sequence was NOT reset
@@ -201,7 +202,7 @@ export default function ManageClientPage() {
           throw error;
         }
         setToast({ type: "success", msg: "New client add ho gaya! ✅" });
-        setTimeout(() => router.push("/clients"), 1000);
+        setTimeout(() => router.replace("/clients"), 1000);
       }
     } catch (err) {
       console.error("save error:", err instanceof Error ? err.message : JSON.stringify(err));
@@ -244,7 +245,7 @@ export default function ManageClientPage() {
         {/* Top Bar */}
         <div className="flex items-center justify-between">
           <button
-            onClick={() => router.back()}
+                onClick={() => safeBack(router, "/clients")}
             className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-bold"
           >
             <ArrowLeft size={18} /> Back
@@ -415,7 +416,7 @@ export default function ManageClientPage() {
               </button>
               <button
                 type="button"
-                onClick={() => router.back()}
+            onClick={() => safeBack(router, "/clients")}
                 className="flex-1 sm:flex-none sm:px-8 py-3 rounded-xl font-bold text-sm bg-[#21293d] hover:bg-[#2a3550] text-slate-300 transition-all"
               >
                 Cancel

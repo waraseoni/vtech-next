@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { safeBack } from "@/lib/utils";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import {
@@ -344,7 +345,7 @@ export default function JobDetailsPage() {
     if (!confirm("Kya aap pakka is job ko delete karna chahte hain?")) return;
     setDeleting(true);
     const { error } = await supabase.from("transaction_list").update({ del_status: 1 }).eq("id", jobId);
-    if (!error) router.push("/jobs");
+    if (!error) router.replace("/jobs");
     else { setToast({ type: "error", msg: "Delete failed!" }); setDeleting(false); }
   };
 
@@ -440,7 +441,7 @@ ${svcHtml}${prodHtml}
                   className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
                   <Printer size={12}/> Print Bill
                 </button>
-                <button onClick={() => router.back()}
+                <button onClick={() => safeBack(router, "/jobs")}
                   className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors">
                   <ArrowLeft size={12}/> Back
                 </button>

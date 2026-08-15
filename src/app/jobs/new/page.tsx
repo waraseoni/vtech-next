@@ -555,7 +555,7 @@ function ManageJobPageInner({
       }
 
       setToast({ type: "success", msg: isEdit ? "Job update ho gaya! ✅" : "Naya job create ho gaya! ✅" });
-      setTimeout(() => router.push(`/jobs/${txnId}/view`), 1000);
+      setTimeout(() => router.replace(`/jobs/${txnId}/view`), 1000);
 
     } catch (e) {
       console.error("save error:", e instanceof Error ? e.message : JSON.stringify(e));

@@ -261,7 +261,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
               <Edit3 size={13} /> Edit
             </Link>
             {userRole === "admin" && (
-              <button onClick={() => { if(confirm(`"${clientName}" ko delete karein?`)) router.push("/clients"); }} className="flex items-center gap-1.5 px-3 py-2 bg-red-600/20 border border-red-500/30 hover:bg-red-600 text-red-400 rounded-xl text-xs font-bold transition-all">
+              <button onClick={() => { if(confirm(`"${clientName}" ko delete karein?`)) router.replace("/clients"); }} className="flex items-center gap-1.5 px-3 py-2 bg-red-600/20 border border-red-500/30 hover:bg-red-600 text-red-400 rounded-xl text-xs font-bold transition-all">
                 <Trash2 size={13} /> Delete
               </button>
             )}

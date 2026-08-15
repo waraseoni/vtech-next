@@ -1540,32 +1540,34 @@ function JobsListContent() {
                   )}
                 </div>
 
-                {/* Action Buttons (6 grid) */}
-                <div className="grid grid-cols-3 gap-1.5 p-3 bg-[#111520] border-t border-[#21293d]">
-                  {[
-                    { href: `/jobs/${txn.id}`,          icon: Eye,      label: "View",     border: "border-blue-500/20",    text: "text-blue-400"    },
-                    { href: null,                        icon: Phone,    label: "WhatsApp", border: "border-emerald-500/20", text: "text-emerald-400", onClick: () => sendWA(txn) },
-                    { href: `/api/print-bill?job_id=${txn.job_id}`, icon: Printer, label: "Print", border: "border-orange-500/20", text: "text-orange-400", target: "_blank" },
-                    { href: `/api/print-bill?job_id=${txn.job_id}&type=thermal`, icon: Printer, label: "Thermal", border: "border-yellow-500/20", text: "text-yellow-400", target: "_blank" },
-                    { href: `/jobs/${txn.id}/old`,     icon: History,  label: "Old Edit", border: "border-cyan-500/20",   text: "text-cyan-400"    },
-                    { href: `/jobs/edit/${txn.id}`,      icon: Settings, label: "Edit",     border: "border-indigo-500/20", text: "text-indigo-400"  },
-                  ].map(({ href, icon: Icon, label, border, text, onClick, target }) =>
-                    href ? (
-                      <a key={label} href={href} target={target}
-                        className={`flex flex-col items-center p-2 bg-[#161b27] rounded-xl border ${border} ${text} text-[9px] font-bold gap-1 hover:opacity-80 transition-all`}>
-                        <Icon size={14} /><span>{label}</span>
-                      </a>
-                    ) : (
-                      <button key={label} onClick={onClick}
-                        className={`flex flex-col items-center p-2 bg-[#161b27] rounded-xl border ${border} ${text} text-[9px] font-bold gap-1 hover:opacity-80 transition-all`}>
-                        <Icon size={14} /><span>{label}</span>
-                      </button>
-                    )
-                  )}
+                {/* Action Buttons (6 grid + delete full-width) */}
+                <div className="p-3 bg-[#111520] border-t border-[#21293d] space-y-1.5">
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { href: `/jobs/${txn.id}`,          icon: Eye,      label: "View",     border: "border-blue-500/20",    text: "text-blue-400"    },
+                      { href: null,                        icon: Phone,    label: "WhatsApp", border: "border-emerald-500/20", text: "text-emerald-400", onClick: () => sendWA(txn) },
+                      { href: `/api/print-bill?job_id=${txn.job_id}`, icon: Printer, label: "Print", border: "border-orange-500/20", text: "text-orange-400", target: "_blank" },
+                      { href: `/api/print-bill?job_id=${txn.job_id}&type=thermal`, icon: Printer, label: "Thermal", border: "border-yellow-500/20", text: "text-yellow-400", target: "_blank" },
+                      { href: `/jobs/${txn.id}/old`,     icon: History,  label: "Old Edit", border: "border-cyan-500/20",   text: "text-cyan-400"    },
+                      { href: `/jobs/${txn.id}/edit`,      icon: Settings, label: "Edit",     border: "border-indigo-500/20", text: "text-indigo-400"  },
+                    ].map(({ href, icon: Icon, label, border, text, onClick, target }) =>
+                      href ? (
+                        <a key={label} href={href} target={target}
+                          className={`flex flex-col items-center p-2 bg-[#161b27] rounded-xl border ${border} ${text} text-[9px] font-bold gap-1 hover:opacity-80 active:scale-95 transition-all`}>
+                          <Icon size={14} /><span>{label}</span>
+                        </a>
+                      ) : (
+                        <button key={label} onClick={onClick}
+                          className={`flex flex-col items-center p-2 bg-[#161b27] rounded-xl border ${border} ${text} text-[9px] font-bold gap-1 hover:opacity-80 active:scale-95 transition-all`}>
+                          <Icon size={14} /><span>{label}</span>
+                        </button>
+                      )
+                    )}
+                  </div>
                   {userRole === "admin" && (
                     <button onClick={() => handleDelete(txn.id)}
-                      className="flex flex-col items-center p-2 bg-[#161b27] rounded-xl border border-red-500/20 text-red-400 text-[9px] font-bold gap-1 hover:opacity-80 transition-all">
-                      <Trash2 size={14} /><span>Delete</span>
+                      className="w-full flex items-center justify-center gap-1.5 p-2 bg-red-500/10 rounded-xl border border-red-500/25 text-red-400 text-[9px] font-bold hover:bg-red-500/20 active:scale-[0.98] transition-all">
+                      <Trash2 size={13} /><span>Delete</span>
                     </button>
                   )}
                 </div>
