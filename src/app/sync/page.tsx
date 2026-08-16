@@ -23,6 +23,8 @@ type SyncInfo = {
   mariadb: { host: string; port: number; db: string };
   mode: "auto" | "manual" | "off";
   task_enabled: boolean | null;
+  watcher_enabled: boolean | null;
+  pending: boolean;
   scheduled: boolean;
   schedule_note: string;
   log_file: string;
@@ -58,6 +60,7 @@ export default function SyncPage() {
   const [changingMode, setChangingMode] = useState(false);
   const [error, setError] = useState("");
   const [denied, setDenied] = useState(false);
+  const [requestedMsg, setRequestedMsg] = useState("");
 
   const load = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
@@ -68,6 +71,7 @@ export default function SyncPage() {
       const json = await res.json();
       setInfo(json);
       setError("");
+      setRequestedMsg("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "API load fail");
     } finally {
@@ -81,11 +85,13 @@ export default function SyncPage() {
     if (syncing) return;
     setSyncing(true);
     setError("");
+    setRequestedMsg("");
     try {
       const res = await fetch("/api/sync", { method: "POST" });
       const json = await res.json();
-      if (json.status === "ok") {
-        setInfo((prev) => prev ? { ...prev, history: json.history } : prev);
+      if (json.status === "ok" || json.status === "requested") {
+        setInfo((prev) => prev ? { ...prev, history: json.history, pending: json.pending ?? false } : prev);
+        if (json.status === "requested" && json.message) setRequestedMsg(json.message);
       } else {
         setError(json.error || "Sync failed");
         if (json.history) setInfo((prev) => prev ? { ...prev, history: json.history } : prev);
@@ -170,6 +176,17 @@ export default function SyncPage() {
         </div>
       </div>
 
+      {/* Pending remote request */}
+      {!loading && info?.pending && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl px-5 py-3.5 flex items-center gap-3">
+          <Loader2 size={15} className="animate-spin text-amber-400 flex-shrink-0" />
+          <p className="text-amber-400 text-sm font-medium">
+            Remote sync request pending hai — shop PC ka watcher ise ~1 min me execute
+            karega. Kuch der baad Refresh dabao.
+          </p>
+        </div>
+      )}
+
       {/* Sync Mode selector */}
       {!loading && info && (
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
@@ -184,6 +201,9 @@ export default function SyncPage() {
                 <span className={mode === "auto" ? "text-emerald-400" : "text-slate-500"}>
                   {info.task_enabled ? "ON" : "OFF"}
                 </span>
+                {info.watcher_enabled !== null && (
+                  <> · Watcher: <span className="text-emerald-400">{info.watcher_enabled ? "ON" : "OFF"}</span></>
+                )}
               </span>
             )}
           </div>
@@ -220,6 +240,14 @@ export default function SyncPage() {
           <p className="text-emerald-400 text-sm font-medium">
             Supabase se saara data MariaDB me copy ho raha hai… (30-60 sec lagte hain)
           </p>
+        </div>
+      )}
+
+      {/* Requested (remote) banner */}
+      {requestedMsg && (
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl px-5 py-3.5 flex items-center gap-3">
+          <CheckCircle size={15} className="text-emerald-400 flex-shrink-0" />
+          <p className="text-emerald-400 text-sm font-medium">{requestedMsg}</p>
         </div>
       )}
 
