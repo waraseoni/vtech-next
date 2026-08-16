@@ -8,8 +8,9 @@ import {
   Settings2, Save, Loader2, CheckCircle, AlertCircle,
   Building2, Phone, Mail, MapPin, Tag, ShieldCheck,
   Clock, Pen, Trash2, Upload, Eye, EyeOff, User, Image as ImageIcon,
-  History, KeyRound,
+  History, KeyRound, Bell,
 } from "lucide-react";
+import NotificationSettings from "@/components/NotificationSettings";
 
 const inputCls  = "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
 const labelCls  = "block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5";
@@ -953,6 +954,15 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Push Notifications */}
+          <div className={fieldsets}>
+            <div className={`${fHdr} from-blue-600/20 to-transparent`}>
+              <Bell size={14} className="text-blue-400"/>
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Push Notifications</h3>
+            </div>
+            <NotificationSettings />
           </div>
 
           {/* License Activation */}

@@ -111,3 +111,7 @@ db folder/
 # 18. Client packages & per-client secrets (generate karo, kabhi push mat karo)
 packages/
 scripts/clients.json
+# 19. Kapil's env backup + legacy MariaDB dump (do not commit)
+.env.local.kapil
+mariadb dump/
+

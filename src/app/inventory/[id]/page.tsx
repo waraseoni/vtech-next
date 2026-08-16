@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import { supabase } from "@/lib/supabase";
+import { stockStatusStyle, alertThreshold, stockValue } from "@/lib/inventory";
 import {
   ArrowLeft, Package, Plus, Edit3, Trash2,
   Boxes, MapPin, Calendar,
@@ -23,6 +24,7 @@ interface Product {
   cost_price: number;
   price: number;
   image_path: string | null;
+  alert_quantity?: number;
 }
 
 interface StockIn {
@@ -30,6 +32,7 @@ interface StockIn {
   quantity: number;
   place: string | null;
   stock_date: string;
+  supplier_id?: number | null;
 }
 
 interface StockOut {
@@ -45,48 +48,33 @@ interface StockOut {
 }
 
 // ─── Stock status helper ──────────────────────────────────────────────────────
-const getStockStatus = (avail: number) => {
-  if (avail <= 0) return {
-    label: "Out of Stock", color: "text-red-400",
-    bg: "bg-red-500/10 border-red-500/25", bar: "bg-red-500",
-    barTrack: "bg-red-500/10", glow: "shadow-red-500/20",
-  };
-  if (avail <= 5) return {
-    label: "Low Stock", color: "text-amber-400",
-    bg: "bg-amber-500/10 border-amber-500/25", bar: "bg-amber-400",
-    barTrack: "bg-amber-500/10", glow: "shadow-amber-500/20",
-  };
-  return {
-    label: "In Stock", color: "text-emerald-400",
-    bg: "bg-emerald-500/10 border-emerald-500/25", bar: "bg-emerald-500",
-    barTrack: "bg-emerald-500/10", glow: "shadow-emerald-500/20",
-  };
-};
+const getStockStatus = (avail: number, alertQty = 5) => stockStatusStyle(avail, alertQty);
 
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
 // ─── Mini radial-like progress ring using SVG ─────────────────────────────────
-function StockRing({ available, totalIn }: { available: number; totalIn: number }) {
+function StockRing({ available, totalIn, alertQty = 5 }: { available: number; totalIn: number; alertQty?: number }) {
   const pct  = totalIn > 0 ? Math.max(0, Math.min(100, (available / totalIn) * 100)) : 0;
   const r    = 28;
   const circ = 2 * Math.PI * r;
   const dash = (pct / 100) * circ;
-  const st   = getStockStatus(available);
+  const st   = getStockStatus(available, alertQty);
+  const threshold = alertThreshold(alertQty);
 
   return (
     <div className="relative w-20 h-20 flex items-center justify-center flex-shrink-0">
       <svg className="w-20 h-20 -rotate-90" viewBox="0 0 72 72">
         <circle cx="36" cy="36" r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="6" />
         <circle cx="36" cy="36" r={r} fill="none"
-          stroke={available <= 0 ? "#ef4444" : available <= 5 ? "#f59e0b" : "#10b981"}
+          stroke={available <= 0 ? "#ef4444" : available <= threshold ? "#f59e0b" : "#10b981"}
           strokeWidth="6" strokeLinecap="round"
           strokeDasharray={`${dash} ${circ}`}
           style={{ transition: "stroke-dasharray 1s ease" }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={`text-xl font-black ${st.color}`}>{available}</span>
+        <span className={`text-xl font-black ${st.color}`}>{Math.max(0, available)}</span>
         <span className="text-[8px] text-slate-700 font-bold uppercase tracking-widest">avail</span>
       </div>
     </div>
@@ -103,91 +91,86 @@ export default function ProductDetailPage() {
   const [stockOut,     setStockOut]     = useState<StockOut[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [modalOpen,    setModalOpen]    = useState(false);
-  const [editingStock, setEditingStock] = useState<StockIn | null>(null);
+  const   [editingStock, setEditingStock] = useState<StockIn | null>(null);
   const [stats,        setStats]        = useState({ totalIn: 0, totalSold: 0, available: 0, revenue: 0, stockValue: 0 });
-  const [activeTab,    setActiveTab]    = useState<"in" | "out">("in");
+  const [activeTab,    setActiveTab]    = useState<"in" | "out" | "ledger">("in");
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Product
-      const { data: prod, error: prodErr } = await supabase
-        .from("product_list").select("*").eq("id", productId).single();
+      // Phase 1 — independent lookups in parallel
+      const [prodRes, stockRes, jobRes, saleRes] = await Promise.all([
+        supabase.from("product_list").select("*").eq("id", productId).single(),
+        supabase.from("inventory_list").select("*").eq("product_id", productId).order("stock_date", { ascending: false }),
+        supabase.from("transaction_products").select("qty, price, transaction_id").eq("product_id", productId),
+        supabase.from("direct_sale_items").select("qty, price, sale_id").eq("product_id", productId),
+      ]);
+
+      const { error: prodErr } = prodRes;
       if (prodErr) throw prodErr;
+      const prod = prodRes.data as Product | null;
       setProduct(prod);
 
-      // Stock-in
-      const { data: stockInData } = await supabase
-        .from("inventory_list").select("*").eq("product_id", productId)
-        .order("stock_date", { ascending: false });
-      setStockIn(stockInData || []);
-      const totalIn = stockInData?.reduce((s, r) => s + r.quantity, 0) || 0;
+      const stockInData = stockRes.data || [];
+      setStockIn(stockInData);
+      const totalIn = stockInData.reduce((s, r) => s + r.quantity, 0);
 
-      // Stock-out: Repair Jobs
-      const { data: jobItems } = await supabase
-        .from("transaction_products")
-        .select("qty, price, transaction_id").eq("product_id", productId);
+      const jobItems  = jobRes.data || [];
+      const saleItems = saleRes.data || [];
 
+      // Phase 2 — fetch parent transactions/sales for stock-out in parallel
+      const jobTxns = jobItems.length
+        ? (await supabase.from("transaction_list")
+            .select("id, date_created, job_id, code, status, client_name")
+            .in("id", jobItems.map(i => i.transaction_id)).neq("status", 4)).data || []
+        : [];
+      const sales = saleItems.length
+        ? (await supabase.from("direct_sales")
+            .select("id, date_created, sale_code, client_id").in("id", saleItems.map(i => i.sale_id))).data || []
+        : [];
+
+      // Phase 3 — resolve client names in one batch
+      const cids = [
+        ...new Set([
+          ...jobTxns.map(t => Number(t.client_name)),
+          ...sales.map(s => s.client_id).filter(Boolean),
+        ]),
+      ];
+      const clients = cids.length
+        ? (await supabase.from("client_list").select("id, firstname, middlename, lastname").in("id", cids)).data || []
+        : [];
+      const cMap = new Map(clients.map(c => [
+        c.id, [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ")
+      ]));
+
+      // Build job stock-out rows
       const jobOut: StockOut[] = [];
-      if (jobItems?.length) {
-        const txnIds = jobItems.map(i => i.transaction_id);
-        const { data: txns } = await supabase
-          .from("transaction_list")
-          .select("id, date_created, job_id, code, status, client_name")
-          .in("id", txnIds).neq("status", 4);
+      const tMap = new Map(jobTxns.map(t => [t.id, t]));
+      jobItems.forEach(item => {
+        const t = tMap.get(item.transaction_id);
+        if (t) jobOut.push({
+          id: t.id, date: t.date_created,
+          reference: t.job_id || t.code, type: "Repair Job",
+          client_name: cMap.get(Number(t.client_name)) || "N/A",
+          qty: item.qty, price: item.price, total: item.qty * item.price,
+          link: `/jobs/${t.id}`,
+        });
+      });
 
-        if (txns) {
-          const cids = [...new Set(txns.map(t => Number(t.client_name)))];
-          const { data: clients } = await supabase
-            .from("client_list").select("id, firstname, middlename, lastname").in("id", cids);
-          const cMap = new Map(clients?.map(c => [
-            c.id, [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ")
-          ]));
-          const tMap = new Map(txns.map(t => [t.id, t]));
-          jobItems.forEach(item => {
-            const t = tMap.get(item.transaction_id);
-            if (t) jobOut.push({
-              id: t.id, date: t.date_created,
-              reference: t.job_id || t.code, type: "Repair Job",
-              client_name: cMap.get(Number(t.client_name)) || "N/A",
-              qty: item.qty, price: item.price, total: item.qty * item.price,
-              link: `/jobs/${t.id}`,
-            });
-          });
-        }
-      }
-
-      // Stock-out: Direct Sales
-      const { data: saleItems } = await supabase
-        .from("direct_sale_items")
-        .select("qty, price, sale_id").eq("product_id", productId);
-
+      // Build direct-sale stock-out rows
       const saleOut: StockOut[] = [];
-      if (saleItems?.length) {
-        const saleIds = saleItems.map(i => i.sale_id);
-        const { data: sales } = await supabase
-          .from("direct_sales").select("id, date_created, sale_code, client_id").in("id", saleIds);
-        if (sales) {
-          const cids = [...new Set(sales.map(s => s.client_id).filter(Boolean))];
-          const { data: clients } = await supabase
-            .from("client_list").select("id, firstname, middlename, lastname").in("id", cids);
-          const cMap = new Map(clients?.map(c => [
-            c.id, [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ")
-          ]));
-          const sMap = new Map(sales.map(s => [s.id, s]));
-          saleItems.forEach(item => {
-            const s = sMap.get(item.sale_id);
-            if (s) saleOut.push({
-              id: s.id, date: s.date_created,
-              reference: s.sale_code, type: "Direct Sale",
-              client_name: cMap.get(s.client_id) || "Walk-in",
-              qty: item.qty, price: item.price, total: item.qty * item.price,
-              link: `/direct-sales/${s.id}/view`,
-            });
-          });
-        }
-      }
+      const sMap = new Map(sales.map(s => [s.id, s]));
+      saleItems.forEach(item => {
+        const s = sMap.get(item.sale_id);
+        if (s) saleOut.push({
+          id: s.id, date: s.date_created,
+          reference: s.sale_code, type: "Direct Sale",
+          client_name: cMap.get(s.client_id) || "Walk-in",
+          qty: item.qty, price: item.price, total: item.qty * item.price,
+          link: `/direct-sales/${s.id}/view`,
+        });
+      });
 
       const allOut = [...jobOut, ...saleOut].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -196,8 +179,9 @@ export default function ProductDetailPage() {
 
       const totalSold  = allOut.reduce((s, o) => s + o.qty, 0);
       const revenue    = allOut.reduce((s, o) => s + o.total, 0);
-      const stockValue = (totalIn - totalSold) * (prod?.price || 0);
-      setStats({ totalIn, totalSold, available: totalIn - totalSold, revenue, stockValue });
+      const available  = totalIn - totalSold;
+      const stockVal   = stockValue(available, prod?.price);
+      setStats({ totalIn, totalSold, available, revenue, stockValue: stockVal });
 
     } catch (err) {
       console.error(err);
@@ -219,7 +203,31 @@ export default function ProductDetailPage() {
   };
 
   // ── Computed ───────────────────────────────────────────────────────────────
-  const st  = getStockStatus(stats.available);
+  const st  = getStockStatus(stats.available, product?.alert_quantity);
+  const costVal = Math.max(0, stats.available) * (product?.cost_price || 0);
+
+  // Running-balance ledger (stock-in + stock-out merged chronologically)
+  const ledger = useMemo(() => {
+    type L = {
+      key: string; date: string; label: string; sub: string; link?: string;
+      direction: "in" | "out"; qty: number; balance?: number;
+    };
+    const rows: L[] = [];
+    stockIn.forEach(s => rows.push({
+      key: `in-${s.id}`, date: s.stock_date, direction: "in", qty: s.quantity,
+      label: "Stock In", sub: s.place || "No location",
+    }));
+    stockOut.forEach(o => rows.push({
+      key: `out-${o.type}-${o.id}`, date: o.date, direction: "out", qty: o.qty,
+      label: o.type, sub: o.client_name, link: o.link,
+    }));
+    rows.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    let bal = 0;
+    return rows.map(r => {
+      bal += r.direction === "in" ? r.qty : -r.qty;
+      return { ...r, balance: bal };
+    });
+  }, [stockIn, stockOut]);
 
   // Monthly movement chart data (last 6 months)
   const monthlyOut = useMemo(() => {
@@ -327,9 +335,27 @@ export default function ProductDetailPage() {
                         <IndianRupee size={9} /> MRP: ₹{product.price.toLocaleString("en-IN")}
                       </span>
                     )}
+                    {product.cost_price > 0 && (
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500">
+                        Cost: ₹{product.cost_price.toLocaleString("en-IN")}
+                      </span>
+                    )}
+                    {product.cost_price > 0 && product.price > 0 && (
+                      <span className={`flex items-center gap-1 text-[10px] font-extrabold ${
+                        Math.round(((product.price - product.cost_price) / product.price) * 100) >= 30
+                          ? "text-emerald-400" : "text-amber-400"
+                      }`}>
+                        {Math.round(((product.price - product.cost_price) / product.price) * 100)}% margin
+                      </span>
+                    )}
                     <span className={`flex items-center gap-1 text-[10px] font-extrabold ${st.color}`}>
                       <CircleDot size={9} /> {st.label}
                     </span>
+                    {stats.available < 0 && (
+                      <span className="flex items-center gap-1 text-[10px] font-extrabold text-red-400">
+                        {stats.available} oversold
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -348,13 +374,14 @@ export default function ProductDetailPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 space-y-5">
 
         {/* ── STATS GRID ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
           {[
             { label: "Total In",     value: stats.totalIn,   icon: ArrowDownToLine, color: "text-blue-400",    bg: "from-blue-600/15 to-blue-700/5",    border: "border-blue-500/20"    },
             { label: "Total Sold",   value: stats.totalSold, icon: ArrowUpFromLine, color: "text-purple-400",  bg: "from-purple-600/15 to-purple-700/5", border: "border-purple-500/20"  },
-            { label: "Available",    value: stats.available, icon: Boxes,           color: st.color,           bg: `${st.bg.split(" ")[0].replace("bg-", "from-")} to-transparent`, border: st.bg.split(" ")[1] },
+            { label: "Available",    value: Math.max(0, stats.available), icon: Boxes,           color: st.color,           bg: `${st.bg.split(" ")[0].replace("bg-", "from-")} to-transparent`, border: st.bg.split(" ")[1] },
             { label: "Revenue",      value: `₹${(stats.revenue / 1000).toFixed(1)}K`, icon: IndianRupee, color: "text-teal-400", bg: "from-teal-600/15 to-teal-700/5", border: "border-teal-500/20" },
             { label: "Stock Value",  value: `₹${(stats.stockValue / 1000).toFixed(1)}K`, icon: BarChart3, color: "text-indigo-400", bg: "from-indigo-600/15 to-indigo-700/5", border: "border-indigo-500/20" },
+            { label: "Cost Value",   value: `₹${(costVal / 1000).toFixed(1)}K`, icon: IndianRupee, color: "text-slate-400", bg: "from-slate-600/15 to-slate-700/5", border: "border-slate-500/20" },
           ].map(({ label, value, icon: Icon, color, bg, border }) => (
             <div key={label}
               className={`bg-gradient-to-br ${bg} border ${border} rounded-2xl px-4 py-3.5 flex items-center gap-3 hover:scale-[1.02] transition-transform`}>
@@ -377,12 +404,12 @@ export default function ProductDetailPage() {
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Stock Level</span>
             </div>
             <div className="flex items-center gap-5">
-              <StockRing available={stats.available} totalIn={stats.totalIn} />
+              <StockRing available={stats.available} totalIn={stats.totalIn} alertQty={product?.alert_quantity} />
               <div className="flex-1 space-y-2.5">
                 {[
                   { label: "Total Received", value: stats.totalIn,   color: "bg-blue-500"   },
                   { label: "Total Used/Sold", value: stats.totalSold, color: "bg-purple-500" },
-                  { label: "Available Now",   value: stats.available, color: st.bar          },
+                  { label: "Available Now",   value: Math.max(0, stats.available), color: st.bar          },
                 ].map(({ label, value, color }) => {
                   const barPct = stats.totalIn > 0 ? (value / stats.totalIn) * 100 : 0;
                   return (
@@ -436,16 +463,18 @@ export default function ProductDetailPage() {
           {/* Tab header */}
           <div className="flex border-b border-[#21293d] bg-[#111520]">
             {[
-              { key: "in",  label: "Stock-In History",   icon: ArrowDownToLine, count: stockIn.length,  color: "blue"   },
-              { key: "out", label: "Stock-Out / Usage",  icon: ArrowUpFromLine, count: stockOut.length, color: "purple" },
+              { key: "in",     label: "Stock-In History",   icon: ArrowDownToLine, count: stockIn.length,  color: "blue"   },
+              { key: "out",    label: "Stock-Out / Usage",  icon: ArrowUpFromLine, count: stockOut.length, color: "purple" },
+              { key: "ledger", label: "Ledger / Movement",  icon: Hash,            count: ledger.length,   color: "teal"   },
             ].map(({ key, label, icon: Icon, count, color }) => {
               const active = activeTab === key;
               const colors: Record<string, string> = {
                 blue:   active ? "border-b-2 border-blue-500 text-blue-400"     : "text-slate-600 hover:text-slate-400",
                 purple: active ? "border-b-2 border-purple-500 text-purple-400" : "text-slate-600 hover:text-slate-400",
+                teal:   active ? "border-b-2 border-teal-500 text-teal-400"     : "text-slate-600 hover:text-slate-400",
               };
               return (
-                <button key={key} onClick={() => setActiveTab(key as "in" | "out")}
+                <button key={key} onClick={() => setActiveTab(key as "in" | "out" | "ledger")}
                   className={`flex items-center gap-2 px-5 py-3.5 text-xs font-extrabold uppercase tracking-wider transition-all ${colors[color]}`}>
                   <Icon size={13} />
                   {label}
@@ -603,6 +632,79 @@ export default function ProductDetailPage() {
                       <td className="px-4 py-2.5 text-right font-black text-teal-400 text-sm">
                         ₹{stats.revenue.toLocaleString("en-IN")}
                       </td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          )}
+
+          {/* ── LEDGER / MOVEMENT TABLE ── */}
+          {activeTab === "ledger" && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#21293d]">
+                    {["#", "Date", "Type", "Detail", "Qty", "Balance"].map((h, i) => (
+                      <th key={h} className={`px-5 py-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 ${
+                        i >= 4 ? "text-right" : "text-left"
+                      }`}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#21293d]">
+                  {ledger.map((l, idx) => (
+                    <tr key={l.key} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-5 py-3 text-slate-700 text-xs">{idx + 1}</td>
+                      <td className="px-5 py-3 text-xs text-slate-400 whitespace-nowrap">{fmtDate(l.date)}</td>
+                      <td className="px-5 py-3">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold border ${
+                          l.direction === "in"
+                            ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                            : "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                        }`}>
+                          {l.direction === "in" ? <ArrowDownToLine size={8} /> : <ArrowUpFromLine size={8} />}
+                          {l.direction === "in" ? "IN" : "OUT"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="flex flex-col">
+                          <span className="text-slate-300 text-xs font-semibold">{l.label}</span>
+                          <span className="text-slate-600 text-[10px] truncate max-w-[160px]">
+                            {l.sub}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <span className={`font-black ${l.direction === "in" ? "text-blue-400" : "text-purple-400"}`}>
+                          {l.direction === "in" ? "+" : "-"}{l.qty}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <span className={`font-black text-sm ${
+                          l.balance <= 0 ? "text-red-400" : l.balance <= alertThreshold(product?.alert_quantity) ? "text-amber-400" : "text-emerald-400"
+                        }`}>
+                          {Math.max(0, l.balance)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {ledger.length === 0 && (
+                    <tr><td colSpan={6} className="py-16 text-center">
+                      <Hash size={28} className="mx-auto text-slate-800 mb-2" />
+                      <p className="text-slate-600 text-sm font-bold">No movement yet</p>
+                      <p className="text-slate-700 text-xs mt-1">Chronological stock-in and usage ledger appears here</p>
+                    </td></tr>
+                  )}
+                </tbody>
+                {ledger.length > 0 && (
+                  <tfoot>
+                    <tr className="bg-[#111520] border-t border-[#21293d]">
+                      <td colSpan={4} className="px-5 py-2.5 text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">
+                        {ledger.length} movements
+                      </td>
+                      <td className="px-5 py-2.5 text-right text-slate-600 text-xs font-bold">Net</td>
+                      <td className="px-5 py-2.5 text-right font-black text-emerald-400">{stats.available}</td>
                     </tr>
                   </tfoot>
                 )}

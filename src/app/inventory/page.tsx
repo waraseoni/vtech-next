@@ -4,12 +4,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import { supabase } from "@/lib/supabase";
+import { stockStatusStyle, stockBarColor, alertThreshold, stockValue } from "@/lib/inventory";
 import {
   Package, Search, Eye, Printer, MapPin,
   TrendingDown, AlertTriangle, CheckCircle, XCircle,
   BarChart3, RefreshCw, ArrowUpDown, X,
-  Layers, Zap, ShoppingCart, Boxes,
+  Layers, Zap, ShoppingCart, Boxes, ScanLine, FileText,
 } from "lucide-react";
+import QuickScanModal from "./components/QuickScanModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ProductStock {
@@ -19,27 +21,26 @@ interface ProductStock {
   cost_price: number;
   price: number;
   image_path: string | null;
+  barcode: string | null;
+  alert_quantity: number;
   total_in: number;
   total_sold: number;
   available: number;
+  oversold: number;
   place: string | null;
+  places: string[];
   stock_value: number;
+  cost_value: number;
+  margin_pct: number;
 }
 
 type FilterType = "all" | "in-stock" | "low-stock" | "out-of-stock";
 type SortKey    = "name" | "available" | "total_sold" | "stock_value";
 
-// ─── Stock status helper ──────────────────────────────────────────────────────
-const getStockStatus = (avail: number) => {
-  if (avail <= 0)  return { label: "Out of Stock", short: "OUT",  color: "text-red-400",     bg: "bg-red-500/10 border-red-500/25",     bar: "bg-red-500",     glow: "shadow-red-500/20"    };
-  if (avail <= 5)  return { label: "Low Stock",    short: "LOW",  color: "text-amber-400",   bg: "bg-amber-500/10 border-amber-500/25", bar: "bg-amber-400",   glow: "shadow-amber-500/20"  };
-  return               { label: "In Stock",     short: "OK",   color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/25", bar: "bg-emerald-500", glow: "shadow-emerald-500/20" };
-};
-
 // ─── Mini sparkline bar ───────────────────────────────────────────────────────
-function StockBar({ available, total_in }: { available: number; total_in: number }) {
+function StockBar({ available, total_in, alert_quantity = 5 }: { available: number; total_in: number; alert_quantity?: number }) {
   const pct = total_in > 0 ? Math.max(0, Math.min(100, (available / total_in) * 100)) : 0;
-  const color = available <= 0 ? "bg-red-500" : available <= 5 ? "bg-amber-400" : "bg-emerald-500";
+  const color = stockBarColor(available, alert_quantity);
   return (
     <div className="w-full h-1 bg-white/[0.05] rounded-full overflow-hidden">
       <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${pct}%` }} />
@@ -57,6 +58,9 @@ export default function InventoryPage() {
   const [sortKey,     setSortKey]     = useState<SortKey>("name");
   const [sortAsc,     setSortAsc]     = useState(true);
   const [isMobile,    setIsMobile]    = useState(false);
+  const [scanOpen,    setScanOpen]    = useState(false);
+  const [pageSize,    setPageSize]    = useState(25);
+  const [page,        setPage]        = useState(1);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
@@ -73,7 +77,7 @@ export default function InventoryPage() {
     try {
       const { data: pl } = await supabase
         .from("product_list")
-        .select("id, name, description, cost_price, price, image_path")
+        .select("id, name, description, cost_price, price, image_path, alert_quantity, barcode")
         .eq("delete_flag", 0)
         .order("name");
 
@@ -99,9 +103,15 @@ export default function InventoryPage() {
 
       // Build maps
       const stockMap   = new Map<number, { qty: number; place: string | null }>();
+      const placeMap   = new Map<number, Set<string>>();
       (stockRes.data || []).forEach(r => {
         const prev = stockMap.get(r.product_id) || { qty: 0, place: null };
         stockMap.set(r.product_id, { qty: prev.qty + r.quantity, place: r.place || prev.place });
+        if (r.place) {
+          const set = placeMap.get(r.product_id) || new Set<string>();
+          set.add(r.place);
+          placeMap.set(r.product_id, set);
+        }
       });
 
       const soldJobMap = new Map<number, number>();
@@ -129,11 +139,19 @@ export default function InventoryPage() {
           cost_price:  p.cost_price || 0,
           price:       p.price || 0,
           image_path:  p.image_path || null,
+          barcode:     p.barcode || null,
+          alert_quantity: p.alert_quantity || 5,
           total_in:    s.qty,
           total_sold:  totalSold,
           available,
+          oversold:    Math.max(0, -available),
           place:       s.place,
-          stock_value: available > 0 ? available * (p.price || 0) : 0,
+          places:      Array.from(placeMap.get(p.id) || []),
+          stock_value: stockValue(available, p.price),
+          cost_value:  stockValue(available, p.cost_price),
+          margin_pct:  p.price && p.cost_price != null && p.price > 0
+            ? Math.round(((p.price - (p.cost_price || 0)) / p.price) * 100)
+            : 0,
         };
       });
 
@@ -151,8 +169,8 @@ export default function InventoryPage() {
   // ── Stats ─────────────────────────────────────────────────────────────────
   const stats = useMemo(() => ({
     total:      products.length,
-    inStock:    products.filter(p => p.available > 5).length,
-    lowStock:   products.filter(p => p.available > 0 && p.available <= 5).length,
+    inStock:    products.filter(p => p.available > alertThreshold(p.alert_quantity)).length,
+    lowStock:   products.filter(p => p.available > 0 && p.available <= alertThreshold(p.alert_quantity)).length,
     outOfStock: products.filter(p => p.available <= 0).length,
     totalValue: products.reduce((s, p) => s + p.stock_value, 0),
     totalSold:  products.reduce((s, p) => s + p.total_sold, 0),
@@ -162,10 +180,11 @@ export default function InventoryPage() {
   const filtered = useMemo(() => {
     let list = products.filter(p => {
       const q = searchTerm.toLowerCase();
-      if (q && !p.name.toLowerCase().includes(q) && !p.description.toLowerCase().includes(q)) return false;
-      if (filter === "in-stock"     && !(p.available > 5))                         return false;
-      if (filter === "low-stock"    && !(p.available > 0 && p.available <= 5))     return false;
-      if (filter === "out-of-stock" && p.available > 0)                             return false;
+      if (q && !p.name.toLowerCase().includes(q) && !p.description.toLowerCase().includes(q) && !(p.barcode || "").toLowerCase().includes(q)) return false;
+      const threshold = Math.max(1, p.alert_quantity);
+      if (filter === "in-stock"     && !(p.available > threshold))                  return false;
+      if (filter === "low-stock"    && !(p.available > 0 && p.available <= threshold)) return false;
+      if (filter === "out-of-stock" && p.available > 0)                              return false;
       return true;
     });
 
@@ -180,6 +199,18 @@ export default function InventoryPage() {
 
     return list;
   }, [products, searchTerm, filter, sortKey, sortAsc]);
+
+  // ── Pagination ─────────────────────────────────────────────────────────────
+  const pageCount = Math.max(1, Math.ceil(filtered.length / (pageSize === 0 ? filtered.length : pageSize)));
+  const safePage  = Math.min(page, pageCount);
+  const paginated = useMemo(() => {
+    if (pageSize === 0) return filtered; // "All"
+    const start = (safePage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, pageSize, safePage]);
+
+  // Reset to page 1 whenever the dataset changes shape (search/filter/sort)
+  useEffect(() => { setPage(1); }, [searchTerm, filter, sortKey, sortAsc, pageSize]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(p => !p);
@@ -201,15 +232,16 @@ export default function InventoryPage() {
       <h1>Inventory Report — V-Technologies</h1>
       <p>Generated: ${new Date().toLocaleString("en-IN")}</p>
       <table><thead><tr>
-        <th>#</th><th>Product</th><th>Total In</th><th>Sold</th><th>Available</th><th>Price</th><th>Stock Value</th><th>Status</th>
+        <th>#</th><th>Product</th><th>Total In</th><th>Sold</th><th>Available</th><th>Price</th><th>Stock Value</th><th>Cost Value</th><th>Status</th>
       </tr></thead><tbody>
         ${products.map((p, i) => `<tr>
           <td>${i + 1}</td><td><b>${p.name}</b><br><small>${p.description}</small></td>
           <td>${p.total_in}</td><td>${p.total_sold}</td>
-          <td><b>${p.available}</b></td>
+          <td><b>${Math.max(0, p.available)}</b></td>
           <td>₹${p.price.toFixed(2)}</td>
           <td>₹${p.stock_value.toFixed(2)}</td>
-          <td>${p.available <= 0 ? "Out of Stock" : p.available <= 5 ? "Low Stock" : "In Stock"}</td>
+          <td>₹${p.cost_value.toFixed(2)}</td>
+          <td>${p.available <= 0 ? "Out of Stock" : p.available <= alertThreshold(p.alert_quantity) ? "Low Stock" : "In Stock"}</td>
         </tr>`).join("")}
       </tbody></table>
     </body></html>`);
@@ -267,6 +299,14 @@ export default function InventoryPage() {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-2">
+              <Link href="/inventory/purchase-orders"
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
+                <FileText size={13} /> Purchase Orders
+              </Link>
+              <button onClick={() => setScanOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-500/20">
+                <ScanLine size={13} /> Scan
+              </button>
               <button onClick={() => fetchProducts(true)} disabled={refreshing}
                 className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
                 <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
@@ -312,7 +352,7 @@ export default function InventoryPage() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" size={15} />
             <input
               type="text"
-              placeholder="Search products, descriptions..."
+              placeholder="Search products, descriptions, barcode..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-10 py-2.5 bg-[#161b27] border border-[#21293d] text-slate-200 placeholder-slate-600 rounded-xl text-sm focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all"
@@ -354,9 +394,11 @@ export default function InventoryPage() {
         </div>
 
         {/* Results indicator */}
-        {(searchTerm || filter !== "all") && (
+        {(searchTerm || filter !== "all" || pageSize !== 25) && (
           <div className="mt-2 flex items-center gap-2 text-xs text-slate-600">
-            <span>Showing <span className="text-slate-400 font-bold">{filtered.length}</span> of {products.length} products</span>
+            <span>
+              Showing <span className="text-slate-400 font-bold">{filtered.length === 0 ? 0 : (safePage - 1) * (pageSize || filtered.length) + 1}-{Math.min(safePage * (pageSize || filtered.length), filtered.length)}</span> of {filtered.length} products
+            </span>
             {(searchTerm || filter !== "all") && (
               <button onClick={() => { setSearchTerm(""); setFilter("all"); }}
                 className="text-blue-500 hover:text-blue-400 font-bold">Clear filters</button>
@@ -371,6 +413,7 @@ export default function InventoryPage() {
       {!isMobile && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-[#111520] border-b border-[#21293d]">
@@ -410,6 +453,9 @@ export default function InventoryPage() {
                     </button>
                   </th>
 
+                  <th className="px-4 py-3 text-right text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Cost</th>
+                  <th className="px-4 py-3 text-right text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Margin</th>
+
                   <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Status</th>
                   <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Place</th>
                   <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Action</th>
@@ -417,11 +463,11 @@ export default function InventoryPage() {
               </thead>
 
               <tbody className="divide-y divide-[#21293d]">
-                {filtered.map((p, idx) => {
-                  const st = getStockStatus(p.available);
+                {paginated.map((p, idx) => {
+                  const st = stockStatusStyle(p.available, p.alert_quantity);
                   return (
                     <tr key={p.id} className="group hover:bg-white/[0.02] transition-colors">
-                      <td className="px-4 py-3 text-slate-700 text-xs">{idx + 1}</td>
+                      <td className="px-4 py-3 text-slate-700 text-xs">{pageSize === 0 ? idx + 1 : (safePage - 1) * pageSize + idx + 1}</td>
 
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -443,6 +489,11 @@ export default function InventoryPage() {
                             <div className="text-xs text-slate-600 truncate max-w-[200px]" title={p.description}>
                               {p.description}
                             </div>
+                            {p.barcode && (
+                              <div className="text-[9px] font-mono text-purple-500/70 truncate max-w-[200px]">
+                                {p.barcode}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -451,12 +502,17 @@ export default function InventoryPage() {
                       <td className="px-4 py-3 w-28">
                         <div className="flex flex-col gap-1 items-end">
                           <span className="text-[10px] text-slate-600">{p.total_in} in</span>
-                          <StockBar available={p.available} total_in={p.total_in} />
+                          <StockBar available={p.available} total_in={p.total_in} alert_quantity={p.alert_quantity} />
                         </div>
                       </td>
 
                       <td className={`px-4 py-3 text-right font-black text-lg ${st.color}`}>
-                        {p.available}
+                        {Math.max(0, p.available)}
+                        {p.oversold > 0 && (
+                          <span className="block text-[9px] font-extrabold text-red-400 uppercase tracking-wider">
+                            -{p.oversold} oversold
+                          </span>
+                        )}
                       </td>
 
                       <td className="px-4 py-3 text-right">
@@ -469,6 +525,28 @@ export default function InventoryPage() {
                         </span>
                       </td>
 
+                      <td className="px-4 py-3 text-right">
+                        <span className={`text-xs font-bold ${p.cost_value > 0 ? "text-slate-400" : "text-slate-700"}`}>
+                          {p.cost_value > 0 ? `₹${p.cost_value.toLocaleString("en-IN")}` : "—"}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {p.cost_price && p.price > 0 ? (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                            p.margin_pct >= 30
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                              : p.margin_pct >= 15
+                                ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                                : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          }`}>
+                            {p.margin_pct}%
+                          </span>
+                        ) : (
+                          <span className="text-slate-700 text-xs">—</span>
+                        )}
+                      </td>
+
                       <td className="px-4 py-3 text-center">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${st.bg} ${st.color}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${st.bar}`} />
@@ -477,10 +555,17 @@ export default function InventoryPage() {
                       </td>
 
                       <td className="px-4 py-3 text-center">
-                        {p.place ? (
-                          <span className="flex items-center justify-center gap-1 text-[11px] text-slate-500">
-                            <MapPin size={10} className="text-slate-700" /> {p.place}
-                          </span>
+                        {p.places.length > 0 ? (
+                          <div className="flex flex-wrap items-center justify-center gap-1 max-w-[180px] mx-auto">
+                            {p.places.slice(0, 2).map((pl) => (
+                              <span key={pl} className="inline-flex items-center gap-0.5 text-[10px] text-slate-500 border border-[#21293d] rounded-md px-1.5 py-0.5">
+                                <MapPin size={9} className="text-slate-700" /> {pl}
+                              </span>
+                            ))}
+                            {p.places.length > 2 && (
+                              <span className="text-[10px] text-slate-700 font-bold">+{p.places.length - 2} more</span>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-slate-700 text-[11px]">—</span>
                         )}
@@ -496,9 +581,9 @@ export default function InventoryPage() {
                   );
                 })}
 
-                {filtered.length === 0 && (
+                {paginated.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="py-20 text-center">
+                    <td colSpan={11} className="py-20 text-center">
                       <Package size={36} className="mx-auto text-slate-800 mb-3" />
                       <p className="text-slate-600 font-bold text-sm">No products found</p>
                       <p className="text-slate-700 text-xs mt-1">Try adjusting your search or filter</p>
@@ -508,11 +593,11 @@ export default function InventoryPage() {
               </tbody>
 
               {/* Table Footer Summary */}
-              {filtered.length > 0 && (
+              {paginated.length > 0 && (
                 <tfoot>
                   <tr className="bg-[#111520] border-t border-[#21293d]">
                     <td colSpan={3} className="px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
-                      {filtered.length} products shown
+                      {paginated.length} on this page
                     </td>
                     <td className="px-4 py-2.5 text-right font-black text-slate-400 text-sm">
                       {filtered.reduce((s, p) => s + p.available, 0)}
@@ -523,11 +608,45 @@ export default function InventoryPage() {
                     <td className="px-4 py-2.5 text-right font-black text-teal-400 text-sm">
                       ₹{filtered.reduce((s, p) => s + p.stock_value, 0).toLocaleString("en-IN")}
                     </td>
-                    <td colSpan={3} />
+                    <td className="px-4 py-2.5 text-right font-black text-slate-500 text-sm">
+                      ₹{filtered.reduce((s, p) => s + p.cost_value, 0).toLocaleString("en-IN")}
+                    </td>
+                    <td colSpan={2} />
                   </tr>
                 </tfoot>
               )}
             </table>
+            </div>
+
+            {/* Pagination footer */}
+            {filtered.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-[#21293d] bg-[#111520]">
+                <div className="flex items-center gap-2 text-[11px] text-slate-600 font-bold">
+                  <span>Show</span>
+                  <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))}
+                    className="bg-[#161b27] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60">
+                    {[10, 25, 50, 100, 0].map(n => (
+                      <option key={n} value={n}>{n === 0 ? "All" : n}</option>
+                    ))}
+                  </select>
+                  <span>rows · {filtered.length} total</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage <= 1}
+                    className="px-3 py-1.5 bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                    Prev
+                  </button>
+                  <span className="px-3 py-1.5 text-[11px] font-black text-slate-400 bg-[#161b27] border border-[#21293d] rounded-lg">
+                    {safePage} / {pageCount}
+                  </span>
+                  <button onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={safePage >= pageCount}
+                    className="px-3 py-1.5 bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -537,9 +656,10 @@ export default function InventoryPage() {
       {/* ══════════════════════════════════════════════════════════════════ */}
       {isMobile && (
         <div className="px-3 space-y-3">
-          {filtered.map(p => {
-            const st  = getStockStatus(p.available);
+          {paginated.map(p => {
+            const st  = stockStatusStyle(p.available, p.alert_quantity);
             const pct = p.total_in > 0 ? Math.max(0, Math.min(100, (p.available / p.total_in) * 100)) : 0;
+      const threshold = alertThreshold(p.alert_quantity);
 
             return (
               <div key={p.id}
@@ -547,7 +667,7 @@ export default function InventoryPage() {
 
                 {/* Top accent bar — colored by status */}
                 <div className={`h-0.5 w-full ${
-                  p.available <= 0 ? "bg-red-500" : p.available <= 5 ? "bg-amber-400" : "bg-emerald-500"
+                  p.available <= 0 ? "bg-red-500" : p.available <= threshold ? "bg-amber-400" : "bg-emerald-500"
                 }`} />
 
                 <div className="p-4">
@@ -568,18 +688,26 @@ export default function InventoryPage() {
                       <div className="min-w-0">
                         <div className="font-black text-white text-sm truncate">{p.name}</div>
                         <div className="text-[11px] text-slate-600 truncate mt-0.5">{p.description}</div>
+                        {p.barcode && (
+                          <div className="text-[9px] font-mono text-purple-500/70 truncate mt-0.5">{p.barcode}</div>
+                        )}
                       </div>
                     </div>
                     <span className={`flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-extrabold border ${st.bg} ${st.color}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${st.bar}`} />
                       {st.short}
                     </span>
+                    {p.oversold > 0 && (
+                      <span className="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-extrabold border bg-red-500/10 border-red-500/25 text-red-400">
+                        -{p.oversold} over
+                      </span>
+                    )}
                   </div>
 
                   {/* Stats row */}
                   <div className="grid grid-cols-3 gap-2 mb-3">
                     {[
-                      { label: "Available", value: p.available,  color: st.color },
+                      { label: "Available", value: Math.max(0, p.available),  color: st.color },
                       { label: "Total In",  value: p.total_in,   color: "text-slate-400" },
                       { label: "Sold",      value: p.total_sold, color: "text-purple-400" },
                     ].map(({ label, value, color }) => (
@@ -598,17 +726,19 @@ export default function InventoryPage() {
                     </div>
                     <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
                       <div className={`h-full rounded-full transition-all duration-700 ${
-                        p.available <= 0 ? "bg-red-500" : p.available <= 5 ? "bg-amber-400" : "bg-emerald-500"
+                        p.available <= 0 ? "bg-red-500" : p.available <= threshold ? "bg-amber-400" : "bg-emerald-500"
                       }`} style={{ width: `${pct}%` }} />
                     </div>
                   </div>
 
                   {/* Bottom row */}
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {p.place && (
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {p.places.length > 0 && (
                         <span className="flex items-center gap-1 text-[11px] text-slate-600">
-                          <MapPin size={10} /> {p.place}
+                          <MapPin size={10} />
+                          {p.places.slice(0, 2).join(", ")}
+                          {p.places.length > 2 && <span className="text-slate-700 font-bold">+{p.places.length - 2}</span>}
                         </span>
                       )}
                       {p.stock_value > 0 && (
@@ -627,7 +757,7 @@ export default function InventoryPage() {
             );
           })}
 
-          {filtered.length === 0 && (
+          {paginated.length === 0 && (
             <div className="py-20 text-center bg-[#161b27] border border-dashed border-[#21293d] rounded-2xl">
               <Package size={36} className="mx-auto text-slate-800 mb-3" />
               <p className="text-slate-600 font-bold text-sm">No products match</p>
@@ -635,6 +765,34 @@ export default function InventoryPage() {
                 className="mt-3 text-xs text-blue-500 hover:text-blue-400 font-bold">
                 Clear filters
               </button>
+            </div>
+          )}
+
+          {/* Mobile pagination footer */}
+          {filtered.length > 0 && (
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <div className="flex items-center gap-2 text-[11px] text-slate-600 font-bold">
+                <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))}
+                  className="bg-[#161b27] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1.5 text-[11px] font-bold outline-none focus:border-blue-500/60">
+                  {[10, 25, 50, 100, 0].map(n => (
+                    <option key={n} value={n}>{n === 0 ? "All" : n}</option>
+                  ))}
+                </select>
+                <span>rows</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage <= 1}
+                  className="px-3 py-1.5 bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                  Prev
+                </button>
+                <span className="px-3 py-1.5 text-[11px] font-black text-slate-400 bg-[#161b27] border border-[#21293d] rounded-lg">
+                  {safePage} / {pageCount}
+                </span>
+                <button onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={safePage >= pageCount}
+                  className="px-3 py-1.5 bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -669,7 +827,7 @@ export default function InventoryPage() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-amber-400 text-xs font-extrabold uppercase tracking-wide">
-                {stats.lowStock} product{stats.lowStock > 1 ? "s" : ""} running low (≤5 units)
+                {stats.lowStock} product{stats.lowStock > 1 ? "s" : ""} running low
               </p>
               <p className="text-slate-700 text-[11px] mt-0.5">Consider restocking soon</p>
             </div>
@@ -682,7 +840,7 @@ export default function InventoryPage() {
       )}
 
       {/* ── LOW STOCK QUICK PANEL ── */}
-      {products.some(p => p.available > 0 && p.available <= 5) && (
+      {products.some(p => p.available > 0 && p.available <= alertThreshold(p.alert_quantity)) && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-4">
           <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-3 border-b border-[#21293d] bg-[#111520]">
@@ -690,7 +848,7 @@ export default function InventoryPage() {
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Critical Low Stock</span>
             </div>
             <div className="flex flex-wrap gap-2 p-4">
-              {products.filter(p => p.available > 0 && p.available <= 5).map(p => (
+              {products.filter(p => p.available > 0 && p.available <= alertThreshold(p.alert_quantity)).map(p => (
                 <Link key={p.id} href={`/inventory/${p.id}`}
                   className="flex items-center gap-2 bg-amber-500/5 border border-amber-500/20 hover:border-amber-500/40 px-3 py-2 rounded-xl transition-colors group">
                   <span className="w-5 h-5 bg-amber-500 text-white text-[10px] font-black rounded flex items-center justify-center flex-shrink-0 group-hover:bg-amber-400 transition-colors">
@@ -702,6 +860,14 @@ export default function InventoryPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── QUICK SCAN MODAL ── */}
+      {scanOpen && (
+        <QuickScanModal
+          onClose={() => setScanOpen(false)}
+          onSaved={() => { setScanOpen(false); fetchProducts(); }}
+        />
       )}
 
     </div>

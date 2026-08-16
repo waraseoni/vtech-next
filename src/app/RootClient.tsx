@@ -14,7 +14,7 @@ import {
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
   DollarSign, Truck, CreditCard, Clock, Briefcase, Coins, Receipt,
   Toolbox, FolderOpen, UsersRound, Database, Settings2, MessageSquare,
-  ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert, KeyRound, Code2, Images,
+  ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert, KeyRound, Code2, Images, FileText, Layers,
 } from "lucide-react";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
@@ -261,12 +261,15 @@ function NavbarSearch() {
 
 // ─── Accordion sub-menu ───────────────────────────────────────────────────────
 function SubMenu({
-  title, icon, children, basePath,
+  title, icon, children, basePath, matchPaths,
 }: {
-  title: string; icon: React.ReactNode; children: React.ReactNode; basePath?: string;
+  title: string; icon: React.ReactNode; children: React.ReactNode; basePath?: string; matchPaths?: string[];
 }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(() => !!(basePath && pathname.startsWith(basePath)));
+  const [open, setOpen] = useState(() => {
+    if (basePath && pathname.startsWith(basePath)) return true;
+    return (matchPaths || []).some(p => pathname === p || pathname.startsWith(p + "/"));
+  });
   return (
     <li>
       <button
@@ -308,7 +311,7 @@ function SidebarNav({
 
   if (isClient) {
     return (
-      <nav className="flex-1 overflow-y-auto py-3 px-2 scrollbar-hide">
+      <nav className="flex-1 overflow-y-auto py-3 px-2">
         <ul className="space-y-0.5">
           <li>
             <Link href="/my-account" className={navLinkCls(lk("/my-account", true))} onClick={onNavClick}>
@@ -331,7 +334,7 @@ function SidebarNav({
   }
 
   return (
-    <nav className="flex-1 overflow-y-auto py-3 px-2 scrollbar-hide">
+    <nav className="flex-1 overflow-y-auto py-3 px-2">
       <ul className="space-y-0.5">
         <li>
           <Link href="/dashboard" className={navLinkCls(pathname === "/dashboard")} onClick={onNavClick}>
@@ -359,22 +362,8 @@ function SidebarNav({
           </Link>
         </li>
         <li>
-          <Link href="/inventory" className={navLinkCls(lk("/inventory"))} onClick={onNavClick}>
-            <Package size={16} /><span>Inventory</span>
-          </Link>
-        </li>
-        <li>
           <Link href="/jobs" className={navLinkCls(lk("/jobs"))} onClick={onNavClick}>
             <ClipboardList size={16} /><span>JobSheet</span>
-          </Link>
-        </li>
-
-        <li className="text-[9px] font-black uppercase text-purple-500 tracking-widest px-3 pt-5 pb-1.5 select-none">
-          AI Tools
-        </li>
-        <li>
-          <Link href="/ai" className={navLinkCls(pathname === "/ai")} onClick={onNavClick}>
-            <Sparkles size={16} /><span>AI Assistant</span>
           </Link>
         </li>
 
@@ -406,6 +395,32 @@ function SidebarNav({
             </SubMenu>
 
             <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+              Inventory
+            </li>
+            <SubMenu title="Inventory" icon={<Package size={15} />} basePath="/inventory" matchPaths={["/products", "/suppliers"]}>
+              <li>
+                <Link href="/inventory" className={subLinkCls(pathname === "/inventory" || (pathname.startsWith("/inventory/") && !pathname.startsWith("/inventory/purchase-orders")))} onClick={onNavClick}>
+                  <Package size={12} className="text-emerald-400" />Stock Overview
+                </Link>
+              </li>
+              <li>
+                <Link href="/inventory/purchase-orders" className={subLinkCls(pathname === "/inventory/purchase-orders")} onClick={onNavClick}>
+                  <FileText size={12} className="text-teal-400" />Purchase Orders
+                </Link>
+              </li>
+              <li>
+                <Link href="/products" className={subLinkCls(pathname === "/products")} onClick={onNavClick}>
+                  <Layers size={12} className="text-orange-400" />Products
+                </Link>
+              </li>
+              <li>
+                <Link href="/suppliers" className={subLinkCls(pathname === "/suppliers")} onClick={onNavClick}>
+                  <Truck size={12} className="text-sky-400" />Suppliers
+                </Link>
+              </li>
+            </SubMenu>
+
+            <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
               Back Office
             </li>
             <SubMenu title="Back Office" icon={<Briefcase size={15} />} basePath="/back-office">
@@ -415,8 +430,6 @@ function SidebarNav({
               <li><Link href="/mechanics/salary" className={subLinkCls(pathname === "/mechanics/salary")} onClick={onNavClick}><Coins size={12} />Salary</Link></li>
               <li><Link href="/advance"       className={subLinkCls(pathname === "/advance")}       onClick={onNavClick}><DollarSign size={12} />Advance</Link></li>
               <li><Link href="/services"      className={subLinkCls(pathname === "/services")}      onClick={onNavClick}><Toolbox size={12} />Services</Link></li>
-              <li><Link href="/products"      className={subLinkCls(pathname === "/products")}      onClick={onNavClick}><Package size={12} />Products</Link></li>
-              <li><Link href="/suppliers"    className={subLinkCls(pathname === "/suppliers")}    onClick={onNavClick}><Truck size={12} />Suppliers</Link></li>
               <li><Link href="/mechanics"     className={subLinkCls(pathname.startsWith("/mechanics"))}     onClick={onNavClick}><UsersRound size={12} />Mechanics</Link></li>
               <li><Link href="/mechanics/commission" className={subLinkCls(pathname === "/mechanics/commission")} onClick={onNavClick}><BarChart2 size={12} />Commission History</Link></li>
               <li><Link href="/clients-admin" className={subLinkCls(pathname === "/clients-admin")} onClick={onNavClick}><FolderOpen size={12} />Client Amt</Link></li>
