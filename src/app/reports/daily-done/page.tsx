@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
-import { Loader2, Printer, ChevronLeft, ChevronRight, Calendar, CheckSquare, Wrench, Clock } from "lucide-react";
+import { Loader2, Printer, ChevronLeft, ChevronRight, Calendar, CheckSquare, Wrench, Clock, Package } from "lucide-react";
 import Link from "next/link";
 import { todayIST, formatIST, parseISTDate } from "@/lib/dateUtils";
 
@@ -233,6 +233,10 @@ export default function DailyDoneReportPage() {
             </div>
           </div>
           
+          <Link href="/reports/delivered"
+            className="flex items-center gap-2 px-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition shrink-0 no-underline">
+            <Package size={14} /> Go to Delivered Report
+          </Link>
           <button onClick={handlePrint}
             className="flex items-center gap-2 px-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:bg-[#1a2234] transition shrink-0">
             <Printer size={14} /> Print Report

@@ -15,6 +15,7 @@ import {
   Banknote, Send,
   Plus, X, CheckCircle, FileText,
   RefreshCw, Image as ImageIcon, Upload, Loader,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars } from "@/lib/whatsapp";
@@ -22,6 +23,11 @@ import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
 import { compressImage } from "@/lib/imageCompression";
 
 // ─── IST HELPERS ─────────────────────────────────────────────────────────────
+// Legacy PHP/MariaDB activity logs predate the Next.js handover (Aug 15, 2026)
+// and use `user_id` = id from the PHP `users` table (id 4 = Vikram Jain). The
+// new system uses 0 = Admin or mechanic_list.id (id 4 = Neelesh). Id spaces
+// collide, so resolve names by date against this cutoff.
+const LEGACY_CUTOFF_MS = new Date("2026-08-15T00:00:00.000Z").getTime();
 function fmtDate(d: string | null) {
   if (!d) return "N/A";
   return new Intl.DateTimeFormat("en-IN", {
@@ -34,6 +40,16 @@ function fmtDateTime(d: string | null) {
     timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: true,
   }).format(new Date(d));
+}
+// Compact PHP-style timestamp for timeline: "14/08 20:57"
+function fmtLogTime(d: string | null) {
+  if (!d) return "";
+  const p = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata", day: "2-digit", month: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(new Date(d));
+  const g = (t: string) => p.find(x => x.type === t)?.value ?? "";
+  return `${g("day")}/${g("month")} ${g("hour")}:${g("minute")}`;
 }
 function nowIST(): string {
   const p = new Intl.DateTimeFormat("en-CA", {
@@ -69,6 +85,14 @@ interface JobDetail {
   amount: number; mechanic_amount: number; mechanic_commission_amount: number;
   mechanic_id: number | null; user_id: number; del_status: number; status: number;
   date_created: string; date_updated: string; date_completed: string | null;
+}
+interface ActivityEntry {
+  id: number;
+  user_id: number | string;
+  action: string;
+  module?: string;
+  details: string;
+  date_created: string;
 }
 interface Client {
   id: number; firstname: string; middlename: string;
@@ -171,11 +195,15 @@ export default function JobDetailsPage() {
   const [products, setProducts] = useState<TransactionProduct[]>([]);
   const [services, setServices] = useState<TransactionService[]>([]);
   const [images,   setImages]   = useState<TransactionImage[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityEntry[]>([]);
+  const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [userRole, setUserRole] = useState<string>("staff");
   const [loading,  setLoading]  = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [toast,    setToast]    = useState<Toast | null>(null);
   const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
+  const [prevJob,  setPrevJob]  = useState<{ id: number; job_id: string } | null>(null);
+  const [nextJob,  setNextJob]  = useState<{ id: number; job_id: string } | null>(null);
 
   // ── Item photo upload/delete ─────────────────────────────────
   const [uploading,   setUploading]   = useState(false);
@@ -254,6 +282,51 @@ export default function JobDetailsPage() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  // ── ACTIVITY LOG ────────────────────────────────────────────────────────────
+  // Fetches activity history for this job from BOTH modules:
+  //   - 'Jobs' (new Next.js system logs)
+  //   - 'Transactions' (legacy PHP system logs — already in the same table)
+  const loadActivity = useCallback(async (row: { id: number; job_id?: string } | null) => {
+    if (!row) { setActivityLogs([]); return; }
+    const jobIdStr = String(row.id);
+    const jobNoStr = String(row.job_id ?? "").trim();
+    const metaIds = jobNoStr && jobNoStr !== jobIdStr ? [jobIdStr, jobNoStr] : [jobIdStr];
+    const { data: actRows, error: actErr } = await supabase
+      .from("activity_logs")
+      .select("id, user_id, action, module, details, date_created")
+      .in("module", ["Jobs", "Transactions"])
+      .in("meta_id", metaIds)
+      .order("date_created", { ascending: false })
+      .limit(60);
+    if (actErr) { console.warn("activity fetch:", actErr.message); }
+
+    const actList = (actRows || []).filter(a => a.action && a.date_created) as ActivityEntry[];
+    setActivityLogs(actList);
+    // User names: resolve via server route (users table is RLS-blocked for anon).
+    //   Legacy PHP/MariaDB logs (all modules, before Aug 15 2026) → `users` table
+    //   New system logs → 0 = Admin, else mechanic_list
+    const userIds = [...new Set(actList.map(a => Number(a.user_id)).filter(n => n > 0))];
+    if (userIds.length > 0) {
+      try {
+        const res = await fetch(`/api/activity-users?ids=${userIds.join(",")}`);
+        const json = await res.json();
+        const nm: Record<string, string> = {};
+        (actList || []).forEach(a => {
+          const id = String(a.user_id);
+          const isLegacy = new Date(a.date_created).getTime() < LEGACY_CUTOFF_MS;
+          if (Number(a.user_id) === 0) { nm[id] = "Admin"; }
+          else if (isLegacy && json.users?.[id]) { nm[id] = json.users[id]; }
+          else if (json.mechanics?.[id]) { nm[id] = json.mechanics[id]; }
+          else if (json.users?.[id]) { nm[id] = json.users[id]; }
+          else { nm[id] = `User #${id}`; }
+        });
+        setUserNames(nm);
+      } catch (err) {
+        console.warn("activity user-name fetch:", err);
+      }
+    }
+  }, []);
+
   // ── FETCH ──────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -279,7 +352,21 @@ export default function JobDetailsPage() {
 
       if (jobErr || !jobData) { router.push("/jobs"); return; }
       setJob(jobData as JobDetail);
+      loadActivity(jobData as { id: number; job_id?: string });
       setNewStatus(jobData.status);
+      // Neighboring active jobs for Prev/Next navigation (order by id, newest first)
+      const [prevRes, nextRes] = await Promise.all([
+        supabase.from("transaction_list")
+          .select("id, job_id")
+          .eq("del_status", 0).lt("id", numId)
+          .order("id", { ascending: false }).limit(1),
+        supabase.from("transaction_list")
+          .select("id, job_id")
+          .eq("del_status", 0).gt("id", numId)
+          .order("id", { ascending: true }).limit(1),
+      ]);
+      setPrevJob(prevRes.data?.[0] as { id: number; job_id: string } | null ?? null);
+      setNextJob(nextRes.data?.[0] as { id: number; job_id: string } | null ?? null);
       // Pre-fill delivery date
       setDeliveryDate(toDateInput(jobData.date_completed));
       setDeliveryTime(jobData.date_completed
@@ -287,8 +374,7 @@ export default function JobDetailsPage() {
         : new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date()));
 
       const clientId = Number(jobData.client_name);
-      const [clientRes, mechRes, prodRes, svcRes, imgRes] = await Promise.all([
-        supabase.from("client_list")
+      const [clientRes, mechRes, prodRes, svcRes, imgRes] = await Promise.all([        supabase.from("client_list")
           .select("id, firstname, middlename, lastname, contact, email, address")
           .eq("id", clientId).single(),
         jobData.mechanic_id
@@ -334,7 +420,7 @@ export default function JobDetailsPage() {
 
     } catch (err) { console.error("fetchData:", err); }
     finally { setLoading(false); }
-  }, [jobId, router]);
+  }, [jobId, router, loadActivity]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -379,6 +465,7 @@ export default function JobDetailsPage() {
     } else {
       setJob({ ...job, ...updates } as JobDetail);
       await logActivity('Updated Job Status', 'Jobs', job.job_id, `Status changed to: ${STATUS_MAP[newStatus]?.label}`);
+      loadActivity(job);
       setToast({ type: "success", msg: `Status "${STATUS_MAP[newStatus]?.label}" update ho gaya!` });
       setShowStatusModal(false);
     }
@@ -404,6 +491,7 @@ export default function JobDetailsPage() {
     if (error) { setToast({ type: "error", msg: "Payment save nahi hua: " + error.message }); }
     else {
       await logActivity('Added Job Payment', 'Jobs', job.job_id, `Amount: Rs.${amt}, Mode: ${payMode}, Type: ${payType}`);
+      loadActivity(job);
       setToast({ type: "success", msg: "Payment save ho gayi!" });
       setShowPayModal(false);
       setPayAmount(""); setPayDiscount("0"); setPayRemarks(""); setPayBillNo(""); setPayType("Full"); setPayDate(todayISTStr());
@@ -522,6 +610,16 @@ ${svcHtml}${prodHtml}
                 <button onClick={() => safeBack(router, "/jobs")}
                   className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors">
                   <ArrowLeft size={12}/> Back
+                </button>
+                <button onClick={() => prevJob && router.push(`/jobs/${prevJob.id}/view`)} disabled={!prevJob}
+                  title={prevJob ? `Job ${prevJob.job_id}` : "No previous job"}
+                  className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                  <ChevronLeft size={12}/> Prev
+                </button>
+                <button onClick={() => nextJob && router.push(`/jobs/${nextJob.id}/view`)} disabled={!nextJob}
+                  title={nextJob ? `Job ${nextJob.job_id}` : "No next job"}
+                  className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                  Next <ChevronRight size={12}/>
                 </button>
               </div>
             </div>
@@ -757,76 +855,155 @@ ${svcHtml}${prodHtml}
                     <Send size={16}/> Send Status on WhatsApp
                   </button>
 
-                  {/* Activity Timeline */}
+                  {/* Activity Timeline — Job Created pinned + activity_logs events + current status (actual timing) */}
                   <Fieldset title="Activity Timeline" icon={Clock} color="info">
-                    <div className="space-y-0">
-                      {/* Job Created */}
-                      <div className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className="w-8 h-8 rounded-full bg-blue-500/20 border-2 border-blue-500/50 flex items-center justify-center">
-                            <Plus size={14} className="text-blue-400" />
-                          </div>
-                          {true && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
-                        </div>
-                        <div className="flex-1 pb-4">
-                          <p className="text-sm text-slate-300 font-medium">Job Created</p>
-                          <p className="text-xs text-slate-500">{fmtDateTime(job.date_created)}</p>
-                        </div>
-                      </div>
-
-                      {/* Status based activities */}
-                      {[1, 2, 3, 4, 5].filter(s => s <= job.status).map((s, idx) => {
-                        const statusLabels: Record<number, { label: string; icon: React.ReactNode; color: string }> = {
-                          1: { label: "Marked On-Progress", icon: <Settings2 size={12} />, color: "blue" },
-                          2: { label: "Marked Done", icon: <CheckCircle size={12} />, color: "teal" },
-                          3: { label: "Marked Paid", icon: <Banknote size={12} />, color: "emerald" },
-                          4: { label: "Marked Cancelled", icon: <AlertTriangle size={12} />, color: "red" },
-                          5: { label: "Marked Delivered", icon: <CheckCircle2 size={12} />, color: "purple" },
+                    {(() => {
+                      // Real activity entries — chronological (oldest first)
+                      const entries = activityLogs.slice().reverse();
+                      // Parse status transition from either format:
+                      //   PHP:  "Job ID: 28921, Done → Delivered" / "Bulk Update → Delivered"
+                      //   New:  "Status changed to: Done"
+                      const parseTransition = (details: string): { to: string; from?: string } | null => {
+                        const m1 = details.match(/Status changed to:\s*(.+)/);
+                        if (m1) return { to: m1[1].trim() };
+                        const m2 = details.match(/(?:→|->)\s*([A-Za-z][A-Za-z\s-]*?)\s*$/);
+                        if (m2) {
+                          const arrowIdx = Math.max(details.lastIndexOf("→"), details.lastIndexOf("->"));
+                          const before = details.slice(0, arrowIdx).trim();
+                          const fromMatch = before.match(/,?\s*([A-Za-z][A-Za-z\s-]*)$/);
+                          return { to: m2[1].trim(), from: fromMatch?.[1]?.trim() };
+                        }
+                        return null;
+                      };
+                      const statusColor = (label: string) => {
+                        const map: Record<string, string> = {
+                          "On-Progress": "bg-blue-500/20 border-blue-500/50 text-blue-400",
+                          "Done": "bg-teal-500/20 border-teal-500/50 text-teal-400",
+                          "Paid": "bg-emerald-500/20 border-emerald-500/50 text-emerald-400",
+                          "Cancelled": "bg-red-500/20 border-red-500/50 text-red-400",
+                          "Delivered": "bg-purple-500/20 border-purple-500/50 text-purple-400",
                         };
-                        const st = statusLabels[s];
-                        const colorClasses: Record<string, string> = {
-                          blue: "bg-blue-500/20 border-blue-500/50 text-blue-400",
-                          teal: "bg-teal-500/20 border-teal-500/50 text-teal-400",
-                          emerald: "bg-emerald-500/20 border-emerald-500/50 text-emerald-400",
-                          red: "bg-red-500/20 border-red-500/50 text-red-400",
-                          purple: "bg-purple-500/20 border-purple-500/50 text-purple-400",
+                        return map[label] || "";
+                      };
+                      const statusIcon = (label: string) => {
+                        const map: Record<string, React.ReactNode> = {
+                          "On-Progress": <Settings2 size={13} />,
+                          "Done": <CheckCircle size={13} />,
+                          "Paid": <Banknote size={13} />,
+                          "Cancelled": <AlertTriangle size={13} />,
+                          "Delivered": <CheckCircle2 size={13} />,
                         };
-                        return (
-                          <div key={s} className="flex gap-3">
+                        return map[label] || null;
+                      };
+                      const entryIcon = (act: ActivityEntry, transition: { to: string } | null) => {
+                        const lower = act.action.toLowerCase();
+                        if (lower.includes("payment")) return { icon: <Banknote size={13} />, cls: "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" };
+                        if (lower.includes("deleted")) return { icon: <Trash2 size={13} />, cls: "bg-red-500/20 border-red-500/50 text-red-400" };
+                        if (lower.includes("status") || transition) {
+                          const sc = statusColor(transition?.to || "");
+                          if (sc) return { icon: statusIcon(transition!.to) || <Settings2 size={13} />, cls: sc };
+                          return { icon: <Settings2 size={13} />, cls: "bg-blue-500/20 border-blue-500/50 text-blue-400" };
+                        }
+                        if (lower.includes("update")) return { icon: <Edit size={13} />, cls: "bg-cyan-500/20 border-cyan-500/50 text-cyan-400" };
+                        if (lower.includes("created")) return { icon: <Plus size={13} />, cls: "bg-blue-500/20 border-blue-500/50 text-blue-400" };
+                        return { icon: <Settings2 size={13} />, cls: "bg-blue-500/20 border-blue-500/50 text-blue-400" };
+                      };
+                      const whoName = (user_id: number | string) => {
+                        if (Number(user_id) === 0) return "Admin";
+                        return userNames[String(user_id)] || `User #${user_id}`;
+                      };
+                      const statusBadges = [1, 2, 3, 4, 5].filter(s => s <= job.status);
+                      const fallbackBadges: Record<number, { label: string; icon: React.ReactNode; color: string }> = {
+                        1: { label: "On-Progress", icon: <Settings2 size={12} />, color: "blue" },
+                        2: { label: "Done", icon: <CheckCircle size={12} />, color: "teal" },
+                        3: { label: "Paid", icon: <Banknote size={12} />, color: "emerald" },
+                        4: { label: "Cancelled", icon: <AlertTriangle size={12} />, color: "red" },
+                        5: { label: "Delivered", icon: <CheckCircle2 size={12} />, color: "purple" },
+                      };
+                      const colorClasses: Record<string, string> = {
+                        blue: "bg-blue-500/20 border-blue-500/50 text-blue-400",
+                        teal: "bg-teal-500/20 border-teal-500/50 text-teal-400",
+                        emerald: "bg-emerald-500/20 border-emerald-500/50 text-emerald-400",
+                        red: "bg-red-500/20 border-red-500/50 text-red-400",
+                        purple: "bg-purple-500/20 border-purple-500/50 text-purple-400",
+                      };
+                      return (
+                        <div className="space-y-0">
+                          {/* Job Created — always pinned (real date_created) */}
+                          <div className="flex gap-3">
                             <div className="flex flex-col items-center">
-                              <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${colorClasses[st.color]}`}>
-                                {st.icon}
+                              <div className="w-8 h-8 rounded-full bg-blue-500/20 border-2 border-blue-500/50 flex items-center justify-center">
+                                <Plus size={14} className="text-blue-400" />
                               </div>
-                              {idx < 4 && s < job.status && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
+                              {entries.length > 0 && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
                             </div>
-                            <div className={`flex-1 pb-4 ${s === job.status ? "" : "opacity-60"}`}>
-                              <p className="text-sm text-slate-300 font-medium">{st.label}</p>
-                              {s === 5 && job.date_completed && (
-                                <p className="text-xs text-slate-500">{fmtDateTime(job.date_completed)}</p>
-                              )}
-                              {s !== 5 && (
-                                <p className="text-xs text-slate-500">{fmtDateTime(job.date_updated)}</p>
-                              )}
+                            <div className="flex-1 pb-4">
+                              <p className="text-sm text-slate-300 font-medium">Job Created</p>
+                              <p className="text-[11px] text-slate-600 mt-1">{fmtLogTime(job.date_created)}</p>
                             </div>
                           </div>
-                        );
-                      })}
 
-                      {/* If delivered, show completion */}
-                      {job.status === 5 && (
-                        <div className="flex gap-3">
-                          <div className="flex flex-col items-center">
-                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 border-2 border-emerald-500/50 flex items-center justify-center">
-                              <CheckCircle2 size={14} className="text-emerald-400" />
-                            </div>
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm text-slate-300 font-medium">Job Completed</p>
-                            <p className="text-xs text-slate-500">Delivered on {fmtDateTime(job.date_completed || job.date_updated)}</p>
-                          </div>
+                          {/* Activity log entries — real facts only */}
+                          {entries.map((act, idx) => {
+                            const transition = parseTransition(act.details);
+                            const st = entryIcon(act, transition);
+                            const isLast = idx === entries.length - 1;
+                            const title = act.action;
+                            return (
+                              <div key={act.id ?? idx} className="flex gap-3">
+                                <div className="flex flex-col items-center">
+                                  <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${st.cls}`}>
+                                    {st.icon}
+                                  </div>
+                                  {!isLast && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
+                                </div>
+                                <div className="flex-1 pb-4">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-sm text-slate-300 font-medium">{title}</p>
+                                    {transition?.to && (
+                                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusColor(transition.to) || "border-[#21293d] text-slate-500"}`}>
+                                        {transition.to}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {act.details && act.details !== title && (
+                                    <p className="text-xs text-slate-500 mt-0.5">{act.details}</p>
+                                  )}
+                                  <p className="text-[11px] text-slate-600 mt-1">
+                                    {fmtLogTime(act.date_created)} · <span className="text-slate-500">{whoName(act.user_id)}</span>
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {/* Fallback: no activity logs recorded — show current status (real fields only) */}
+                          {entries.length === 0 && statusBadges.map((s, idx) => {
+                            const st = fallbackBadges[s];
+                            const isLast = idx === statusBadges.length - 1;
+                            return (
+                              <div key={s} className="flex gap-3">
+                                <div className="flex flex-col items-center">
+                                  <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${colorClasses[st.color]}`}>
+                                    {st.icon}
+                                  </div>
+                                  {!isLast && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
+                                </div>
+                                <div className={`flex-1 pb-4 ${s === job.status ? "" : "opacity-60"}`}>
+                                  <p className="text-sm text-slate-300 font-medium">{s === job.status ? `${st.label} (current)` : st.label}</p>
+                                  {s === 5 && job.date_completed && (
+                                    <p className="text-[11px] text-slate-600 mt-1">{fmtLogTime(job.date_completed)}</p>
+                                  )}
+                                  {s !== 5 && (
+                                    <p className="text-[11px] text-slate-600 mt-1">{fmtLogTime(job.date_updated)}</p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      )}
-                    </div>
+                      );
+                    })()}
                   </Fieldset>
                 </div>
               </div>

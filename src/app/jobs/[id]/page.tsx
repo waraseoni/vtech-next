@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { substituteTemplate, firmVars } from "@/lib/whatsapp";
 import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
+import { logActivity } from "@/lib/activity";
 
 // ─── IST HELPERS ─────────────────────────────────────────────────────────────
 function fmtDate(d: string | null) {
@@ -310,6 +311,7 @@ export default function JobDetailsPage() {
       setToast({ type: "error", msg: "Status update failed: " + error.message });
     } else {
       setJob({ ...job, ...updates } as JobDetail);
+      await logActivity('Updated Job Status', 'Jobs', job.job_id, `Status changed to: ${STATUS_MAP[newStatus]?.label}`);
       setToast({ type: "success", msg: `Status "${STATUS_MAP[newStatus]?.label}" update ho gaya!` });
       setShowStatusModal(false);
     }

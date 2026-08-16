@@ -19,9 +19,10 @@ export async function logActivity(action: string, module: string, metaId?: strin
       .eq("id", user.id)
       .single();
 
-    // Map UUID to Integer for DB compatibility
-    // Admin = 0, Staff = mechanic_id
-    const numericUserId = profile?.role === 'admin' ? 0 : (profile?.mechanic_id || 0);
+    // Map UUID to Integer for DB compatibility.
+    // Use mechanic_id when available (so full names resolve on every page),
+    // fall back to 0 (Admin) only for accounts with no linked mechanic.
+    const numericUserId = profile?.mechanic_id || 0;
 
     const { error } = await supabase
       .from("activity_logs")

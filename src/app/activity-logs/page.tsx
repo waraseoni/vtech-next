@@ -23,6 +23,11 @@ interface LogEntry {
 
 const PAGE_SIZES = [10, 25, 50, 100];
 
+// Legacy PHP/MariaDB activity logs predate the Next.js handover (Aug 15, 2026)
+// and use `user_id` = id from the PHP `users` table. The new system uses
+// 0 = Admin or mechanic_list.id. Id spaces collide, so resolve by date.
+const LEGACY_CUTOFF_MS = new Date("2026-08-15T00:00:00.000Z").getTime();
+
 // User avatar — photo ho to photo, warna 1-letter initials (admin amber, staff blue).
 const UserAvatar = ({ image, name, user_id, cls = "w-8 h-8 text-[10px]" }: { image?: string | null; name?: string; user_id: number; cls?: string }) =>
   image ? (
@@ -87,7 +92,16 @@ export default function ActivityLogsPage() {
       const mechIds = [...new Set((data || []).map(l => l.user_id).filter(id => id > 0))];
       const mechsMap = new Map<number, { name: string; image: string | null }>();
 
+      // `users` table (legacy PHP ids) is RLS-blocked for anon → resolve via server route.
+      let usersMap: Record<string, string> = {};
+      let mechanicsMap: Record<string, string> = {};
       if (mechIds.length > 0) {
+        try {
+          const res = await fetch(`/api/activity-users?ids=${mechIds.join(",")}`);
+          const json = await res.json();
+          usersMap = json.users || {};
+          mechanicsMap = json.mechanics || {};
+        } catch {}
         const { data: mechs } = await supabase
           .from("mechanic_list")
           .select("id, firstname, lastname, image_path")
@@ -95,11 +109,22 @@ export default function ActivityLogsPage() {
         mechs?.forEach(m => mechsMap.set(m.id, { name: `${m.firstname} ${m.lastname}`, image: m.image_path || null }));
       }
 
-      const formatted = (data || []).map(l => ({
-        ...l,
-        username: l.user_id === 0 ? "Administrator" : mechsMap.get(l.user_id)?.name || `Staff #${l.user_id}`,
-        user_image: l.user_id === 0 ? null : mechsMap.get(l.user_id)?.image || null
-      }));
+      const formatted = (data || []).map(l => {
+        const id = String(l.user_id);
+        const isLegacy = new Date(l.date_created).getTime() < LEGACY_CUTOFF_MS;
+        let name: string;
+        if (l.user_id === 0) name = "Admin";
+        else if (isLegacy) name = usersMap[id] || `User ${id}`;
+        else name = mechanicsMap[id] || `User ${id}`;
+        // Legacy PHP `users` rows have no mechanic photo — only show images for
+        // real mechanic_list entries from the new system.
+        const image = !isLegacy && l.user_id !== 0 ? mechsMap.get(l.user_id)?.image || null : null;
+        return {
+          ...l,
+          username: name,
+          user_image: image
+        };
+      });
 
       setLogs(formatted);
       setTotalCount(count || 0);

@@ -25,6 +25,13 @@ type LogEntry = {
   };
 };
 
+// Legacy PHP/MariaDB data was restored into the same Supabase table. Its logs
+// use `user_id` = id from the PHP `users` table; the Next.js system (live from
+// Aug 15, 2026) uses 0 = Admin or mechanic_list.id. These id spaces collide
+// (e.g. users.id 4 = Vikram Jain, mechanic_list.id 4 = Neelesh Janjewar), so
+// we resolve by date: anything before this cutoff is a PHP `users` id.
+const LEGACY_CUTOFF_MS = new Date("2026-08-15T00:00:00.000Z").getTime();
+
 export default function ActivityLogPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,24 +95,35 @@ export default function ActivityLogPage() {
         throw new Error(error.message);
       }
 
-      // 2. Fetch User Profiles to map names (Manually mapping to avoid SQL Join complexity/errors)
-      const userIds = Array.from(new Set(data?.map(l => l.user_id).filter(Boolean)));
-      
-      const profilesMap: Record<string, string> = {};
+      // 2. Resolve user names:
+      //    - Legacy PHP/MariaDB logs (all modules, before Next.js handover Aug 15, 2026)
+      //      → `user_id` = id in the PHP `users` table
+      //    - New system logs → 0 = Admin, else mechanic_list.id
+      //    `users` table is RLS-blocked for anon → resolve via server route
+      const userIds = Array.from(new Set(data?.map(l => Number(l.user_id)).filter(n => n > 0)));
+      let usersMap: Record<string, string> = {};
+      let mechanicsMap: Record<string, string> = {};
       if (userIds.length > 0) {
-        const { data: profData } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .in("id", userIds);
-        
-        if (profData) {
-          profData.forEach(p => profilesMap[p.id] = p.full_name);
-        }
+        try {
+          const res = await fetch(`/api/activity-users?ids=${userIds.join(",")}`);
+          const json = await res.json();
+          usersMap = json.users || {};
+          mechanicsMap = json.mechanics || {};
+        } catch {}
       }
+      const nameFor = (log: LogEntry) => {
+        const id = String(log.user_id);
+        if (Number(log.user_id) === 0) return "Admin";
+        // Legacy PHP/MariaDB logs predate the Next.js handover (Aug 15, 2026)
+        // and use `users` table ids across every module — not just 'Transactions'.
+        const isLegacy = new Date(log.date_created).getTime() < LEGACY_CUTOFF_MS;
+        if (isLegacy) return usersMap[id] || `User ${id}`;
+        return mechanicsMap[id] || `User ${id}`;
+      };
 
       const formattedLogs = (data || []).map(log => ({
         ...log,
-        profiles: { full_name: profilesMap[log.user_id] || `User ${log.user_id}` }
+        profiles: { full_name: nameFor(log) }
       }));
 
       setLogs(formattedLogs);

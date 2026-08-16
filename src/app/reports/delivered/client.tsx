@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import {
   Package, Users, TrendingUp, DollarSign, Printer,
   ChevronLeft, ChevronRight, RefreshCw, Eye, MessageCircle,
-  X, Loader2, Filter, CheckCircle2, Receipt
+  X, Loader2, Filter, CheckCircle2, Receipt, CheckSquare
 } from 'lucide-react';
 import { todayIST, formatIST } from '@/lib/dateUtils';
 import SearchableSelect from "@/components/SearchableSelect";
@@ -276,6 +276,10 @@ Mob: 9179105875`;
           <p className="text-xs text-slate-500 mt-0.5">{selectedClientName} • {dateRangeLabel}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/reports/daily-done"
+            className="flex items-center gap-2 px-4 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-teal-500/40 transition-all no-underline">
+            <CheckSquare size={13} /> Go to Done Jobs
+          </Link>
           <button onClick={() => fetchData(true)} disabled={refreshing}
             className="flex items-center gap-2 px-3 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all">
             <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} /> Refresh

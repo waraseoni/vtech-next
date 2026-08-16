@@ -252,35 +252,23 @@ function JobsListContent() {
     return () => document.removeEventListener("mousedown", handler);
   }, [openDropdownId]);
 
-  // ── Fetch (SERVER SIDE PAGINATION & FILTERING) ────────────────────────────
-  const fetchTransactions = useCallback(async () => {
+  // ── Client search (Step 1: foreign key filtering) ─────────────────────────
+  const searchClients = useCallback(async (term: string) => {
+    if (!term) return "";
+    const { data: matchedClients } = await supabase
+      .from("client_list")
+      .select("id")
+      .or(`firstname.ilike.%${term}%,middlename.ilike.%${term}%,lastname.ilike.%${term}%,contact.ilike.%${term}%`);
+    return matchedClients?.map(c => c.id).join(",") || "-1";
+  }, []);
+
+  // ── Quick Stats (exact — no 2k-row cap). Filter-dependent only: NOT re-run
+  //    on pagination, so page changes skip the full-dataset stats scan. ──────
+  const fetchStats = useCallback(async () => {
     try {
-      setLoading(true);
-      
       const term = debouncedSearch.trim().toLowerCase();
-      let matchedClientIds = "";
-      if (term) {
-        // Step 1: Search clients first for foreign key filtering
-        const { data: matchedClients } = await supabase
-          .from("client_list")
-          .select("id")
-          .or(`firstname.ilike.%${term}%,middlename.ilike.%${term}%,lastname.ilike.%${term}%,contact.ilike.%${term}%`);
-        matchedClientIds = matchedClients?.map(c => c.id).join(",") || "-1";
-      }
+      const matchedClientIds = await searchClients(term);
 
-      // Step 2: Apply Filters
-      let query = supabase.from("transaction_list").select("*", { count: "exact" }).eq("del_status", 0);
-      
-      if (dateFrom) query = query.gte("date_created", `${dateFrom}T00:00:00+05:30`);
-      if (dateTo) query = query.lte("date_created", `${dateTo}T23:59:59+05:30`);
-      if (hideDelivered) query = query.neq("status", 5);
-      if (statusFilter !== "") query = query.eq("status", statusFilter);
-      
-      if (term) {
-        query = query.or(`job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`);
-      }
-
-      // ── Quick Stats Query (exact — no 2k-row cap) ──
       const buildStatsQuery = (rangeFrom: number, rangeTo: number) => {
         let q = supabase.from("transaction_list").select("status, amount").eq("del_status", 0).range(rangeFrom, rangeTo);
         if (dateFrom) q = q.gte("date_created", `${dateFrom}T00:00:00+05:30`);
@@ -291,33 +279,63 @@ function JobsListContent() {
         return q;
       };
 
-      // Exact status counts via head queries (no row fetch)
-      const statusCount = async (statuses: number[]) => {
-        let q = supabase.from("transaction_list").select("id", { count: "exact", head: true }).eq("del_status", 0);
-        if (statuses.length === 1) q = q.eq("status", statuses[0]);
-        else if (statuses.length > 1) q = q.in("status", statuses);
-        if (dateFrom) q = q.gte("date_created", `${dateFrom}T00:00:00+05:30`);
-        if (dateTo) q = q.lte("date_created", `${dateTo}T23:59:59+05:30`);
-        if (hideDelivered) q = q.neq("status", 5);
-        if (statusFilter !== "") q = q.eq("status", statusFilter);
-        if (term) q = q.or(`job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`);
-        const { count } = await q;
-        return count || 0;
+      const scanChunk = async (rangeFrom: number, rangeTo: number): Promise<Array<{ status: number; amount: number }>> => {
+        const { data } = await buildStatsQuery(rangeFrom, rangeTo);
+        return (data || []) as Array<{ status: number; amount: number }>;
       };
 
-      // Exact amount sum — paginate past Supabase's 1k row cap
-      const sumAmounts = async () => {
-        let sum = 0;
-        for (let start = 0; ; start += 1000) {
-          const { data } = await buildStatsQuery(start, start + 999);
-          if (!data || data.length === 0) break;
-          sum += data.reduce((s, t) => s + (t.amount || 0), 0);
-          if (data.length < 1000) break;
+      // Exact total first (head query), then scan all chunks in parallel
+      let countQ = supabase.from("transaction_list").select("id", { count: "exact", head: true }).eq("del_status", 0);
+      if (dateFrom) countQ = countQ.gte("date_created", `${dateFrom}T00:00:00+05:30`);
+      if (dateTo) countQ = countQ.lte("date_created", `${dateTo}T23:59:59+05:30`);
+      if (hideDelivered) countQ = countQ.neq("status", 5);
+      if (statusFilter !== "") countQ = countQ.eq("status", statusFilter);
+      if (term) countQ = countQ.or(`job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`);
+      const { count } = await countQ;
+      const total = count || 0;
+
+      const chunkCount = Math.max(1, Math.ceil(total / 1000));
+      const chunks = await Promise.all(
+        Array.from({ length: chunkCount }, (_, i) => scanChunk(i * 1000, i * 1000 + 999))
+      );
+
+      let pending = 0;
+      let progress = 0;
+      let completed = 0;
+      let totalAmt = 0;
+      for (const rows of chunks) {
+        for (const t of rows) {
+          totalAmt += t.amount || 0;
+          if (t.status === 0) pending += 1;
+          else if (t.status === 1) progress += 1;
+          else if (t.status === 2 || t.status === 3 || t.status === 5) completed += 1;
         }
-        return sum;
-      };
+      }
 
-      // ── Execute Page Query ──
+      setStats({ total, pending, progress, completed, totalAmt });
+    } catch (err) {
+      console.error("fetchStats error:", err);
+    }
+  }, [dateFrom, dateTo, hideDelivered, statusFilter, debouncedSearch, searchClients]);
+
+  // ── Page rows (filter + pagination dependent) ─────────────────────────────
+  const fetchPage = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const term = debouncedSearch.trim().toLowerCase();
+      const matchedClientIds = await searchClients(term);
+
+      // Apply Filters
+      let query = supabase.from("transaction_list").select("*", { count: "exact" }).eq("del_status", 0);
+      if (dateFrom) query = query.gte("date_created", `${dateFrom}T00:00:00+05:30`);
+      if (dateTo) query = query.lte("date_created", `${dateTo}T23:59:59+05:30`);
+      if (hideDelivered) query = query.neq("status", 5);
+      if (statusFilter !== "") query = query.eq("status", statusFilter);
+      if (term) {
+        query = query.or(`job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`);
+      }
+
       const from = pageIndex * pageSize;
       const to = from + pageSize - 1;
       // Sort by job_id (newest job first) — date_created ties/backdates and looks "random".
@@ -325,25 +343,10 @@ function JobsListContent() {
       // PostgREST version. All job_ids are currently uniform-width numeric so text sort == numeric sort.
       query = query.order("job_id", { ascending: false }).range(from, to);
 
-      const [pageRes, pending, progress, done, totalAmt] = await Promise.all([
-        query,
-        statusCount([0]),
-        statusCount([1]),
-        statusCount([2, 3, 5]),
-        sumAmounts(),
-      ]);
-
+      const pageRes = await query;
       if (pageRes.error) throw pageRes.error;
-      
-      setTotalRows(pageRes.count || 0);
 
-      setStats({
-        total: pageRes.count || 0,
-        pending,
-        progress,
-        completed: done,
-        totalAmt,
-      });
+      setTotalRows(pageRes.count || 0);
 
       const pageTxns = pageRes.data || [];
       if (!pageTxns.length) {
@@ -422,14 +425,15 @@ function JobsListContent() {
       }));
 
     } catch (err) {
-      console.error("fetchTransactions error:", err);
+      console.error("fetchPage error:", err);
     } finally {
       setHasLoaded(true);
       setLoading(false);
     }
-  }, [dateFrom, dateTo, hideDelivered, statusFilter, debouncedSearch, pageIndex, pageSize]);
+  }, [dateFrom, dateTo, hideDelivered, statusFilter, debouncedSearch, pageIndex, pageSize, searchClients]);
 
-  useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
+  useEffect(() => { fetchStats(); }, [fetchStats]);
+  useEffect(() => { fetchPage(); }, [fetchPage]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const getClientName = (t: Transaction) =>
@@ -463,9 +467,12 @@ function JobsListContent() {
     if (userRole !== "admin") { alert("Permission Denied: Sirf Admin hi delete kar sakta hai!"); return; }
     if (!confirm("Kya aap pakka is job ko delete karna chahte hain?")) return;
     const { error } = await supabase.from("transaction_list").update({ del_status: 1 }).eq("id", id);
-    if (!error) setTransactions(prev => prev.filter(t => t.id !== id));
+    if (!error) {
+      setTransactions(prev => prev.filter(t => t.id !== id));
+      fetchStats();
+    }
     else alert("Delete failed: " + error.message);
-  }, [userRole]);
+  }, [userRole, fetchStats]);
 
   // ── Quick Status Change ────────────────────────────────────────────────────
   const quickStatusChange = async (id: number, newStatus: number) => {
@@ -486,6 +493,7 @@ function JobsListContent() {
       setTransactions(prev => prev.map(t => 
         t.id === id ? { ...t, ...updates } as Transaction : t
       ));
+      fetchStats();
     } else {
       alert("Status update failed: " + error.message);
     }
@@ -538,9 +546,10 @@ function JobsListContent() {
       const statusName = STATUS_MAP[newStatus] || String(newStatus);
       for (const id of ids) {
         const txn = transactions.find(t => t.id === id);
-        await logActivity('Transaction Status Changed', 'Transactions', id, `Job ID: ${txn?.job_id || ""}, Bulk Update → ${statusName}`);
+        await logActivity('Updated Job Status', 'Jobs', txn?.job_id || id, `Status changed to: ${statusName}`);
       }
-      await logActivity('Bulk Status Update', 'Transactions', undefined, `Updated ${ids.length} transactions to status ${statusName}`);
+      await logActivity('Bulk Status Update', 'Jobs', undefined, `Updated ${ids.length} transactions to status ${statusName}`);
+      fetchStats();
     } else {
       alert("Bulk update failed: " + error.message);
     }
@@ -722,7 +731,8 @@ function JobsListContent() {
       setShowQuickCreate(false);
       setQuickForm({ clientName: "", contact: "", item: "", fault: "", mechanicId: "" });
       setQuickClientId(null);
-      fetchTransactions();
+      fetchStats();
+      fetchPage();
       router.push(`/jobs/${data.id}/edit`);
     } catch (e) {
       alert("Error: " + ((e instanceof Error && e.message) ? e.message : "Unknown error"));
