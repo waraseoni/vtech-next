@@ -159,6 +159,7 @@ function ExpensesPageInner() {
   const [toast, setToast] = useState<Toast | null>(null);
 
   const [search, setSearch] = useState(urlSearch);
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [fromDate, setFromDate] = useState(urlFrom);
   const [toDate, setToDate] = useState(urlTo);
 
@@ -276,15 +277,17 @@ function ExpensesPageInner() {
 
   const filteredShopExpenses = useMemo(() => {
     const term = search.toLowerCase().trim();
+    const catFilter = categoryFilter.trim().toLowerCase();
     return shopExpenses.filter((expense) => {
       const dateKey = String(expense.date_created).slice(0, 10);
       if (fromDate && dateKey < fromDate) return false;
       if (toDate && dateKey > toDate) return false;
+      if (catFilter && (expense.category || "").trim().toLowerCase() !== catFilter) return false;
       if (!term) return true;
       const hay = [expense.category, expense.remarks || "", expense.date_created].join(" ").toLowerCase();
       return hay.includes(term);
     });
-  }, [shopExpenses, search, fromDate, toDate]);
+  }, [shopExpenses, search, fromDate, toDate, categoryFilter]);
 
   const staffTotal = useMemo(
     () => filteredStaffPayments.reduce((sum, row) => sum + Number(row.amount || 0), 0),
@@ -294,6 +297,17 @@ function ExpensesPageInner() {
     () => filteredShopExpenses.reduce((sum, row) => sum + Number(row.amount || 0), 0),
     [filteredShopExpenses]
   );
+
+  const categoryOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    shopExpenses.forEach((expense) => {
+      const cat = (expense.category || "").trim();
+      if (!cat) return;
+      const key = cat.toLowerCase();
+      if (!seen.has(key)) seen.set(key, cat);
+    });
+    return [...seen.values()].sort((a, b) => a.localeCompare(b));
+  }, [shopExpenses]);
 
   const applyCurrentMonth = () => {
     const range = monthRangeFrom(todayIST(), 0);
@@ -315,6 +329,7 @@ function ExpensesPageInner() {
 
   const resetFilters = () => {
     setSearch("");
+    setCategoryFilter("");
     applyCurrentMonth();
   };
 
@@ -497,7 +512,11 @@ function ExpensesPageInner() {
         </div>
 
         <div className={`${card} p-4`}>
-          <div className="grid gap-4 lg:grid-cols-[1fr_180px_180px_auto] lg:items-end">
+          <div
+            className={`grid gap-4 lg:items-end ${
+              tab === "shop" ? "lg:grid-cols-[1fr_1fr_180px_180px_auto]" : "lg:grid-cols-[1fr_180px_180px_auto]"
+            }`}
+          >
             <div>
               <label className={label}>Search</label>
               <div className="relative">
@@ -510,6 +529,20 @@ function ExpensesPageInner() {
                 />
               </div>
             </div>
+            {tab === "shop" && (
+              <div>
+                <label className={label}>Category</label>
+                <SearchableSelect
+                  value={categoryFilter || null}
+                  options={categoryOptions.map((cat) => ({ id: cat, label: cat }))}
+                  onSelect={(v) => setCategoryFilter(v)}
+                  placeholder="All categories..."
+                  searchPlaceholder="Category search karo..."
+                  emptyText="Koi category nahi mili"
+                  clearLabel="All Categories"
+                />
+              </div>
+            )}
             <div>
               <label className={label}>From Date</label>
               <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className={input} />
@@ -781,11 +814,20 @@ function ExpensesPageInner() {
             <form onSubmit={saveExpense} className="space-y-4 px-5 py-5">
               <Field title="Category">
                 <input
+                  list="expense-categories"
                   value={expenseForm.category}
                   onChange={(e) => setExpenseForm((prev) => ({ ...prev, category: e.target.value }))}
                   className={input}
                   placeholder="Rent, travel, office, material..."
                 />
+                <datalist id="expense-categories">
+                  {(expenseForm.category.trim() && !categoryOptions.includes(expenseForm.category.trim())
+                    ? [...categoryOptions, expenseForm.category.trim()]
+                    : categoryOptions
+                  ).map((cat) => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field title="Amount">
