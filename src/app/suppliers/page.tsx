@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
-import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Truck, Phone, Mail, MapPin } from "lucide-react";
+import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Truck, Phone, Mail, MapPin, Package, ClipboardList } from "lucide-react";
 
 type Supplier = {
   id: number;
@@ -121,10 +122,20 @@ export default function SuppliersPage() {
               {filtered.length} of {rows.length}
             </span>
           </div>
-          <button onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all">
-            <Plus size={14} /> Add Supplier
-          </button>
+          <div className="flex items-center gap-2">
+            <Link href="/products"
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-bold transition-all">
+              <Package size={13} /> Products
+            </Link>
+            <Link href="/inventory/purchase-orders"
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-bold transition-all">
+              <ClipboardList size={13} /> Purchase Orders
+            </Link>
+            <button onClick={openAdd}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all">
+              <Plus size={14} /> Add Supplier
+            </button>
+          </div>
         </div>
 
         {err && <div className="px-5 py-3 bg-red-500/10 border-b border-red-500/20 text-red-400 text-xs">{err}</div>}
@@ -215,7 +226,7 @@ export default function SuppliersPage() {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
               <h3 className="font-bold text-white flex items-center gap-2">
                 {editing ? <><Edit3 size={16} className="text-blue-400" /> Edit Supplier</> : <><Plus size={16} className="text-blue-400" /> Add Supplier</>}

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
-import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Package, Camera, ChevronDown, ScanLine, ExternalLink } from "lucide-react";
+import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Package, Camera, ChevronDown, ScanLine, ExternalLink, MapPin, FileText, Boxes } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
@@ -272,10 +272,24 @@ export default function ProductsPage() {
               {filtered.length} of {rows.length} products
             </span>
           </div>
-          <button onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all">
-            <Plus size={14} /> Add Product
-          </button>
+          <div className="flex items-center gap-2">
+            <Link href="/inventory"
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-bold transition-all">
+              <Boxes size={13} /> Inventory
+            </Link>
+            <Link href="/inventory/locate"
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-bold transition-all">
+              <MapPin size={13} /> Spare Finder
+            </Link>
+            <Link href="/inventory/purchase-orders"
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-bold transition-all">
+              <FileText size={13} /> POs
+            </Link>
+            <button onClick={openAdd}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all">
+              <Plus size={14} /> Add Product
+            </button>
+          </div>
         </div>
 
         {err && <div className="px-5 py-3 bg-red-500/10 border-b border-red-500/20 text-red-400 text-xs">{err}</div>}
@@ -734,9 +748,9 @@ export default function ProductsPage() {
       {barcodeScanning && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
           onClick={() => setBarcodeScanning(false)}>
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-[#21293d]">
+            <div className="flex items-center justify-between p-4 border-b border-[#21293d] flex-shrink-0">
               <h3 className="font-bold text-white flex items-center gap-2 text-sm">
                 <ScanLine size={16} className="text-blue-400" /> Barcode Scan
               </h3>
@@ -745,7 +759,7 @@ export default function ProductsPage() {
                 <X size={16} />
               </button>
             </div>
-            <div className="p-4">
+            <div className="p-4 overflow-y-auto flex-1 min-h-0">
               <BarcodeCameraScanner
                 onScan={(text) => {
                   setBarcodeScanning(false);

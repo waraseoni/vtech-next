@@ -348,6 +348,10 @@ export default function InventoryPage() {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-2">
+              <Link href="/inventory/locate"
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
+                <MapPin size={13} /> Spare Finder
+              </Link>
               <Link href="/inventory/purchase-orders"
                 className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
                 <FileText size={13} /> Purchase Orders
@@ -619,9 +623,10 @@ export default function InventoryPage() {
                         {p.places.length > 0 ? (
                           <div className="flex flex-wrap items-center justify-center gap-1 max-w-[180px] mx-auto">
                             {p.places.slice(0, 2).map((pl) => (
-                              <span key={pl} className="inline-flex items-center gap-0.5 text-[10px] text-slate-500 border border-[#21293d] rounded-md px-1.5 py-0.5">
-                                <MapPin size={9} className="text-slate-700" /> {pl}
-                              </span>
+                              <Link key={pl} href={`/inventory/locate?loc=${encodeURIComponent(pl)}`} title={pl}
+                                className="inline-flex items-center gap-0.5 text-[10px] text-slate-500 border border-[#21293d] rounded-md px-1.5 py-0.5 hover:text-emerald-400 hover:border-emerald-500/30 transition-colors">
+                                <MapPin size={9} className="text-slate-700" /> {pl.split(" ▸ ").slice(-2).join(" ▸ ")}
+                              </Link>
                             ))}
                             {p.places.length > 2 && (
                               <span className="text-[10px] text-slate-700 font-bold">+{p.places.length - 2} more</span>

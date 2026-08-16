@@ -14,7 +14,7 @@ import {
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
   DollarSign, Truck, CreditCard, Clock, Briefcase, Coins, Receipt,
   Toolbox, FolderOpen, UsersRound, Database, Settings2, MessageSquare,
-  ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert, KeyRound, Code2, Images, FileText, Layers,
+  ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert, KeyRound, Code2, Images, FileText, Layers, MapPin,
 } from "lucide-react";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
@@ -399,8 +399,13 @@ function SidebarNav({
             </li>
             <SubMenu title="Inventory" icon={<Package size={15} />} basePath="/inventory" matchPaths={["/products", "/suppliers"]}>
               <li>
-                <Link href="/inventory" className={subLinkCls(pathname === "/inventory" || (pathname.startsWith("/inventory/") && !pathname.startsWith("/inventory/purchase-orders")))} onClick={onNavClick}>
+                <Link href="/inventory" className={subLinkCls(pathname === "/inventory" || (pathname.startsWith("/inventory/") && !pathname.startsWith("/inventory/purchase-orders") && !pathname.startsWith("/inventory/locate")))} onClick={onNavClick}>
                   <Package size={12} className="text-emerald-400" />Stock Overview
+                </Link>
+              </li>
+              <li>
+                <Link href="/inventory/locate" className={subLinkCls(pathname === "/inventory/locate")} onClick={onNavClick}>
+                  <MapPin size={12} className="text-amber-400" />Spare Finder
                 </Link>
               </li>
               <li>

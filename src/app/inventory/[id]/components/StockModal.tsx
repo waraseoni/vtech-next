@@ -8,6 +8,8 @@ import {
 import { logActivity } from "@/lib/activity";
 import { todayIST, toISTDatePart } from "@/lib/dateUtils";
 import SearchableSelect from "@/components/SearchableSelect";
+import LocationPicker from "@/components/LocationPicker";
+import { locPath, partsFromRow, type LocationParts } from "@/lib/locations";
 
 interface StockModalProps {
   productId: number;
@@ -15,6 +17,10 @@ interface StockModalProps {
     id: number;
     quantity: number;
     place: string | null;
+    place_zone?: string | null;
+    place_rack?: string | null;
+    place_bin?: string | null;
+    place_box?: string | null;
     stock_date: string;
     supplier_id?: number | null;
   } | null;
@@ -25,11 +31,21 @@ interface StockModalProps {
 
 interface Supplier { id: number; name: string; }
 
+type LocSuggestions = { zone: string[]; rack: string[]; bin: string[]; box: string[] };
+
 export default function StockModal({ productId, stock, onClose, onSaved, productName }: StockModalProps) {
   const isEdit = !!stock;
 
   const [quantity,  setQuantity]  = useState(stock?.quantity  || 1);
-  const [place,     setPlace]     = useState(stock?.place     || "");
+  const [loc,       setLoc]       = useState<LocationParts>(() =>
+    partsFromRow({
+      zone:  stock?.place_zone || undefined,
+      rack:  stock?.place_rack || undefined,
+      bin:   stock?.place_bin  || undefined,
+      box:   stock?.place_box  || undefined,
+      place: stock?.place      || undefined,
+    })
+  );
   const [supplierId, setSupplierId] = useState<string>(stock?.supplier_id ? String(stock.supplier_id) : "");
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [stockDate, setStockDate] = useState(
@@ -38,6 +54,8 @@ export default function StockModal({ productId, stock, onClose, onSaved, product
   const [saving,  setSaving]  = useState(false);
   const [success, setSuccess] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<LocSuggestions>({ zone: [], rack: [], bin: [], box: [] });
+  const [lastUsed, setLastUsed] = useState<LocationParts | null>(null);
 
   const overlayRef = useRef<HTMLDivElement>(null);
   const today      = todayIST();
@@ -61,6 +79,36 @@ export default function StockModal({ productId, stock, onClose, onSaved, product
       .then(({ data }) => setSuppliers((data || []) as Supplier[]));
   }, []);
 
+  // Existing locations (suggestions) + is product ki last used location
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const [locRes, lastRes] = await Promise.all([
+        supabase.from("inventory_list").select("place_zone, place_rack, place_bin, place_box"),
+        supabase.from("inventory_list")
+          .select("place, place_zone, place_rack, place_bin, place_box, stock_date")
+          .eq("product_id", productId)
+          .order("stock_date", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(8),
+      ]);
+      if (!alive) return;
+      const acc: LocSuggestions = { zone: [], rack: [], bin: [], box: [] };
+      (locRes.data || []).forEach(r => {
+        (["zone", "rack", "bin", "box"] as const).forEach(k => {
+          const v = String(r[`place_${k}`] || "").trim();
+          if (v && !acc[k].includes(v)) acc[k].push(v);
+        });
+      });
+      setSuggestions(acc);
+      const toParts = (r: { place?: string | null; place_zone?: string | null; place_rack?: string | null; place_bin?: string | null; place_box?: string | null }) =>
+        partsFromRow({ zone: r.place_zone, rack: r.place_rack, bin: r.place_bin, box: r.place_box, place: r.place });
+      const found = (lastRes.data || []).find(r => locPath(toParts(r)));
+      setLastUsed(found ? toParts(found) : null);
+    })();
+    return () => { alive = false; };
+  }, [productId]);
+
   const adjustQty = (delta: number) => {
     setQuantity(q => Math.max(1, q + delta));
   };
@@ -72,20 +120,30 @@ export default function StockModal({ productId, stock, onClose, onSaved, product
 
     setSaving(true);
     try {
-      const placeValue = place.trim() || "";
+      const placeValue = locPath(loc);
       if (isEdit) {
         const { error: err } = await supabase
           .from("inventory_list")
-          .update({ quantity, place: placeValue, stock_date: stockDate, supplier_id: supplierId ? Number(supplierId) : null })
+          .update({
+            quantity, place: placeValue,
+            place_zone: loc.zone || null, place_rack: loc.rack || null,
+            place_bin: loc.bin || null, place_box: loc.box || null,
+            stock_date: stockDate, supplier_id: supplierId ? Number(supplierId) : null,
+          })
           .eq("id", stock!.id);
         if (err) throw err;
         await logActivity('Updated Stock Entry', 'Inventory', productId, `${productName || 'Product'}: Updated to ${quantity} units (ID: ${stock!.id})`);
       } else {
         const { error: err } = await supabase
           .from("inventory_list")
-          .insert([{ product_id: productId, quantity, place: placeValue, stock_date: stockDate, supplier_id: supplierId ? Number(supplierId) : null }]);
+          .insert([{
+            product_id: productId, quantity, place: placeValue,
+            place_zone: loc.zone || null, place_rack: loc.rack || null,
+            place_bin: loc.bin || null, place_box: loc.box || null,
+            stock_date: stockDate, supplier_id: supplierId ? Number(supplierId) : null,
+          }]);
         if (err) throw err;
-        await logActivity('Added New Stock', 'Inventory', productId, `${productName || 'Product'}: Added ${quantity} units`);
+        await logActivity('Added New Stock', 'Inventory', productId, `${productName || 'Product'}: Added ${quantity} units${placeValue ? ` @ ${placeValue}` : ""}`);
       }
       // Show success flash briefly
       setSuccess(true);
@@ -107,7 +165,7 @@ export default function StockModal({ productId, stock, onClose, onSaved, product
 
       {/* Modal */}
       <div
-        className="relative w-full sm:max-w-md bg-[#161b27] border border-[#21293d] sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl shadow-black/50"
+        className="relative w-full sm:max-w-md bg-[#161b27] border border-[#21293d] sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
         style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -158,8 +216,8 @@ export default function StockModal({ productId, stock, onClose, onSaved, product
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit}>
-          <div className="px-5 py-5 space-y-5">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+          <div className="px-5 py-5 space-y-5 overflow-y-auto flex-1 min-h-0">
 
             {/* Error banner */}
             {error && (
@@ -214,19 +272,18 @@ export default function StockModal({ productId, stock, onClose, onSaved, product
               </div>
             </div>
 
-            {/* ── Place/Location ── */}
+            {/* ── Location (Zone ▸ Rack ▸ Bin ▸ Box) ── */}
             <div>
               <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
                 <span className="flex items-center gap-1.5">
-                  <MapPin size={10} className="text-slate-700" /> Place / Location
+                  <MapPin size={10} className="text-emerald-500" /> Location
                 </span>
               </label>
-              <input
-                type="text"
-                value={place}
-                onChange={(e) => setPlace(e.target.value)}
-                placeholder="e.g. Shelf A1, Drawer 3..."
-                className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 placeholder-slate-700 rounded-xl outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all text-sm"
+              <LocationPicker
+                value={loc}
+                onChange={setLoc}
+                suggestions={suggestions}
+                lastUsed={lastUsed}
               />
             </div>
 
@@ -285,7 +342,7 @@ export default function StockModal({ productId, stock, onClose, onSaved, product
           </div>
 
           {/* Footer actions */}
-          <div className="px-5 pb-5 flex gap-2.5">
+          <div className="px-5 pb-5 pt-1 flex gap-2.5 flex-shrink-0">
             <button type="submit" disabled={saving || success}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-extrabold text-sm transition-all active:scale-[0.98] disabled:opacity-60 shadow-lg ${
                 isEdit

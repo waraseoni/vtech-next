@@ -1,14 +1,17 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
   X, ScanLine, Camera, CameraOff, Loader2, CheckCircle2, AlertCircle,
-  Package, Search, ArrowDownToLine, MapPin, Calendar,
+  Package, Search, ArrowDownToLine, MapPin, Calendar, ExternalLink, Plus,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
 import { todayIST, toISTDatePart } from "@/lib/dateUtils";
 import { stockStatusStyle } from "@/lib/inventory";
 import { isCameraSupported, cameraUnsupportedReason, cameraErrorMessage } from "@/lib/cameraSupport";
+import LocationPicker from "@/components/LocationPicker";
+import { locPath, partsFromRow, EMPTY_LOCATION, type LocationParts } from "@/lib/locations";
 
 interface QuickScanProps {
   onClose: () => void;
@@ -31,7 +34,9 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
   const [match,     setMatch]     = useState<MatchedProduct | null>(null);
   const [notFound,  setNotFound]  = useState(false);
   const [quantity,  setQuantity]  = useState(1);
-  const [place,     setPlace]     = useState("");
+  const [loc,       setLoc]       = useState<LocationParts>({ ...EMPTY_LOCATION });
+  const [suggestions, setSuggestions] = useState<{ zone: string[]; rack: string[]; bin: string[]; box: string[] }>({ zone: [], rack: [], bin: [], box: [] });
+  const [lastUsed,  setLastUsed]  = useState<LocationParts | null>(null);
   const [stockDate, setStockDate] = useState(todayIST());
   const [saving,    setSaving]    = useState(false);
   const [success,   setSuccess]   = useState(false);
@@ -137,8 +142,34 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
     const sold = await fetchSold(data.id);
     setMatch({ ...data, alert_quantity: data.alert_quantity || 5, available: sold.available });
     setQuantity(1);
-    setPlace("");
+    setLoc({ ...EMPTY_LOCATION });
     setStockDate(today);
+    loadLocationHints(data.id);
+  };
+
+  // Existing locations (suggestions) + is product ki last used location
+  const loadLocationHints = async (productId: number) => {
+    const [locRes, lastRes] = await Promise.all([
+      supabase.from("inventory_list").select("place_zone, place_rack, place_bin, place_box"),
+      supabase.from("inventory_list")
+        .select("place, place_zone, place_rack, place_bin, place_box, stock_date")
+        .eq("product_id", productId)
+        .order("stock_date", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(8),
+    ]);
+    const acc = { zone: [] as string[], rack: [] as string[], bin: [] as string[], box: [] as string[] };
+    (locRes.data || []).forEach(r => {
+      (["zone", "rack", "bin", "box"] as const).forEach(k => {
+        const v = String(r[`place_${k}`] || "").trim();
+        if (v && !acc[k].includes(v)) acc[k].push(v);
+      });
+    });
+    setSuggestions(acc);
+    const toParts = (r: { place?: string | null; place_zone?: string | null; place_rack?: string | null; place_bin?: string | null; place_box?: string | null }) =>
+      partsFromRow({ zone: r.place_zone, rack: r.place_rack, bin: r.place_bin, box: r.place_box, place: r.place });
+    const found = (lastRes.data || []).find(r => locPath(toParts(r)));
+    setLastUsed(found ? toParts(found) : null);
   };
 
   const fetchSold = async (productId: number) => {
@@ -172,12 +203,16 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
         .insert([{
           product_id: match.id,
           quantity,
-          place: place.trim() || "",
+          place: locPath(loc),
+          place_zone: loc.zone || null,
+          place_rack: loc.rack || null,
+          place_bin: loc.bin || null,
+          place_box: loc.box || null,
           stock_date: stockDate,
           supplier_id: null,
         }]);
       if (err) throw err;
-      await logActivity('Added New Stock', 'Inventory', match.id, `${match.name}: Barcode quick-add ${quantity} units`);
+      await logActivity('Added New Stock', 'Inventory', match.id, `${match.name}: Barcode quick-add ${quantity} units${locPath(loc) ? ` @ ${locPath(loc)}` : ""}`);
       setSuccess(true);
       setTimeout(() => onSaved(), 700);
     } catch (err) {
@@ -197,7 +232,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
       <div
-        className="relative w-full sm:max-w-md bg-[#161b27] border border-[#21293d] sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl shadow-black/50"
+        className="relative w-full sm:max-w-md bg-[#161b27] border border-[#21293d] sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
         style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -233,7 +268,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
           </button>
         </div>
 
-        <div className="px-5 py-5 space-y-5">
+        <div className="px-5 py-5 space-y-5 overflow-y-auto flex-1 min-h-0">
           {/* ── Camera scan toggle ── */}
           <div>
             <button
@@ -295,11 +330,17 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
 
           {/* ── Result state ── */}
           {notFound && (
-            <div className="flex items-center gap-2.5 bg-amber-500/8 border border-amber-500/20 rounded-xl px-4 py-3">
-              <AlertCircle size={14} className="text-amber-400 flex-shrink-0" />
-              <p className="text-amber-400 text-xs font-bold">
-                No product found with barcode <span className="font-mono uppercase">&quot;{code.trim()}&quot;</span>.
-              </p>
+            <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl px-4 py-3 space-y-1.5">
+              <div className="flex items-center gap-2.5">
+                <AlertCircle size={14} className="text-amber-400 flex-shrink-0" />
+                <p className="text-amber-400 text-xs font-bold">
+                  No product found with barcode <span className="font-mono uppercase">&quot;{code.trim()}&quot;</span>.
+                </p>
+              </div>
+              <Link href="/products"
+                className="inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-300 hover:text-amber-200 transition-colors">
+                <Plus size={11} /> Add this product in Products catalog
+              </Link>
             </div>
           )}
 
@@ -317,7 +358,10 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
                 <div className="min-w-0">
                   <div className="font-black text-white text-sm truncate">{match.name}</div>
                   <div className="text-[11px] text-slate-600 truncate mt-0.5">{match.description}</div>
-                  <div className="text-[9px] font-mono text-emerald-500/70 mt-1 uppercase">{match.barcode}</div>
+                  <Link href={`/inventory/${match.id}`}
+                    className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-400 hover:text-emerald-300 transition-colors mt-1.5">
+                    <ExternalLink size={10} /> View product & stock
+                  </Link>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <div className={`text-xl font-black ${st.color}`}>{Math.max(0, match.available)}</div>
@@ -341,19 +385,19 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
                   />
                 </div>
 
-                {/* Place */}
+                {/* Location */}
                 <div>
                   <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
                     <span className="flex items-center gap-1.5">
-                      <MapPin size={10} className="text-slate-700" /> Place / Location
+                      <MapPin size={10} className="text-emerald-500" /> Location (Zone ▸ Rack ▸ Bin ▸ Box)
                     </span>
                   </label>
-                  <input
-                    type="text"
-                    value={place}
-                    onChange={(e) => setPlace(e.target.value)}
-                    placeholder="e.g. Shelf A1, Drawer 3..."
-                    className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 placeholder-slate-700 rounded-xl outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm"
+                  <LocationPicker
+                    compact
+                    value={loc}
+                    onChange={setLoc}
+                    suggestions={suggestions}
+                    lastUsed={lastUsed}
                   />
                 </div>
 

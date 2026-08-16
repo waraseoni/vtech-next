@@ -246,6 +246,10 @@ export default function PurchaseOrdersPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Link href="/suppliers"
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
+                <Truck size={13} /> Suppliers
+              </Link>
               <button onClick={() => fetchPos(true)} disabled={refreshing}
                 className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
                 <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
@@ -576,8 +580,12 @@ function CreatePOModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
               </label>
               <div className="space-y-2.5">
                 {lines.map((l, idx) => (
-                  <div key={idx} className="bg-[#111520] border border-[#21293d] rounded-xl p-3 space-y-2.5">
-                    <div className="flex items-center justify-between gap-2">
+                  <div key={idx} className="relative bg-[#111520] border border-[#21293d] rounded-xl p-3 space-y-2.5">
+                    <button type="button" onClick={() => removeLine(idx)}
+                      className="absolute top-3 right-3 z-10 p-2 bg-[#21293d] hover:bg-red-600/30 border border-[#21293d] hover:border-red-500/40 rounded-lg text-slate-500 hover:text-red-400 transition-all">
+                      <X size={13} />
+                    </button>
+                    <div className="pr-11">
                       <SearchableSelect
                         value={l.product_id || null}
                         options={products.map(p => ({ id: p.id, label: p.name }))}
@@ -589,10 +597,6 @@ function CreatePOModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
                         searchPlaceholder="Search product..."
                         emptyText="No product found"
                       />
-                      <button type="button" onClick={() => removeLine(idx)}
-                        className="p-2 bg-[#21293d] hover:bg-red-600/30 border border-[#21293d] hover:border-red-500/40 rounded-lg text-slate-500 hover:text-red-400 transition-all flex-shrink-0">
-                        <X size={13} />
-                      </button>
                     </div>
                     <div className="grid grid-cols-2 gap-2.5">
                       <div>

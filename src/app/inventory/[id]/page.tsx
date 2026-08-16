@@ -11,11 +11,12 @@ import {
   Boxes, MapPin, Calendar,
   Wrench, ShoppingCart, IndianRupee, BarChart3, Hash,
   ArrowDownToLine, ArrowUpFromLine, ExternalLink, Info,
-  ChevronRight, Zap, CircleDot, Printer,
+  ChevronRight, Zap, CircleDot, Printer, Search, AlertTriangle, FileText,
 } from "lucide-react";
 import StockModal from "./components/StockModal";
 import { logActivity } from "@/lib/activity";
 import { printBarcodeLabels, safeBarcode } from "@/lib/barcodePrint";
+import { locPath, partsFromRow, type LocationParts } from "@/lib/locations";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -33,6 +34,10 @@ interface StockIn {
   id: number;
   quantity: number;
   place: string | null;
+  place_zone?: string | null;
+  place_rack?: string | null;
+  place_bin?: string | null;
+  place_box?: string | null;
   stock_date: string;
   supplier_id?: number | null;
 }
@@ -208,6 +213,28 @@ export default function ProductDetailPage() {
   const st  = getStockStatus(stats.available, product?.alert_quantity);
   const costVal = Math.max(0, stats.available) * (product?.cost_price || 0);
 
+  // Stock locations summary (per location qty, most recently stocked first)
+  const stockLocations = useMemo(() => {
+    const map = new Map<string, { parts: LocationParts; qty: number; lastDate: string }>();
+    for (const s of stockIn) {
+      const parts = partsFromRow(s);
+      const key = locPath(parts);
+      if (!key) continue;
+      const cur = map.get(key) || { parts, qty: 0, lastDate: "" };
+      cur.qty += s.quantity;
+      if (s.stock_date > cur.lastDate) cur.lastDate = s.stock_date;
+      map.set(key, cur);
+    }
+    return [...map.entries()]
+      .map(([key, v]) => ({ key, ...v }))
+      .sort((a, b) => (a.lastDate < b.lastDate ? 1 : -1));
+  }, [stockIn]);
+
+  const latestLoc = stockLocations.length > 0 ? stockLocations[0] : null;
+  const unlocatedQty = stockIn.reduce(
+    (sum, row) => sum + (locPath(partsFromRow(row)) ? 0 : row.quantity), 0
+  );
+
   // Running-balance ledger (stock-in + stock-out merged chronologically)
   const ledger = useMemo(() => {
     type L = {
@@ -217,7 +244,7 @@ export default function ProductDetailPage() {
     const rows: L[] = [];
     stockIn.forEach(s => rows.push({
       key: `in-${s.id}`, date: s.stock_date, direction: "in", qty: s.quantity,
-      label: "Stock In", sub: s.place || "No location",
+      label: "Stock In", sub: locPath(partsFromRow(s)) || "No location",
     }));
     stockOut.forEach(o => rows.push({
       key: `out-${o.type}-${o.id}`, date: o.date, direction: "out", qty: o.qty,
@@ -350,6 +377,14 @@ export default function ProductDetailPage() {
                         {Math.round(((product.price - product.cost_price) / product.price) * 100)}% margin
                       </span>
                     )}
+                    <Link href="/products"
+                      className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-white border border-[#21293d] rounded-md px-2 py-0.5 transition-colors">
+                      <Boxes size={9} /> Edit in Products
+                    </Link>
+                    <Link href="/inventory/purchase-orders"
+                      className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-white border border-[#21293d] rounded-md px-2 py-0.5 transition-colors">
+                      <FileText size={9} /> Purchase Orders
+                    </Link>
                     <span className={`flex items-center gap-1 text-[10px] font-extrabold ${st.color}`}>
                       <CircleDot size={9} /> {st.label}
                     </span>
@@ -405,6 +440,61 @@ export default function ProductDetailPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* ── STOCK LOCATION (Spare Finder) ── */}
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#21293d]">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center">
+                <MapPin size={14} className="text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-white">Stock Location</h3>
+                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Zone ▸ Rack ▸ Bin ▸ Box</p>
+              </div>
+            </div>
+            <Link href="/inventory/locate"
+              className="flex items-center gap-1 px-3 py-1.5 bg-[#111520] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-lg text-[11px] font-bold transition-all">
+              <Search size={11} /> Open Spare Finder
+            </Link>
+          </div>
+          <div className="p-3">
+            {latestLoc ? (
+              <div className="space-y-1.5">
+                {stockLocations.map(({ key, parts, qty, lastDate }) => (
+                  <div key={key}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#111520] border border-[#21293d] hover:border-emerald-500/30 transition-colors">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                      <MapPin size={13} className="text-emerald-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-black text-slate-200 truncate">{locPath(parts)}</div>
+                      <div className="text-[9px] text-slate-600 font-bold mt-0.5">Last stocked {fmtDate(lastDate)}</div>
+                    </div>
+                    <span className="flex-shrink-0 text-xs font-black text-emerald-400">{qty} unit{qty !== 1 ? "s" : ""}</span>
+                  </div>
+                ))}
+                {unlocatedQty > 0 && (
+                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0">
+                      <AlertTriangle size={13} className="text-amber-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-black text-amber-300">No location set</div>
+                      <div className="text-[9px] text-slate-600 font-bold mt-0.5">Add stock with a location to track where it is kept</div>
+                    </div>
+                    <span className="flex-shrink-0 text-xs font-black text-amber-400">{unlocatedQty} unit{unlocatedQty !== 1 ? "s" : ""}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="px-3 py-4 text-center">
+                <MapPin size={22} className="mx-auto text-slate-800 mb-2" />
+                <p className="text-slate-600 text-xs font-bold">No stock in yet — add stock with a location to track where it is kept</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── STOCK VISUAL + MONTHLY CHART ── */}
@@ -529,9 +619,9 @@ export default function ProductDetailPage() {
                         <span className="text-slate-600 text-xs ml-1">units</span>
                       </td>
                       <td className="px-5 py-3">
-                        {s.place ? (
+                        {locPath(partsFromRow(s)) ? (
                           <span className="flex items-center gap-1 text-xs text-slate-500">
-                            <MapPin size={10} className="text-slate-700" /> {s.place}
+                            <MapPin size={10} className="text-emerald-500/70" /> {locPath(partsFromRow(s))}
                           </span>
                         ) : (
                           <span className="text-slate-700 text-xs">—</span>
