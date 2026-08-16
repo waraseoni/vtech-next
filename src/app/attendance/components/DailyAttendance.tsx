@@ -64,7 +64,7 @@ const STATUS_BADGE: Record<number, { label: string; cls: string }> = {
 
 export default function DailyAttendance({
   userRole, mechanicId,
-}: { userRole: 'admin' | 'staff'; mechanicId: number | null }) {
+}: { userRole: 'admin' | 'staff' | 'developer'; mechanicId: number | null }) {
   const searchParams = useSearchParams();
   const today = todayIST();
 
@@ -192,8 +192,12 @@ export default function DailyAttendance({
         }
       }
 
-      // GPS geofence check — only enforced when actually writing a stamp
-      const geo = await verifyAttendanceLocation();
+      // GPS geofence check — only enforced when actually writing a stamp.
+      // Admin/developer geofence se exempt hain (office ke bahar se bhi stamp kar sakte hain).
+      const geo =
+        userRole === 'admin' || userRole === 'developer'
+          ? { ok: true, reason: 'ok' as const, distanceM: null, coords: null }
+          : await verifyAttendanceLocation();
       if (!geo.ok) {
         setSelfMsg({ type: 'err', text: geoErrorMessage(geo) });
         return;

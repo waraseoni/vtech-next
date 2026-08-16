@@ -19,7 +19,7 @@ function AttendanceContent() {
   const viewParam = searchParams.get('view');
   const activeTab = viewParam === 'report' ? 'report' : 'daily';
 
-  const [userRole, setUserRole]     = useState<'admin' | 'staff'>('staff');
+  const [userRole, setUserRole]     = useState<'admin' | 'staff' | 'developer'>('staff');
   const [mechanicId, setMechanicId] = useState<number | null>(null);
   const [loading, setLoading]       = useState(true);
 

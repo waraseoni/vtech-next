@@ -46,7 +46,7 @@ const MechAvatar = ({ image, name, cls = "w-8 h-8 text-xs" }: { image?: string |
 
 export default function MonthlyReport({
   userRole, mechanicId,
-}: { userRole: 'admin' | 'staff'; mechanicId: number | null }) {
+}: { userRole: 'admin' | 'staff' | 'developer'; mechanicId: number | null }) {
   const searchParams = useSearchParams();
   const router       = useRouter();
 
