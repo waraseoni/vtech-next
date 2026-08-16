@@ -610,27 +610,11 @@ export default function ProductsPage() {
                       maxLength={100}
                       className="flex-1 min-w-0 px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500" />
                     <button type="button"
-                      onClick={() => setBarcodeScanning(s => !s)}
-                      className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all border ${
-                        barcodeScanning
-                          ? "bg-red-500/15 border-red-500/30 text-red-400 hover:bg-red-500/25"
-                          : "bg-blue-600/15 border-blue-600/30 text-blue-400 hover:bg-blue-600/25"
-                      }`}>
-                      {barcodeScanning ? <X size={13} /> : <ScanLine size={13} />}
-                      {barcodeScanning ? "Cancel" : "Scan"}
+                      onClick={() => setBarcodeScanning(true)}
+                      className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all border bg-blue-600/15 border-blue-600/30 text-blue-400 hover:bg-blue-600/25">
+                      <ScanLine size={13} /> Scan
                     </button>
                   </div>
-
-                  {barcodeScanning && (
-                    <div className="mt-2.5">
-                      <BarcodeCameraScanner
-                        onScan={(text) => {
-                          setBarcodeScanning(false);
-                          setForm(p => ({ ...p, barcode: text }));
-                          void checkBarcodeDuplicate(text, editing?.id ?? null);
-                        }} />
-                    </div>
-                  )}
 
                   {dupWarn && (
                     <div className="mt-2 flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2.5">
@@ -742,6 +726,36 @@ export default function ProductsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Barcode Scan Modal (edit/add modal ke upar) */}
+      {barcodeScanning && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setBarcodeScanning(false)}>
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-[#21293d]">
+              <h3 className="font-bold text-white flex items-center gap-2 text-sm">
+                <ScanLine size={16} className="text-blue-400" /> Barcode Scan
+              </h3>
+              <button type="button" onClick={() => setBarcodeScanning(false)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-4">
+              <BarcodeCameraScanner
+                onScan={(text) => {
+                  setBarcodeScanning(false);
+                  setForm(p => ({ ...p, barcode: text }));
+                  void checkBarcodeDuplicate(text, editing?.id ?? null);
+                }} />
+              <p className="text-[10px] text-slate-600 text-center mt-3">
+                Barcode / QR sticker ko camera ke samne rakhein — auto detect hoke barcode fill hoga.
+              </p>
+            </div>
           </div>
         </div>
       )}

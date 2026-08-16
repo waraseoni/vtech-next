@@ -1,16 +1,63 @@
 import JsBarcode from "jsbarcode";
 
+export type LabelSize = "medium" | "small" | "compact";
+export type Orientation = "portrait" | "landscape";
+export type PrintMargin = "narrow" | "normal" | "wide";
+
 export interface BarcodeLabelItem {
   value: string;
   name: string;
-  price?: number;
+}
+
+export interface PrintOptions {
+  size: LabelSize;
+  orientation: Orientation;
+  margin: PrintMargin;
+}
+
+export const DEFAULT_PRINT_OPTIONS: PrintOptions = {
+  size: "medium",
+  orientation: "portrait",
+  margin: "normal",
+};
+
+const LABEL_PRESETS: Record<LabelSize, { w: number; h: number; nameSize: number; svgH: number }> = {
+  medium:  { w: 63.5, h: 38.1, nameSize: 8,   svgH: 15 },
+  small:   { w: 63.5, h: 25.4, nameSize: 6.5, svgH: 10 },
+  compact: { w: 50,   h: 20,   nameSize: 5.5, svgH: 8 },
+};
+
+const PRINT_MARGINS: Record<PrintMargin, number> = {
+  narrow: 3,
+  normal: 8,
+  wide: 14,
+};
+
+const GAP_MM = 1.5;
+
+const PAGE_MM: Record<Orientation, { w: number; h: number }> = {
+  portrait:  { w: 210, h: 297 },
+  landscape: { w: 297, h: 210 },
+};
+
+/**
+ * Compute how many labels fit on a single A4 sheet for the given options.
+ * Used both by the UI (sheet estimate) and the print window (grid sizing).
+ */
+export function labelSheetCapacity(opts: PrintOptions = DEFAULT_PRINT_OPTIONS) {
+  const preset = LABEL_PRESETS[opts.size];
+  const page = PAGE_MM[opts.orientation];
+  const m = PRINT_MARGINS[opts.margin];
+  const cols = Math.max(1, Math.floor((page.w - 2 * m + GAP_MM) / (preset.w + GAP_MM)));
+  const rows = Math.max(1, Math.floor((page.h - 2 * m + GAP_MM) / (preset.h + GAP_MM)));
+  return { cols, rows, perSheet: cols * rows };
 }
 
 /**
  * JSX-free barcode SVG string generator (jsbarcode → svg element → outerHTML).
  * Deterministic & side-effect free, so it can be called from any client page.
  */
-export function barcodeSvg(value: string, width = 120, height = 40): string {
+export function barcodeSvg(value: string, width = 140, height = 44): string {
   const el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   el.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   JsBarcode(el, value, {
@@ -33,28 +80,27 @@ export function safeBarcode(value: string | null | undefined): string {
 }
 
 /**
- * Open print window with a sheet of barcode labels.
- * items: ordered list of { value, name, price? }.
- * cols: labels per row (thermal = 1-2, A4 = 3-4).
+ * Open print window with an A4 grid of barcode labels.
+ * Designed for inkjet/laser A4 printers (no thermal printer needed).
+ * items: ordered list of { value, name }. Price intentionally NOT printed.
+ * opts: label size, page orientation, page margin — grid auto-fills the page
+ * so the maximum number of labels prints per sheet.
  */
-export function printBarcodeLabels(items: BarcodeLabelItem[], cols = 3): void {
+export function printBarcodeLabels(items: BarcodeLabelItem[], opts: PrintOptions = DEFAULT_PRINT_OPTIONS): void {
   const list = items.filter(i => safeBarcode(i.value));
   if (!list.length) return;
 
-  const labels = list.map(item => {
-    const price = typeof item.price === "number" && item.price > 0
-      ? `<div class="price">₹${item.price.toLocaleString("en-IN")}</div>`
-      : "";
-    return `
-      <div class="label">
-        ${barcodeSvg(safeBarcode(item.value), 140, 44)}
-        <div class="name">${escapeHtml(item.name)}</div>
-        ${price}
-      </div>`;
-  }).join("");
+  const preset = LABEL_PRESETS[opts.size];
+  const m = PRINT_MARGINS[opts.margin];
+  const { cols } = labelSheetCapacity(opts);
+  const lw = `${preset.w}mm`;
+  const lh = `${preset.h}mm`;
 
-  const single = list.length === 1;
-  const gridCols = single ? 1 : cols;
+  const labels = list.map(item => `
+      <div class="label">
+        ${barcodeSvg(safeBarcode(item.value))}
+        <div class="name">${escapeHtml(item.name)}</div>
+      </div>`).join("");
 
   const w = window.open("", "_blank", "width=900,height=700");
   if (!w) { alert("Popup blocked — popups allow kar ke dobara try karein."); return; }
@@ -63,29 +109,34 @@ export function printBarcodeLabels(items: BarcodeLabelItem[], cols = 3): void {
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Barcode Labels</title>
+  <title>Barcode Labels (A4)</title>
   <style>
+    @page { size: A4 ${opts.orientation}; margin: ${m}mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, Helvetica, sans-serif; background: #fff; padding: 8px; }
-    .sheet { display: grid; grid-template-columns: repeat(${gridCols}, 1fr); gap: 8px; }
-    .label {
-      border: 1px dashed #999; border-radius: 4px; padding: 8px 10px;
-      display: flex; flex-direction: column; align-items: center; gap: 2px;
-      text-align: center; break-inside: avoid;
+    body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; padding: 0; }
+    .sheet {
+      display: grid;
+      grid-template-columns: repeat(${cols}, ${lw});
+      grid-auto-rows: ${lh};
+      gap: ${GAP_MM}mm;
+      justify-content: start;
     }
-    .label svg { max-width: 100%; height: auto; }
-    .name { font-size: 11px; font-weight: 700; color: #111; line-height: 1.2; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .price { font-size: 12px; font-weight: 800; color: #000; margin-top: 1px; }
-    ${single ? `
-    /* Single label: compact fixed-width so it fits a thermal/label printer */
-    .sheet { display: flex; justify-content: flex-start; }
-    .label { width: 248px; border: 1px solid #999; }
-    body { padding: 10px; }` : ""}
+    .label {
+      width: ${lw}; height: ${lh};
+      border: 1px dashed #aaa; border-radius: 1.5mm;
+      padding: 1mm 1.5mm;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.8mm;
+      text-align: center; overflow: hidden;
+      break-inside: avoid; page-break-inside: avoid;
+    }
+    .label svg { max-width: 100%; max-height: ${preset.svgH}mm; height: auto; }
+    .name {
+      font-size: ${preset.nameSize}pt; font-weight: 700; line-height: 1.15;
+      width: 100%; word-break: break-word;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
     @media print {
-      body { padding: 0; }
-      .sheet { gap: 6px; }
-      .label { border: 1px solid #ddd; }
-      ${single ? `body { padding: 0; } .label { width: 248px; }` : ""}
+      .label { border: 1px dashed #ddd; }
     }
   </style>
 </head>

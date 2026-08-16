@@ -9,10 +9,10 @@ import {
   Package, Search, Eye, Printer, MapPin,
   TrendingDown, AlertTriangle, CheckCircle, XCircle,
   BarChart3, RefreshCw, ArrowUpDown, X,
-  Layers, Zap, ShoppingCart, Boxes, ScanLine, FileText,
+  Layers, Zap, ShoppingCart, Boxes, ScanLine, FileText, Minus, Plus,
 } from "lucide-react";
 import QuickScanModal from "./components/QuickScanModal";
-import { printBarcodeLabels, safeBarcode } from "@/lib/barcodePrint";
+import { printBarcodeLabels, safeBarcode, labelSheetCapacity, DEFAULT_PRINT_OPTIONS, type LabelSize, type Orientation, type PrintMargin, type BarcodeLabelItem } from "@/lib/barcodePrint";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ProductStock {
@@ -62,6 +62,9 @@ export default function InventoryPage() {
   const [scanOpen,    setScanOpen]    = useState(false);
   const [pageSize,    setPageSize]    = useState(25);
   const [page,        setPage]        = useState(1);
+  const [printOpts,   setPrintOpts]   = useState(DEFAULT_PRINT_OPTIONS);
+  const [printOpen,   setPrintOpen]   = useState(false);
+  const [printCopies, setPrintCopies] = useState<Record<number, number>>({});
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
@@ -250,20 +253,49 @@ export default function InventoryPage() {
     w.print();
   };
 
-  // ── Print barcode labels for current filtered list ──────────────────────────
-  const handlePrintLabels = () => {
-    const items = filtered
-      .filter(p => safeBarcode(p.barcode))
-      .map(p => ({ value: p.barcode!, name: p.name, price: p.price }));
-    if (!items.length) {
+  // ── Print barcode labels — selector modal ───────────────────────────────────
+  const printableProducts = useMemo(
+    () => filtered.filter(p => safeBarcode(p.barcode)),
+    [filtered]
+  );
+
+  const getCopies = (id: number) => printCopies[id] ?? 1;
+
+  const adjustCopies = (id: number, delta: number) => {
+    setPrintCopies(prev => ({ ...prev, [id]: Math.max(1, Math.min(999, (prev[id] ?? 1) + delta)) }));
+  };
+
+  const setCopies = (id: number, raw: string) => {
+    const n = Math.max(1, Math.min(999, Number(raw) || 1));
+    setPrintCopies(prev => ({ ...prev, [id]: n }));
+  };
+
+  const totalLabels = printableProducts.reduce((s, p) => s + getCopies(p.id), 0);
+  const perSheet = labelSheetCapacity(printOpts).perSheet;
+
+  const openPrintModal = () => {
+    if (!printableProducts.length) {
       alert("Filtered list me kisi product ka barcode set nahi hai. Pehle Products page me barcodes add karein.");
       return;
     }
-    if (items.length > 150) {
-      alert(`Bohot zyada labels (${items.length}) — pehle filter/search se list chhoti karein (max 150).`);
+    const init: Record<number, number> = {};
+    for (const p of printableProducts) init[p.id] = 1;
+    setPrintCopies(init);
+    setPrintOpen(true);
+  };
+
+  const handlePrintModal = () => {
+    if (totalLabels === 0) return;
+    if (totalLabels > 1000) {
+      alert(`Bohot zyada labels (${totalLabels}) — total 1000 se kam rakhein.`);
       return;
     }
-    printBarcodeLabels(items, 3);
+    const items: BarcodeLabelItem[] = [];
+    for (const p of printableProducts) {
+      for (let i = 0; i < getCopies(p.id); i++) items.push({ value: p.barcode!, name: p.name });
+    }
+    printBarcodeLabels(items, printOpts);
+    setPrintOpen(false);
   };
 
   // ── Loading ────────────────────────────────────────────────────────────────
@@ -320,7 +352,7 @@ export default function InventoryPage() {
                 className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
                 <FileText size={13} /> Purchase Orders
               </Link>
-              <button onClick={handlePrintLabels}
+              <button onClick={openPrintModal}
                 className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
                 <Printer size={13} /> Labels
               </button>
@@ -516,7 +548,7 @@ export default function InventoryPage() {
                                   {p.barcode}
                                 </span>
                                 <button
-                                  onClick={() => printBarcodeLabels([{ value: p.barcode!, name: p.name, price: p.price }], 1)}
+                                  onClick={() => printBarcodeLabels([{ value: p.barcode!, name: p.name }])}
                                   title="Print label"
                                   className="text-slate-700 hover:text-slate-300 transition-colors">
                                   <Printer size={10} />
@@ -721,7 +753,7 @@ export default function InventoryPage() {
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="text-[9px] font-mono text-purple-500/70 truncate">{p.barcode}</span>
                             <button
-                              onClick={() => printBarcodeLabels([{ value: p.barcode!, name: p.name, price: p.price }], 1)}
+                              onClick={() => printBarcodeLabels([{ value: p.barcode!, name: p.name }])}
                               title="Print label"
                               className="text-slate-700 hover:text-slate-300 transition-colors">
                               <Printer size={10} />
@@ -905,6 +937,104 @@ export default function InventoryPage() {
           onClose={() => setScanOpen(false)}
           onSaved={() => { setScanOpen(false); fetchProducts(); }}
         />
+      )}
+
+      {/* ── PRINT LABELS MODAL ── */}
+      {printOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-[#21293d] flex-shrink-0">
+              <h3 className="font-bold text-white flex items-center gap-2 text-sm">
+                <Printer size={16} className="text-blue-400" /> Print Barcode Labels
+              </h3>
+              <button onClick={() => setPrintOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition">
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Print options bar */}
+            <div className="px-5 py-3 border-b border-[#21293d] bg-[#111520] flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
+              <div className="text-[11px] text-slate-400 font-bold">
+                {printableProducts.length} products me barcode hai
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Label</span>
+                  <select value={printOpts.size} onChange={e => setPrintOpts(p => ({ ...p, size: e.target.value as LabelSize }))}
+                    className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60 cursor-pointer">
+                    <option value="medium">63.5 × 38mm</option>
+                    <option value="small">63.5 × 25mm</option>
+                    <option value="compact">50 × 20mm</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Orient</span>
+                  <select value={printOpts.orientation} onChange={e => setPrintOpts(p => ({ ...p, orientation: e.target.value as Orientation }))}
+                    className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60 cursor-pointer">
+                    <option value="portrait">Portrait</option>
+                    <option value="landscape">Landscape</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Margin</span>
+                  <select value={printOpts.margin} onChange={e => setPrintOpts(p => ({ ...p, margin: e.target.value as PrintMargin }))}
+                    className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60 cursor-pointer">
+                    <option value="narrow">Narrow (3mm)</option>
+                    <option value="normal">Normal (8mm)</option>
+                    <option value="wide">Wide (14mm)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Product copies list */}
+            <div className="overflow-y-auto min-h-0 flex-1 px-5 py-4 space-y-2">
+              {printableProducts.map(p => {
+                const copies = getCopies(p.id);
+                return (
+                  <div key={p.id} className="flex items-center justify-between gap-3 bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-2.5">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-slate-200 truncate">{p.name}</div>
+                      <div className="text-[10px] font-mono text-purple-500/70 truncate">{p.barcode}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button type="button" onClick={() => adjustCopies(p.id, -1)} disabled={copies <= 1}
+                        className="w-7 h-7 rounded-lg bg-[#161b27] border border-[#21293d] text-slate-400 hover:text-white hover:border-blue-500/40 flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                        <Minus size={12} />
+                      </button>
+                      <input type="number" min={1} max={999} value={copies}
+                        onChange={e => setCopies(p.id, e.target.value)}
+                        className="w-14 h-7 text-center bg-[#161b27] border border-[#21293d] text-white rounded-lg text-xs font-bold outline-none focus:border-blue-500/60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                      <button type="button" onClick={() => adjustCopies(p.id, 1)} disabled={copies >= 999}
+                        className="w-7 h-7 rounded-lg bg-[#161b27] border border-[#21293d] text-slate-400 hover:text-white hover:border-blue-500/40 flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-4 border-t border-[#21293d] bg-[#111520] flex items-center justify-between gap-3 flex-shrink-0">
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-wider text-slate-500">Total labels</div>
+                <div className="text-lg font-black text-white leading-tight">
+                  {totalLabels}
+                  <span className="text-xs font-bold text-slate-500 ml-2">
+                    ≈ {Math.ceil(totalLabels / perSheet)} A4 sheet(s)
+                  </span>
+                </div>
+              </div>
+              <button type="button" onClick={handlePrintModal} disabled={totalLabels === 0}
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl font-bold text-sm flex items-center gap-2 transition-all">
+                <Printer size={14} /> Print
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

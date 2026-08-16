@@ -369,7 +369,7 @@ export default function ProductDetailPage() {
                 onClick={() => {
                   const bc = safeBarcode(product.barcode);
                   if (!bc) { alert("Is product ka koi barcode set nahi hai — pehle Products page me barcode add karein."); return; }
-                  printBarcodeLabels([{ value: bc, name: product.name, price: product.price }], 1);
+                  printBarcodeLabels([{ value: bc, name: product.name }]);
                 }}
                 className="flex items-center gap-2 px-4 py-2.5 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-300 hover:text-white rounded-xl text-sm font-bold transition-all active:scale-95">
                 <Printer size={15} /> Print Label
