@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
   Download, Upload, Database, CheckCircle, AlertCircle,
@@ -786,6 +787,22 @@ export default function BackupPage() {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* MariaDB Sync card */}
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center gap-3">
+          <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center flex-shrink-0">
+            <RefreshCw size={15} className="text-white" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-black text-white">Supabase → MariaDB Sync</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Saara data MariaDB (<span className="font-mono">vtech_db</span>) me copy karta hai — har 15 min pe auto bhi hota hai.
+            </p>
+          </div>
+          <Link href="/sync" className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-[#0a0e16] rounded-lg text-xs font-black transition">
+            <RefreshCw size={12} /> Sync Tool
+          </Link>
         </div>
 
         {/* Progress bar */}

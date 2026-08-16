@@ -437,6 +437,7 @@ function SidebarNav({
               <li><Link href="/lenders"        className={subLinkCls(pathname === "/lenders")}        onClick={onNavClick}><History size={12} />Lenders</Link></li>
               <li><Link href="/users"         className={subLinkCls(pathname === "/users")}         onClick={onNavClick}><ShieldCheck size={12} />Users</Link></li>
               <li><Link href="/backup"        className={subLinkCls(pathname === "/backup")}        onClick={onNavClick}><Database size={12} />Backup</Link></li>
+              <li><Link href="/sync"          className={subLinkCls(pathname === "/sync")}          onClick={onNavClick}><RefreshCw size={12} className="text-emerald-400" />MariaDB Sync</Link></li>
               <li><Link href="/images"        className={subLinkCls(pathname === "/images")}        onClick={onNavClick}><Images size={12} className="text-amber-400" />Images</Link></li>
               <li><Link href="/settings"      className={subLinkCls(pathname === "/settings")}      onClick={onNavClick}><Settings2 size={12} />Settings</Link></li>
               <li><Link href="/settings/throttle" className={subLinkCls(pathname === "/settings/throttle")} onClick={onNavClick}><ShieldAlert size={12} className="text-red-400" />Login Throttle</Link></li>
