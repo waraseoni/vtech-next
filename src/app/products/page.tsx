@@ -3,11 +3,12 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
-import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Package, Camera, ChevronDown } from "lucide-react";
+import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Package, Camera, ChevronDown, ScanLine, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import { compressImage } from "@/lib/imageCompression";
+import BarcodeCameraScanner from "@/app/components/BarcodeCameraScanner";
 
 type Product = {
   id: number;
@@ -29,6 +30,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
@@ -42,6 +44,20 @@ export default function ProductsPage() {
   const [supplierOpen, setSupplierOpen] = useState(false);
   const [supplierSearch, setSupplierSearch] = useState("");
   const supplierRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const h  = (e: MediaQueryList | MediaQueryListEvent) => setIsMobile(e.matches);
+    setIsMobile(mq.matches);
+    mq.addEventListener("change", h);
+    return () => mq.removeEventListener("change", h);
+  }, []);
+
+  // Pagination
+  const [pageSize, setPageSize] = useState(25);
+  const [page, setPage] = useState(1);
+  const [barcodeScanning, setBarcodeScanning] = useState(false);
+  const [dupWarn, setDupWarn] = useState<Product | null>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -140,12 +156,37 @@ export default function ProductsPage() {
 
   const filtered = rows.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.description?.toLowerCase().includes(search.toLowerCase())
+    p.description?.toLowerCase().includes(search.toLowerCase()) ||
+    (p.barcode || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const openAdd = () => { setEditing(null); setForm({ name: "", description: "", cost_price: "", price: "", hsn: "", barcode: "", alert_quantity: "" }); setSelectedSuppliers([]); setSupplierOpen(false); setSupplierSearch(""); setImgPath(""); setImgFile(null); setImgPreview(""); setImgRemoved(false); setFormErr(""); setShowModal(true); };
+  // Reset page on search change
+  useEffect(() => { setPage(1); }, [search, pageSize]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / (pageSize === 0 ? filtered.length : pageSize)));
+  const safePage = Math.min(page, pageCount);
+  const paginated = pageSize === 0
+    ? filtered
+    : filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  // Duplicate barcode check: is barcode linked to a DIFFERENT product?
+  const checkBarcodeDuplicate = async (value: string, currentId: number | null) => {
+    const q = value.trim();
+    if (!q) { setDupWarn(null); return; }
+    const { data } = await supabase
+      .from("product_list")
+      .select("id, name, barcode")
+      .eq("barcode", q)
+      .eq("delete_flag", 0)
+      .neq("id", currentId ?? -1)
+      .limit(1)
+      .single();
+    setDupWarn((data as Product | null) ?? null);
+  };
+
+  const openAdd = () => { setEditing(null); setForm({ name: "", description: "", cost_price: "", price: "", hsn: "", barcode: "", alert_quantity: "" }); setSelectedSuppliers([]); setSupplierOpen(false); setSupplierSearch(""); setImgPath(""); setImgFile(null); setImgPreview(""); setImgRemoved(false); setFormErr(""); setBarcodeScanning(false); setDupWarn(null); setShowModal(true); };
   const openEdit = (p: Product) => {
-    setEditing(p); setForm({ name: p.name, description: p.description || "", cost_price: String(p.cost_price || ""), price: String(p.price || ""), hsn: p.hsn || "", barcode: p.barcode || "", alert_quantity: String(p.alert_quantity || "") }); setImgPath(p.image_path || ""); setImgFile(null); setImgPreview(p.image_path || ""); setImgRemoved(false); setSupplierOpen(false); setSupplierSearch(""); setFormErr(""); setShowModal(true);
+    setEditing(p); setForm({ name: p.name, description: p.description || "", cost_price: String(p.cost_price || ""), price: String(p.price || ""), hsn: p.hsn || "", barcode: p.barcode || "", alert_quantity: String(p.alert_quantity || "") }); setImgPath(p.image_path || ""); setImgFile(null); setImgPreview(p.image_path || ""); setImgRemoved(false); setSupplierOpen(false); setSupplierSearch(""); setFormErr(""); setBarcodeScanning(false); setDupWarn(null); setShowModal(true);
     supabase.from("spare_supplier").select("supplier_id").eq("spare_id", p.id)
       .then(({ data }) => setSelectedSuppliers((data || []).map(d => d.supplier_id)));
   };
@@ -224,11 +265,11 @@ export default function ProductsPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search products..."
-                className="pl-9 pr-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-blue-500 w-64"
+                className="pl-9 pr-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-blue-500 w-full sm:w-64"
               />
             </div>
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-              {filtered.length} of {rows.length}
+              {filtered.length} of {rows.length} products
             </span>
           </div>
           <button onClick={openAdd}
@@ -247,6 +288,8 @@ export default function ProductsPage() {
         ) : filtered.length === 0 ? (
           <div className="px-5 py-12 text-center text-slate-600 text-sm">No products found.</div>
         ) : (
+          <>
+          {!isMobile && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-[#111520]">
@@ -263,7 +306,7 @@ export default function ProductsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1a2234]">
-                {filtered.map(p => {
+                {paginated.map(p => {
                   const margin = p.price > 0 && p.cost_price > 0 ? ((p.price - p.cost_price) / p.price * 100) : null;
                   return (
                     <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
@@ -341,6 +384,126 @@ export default function ProductsPage() {
               </tfoot>
             </table>
           </div>
+          )}
+
+          {isMobile && (
+            <div className="divide-y divide-[#1a2234]">
+              {paginated.map(p => {
+                const margin = p.price > 0 && p.cost_price > 0 ? ((p.price - p.cost_price) / p.price * 100) : null;
+                return (
+                  <div key={p.id} className="px-4 py-4 space-y-3">
+                    {/* Header: image + name + status */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {p.image_path ? (
+                          <Image src={p.image_path} alt={p.name}
+                            width={40} height={40} unoptimized
+                            className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+                            onDoubleClick={(e) => { e.stopPropagation(); openImageLightbox(p.image_path, p.name); }}
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-[#21293d] flex items-center justify-center flex-shrink-0">
+                            <Package size={16} className="text-amber-500" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-200 text-sm truncate">{p.name}</div>
+                          <div className="text-xs text-slate-600 truncate">{p.description || "—"}</div>
+                        </div>
+                      </div>
+                      <button onClick={() => toggleStatus(p)}
+                        className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
+                          p.status === 1
+                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
+                            : "bg-slate-500/10 border-slate-500/20 text-slate-500 hover:bg-slate-500/20"
+                        }`}>
+                        {p.status === 1 ? <ToggleRight size={13} /> : <ToggleLeft size={13} />}
+                        {p.status === 1 ? "Active" : "Inactive"}
+                      </button>
+                    </div>
+
+                    {/* Badges: HSN + barcode */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {p.hsn && (
+                        <span className="inline-block px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded text-[10px] font-bold">{p.hsn}</span>
+                      )}
+                      {p.barcode ? (
+                        <span className="inline-block px-2 py-0.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded text-[10px] font-mono font-bold">{p.barcode}</span>
+                      ) : (
+                        <span className="text-slate-700 text-[10px]">No barcode</span>
+                      )}
+                    </div>
+
+                    {/* Prices row */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-[#0d1117] border border-[#1a2234] rounded-xl px-2 py-2 text-center">
+                        <div className="text-[8px] font-black uppercase tracking-widest text-slate-600">Cost</div>
+                        <div className="text-slate-400 text-xs font-bold mt-0.5">{inr(p.cost_price)}</div>
+                      </div>
+                      <div className="bg-[#0d1117] border border-[#1a2234] rounded-xl px-2 py-2 text-center">
+                        <div className="text-[8px] font-black uppercase tracking-widest text-slate-600">Selling</div>
+                        <div className="text-emerald-400 text-xs font-black mt-0.5">{inr(p.price)}</div>
+                      </div>
+                      <div className="bg-[#0d1117] border border-[#1a2234] rounded-xl px-2 py-2 text-center">
+                        <div className="text-[8px] font-black uppercase tracking-widest text-slate-600">Margin</div>
+                        <div className={`text-xs font-black mt-0.5 ${margin !== null ? (margin >= 20 ? "text-emerald-400" : margin >= 10 ? "text-amber-400" : "text-red-400") : "text-slate-600"}`}>
+                          {margin !== null ? `${margin.toFixed(1)}%` : "—"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => openEdit(p)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition text-xs font-bold">
+                        <Edit3 size={13} /> Edit
+                      </button>
+                      {userRole === "admin" && (
+                        <button onClick={() => handleDelete(p.id, p.name)}
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition text-xs font-bold">
+                          <Trash2 size={13} /> Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="px-4 py-3 bg-[#111520] flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">Total Value:</span>
+                <span className="font-black text-emerald-400">{inr(totalValue)}</span>
+              </div>
+            </div>
+          )}
+          </>
+        )}
+
+        {/* Pagination */}
+        {filtered.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-[#21293d]">
+            <div className="flex items-center gap-2 text-[11px] text-slate-600 font-bold">
+              <span>Show</span>
+              <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))}
+                className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60">
+                {[10, 25, 50, 100, 0].map(n => (
+                  <option key={n} value={n}>{n === 0 ? "All" : n}</option>
+                ))}
+              </select>
+              <span>rows</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage <= 1}
+                className="px-3 py-1.5 bg-[#0d1117] border border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                Prev
+              </button>
+              <span className="px-3 py-1.5 text-[11px] font-black text-slate-400 bg-[#0d1117] border border-[#21293d] rounded-lg">
+                {safePage} / {pageCount}
+              </span>
+              <button onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={safePage >= pageCount}
+                className="px-3 py-1.5 bg-[#0d1117] border border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                Next
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
@@ -352,7 +515,7 @@ export default function ProductsPage() {
               <h3 className="font-bold text-white flex items-center gap-2">
                 {editing ? <><Edit3 size={16} className="text-blue-400" /> Edit Product</> : <><Plus size={16} className="text-blue-400" /> Add Product</>}
               </h3>
-              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition">
+              <button onClick={() => { setBarcodeScanning(false); setDupWarn(null); setShowModal(false); }} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition">
                 <X size={16} />
               </button>
             </div>
@@ -428,19 +591,59 @@ export default function ProductsPage() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="col-span-2">
                   <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">HSN Code</label>
                   <input value={form.hsn} onChange={e => setForm(p => ({ ...p, hsn: e.target.value }))}
                     placeholder="e.g. 8504"
                     maxLength={20}
                     className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500" />
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Barcode</label>
-                  <input value={form.barcode} onChange={e => setForm(p => ({ ...p, barcode: e.target.value }))}
-                    placeholder="Optional barcode"
-                    maxLength={100}
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500" />
+                <div className="col-span-2">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                    Barcode <span className="normal-case font-semibold text-slate-600">(sticker scan karke link karein)</span>
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <input value={form.barcode}
+                      onChange={e => { setForm(p => ({ ...p, barcode: e.target.value })); if (dupWarn) setDupWarn(null); }}
+                      onBlur={() => checkBarcodeDuplicate(form.barcode, editing?.id ?? null)}
+                      placeholder="Optional barcode"
+                      maxLength={100}
+                      className="flex-1 min-w-0 px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500" />
+                    <button type="button"
+                      onClick={() => setBarcodeScanning(s => !s)}
+                      className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all border ${
+                        barcodeScanning
+                          ? "bg-red-500/15 border-red-500/30 text-red-400 hover:bg-red-500/25"
+                          : "bg-blue-600/15 border-blue-600/30 text-blue-400 hover:bg-blue-600/25"
+                      }`}>
+                      {barcodeScanning ? <X size={13} /> : <ScanLine size={13} />}
+                      {barcodeScanning ? "Cancel" : "Scan"}
+                    </button>
+                  </div>
+
+                  {barcodeScanning && (
+                    <div className="mt-2.5">
+                      <BarcodeCameraScanner
+                        onScan={(text) => {
+                          setBarcodeScanning(false);
+                          setForm(p => ({ ...p, barcode: text }));
+                          void checkBarcodeDuplicate(text, editing?.id ?? null);
+                        }} />
+                    </div>
+                  )}
+
+                  {dupWarn && (
+                    <div className="mt-2 flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2.5">
+                      <AlertCircle size={14} className="text-amber-400 flex-shrink-0" />
+                      <p className="text-amber-400 text-xs font-bold flex-1">
+                        Ye barcode already <span className="underline">{dupWarn.name}</span> se linked hai.
+                      </p>
+                      <Link href={`/inventory/${dupWarn.id}`} target="_blank"
+                        className="flex-shrink-0 text-[10px] font-extrabold text-amber-400 hover:text-amber-300 border border-amber-500/30 px-2 py-1 rounded-lg transition-colors">
+                        <span className="inline-flex items-center gap-1"><ExternalLink size={10} /> View</span>
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

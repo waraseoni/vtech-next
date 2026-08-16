@@ -11,10 +11,11 @@ import {
   Boxes, MapPin, Calendar,
   Wrench, ShoppingCart, IndianRupee, BarChart3, Hash,
   ArrowDownToLine, ArrowUpFromLine, ExternalLink, Info,
-  ChevronRight, Zap, CircleDot,
+  ChevronRight, Zap, CircleDot, Printer,
 } from "lucide-react";
 import StockModal from "./components/StockModal";
 import { logActivity } from "@/lib/activity";
+import { printBarcodeLabels, safeBarcode } from "@/lib/barcodePrint";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -25,6 +26,7 @@ interface Product {
   price: number;
   image_path: string | null;
   alert_quantity?: number;
+  barcode?: string | null;
 }
 
 interface StockIn {
@@ -361,12 +363,23 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Right: Add stock CTA */}
-            <button
-              onClick={() => { setEditingStock(null); setModalOpen(true); }}
-              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-extrabold shadow-lg shadow-blue-500/20 transition-all active:scale-95">
-              <Plus size={16} /> Add Stock
-            </button>
+            {/* Right: actions */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const bc = safeBarcode(product.barcode);
+                  if (!bc) { alert("Is product ka koi barcode set nahi hai — pehle Products page me barcode add karein."); return; }
+                  printBarcodeLabels([{ value: bc, name: product.name, price: product.price }], 1);
+                }}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-300 hover:text-white rounded-xl text-sm font-bold transition-all active:scale-95">
+                <Printer size={15} /> Print Label
+              </button>
+              <button
+                onClick={() => { setEditingStock(null); setModalOpen(true); }}
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-extrabold shadow-lg shadow-blue-500/20 transition-all active:scale-95">
+                <Plus size={16} /> Add Stock
+              </button>
+            </div>
           </div>
         </div>
       </div>

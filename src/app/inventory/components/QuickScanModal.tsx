@@ -2,12 +2,13 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import {
-  X, ScanLine, Loader2, CheckCircle2, AlertCircle,
+  X, ScanLine, Camera, CameraOff, Loader2, CheckCircle2, AlertCircle,
   Package, Search, ArrowDownToLine, MapPin, Calendar,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
 import { todayIST, toISTDatePart } from "@/lib/dateUtils";
 import { stockStatusStyle } from "@/lib/inventory";
+import { isCameraSupported, cameraUnsupportedReason, cameraErrorMessage } from "@/lib/cameraSupport";
 
 interface QuickScanProps {
   onClose: () => void;
@@ -23,19 +24,26 @@ interface MatchedProduct {
   available: number;
 }
 
-export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
-  const [code,     setCode]     = useState("");
-  const [match,    setMatch]    = useState<MatchedProduct | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const [quantity, setQuantity] = useState(1);
-  const [place,    setPlace]    = useState("");
-  const [stockDate,setStockDate] = useState(todayIST());
-  const [saving,   setSaving]   = useState(false);
-  const [success,  setSuccess]  = useState(false);
-  const [error,    setError]    = useState<string | null>(null);
+type Html5QrcodeRef = import("html5-qrcode").Html5Qrcode;
 
-  const inputRef  = useRef<HTMLInputElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
+export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
+  const [code,      setCode]      = useState("");
+  const [match,     setMatch]     = useState<MatchedProduct | null>(null);
+  const [notFound,  setNotFound]  = useState(false);
+  const [quantity,  setQuantity]  = useState(1);
+  const [place,     setPlace]     = useState("");
+  const [stockDate, setStockDate] = useState(todayIST());
+  const [saving,    setSaving]    = useState(false);
+  const [success,   setSuccess]   = useState(false);
+  const [error,     setError]     = useState<string | null>(null);
+  const [cameraOn,  setCameraOn]  = useState(false);
+  const [camErr,    setCamErr]    = useState<string | null>(null);
+
+  const inputRef    = useRef<HTMLInputElement>(null);
+  const overlayRef  = useRef<HTMLDivElement>(null);
+  const cameraBoxRef= useRef<HTMLDivElement>(null);
+  const scannerRef  = useRef<Html5QrcodeRef | null>(null);
+  const scanOnce    = useRef(false);
   const today = todayIST();
 
   useEffect(() => {
@@ -50,6 +58,64 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
   }, []);
 
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 60); }, []);
+
+  const stopCamera = async () => {
+    scanOnce.current = true;
+    setCameraOn(false);
+    if (scannerRef.current) {
+      try {
+        if (scannerRef.current.isScanning) await scannerRef.current.stop();
+      } catch { /* already stopped */ }
+      scannerRef.current.clear();
+      scannerRef.current = null;
+    }
+  };
+
+  // Stop camera + cleanup on unmount
+  useEffect(() => () => { void stopCamera(); }, []);
+
+  const startCamera = async () => {
+    setCamErr(null);
+    scanOnce.current = false;
+    setCameraOn(true);
+    try {
+      if (!isCameraSupported()) {
+        setCameraOn(false);
+        setCamErr(cameraUnsupportedReason());
+        return;
+      }
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
+      if (!cameraBoxRef.current) return;
+      const scanner = new Html5Qrcode("quickscan-camera", {
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+        ],
+        verbose: false,
+      });
+      scannerRef.current = scanner;
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 230, height: 150 } },
+        async (text) => {
+          if (scanOnce.current) return;
+          scanOnce.current = true;
+          await stopCamera();
+          setCode(text);
+          await lookup(text);
+        },
+        () => { /* frame miss — ignore */ }
+      );
+    } catch (err) {
+      setCameraOn(false);
+      setCamErr(cameraErrorMessage(err));
+    }
+  };
 
   const lookup = async (raw: string) => {
     const q = raw.trim();
@@ -168,6 +234,38 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
         </div>
 
         <div className="px-5 py-5 space-y-5">
+          {/* ── Camera scan toggle ── */}
+          <div>
+            <button
+              type="button"
+              onClick={() => { if (cameraOn) { void stopCamera(); } else { void startCamera(); } }}
+              className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-extrabold text-sm transition-all active:scale-[0.98] border ${
+                cameraOn
+                  ? "bg-red-600/15 border-red-500/30 text-red-400 hover:bg-red-600/25"
+                  : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 border-transparent text-white shadow-lg shadow-blue-500/20"
+              }`}>
+              {cameraOn
+                ? <><CameraOff size={16} /> Stop Camera</>
+                : <><Camera size={16} /> Scan with Phone Camera</>}
+            </button>
+            {camErr && (
+              <div className="flex items-center gap-2.5 bg-amber-500/8 border border-amber-500/20 rounded-xl px-4 py-3 mt-2">
+                <AlertCircle size={14} className="text-amber-400 flex-shrink-0" />
+                <p className="text-amber-400 text-xs font-bold">{camErr}</p>
+              </div>
+            )}
+            {cameraOn && (
+              <div className="mt-3 rounded-xl overflow-hidden border border-[#21293d] bg-black relative">
+                <div id="quickscan-camera" ref={cameraBoxRef} className="w-full" />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2 text-center">
+                  <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                    Point camera at barcode / QR
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* ── Scan input ── */}
           <div>
             <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
@@ -309,7 +407,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
                 <Package size={26} className="text-emerald-500/40" />
               </div>
               <p className="text-slate-500 text-xs font-bold max-w-[240px] leading-relaxed">
-                USB barcode scanner se scan karein — ya barcode number type karke Enter dabayen
+                Phone camera se scan karein — ya USB scanner / manual barcode entry
               </p>
             </div>
           )}

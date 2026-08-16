@@ -12,6 +12,7 @@ import {
   Layers, Zap, ShoppingCart, Boxes, ScanLine, FileText,
 } from "lucide-react";
 import QuickScanModal from "./components/QuickScanModal";
+import { printBarcodeLabels, safeBarcode } from "@/lib/barcodePrint";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ProductStock {
@@ -249,6 +250,22 @@ export default function InventoryPage() {
     w.print();
   };
 
+  // ── Print barcode labels for current filtered list ──────────────────────────
+  const handlePrintLabels = () => {
+    const items = filtered
+      .filter(p => safeBarcode(p.barcode))
+      .map(p => ({ value: p.barcode!, name: p.name, price: p.price }));
+    if (!items.length) {
+      alert("Filtered list me kisi product ka barcode set nahi hai. Pehle Products page me barcodes add karein.");
+      return;
+    }
+    if (items.length > 150) {
+      alert(`Bohot zyada labels (${items.length}) — pehle filter/search se list chhoti karein (max 150).`);
+      return;
+    }
+    printBarcodeLabels(items, 3);
+  };
+
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -303,6 +320,10 @@ export default function InventoryPage() {
                 className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
                 <FileText size={13} /> Purchase Orders
               </Link>
+              <button onClick={handlePrintLabels}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
+                <Printer size={13} /> Labels
+              </button>
               <button onClick={() => setScanOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-500/20">
                 <ScanLine size={13} /> Scan
@@ -490,8 +511,16 @@ export default function InventoryPage() {
                               {p.description}
                             </div>
                             {p.barcode && (
-                              <div className="text-[9px] font-mono text-purple-500/70 truncate max-w-[200px]">
-                                {p.barcode}
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] font-mono text-purple-500/70 truncate max-w-[200px]">
+                                  {p.barcode}
+                                </span>
+                                <button
+                                  onClick={() => printBarcodeLabels([{ value: p.barcode!, name: p.name, price: p.price }], 1)}
+                                  title="Print label"
+                                  className="text-slate-700 hover:text-slate-300 transition-colors">
+                                  <Printer size={10} />
+                                </button>
                               </div>
                             )}
                           </div>
@@ -689,7 +718,15 @@ export default function InventoryPage() {
                         <div className="font-black text-white text-sm truncate">{p.name}</div>
                         <div className="text-[11px] text-slate-600 truncate mt-0.5">{p.description}</div>
                         {p.barcode && (
-                          <div className="text-[9px] font-mono text-purple-500/70 truncate mt-0.5">{p.barcode}</div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[9px] font-mono text-purple-500/70 truncate">{p.barcode}</span>
+                            <button
+                              onClick={() => printBarcodeLabels([{ value: p.barcode!, name: p.name, price: p.price }], 1)}
+                              title="Print label"
+                              className="text-slate-700 hover:text-slate-300 transition-colors">
+                              <Printer size={10} />
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
