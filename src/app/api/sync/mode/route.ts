@@ -3,7 +3,6 @@ import { requireAdmin, UNAUTHORIZED } from "@/lib/api-auth";
 import {
   readSyncMode,
   writeSyncMode,
-  getSyncTaskEnabled,
   setSyncTaskEnabled,
   SYNC_MODES,
   type SyncMode,
@@ -12,11 +11,7 @@ import {
 export async function GET() {
   const admin = await requireAdmin();
   if (!admin) return UNAUTHORIZED();
-  return NextResponse.json({
-    status: "ok",
-    mode: await readSyncMode(),
-    task_enabled: await getSyncTaskEnabled(),
-  });
+  return NextResponse.json({ mode: readSyncMode() });
 }
 
 export async function POST(req: Request) {
@@ -41,17 +36,15 @@ export async function POST(req: Request) {
     );
   }
 
-  // Cloud (system_info) me save karo — Vercel GUI, shop PC script, sab yahi padhte hain.
-  const cloudOk = await writeSyncMode(mode as SyncMode);
+  writeSyncMode(mode as SyncMode);
 
-  // Shop PC (localhost): local file mirror + Task Scheduler ko bhi sync rakho.
+  // Windows Task Scheduler ko bhi same state pe rakh do (best-effort).
   // Auto → task enable, manual/off → task disable.
   const taskChangeOk = await setSyncTaskEnabled(mode === "auto");
 
   return NextResponse.json({
     status: "ok",
     mode,
-    cloud_saved: cloudOk,
     task_enabled: mode === "auto" ? taskChangeOk : !taskChangeOk,
   });
 }

@@ -78,13 +78,11 @@ const log = (msg) => {
   if (!QUIET) console.log(msg);
 };
 
-// ── Sync mode + remote state (auto / manual / off) ─────────────────────────
-// State ka source of truth Supabase system_info me hai (sync_mode / sync_pending
-// / sync_runs) — Vercel ke /sync page ka remote "Sync Now" wahan flag set karta
-// hai, aur shop PC ki GUI bhi wahi likhti hai. scripts/sync-settings.json sirf
-// shop PC ka local cache/fallback hai.
+// ── Sync mode (auto / manual / off) ─────────────────────────────────────────
+// scripts/sync-settings.json me mode store hota hai. Task Scheduler run (bina
+// --force) isse respect karta hai; GUI ka "Sync Now" hamesha --force chalta hai.
 const SETTINGS_FILE = path.join(__dirname, "sync-settings.json");
-function readLocalSyncMode() {
+function readSyncMode() {
   try {
     if (fs.existsSync(SETTINGS_FILE)) {
       const parsed = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
@@ -93,67 +91,8 @@ function readLocalSyncMode() {
   } catch {}
   return "auto";
 }
-
-const SBH = {
-  apikey: SUPABASE_KEY,
-  Authorization: `Bearer ${SUPABASE_KEY}`,
-};
-
-const CFG = {
-  mode: "sync_mode",
-  pending: "sync_pending",
-  runs: "sync_runs",
-  lastRun: "sync_last_run",
-};
-
-async function cfgGet(field) {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/system_info?select=meta_value&meta_field=eq.${field}`,
-    { headers: SBH }
-  );
-  if (!res.ok) throw new Error(`system_info get ${field}: ${res.status}`);
-  const rows = await res.json();
-  return rows && rows.length ? rows[0].meta_value : null;
-}
-
-async function cfgUpsert(field, value) {
-  const existing = await cfgGet(field);
-  const patchBody = JSON.stringify({ meta_value: String(value) });
-  const insertBody = JSON.stringify({ meta_field: field, meta_value: String(value) });
-  const res =
-    existing !== null
-      ? await fetch(
-          `${SUPABASE_URL}/rest/v1/system_info?meta_field=eq.${field}`,
-          { method: "PATCH", headers: { ...SBH, "Content-Type": "application/json" }, body: patchBody }
-        )
-      : await fetch(`${SUPABASE_URL}/rest/v1/system_info`, {
-          method: "POST",
-          headers: { ...SBH, "Content-Type": "application/json", Prefer: "return=minimal" },
-          body: insertBody,
-        });
-  if (!res.ok) throw new Error(`system_info set ${field}: ${res.status}`);
-}
-
 const FORCE = process.argv.includes("--force");
-const WATCHER = process.argv.includes("--watcher");
-const LOCK_FILE = path.join(__dirname, "sync.lock");
-const IS_HISTORY = process.argv.includes("--history");
-
-// Cloud state load (best-effort — fail ho to local file use hota hai).
-// --history ke liye zaroori nahi, isliye skip.
-let SYNC_MODE = readLocalSyncMode();
-let PENDING = false;
-let cloudReady = false;
-if (!IS_HISTORY) {
-  try {
-    const cm = await cfgGet(CFG.mode);
-    if (cm && ["auto", "manual", "off"].includes(cm)) SYNC_MODE = cm;
-    PENDING = (await cfgGet(CFG.pending)) === "1";
-    cloudReady = true;
-  } catch (e) {
-    console.warn(`[sync] cloud state read fail (local file use hoga): ${e.message}`);
-  }
-}
+const SYNC_MODE = readSyncMode();
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error(
@@ -497,67 +436,23 @@ async function printHistory(n) {
   process.exit(0);
 }
 
-// Har run ka summary cloud (system_info.sync_runs) me save karo + remote pending
-// request clear karo. Vercel ka /sync page yahi history dikhata hai.
-async function recordCloudRun(rec) {
-  const prev = JSON.parse((await cfgGet(CFG.runs)) || "[]");
-  const arr = Array.isArray(prev) ? prev : [];
-  arr.unshift({
-    id: Date.now(),
-    started_at: rec.startedAt.toISOString(),
-    finished_at: rec.finishedAt.toISOString(),
-    status: rec.status,
-    tables: rec.tables || 0,
-    rows: rec.rows || 0,
-    mismatches: rec.mismatches || 0,
-    duration_sec: rec.durationSec || 0,
-    details: rec.details || null,
-  });
-  await cfgUpsert(CFG.runs, JSON.stringify(arr.slice(0, 20)));
-  await cfgUpsert(CFG.pending, "0");
-  await cfgUpsert(CFG.lastRun, rec.startedAt.toISOString());
-}
-
 // ── Main ────────────────────────────────────────────────────────────────────
 async function main() {
-  // 1-min watcher: sirf remote "Sync Now" request (pending flag) par kaam karta
-  // hai. Auto 15-min sync alag Task Scheduler task se chalta hai.
-  if (WATCHER) {
-    if (!cloudReady || SYNC_MODE === "off" || !PENDING) {
-      console.log(
-        `[watcher] ${new Date().toISOString()} | mode=${SYNC_MODE} pending=${PENDING} — kuch nahi karna`
-      );
-      return;
-    }
-    log("[watcher] Remote 'Sync Now' request mila — sync shuru...");
-  }
+  const started = new Date();
+  log("Supabase → MariaDB converter");
+  log(`  Supabase : ${SUPABASE_URL}`);
+  log(`  MariaDB  : ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}`);
 
-  // Sync mode gate: scheduled run (bina --force, bina pending request) manual/off
-  // me skip karta hai. Remote request (pending) ho to manual me bhi chalta hai.
+  // Sync mode gate: Task Scheduler run (bina --force) manual/off me skip karta hai.
   // GUI ka "Sync Now" hamesha --force ke saath aata hai (API uske liye mode=off hi rokta hai).
-  if (!FORCE && !PENDING && SYNC_MODE !== "auto") {
+  if (!FORCE && SYNC_MODE !== "auto") {
     console.log(
       `[sync] SKIPPED ${new Date().toISOString()} | mode=${SYNC_MODE} (scheduled run) — auto sync off hai. GUI me "Sync Now" use karo.`
     );
     return;
   }
 
-  // Lock guard — do sync runs ek sath na chalein (15-min task + watcher overlap).
-  if (fs.existsSync(LOCK_FILE)) {
-    console.log(
-      `[sync] LOCKED ${new Date().toISOString()} — pichhla sync abhi chal raha hai, skip.`
-    );
-    return;
-  }
-  fs.writeFileSync(LOCK_FILE, String(process.pid));
-
-  const started = new Date();
-  log("Supabase → MariaDB converter");
-  log(`  Supabase : ${SUPABASE_URL}`);
-  log(`  MariaDB  : ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}`);
-
   let conn = null;
-  let run = null;
   try {
     conn = await openDb();
 
@@ -629,7 +524,7 @@ async function main() {
 
     const totalRows = Object.values(totals).reduce((a, b) => a + b, 0);
     const secs = +((Date.now() - started.getTime()) / 1000).toFixed(2);
-    run = {
+    await recordHistory(conn, {
       startedAt: started,
       finishedAt: new Date(),
       status: "OK",
@@ -638,46 +533,33 @@ async function main() {
       mismatches,
       durationSec: secs,
       details: null,
-    };
-    await recordHistory(conn, run);
+    });
+    await conn.end();
+    conn = null;
     console.log(
       `[sync] OK ${new Date().toISOString()} | db=${DB_NAME} tables=${tables.length} rows=${totalRows} mismatch=${mismatches} (${secs}s)`
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    run = {
-      startedAt: started,
-      finishedAt: new Date(),
-      status: "FAIL",
-      tables: 0,
-      rows: 0,
-      mismatches: 0,
-      durationSec: 0,
-      details: msg.slice(0, 2000),
-    };
     try {
-      if (conn) await recordHistory(conn, run);
+      await recordHistory(conn, {
+        startedAt: started,
+        finishedAt: new Date(),
+        status: "FAIL",
+        tables: 0,
+        rows: 0,
+        mismatches: 0,
+        durationSec: 0,
+        details: msg.slice(0, 2000),
+      });
     } catch {}
+    if (conn) {
+      try { await conn.end(); } catch {}
+    }
     console.error(`[sync] FAIL ${new Date().toISOString()} | ${msg}`);
     console.error(e);
-  } finally {
-    if (conn) {
-      try {
-        await conn.end();
-      } catch {}
-    }
-    try {
-      fs.unlinkSync(LOCK_FILE);
-    } catch {}
+    process.exit(1);
   }
-
-  // Cloud me history + pending clear (OK ho ya FAIL — dono cases me).
-  try {
-    await recordCloudRun(run);
-  } catch (ce) {
-    console.warn(`[sync] cloud run record fail: ${ce.message}`);
-  }
-  if (run && run.status === "FAIL") process.exit(1);
 }
 
 const HISTORY_ARG = process.argv.indexOf("--history");
