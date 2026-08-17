@@ -27,3 +27,13 @@ alter table public.inventory_list
 -- Zone search (Spare Finder browse tree) fast banane ke liye.
 create index if not exists inventory_list_place_zone_idx
   on public.inventory_list (place_zone);
+
+-- Purchase order reference (PO se aaya stock trace karne ke liye).
+-- `place` mein "PO: code" mat daalo — yeh column alag hai.
+alter table public.inventory_list
+  add column if not exists purchase_order_id integer;
+
+-- `place` ab optional hai (structured fields zone/rack/bin/box primary hain).
+-- Legacy PO receive aur manual entries me place empty ho sakta hai.
+alter table public.inventory_list
+  alter column place drop not null;

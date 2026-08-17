@@ -213,7 +213,7 @@ export default function Dashboard() {
           supabase.from("mechanic_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0).eq("status", 1),
           // Low stock — products with alert level
           pageAll(supabase.from("product_list").select("id, name, alert_quantity").eq("delete_flag", 0).gt("alert_quantity", 0)),
-          pageAll(supabase.from("inventory_list").select("product_id, quantity, place")),
+          pageAll(supabase.from("inventory_list").select("product_id, quantity")),
           pageAll(supabase.from("transaction_products").select("product_id, qty, transaction_id")),
           pageAll(supabase.from("direct_sale_items").select("product_id, qty")),
           supabase.from("transaction_list").select("id, job_id, client_name, item, amount, status").eq("del_status", 0).order("id", { ascending: false }).limit(5),
@@ -340,10 +340,23 @@ export default function Dashboard() {
           (lowSaleItems || []).forEach((i) => soldSaleMap.set(i.product_id, (soldSaleMap.get(i.product_id) || 0) + n(i.qty)));
 
           const placeMap = new Map<number, string>();
-          (lowInvAll || []).forEach((i) => { if (i.place && !placeMap.has(i.product_id)) placeMap.set(i.product_id, i.place); });
+          // Fetch locations from product_locations + locations tables
+          const lowProdIds = (lowProds || []).map((p: { id: number }) => p.id);
+          if (lowProdIds.length) {
+            const { data: plLocs } = await supabase
+              .from("product_locations")
+              .select("product_id, locations!inner(zone, rack, bin, box)")
+              .in("product_id", lowProdIds);
+            (plLocs || []).forEach((row: any) => {
+              if (placeMap.has(row.product_id)) return;
+              const loc = Array.isArray(row.locations) ? row.locations[0] : row.locations;
+              const parts = [loc?.zone, loc?.rack, loc?.bin, loc?.box].filter(Boolean);
+              if (parts.length > 0) placeMap.set(row.product_id, parts.join(" ▸ "));
+            });
+          }
 
           const builtLow = (lowProds || [])
-            .map((p) => {
+            .map((p: { id: number; name: string; alert_quantity: number }) => {
               const available = (stockMap.get(p.id) || 0) - (soldJobMap.get(p.id) || 0) - (soldSaleMap.get(p.id) || 0);
               return { name: p.name, quantity: available, place: placeMap.get(p.id) || "—", alert: n(p.alert_quantity) };
             })

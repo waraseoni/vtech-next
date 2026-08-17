@@ -730,15 +730,30 @@ export async function executeGeminiTool(functionCall: { name: string; args?: obj
 
         if (name === "get_inventory_status") {
             const [invRes, prodRes] = await Promise.all([
-                pageAll(supabase.from("inventory_list").select("product_id, quantity, place")),
+                pageAll(supabase.from("inventory_list").select("product_id, quantity")),
                 pageAll(supabase.from("product_list").select("id, name, alert_quantity, price").eq("delete_flag", 0)),
             ]);
             const qty: Record<number, number> = {};
             (invRes.data || []).forEach((i) => { qty[i.product_id] = (qty[i.product_id] || 0) + (Number(i.quantity) || 0); });
+            // Fetch locations from product_locations + locations
+            const prodIds = (prodRes.data || []).map((p: { id: number }) => p.id);
+            const locMap = new Map<number, string>();
+            if (prodIds.length) {
+                const { data: plLocs } = await supabase
+                    .from("product_locations")
+                    .select("product_id, locations!inner(zone, rack, bin, box)")
+                    .in("product_id", prodIds);
+                (plLocs || []).forEach((row: any) => {
+                    if (locMap.has(row.product_id)) return;
+                    const loc = Array.isArray(row.locations) ? row.locations[0] : row.locations;
+                    const parts = [loc?.zone, loc?.rack, loc?.bin, loc?.box].filter(Boolean);
+                    if (parts.length > 0) locMap.set(row.product_id, parts.join(" ▸ "));
+                });
+            }
             const items = (prodRes.data || []).map((p) => {
                 const quantity = qty[p.id] || 0;
                 const alert = Number(p.alert_quantity) || 0;
-                return { product_id: p.id, name: p.name, price: Number(p.price) || 0, quantity, alert_quantity: alert, low_stock: alert > 0 && quantity <= alert };
+                return { product_id: p.id, name: p.name, price: Number(p.price) || 0, quantity, alert_quantity: alert, low_stock: alert > 0 && quantity <= alert, location: locMap.get(p.id) || "—" };
             });
             return { total_products: items.length, low_stock_count: items.filter((x) => x.low_stock).length, inventory: items };
         }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { stockStatusStyle, alertThreshold, type StockStatusStyle } from "@/lib/inventory";
 import {
-  locPath, partsFromRow, encodeLocationToken, decodeLocationToken,
+  locPath, encodeLocationToken, decodeLocationToken,
   EMPTY_LOCATION, type LocationParts,
 } from "@/lib/locations";
 import BarcodeCameraScanner from "@/app/components/BarcodeCameraScanner";
@@ -20,6 +20,7 @@ type LocGroup = {
   qty: number;
   rows: number;
   lastDate: string;
+  poCodes: string[];
 };
 
 type ProductLoc = {
@@ -33,6 +34,7 @@ type ProductLoc = {
   total_in: number;
   groups: LocGroup[];
   unlocatedQty: number;
+  unlocatedPoCodes: string[];
 };
 
 type TreeNode = {
@@ -139,13 +141,33 @@ export default function LocatePage() {
       if (!pl) { setProds([]); return; }
       const ids = pl.map(p => p.id);
 
+      const { data: plLocs } = await supabase
+        .from("product_locations")
+        .select("product_id, locations!inner(id, zone, rack, bin, box)")
+        .in("product_id", ids);
+      const prodLocMap = new Map<number, { zone: string; rack: string; bin: string; box: string }[]>();
+      (plLocs || []).forEach((row: any) => {
+        const loc = row.locations;
+        const arr = prodLocMap.get(row.product_id) || [];
+        arr.push({ zone: loc.zone || "", rack: loc.rack || "", bin: loc.bin || "", box: loc.box || "" });
+        prodLocMap.set(row.product_id, arr);
+      });
+
       const [stockRes, jobRes, saleRes] = await Promise.all([
         supabase.from("inventory_list")
-          .select("product_id, quantity, place, place_zone, place_rack, place_bin, place_box, stock_date")
+          .select("product_id, quantity, stock_date, purchase_order_id")
           .in("product_id", ids),
         supabase.from("transaction_products").select("product_id, qty, transaction_id").in("product_id", ids),
         supabase.from("direct_sale_items").select("product_id, qty").in("product_id", ids),
       ]);
+
+      // Fetch PO codes
+      const allPoIds = [...new Set((stockRes.data || []).map(r => r.purchase_order_id).filter(Boolean))];
+      const poCodeMap = new Map<number, string>();
+      if (allPoIds.length) {
+        const { data: poRows } = await supabase.from("purchase_orders").select("id, po_code").in("id", allPoIds);
+        (poRows || []).forEach(r => poCodeMap.set(r.id, r.po_code));
+      }
 
       const txnIds = [...new Set((jobRes.data || []).map(i => i.transaction_id))];
       let valid = new Set<number>();
@@ -160,10 +182,18 @@ export default function LocatePage() {
 
       const byId = new Map<number, ProductLoc>();
       for (const p of pl) {
+        const locs = prodLocMap.get(p.id) || [];
+        const groups: LocGroup[] = locs.map(loc => {
+          const parts = { zone: loc.zone, rack: loc.rack, bin: loc.bin, box: loc.box };
+          const path = locPath(parts);
+          return path ? { parts, path, qty: 0, rows: 0, lastDate: "", poCodes: [] } : null;
+        }).filter(Boolean) as LocGroup[];
         byId.set(p.id, {
           id: p.id, name: p.name, description: p.description || "", barcode: p.barcode || null,
           image_path: p.image_path || null, alert_quantity: p.alert_quantity || 5,
-          available: 0, total_in: 0, groups: [], unlocatedQty: 0,
+          available: 0, total_in: 0,
+          groups,
+          unlocatedQty: 0, unlocatedPoCodes: [],
         });
       }
 
@@ -172,14 +202,16 @@ export default function LocatePage() {
         if (!prod) return;
         const qty = r.quantity || 0;
         prod.total_in += qty;
-        const parts = partsFromRow({ zone: r.place_zone, rack: r.place_rack, bin: r.place_bin, box: r.place_box, place: r.place });
-        const path = locPath(parts);
-        if (path) {
-          const g = prod.groups.find(x => x.path === path);
-          if (g) { g.qty += qty; g.rows++; if (String(r.stock_date) > g.lastDate) g.lastDate = String(r.stock_date); }
-          else prod.groups.push({ parts, path, qty, rows: 1, lastDate: String(r.stock_date || "") });
+        const poCode = r.purchase_order_id ? poCodeMap.get(r.purchase_order_id) : undefined;
+        if (prod.groups.length > 0) {
+          const g = prod.groups[0];
+          g.qty += qty;
+          g.rows++;
+          if (String(r.stock_date) > g.lastDate) g.lastDate = String(r.stock_date);
+          if (poCode && !g.poCodes.includes(poCode)) g.poCodes.push(poCode);
         } else {
           prod.unlocatedQty += qty;
+          if (poCode && !prod.unlocatedPoCodes.includes(poCode)) prod.unlocatedPoCodes.push(poCode);
         }
       });
 
@@ -569,9 +601,12 @@ export default function LocatePage() {
                         {p.groups.map(g => (
                           <button key={g.path} onClick={() => revealLocation(g.path)}
                             className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-500/8 border border-emerald-500/25 rounded-lg text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/15 transition-all text-left group"
-                            title={`${g.rows} stock entry(ies) · last ${g.lastDate || "—"}`}>
+                            title={`${g.rows} stock entry(ies) · last ${g.lastDate || "—"}${g.poCodes.length ? ` · PO: ${g.poCodes.join(", ")}` : ""}`}>
                             <MapPin size={11} className="text-emerald-500 flex-shrink-0" />
                             <span className="truncate max-w-[240px] sm:max-w-[320px]">{g.path}</span>
+                            {g.poCodes.length > 0 && (
+                              <span className="text-[9px] text-blue-400 font-bold px-1 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">{g.poCodes[0]}</span>
+                            )}
                             <span className="text-[10px] text-emerald-400/70 font-black px-1.5 py-0.5 rounded-md bg-emerald-500/10">{g.qty}</span>
                           </button>
                         ))}
@@ -640,6 +675,12 @@ export default function LocatePage() {
                     <Link href={`/inventory/${p.id}`} className="text-sm font-black text-white hover:text-amber-400 transition-colors">{p.name}</Link>
                     <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-600">
                       <span className="font-bold text-amber-400">{p.unlocatedQty} unit stock</span>
+                      {p.unlocatedPoCodes.length > 0 && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-400 font-bold">
+                          <FileText size={9} /> {p.unlocatedPoCodes.slice(0, 2).join(", ")}
+                          {p.unlocatedPoCodes.length > 2 && <span className="text-slate-600"> +{p.unlocatedPoCodes.length - 2}</span>}
+                        </span>
+                      )}
                       {p.barcode && <span className="font-mono text-[9px] text-purple-500/70">{p.barcode}</span>}
                     </div>
                   </div>

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import { supabase } from "@/lib/supabase";
 import { stockStatusStyle, stockBarColor, alertThreshold, stockValue } from "@/lib/inventory";
+import { locPath } from "@/lib/locations";
 import {
   Package, Search, Eye, Printer, MapPin,
   TrendingDown, AlertTriangle, CheckCircle, XCircle,
@@ -30,6 +31,7 @@ interface ProductStock {
   oversold: number;
   place: string | null;
   places: string[];
+  poCodes: string[];
   stock_value: number;
   cost_value: number;
   margin_pct: number;
@@ -90,11 +92,27 @@ export default function InventoryPage() {
       // Batch fetch all inventory + sold data at once (avoid N+1)
       const ids = pl.map(p => p.id);
 
-      const [stockRes, jobItemsRes, saleItemsRes] = await Promise.all([
-        supabase.from("inventory_list").select("product_id, quantity, place").in("product_id", ids),
+      const [stockRes, jobItemsRes, saleItemsRes, plLocs] = await Promise.all([
+        supabase.from("inventory_list").select("product_id, quantity, purchase_order_id").in("product_id", ids),
         supabase.from("transaction_products").select("product_id, qty, transaction_id").in("product_id", ids),
         supabase.from("direct_sale_items").select("product_id, qty").in("product_id", ids),
+        supabase
+          .from("product_locations")
+          .select("product_id, locations!inner(id, zone, rack, bin, box)")
+          .in("product_id", ids),
       ]);
+
+      const locMap = new Map<number, { zone: string; rack: string; bin: string; box: string }[]>();
+      (plLocs.data || []).forEach((row: any) => {
+        const arr = locMap.get(row.product_id) || [];
+        arr.push({
+          zone: row.locations?.zone ?? "",
+          rack: row.locations?.rack ?? "",
+          bin:  row.locations?.bin  ?? "",
+          box:  row.locations?.box  ?? "",
+        });
+        locMap.set(row.product_id, arr);
+      });
 
       // Get valid (non-cancelled) transaction IDs once
       const txnIds = [...new Set((jobItemsRes.data || []).map(i => i.transaction_id))];
@@ -106,17 +124,24 @@ export default function InventoryPage() {
       }
 
       // Build maps
-      const stockMap   = new Map<number, { qty: number; place: string | null }>();
-      const placeMap   = new Map<number, Set<string>>();
+      const stockMap   = new Map<number, number>();
+      const poIdMap    = new Map<number, Set<number>>();
       (stockRes.data || []).forEach(r => {
-        const prev = stockMap.get(r.product_id) || { qty: 0, place: null };
-        stockMap.set(r.product_id, { qty: prev.qty + r.quantity, place: r.place || prev.place });
-        if (r.place) {
-          const set = placeMap.get(r.product_id) || new Set<string>();
-          set.add(r.place);
-          placeMap.set(r.product_id, set);
+        stockMap.set(r.product_id, (stockMap.get(r.product_id) || 0) + r.quantity);
+        if (r.purchase_order_id) {
+          const set = poIdMap.get(r.product_id) || new Set<number>();
+          set.add(r.purchase_order_id);
+          poIdMap.set(r.product_id, set);
         }
       });
+
+      // Fetch PO codes for all referenced purchase orders
+      const allPoIds = [...new Set([...poIdMap.values()].flatMap(s => [...s]))];
+      const poCodeMap = new Map<number, string>();
+      if (allPoIds.length) {
+        const { data: poRows } = await supabase.from("purchase_orders").select("id, po_code").in("id", allPoIds);
+        (poRows || []).forEach((r: { id: number; po_code: string }) => poCodeMap.set(r.id, r.po_code));
+      }
 
       const soldJobMap = new Map<number, number>();
       (jobItemsRes.data || []).forEach(r => {
@@ -131,11 +156,14 @@ export default function InventoryPage() {
       });
 
       const result: ProductStock[] = pl.map(p => {
-        const s         = stockMap.get(p.id)    || { qty: 0, place: null };
+        const qty        = stockMap.get(p.id) || 0;
         const soldJob   = soldJobMap.get(p.id)  || 0;
         const soldSale  = soldSaleMap.get(p.id) || 0;
         const totalSold = soldJob + soldSale;
-        const available = s.qty - totalSold;
+        const available = qty - totalSold;
+        const locs = locMap.get(p.id) || [];
+        const placePaths = locs.map(l => locPath(l)).filter(Boolean);
+        const placePath = placePaths[0] || "";
         return {
           id:          p.id,
           name:        p.name,
@@ -145,12 +173,13 @@ export default function InventoryPage() {
           image_path:  p.image_path || null,
           barcode:     p.barcode || null,
           alert_quantity: p.alert_quantity || 5,
-          total_in:    s.qty,
+          total_in:    qty,
           total_sold:  totalSold,
           available,
           oversold:    Math.max(0, -available),
-          place:       s.place,
-          places:      Array.from(placeMap.get(p.id) || []),
+          place:       placePath || null,
+          places:      placePaths,
+          poCodes:     [...(poIdMap.get(p.id) || [])].map(id => poCodeMap.get(id)).filter(Boolean) as string[],
           stock_value: stockValue(available, p.price),
           cost_value:  stockValue(available, p.cost_price),
           margin_pct:  p.price && p.cost_price != null && p.price > 0
@@ -620,21 +649,35 @@ export default function InventoryPage() {
                       </td>
 
                       <td className="px-4 py-3 text-center">
-                        {p.places.length > 0 ? (
-                          <div className="flex flex-wrap items-center justify-center gap-1 max-w-[180px] mx-auto">
-                            {p.places.slice(0, 2).map((pl) => (
-                              <Link key={pl} href={`/inventory/locate?loc=${encodeURIComponent(pl)}`} title={pl}
-                                className="inline-flex items-center gap-0.5 text-[10px] text-slate-500 border border-[#21293d] rounded-md px-1.5 py-0.5 hover:text-emerald-400 hover:border-emerald-500/30 transition-colors">
-                                <MapPin size={9} className="text-slate-700" /> {pl.split(" ▸ ").slice(-2).join(" ▸ ")}
-                              </Link>
-                            ))}
-                            {p.places.length > 2 && (
-                              <span className="text-[10px] text-slate-700 font-bold">+{p.places.length - 2} more</span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-slate-700 text-[11px]">—</span>
-                        )}
+                        <div className="flex flex-col items-center gap-1 max-w-[180px] mx-auto">
+                          {p.places.length > 0 ? (
+                            <div className="flex flex-wrap items-center justify-center gap-1">
+                              {p.places.slice(0, 2).map((pl) => (
+                                <Link key={pl} href={`/inventory/locate?loc=${encodeURIComponent(pl)}`} title={pl}
+                                  className="inline-flex items-center gap-0.5 text-[10px] text-slate-500 border border-[#21293d] rounded-md px-1.5 py-0.5 hover:text-emerald-400 hover:border-emerald-500/30 transition-colors">
+                                  <MapPin size={9} className="text-slate-700" /> {pl.split(" ▸ ").slice(-2).join(" ▸ ")}
+                                </Link>
+                              ))}
+                              {p.places.length > 2 && (
+                                <span className="text-[10px] text-slate-700 font-bold">+{p.places.length - 2}</span>
+                              )}
+                            </div>
+                          ) : p.poCodes.length === 0 ? (
+                            <span className="text-slate-700 text-[11px]">—</span>
+                          ) : null}
+                          {p.poCodes.length > 0 && (
+                            <div className="flex flex-wrap items-center justify-center gap-1" title={`PO: ${p.poCodes.join(", ")}`}>
+                              {p.poCodes.slice(0, 2).map(code => (
+                                <span key={code} className="inline-flex items-center gap-0.5 text-[10px] text-blue-400 font-bold border border-blue-500/20 bg-blue-500/5 rounded-md px-1.5 py-0.5">
+                                  <FileText size={8} /> {code}
+                                </span>
+                              ))}
+                              {p.poCodes.length > 2 && (
+                                <span className="text-[10px] text-slate-700 font-bold">+{p.poCodes.length - 2}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </td>
 
                       <td className="px-4 py-3 text-center">
@@ -813,6 +856,13 @@ export default function InventoryPage() {
                           <MapPin size={10} />
                           {p.places.slice(0, 2).join(", ")}
                           {p.places.length > 2 && <span className="text-slate-700 font-bold">+{p.places.length - 2}</span>}
+                        </span>
+                      )}
+                      {p.poCodes.length > 0 && (
+                        <span className="flex items-center gap-1 text-[11px] text-blue-400 font-bold">
+                          <FileText size={10} />
+                          {p.poCodes.slice(0, 2).join(", ")}
+                          {p.poCodes.length > 2 && <span className="text-slate-700 font-bold">+{p.poCodes.length - 2}</span>}
                         </span>
                       )}
                       {p.stock_value > 0 && (

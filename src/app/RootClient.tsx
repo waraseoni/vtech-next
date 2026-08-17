@@ -423,6 +423,11 @@ function SidebarNav({
                   <Truck size={12} className="text-sky-400" />Suppliers
                 </Link>
               </li>
+              <li>
+                <Link href="/inventory/locations" className={subLinkCls(pathname === "/inventory/locations")} onClick={onNavClick}>
+                  <MapPin size={12} className="text-rose-400" />Locations
+                </Link>
+              </li>
             </SubMenu>
 
             <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">

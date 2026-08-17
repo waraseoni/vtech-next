@@ -10,8 +10,6 @@ import { logActivity } from "@/lib/activity";
 import { todayIST, toISTDatePart } from "@/lib/dateUtils";
 import { stockStatusStyle } from "@/lib/inventory";
 import { isCameraSupported, cameraUnsupportedReason, cameraErrorMessage } from "@/lib/cameraSupport";
-import LocationPicker from "@/components/LocationPicker";
-import { locPath, partsFromRow, EMPTY_LOCATION, type LocationParts } from "@/lib/locations";
 
 interface QuickScanProps {
   onClose: () => void;
@@ -34,9 +32,6 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
   const [match,     setMatch]     = useState<MatchedProduct | null>(null);
   const [notFound,  setNotFound]  = useState(false);
   const [quantity,  setQuantity]  = useState(1);
-  const [loc,       setLoc]       = useState<LocationParts>({ ...EMPTY_LOCATION });
-  const [suggestions, setSuggestions] = useState<{ zone: string[]; rack: string[]; bin: string[]; box: string[] }>({ zone: [], rack: [], bin: [], box: [] });
-  const [lastUsed,  setLastUsed]  = useState<LocationParts | null>(null);
   const [stockDate, setStockDate] = useState(todayIST());
   const [saving,    setSaving]    = useState(false);
   const [success,   setSuccess]   = useState(false);
@@ -142,34 +137,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
     const sold = await fetchSold(data.id);
     setMatch({ ...data, alert_quantity: data.alert_quantity || 5, available: sold.available });
     setQuantity(1);
-    setLoc({ ...EMPTY_LOCATION });
     setStockDate(today);
-    loadLocationHints(data.id);
-  };
-
-  // Existing locations (suggestions) + is product ki last used location
-  const loadLocationHints = async (productId: number) => {
-    const [locRes, lastRes] = await Promise.all([
-      supabase.from("inventory_list").select("place_zone, place_rack, place_bin, place_box"),
-      supabase.from("inventory_list")
-        .select("place, place_zone, place_rack, place_bin, place_box, stock_date")
-        .eq("product_id", productId)
-        .order("stock_date", { ascending: false })
-        .order("id", { ascending: false })
-        .limit(8),
-    ]);
-    const acc = { zone: [] as string[], rack: [] as string[], bin: [] as string[], box: [] as string[] };
-    (locRes.data || []).forEach(r => {
-      (["zone", "rack", "bin", "box"] as const).forEach(k => {
-        const v = String(r[`place_${k}`] || "").trim();
-        if (v && !acc[k].includes(v)) acc[k].push(v);
-      });
-    });
-    setSuggestions(acc);
-    const toParts = (r: { place?: string | null; place_zone?: string | null; place_rack?: string | null; place_bin?: string | null; place_box?: string | null }) =>
-      partsFromRow({ zone: r.place_zone, rack: r.place_rack, bin: r.place_bin, box: r.place_box, place: r.place });
-    const found = (lastRes.data || []).find(r => locPath(toParts(r)));
-    setLastUsed(found ? toParts(found) : null);
   };
 
   const fetchSold = async (productId: number) => {
@@ -198,21 +166,17 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
     setSaving(true);
     setError(null);
     try {
+      // Insert stock entry (no location — location lives on product_list or product_locations)
       const { error: err } = await supabase
         .from("inventory_list")
         .insert([{
           product_id: match.id,
           quantity,
-          place: locPath(loc),
-          place_zone: loc.zone || null,
-          place_rack: loc.rack || null,
-          place_bin: loc.bin || null,
-          place_box: loc.box || null,
           stock_date: stockDate,
           supplier_id: null,
         }]);
       if (err) throw err;
-      await logActivity('Added New Stock', 'Inventory', match.id, `${match.name}: Barcode quick-add ${quantity} units${locPath(loc) ? ` @ ${locPath(loc)}` : ""}`);
+      await logActivity('Added New Stock', 'Inventory', match.id, `${match.name}: Barcode quick-add ${quantity} units`);
       setSuccess(true);
       setTimeout(() => onSaved(), 700);
     } catch (err) {
@@ -382,22 +346,6 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
                     value={quantity}
                     onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
                     className="w-full text-center text-3xl font-black text-white bg-[#111520] border border-[#21293d] rounded-xl py-3 outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
-
-                {/* Location */}
-                <div>
-                  <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
-                    <span className="flex items-center gap-1.5">
-                      <MapPin size={10} className="text-emerald-500" /> Location (Zone ▸ Rack ▸ Bin ▸ Box)
-                    </span>
-                  </label>
-                  <LocationPicker
-                    compact
-                    value={loc}
-                    onChange={setLoc}
-                    suggestions={suggestions}
-                    lastUsed={lastUsed}
                   />
                 </div>
 

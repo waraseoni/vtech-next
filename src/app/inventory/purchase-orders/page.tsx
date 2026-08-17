@@ -147,7 +147,7 @@ export default function PurchaseOrdersPage() {
       const rows = po.items.map(i => ({
         product_id: i.product_id,
         quantity: Math.max(0, i.qty_ordered - i.qty_received),
-        place: "PO: " + po.po_code,
+        purchase_order_id: po.id,
         stock_date: todayIST(),
         supplier_id: po.supplier_id,
         purchase_cost: i.unit_cost,

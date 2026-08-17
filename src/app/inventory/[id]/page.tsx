@@ -14,9 +14,10 @@ import {
   ChevronRight, Zap, CircleDot, Printer, Search, AlertTriangle, FileText,
 } from "lucide-react";
 import StockModal from "./components/StockModal";
+import LocationPicker from "@/components/LocationPicker";
 import { logActivity } from "@/lib/activity";
 import { printBarcodeLabels, safeBarcode } from "@/lib/barcodePrint";
-import { locPath, partsFromRow, type LocationParts } from "@/lib/locations";
+import { locPath, EMPTY_LOCATION, type LocationParts } from "@/lib/locations";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -34,12 +35,9 @@ interface StockIn {
   id: number;
   quantity: number;
   place: string | null;
-  place_zone?: string | null;
-  place_rack?: string | null;
-  place_bin?: string | null;
-  place_box?: string | null;
   stock_date: string;
   supplier_id?: number | null;
+  purchase_order_id?: number | null;
 }
 
 interface StockOut {
@@ -101,6 +99,11 @@ export default function ProductDetailPage() {
   const   [editingStock, setEditingStock] = useState<StockIn | null>(null);
   const [stats,        setStats]        = useState({ totalIn: 0, totalSold: 0, available: 0, revenue: 0, stockValue: 0 });
   const [activeTab,    setActiveTab]    = useState<"in" | "out" | "ledger">("in");
+  const [poCodes,      setPoCodes]      = useState<Map<number, string>>(new Map());
+  const [locEditing,   setLocEditing]   = useState(false);
+  const [editLoc,      setEditLoc]      = useState<LocationParts>({ ...EMPTY_LOCATION });
+  const [locSaving,    setLocSaving]    = useState(false);
+  const [productLocations, setProductLocations] = useState<{id: number; zone: string; rack: string; bin: string; box: string}[]>([]);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -119,9 +122,31 @@ export default function ProductDetailPage() {
       const prod = prodRes.data as Product | null;
       setProduct(prod);
 
+      const { data: plLocs } = await supabase
+        .from("product_locations")
+        .select("id, locations!inner(zone, rack, bin, box)")
+        .eq("product_id", productId);
+      const mappedLocs = (plLocs || []).map((row: { id: number; locations: { zone: string; rack: string; bin: string; box: string }[] }) => ({
+        id: row.id,
+        zone: row.locations?.[0]?.zone || "",
+        rack: row.locations?.[0]?.rack || "",
+        bin:  row.locations?.[0]?.bin  || "",
+        box:  row.locations?.[0]?.box  || "",
+      }));
+      setProductLocations(mappedLocs);
+
       const stockInData = stockRes.data || [];
       setStockIn(stockInData);
       const totalIn = stockInData.reduce((s, r) => s + r.quantity, 0);
+
+      // Fetch PO codes for stock-in rows received from purchase orders
+      const poIds = [...new Set(stockInData.map((r: { purchase_order_id?: number | null }) => r.purchase_order_id).filter(Boolean))] as number[];
+      const poCodes = new Map<number, string>();
+      if (poIds.length) {
+        const { data: poRows } = await supabase.from("purchase_orders").select("id, po_code").in("id", poIds);
+        (poRows || []).forEach((r: { id: number; po_code: string }) => poCodes.set(r.id, r.po_code));
+      }
+      setPoCodes(poCodes);
 
       const jobItems  = jobRes.data || [];
       const saleItems = saleRes.data || [];
@@ -212,28 +237,9 @@ export default function ProductDetailPage() {
   // ── Computed ───────────────────────────────────────────────────────────────
   const st  = getStockStatus(stats.available, product?.alert_quantity);
   const costVal = Math.max(0, stats.available) * (product?.cost_price || 0);
-
-  // Stock locations summary (per location qty, most recently stocked first)
-  const stockLocations = useMemo(() => {
-    const map = new Map<string, { parts: LocationParts; qty: number; lastDate: string }>();
-    for (const s of stockIn) {
-      const parts = partsFromRow(s);
-      const key = locPath(parts);
-      if (!key) continue;
-      const cur = map.get(key) || { parts, qty: 0, lastDate: "" };
-      cur.qty += s.quantity;
-      if (s.stock_date > cur.lastDate) cur.lastDate = s.stock_date;
-      map.set(key, cur);
-    }
-    return [...map.entries()]
-      .map(([key, v]) => ({ key, ...v }))
-      .sort((a, b) => (a.lastDate < b.lastDate ? 1 : -1));
-  }, [stockIn]);
-
-  const latestLoc = stockLocations.length > 0 ? stockLocations[0] : null;
-  const unlocatedQty = stockIn.reduce(
-    (sum, row) => sum + (locPath(partsFromRow(row)) ? 0 : row.quantity), 0
-  );
+  const productLoc = productLocations.length > 0
+    ? { zone: productLocations[0].zone, rack: productLocations[0].rack, bin: productLocations[0].bin, box: productLocations[0].box }
+    : null;
 
   // Running-balance ledger (stock-in + stock-out merged chronologically)
   const ledger = useMemo(() => {
@@ -244,7 +250,7 @@ export default function ProductDetailPage() {
     const rows: L[] = [];
     stockIn.forEach(s => rows.push({
       key: `in-${s.id}`, date: s.stock_date, direction: "in", qty: s.quantity,
-      label: "Stock In", sub: locPath(partsFromRow(s)) || "No location",
+      label: "Stock In", sub: (product ? locPath(productLoc) : null) || (s.purchase_order_id && poCodes.get(s.purchase_order_id) ? `PO: ${poCodes.get(s.purchase_order_id)}` : "No location"),
     }));
     stockOut.forEach(o => rows.push({
       key: `out-${o.type}-${o.id}`, date: o.date, direction: "out", qty: o.qty,
@@ -256,7 +262,7 @@ export default function ProductDetailPage() {
       bal += r.direction === "in" ? r.qty : -r.qty;
       return { ...r, balance: bal };
     });
-  }, [stockIn, stockOut]);
+  }, [stockIn, stockOut, poCodes]);
 
   // Monthly movement chart data (last 6 months)
   const monthlyOut = useMemo(() => {
@@ -454,44 +460,111 @@ export default function ProductDetailPage() {
                 <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Zone ▸ Rack ▸ Bin ▸ Box</p>
               </div>
             </div>
-            <Link href="/inventory/locate"
-              className="flex items-center gap-1 px-3 py-1.5 bg-[#111520] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-lg text-[11px] font-bold transition-all">
-              <Search size={11} /> Open Spare Finder
-            </Link>
+            <div className="flex items-center gap-2">
+              {!locEditing && (
+                <button onClick={() => { setEditLoc(productLocations.length > 0 ? { zone: productLocations[0].zone, rack: productLocations[0].rack, bin: productLocations[0].bin, box: productLocations[0].box } : { ...EMPTY_LOCATION }); setLocEditing(true); }}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-[#111520] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-lg text-[11px] font-bold transition-all">
+                  <Edit3 size={11} /> Edit Location
+                </button>
+              )}
+              <Link href="/inventory/locate"
+                className="flex items-center gap-1 px-3 py-1.5 bg-[#111520] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-lg text-[11px] font-bold transition-all">
+                <Search size={11} /> Spare Finder
+              </Link>
+            </div>
           </div>
           <div className="p-3">
-            {latestLoc ? (
+            {locEditing ? (
+              <div className="space-y-3">
+                <LocationPicker
+                  value={editLoc}
+                  onChange={setEditLoc}
+                  suggestions={{ zone: [], rack: [], bin: [], box: [] }}
+                />
+                <div className="flex gap-2">
+                  <button onClick={async () => {
+                    setLocSaving(true);
+                    try {
+                      const z = editLoc.zone || null;
+                      const r = editLoc.rack || null;
+                      const b = editLoc.bin  || null;
+                      const bx = editLoc.box || null;
+
+                      let locationId: number | null = null;
+
+                      if (z || r || b || bx) {
+                        const { data: existingLoc } = await supabase
+                          .from("locations")
+                          .select("id")
+                          .eq("zone", z || "")
+                          .eq("rack", r || "")
+                          .eq("bin", b || "")
+                          .eq("box", bx || "")
+                          .maybeSingle();
+
+                        if (existingLoc) {
+                          locationId = existingLoc.id;
+                        } else {
+                          const { data: newLoc } = await supabase
+                            .from("locations")
+                            .insert({ zone: z, rack: r, bin: b, box: bx })
+                            .select("id")
+                            .single();
+                          if (newLoc) locationId = newLoc.id;
+                        }
+                      }
+
+                      if (productLocations.length > 0) {
+                        const existing = productLocations[0];
+                        if (locationId !== null) {
+                          await supabase.from("product_locations").update({ location_id: locationId }).eq("id", existing.id);
+                        } else {
+                          await supabase.from("product_locations").delete().eq("id", existing.id);
+                        }
+                      } else if (locationId !== null) {
+                        await supabase.from("product_locations").insert({ product_id: productId, location_id: locationId });
+                      }
+
+                      await logActivity('Updated Product Location', 'Inventory', productId, `${product.name}: Location set to ${locPath(editLoc) || "cleared"}`);
+                      setLocEditing(false);
+                      fetchData();
+                    } catch (err) {
+                      alert("Failed: " + (err as Error).message);
+                    }
+                    setLocSaving(false);
+                  }} disabled={locSaving}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold transition-all active:scale-[0.98] disabled:opacity-60">
+                    {locSaving ? "Saving..." : "Save Location"}
+                  </button>
+                  <button onClick={() => setLocEditing(false)}
+                    className="py-2.5 px-4 bg-[#111520] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-slate-300 rounded-xl font-bold text-xs transition-all">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : productLocations.length > 0 ? (
               <div className="space-y-1.5">
-                {stockLocations.map(({ key, parts, qty, lastDate }) => (
-                  <div key={key}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#111520] border border-[#21293d] hover:border-emerald-500/30 transition-colors">
+                {productLocations.map((loc) => (
+                  <div key={loc.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#111520] border border-[#21293d] hover:border-emerald-500/30 transition-colors">
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
                       <MapPin size={13} className="text-emerald-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-black text-slate-200 truncate">{locPath(parts)}</div>
-                      <div className="text-[9px] text-slate-600 font-bold mt-0.5">Last stocked {fmtDate(lastDate)}</div>
+                      <div className="text-xs font-black text-slate-200 truncate">{locPath(loc)}</div>
+                      <div className="text-[9px] text-slate-600 font-bold mt-0.5">Product location</div>
                     </div>
-                    <span className="flex-shrink-0 text-xs font-black text-emerald-400">{qty} unit{qty !== 1 ? "s" : ""}</span>
                   </div>
                 ))}
-                {unlocatedQty > 0 && (
-                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-amber-500/5 border border-amber-500/20">
-                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0">
-                      <AlertTriangle size={13} className="text-amber-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-black text-amber-300">No location set</div>
-                      <div className="text-[9px] text-slate-600 font-bold mt-0.5">Add stock with a location to track where it is kept</div>
-                    </div>
-                    <span className="flex-shrink-0 text-xs font-black text-amber-400">{unlocatedQty} unit{unlocatedQty !== 1 ? "s" : ""}</span>
+                {stats.available <= 0 && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[10px] text-amber-400 font-bold">
+                    <AlertTriangle size={11} /> Out of stock — location retained
                   </div>
                 )}
               </div>
             ) : (
               <div className="px-3 py-4 text-center">
                 <MapPin size={22} className="mx-auto text-slate-800 mb-2" />
-                <p className="text-slate-600 text-xs font-bold">No stock in yet — add stock with a location to track where it is kept</p>
+                <p className="text-slate-600 text-xs font-bold">Location set nahi hai — Edit Location click karke assign karein</p>
               </div>
             )}
           </div>
@@ -619,13 +692,20 @@ export default function ProductDetailPage() {
                         <span className="text-slate-600 text-xs ml-1">units</span>
                       </td>
                       <td className="px-5 py-3">
-                        {locPath(partsFromRow(s)) ? (
-                          <span className="flex items-center gap-1 text-xs text-slate-500">
-                            <MapPin size={10} className="text-emerald-500/70" /> {locPath(partsFromRow(s))}
-                          </span>
-                        ) : (
-                          <span className="text-slate-700 text-xs">—</span>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {locPath(productLoc) ? (
+                            <span className="flex items-center gap-1 text-xs text-slate-500">
+                              <MapPin size={10} className="text-emerald-500/70" /> {locPath(productLoc)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-700 text-xs">—</span>
+                          )}
+                          {s.purchase_order_id && poCodes.has(s.purchase_order_id) && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-blue-400 font-bold border border-blue-500/20 bg-blue-500/5 rounded-md px-1.5 py-0.5 w-fit">
+                              <FileText size={8} /> {poCodes.get(s.purchase_order_id)}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex justify-center gap-1.5">
@@ -833,6 +913,7 @@ export default function ProductDetailPage() {
           productId={productId}
           productName={product.name}
           stock={editingStock}
+          productLocationLabel={locPath(productLoc)}
           onClose={() => setModalOpen(false)}
           onSaved={() => { setModalOpen(false); fetchData(); }}
         />

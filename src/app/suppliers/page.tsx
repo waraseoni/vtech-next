@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
-import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Truck, Phone, Mail, MapPin, Package, ClipboardList } from "lucide-react";
+import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Truck, Phone, Mail, MapPin, Package, ClipboardList, Eye } from "lucide-react";
 
 type Supplier = {
   id: number;
@@ -203,6 +203,10 @@ export default function SuppliersPage() {
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center justify-center gap-2">
+                        <Link href={`/suppliers/${s.id}`}
+                          className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition">
+                          <Eye size={13} />
+                        </Link>
                         <button onClick={() => openEdit(s)}
                           className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition">
                           <Edit3 size={13} />
