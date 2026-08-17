@@ -501,6 +501,11 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   const [theme,        setTheme]        = useState<"dark" | "light" | null>(null);
   const [license,      setLicense]      = useState<LicenseStatus | null>(null);
   const [brandLogo,    setBrandLogo]    = useState<string | null>(null);
+  const [showIdleWarning, setShowIdleWarning] = useState(false);
+
+  // Refs for staff idle timeout (stable across re-renders, no stale closures)
+  const lastActiveRef       = useRef(Date.now());
+  const showIdleWarningRef  = useRef(false);
 
   // License status fetch — login ke baad har non-public page par.
   // Gate (LicenseGate) isi state ko dekh kar render hota hai.
@@ -712,6 +717,47 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     const interval = setInterval(check, CLIENT_CHECK_MS);
     return () => { cancelled = true; clearInterval(interval); };
   }, [profile?.role, forceClientLogout]);
+
+  // ── Staff / Admin / Developer idle timeout ──────────────────────────────
+  // 30 min inactivity → auto-logout, last 2 min me warning modal dikhata hai.
+  // Client ka alag 10-min timeout hai (upar). Refs use karte hain taaki
+  // setInterval closure me stale state na rahe.
+  useEffect(() => {
+    if (!profile?.role || profile.role === "client") return;
+    const IDLE_MS    = 30 * 60 * 1000; // 30 minutes
+    const WARNING_MS =  2 * 60 * 1000; // warning 2 min before logout
+
+    const resetTimer = () => {
+      lastActiveRef.current = Date.now();
+      if (showIdleWarningRef.current) {
+        showIdleWarningRef.current = false;
+        setShowIdleWarning(false);
+      }
+    };
+
+    const events: (keyof WindowEventMap)[] = ["mousemove", "keydown", "touchstart", "click", "scroll"];
+    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }));
+    resetTimer();
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - lastActiveRef.current;
+      if (elapsed >= IDLE_MS) {
+        supabase.auth.signOut().catch(() => {});
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+        window.location.href = "/login?reason=idle";
+      } else if (elapsed >= IDLE_MS - WARNING_MS && !showIdleWarningRef.current) {
+        showIdleWarningRef.current = true;
+        setShowIdleWarning(true);
+      }
+    }, 10_000);
+
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetTimer));
+      clearInterval(interval);
+      showIdleWarningRef.current = false;
+      setShowIdleWarning(false);
+    };
+  }, [profile?.role]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
@@ -1143,6 +1189,34 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             )}
           </>
         )}
+
+      {/* ── Idle timeout warning (staff/admin/developer) ─────────────── */}
+      {showIdleWarning && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-6 max-w-sm mx-4 shadow-2xl text-center">
+            <div className="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <Clock size={24} className="text-amber-400" />
+            </div>
+            <h3 className="text-white font-bold text-base mb-2">Session expiring soon</h3>
+            <p className="text-slate-400 text-sm mb-1">
+              Aap 30 minute se kuch nahi kar rahe.
+            </p>
+            <p className="text-slate-500 text-xs mb-5">
+              Agar 2 minute mein kuch nahi kiya to aap automatically logout ho jayenge.
+            </p>
+            <button
+              onClick={() => {
+                lastActiveRef.current = Date.now();
+                showIdleWarningRef.current = false;
+                setShowIdleWarning(false);
+              }}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-sm transition-all active:scale-95 shadow-lg shadow-blue-900/30"
+            >
+              Main hoon — Continue karo
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

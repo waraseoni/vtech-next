@@ -60,7 +60,8 @@ export default function LoginPage() {
       setTab("client");
       setError("Aapki portal access band kar di gayi hai. Dobara access ke liye shop se sampark karein.");
     } else if (reason === "idle") {
-      setTab("client");
+      // Staff ya client — dono ke liye same message. Tab switch nahi karte
+      // (staff tab pe default dikh jayega, client tab pe bhi same error dikhega).
       setError("Kuchh der inactivity ki wajah se aap automatically logout ho gaye hain. Dobara login karein.");
     }
   }, []);
