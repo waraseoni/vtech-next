@@ -292,32 +292,52 @@ async function addForeignKeys(conn, tables) {
 }
 
 // Supabase me naye columns aa jayein to MariaDB me bhi add kar do.
+// Existing columns ki nullable change ho to bhi update kar do.
 async function syncMissingColumns(conn, tables) {
   const existing = await conn.query(
-    `SELECT TABLE_NAME, COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ?`,
+    `SELECT TABLE_NAME, COLUMN_NAME, IS_NULLABLE, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ?`,
     [DB_NAME]
   );
   const have = {};
+  const colInfo = {};
   for (const r of existing) {
     have[r.TABLE_NAME] ||= new Set();
     have[r.TABLE_NAME].add(r.COLUMN_NAME);
+    colInfo[`${r.TABLE_NAME}.${r.COLUMN_NAME}`] = r;
   }
   let added = 0;
+  let altered = 0;
   for (const t of tables) {
     const set = have[t.name] || new Set();
     for (const c of t.cols) {
-      if (set.has(c.name)) continue;
-      try {
-        await conn.query(
-          `ALTER TABLE \`${t.name}\` ADD COLUMN \`${c.name}\` ${mariaType(c.meta)}${c.nullable ? " NULL" : " NOT NULL"}`
-        );
-        added++;
-      } catch (e) {
-        console.warn(`  ! COLUMN skip ${t.name}.${c.name}: ${e.message}`);
+      if (!set.has(c.name)) {
+        try {
+          await conn.query(
+            `ALTER TABLE \`${t.name}\` ADD COLUMN \`${c.name}\` ${mariaType(c.meta)}${c.nullable ? " NULL" : " NOT NULL"}`
+          );
+          added++;
+        } catch (e) {
+          console.warn(`  ! COLUMN skip ${t.name}.${c.name}: ${e.message}`);
+        }
+      } else {
+        // Check if nullable changed
+        const info = colInfo[`${t.name}.${c.name}`];
+        const wantNull = c.nullable ? "YES" : "NO";
+        if (info && info.IS_NULLABLE !== wantNull) {
+          try {
+            await conn.query(
+              `ALTER TABLE \`${t.name}\` MODIFY COLUMN \`${c.name}\` ${mariaType(c.meta)}${c.nullable ? " NULL" : " NOT NULL"}`
+            );
+            altered++;
+          } catch (e) {
+            console.warn(`  ! ALTER skip ${t.name}.${c.name}: ${e.message}`);
+          }
+        }
       }
     }
   }
   if (added) log(`  Added ${added} missing column(s)`);
+  if (altered) log(`  Updated ${altered} column nullability change(s)`);
 }
 
 // ── Paginated row fetch (PostgREST 1000-row cap) ───────────────────────────

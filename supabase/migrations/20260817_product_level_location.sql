@@ -113,3 +113,5 @@ END $$;
 NOTIFY pgrst, 'reload schema';
 ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS delete_flag int NOT NULL DEFAULT 0;
 ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS status int NOT NULL DEFAULT 1;
+ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS delete_flag int NOT NULL DEFAULT 0;
+ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS status int NOT NULL DEFAULT 1;
