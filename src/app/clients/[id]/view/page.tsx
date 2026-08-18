@@ -20,6 +20,7 @@ import { todayIST, formatIST, parseISTDate, toISTString, toLocalStr } from "@/li
 import { logActivity } from "@/lib/activity";
 import { firmVars } from "@/lib/whatsapp";
 import { compressImage } from "@/lib/imageCompression";
+import { JOB_STATUS } from "@/lib/status-colors";
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -124,14 +125,9 @@ const fmtDate = (d: string) => {
   return formatIST(date, { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-const STATUS_MAP: Record<number, { label: string; color: string }> = {
-  0: { label: 'Pending',     color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
-  1: { label: 'In-Progress', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
-  2: { label: 'Repaired',    color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
-  3: { label: 'Paid',        color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
-  4: { label: 'Cancelled',   color: 'bg-red-500/20 text-red-300 border-red-500/30' },
-  5: { label: 'Delivered',   color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' },
-};
+const STATUS_MAP: Record<number, { label: string; cls: string }> = Object.fromEntries(
+  Object.entries(JOB_STATUS).map(([k, v]) => [Number(k), { label: v.label, cls: v.cls }])
+);
 
 // ─────────────────────────────────────────────────────────────
 // STAT CARD
@@ -695,7 +691,7 @@ export default function ViewClientProfile() {
 
   // ── RENDER ─────────────────────────────────────────────────
   return (
-    <div className="min-h-screen font-sans theme-body">
+    <div className={`min-h-screen font-sans theme-body ${selectedIds.size > 0 ? "pb-28" : ""}`}>
       {/* Global styles */}
       <style>{`
         .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
@@ -1041,7 +1037,7 @@ export default function ViewClientProfile() {
                   </thead>
                   <tbody>
                     {filteredJobs.map(job => {
-                      const st = STATUS_MAP[job.status] ?? { label: 'Unknown', color: 'bg-slate-500/20 text-slate-400 border-slate-500/20' };
+                      const st = STATUS_MAP[job.status] ?? { label: 'Unknown', cls: 'bg-slate-500/20 text-slate-400 border-slate-500/20' };
                       const isSel = selectedIds.has(job.id);
                       return (
                         <tr key={job.id} className={`${trCls} group ${isSel ? 'bg-blue-500/10' : ''}`}>
@@ -1065,7 +1061,7 @@ export default function ViewClientProfile() {
                           <td className={`${tdCls} text-xs text-slate-400 max-w-[160px] truncate`}>{job.fault || '—'}</td>
                           <td className={`${tdCls} text-xs text-slate-500`}>{job.uniq_id || '—'}</td>
                           <td className={tdCls}>
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${st.color}`}>
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${st.cls}`}>
                               {st.label}
                             </span>
                             {job.status === 5 && job.date_completed && (
@@ -1086,7 +1082,7 @@ export default function ViewClientProfile() {
               <div className="md:hidden divide-y divide-[#21293d]">
                 {filteredJobs.length === 0 && <p className="p-8 text-center text-slate-600 text-sm italic">No repairs found</p>}
                 {filteredJobs.map(job => {
-                  const st = STATUS_MAP[job.status] ?? { label: 'Unknown', color: 'bg-slate-500/20 text-slate-400 border-slate-500/20' };
+                  const st = STATUS_MAP[job.status] ?? { label: 'Unknown', cls: 'bg-slate-500/20 text-slate-400 border-slate-500/20' };
                   const isSel = selectedIds.has(job.id);
                   return (
                     <div key={job.id} className={`p-4 hover:bg-white/[0.02] transition-colors ${isSel ? 'bg-blue-500/10' : ''}`}>
@@ -1099,7 +1095,7 @@ export default function ViewClientProfile() {
                           {job.fault && <p className="text-xs text-slate-500 mt-0.5 truncate">{job.fault}</p>}
                         </div>
                         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${st.color}`}>{st.label}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${st.cls}`}>{st.label}</span>
                           <span className="text-base font-black text-white">₹{fmt(job.amount || 0)}</span>
                         </div>
                       </div>
@@ -1539,7 +1535,7 @@ export default function ViewClientProfile() {
       {/* ── BULK ACTION BAR (PHP parity: jobs page) ── */}
       {selectedIds.size > 0 && (
         <div
-          className="fixed bottom-5 left-1/2 z-[60] text-white rounded-2xl px-4 py-3 flex flex-wrap items-center justify-center gap-3 min-w-[300px] max-w-[95vw]"
+          className="fixed bottom-5 left-1/2 z-[60] text-white rounded-2xl px-3 py-2.5 flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-3 w-[calc(100%-2rem)] md:min-w-[300px] md:max-w-[95vw]"
           style={{
             background: "linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)",
             boxShadow: "0 -4px 30px rgba(0,0,0,0.35)",
@@ -1547,77 +1543,83 @@ export default function ViewClientProfile() {
             animation: "bulkBarPop 0.35s cubic-bezier(0.34,1.56,0.64,1)",
           }}
         >
-          <span className="bg-[#667eea] text-white rounded-full px-3 py-1 font-bold text-sm whitespace-nowrap">
-            {selectedIds.size} selected
-          </span>
-
-          <select
-            value={bulkStatus}
-            onChange={e => setBulkStatus(e.target.value)}
-            className="border-none rounded-lg px-3 py-2 text-sm font-semibold outline-none cursor-pointer min-w-[150px]"
-            style={{ backgroundColor: "#ffffff !important", color: "#1a1a2e !important" }}
-          >
-            <option value="">-- Status --</option>
-            <option value="0">Pending</option>
-            <option value="1">On-Progress</option>
-            <option value="2">Done</option>
-            <option value="3">Paid</option>
-            <option value="4">Cancelled</option>
-            <option value="5">Delivered</option>
-          </select>
-
-          {bulkStatus === "5" && (
-            <input
-              type="datetime-local"
-              value={bulkDeliverDate}
-              onChange={e => setBulkDeliverDate(e.target.value)}
-              title="Delivery Date & Time"
-              className="border-none rounded-lg px-3 py-2 text-sm outline-none cursor-pointer"
+          {/* Row 1: info + status + datetime */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <span className="bg-[#667eea] text-white rounded-full px-2.5 py-0.5 font-bold text-xs whitespace-nowrap">
+              {selectedIds.size} selected
+            </span>
+            <select
+              value={bulkStatus}
+              onChange={e => {
+                const v = e.target.value;
+                setBulkStatus(v);
+                if (v === "5" && !bulkDeliverDate) {
+                  const now = new Date();
+                  const pad = (n: number) => String(n).padStart(2, "0");
+                  const local = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                  setBulkDeliverDate(local);
+                }
+              }}
+              className="border-none rounded-lg px-2 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px]"
               style={{ backgroundColor: "#ffffff !important", color: "#1a1a2e !important" }}
-            />
-          )}
+            >
+              <option value="">-- Status --</option>
+              <option value="0">Pending</option>
+              <option value="1">On-Progress</option>
+              <option value="2">Done</option>
+              <option value="3">Paid</option>
+              <option value="4">Cancelled</option>
+              <option value="5">Delivered</option>
+            </select>
+            {bulkStatus === "5" && (
+              <input
+                type="datetime-local"
+                value={bulkDeliverDate}
+                onChange={e => setBulkDeliverDate(e.target.value)}
+                title="Delivery Date & Time"
+                className="border-none rounded-lg px-2 py-1.5 text-xs outline-none cursor-pointer flex-1 md:flex-none"
+                style={{ backgroundColor: "#ffffff !important", color: "#1a1a2e !important" }}
+              />
+            )}
+          </div>
 
-          <button
-            onClick={() => {
-              if (!bulkStatus) { alert("Please select a status first"); return; }
-              bulkUpdateStatus(Number(bulkStatus));
-            }}
-            disabled={bulkActionLoading}
-            className="text-white border-none rounded-[10px] px-5 py-2 font-bold text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1.5 whitespace-nowrap"
-            style={{ background: "linear-gradient(135deg,#48bb78 0%,#38a169 100%)" }}
-          >
-            <CheckCircle2 size={14} /> {bulkActionLoading ? "Applying..." : "Apply"}
-          </button>
+          {/* Row 2: actions */}
+          <div className="flex items-center gap-1.5 md:gap-3">
+            <button
+              onClick={() => {
+                if (!bulkStatus) { alert("Please select a status first"); return; }
+                bulkUpdateStatus(Number(bulkStatus));
+              }}
+              disabled={bulkActionLoading}
+              className="text-white border-none rounded-lg px-3 md:px-5 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap"
+              style={{ background: "linear-gradient(135deg,#48bb78 0%,#38a169 100%)" }}
+            >
+              <CheckCircle2 size={13} /> {bulkActionLoading ? "Applying..." : "Apply"}
+            </button>
 
-          <button
-            onClick={openBulkWhatsApp}
-            className="text-white border-none rounded-lg px-4 py-2 font-bold text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1.5 whitespace-nowrap"
-            style={{ background: "#25d366" }}
-          >
-            <MessageCircle size={14} /> WhatsApp Report
-          </button>
+            <button
+              onClick={openBulkWhatsApp}
+              className="text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap"
+              style={{ background: "#25d366" }}
+            >
+              <MessageCircle size={13} /> WA Report
+            </button>
 
-          <button
-            onClick={() => openCombinedInvoice("gst")}
-            className="text-white border-none rounded-lg px-4 py-2 font-bold text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1.5 whitespace-nowrap"
-            style={{ background: "#0d6efd" }}
-          >
-            <FileText size={14} /> Combined Invoice
-          </button>
-          <button
-            onClick={() => openCombinedInvoice("non_gst")}
-            className="text-white border-none rounded-lg px-4 py-2 font-bold text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1.5 whitespace-nowrap"
-            style={{ background: "#6c757d" }}
-          >
-            <FileText size={14} /> Combined Estimate
-          </button>
+            <button
+              onClick={() => openCombinedInvoice("non_gst")}
+              className="text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap"
+              style={{ background: "#6c757d" }}
+            >
+              <FileText size={13} /> Estimate
+            </button>
 
-          <button
-            onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); setBulkDeliverDate(""); }}
-            className="bg-white/15 text-white border border-white/30 rounded-[10px] px-3.5 py-2 text-sm cursor-pointer transition-colors hover:bg-white/25 flex items-center gap-1.5 whitespace-nowrap"
-          >
-            <X size={14} /> Clear
-          </button>
+            <button
+              onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); setBulkDeliverDate(""); }}
+              className="bg-white/15 text-white border border-white/30 rounded-lg px-2.5 md:px-3.5 py-1.5 md:py-2 text-xs md:text-sm cursor-pointer transition-colors hover:bg-white/25 flex items-center gap-1 whitespace-nowrap"
+            >
+              <X size={13} /> Clear
+            </button>
+          </div>
         </div>
       )}
 

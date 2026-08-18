@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { Loader2, Printer, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 
 import { todayIST, formatIST, parseISTDate } from "@/lib/dateUtils";
+import { SERVICE_STATUS } from "@/lib/status-colors";
 
 type Job = {
   id: number;
@@ -22,14 +23,9 @@ const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFra
 const fmtDate = (v: string) => formatIST(v.includes("T") ? v : v + "T00:00:00+05:30", { day: "2-digit", month: "short", year: "numeric" });
 const fmtDateTime = (v: string) => formatIST(v, { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
 
-const STATUS_LABELS: Record<number, { label: string; color: string }> = {
-  0: { label: "Pending", color: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
-  1: { label: "Accepted", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-  2: { label: "In Progress", color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
-  3: { label: "Ready", color: "bg-teal-500/10 text-teal-400 border-teal-500/20" },
-  4: { label: "Cancelled", color: "bg-red-500/10 text-red-400 border-red-500/20" },
-  5: { label: "Delivered", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-};
+const STATUS_MAP: Record<number, { label: string; color: string }> = Object.fromEntries(
+  Object.entries(SERVICE_STATUS).map(([k, v]) => [Number(k), { label: v.label, color: v.cls }])
+);
 
 export default function DailyServiceReportPage() {
   const [loading, setLoading] = useState(true);
@@ -153,7 +149,7 @@ export default function DailyServiceReportPage() {
                 </thead>
                 <tbody className="divide-y divide-[#1a2234]">
                   {jobs.map((job, i) => {
-                    const st = STATUS_LABELS[job.status] || { label: "Unknown", color: "bg-slate-500/10 text-slate-400 border-slate-500/20" };
+                    const st = STATUS_MAP[job.status] || { label: "Unknown", color: "bg-slate-500/10 text-slate-400 border-slate-500/20" };
                     return (
                       <tr key={job.id} className="hover:bg-white/[0.02]">
                         <td className="px-4 py-3.5 text-slate-600">{i + 1}</td>

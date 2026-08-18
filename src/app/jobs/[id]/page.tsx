@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { safeBack } from "@/lib/utils";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { JOB_STATUS } from "@/lib/status-colors";
 import {
   ArrowLeft, Wrench, User, Clock,
   Package, Settings2, AlertTriangle, CheckCircle2,
@@ -94,13 +95,14 @@ type Toast = { type: "success" | "error" | "info"; msg: string };
 const STATUS_MAP: Record<number, {
   label: string; explanation: string;
   badgeColor: string; // Bootstrap-like color name for PHP-style badge
+  cls: string;
 }> = {
-  0: { label: "Pending",     explanation: "Kaam shuru nahi hua hai",             badgeColor: "secondary" },
-  1: { label: "On-Progress", explanation: "Kaam chal raha hai, jald ready hoga", badgeColor: "primary"   },
-  2: { label: "Done",        explanation: "Kaam pura ho gaya hai",               badgeColor: "info"      },
-  3: { label: "Paid",        explanation: "Bill chuka diya gaya hai",            badgeColor: "success"   },
-  4: { label: "Cancelled",   explanation: "Transaction radd kar diya gaya hai",  badgeColor: "danger"    },
-  5: { label: "Delivered",   explanation: "Aapko item mil chuka hai",            badgeColor: "warning"   },
+  0: { label: "Pending",     explanation: "Kaam shuru nahi hua hai",             badgeColor: "secondary", cls: JOB_STATUS[0].cls },
+  1: { label: "On-Progress", explanation: "Kaam chal raha hai, jald ready hoga", badgeColor: "primary",   cls: JOB_STATUS[1].cls },
+  2: { label: "Done",        explanation: "Kaam pura ho gaya hai",               badgeColor: "info",      cls: JOB_STATUS[2].cls },
+  3: { label: "Paid",        explanation: "Bill chuka diya gaya hai",            badgeColor: "success",   cls: JOB_STATUS[3].cls },
+  4: { label: "Cancelled",   explanation: "Transaction radd kar diya gaya hai",  badgeColor: "danger",    cls: JOB_STATUS[4].cls },
+  5: { label: "Delivered",   explanation: "Aapko item mil chuka hai",            badgeColor: "warning",   cls: JOB_STATUS[5].cls },
 };
 
 // PHP-style badge colors mapped to Tailwind

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { JOB_STATUS_INLINE } from "@/lib/status-colors";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,14 +13,7 @@ const SHOP = {
   mobile: "9179105875",
 };
 
-const STATUS_CONFIG: Record<number, { label: string; color: string; bg: string; desc: string }> = {
-  0: { label: "Pending", color: "#f59e0b", bg: "#fff7ed", desc: "Work not started yet" },
-  1: { label: "On-Progress", color: "#667eea", bg: "#eef2ff", desc: "Work in progress" },
-  2: { label: "Done", color: "#3b82f6", bg: "#eff6ff", desc: "Work completed" },
-  3: { label: "Paid", color: "#10b981", bg: "#ecfdf5", desc: "Payment received" },
-  4: { label: "Cancelled", color: "#ef4444", bg: "#fef2f2", desc: "Transaction cancelled" },
-  5: { label: "Delivered", color: "#059669", bg: "#ecfdf5", desc: "Item delivered to customer" },
-};
+const STATUS_CONFIG = JOB_STATUS_INLINE;
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";

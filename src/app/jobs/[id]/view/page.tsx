@@ -21,6 +21,7 @@ import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars } from "@/lib/whatsapp";
 import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
 import { compressImage } from "@/lib/imageCompression";
+import { JOB_STATUS } from "@/lib/status-colors";
 
 // ─── IST HELPERS ─────────────────────────────────────────────────────────────
 // Legacy PHP/MariaDB activity logs predate the Next.js handover (Aug 15, 2026)
@@ -117,16 +118,17 @@ type Toast = { type: "success" | "error" | "info"; msg: string };
 
 // ─── STATUS CONFIG ────────────────────────────────────────────────────────────
 const STATUS_MAP: Record<number, {
-  label: string; explanation: string;
+  label: string; explanation: string; cls: string;
   badgeColor: string; // Bootstrap-like color name for PHP-style badge
 }> = {
-  0: { label: "Pending",     explanation: "Kaam shuru nahi hua hai",             badgeColor: "secondary" },
-  1: { label: "On-Progress", explanation: "Kaam chal raha hai, jald ready hoga", badgeColor: "primary"   },
-  2: { label: "Done",        explanation: "Kaam pura ho gaya hai",               badgeColor: "info"      },
-  3: { label: "Paid",        explanation: "Bill chuka diya gaya hai",            badgeColor: "success"   },
-  4: { label: "Cancelled",   explanation: "Transaction radd kar diya gaya hai",  badgeColor: "danger"    },
-  5: { label: "Delivered",   explanation: "Aapko item mil chuka hai",            badgeColor: "warning"   },
+  0: { label: "Pending",     explanation: "Kaam shuru nahi hua hai",             badgeColor: "secondary", cls: "" },
+  1: { label: "On-Progress", explanation: "Kaam chal raha hai, jald ready hoga", badgeColor: "primary",   cls: "" },
+  2: { label: "Done",        explanation: "Kaam pura ho gaya hai",               badgeColor: "info",      cls: "" },
+  3: { label: "Paid",        explanation: "Bill chuka diya gaya hai",            badgeColor: "success",   cls: "" },
+  4: { label: "Cancelled",   explanation: "Transaction radd kar diya gaya hai",  badgeColor: "danger",    cls: "" },
+  5: { label: "Delivered",   explanation: "Aapko item mil chuka hai",            badgeColor: "warning",   cls: "" },
 };
+Object.entries(JOB_STATUS).forEach(([k, v]) => { if (STATUS_MAP[Number(k)]) STATUS_MAP[Number(k)].cls = v.cls; });
 
 // PHP-style badge colors mapped to Tailwind
 const BADGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {

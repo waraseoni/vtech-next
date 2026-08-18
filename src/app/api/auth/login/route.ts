@@ -60,7 +60,11 @@ async function handlePassword(request: Request, body: LoginBody, ip: string) {
   }
 
   await reset(email);
-  return NextResponse.json({ success: true });
+  const res = NextResponse.json({ success: true });
+  res.cookies.set("vtech_session_start", String(Date.now()), {
+    httpOnly: true, secure: true, sameSite: "lax", path: "/",
+  });
+  return res;
 }
 
 // ── Client OTP: send code ────────────────────────────────────────
@@ -118,7 +122,11 @@ async function handleVerifyOtp(request: Request, body: LoginBody, ip: string) {
   }
 
   await reset(email);
-  return NextResponse.json({ success: true });
+  const res = NextResponse.json({ success: true });
+  res.cookies.set("vtech_session_start", String(Date.now()), {
+    httpOnly: true, secure: true, sameSite: "lax", path: "/",
+  });
+  return res;
 }
 
 function fmtMin(sec?: number): string {

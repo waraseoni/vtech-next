@@ -6,6 +6,7 @@ import {
   CheckCircle2, Clock, Banknote, XCircle, PackageCheck, FileSearch,
 } from "lucide-react";
 import { WHATSAPP_LINK } from "../site";
+import { JOB_STATUS_INLINE } from "@/lib/status-colors";
 
 type JobData = {
   id: number;
@@ -24,14 +25,20 @@ type RecentJob = { id: number; job_id: string; code: string; item: string; statu
 type Service = { service_name: string; price: number };
 type Product = { product_name: string; qty: number; price: number; total: number };
 
-const STATUS_CONFIG: Record<number, { label: string; color: string; bg: string; desc: string }> = {
-  0: { label: "Pending", color: "#f59e0b", bg: "rgba(245,158,11,0.2)", desc: "Kaam shuru nahi hua hai" },
-  1: { label: "On-Progress", color: "#667eea", bg: "rgba(102,126,234,0.2)", desc: "Kaam chal raha hai" },
-  2: { label: "Done", color: "#3b82f6", bg: "rgba(59,130,246,0.2)", desc: "Kaam pura ho gaya hai" },
-  3: { label: "Paid", color: "#10b981", bg: "rgba(16,185,129,0.2)", desc: "Payment ho chuka hai" },
-  4: { label: "Cancelled", color: "#ef4444", bg: "rgba(239,68,68,0.2)", desc: "Transaction radd ho gaya" },
-  5: { label: "Delivered", color: "#059669", bg: "rgba(5,150,105,0.2)", desc: "Aapko item mil chuka hai" },
-};
+const STATUS_CONFIG = Object.fromEntries(
+  Object.entries(JOB_STATUS_INLINE).map(([k, v]) => [
+    Number(k),
+    {
+      ...v,
+      desc: Number(k) === 0 ? "Aapka repair pending hai" :
+            Number(k) === 1 ? "Hamari team kaam kar rahi hai" :
+            Number(k) === 2 ? "Repair ho gaya hai, pickup ke liye ready" :
+            Number(k) === 3 ? "Payment ho chuki hai" :
+            Number(k) === 4 ? "Repair cancel ho gaya hai" :
+            "Product deliver ho gaya hai",
+    },
+  ])
+);
 
 const STATUS_ICON: Record<number, React.ReactNode> = {
   0: <Clock size={14} />,

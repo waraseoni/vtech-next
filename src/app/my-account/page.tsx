@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Wrench, Loader2, AlertCircle, Phone, Mail, Inbox, Clock, BookOpen, TrendingUp, TrendingDown } from "lucide-react";
+import { JOB_STATUS } from "@/lib/status-colors";
 
 type ClientInfo = {
   id: number; name: string; contact: string; email: string; opening_balance: number; due: number;
@@ -14,14 +15,9 @@ type Job = {
   date_created?: string | null; date_completed?: string | null;
 };
 
-const STATUS: Record<number, { label: string; cls: string }> = {
-  0: { label: "Pending",        cls: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
-  1: { label: "In Progress",    cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-  2: { label: "Done",           cls: "bg-teal-500/20 text-teal-400 border-teal-500/30" },
-  3: { label: "Paid",           cls: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
-  4: { label: "Cancelled",      cls: "bg-red-500/20 text-red-400 border-red-500/30" },
-  5: { label: "Delivered",      cls: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
-};
+const STATUS: Record<number, { label: string; cls: string }> = Object.fromEntries(
+  Object.entries(JOB_STATUS).map(([k, v]) => [Number(k), { label: v.label, cls: v.cls }])
+);
 
 const inr = (v: number) => "₹" + Math.abs(v).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 const fmtDate = (d: string | null | undefined) =>

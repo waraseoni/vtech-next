@@ -7,6 +7,7 @@ import {
   Calendar,
   AlertTriangle,
 } from "lucide-react";
+import { JOB_STATUS_INLINE } from "@/lib/status-colors";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // IST TIMEZONE HELPERS
@@ -39,12 +40,7 @@ const inr = (n: number, abs = true) =>
 // STATUS CONFIG — matching PHP status_arr
 // ─────────────────────────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<string | number, { label: string; color: string; bg: string }> = {
-  0: { label: "Pending",          color: "#f39c12", bg: "#fff8e1" },
-  1: { label: "In Progress",      color: "#007bff", bg: "#e3f2fd" },
-  2: { label: "Done",             color: "#6f42c1", bg: "#f3e5f5" },
-  3: { label: "Paid",             color: "#28a745", bg: "#e8f5e9" },
-  4: { label: "Cancelled",        color: "#dc3545", bg: "#ffebee" },
-  5: { label: "Delivered",        color: "#19692c", bg: "#e8f5e9" },
+  ...JOB_STATUS_INLINE,
   payment:     { label: "Payment",          color: "#fff", bg: "#17a2b8" },
   direct_sale: { label: "Direct Sale",      color: "#fff", bg: "#ff6b6b" },
   loan:        { label: "Loan",             color: "#fff", bg: "#9b59b6" },

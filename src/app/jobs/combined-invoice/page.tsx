@@ -13,6 +13,7 @@ import {
   Users, Search, CheckSquare, Square, Printer, ArrowLeft,
   Loader2, FileText, ChevronRight, X,
 } from "lucide-react";
+import { JOB_STATUS_INLINE } from "@/lib/status-colors";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Client {
@@ -36,14 +37,7 @@ interface Transaction {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const STATUS_MAP: Record<number, { label: string; color: string; bg: string }> = {
-  0: { label: "Pending",     color: "#94a3b8", bg: "#94a3b820" },
-  1: { label: "In Progress", color: "#f59e0b", bg: "#f59e0b20" },
-  2: { label: "Done",        color: "#06b6d4", bg: "#06b6d420" },
-  3: { label: "Paid",        color: "#10b981", bg: "#10b98120" },
-  4: { label: "Cancelled",   color: "#ef4444", bg: "#ef444420" },
-  5: { label: "Delivered",   color: "#3b82f6", bg: "#3b82f620" },
-};
+const STATUS_MAP: Record<number, { label: string; color: string; bg: string }> = JOB_STATUS_INLINE;
 
 function fmtDate(iso: string) {
   return new Intl.DateTimeFormat("en-IN", {

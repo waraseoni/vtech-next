@@ -10,17 +10,15 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { formatIST, todayIST, startOfMonthIST } from "@/lib/dateUtils";
+import { JOB_STATUS } from "@/lib/status-colors";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 type DbRow = ReturnType<typeof JSON.parse>;
 
-const STATUS_MAP: Record<number, { label: string; class: string }> = {
-  0: { label: "Just Pending", class: "bg-slate-500/10 text-slate-400 border-slate-500/20" },
-  1: { label: "In Progress", class: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
-  2: { label: "Finished", class: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20" },
-  3: { label: "Paid", class: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-};
+const STATUS_MAP: Record<number, { label: string; class: string }> = Object.fromEntries(
+  [0, 1, 2, 3].map(n => [n, { label: JOB_STATUS[n]?.label ?? "Unknown", class: JOB_STATUS[n]?.cls ?? JOB_STATUS[0].cls }])
+);
 
 function PendingJobsContent() {
   const searchParams = useSearchParams();

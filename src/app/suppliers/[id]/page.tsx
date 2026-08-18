@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
+import { PO_STATUS } from "@/lib/status-colors";
 import {
   ArrowLeft,
   Edit3,
@@ -67,12 +68,9 @@ type POItem = {
   product_list?: { id: number; name: string } | null;
 };
 
-const PO_STATUS: Record<number, { label: string; cls: string }> = {
-  0: { label: "Pending", cls: "bg-amber-500/10 text-amber-400 border border-amber-500/20" },
-  1: { label: "Partial", cls: "bg-blue-500/10 text-blue-400 border border-blue-500/20" },
-  2: { label: "Received", cls: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" },
-  3: { label: "Cancelled", cls: "bg-slate-500/10 text-slate-500 border border-slate-500/20" },
-};
+const STATUS_MAP: Record<number, { label: string; color: string }> = Object.fromEntries(
+  Object.entries(PO_STATUS).map(([k, v]) => [Number(k), { label: v.label, color: v.cls }])
+);
 
 const defaultForm = { name: "", contact: "", email: "", address: "" };
 
@@ -359,7 +357,7 @@ export default function SupplierDetailPage() {
                   {purchaseOrders.map((po) => {
                     const items = poItemsMap[po.id] || [];
                     const isExpanded = expandedPO === po.id;
-                    const statusInfo = PO_STATUS[po.status] || PO_STATUS[0];
+                    const statusInfo = STATUS_MAP[po.status] || STATUS_MAP[0];
 
                     return (
                       <React.Fragment key={po.id}>
@@ -396,7 +394,7 @@ export default function SupplierDetailPage() {
                           </td>
                           <td className="px-4 py-3.5 text-center">
                             <span
-                              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusInfo.cls}`}
+                              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusInfo.color}`}
                             >
                               {statusInfo.label}
                             </span>

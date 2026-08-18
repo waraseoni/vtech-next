@@ -7,6 +7,7 @@ import Image from "next/image";
 import { Loader2, Printer, ChevronLeft, ChevronRight, Calendar, CheckSquare, Wrench, Clock, Package } from "lucide-react";
 import Link from "next/link";
 import { todayIST, formatIST, parseISTDate } from "@/lib/dateUtils";
+import { JOB_STATUS } from "@/lib/status-colors";
 
 type DailyDoneItem = {
   id: string;
@@ -45,14 +46,9 @@ const MechAvatar = ({ image, name, cls = "w-8 h-8 text-xs" }: { image?: string |
     </div>
   );
 
-const statusMap: Record<number, { label: string; color: string }> = {
-  0: { label: "Pending", color: "text-slate-500 bg-slate-500/10 border-slate-500/20" },
-  1: { label: "In-Progress", color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
-  2: { label: "Done", color: "text-teal-500 bg-teal-500/10 border-teal-500/20" },
-  3: { label: "Paid", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
-  4: { label: "Cancelled", color: "text-red-500 bg-red-500/10 border-red-500/20" },
-  5: { label: "Delivered", color: "text-orange-500 bg-orange-500/10 border-orange-500/20" },
-};
+const statusMap: Record<number, { label: string; color: string }> = Object.fromEntries(
+  Object.entries(JOB_STATUS).map(([k, v]) => [Number(k), { label: v.label, color: v.cls }])
+);
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 const fmtDate = (v: string) => formatIST(v.includes("T") ? v : v + "T00:00:00+05:30", { day: "2-digit", month: "short", year: "numeric" });
