@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 // Resolves activity log user_id → display name.
-// Two naming systems coexist in activity_logs.user_id:
+// Three naming systems coexist:
 //   - Legacy PHP/MariaDB data (module 'Transactions') → user_id = id in `users` table
 //   - New Next.js system data (module 'Jobs', 'Clients', etc.) → user_id = 0 (Admin) or mechanic_list.id
+//   - transaction_list.user_id → may be profiles.id (Supabase auth UUID)
 // The `users` table is RLS-blocked for anon, so we resolve with the service-role key here.
 
 export async function GET(request: Request) {
@@ -37,6 +38,20 @@ export async function GET(request: Request) {
     (mRows || []).forEach(m => {
       mechanics[String(m.id)] = [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ") || `User ${m.id}`;
     });
+
+    // profiles table — transaction_list.user_id references profiles.mechanic_id
+    const unresolved = ids.filter(id => !users[String(id)] && !mechanics[String(id)]);
+    if (unresolved.length > 0) {
+      const { data: pRows } = await admin
+        .from("profiles")
+        .select("full_name, mechanic_id")
+        .in("mechanic_id", unresolved);
+      (pRows || []).forEach(p => {
+        if (p.full_name && p.mechanic_id) {
+          users[String(p.mechanic_id)] = p.full_name;
+        }
+      });
+    }
 
     return NextResponse.json({ users, mechanics });
   } catch (err) {

@@ -56,7 +56,7 @@ const STATUS_BTNS = [
 ] as const;
 
 const STATUS_BADGE: Record<number, { label: string; cls: string }> = {
-  0: { label: 'Not Marked', cls: 'bg-slate-700/60 text-slate-400 border border-slate-600/40' },
+  0: { label: 'Absent',     cls: 'bg-red-500/15 text-red-400 border border-red-500/30' },
   1: { label: 'Present',    cls: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' },
   2: { label: 'Absent',     cls: 'bg-red-500/15 text-red-400 border border-red-500/30' },
   3: { label: 'Half Day',   cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
@@ -134,7 +134,7 @@ export default function DailyAttendance({
         };
       });
     }
-    mechanics.forEach(m => { if (attMap[m.id] == null) attMap[m.id] = 0; });
+    mechanics.forEach(m => { if (attMap[m.id] == null) attMap[m.id] = 2; });
     setAttendance(attMap);
     setTimes(timesMap);
     setLoading(false);
@@ -250,11 +250,9 @@ export default function DailyAttendance({
     setSaving(true);
     try {
       await Promise.all(mechanics.map(async (mech) => {
-        // Status 0 (unmarked) → skip. Unmarked ko silently Absent mat karo —
-        // sirf explicitly marked (1 Present / 2 Absent / 3 Half Day) save hote hain.
-        const s = attendance[mech.id];
-        if (s !== 1 && s !== 2 && s !== 3) return;
-        let status: number = s;
+        // Default: absent (2). Staff check-in nahi kare to absent.
+        const s = attendance[mech.id] ?? 2;
+        let status: number = s === 1 || s === 2 || s === 3 ? s : 2;
         const t = times[mech.id];
         let timeIn: string | null = null;
         let timeOut: string | null = null;
@@ -312,7 +310,7 @@ export default function DailyAttendance({
   const halfdayCount = Object.values(attendance).filter(s => s === 3).length;
   const absentCount  = Object.values(attendance).filter(s => s === 2).length;
   const totalStaff   = mechanics.length;
-  const unmarkedCount = mechanics.filter(m => attendance[m.id] === 0).length;
+  const unmarkedCount = 0; // No longer relevant — unmarked defaults to Absent
 
   const selfStatus = selfAttn || { status: 0, time_in: null, time_out: null };
   const selfBadge = STATUS_BADGE[selfStatus.status] ?? STATUS_BADGE[0];
@@ -507,9 +505,9 @@ export default function DailyAttendance({
                           <div className="font-bold text-slate-200 text-sm">{mech.name}</div>
                           <div className="text-xs text-slate-600">{mech.designation}</div>
                         </div>
-                        {userRole === 'admin' && st === 0 && (
-                          <span className="ml-2 text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-500 border border-slate-600/30">
-                            Unmarked
+                        {userRole === 'admin' && st === 2 && !times[mech.id]?.timeIn && (
+                          <span className="ml-2 text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/30">
+                            No Check-in
                           </span>
                         )}
                       </div>
@@ -534,7 +532,7 @@ export default function DailyAttendance({
                         </div>
                       ) : (
                         <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full ${STATUS_BADGE[st]?.cls ?? STATUS_BADGE[0].cls}`}>
-                          {STATUS_BADGE[st]?.label ?? 'Not Marked'}
+                          {STATUS_BADGE[st]?.label ?? 'Absent'}
                         </span>
                       )}
                     </td>
@@ -591,9 +589,9 @@ export default function DailyAttendance({
                     <div className="font-bold text-slate-200 text-sm truncate">{mech.name}</div>
                     <div className="text-xs text-slate-600">{mech.designation}</div>
                   </div>
-                  {userRole === 'admin' && st === 0 && (
-                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-500 border border-slate-600/30 flex-shrink-0">
-                      Unmarked
+                  {userRole === 'admin' && st === 2 && !times[mech.id]?.timeIn && (
+                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/30 flex-shrink-0">
+                      No Check-in
                     </span>
                   )}
                 </div>
@@ -601,7 +599,7 @@ export default function DailyAttendance({
                 {userRole === 'staff' && (
                   <div className="flex items-center justify-center gap-2 mb-3 text-xs font-black">
                     <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full ${STATUS_BADGE[st]?.cls ?? STATUS_BADGE[0].cls}`}>
-                      {STATUS_BADGE[st]?.label ?? 'Not Marked'}
+                      {STATUS_BADGE[st]?.label ?? 'Absent'}
                     </span>
                     <span className="text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md"><LogIn size={10} className="inline mr-0.5" />{fmtTimeIST(tIn) || '—'}</span>
                     <span className="text-[11px] text-red-400 bg-red-500/10 px-2 py-1 rounded-md"><LogOut size={10} className="inline mr-0.5" />{fmtTimeIST(tOut) || '—'}</span>

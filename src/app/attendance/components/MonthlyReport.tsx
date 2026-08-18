@@ -98,10 +98,10 @@ export default function MonthlyReport({
       for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${month}-${d.toString().padStart(2, '0')}`;
         const att     = attData?.find(a => a.mechanic_id === mech.id && a.curr_date === dateStr);
-        const status  = att ? (att.status as 1 | 2 | 3) : 0;
+        const status  = att ? (att.status as 1 | 2 | 3) : 2;
         if (status === 1) fullDays++;
         else if (status === 3) halfDays++;
-        else if (status === 2) absentDays++;
+        absentDays++; // default = absent
         const timeIn  = (att?.time_in as string)?.slice(0, 5) || '';
         const timeOut = (att?.time_out as string)?.slice(0, 5) || '';
         days.push({ day: d, status, isSunday: parseISTDate(dateStr).getDay() === 0, timeIn, timeOut, hours: hoursBetweenIST(timeIn || null, timeOut || null) });
@@ -152,7 +152,7 @@ export default function MonthlyReport({
         updatedDays.forEach(d => {
           if (d.status === 1) fullDays++;
           else if (d.status === 3) halfDays++;
-          else if (d.status === 2) absentDays++;
+          absentDays++;
         });
 
         return { ...md, days: updatedDays, fullDays, halfDays, absentDays };
@@ -260,17 +260,15 @@ export default function MonthlyReport({
 
               {md.days.map(day => {
                 const dateStr = `${month}-${day.day.toString().padStart(2, '0')}`;
-                let cls = 'bg-[#0d1117] text-slate-600'; // 0 = unmarked
+                let cls = 'bg-red-500/70 text-white'; // default = absent
                 if (day.status === 1) cls = 'bg-emerald-500 text-white';
                 else if (day.status === 3) cls = 'bg-amber-500 text-white';
-                else if (day.status === 2) cls = 'bg-red-500/70 text-white';
                 else if (day.isSunday)     cls = 'bg-red-900/30 text-red-500';
 
                 const statusLabel =
                   day.status === 1 ? 'Present'
                   : day.status === 3 ? 'Half Day'
-                  : day.status === 2 ? 'Absent'
-                  : 'Not marked';
+                  : 'Absent';
                 const tooltip =
                   `${new Date(dateStr + 'T00:00:00+05:30').toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' })} — ${statusLabel}` +
                   (day.timeIn && day.timeOut ? ` — ${fmtTimeIST(day.timeIn)} to ${fmtTimeIST(day.timeOut)} (${day.hours})` : '');

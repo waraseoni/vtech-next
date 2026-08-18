@@ -288,7 +288,7 @@ export default function JobDetailsPage() {
   // Fetches activity history for this job from BOTH modules:
   //   - 'Jobs' (new Next.js system logs)
   //   - 'Transactions' (legacy PHP system logs — already in the same table)
-  const loadActivity = useCallback(async (row: { id: number; job_id?: string } | null) => {
+  const loadActivity = useCallback(async (row: { id: number; job_id?: string; user_id?: number } | null) => {
     if (!row) { setActivityLogs([]); return; }
     const jobIdStr = String(row.id);
     const jobNoStr = String(row.job_id ?? "").trim();
@@ -307,7 +307,11 @@ export default function JobDetailsPage() {
     // User names: resolve via server route (users table is RLS-blocked for anon).
     //   Legacy PHP/MariaDB logs (all modules, before Aug 15 2026) → `users` table
     //   New system logs → 0 = Admin, else mechanic_list
-    const userIds = [...new Set(actList.map(a => Number(a.user_id)).filter(n => n > 0))];
+    //   Also include job creator (job.user_id) so "Job Created" shows a name.
+    const userIds = [...new Set([
+      ...actList.map(a => Number(a.user_id)),
+      row.user_id ? Number(row.user_id) : 0,
+    ].filter(n => n > 0))];
     if (userIds.length > 0) {
       try {
         const res = await fetch(`/api/activity-users?ids=${userIds.join(",")}`);
@@ -322,6 +326,11 @@ export default function JobDetailsPage() {
           else if (json.users?.[id]) { nm[id] = json.users[id]; }
           else { nm[id] = `User #${id}`; }
         });
+        // Also map job creator name (row.user_id) — not in actList
+        const creatorId = row.user_id ? String(row.user_id) : "";
+        if (creatorId && !nm[creatorId] && Number(creatorId) > 0) {
+          nm[creatorId] = json.mechanics?.[creatorId] || json.users?.[creatorId] || `User #${creatorId}`;
+        }
         setUserNames(nm);
       } catch (err) {
         console.warn("activity user-name fetch:", err);
@@ -354,7 +363,7 @@ export default function JobDetailsPage() {
 
       if (jobErr || !jobData) { router.push("/jobs"); return; }
       setJob(jobData as JobDetail);
-      loadActivity(jobData as { id: number; job_id?: string });
+      loadActivity(jobData as { id: number; job_id?: string; user_id?: number });
       setNewStatus(jobData.status);
       // Neighboring active jobs for Prev/Next navigation (order by id, newest first)
       const [prevRes, nextRes] = await Promise.all([
@@ -941,7 +950,9 @@ ${svcHtml}${prodHtml}
                             </div>
                             <div className="flex-1 pb-4">
                               <p className="text-sm text-slate-300 font-medium">Job Created</p>
-                              <p className="text-[11px] text-slate-600 mt-1">{fmtLogTime(job.date_created)}</p>
+                              <p className="text-[11px] text-slate-600 mt-1">
+                                {fmtLogTime(job.date_created)} · <span className="text-slate-500">{whoName(job.user_id)}</span>
+                              </p>
                             </div>
                           </div>
 
