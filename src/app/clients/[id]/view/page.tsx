@@ -488,9 +488,10 @@ export default function ViewClientProfile() {
       const statusName = STATUS_MAP[newStatus]?.label || String(newStatus);
       for (const id of ids) {
         const job = jobs.find(j => j.id === id);
-        await logActivity('Transaction Status Changed', 'Transactions', id, `Job ID: ${job?.job_id || ""}, Bulk Update → ${statusName}`);
+        const oldStatus = (job?.status != null ? STATUS_MAP[job.status]?.label : null) || String(job?.status ?? '?');
+        await logActivity('Transaction Status Changed', 'Transactions', id, `Job #${job?.job_id || id} | ${oldStatus} → ${statusName} | ${job?.item || ''}`);
       }
-      await logActivity('Bulk Status Update', 'Transactions', undefined, `Updated ${ids.length} transactions to status ${statusName}`);
+      await logActivity('Bulk Status Update', 'Transactions', undefined, `${ids.length} job(s) updated to "${statusName}"`);
     } else {
       alert("Bulk update failed: " + error.message);
     }
@@ -651,7 +652,7 @@ export default function ViewClientProfile() {
       if (error) throw error;
       setClient({ ...client, payment_due_date: dueForm.due_date, payment_due_remarks: dueForm.due_remarks.trim() || null });
       setDueModal(false);
-      await logActivity('Set Promised Due Date', 'Clients', client.id, `Client: ${client.fullName}`);
+      await logActivity('Set Promised Due Date', 'Clients', client.id, `Client: ${client.fullName} | Due date set`);
     } catch (err) {
       alert('Error: ' + (err instanceof Error ? err.message : String(err)));
     } finally {

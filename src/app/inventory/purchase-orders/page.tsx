@@ -131,7 +131,7 @@ export default function PurchaseOrdersPage() {
       if (status === "received") payload.received_date = todayIST();
       const { error } = await supabase.from("purchase_orders").update(payload).eq("id", po.id);
       if (error) throw error;
-      await logActivity('PO Status Updated', 'Inventory', po.id, `${po.po_code}: marked as ${status}`);
+      await logActivity('PO Status Updated', 'Inventory', po.id, `PO: ${po.po_code} | Status → ${status}`);
       fetchPos();
     } catch (err) {
       alert("Failed: " + (err instanceof Error ? err.message : String(err)));
@@ -164,7 +164,7 @@ export default function PurchaseOrdersPage() {
         .eq("id", po.id);
       if (updErr) throw updErr;
 
-      await logActivity('PO Received', 'Inventory', po.id, `${po.po_code}: ${rows.length} item(s) stocked in`);
+      await logActivity('PO Received', 'Inventory', po.id, `PO: ${po.po_code} | ${rows.length} item(s) stocked in`);
       fetchPos();
     } catch (err) {
       alert("Failed: " + (err instanceof Error ? err.message : String(err)));
@@ -177,7 +177,7 @@ export default function PurchaseOrdersPage() {
     if (po.status !== "pending") { alert("Only pending POs can be deleted"); return; }
     if (!confirm(`Delete PO ${po.po_code}?`)) return;
     const { error } = await supabase.from("purchase_orders").delete().eq("id", po.id);
-    if (!error) { await logActivity('PO Deleted', 'Inventory', po.id, `${po.po_code} deleted`); fetchPos(); }
+    if (!error) { await logActivity('PO Deleted', 'Inventory', po.id, `PO: ${po.po_code} deleted`); fetchPos(); }
     else alert("Failed: " + error.message);
   };
 
@@ -492,7 +492,7 @@ function CreatePOModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
         })));
       if (itErr) throw itErr;
 
-      await logActivity('PO Created', 'Inventory', po.id, `${poCode}: ${valid.length} item(s), ₹${total}`);
+      await logActivity('PO Created', 'Inventory', po.id, `PO: ${poCode} | ${valid.length} item(s) | Total: ₹${total}`);
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

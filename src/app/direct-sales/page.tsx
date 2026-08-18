@@ -207,7 +207,7 @@ function DirectSalesPageInner() {
     const saleToDelete = sales.find(s => s.id === id);
     const { error } = await supabase.from("direct_sales").delete().eq("id", id);
     if (!error) {
-      await logActivity('Deleted Direct Sale', 'Sales', id, `Deleted Sale #${saleToDelete?.sale_code}`);
+      await logActivity('Deleted Direct Sale', 'Sales', id, `Sale: ${saleToDelete?.sale_code}`);
       fetchSales();
     } else alert("Delete failed: " + error.message);
   };

@@ -5,9 +5,10 @@ import Image from "next/image";
 import {
   History, Search, Loader2, User, Info,
   ChevronLeft, ChevronRight, X,
-  UserCog, Package, ShoppingCart
+  UserCog, Package, ShoppingCart, ExternalLink
 } from "lucide-react";
 import { formatIST } from "@/lib/dateUtils";
+import Link from "next/link";
 
 interface LogEntry {
   id: number;
@@ -158,6 +159,37 @@ export default function ActivityLogsPage() {
     }
   };
 
+  const getRelatedLink = (module: string, metaId: string | null) => {
+    if (!metaId || metaId === '0') return null;
+    const m = module.toLowerCase();
+    if (m.includes('transaction') || m.includes('job')) return { href: `/jobs/${metaId}/view`, label: 'View Job' };
+    if (m.includes('client')) return { href: `/clients/${metaId}/view`, label: 'View Client' };
+    if (m.includes('mechanic')) return { href: `/mechanics/${metaId}`, label: 'View Mechanic' };
+    if (m.includes('sale')) return { href: `/sales/view/${metaId}`, label: 'View Sale' };
+    if (m.includes('inventory') || m.includes('product')) return { href: '/inventory', label: 'Inventory' };
+    return null;
+  };
+
+  const getActionStyles = (action: string) => {
+    const a = action.toLowerCase();
+    if (a.includes('delete') || a.includes('removed')) return 'text-red-400 bg-red-400/10 border-red-400/20';
+    if (a.includes('add') || a.includes('create') || a.includes('new')) return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+    if (a.includes('status') || a.includes('update')) return 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
+    return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+  };
+
+  const formatDetails = (details: string | null, module: string) => {
+    if (!details) return <span className="italic text-slate-700">—</span>;
+    // Highlight job IDs, amounts, status changes
+    const m = module.toLowerCase();
+    let text = details;
+    if (m.includes('job') || m.includes('transaction')) {
+      text = text.replace(/Job #(\d+)/g, 'Job #$1');
+      text = text.replace(/Amount:\s*([\d,.]+)/g, 'Amount: ₹$1');
+    }
+    return <span>{text}</span>;
+  };
+
   return (
     <div className="min-h-screen bg-[#0d1117] text-white p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -273,6 +305,7 @@ export default function ActivityLogsPage() {
                     <th className="text-left px-5 py-4 text-[10px] font-black uppercase tracking-widest text-slate-600">Action</th>
                     <th className="text-left px-5 py-4 text-[10px] font-black uppercase tracking-widest text-slate-600">Module</th>
                     <th className="text-left px-5 py-4 text-[10px] font-black uppercase tracking-widest text-slate-600">Details</th>
+                    <th className="text-left px-5 py-4 text-[10px] font-black uppercase tracking-widest text-slate-600">Open</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#21293d]">
@@ -300,15 +333,36 @@ export default function ActivityLogsPage() {
                         </div>
                       </td>
                       <td className="px-5 py-4">
-                        <p className="text-slate-500 text-xs leading-relaxed max-w-md italic">
-                          {log.details || "—"}
+                        <p className="text-slate-500 text-xs leading-relaxed max-w-md">
+                          {formatDetails(log.details, log.module)}
                         </p>
+                      </td>
+                      <td className="px-5 py-4 whitespace-nowrap">
+                        {(() => {
+                          const link = getRelatedLink(log.module, log.meta_id);
+                          if (!link) return <span className="text-slate-700 text-[10px] font-bold tracking-widest uppercase">—</span>;
+                          const isDelete = log.action.toLowerCase().includes('delete');
+                          return (
+                            <Link
+                              href={link.href}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all no-underline ${
+                                isDelete
+                                  ? 'bg-red-500/5 border-red-500/20 text-red-400/50 cursor-not-allowed opacity-60'
+                                  : 'bg-blue-500/5 border-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white'
+                              }`}
+                              onClick={(e) => isDelete && e.preventDefault()}
+                            >
+                              <ExternalLink size={11} />
+                              {isDelete ? 'Deleted' : link.label}
+                            </Link>
+                          );
+                        })()}
                       </td>
                     </tr>
                   ))}
                   {logs.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="p-20 text-center">
+                      <td colSpan={6} className="p-20 text-center">
                         <History size={40} className="text-slate-800 mx-auto mb-4 opacity-20" />
                         <p className="text-slate-600 font-black uppercase tracking-widest text-xs">No activity logs found</p>
                       </td>
@@ -341,9 +395,28 @@ export default function ActivityLogsPage() {
                   </div>
                   <div className="mt-3">
                     <span className="text-slate-300 font-bold text-sm block mb-1">{log.action}</span>
-                    <p className="text-slate-500 text-xs leading-relaxed italic">
-                      {log.details || "—"}
+                    <p className="text-slate-500 text-xs leading-relaxed mb-2">
+                      {formatDetails(log.details, log.module)}
                     </p>
+                    {(() => {
+                      const link = getRelatedLink(log.module, log.meta_id);
+                      if (!link) return null;
+                      const isDelete = log.action.toLowerCase().includes('delete');
+                      return (
+                        <Link
+                          href={link.href}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all no-underline ${
+                            isDelete
+                              ? 'bg-red-500/5 border-red-500/20 text-red-400/50'
+                              : 'bg-blue-500/5 border-blue-500/20 text-blue-400'
+                          }`}
+                          onClick={(e) => isDelete && e.preventDefault()}
+                        >
+                          <ExternalLink size={11} />
+                          {isDelete ? 'Deleted' : link.label}
+                        </Link>
+                      );
+                    })()}
                   </div>
                 </div>
               ))}

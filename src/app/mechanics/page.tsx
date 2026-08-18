@@ -169,13 +169,13 @@ export default function MechanicsPage() {
           const { error: histErr } = await supabase.from("mechanic_salary_history").insert([{ mechanic_id: editing.id, salary, effective_date: today }]);
           if (histErr) throw histErr;
         }
-        await logActivity('Updated Staff Member', 'Mechanics', editing.id, `Updated profile for: ${payload.firstname} ${payload.lastname}`);
+        await logActivity('Updated Staff Member', 'Mechanics', editing.id, `Staff: ${payload.firstname} ${payload.lastname}`);
       } else {
         const { data, error } = await supabase.from("mechanic_list").insert([{ ...payload, delete_flag: 0 }]).select("id").single();
         if (error) throw error;
         const { error: histErr } = await supabase.from("mechanic_salary_history").insert([{ mechanic_id: data.id, salary, effective_date: today }]);
         if (histErr) throw histErr;
-        await logActivity('Added Staff Member', 'Mechanics', data.id, `Created profile for: ${payload.firstname} ${payload.lastname}`);
+        await logActivity('Added Staff Member', 'Mechanics', data.id, `Staff: ${payload.firstname} ${payload.lastname}`);
       }
       setShowModal(false);
       fetchData();
@@ -191,7 +191,7 @@ export default function MechanicsPage() {
     if (!confirm(`"${name}" ko delete karna hai?`)) return;
     const { error } = await supabase.from("mechanic_list").update({ delete_flag: 1 }).eq("id", id);
     if (!error) {
-      await logActivity('Deleted Staff Member', 'Mechanics', id, `Deleted profile: ${name}`);
+      await logActivity('Deleted Staff Member', 'Mechanics', id, `Staff: ${name}`);
       fetchData();
     }
   };
@@ -202,7 +202,7 @@ export default function MechanicsPage() {
     const name = [m.firstname, m.lastname].join(" ");
     const { error } = await supabase.from("mechanic_list").update({ status: newStatus }).eq("id", m.id);
     if (!error) {
-      await logActivity('Updated Staff Status', 'Mechanics', m.id, `${name} marked as ${newStatus === 1 ? 'Active' : 'Inactive'}`);
+      await logActivity('Updated Staff Status', 'Mechanics', m.id, `Staff: ${name} → ${newStatus === 1 ? 'Active' : 'Inactive'}`);
       fetchData();
     }
   };

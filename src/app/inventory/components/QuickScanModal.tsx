@@ -176,7 +176,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
           supplier_id: null,
         }]);
       if (err) throw err;
-      await logActivity('Added New Stock', 'Inventory', match.id, `${match.name}: Barcode quick-add ${quantity} units`);
+      await logActivity('Added New Stock', 'Inventory', match.id, `Product: ${match.name} | Barcode quick-add: ${quantity} units`);
       setSuccess(true);
       setTimeout(() => onSaved(), 700);
     } catch (err) {

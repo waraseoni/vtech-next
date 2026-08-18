@@ -537,9 +537,10 @@ function JobsListContent() {
       const statusName = STATUS_MAP[newStatus] || String(newStatus);
       for (const id of ids) {
         const txn = transactions.find(t => t.id === id);
-        await logActivity('Updated Job Status', 'Jobs', txn?.job_id || id, `Status changed to: ${statusName}`);
+        const oldStatus = (txn?.status != null ? STATUS_MAP[txn.status] : null) || String(txn?.status ?? '?');
+        await logActivity('Updated Job Status', 'Jobs', txn?.job_id || id, `Job #${txn?.job_id || id} | ${oldStatus} → ${statusName} | ${txn?.item || ''}`);
       }
-      await logActivity('Bulk Status Update', 'Jobs', undefined, `Updated ${ids.length} transactions to status ${statusName}`);
+      await logActivity('Bulk Status Update', 'Jobs', undefined, `${ids.length} job(s) updated to "${statusName}"`);
       fetchStats();
     } else {
       alert("Bulk update failed: " + error.message);

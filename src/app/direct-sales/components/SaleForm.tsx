@@ -387,9 +387,9 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
       if (ie) throw ie;
 
       if (mode === "new") {
-        await logActivity('Created Direct Sale', 'Sales', resultId, `Created Sale #${saleCode} for Rs.${totalAmount}`);
+        await logActivity('Created Direct Sale', 'Sales', resultId, `Sale: ${saleCode} | Total: ₹${totalAmount}`);
       } else {
-        await logActivity('Updated Direct Sale', 'Sales', resultId, `Updated Sale #${originalSaleData?.sale_code} (Grand Total: Rs.${totalAmount})`);
+        await logActivity('Updated Direct Sale', 'Sales', resultId, `Sale: ${originalSaleData?.sale_code} | Total: ₹${totalAmount}`);
       }
 
       router.replace(`/direct-sales/${resultId}/view`);

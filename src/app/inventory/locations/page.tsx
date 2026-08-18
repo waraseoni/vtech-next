@@ -226,7 +226,7 @@ export default function LocationsPage() {
           "Updated Location",
           "Inventory",
           editing.id,
-          `Location: ${locPath(toParts(payload))}`
+          `Location: ${locPath(toParts(payload))} | ID: ${editing.id}`
         );
       } else {
         const { data, error } = await supabase
@@ -240,7 +240,7 @@ export default function LocationsPage() {
           "Created Location",
           "Inventory",
           data?.id,
-          `Location: ${locPath(toParts(payload))}`
+          `Location: ${locPath(toParts(payload))} | New`
         );
       }
 
@@ -264,7 +264,7 @@ export default function LocationsPage() {
     if (!confirm(`"${path || "Untitled"}" ko delete karna hai?`)) return;
 
     await supabase.from("locations").update({ delete_flag: 1 }).eq("id", loc.id);
-    await logActivity("Deleted Location", "Inventory", loc.id, `Location: ${path}`);
+    await logActivity("Deleted Location", "Inventory", loc.id, `Location: ${path} | ID: ${loc.id}`);
     fetchData();
   };
 

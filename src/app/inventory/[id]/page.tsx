@@ -229,7 +229,7 @@ export default function ProductDetailPage() {
     const entry = stockIn.find(s => s.id === id);
     const { error } = await supabase.from("inventory_list").delete().eq("id", id);
     if (!error) {
-      await logActivity('Deleted Stock Entry', 'Inventory', productId, `${product?.name || "Unknown"}: Removed entry of ${entry?.quantity} units (ID: ${id})`);
+      await logActivity('Deleted Stock Entry', 'Inventory', productId, `Product: ${product?.name || "Unknown"} | Removed ${entry?.quantity} units | Stock ID: ${id}`);
       fetchData();
     } else alert("Failed to delete: " + error.message);
   };
@@ -525,7 +525,7 @@ export default function ProductDetailPage() {
                         await supabase.from("product_locations").insert({ product_id: productId, location_id: locationId });
                       }
 
-                      await logActivity('Updated Product Location', 'Inventory', productId, `${product.name}: Location set to ${locPath(editLoc) || "cleared"}`);
+                      await logActivity('Updated Product Location', 'Inventory', productId, `Product: ${product.name} | Location: ${locPath(editLoc) || "cleared"}`);
                       setLocEditing(false);
                       fetchData();
                     } catch (err) {

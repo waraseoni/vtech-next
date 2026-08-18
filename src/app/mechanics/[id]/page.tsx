@@ -156,7 +156,7 @@ export default function MechanicDetailPage() {
         reason: payReason || `Advance Payment`
       }]);
       if (error) throw error;
-      await logActivity("Staff Payment", "Mechanics", mechanic.id, `Paid ${inr(amt)} to ${name}`);
+      await logActivity("Staff Payment", "Mechanics", mechanic.id, `Staff: ${name} | Paid: ${inr(amt)}`);
       setShowPayModal(false);
       setPayAmount("");
       setPayReason("");

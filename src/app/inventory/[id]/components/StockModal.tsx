@@ -72,13 +72,13 @@ export default function StockModal({ productId, stock, onClose, onSaved, product
           .update({ quantity, stock_date: stockDate, supplier_id: supplierId ? Number(supplierId) : null })
           .eq("id", stock!.id);
         if (err) throw err;
-        await logActivity('Updated Stock Entry', 'Inventory', productId, `${productName || 'Product'}: Updated to ${quantity} units (ID: ${stock!.id})`);
+        await logActivity('Updated Stock Entry', 'Inventory', productId, `Product: ${productName || 'Product'} | Updated to ${quantity} units | Stock ID: ${stock!.id}`);
       } else {
         const { error: err } = await supabase
           .from("inventory_list")
           .insert([{ product_id: productId, quantity, stock_date: stockDate, supplier_id: supplierId ? Number(supplierId) : null }]);
         if (err) throw err;
-        await logActivity('Added New Stock', 'Inventory', productId, `${productName || 'Product'}: Added ${quantity} units`);
+        await logActivity('Added New Stock', 'Inventory', productId, `Product: ${productName || 'Product'} | Added ${quantity} units`);
       }
       setSuccess(true);
       setTimeout(() => onSaved(), 700);

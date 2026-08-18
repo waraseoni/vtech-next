@@ -178,8 +178,8 @@ export default function ActivityLogPage() {
   const getRelatedLink = (module: string, id: string) => {
     if (!id || id === '0') return null;
     const m = module.toLowerCase();
-    if (m.includes('transaction') || m.includes('job')) return `/jobs/${id}`;
-    if (m.includes('client')) return `/clients/${id}`;
+    if (m.includes('transaction') || m.includes('job')) return `/jobs/${id}/view`;
+    if (m.includes('client')) return `/clients/${id}/view`;
     if (m.includes('mechanic')) return `/mechanics/${id}`;
     if (m.includes('sale')) return `/sales/view/${id}`;
     if (m.includes('inventory') || m.includes('product')) return `/inventory`;

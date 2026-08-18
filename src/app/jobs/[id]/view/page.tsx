@@ -475,7 +475,7 @@ export default function JobDetailsPage() {
       setToast({ type: "error", msg: "Status update failed: " + error.message });
     } else {
       setJob({ ...job, ...updates } as JobDetail);
-      await logActivity('Updated Job Status', 'Jobs', job.job_id, `Status changed to: ${STATUS_MAP[newStatus]?.label}`);
+      await logActivity('Updated Job Status', 'Jobs', job.job_id, `Job #${job.job_id} | ${STATUS_MAP[job.status]?.label} → ${STATUS_MAP[newStatus]?.label} | ${job.item}`);
       loadActivity(job);
       setToast({ type: "success", msg: `Status "${STATUS_MAP[newStatus]?.label}" update ho gaya!` });
       setShowStatusModal(false);
@@ -501,7 +501,7 @@ export default function JobDetailsPage() {
     });
     if (error) { setToast({ type: "error", msg: "Payment save nahi hua: " + error.message }); }
     else {
-      await logActivity('Added Job Payment', 'Jobs', job.job_id, `Amount: Rs.${amt}, Mode: ${payMode}, Type: ${payType}`);
+      await logActivity('Added Job Payment', 'Jobs', job.job_id, `Job #${job.job_id} | ₹${amt} (${payMode}, ${payType}) | Client: ${client.firstname} ${client.lastname}`);
       loadActivity(job);
       setToast({ type: "success", msg: "Payment save ho gayi!" });
       setShowPayModal(false);
@@ -517,7 +517,7 @@ export default function JobDetailsPage() {
     setDeleting(true);
     const { error } = await supabase.from("transaction_list").update({ del_status: 1 }).eq("id", jobId);
     if (!error) {
-      await logActivity('Deleted Job', 'Jobs', job?.job_id, `Job #${job?.job_id} marked as deleted`);
+      await logActivity('Deleted Job', 'Jobs', job?.job_id, `Job #${job?.job_id} | ${job?.item || 'Unknown'} | Client: ${client?.firstname || ''} ${client?.lastname || ''}`);
       router.replace("/jobs");
     } else { setToast({ type: "error", msg: "Delete failed!" }); setDeleting(false); }
   };

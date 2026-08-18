@@ -293,7 +293,7 @@ function CommissionContent() {
 
       if (listErr) throw listErr;
 
-      await logActivity('Updated Commission Rate', 'Mechanics', selectedMech.id, `Rate changed to ${rate}% (Effective: ${effDate}) for ${selectedMech.name}`);
+      await logActivity('Updated Commission Rate', 'Mechanics', selectedMech.id, `Staff: ${selectedMech.name} | Commission → ${rate}% | Effective: ${effDate}`);
       
       setShowUpdateModal(false);
       fetchData();

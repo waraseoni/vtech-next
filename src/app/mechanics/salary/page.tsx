@@ -180,7 +180,7 @@ export default function SalaryManagement() {
       }]);
       if (histErr) throw histErr;
 
-      await logActivity('Updated Salary Rate', 'Mechanics', editingMech.id, `Daily wage updated to ${inr(rate)} (Effective: ${effectiveDate})`);
+      await logActivity('Updated Salary Rate', 'Mechanics', editingMech.id, `Staff: ${editingMech.firstname} ${editingMech.lastname} | Daily wage → ${inr(rate)} | Effective: ${effectiveDate}`);
       setShowRateModal(false);
       fetchData();
     } catch (err) {
@@ -204,7 +204,7 @@ export default function SalaryManagement() {
       }]);
       if (error) throw error;
 
-      await logActivity('Staff Payout', 'Mechanics', payoutData.id, `Paid ${inr(amt)} to ${payoutData.name}`);
+      await logActivity('Staff Payout', 'Mechanics', payoutData.id, `Staff: ${payoutData.name} | Paid: ${inr(amt)}`);
       setShowPayoutModal(false);
       fetchData();
     } catch (err) {

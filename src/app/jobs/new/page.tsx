@@ -549,9 +549,9 @@ function ManageJobPageInner({
       // Increment job_id_counter after successful save (new job only)
       if (!isEdit) {
         await bumpJobCounter(parseInt(jobCode));
-        await logActivity('Created New Job', 'Jobs', txnId ?? undefined, `Job #${jobCode} for ${selectedClient.fullname}`);
+        await logActivity('Created New Job', 'Jobs', txnId ?? undefined, `Job #${jobCode} for ${selectedClient.fullname} — Amount: ₹${grandTotal.toLocaleString("en-IN")}`);
       } else {
-        await logActivity('Updated Job Details', 'Jobs', jobId, `Job #${jobCode} — ${item}`);
+        await logActivity('Updated Job Details', 'Jobs', jobId, `Job #${jobCode} — ${item || "No item"} | ${serviceRows.length} service(s), ${productRows.length} product(s)`);
       }
 
       setToast({ type: "success", msg: isEdit ? "Job update ho gaya! ✅" : "Naya job create ho gaya! ✅" });
