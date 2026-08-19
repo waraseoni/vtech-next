@@ -191,8 +191,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         if (!res.ok) throw new Error(data.error);
       }
 
-      setToast({ type: "success", msg: "User update ho gaya! ✅" });
-      setTimeout(() => router.replace("/users"), 1000);
+      setToast({ type: "success", msg: "User update ho gaya!" });
+      setTimeout(() => { window.location.href = "/users"; }, 1000);
     } catch (err: unknown) {
       setToast({ type: "error", msg: err instanceof Error ? err.message : "Save failed!" });
     } finally {

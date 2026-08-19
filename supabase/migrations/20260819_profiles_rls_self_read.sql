@@ -1,38 +1,39 @@
 -- ============================================================================
 -- 20260819_profiles_rls_self_read.sql
 --
--- Fix: profiles table par RLS enabled hai par koi SELECT policy nahi hai.
--- Isse cookie-based client (requireAdmin/requireStaff/requireClient) profiles
--- read nahi kar paata — login ke baad role null milta hai, LicenseGate/
--- sidebar sab galat kaam karta hai.
+-- Fix: profiles table par RLS enabled hai par galat/missing policies.
+-- Original DB me RLS OFF hai to ye policies sirf naye DB par lagengi.
 --
--- Solution: authenticated user apni OWN profile read kar sake (self-read).
--- service_role ko hamesha allow karte hain (admin operations ke liye).
+-- SELECT: sab authenticated users sabki profiles padh sakein (user lists,
+--   activity logs, attendance, salary — sabko profiles chahiye).
+-- UPDATE: staff/admin kisi ki bhi, user sirf apni (name/avatar).
+-- INSERT/DELETE: sirf service_role se (setup API, admin create/delete user).
 -- ============================================================================
 
--- 1. Agar profiles par RLS nahi hai to enable karo
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- 2. Purani koi bhi profiles policy ho to drop karo (idempotent)
+-- Purani koi bhi profiles policy ho to drop karo (idempotent)
 DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'profiles' AND policyname = 'profiles_self_read') THEN
-    DROP POLICY profiles_self_read ON public.profiles;
-  END IF;
+  DROP POLICY IF EXISTS profiles_self_read ON public.profiles;
+  DROP POLICY IF EXISTS profiles_self_update ON public.profiles;
+  DROP POLICY IF EXISTS profiles_select_all ON public.profiles;
+  DROP POLICY IF EXISTS profiles_update_staff ON public.profiles;
+  DROP POLICY IF EXISTS profiles_update_self ON public.profiles;
 END $$;
 
--- 3. Self-read: authenticated user apni profile padh sakta hai
-CREATE POLICY profiles_self_read ON public.profiles
+-- SELECT: sabko sabki profiles
+CREATE POLICY profiles_select_all ON public.profiles
   FOR SELECT TO authenticated
-  USING (id = auth.uid());
+  USING (true);
 
--- 4. Agar update ki zaroorat aaye to bhi (full_name, avatar_url)
-DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'profiles' AND policyname = 'profiles_self_update') THEN
-    DROP POLICY profiles_self_update ON public.profiles;
-  END IF;
-END $$;
+-- UPDATE: staff/admin
+CREATE POLICY profiles_update_staff ON public.profiles
+  FOR UPDATE TO authenticated
+  USING (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'))
+  WITH CHECK (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'));
 
-CREATE POLICY profiles_self_update ON public.profiles
+-- UPDATE: user apni khud ki
+CREATE POLICY profiles_update_self ON public.profiles
   FOR UPDATE TO authenticated
   USING (id = auth.uid())
   WITH CHECK (id = auth.uid());

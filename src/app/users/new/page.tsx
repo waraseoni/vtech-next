@@ -64,8 +64,8 @@ export default function NewUserPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      setToast({ type: "success", msg: "User successfully create ho gaya! ✅" });
-      setTimeout(() => router.replace("/users"), 1200);
+      setToast({ type: "success", msg: "User successfully create ho gaya!" });
+      setTimeout(() => { window.location.href = "/users"; }, 1200);
     } catch (err: unknown) {
       setToast({ type: "error", msg: err instanceof Error ? err.message : "Create failed!" });
       setLoading(false);
