@@ -92,9 +92,10 @@ Key format: `VTC-` + 4 groups of 4 alphanumeric (uppercase), e.g.
 
 ## Client Package + Setup Page (naye client ko kya dena hai)
 
-> **Naye client ka Supabase project banate time schema lagane ke liye
-> [`supabase-cli-guide.md`](./supabase-cli-guide.md) padho** — CLI install se
-> dump nikalne tak, step-by-step (Windows/PowerShell).
+> **Naye client ko deploy karne ki complete step-by-step guide:
+> [`docs/DEPLOYMENT_GUIDE.md`](../DEPLOYMENT_GUIDE.md)** — supabase project
+> banana se lekar schema dalne tak, Vercel deploy, env vars, setup page, license
+> activation — sab kuch.
 
 Client ke liye ready-to-deploy package banane ka system:
 

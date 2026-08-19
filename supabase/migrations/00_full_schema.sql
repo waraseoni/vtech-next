@@ -515,20 +515,24 @@ ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS status integer NOT NULL DE
 -- ═════════════════════════════════════════════════════════════════════════════
 
 -- profiles.role: admin | staff | client | developer
-ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
-ALTER TABLE public.profiles ADD CONSTRAINT profiles_role_check
-  CHECK (role IN ('admin', 'staff', 'client', 'developer'));
+DO $$ BEGIN
+  ALTER TABLE public.profiles ADD CONSTRAINT profiles_role_check
+    CHECK (role IN ('admin', 'staff', 'client', 'developer'));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- purchase_orders.status
-ALTER TABLE public.purchase_orders DROP CONSTRAINT IF EXISTS purchase_orders_status_check;
-ALTER TABLE public.purchase_orders ADD CONSTRAINT purchase_orders_status_check
-  CHECK (status IN ('pending', 'ordered', 'received', 'cancelled'));
+DO $$ BEGIN
+  ALTER TABLE public.purchase_orders ADD CONSTRAINT purchase_orders_status_check
+    CHECK (status IN ('pending', 'ordered', 'received', 'cancelled'));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- locations unique zone+rack+bin+box
 DO $$ BEGIN
   ALTER TABLE public.locations ADD CONSTRAINT locations_zone_rack_bin_box_uniq
     UNIQUE (zone, rack, bin, box);
-EXCEPTION WHEN duplicate_object THEN NULL;
+EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 
@@ -548,7 +552,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS login_throttle_email_uniq
 DO $$ BEGIN
   ALTER TABLE public.purchase_orders ADD CONSTRAINT purchase_orders_po_code_uniq
     UNIQUE (po_code);
-EXCEPTION WHEN duplicate_object THEN NULL;
+EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 
