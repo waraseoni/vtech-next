@@ -347,53 +347,29 @@ function SidebarNav({
           </Link>
         </li>
         <li>
+          <Link href="/jobs" className={navLinkCls(lk("/jobs"))} onClick={onNavClick}>
+            <ClipboardList size={16} /><span>Jobs</span>
+          </Link>
+        </li>
+        <li>
+          <Link href="/direct-sales" className={navLinkCls(lk("/direct-sales"))} onClick={onNavClick}>
+            <ShoppingCart size={16} /><span>Sales</span>
+          </Link>
+        </li>
+        <li>
           <Link href="/clients" className={navLinkCls(lk("/clients"))} onClick={onNavClick}>
             <Users size={16} /><span>Clients</span>
           </Link>
         </li>
         <li>
           <Link href="/inquiries" className={navLinkCls(lk("/inquiries", true))} onClick={onNavClick}>
-            <HelpCircle size={16} /><span>Inquiries</span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/direct-sales" className={navLinkCls(lk("/direct-sales"))} onClick={onNavClick}>
-            <ShoppingCart size={16} /><span>Direct Sales</span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/jobs" className={navLinkCls(lk("/jobs"))} onClick={onNavClick}>
-            <ClipboardList size={16} /><span>JobSheet</span>
+            <HelpCircle size={16} /><span>Enquiries</span>
           </Link>
         </li>
 
         {isAdmin && (
           <>
-            <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
-              Reports
-            </li>
-            <SubMenu title="Reports" icon={<PieChart size={15} />} basePath="/reports">
-              <li><Link href="/reports"                 className={subLinkCls(pathname === "/reports")}                onClick={onNavClick}><Sparkles size={12} className="text-blue-400" />All Reports</Link></li>
-              <li><Link href="/reports/balancesheet"    className={subLinkCls(pathname === "/reports/balancesheet")}    onClick={onNavClick}><BarChart2 size={12} />Balance Sheet</Link></li>
-              <li><Link href="/reports/delivered"      className={subLinkCls(pathname === "/reports/delivered")}      onClick={onNavClick}><Truck size={12} />Delivered Report</Link></li>
-              <li><Link href="/reports/due-reminders"  className={subLinkCls(pathname === "/reports/due-reminders")}  onClick={onNavClick}><CalendarClock size={12} className="text-red-400" />Due Reminders</Link></li>
-              <li><Link href="/reports/monthly-profit" className={subLinkCls(pathname === "/reports/monthly-profit")} onClick={onNavClick}><BarChart2 size={12} className="text-emerald-400" />Monthly Profit</Link></li>
-              <li><Link href="/reports/cash-flow"      className={subLinkCls(pathname === "/reports/cash-flow")}      onClick={onNavClick}><TrendingUp size={12} />Cash Flow</Link></li>
-              <li><Link href="/reports/ledger"         className={subLinkCls(pathname === "/reports/ledger")}         onClick={onNavClick}><DollarSign size={12} />Business Ledger</Link></li>
-              <li><Link href="/reports/yearly"         className={subLinkCls(pathname === "/reports/yearly")}         onClick={onNavClick}><Clock size={12} />Yearly Report</Link></li>
-
-              <li><Link href="/reports/daily-sales"    className={subLinkCls(pathname === "/reports/daily-sales")}    onClick={onNavClick}><ShoppingCart size={12} />Daily Sales</Link></li>
-              <li><Link href="/reports/daily-service"  className={subLinkCls(pathname === "/reports/daily-service")}  onClick={onNavClick}><Wrench size={12} />Daily Service</Link></li>
-              <li><Link href="/reports/monthly-sales"   className={subLinkCls(pathname === "/reports/monthly-sales")}   onClick={onNavClick}><ShoppingCart size={12} />Monthly Sales</Link></li>
-              <li><Link href="/reports/custom-sales"    className={subLinkCls(pathname === "/reports/custom-sales")}    onClick={onNavClick}><ShoppingCart size={12} />Custom Sales</Link></li>
-              <li><Link href="/reports/custom-service"  className={subLinkCls(pathname === "/reports/custom-service")}  onClick={onNavClick}><Wrench size={12} />Custom Service</Link></li>
-              <li><Link href="/reports/top-customers"  className={subLinkCls(pathname === "/reports/top-customers")}  onClick={onNavClick}><Users size={12} />Top Customers</Link></li>
-              <li><Link href="/reports/loan"           className={subLinkCls(pathname === "/reports/loan")}           onClick={onNavClick}><CreditCard size={12} />Loan Report</Link></li>
-               <li><Link href="/reports/pending-jobs"   className={subLinkCls(pathname === "/reports/pending-jobs")}   onClick={onNavClick}><Clock size={12} className="text-amber-400" />Pending Jobs</Link></li>
-              <li><Link href="/reports/vyapar-darpan"   className={subLinkCls(pathname === "/reports/vyapar-darpan")}   onClick={onNavClick}><PieChart size={12} className="text-amber-400" />Vyapar Darpan</Link></li>
-              <li><Link href="/activity-logs"          className={subLinkCls(pathname === "/activity-logs")}          onClick={onNavClick}><Activity size={12} />Activity Log</Link></li>
-            </SubMenu>
-
+            {/* ══ INVENTORY ════════════════════════════════════════════════ */}
             <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
               Inventory
             </li>
@@ -401,16 +377,6 @@ function SidebarNav({
               <li>
                 <Link href="/inventory" className={subLinkCls(pathname === "/inventory" || (pathname.startsWith("/inventory/") && !pathname.startsWith("/inventory/purchase-orders") && !pathname.startsWith("/inventory/locate")))} onClick={onNavClick}>
                   <Package size={12} className="text-emerald-400" />Stock Overview
-                </Link>
-              </li>
-              <li>
-                <Link href="/inventory/locate" className={subLinkCls(pathname === "/inventory/locate")} onClick={onNavClick}>
-                  <MapPin size={12} className="text-amber-400" />Spare Finder
-                </Link>
-              </li>
-              <li>
-                <Link href="/inventory/purchase-orders" className={subLinkCls(pathname === "/inventory/purchase-orders")} onClick={onNavClick}>
-                  <FileText size={12} className="text-teal-400" />Purchase Orders
                 </Link>
               </li>
               <li>
@@ -424,36 +390,96 @@ function SidebarNav({
                 </Link>
               </li>
               <li>
+                <Link href="/inventory/purchase-orders" className={subLinkCls(pathname === "/inventory/purchase-orders")} onClick={onNavClick}>
+                  <FileText size={12} className="text-teal-400" />Purchase Orders
+                </Link>
+              </li>
+              <li>
                 <Link href="/inventory/locations" className={subLinkCls(pathname === "/inventory/locations")} onClick={onNavClick}>
                   <MapPin size={12} className="text-rose-400" />Locations
                 </Link>
               </li>
+              <li>
+                <Link href="/inventory/locate" className={subLinkCls(pathname === "/inventory/locate")} onClick={onNavClick}>
+                  <MapPin size={12} className="text-amber-400" />Spare Finder
+                </Link>
+              </li>
             </SubMenu>
 
+            {/* ══ FINANCE ══════════════════════════════════════════════════ */}
             <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
-              Back Office
+              Finance
             </li>
-            <SubMenu title="Back Office" icon={<Briefcase size={15} />} basePath="/back-office">
+            <SubMenu title="Finance" icon={<DollarSign size={15} />} matchPaths={["/back-office", "/payments", "/expenses", "/advance", "/clients-admin", "/client-loans", "/lenders", "/mechanics/salary"]}>
               <li><Link href="/back-office"   className={subLinkCls(pathname === "/back-office")}   onClick={onNavClick}><Sparkles size={12} className="text-purple-400" />Overview</Link></li>
-              <li><Link href="/expenses"      className={subLinkCls(pathname === "/expenses")}      onClick={onNavClick}><DollarSign size={12} />Pay Outs</Link></li>
               <li><Link href="/payments"      className={subLinkCls(pathname === "/payments")}      onClick={onNavClick}><Receipt size={12} />Payments</Link></li>
+              <li><Link href="/expenses"      className={subLinkCls(pathname === "/expenses")}      onClick={onNavClick}><DollarSign size={12} />Expenses</Link></li>
               <li><Link href="/mechanics/salary" className={subLinkCls(pathname === "/mechanics/salary")} onClick={onNavClick}><Coins size={12} />Salary</Link></li>
               <li><Link href="/advance"       className={subLinkCls(pathname === "/advance")}       onClick={onNavClick}><DollarSign size={12} />Advance</Link></li>
-              <li><Link href="/services"      className={subLinkCls(pathname === "/services")}      onClick={onNavClick}><Toolbox size={12} />Services</Link></li>
-              <li><Link href="/mechanics"     className={subLinkCls(pathname.startsWith("/mechanics"))}     onClick={onNavClick}><UsersRound size={12} />Mechanics</Link></li>
-              <li><Link href="/mechanics/commission" className={subLinkCls(pathname === "/mechanics/commission")} onClick={onNavClick}><BarChart2 size={12} />Commission History</Link></li>
-              <li><Link href="/clients-admin" className={subLinkCls(pathname === "/clients-admin")} onClick={onNavClick}><FolderOpen size={12} />Client Amt</Link></li>
+              <li><Link href="/clients-admin" className={subLinkCls(pathname === "/clients-admin")} onClick={onNavClick}><FolderOpen size={12} />Client Ledger</Link></li>
               <li><Link href="/client-loans" className={subLinkCls(pathname === "/client-loans")} onClick={onNavClick}><CreditCard size={12} />Client Loans</Link></li>
               <li><Link href="/lenders"        className={subLinkCls(pathname === "/lenders")}        onClick={onNavClick}><History size={12} />Lenders</Link></li>
+            </SubMenu>
+
+            {/* ══ PEOPLE ═══════════════════════════════════════════════════ */}
+            <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+              People
+            </li>
+            <SubMenu title="People" icon={<UsersRound size={15} />} matchPaths={["/services"]}>
+              <li><Link href="/mechanics"     className={subLinkCls(pathname.startsWith("/mechanics") && pathname !== "/mechanics/salary" && pathname !== "/mechanics/commission")}     onClick={onNavClick}><UsersRound size={12} />Staff</Link></li>
+              <li><Link href="/mechanics/commission" className={subLinkCls(pathname === "/mechanics/commission")} onClick={onNavClick}><BarChart2 size={12} />Commission</Link></li>
+              <li><Link href="/services"      className={subLinkCls(pathname === "/services")}      onClick={onNavClick}><Toolbox size={12} />Service Catalog</Link></li>
+            </SubMenu>
+
+            {/* ══ REPORTS ══════════════════════════════════════════════════ */}
+            <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+              Reports
+            </li>
+            <SubMenu title="Reports" icon={<PieChart size={15} />} basePath="/reports" matchPaths={["/activity-logs"]}>
+              <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-2 pb-0.5 select-none">Overview</li>
+              <li><Link href="/reports"                 className={subLinkCls(pathname === "/reports")}                onClick={onNavClick}><Sparkles size={12} className="text-blue-400" />All Reports</Link></li>
+              <li><Link href="/reports/vyapar-darpan"   className={subLinkCls(pathname === "/reports/vyapar-darpan")}   onClick={onNavClick}><PieChart size={12} className="text-amber-400" />Vyapar Darpan</Link></li>
+
+              <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">Financial</li>
+              <li><Link href="/reports/balancesheet"    className={subLinkCls(pathname === "/reports/balancesheet")}    onClick={onNavClick}><BarChart2 size={12} />Balance Sheet</Link></li>
+              <li><Link href="/reports/cash-flow"      className={subLinkCls(pathname === "/reports/cash-flow")}      onClick={onNavClick}><TrendingUp size={12} />Cash Flow</Link></li>
+              <li><Link href="/reports/ledger"         className={subLinkCls(pathname === "/reports/ledger")}         onClick={onNavClick}><DollarSign size={12} />Business Ledger</Link></li>
+              <li><Link href="/reports/monthly-profit" className={subLinkCls(pathname === "/reports/monthly-profit")} onClick={onNavClick}><BarChart2 size={12} className="text-emerald-400" />Monthly Profit</Link></li>
+              <li><Link href="/reports/yearly"         className={subLinkCls(pathname === "/reports/yearly")}         onClick={onNavClick}><Clock size={12} />Yearly Report</Link></li>
+              <li><Link href="/reports/loan"           className={subLinkCls(pathname === "/reports/loan")}           onClick={onNavClick}><CreditCard size={12} />Loan Report</Link></li>
+
+              <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">Sales &amp; Service</li>
+              <li><Link href="/reports/daily-sales"    className={subLinkCls(pathname === "/reports/daily-sales")}    onClick={onNavClick}><ShoppingCart size={12} />Daily Sales</Link></li>
+              <li><Link href="/reports/daily-service"  className={subLinkCls(pathname === "/reports/daily-service")}  onClick={onNavClick}><Wrench size={12} />Daily Service</Link></li>
+              <li><Link href="/reports/monthly-sales"   className={subLinkCls(pathname === "/reports/monthly-sales")}   onClick={onNavClick}><ShoppingCart size={12} />Monthly Sales</Link></li>
+              <li><Link href="/reports/custom-sales"    className={subLinkCls(pathname === "/reports/custom-sales")}    onClick={onNavClick}><ShoppingCart size={12} />Custom Sales</Link></li>
+              <li><Link href="/reports/custom-service"  className={subLinkCls(pathname === "/reports/custom-service")}  onClick={onNavClick}><Wrench size={12} />Custom Service</Link></li>
+
+              <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">Customers</li>
+              <li><Link href="/reports/top-customers"  className={subLinkCls(pathname === "/reports/top-customers")}  onClick={onNavClick}><Users size={12} />Top Customers</Link></li>
+              <li><Link href="/reports/delivered"      className={subLinkCls(pathname === "/reports/delivered")}      onClick={onNavClick}><Truck size={12} />Delivered Report</Link></li>
+              <li><Link href="/reports/due-reminders"  className={subLinkCls(pathname === "/reports/due-reminders")}  onClick={onNavClick}><CalendarClock size={12} className="text-red-400" />Due Reminders</Link></li>
+              <li><Link href="/reports/pending-jobs"   className={subLinkCls(pathname === "/reports/pending-jobs")}   onClick={onNavClick}><Clock size={12} className="text-amber-400" />Pending Jobs</Link></li>
+
+              <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">Audit</li>
+              <li><Link href="/activity-logs"          className={subLinkCls(pathname === "/activity-logs")}          onClick={onNavClick}><Activity size={12} />Activity Log</Link></li>
+            </SubMenu>
+
+            {/* ══ SYSTEM ═══════════════════════════════════════════════════ */}
+            <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+              System
+            </li>
+            <SubMenu title="System" icon={<Settings2 size={15} />} matchPaths={["/users", "/settings", "/backup", "/sync", "/images"]}>
               <li><Link href="/users"         className={subLinkCls(pathname === "/users")}         onClick={onNavClick}><ShieldCheck size={12} />Users</Link></li>
-              <li><Link href="/backup"        className={subLinkCls(pathname === "/backup")}        onClick={onNavClick}><Database size={12} />Backup</Link></li>
-              <li><Link href="/sync"          className={subLinkCls(pathname === "/sync")}          onClick={onNavClick}><RefreshCw size={12} className="text-emerald-400" />MariaDB Sync</Link></li>
-              <li><Link href="/images"        className={subLinkCls(pathname === "/images")}        onClick={onNavClick}><Images size={12} className="text-amber-400" />Images</Link></li>
               <li><Link href="/settings"      className={subLinkCls(pathname === "/settings")}      onClick={onNavClick}><Settings2 size={12} />Settings</Link></li>
               <li><Link href="/settings/throttle" className={subLinkCls(pathname === "/settings/throttle")} onClick={onNavClick}><ShieldAlert size={12} className="text-red-400" />Login Throttle</Link></li>
               <li><Link href="/settings/whatsapp-templates" className={subLinkCls(pathname === "/settings/whatsapp-templates")} onClick={onNavClick}><MessageSquare size={12} className="text-green-400" />WA Templates</Link></li>
+              <li><Link href="/backup"        className={subLinkCls(pathname === "/backup")}        onClick={onNavClick}><Database size={12} />Backup</Link></li>
+              <li><Link href="/sync"          className={subLinkCls(pathname === "/sync")}          onClick={onNavClick}><RefreshCw size={12} className="text-emerald-400" />MariaDB Sync</Link></li>
+              <li><Link href="/images"        className={subLinkCls(pathname === "/images")}        onClick={onNavClick}><Images size={12} className="text-amber-400" />Images</Link></li>
             </SubMenu>
 
+            {/* ══ LICENSING ════════════════════════════════════════════════ */}
             {(sellerEnabled || devEnabled) && (
               <>
                 <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
