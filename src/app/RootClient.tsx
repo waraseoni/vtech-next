@@ -14,7 +14,7 @@ import {
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
   DollarSign, Truck, CreditCard, Clock, Briefcase, Coins, Receipt,
   Toolbox, FolderOpen, UsersRound, Database, Settings2, MessageSquare,
-  ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert, KeyRound, Code2, Images, FileText, Layers, MapPin,
+  ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert, KeyRound, Code2, Images, FileText, Layers, MapPin, Terminal,
 } from "lucide-react";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
@@ -469,7 +469,7 @@ function SidebarNav({
             <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
               System
             </li>
-            <SubMenu title="System" icon={<Settings2 size={15} />} matchPaths={["/users", "/settings", "/backup"]}>
+            <SubMenu title="System" icon={<Settings2 size={15} />} matchPaths={["/users", "/settings", "/backup", "/back-office/db-tools"]}>
               <li><Link href="/users"         className={subLinkCls(pathname === "/users")}         onClick={onNavClick}><ShieldCheck size={12} />Users</Link></li>
               <li><Link href="/settings"      className={subLinkCls(pathname === "/settings")}      onClick={onNavClick}><Settings2 size={12} />Settings</Link></li>
               <li><Link href="/settings/throttle" className={subLinkCls(pathname === "/settings/throttle")} onClick={onNavClick}><ShieldAlert size={12} className="text-red-400" />Login Throttle</Link></li>
@@ -505,6 +505,11 @@ function SidebarNav({
                     <li>
                       <Link href="/images" className={navLinkCls(pathname === "/images")} onClick={onNavClick}>
                         <Images size={16} className="text-amber-400" /><span>Images</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/back-office/db-tools" className={navLinkCls(pathname === "/back-office/db-tools")} onClick={onNavClick}>
+                        <Terminal size={16} className="text-orange-400" /><span>DB Tools</span>
                       </Link>
                     </li>
                   </>

@@ -5,7 +5,7 @@ import {
   Wrench, Package, Users, ShieldCheck, Database, Settings, 
   Search, DollarSign, Wallet, Percent, 
   Landmark, Handshake, ScrollText, Download,
-  ArrowRight
+  ArrowRight, Terminal
 } from "lucide-react";
 import Link from "next/link";
 
@@ -54,6 +54,7 @@ export default function BackOfficeDashboard() {
       icon: <Settings size={18} />,
       items: [
         { name: "Backup", href: "/backup", icon: <Download />, color: "sky", desc: "Database exports" },
+        { name: "DB Tools", href: "/back-office/db-tools", icon: <Terminal />, color: "orange", desc: "pg_dump, schema & deploy" },
         { name: "Settings", href: "/settings", icon: <Settings />, color: "slate", desc: "Global configuration" },
         { name: "Activity Logs", href: "/activity-logs", icon: <ScrollText />, color: "cyan", desc: "Audit trail & history" },
       ]
