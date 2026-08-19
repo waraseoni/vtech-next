@@ -246,3 +246,56 @@ ALTER TABLE public.product_list ADD COLUMN IF NOT EXISTS new_column text;
 
 > **Dhyan:** `baseline_schema.sql` me bhi update karo taaki agle client ke liye
 > fresh setup me bhi naya column aaye.
+
+---
+
+## DB Backup/Restore Tools
+
+### pg_dump — Full Database Backup
+
+```powershell
+# Schema only (client ke liye naya setup)
+node scripts/supabase-dump.mjs
+
+# Schema + data (complete backup)
+node scripts/supabase-dump.mjs --full
+
+# Sirf data (schema nahi)
+node scripts/supabase-dump.mjs --data-only
+
+# Custom filename
+node scripts/supabase-dump.mjs --output my-backup.sql
+
+# Clean mode (DROP + CREATE statements include)
+node scripts/supabase-dump.mjs --clean
+```
+
+**Prerequisites:** `pg_dump` installed hona chahiye:
+```powershell
+# Windows
+scoop install postgresql
+
+# Mac
+brew install postgresql
+
+# Linux
+sudo apt install postgresql-client
+```
+
+**Connection:** `.env.local` me `SUPABASE_DB_PASSWORD` + `NEXT_PUBLIC_SUPABASE_URL`
+hona chahiye. Ya directly `--db-url` flag do.
+
+### Restore — Database Me Data Wapas Dalna
+
+```powershell
+# Dry run (sirf check, execute nahi)
+node scripts/supabase-restore.mjs backup.sql --dry-run
+
+# Actual restore
+node scripts/supabase-restore.mjs backup.sql
+
+# Force (confirmation bina)
+node scripts/supabase-restore.mjs backup.sql --force
+```
+
+**Prerequisites:** `psql` installed hona chahiye (same as pg_dump).
