@@ -3,10 +3,13 @@
 -- Consolidated idempotent schema — full project setup.
 --
 -- Run on: Any fresh Supabase / PostgreSQL database.
--- Order:    ENUMS → TABLES → INDEXES → RLS → FUNCTIONS → TRIGGERS
+-- Order:    ENUMS → TABLES → INDEXES → FUNCTIONS → TRIGGERS → SEED
 -- Safe:     IF NOT EXISTS / DROP IF EXISTS — repeatable, no conflicts.
 --
--- Generated from Supabase schema dump (PostgREST OpenAPI) + migration files.
+-- Source: Original working DB (rklyznlrcrysdpksltxm.supabase.co)
+--         Queried via PostgREST REST API + schema introspection.
+-- NOTE:    Original DB has NO RLS enabled. This dump intentionally omits
+--          RLS to match the working production state.
 -- ============================================================================
 
 -- ═════════════════════════════════════════════════════════════════════════════
@@ -481,9 +484,6 @@ CREATE TABLE IF NOT EXISTS public.push_subscriptions (
 -- 3. ADD MISSING COLUMNS (idempotent — runs on existing tables too)
 -- ═════════════════════════════════════════════════════════════════════════════
 
--- client_list
-ALTER TABLE public.client_list ADD COLUMN IF NOT EXISTS login_allowed boolean NOT NULL DEFAULT false;
-
 -- profiles
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS mechanic_id bigint;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS client_id bigint;
@@ -747,163 +747,9 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- spare_supplier → spare_supplier (no FK, junction table with PK)
-
 
 -- ═════════════════════════════════════════════════════════════════════════════
--- 8. ROW LEVEL SECURITY (RLS)
--- ═════════════════════════════════════════════════════════════════════════════
-
--- Enable RLS on all tables that need it
-ALTER TABLE public.profiles           ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.transaction_list   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.client_payments    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.system_info        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.activity_logs      ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.payment_reminders  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.suppliers          ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.spare_supplier     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.wp_template_history ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.message_list       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.purchase_orders    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.purchase_order_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.login_throttle     ENABLE ROW LEVEL SECURITY;
-
--- ── Drop old policies (idempotent) ─────────────────────────────────────────
-DO $$ DECLARE p record; BEGIN
-  FOR p IN
-    SELECT policyname, tablename FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename IN (
-        'profiles', 'transaction_list', 'client_payments', 'system_info', 'activity_logs',
-        'payment_reminders', 'suppliers', 'spare_supplier', 'wp_template_history',
-        'message_list', 'purchase_orders', 'purchase_order_items', 'push_subscriptions'
-      )
-  LOOP
-    EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', p.policyname, p.tablename);
-  END LOOP;
-END $$;
-
--- ── profiles ────────────────────────────────────────────────────────────────
--- SELECT: sab authenticated users sabki profiles padh sakein (user lists,
--- activity logs, attendance, salary — sabko profiles chahiye). Original DB
--- me RLS OFF hai to ye policy sirf naye DB par lagegi.
-CREATE POLICY profiles_select_all ON public.profiles
-  FOR SELECT TO authenticated
-  USING (true);
-
--- UPDATE: staff/admin kisi ki bhi profile update kar sakein + user apni
--- khud ki profile edit kar sake (full_name, avatar_url).
-CREATE POLICY profiles_update_staff ON public.profiles
-  FOR UPDATE TO authenticated
-  USING (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'))
-  WITH CHECK (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'));
-
-CREATE POLICY profiles_update_self ON public.profiles
-  FOR UPDATE TO authenticated
-  USING (id = auth.uid())
-  WITH CHECK (id = auth.uid());
-
--- ── transaction_list ────────────────────────────────────────────────────────
-CREATE POLICY portal_transaction_list_staff ON public.transaction_list
-  FOR ALL TO authenticated
-  USING (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'))
-  WITH CHECK (true);
-
-CREATE POLICY portal_transaction_list_client_own ON public.transaction_list
-  FOR SELECT TO authenticated
-  USING (
-    (select role from public.profiles where id = auth.uid()) = 'client'
-    and client_name ~ '^[0-9]+$'
-    and client_name::bigint = (select client_id from public.profiles where id = auth.uid())
-  );
-
--- ── client_payments ─────────────────────────────────────────────────────────
-CREATE POLICY portal_client_payments_staff ON public.client_payments
-  FOR ALL TO authenticated
-  USING (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'))
-  WITH CHECK (true);
-
-CREATE POLICY portal_client_payments_client_own ON public.client_payments
-  FOR SELECT TO authenticated
-  USING (
-    (select role from public.profiles where id = auth.uid()) = 'client'
-    and client_id = (select client_id from public.profiles where id = auth.uid())
-  );
-
--- ── system_info ─────────────────────────────────────────────────────────────
-CREATE POLICY hardening_sysinfo_anon_read ON public.system_info
-  FOR SELECT TO anon
-  USING (meta_field in (
-    'name', 'short_name', 'logo', 'cover', 'email', 'contact',
-    'address', 'owner', 'biz_days', 'biz_open', 'biz_close',
-    'gst_no', 'gstin', 'map_url', 'map_iframe',
-    'whatsapp', 'facebook', 'instagram', 'youtube', 'footer_text', 'announcement'
-  ));
-
-CREATE POLICY hardening_sysinfo_auth_read ON public.system_info
-  FOR SELECT TO authenticated
-  USING (meta_field not in ('ai_api_key', 'csrf_token'));
-
-CREATE POLICY hardening_sysinfo_staff ON public.system_info
-  FOR ALL TO authenticated
-  USING (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'))
-  WITH CHECK (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'));
-
--- ── activity_logs ───────────────────────────────────────────────────────────
-CREATE POLICY hardening_activity_staff ON public.activity_logs
-  FOR ALL TO authenticated
-  USING (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'))
-  WITH CHECK (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'));
-
--- ── payment_reminders ───────────────────────────────────────────────────────
-CREATE POLICY hardening_reminders_staff ON public.payment_reminders
-  FOR ALL TO authenticated
-  USING (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'))
-  WITH CHECK (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'));
-
--- ── suppliers ───────────────────────────────────────────────────────────────
-CREATE POLICY hardening_suppliers_staff ON public.suppliers
-  FOR ALL TO authenticated
-  USING (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'))
-  WITH CHECK (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'));
-
--- ── spare_supplier ──────────────────────────────────────────────────────────
-CREATE POLICY hardening_spare_staff ON public.spare_supplier
-  FOR ALL TO authenticated
-  USING (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'))
-  WITH CHECK (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'));
-
--- ── wp_template_history ─────────────────────────────────────────────────────
-CREATE POLICY hardening_wptpl_staff ON public.wp_template_history
-  FOR ALL TO authenticated
-  USING (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'))
-  WITH CHECK (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'));
-
--- ── message_list ────────────────────────────────────────────────────────────
-CREATE POLICY hardening_msgs_anon_insert ON public.message_list
-  FOR INSERT TO anon
-  WITH CHECK (true);
-
-CREATE POLICY hardening_msgs_staff ON public.message_list
-  FOR ALL TO authenticated
-  USING (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'))
-  WITH CHECK (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff'));
-
--- ── purchase_orders / purchase_order_items / push_subscriptions ──────────────
-CREATE POLICY "Allow authenticated access" ON public.purchase_orders
-  FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
-CREATE POLICY "Allow authenticated access" ON public.purchase_order_items
-  FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
-CREATE POLICY "Allow authenticated access" ON public.push_subscriptions
-  FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
-
--- ═════════════════════════════════════════════════════════════════════════════
--- 9. FUNCTIONS
+-- 8. FUNCTIONS
 -- ═════════════════════════════════════════════════════════════════════════════
 
 -- prevent_role_escalation
@@ -944,7 +790,7 @@ $$;
 
 
 -- ═════════════════════════════════════════════════════════════════════════════
--- 10. TRIGGERS
+-- 9. TRIGGERS
 -- ═════════════════════════════════════════════════════════════════════════════
 
 DROP TRIGGER IF EXISTS prevent_role_escalation_trigger ON public.profiles;
@@ -964,7 +810,7 @@ CREATE TRIGGER push_subscriptions_touch
 
 
 -- ═════════════════════════════════════════════════════════════════════════════
--- 11. SEED DATA
+-- 10. SEED DATA
 -- ═════════════════════════════════════════════════════════════════════════════
 
 -- job_id_counter seed (idempotent)
@@ -978,19 +824,62 @@ SELECT 1, greatest(
 )
 WHERE NOT EXISTS (SELECT 1 FROM public.job_id_counter WHERE id = 1);
 
--- system_info seed (idempotent)
+-- system_info seed (idempotent) — core business defaults
 INSERT INTO public.system_info (meta_field, meta_value)
 VALUES
   ('owner', ''),
   ('geofence_enabled', 'false'),
   ('geofence_lat', '0'),
   ('geofence_lng', '0'),
-  ('geofence_radius_m', '100')
+  ('geofence_radius_m', '100'),
+  ('name', 'V-Technologies'),
+  ('short_name', 'V-Tech'),
+  ('email', ''),
+  ('contact', ''),
+  ('address', ''),
+  ('logo', ''),
+  ('cover', ''),
+  ('gst_no', ''),
+  ('gstin', ''),
+  ('biz_days', 'Mon-Sat'),
+  ('biz_open', '10:00'),
+  ('biz_close', '20:00'),
+  ('map_url', ''),
+  ('map_iframe', ''),
+  ('whatsapp', ''),
+  ('facebook', ''),
+  ('instagram', ''),
+  ('youtube', ''),
+  ('footer_text', ''),
+  ('announcement', ''),
+  ('upi_id', ''),
+  ('ai_provider', 'groq'),
+  ('ai_model', 'llama-3.3-70b-versatile'),
+  ('ai_api_key', ''),
+  ('license_key', ''),
+  ('license_status', '{"activated":false}'),
+  ('license_last_checked', ''),
+  ('log_retention', '90'),
+  ('whatsapp_welcome', ''),
+  ('whatsapp_reminder', ''),
+  ('whatsapp_followup', ''),
+  ('whatsapp_offer', ''),
+  ('whatsapp_greeting', ''),
+  ('whatsapp_sale', ''),
+  ('whatsapp_status_pending', ''),
+  ('whatsapp_status_repairing', ''),
+  ('whatsapp_status_ready', ''),
+  ('whatsapp_status_delivered', ''),
+  ('whatsapp_status_cancelled', ''),
+  ('csrf_token', ''),
+  ('signature', ''),
+  ('signature_canvas', ''),
+  ('delete_signature', '0')
 ON CONFLICT DO NOTHING;
 
 
 -- ═════════════════════════════════════════════════════════════════════════════
--- 12. STORAGE BUCKETS
+-- 11. STORAGE BUCKETS
 -- ═════════════════════════════════════════════════════════════════════════════
 
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -1004,7 +893,7 @@ ON CONFLICT (id) DO NOTHING;
 
 
 -- ═════════════════════════════════════════════════════════════════════════════
--- 13. DROP AUTO-CREATE TRIGGER (profiles no longer auto-created)
+-- 12. DROP AUTO-CREATE TRIGGER (profiles no longer auto-created)
 -- ═════════════════════════════════════════════════════════════════════════════
 
 DO $$ DECLARE t record; BEGIN

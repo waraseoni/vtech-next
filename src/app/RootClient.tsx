@@ -469,14 +469,12 @@ function SidebarNav({
             <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
               System
             </li>
-            <SubMenu title="System" icon={<Settings2 size={15} />} matchPaths={["/users", "/settings", "/backup", "/sync", "/images"]}>
+            <SubMenu title="System" icon={<Settings2 size={15} />} matchPaths={["/users", "/settings", "/backup"]}>
               <li><Link href="/users"         className={subLinkCls(pathname === "/users")}         onClick={onNavClick}><ShieldCheck size={12} />Users</Link></li>
               <li><Link href="/settings"      className={subLinkCls(pathname === "/settings")}      onClick={onNavClick}><Settings2 size={12} />Settings</Link></li>
               <li><Link href="/settings/throttle" className={subLinkCls(pathname === "/settings/throttle")} onClick={onNavClick}><ShieldAlert size={12} className="text-red-400" />Login Throttle</Link></li>
               <li><Link href="/settings/whatsapp-templates" className={subLinkCls(pathname === "/settings/whatsapp-templates")} onClick={onNavClick}><MessageSquare size={12} className="text-green-400" />WA Templates</Link></li>
               <li><Link href="/backup"        className={subLinkCls(pathname === "/backup")}        onClick={onNavClick}><Database size={12} />Backup</Link></li>
-              <li><Link href="/sync"          className={subLinkCls(pathname === "/sync")}          onClick={onNavClick}><RefreshCw size={12} className="text-emerald-400" />MariaDB Sync</Link></li>
-              <li><Link href="/images"        className={subLinkCls(pathname === "/images")}        onClick={onNavClick}><Images size={12} className="text-amber-400" />Images</Link></li>
             </SubMenu>
 
             {/* ══ LICENSING ════════════════════════════════════════════════ */}
@@ -493,11 +491,23 @@ function SidebarNav({
                   </li>
                 )}
                 {devEnabled && (
-                  <li>
-                    <Link href="/developer" className={navLinkCls(pathname === "/developer")} onClick={onNavClick}>
-                      <Code2 size={16} className="text-indigo-400" /><span>Developer</span>
-                    </Link>
-                  </li>
+                  <>
+                    <li>
+                      <Link href="/developer" className={navLinkCls(pathname === "/developer")} onClick={onNavClick}>
+                        <Code2 size={16} className="text-indigo-400" /><span>Developer</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/sync" className={navLinkCls(pathname === "/sync")} onClick={onNavClick}>
+                        <RefreshCw size={16} className="text-emerald-400" /><span>MariaDB Sync</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/images" className={navLinkCls(pathname === "/images")} onClick={onNavClick}>
+                        <Images size={16} className="text-amber-400" /><span>Images</span>
+                      </Link>
+                    </li>
+                  </>
                 )}
               </>
             )}
