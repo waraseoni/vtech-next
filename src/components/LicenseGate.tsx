@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KeyRound, LogOut, RefreshCw, ShieldAlert, Loader2 } from "lucide-react";
+import { KeyRound, LogOut, RefreshCw, ShieldAlert, ShieldCheck, Loader2 } from "lucide-react";
 import type { LicenseStatus } from "@/lib/license";
 
 // License expiry / trial mode ke time par full-screen gate.
@@ -22,6 +22,8 @@ export default function LicenseGate({
   const [key, setKey] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fixing, setFixing] = useState(false);
+  const [fixMsg, setFixMsg] = useState("");
 
   const expired = !!status.expiresAt && new Date(status.expiresAt).getTime() < Date.now();
 
@@ -64,6 +66,32 @@ export default function LicenseGate({
       setError("Server se connect nahi ho paya. Dobara try karein.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  // Auto-fix: agar profile missing/galat role hai to fix karo
+  const handleFixRole = async () => {
+    setFixing(true);
+    setFixMsg("");
+    try {
+      const res = await fetch("/api/debug/fix-role", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setFixMsg(data.error || "Fix nahi ho paya");
+        return;
+      }
+      setFixMsg(data.action === "promoted_to_admin"
+        ? "Role fixed! Admin banaya gaya hai. Page refresh ho raha hai..."
+        : data.action === "created_as_admin"
+        ? "Profile banayi gayi hai (admin). Page refresh ho raha hai..."
+        : "Aap pehle se admin hain.");
+      if (data.action !== "already_admin") {
+        setTimeout(() => window.location.reload(), 1200);
+      }
+    } catch {
+      setFixMsg("Server se connect nahi ho paya.");
+    } finally {
+      setFixing(false);
     }
   };
 
@@ -111,59 +139,78 @@ export default function LicenseGate({
             </div>
           )}
 
-          {/* ── Key form (sirf admin) ── */}
-          {isAdmin ? (
-            <form onSubmit={handleActivate} className="mt-6 space-y-3">
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">
-                  License Key (VTC-XXXX-XXXX-XXXX-XXXX)
-                </label>
-                <input
-                  type="text"
-                  value={key}
-                  onChange={(e) => setKey(e.target.value.toUpperCase())}
-                  placeholder="VTC-XXXX-XXXX-XXXX-XXXX"
-                  autoCapitalize="characters"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  className="w-full px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm font-mono font-bold tracking-wider text-slate-100 placeholder:text-slate-600 placeholder:font-sans outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
-                />
-              </div>
+          {/* ── Key form (hamesha dikhao — server par admin check hai) ── */}
+          <form onSubmit={handleActivate} className="mt-6 space-y-3">
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">
+                License Key (VTC-XXXX-XXXX-XXXX-XXXX)
+              </label>
+              <input
+                type="text"
+                value={key}
+                onChange={(e) => setKey(e.target.value.toUpperCase())}
+                placeholder="VTC-XXXX-XXXX-XXXX-XXXX"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                className="w-full px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm font-mono font-bold tracking-wider text-slate-100 placeholder:text-slate-600 placeholder:font-sans outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+              />
+            </div>
 
-              {error && (
-                <p className="text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-                  {error}
-                </p>
+            {error && (
+              <p className="text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={busy || key.trim().length < 5}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-black tracking-wide transition-all"
+            >
+              {busy ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Activating...
+                </>
+              ) : (
+                <>
+                  <KeyRound size={15} /> Activate License
+                </>
               )}
+            </button>
 
-              <button
-                type="submit"
-                disabled={busy || key.trim().length < 5}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-black tracking-wide transition-all"
-              >
-                {busy ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" /> Activating...
-                  </>
-                ) : (
-                  <>
-                    <KeyRound size={15} /> Activate License
-                  </>
-                )}
-              </button>
+            <button
+              type="button"
+              onClick={() => { setError(""); onActivated(); }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              <RefreshCw size={13} /> Status refresh karein
+            </button>
+          </form>
 
+          {/* ── Non-admin: auto-fix button ── */}
+          {!isAdmin && (
+            <div className="mt-4 space-y-2">
+              <p className="text-[10px] font-bold text-amber-400/70 text-center">
+                Agar aap admin hain par system nahi maan raha:
+              </p>
               <button
                 type="button"
-                onClick={() => { setError(""); onActivated(); }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors"
+                onClick={handleFixRole}
+                disabled={fixing}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 text-amber-300 text-xs font-black tracking-wide transition-all disabled:opacity-50"
               >
-                <RefreshCw size={13} /> Status refresh karein
+                {fixing ? (
+                  <><Loader2 size={14} className="animate-spin" /> Fixing...</>
+                ) : (
+                  <><ShieldCheck size={14} /> Fix Admin Role (Auto)</>
+                )}
               </button>
-            </form>
-          ) : (
-            <div className="mt-6 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-200/90 font-semibold leading-relaxed">
-              Is shop ka license active nahi hai. Kripya shop ke admin / seller se
-              renew karwane ki request karein.
+              {fixMsg && (
+                <p className={`text-[11px] font-semibold text-center ${fixMsg.includes("nahi") || fixMsg.includes("galat") ? "text-red-400" : "text-emerald-400"}`}>
+                  {fixMsg}
+                </p>
+              )}
             </div>
           )}
 

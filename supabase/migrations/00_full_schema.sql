@@ -755,6 +755,7 @@ END $$;
 -- ═════════════════════════════════════════════════════════════════════════════
 
 -- Enable RLS on all tables that need it
+ALTER TABLE public.profiles           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transaction_list   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.client_payments    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_info        ENABLE ROW LEVEL SECURITY;
@@ -775,7 +776,7 @@ DO $$ DECLARE p record; BEGIN
     SELECT policyname, tablename FROM pg_policies
     WHERE schemaname = 'public'
       AND tablename IN (
-        'transaction_list', 'client_payments', 'system_info', 'activity_logs',
+        'profiles', 'transaction_list', 'client_payments', 'system_info', 'activity_logs',
         'payment_reminders', 'suppliers', 'spare_supplier', 'wp_template_history',
         'message_list', 'purchase_orders', 'purchase_order_items', 'push_subscriptions'
       )
@@ -783,6 +784,20 @@ DO $$ DECLARE p record; BEGIN
     EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', p.policyname, p.tablename);
   END LOOP;
 END $$;
+
+-- ── profiles ────────────────────────────────────────────────────────────────
+-- Self-read: authenticated user apni OWN profile padh sakta hai (requireAdmin
+-- / requireStaff / requireClient ke liye zaroori — bina iske role = null aata
+-- hai aur sab galat kaam karta hai).
+CREATE POLICY profiles_self_read ON public.profiles
+  FOR SELECT TO authenticated
+  USING (id = auth.uid());
+
+-- Self-update: user apna full_name / avatar_url update kar sake
+CREATE POLICY profiles_self_update ON public.profiles
+  FOR UPDATE TO authenticated
+  USING (id = auth.uid())
+  WITH CHECK (id = auth.uid());
 
 -- ── transaction_list ────────────────────────────────────────────────────────
 CREATE POLICY portal_transaction_list_staff ON public.transaction_list
