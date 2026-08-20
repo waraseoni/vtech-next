@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
-import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Package, Camera, ChevronDown, ScanLine, ExternalLink, MapPin, FileText, Boxes } from "lucide-react";
+import { Search, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, X, Loader2, Check, AlertCircle, Package, Camera, ChevronDown, ScanLine, ExternalLink, MapPin, FileText, Boxes, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
@@ -75,7 +75,9 @@ export default function ProductsPage() {
   const [imgPreview, setImgPreview] = useState("");          // displayed image (preview or saved)
   const [imgSaving,  setImgSaving]  = useState(false);
   const [imgRemoved, setImgRemoved] = useState(false);
+  const [imgPopup,   setImgPopup]   = useState(false);
   const imgRef = useRef<HTMLInputElement>(null);
+  const imgCamRef = useRef<HTMLInputElement>(null);
 
   const handleImgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -555,11 +557,27 @@ export default function ProductsPage() {
                     <div className="flex-1 min-w-[160px]">
                       <input ref={imgRef} type="file" accept="image/png,image/jpeg,image/webp"
                         onChange={handleImgChange} className="hidden"/>
+                      <input ref={imgCamRef} type="file" accept="image/png,image/jpeg,image/webp" capture="environment"
+                        onChange={handleImgChange} className="hidden"/>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <button type="button" onClick={() => imgRef.current?.click()} disabled={imgSaving}
+                        <button type="button" onClick={() => setImgPopup(!imgPopup)} disabled={imgSaving}
                           className="text-xs bg-blue-600/20 text-blue-400 border border-blue-600/30 px-3 py-1.5 rounded-lg hover:bg-blue-600/30 transition-all disabled:opacity-50">
                           <span className="inline-flex items-center gap-1.5"><Camera size={12}/> Choose Image</span>
                         </button>
+                        {imgPopup && (
+                          <div className="relative">
+                            <div className="absolute top-full left-0 mt-1 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                              <button type="button" onClick={() => { setImgPopup(false); imgCamRef.current?.click(); }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
+                                <Camera size={12}/> Camera
+                              </button>
+                              <button type="button" onClick={() => { setImgPopup(false); imgRef.current?.click(); }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
+                                <ImageIcon size={12}/> Gallery
+                              </button>
+                            </div>
+                          </div>
+                        )}
                         {(imgPreview || imgPath) && (
                           <button type="button" onClick={removeImg} disabled={imgSaving}
                             className="text-xs text-red-400 hover:text-red-300 px-3 py-1.5 rounded-lg border border-red-500/30 hover:bg-red-500/10 transition-all disabled:opacity-50">

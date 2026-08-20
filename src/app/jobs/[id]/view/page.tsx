@@ -12,7 +12,7 @@ import {
   Package, Settings2, AlertTriangle, CheckCircle2,
   IndianRupee, Printer, Edit, Trash2,
   Loader2, Box,
-  Banknote, Send,
+  Banknote, Send, Camera,
   Plus, X, CheckCircle, FileText,
   RefreshCw, Image as ImageIcon, Upload, Loader,
   ChevronLeft, ChevronRight,
@@ -210,7 +210,9 @@ export default function JobDetailsPage() {
   // ── Item photo upload/delete ─────────────────────────────────
   const [uploading,   setUploading]   = useState(false);
   const [photoErr,    setPhotoErr]    = useState("");
+  const [imgPopup,    setImgPopup]    = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
+  const imgCamInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -781,15 +783,30 @@ ${svcHtml}${prodHtml}
                   <Fieldset title={`Item Photos (${images.length})`} icon={ImageIcon} color="primary">
                     <div className="flex items-center gap-2 mb-3">
                       <button
-                        onClick={() => imgInputRef.current?.click()}
+                        onClick={() => setImgPopup(!imgPopup)}
                         disabled={uploading}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-60"
                       >
                         {uploading ? <Loader size={13} className="animate-spin" /> : <Upload size={13} />}
                         {uploading ? "Uploading..." : "Upload Photos"}
                       </button>
+                      {imgPopup && (
+                        <div className="relative">
+                          <div className="absolute top-full left-0 mt-1 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[140px]">
+                            <button onClick={() => { setImgPopup(false); imgCamInputRef.current?.click(); }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
+                              <Camera size={12}/> Camera
+                            </button>
+                            <button onClick={() => { setImgPopup(false); imgInputRef.current?.click(); }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
+                              <ImageIcon size={12}/> Gallery
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       <span className="text-[10px] text-slate-500">JPEG/PNG · ≤100KB · auto-compressed</span>
                       <input ref={imgInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+                      <input ref={imgCamInputRef} type="file" accept="image/*" multiple capture="environment" className="hidden" onChange={handleImageUpload} />
                     </div>
                     {photoErr && <p className="text-[11px] text-red-400 font-semibold mb-2">{photoErr}</p>}
                     {images.length > 0 ? (

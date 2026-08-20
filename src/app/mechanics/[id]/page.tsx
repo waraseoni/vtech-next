@@ -10,7 +10,7 @@ import {
   Loader2, ArrowLeft, Calendar, DollarSign, TrendingUp, Users,
   Wrench, FileText, Clock, CheckCircle, XCircle,
   ChevronLeft, ChevronRight, MessageSquare, Printer,
-  Camera, Trash2, CreditCard, IndianRupee
+  Camera, Trash2, CreditCard, IndianRupee, ImageIcon
 } from "lucide-react";
 import { compressImage } from "@/lib/imageCompression";
 import { logActivity } from "@/lib/activity";
@@ -171,7 +171,9 @@ export default function MechanicDetailPage() {
   // ── MECHANIC PHOTO ─────────────────────────────────────────
   const [photoSaving, setPhotoSaving] = useState(false);
   const [photoErr,    setPhotoErr]    = useState("");
+  const [photoPopup,  setPhotoPopup]  = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
+  const photoCamRef = useRef<HTMLInputElement>(null);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -406,12 +408,25 @@ export default function MechanicDetailPage() {
                 {name.slice(0, 2).toUpperCase()}
               </div>
             )}
-            <button onClick={() => photoRef.current?.click()} disabled={photoSaving}
+            <button onClick={() => setPhotoPopup(!photoPopup)} disabled={photoSaving}
               className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors disabled:opacity-60"
               title="Photo upload">
               {photoSaving ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />}
             </button>
+            {photoPopup && (
+              <div className="absolute -bottom-20 -right-2 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                <button onClick={() => { setPhotoPopup(false); photoCamRef.current?.click(); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
+                  <Camera size={12}/> Camera
+                </button>
+                <button onClick={() => { setPhotoPopup(false); photoRef.current?.click(); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
+                  <ImageIcon size={12}/> Gallery
+                </button>
+              </div>
+            )}
             <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+            <input ref={photoCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoUpload} />
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-black text-white">{name}</h1>

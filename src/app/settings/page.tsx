@@ -8,7 +8,7 @@ import {
   Settings2, Save, Loader2, CheckCircle, AlertCircle,
   Building2, Phone, Mail, MapPin, Tag, ShieldCheck,
   Clock, Pen, Trash2, Upload, Eye, EyeOff, User, Image as ImageIcon,
-  History, KeyRound, Bell,
+  History, KeyRound, Bell, Camera,
 } from "lucide-react";
 import NotificationSettings from "@/components/NotificationSettings";
 
@@ -49,7 +49,9 @@ export default function SettingsPage() {
   const [sigFile, setSigFile] = useState<File | null>(null);
   const [sigFileName, setSigFileName] = useState("");
   const [sigSaving, setSigSaving] = useState(false);
+  const [sigPopup, setSigPopup] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const fileCamRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawing, setDrawing] = useState(false);
   const [showCanvas, setShowCanvas] = useState(false);
@@ -59,14 +61,18 @@ export default function SettingsPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoFileName, setLogoFileName] = useState("");
   const [logoSaving, setLogoSaving] = useState(false);
+  const [logoPopup, setLogoPopup] = useState(false);
   const logoRef = useRef<HTMLInputElement>(null);
+  const logoCamRef = useRef<HTMLInputElement>(null);
 
   // Website Cover
   const [cover, setCover] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverFileName, setCoverFileName] = useState("");
   const [coverSaving, setCoverSaving] = useState(false);
+  const [coverPopup, setCoverPopup] = useState(false);
   const coverRef = useRef<HTMLInputElement>(null);
+  const coverCamRef = useRef<HTMLInputElement>(null);
 
   // AI
   const [aiProvider, setAiProvider] = useState("gemini");
@@ -615,11 +621,27 @@ export default function SettingsPage() {
                       </p>
                       <input ref={logoRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"
                         onChange={handleLogoFileChange} className="hidden"/>
+                      <input ref={logoCamRef} type="file" accept="image/png,image/jpeg,image/webp" capture="environment"
+                        onChange={handleLogoFileChange} className="hidden"/>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <button type="button" onClick={() => logoRef.current?.click()}
+                        <button type="button" onClick={() => setLogoPopup(!logoPopup)}
                           className="text-xs bg-blue-600/20 text-blue-400 border border-blue-600/30 px-3 py-1.5 rounded-lg hover:bg-blue-600/30 transition-all">
                           <span className="inline-flex items-center gap-1.5"><Upload size={12}/> Choose Logo</span>
                         </button>
+                        {logoPopup && (
+                          <div className="relative">
+                            <div className="absolute top-full left-0 mt-1 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                              <button type="button" onClick={() => { setLogoPopup(false); logoCamRef.current?.click(); }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
+                                <Camera size={12}/> Camera
+                              </button>
+                              <button type="button" onClick={() => { setLogoPopup(false); logoRef.current?.click(); }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
+                                <ImageIcon size={12}/> Gallery
+                              </button>
+                            </div>
+                          </div>
+                        )}
                         {logoFile && (
                           <button type="button" onClick={saveLogo} disabled={logoSaving}
                             className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-50">
@@ -655,11 +677,27 @@ export default function SettingsPage() {
                       </p>
                       <input ref={coverRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"
                         onChange={handleCoverFileChange} className="hidden"/>
+                      <input ref={coverCamRef} type="file" accept="image/png,image/jpeg,image/webp" capture="environment"
+                        onChange={handleCoverFileChange} className="hidden"/>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <button type="button" onClick={() => coverRef.current?.click()}
+                        <button type="button" onClick={() => setCoverPopup(!coverPopup)}
                           className="text-xs bg-blue-600/20 text-blue-400 border border-blue-600/30 px-3 py-1.5 rounded-lg hover:bg-blue-600/30 transition-all">
                           <span className="inline-flex items-center gap-1.5"><Upload size={12}/> Choose Cover</span>
                         </button>
+                        {coverPopup && (
+                          <div className="relative">
+                            <div className="absolute top-full left-0 mt-1 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                              <button type="button" onClick={() => { setCoverPopup(false); coverCamRef.current?.click(); }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
+                                <Camera size={12}/> Camera
+                              </button>
+                              <button type="button" onClick={() => { setCoverPopup(false); coverRef.current?.click(); }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
+                                <ImageIcon size={12}/> Gallery
+                              </button>
+                            </div>
+                          </div>
+                        )}
                         {coverFile && (
                           <button type="button" onClick={saveCover} disabled={coverSaving}
                             className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-50">
@@ -858,8 +896,26 @@ export default function SettingsPage() {
                   <p className="text-xs font-bold text-slate-400 mb-2">Upload Image</p>
                   <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp"
                     onChange={handleSigFileChange} className="hidden"/>
-                  <button type="button" onClick={() => fileRef.current?.click()}
-                    className="text-xs text-blue-400 hover:underline">Choose File</button>
+                  <input ref={fileCamRef} type="file" accept="image/png,image/jpeg,image/webp" capture="environment"
+                    onChange={handleSigFileChange} className="hidden"/>
+                  <div className="flex items-center gap-2 justify-center">
+                    <button type="button" onClick={() => setSigPopup(!sigPopup)}
+                      className="text-xs text-blue-400 hover:underline">Choose File</button>
+                    {sigPopup && (
+                      <div className="relative">
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                          <button type="button" onClick={() => { setSigPopup(false); fileCamRef.current?.click(); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
+                            <Camera size={12}/> Camera
+                          </button>
+                          <button type="button" onClick={() => { setSigPopup(false); fileRef.current?.click(); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
+                            <ImageIcon size={12}/> Gallery
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   {sigFileName && <p className="text-[10px] text-slate-600 mt-1">{sigFileName}</p>}
                   {sigFile && (
                     <button type="button" onClick={uploadSignature} disabled={sigSaving}
