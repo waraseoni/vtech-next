@@ -50,15 +50,15 @@
 
 ## 6. Testing checklist
 
-- [ ] Migration apply (SQL editor) — no errors, report shows policies
-- [ ] anon SELECT `system_info` → only public fields (no ai_api_key/csrf_token/upi_id/signature)
-- [ ] anon SELECT/INSERT on 5 staff tables → denied (empty/error)
-- [ ] anon INSERT `message_list` → works (public contact form)
-- [ ] staff session: settings save, supplier add, logActivity, payment reminder, template history — sab works
-- [ ] client portal + print-bill + ledger + balancesheet + clean-logs regression
-- [ ] public home loads (name + cover readable)
-- [ ] `npx tsc --noEmit` + `npm run build` pass (done: EXIT 0)
-- [ ] Deploy → Vercel (code changes) + SQL applied (DB)
+- [x] Migration apply (SQL editor) — no errors, report shows policies
+- [x] anon SELECT `system_info` → only public fields (no ai_api_key/csrf_token/upi_id/signature)
+- [x] anon SELECT/INSERT on 5 staff tables → denied (empty/error)
+- [x] anon INSERT `message_list` → works (public contact form)
+- [x] staff session: settings save, supplier add, logActivity, payment reminder, template history — sab works
+- [x] client portal + print-bill + ledger + balancesheet + clean-logs regression
+- [x] public home loads (name + cover readable)
+- [x] `npx tsc --noEmit` + `npm run build` pass (done: EXIT 0)
+- [x] Deploy → Vercel (code changes) + SQL applied (DB)
 
 ## 7. Effort
 

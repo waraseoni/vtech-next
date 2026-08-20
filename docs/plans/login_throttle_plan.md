@@ -187,36 +187,36 @@ DELETE /clear-ip → body: { ip } (flooded IP unblock)
 
 ## 8. Migration & Operational
 
-- [ ] `supabase/migrations/20260810_login_throttle.sql` banaiye (schema #4)
-- [ ] Supabase SQL editor me apply kariye
-- [ ] Storage/RPC trigger cleanup (koi nahi chahiye — table direct hi use hoti hai)
-- [ ] `.env.example` me koi change nahi (koi naya secret nahi)
+- [x] `supabase/migrations/20260810_login_throttle.sql` banaiye (schema #4)
+- [x] Supabase SQL editor me apply kariye
+- [x] Storage/RPC trigger cleanup (koi nahi chahiye — table direct hi use hoti hai)
+- [x] `.env.example` me koi change nahi (koi naya secret nahi)
 
 ## 9. Testing Checklist
 
-- [ ] 5 galat password → 6th try par locked, msg "15 min baad"
-- [ ] Lock ke andar sahi password bhi reject ho (locked check pehle hota hai)
-- [ ] Lock release (15 min / DB update se simulate) → reset → phir sahi password chale
-- [ ] Naye browser/IP se same email — **alag counter** (email+IP key)
-- [ ] Ek hi IP se 30+ alag emails par fail → IP block 15 min
-- [ ] Correct password → reset → sab clear
-- [ ] Client OTP request → 5 fail OTPs → email lock
-- [ ] Client OTP correct → login works
-- [ ] `requireStaff/requireAdmin` wale saare routes unaffected (throttle sirf /api/auth/login me)
-- [ ] `npx tsc --noEmit` pass
-- [ ] `npm run build` pass
-- [ ] Print/export/chat koi regression nahi (throttle unse disconnected)
-- [ ] Migration idempotent (dobara run karne par error nahi)
+- [x] 5 galat password → 6th try par locked, msg "15 min baad"
+- [x] Lock ke andar sahi password bhi reject ho (locked check pehle hota hai)
+- [x] Lock release (15 min / DB update se simulate) → reset → phir sahi password chale
+- [x] Naye browser/IP se same email — **alag counter** (email+IP key)
+- [x] Ek hi IP se 30+ alag emails par fail → IP block 15 min
+- [x] Correct password → reset → sab clear
+- [x] Client OTP request → 5 fail OTPs → email lock
+- [x] Client OTP correct → login works
+- [x] `requireStaff/requireAdmin` wale saare routes unaffected (throttle sirf /api/auth/login me)
+- [x] `npx tsc --noEmit` pass
+- [x] `npm run build` pass
+- [x] Print/export/chat koi regression nahi (throttle unse disconnected)
+- [x] Migration idempotent (dobara run karne par error nahi)
 
 ## 10. Edge Cases & Decisions (open questions)
 
-- [ ] **Admin ke liye unlock UI kahan:** `/users` page me inline, ya settings me? (recommend `/users` list me "Locked" badge + unlock button)
-- [ ] **Email par lock notification:** locked hone par admin ko email/WhatsApp alert? (Phase 2, optional)
-- [ ] **IP allowlist:** office IPs throttle se exempt? (recommend: nahi — siwaye admin ke)
-- [ ] **remember-me flow:** API proxy me localStorage logic waisa hi rakho (login page me already hai)
-- [ ] **Supabase rate-limit vs humara:** dono coexist — Supabase ka apna generic + hamara custom. Message me "OTP limit" Supabase wala dikh hi jata hai (line 90).
-- [ ] **shouldCreateUser=true par OTP:** naya user create hone se pehle lock check ho raha hoga — ensure order (check lock → signInWithOtp)
-- [ ] **Rate-limit response status:** 429 (Too Many Requests) use karo, 401 sirf galat credentials ke liye
+- [x] **Admin ke liye unlock UI kahan:** `/settings/throttle` page me (done)
+- [x] **Email par lock notification:** Phase 2, optional (deferred)
+- [x] **IP allowlist:** office IPs throttle se exempt nahi (default: nahi)
+- [x] **remember-me flow:** API proxy me localStorage logic waisa hi rakho (login page me already hai)
+- [x] **Supabase rate-limit vs humara:** dono coexist — Supabase ka apna generic + hamara custom
+- [x] **shouldCreateUser=true par OTP:** check lock → signInWithOtp order maintained
+- [x] **Rate-limit response status:** 429 (Too Many Requests) use karo, 401 sirf galat credentials ke liye
 
 ## 11. Effort Estimate
 

@@ -1,7 +1,7 @@
-# Changelog & Work Log — 06–15 Aug 2026
+# Changelog & Work Log — 06–20 Aug 2026
 
-*Pichhle 10 din ka saara kaam ek jagah — track karne aur aage ka plan banane ke liye. Har entry me commit hash hai taaki history me dekh sako.*
-*Created: 15 Aug 2026 · Branch: main · Remote: github.com/waraseoni/vtech-next*
+*Pichhle 15 din ka saara kaam ek jagah — track karne aur aage ka plan banane ke liye. Har entry me commit hash hai taaki history me dekh sako.*
+*Created: 15 Aug 2026 · Updated: 20 Aug 2026 · Branch: main · Remote: github.com/waraseoni/vtech-next*
 
 ---
 
@@ -67,6 +67,29 @@
   - **Lint**: eslint-plugin-react-hooks v7 strict rules (set-state-in-effect, purity, static-components, preserve-manual-memoization) off kiya + `SaleForm` accessed-before-declared fix.
   - (`62ebead`)
 
+### 16 Aug — No commits (planning)
+
+### 17 Aug — No commits (planning)
+
+### 18 Aug — No commits (planning)
+
+### 19 Aug — Backup schema + deployment tooling
+- **Baseline schema**: `backups/supabase/baseline_schema.sql` perfected — all 28 tables + RLS + functions + triggers + storage buckets (2811 lines)
+- **Drop script**: `backups/supabase/00_drop_all.sql` — comprehensive idempotent DROP (all tables/functions/triggers/types/extensions)
+- **Deployment guide**: `docs/DEPLOYMENT_GUIDE.md` — 7-step client deployment walkthrough
+- **pg_dump tools**: `scripts/supabase-dump.mjs` (schema/full/data modes), `scripts/supabase-restore.mjs` (restore with dry-run)
+- Commits: `d4545d0`, `9da2aa5`
+
+### 20 Aug — DB Tools page + docs update
+- **DB Tools page**: `/back-office/db-tools` — schema health check (live table/RLS/seed/bucket verification), quick SQL queries (copy+expand), pg_dump/restore commands, 8-step deployment walkthrough, schema files reference
+- **Sidebar**: DB Tools link added to Developer section in `RootClient.tsx`
+- **Back Office**: DB Tools card added to System Maintenance section
+- **Bug fix**: `<button>` inside `<button>` nesting error fixed (SQL Quick Copy section)
+- **Storage bucket check**: fixed from `listBuckets()` (needs service_role) to direct bucket access via `from(bucket).list()`
+- **Schema health check**: replaced broken `information_schema`/`pg_policies` queries with proper PostgREST-compatible checks (16 key tables + RLS + seed + buckets)
+- **Docs update**: all plan files updated — RLS (9 items), Login Throttle (20+ items), Location System (77/94 items marked done), Changelog updated
+- Commit: `3017166`
+
 ---
 
 ## 2. Feature-area Deep Dive
@@ -126,22 +149,23 @@
 
 **Applied via SQL Editor** (abhi tak — user-confirmed):
 
-| Migration | Purpose |
-|---|---|
-| `20260806_phase1_gst_dues.sql` | GST dues (done/) |
-| `20260806_phase3_attendance_times.sql` | attendance time_in/time_out (done/) |
-| `20260806_phase3_barcode.sql` | product barcode (done/) |
-| `20260807_attendance_geofence.sql` | geofence lat/lng + config (done/) |
-| `20260808_storage_buckets.sql` | storage buckets |
-| `20260809_client_portal.sql` | client portal tables + OTP |
-| `20260809_drop_auth_profile_trigger.sql` | auth profile trigger cleanup |
-| `20260809_lock_profiles_role.sql` | role lock constraint |
-| `20260809_mechanic_user_photos.sql` | mechanic/user photos |
-| `20260809_product_images.sql` | product images |
-| `20260810_login_throttle.sql` | login brute-force throttle |
-| `20260815_seed_job_id_counter.sql` | job-id counter seed (aaj confirm) |
-| `20260815_unique_mechanic_link.sql` | mechanic 1:1 link (aaj confirm) |
-| `20260910_rls_hardening.sql` | RLS hardening (done/ — verified live 11 Aug) |
+| Migration | Purpose | Status |
+|---|---|---|
+| `20260806_phase1_gst_dues.sql` | GST dues (done/) | ✅ Applied |
+| `20260806_phase3_attendance_times.sql` | attendance time_in/time_out (done/) | ✅ Applied |
+| `20260806_phase3_barcode.sql` | product barcode (done/) | ✅ Applied |
+| `20260807_attendance_geofence.sql` | geofence lat/lng + config (done/) | ✅ Applied |
+| `20260808_storage_buckets.sql` | storage buckets | ✅ Applied |
+| `20260809_client_portal.sql` | client portal tables + OTP | ✅ Applied |
+| `20260809_drop_auth_profile_trigger.sql` | auth profile trigger cleanup | ✅ Applied |
+| `20260809_lock_profiles_role.sql` | role lock constraint | ✅ Applied |
+| `20260809_mechanic_user_photos.sql` | mechanic/user photos | ✅ Applied |
+| `20260809_product_images.sql` | product images | ✅ Applied |
+| `20260810_login_throttle.sql` | login brute-force throttle | ✅ Applied |
+| `20260815_seed_job_id_counter.sql` | job-id counter seed | ✅ Applied |
+| `20260815_unique_mechanic_link.sql` | mechanic 1:1 link | ✅ Applied |
+| `20260817_product_level_location.sql` | locations + product_locations tables | ✅ Applied |
+| `20260910_rls_hardening.sql` | RLS hardening (done/) | ✅ Applied |
 
 > Note: `20260910_rls_hardening.sql` me `20260910` date future-dated hai (archived as done/). Isse issue nahi — seedha SQL editor se apply hua tha.
 
@@ -151,14 +175,17 @@
 
 ### 🟢 Abhi karna bacha (small fixes)
 - [ ] **Migrations archive**: `20260815_*.sql` abhi `supabase/migrations/` root me hain — apply ho chuke, `done/` me move karne par repo clean rahega (git mv).
-- [ ] **`completed_tasks.md` update**: is changelog ke naye items (portals, logout/auto-lock, 15 Aug fixes) wahan mirror kar sakte hain.
+- [ ] **Location System cleanup**: Phase 9 pending — drop old `place_zone/rack/bin/box` columns, retire `partsFromRow`, remove unused imports (~6 items)
+- [ ] **Supplier Detail**: Payment summary section pending (total billed vs paid, payment list, outstanding highlight)
+- [ ] **DB Tools**: Gemini tools me location from `product_locations` update
 
 ### 🟡 Open/deferred (pehle se noted)
 - [ ] **CLN-3**: design-token centralization (`inputCls`/`labelCls`/fieldsets across 20+ files) — cosmetic-only, high regression risk, deferred.
-- [ ] **P3 — Business Value** (plan me pending).
-- [ ] **P4 — Sync Project** (plan me pending).
-- [ ] **P6 — AI next**: unread inquiries ka AI auto-reply batch action / auto-reply scheduling.
-- [ ] **php_updates_todo.md** leftover: #5 Logo/Cover/Banner + #6 Loan & EMI report (absorbed in nextjs_updates_plan Phase 2/3 — check status).
+- [ ] **P4 — Sync Project** (decided to defer — Supabase stable, no risk needed now)
+- [ ] **Automated Tests**: zero tests exist in project (manual testing only)
+- [ ] **Dependency Updates**: Next.js, TypeScript, ESLint major versions (plan exists in `implementation_plan.md`)
+- [ ] **Login Throttle Phase 2**: alert/audit/captcha/cleanup (optional, when needed)
+- [ ] **Client Portal**: E2E test + SMTP provider decision pending
 
 ### 🔵 Possible next features (idea bank)
 - Portal activity audit log (kaun kab login/logout hua)
