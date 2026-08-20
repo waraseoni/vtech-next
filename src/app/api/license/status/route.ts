@@ -63,15 +63,22 @@ export async function GET() {
     const activated = !!parsed.activated && !!keyRaw;
     let valid = false;
     let error: string | undefined;
-    const plan = parsed.plan;
-    const shopName = parsed.shopName;
+    let plan = parsed.plan;
+    let shopName = parsed.shopName;
     let expiresAt = parsed.expiresAt ?? null;
 
     if (activated && activationId) {
-      const lastChecked = lastCheckedRaw ? new Date(lastCheckedRaw).getTime() : 0;
-      const due = !lastChecked || Date.now() - lastChecked > RECHECK_MS;
-      // Locally stored expiry (agar ho) — trial/unconfigured fallback ke liye.
+      // Locally stored expiry (agar ho) — re-check trigger aur fallback ke liye.
       const localExpired = expiresAt !== null && new Date(expiresAt).getTime() <= Date.now();
+      const lastChecked = lastCheckedRaw ? new Date(lastCheckedRaw).getTime() : 0;
+
+      // Jab local expiry stored nahi hai (null / lifetime), chhota interval
+      // use karo (6h). Reason: central se real expiry date fetch karna
+      // zaroori hai — bina expiry ke local fallback kaam nahi karta, to stale
+      // "lifetime" result ghanton tak galat access de sakta hai.
+      const NULL_EXPIRY_RECHECK_MS = 6 * 60 * 60 * 1000;
+      const effectiveInterval = expiresAt === null ? NULL_EXPIRY_RECHECK_MS : RECHECK_MS;
+      const due = !lastChecked || Date.now() - lastChecked > effectiveInterval || localExpired;
 
       if (isLicenseConfigured() && due) {
         // Central se fresh verify — naya activation NAHI, sirf check_license.
@@ -88,8 +95,8 @@ export async function GET() {
             expiresAt = res.expiresAt ?? null;
             parsed.expiresAt = res.expiresAt ?? null;
           }
-          if (res.plan) parsed.plan = res.plan;
-          if (res.shopName) parsed.shopName = res.shopName;
+          if (res.plan) { parsed.plan = res.plan; plan = res.plan; }
+          if (res.shopName) { parsed.shopName = res.shopName; shopName = res.shopName; }
           valid = res.ok;
           error = res.ok ? undefined : res.error;
           // Re-check timestamp hamesha save karo — offline grace window avoid karo.
