@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   ShieldCheck, Store, KeyRound, CalendarClock, CheckCircle2,
-  AlertTriangle, ShieldX,
+  AlertTriangle, ShieldX, Clock,
 } from "lucide-react";
 import type { LicenseStatus } from "@/lib/license";
 import { formatIST } from "@/lib/dateUtils";
@@ -95,6 +95,17 @@ export default function LicenseInfoCard() {
           <p className="text-sm font-black leading-none">{badge.label}</p>
         </div>
       </div>
+
+      {/* ── Expiry Warning Banner ── */}
+      {soon && dl !== null && license.expiresAt && (
+        <div className="mt-3 flex items-start gap-2.5 bg-amber-500/[0.06] border border-amber-500/20 rounded-xl px-3.5 py-3">
+          <Clock size={14} className="text-amber-400 mt-0.5 shrink-0" />
+          <p className="text-[11px] text-amber-300/90 leading-relaxed">
+            Aapka license <span className="font-black text-amber-300">{fmtExpiry(license.expiresAt)}</span> ko expire ho jayega.
+            Krupaya samay rehte seller se sampark karein aur license renew karwayein taaki aapka system bina ruke chalta rahe.
+          </p>
+        </div>
+      )}
     </section>
   );
 }

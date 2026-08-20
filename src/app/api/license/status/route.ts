@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/api-auth";
 import {
@@ -39,7 +39,7 @@ async function upsertField(field: string, value: string) {
   return supabaseAdmin.from("system_info").insert({ meta_field: field, meta_value: value });
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     // requireUser (admin nahi): login hamesha allowed hai, isliye staff/client ko
     // bhi status dikhega — taaki unke liye bhi license gate sahi dikhe.
@@ -47,6 +47,11 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // ?force=true → login/hard-refresh par cache bypass karke central se
+    // fresh verify karo — seller ke changes (plan, expiry, revoke) jaldi
+    // client tak pahunchen.
+    const force = req.nextUrl.searchParams.get("force") === "true";
 
     const [keyRaw, statusRaw, lastCheckedRaw] = await Promise.all([
       readField("license_key"),
@@ -78,7 +83,7 @@ export async function GET() {
       // "lifetime" result ghanton tak galat access de sakta hai.
       const NULL_EXPIRY_RECHECK_MS = 6 * 60 * 60 * 1000;
       const effectiveInterval = expiresAt === null ? NULL_EXPIRY_RECHECK_MS : RECHECK_MS;
-      const due = !lastChecked || Date.now() - lastChecked > effectiveInterval || localExpired;
+      const due = force || !lastChecked || Date.now() - lastChecked > effectiveInterval || localExpired;
 
       if (isLicenseConfigured() && due) {
         // Central se fresh verify — naya activation NAHI, sirf check_license.

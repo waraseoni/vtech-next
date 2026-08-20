@@ -549,12 +549,14 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // Refs for staff idle timeout (stable across re-renders, no stale closures)
   const lastActiveRef       = useRef(Date.now());
   const showIdleWarningRef  = useRef(false);
+  const initialLicenseFetch = useRef(true);
 
   // License status fetch — login ke baad har non-public page par.
   // Gate (LicenseGate) isi state ko dekh kar render hota hai.
-  const refreshLicense = useCallback(async () => {
+  const refreshLicense = useCallback(async (force = false) => {
     try {
-      const res = await fetch("/api/license/status", { cache: "no-store" });
+      const url = force ? "/api/license/status?force=true" : "/api/license/status";
+      const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) { setLicense(null); return; }
       setLicense(await res.json());
     } catch {
@@ -705,14 +707,17 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   }, [profile?.role, pathname, router]);
 
   // LICENSE GATE: profile milne ke baad non-public page par license status fetch.
-  // Login hamesha allowed hai — isliye har baar profile set hone par chalta hai.
+  // Login par force=true se central se fresh verify hota hai — seller ke changes
+  // (plan, expiry, revoke) jaldi reflect hote hain. Baad me normal cache interval.
   useEffect(() => {
     if (!profile) return;
     const pub = pathname === "/" ||
       ["/login", "/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"]
         .some(p => pathname === p || pathname.startsWith(p + "/"));
     if (pub) return;
-    refreshLicense();
+    const isFirst = initialLicenseFetch.current;
+    if (isFirst) initialLicenseFetch.current = false;
+    refreshLicense(isFirst);
   }, [profile, pathname, refreshLicense]);
 
   // ── Client portal session security ──────────────────────────────────────
