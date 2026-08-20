@@ -91,6 +91,59 @@ export async function activateRemoteLicense(opts: {
 }
 
 /**
+ * Direct table query — same approach as seller page.
+ * RPC (check_license) expiresAt return nahi karta, isliye tables se seedha
+ * read karo. Anon key se dono tables readable hain (public policies).
+ */
+export async function fetchLicenseFromDB(activationId: string): Promise<{
+  ok: boolean;
+  error?: string;
+  plan?: string;
+  shopName?: string;
+  expiresAt?: string | null;
+  status?: string;
+}> {
+  if (!isLicenseConfigured()) {
+    return { ok: false, error: "LICENSE_SERVICE_NOT_CONFIGURED" };
+  }
+  const client = makeLicenseClient();
+
+  // Step 1: activations table se license_id nikalo
+  const { data: act, error: actErr } = await client
+    .from("activations")
+    .select("license_id")
+    .eq("activation_id", activationId)
+    .maybeSingle();
+
+  if (actErr || !act) {
+    return { ok: false, error: actErr?.message || "ACTIVATION_NOT_FOUND" };
+  }
+
+  // Step 2: licenses table se full details lo
+  const { data: lic, error: licErr } = await client
+    .from("licenses")
+    .select("plan, shop_name, expires_at, status")
+    .eq("id", act.license_id)
+    .maybeSingle();
+
+  if (licErr || !lic) {
+    return { ok: false, error: licErr?.message || "LICENSE_NOT_FOUND" };
+  }
+
+  const active = lic.status === "active";
+  const notExpired = !lic.expires_at || new Date(lic.expires_at).getTime() > Date.now();
+
+  return {
+    ok: active && notExpired,
+    plan: lic.plan ?? undefined,
+    shopName: lic.shop_name ?? undefined,
+    expiresAt: lic.expires_at ?? null,
+    status: lic.status,
+    error: !active ? "LICENSE_DISABLED" : !notExpired ? "LICENSE_EXPIRED" : undefined,
+  };
+}
+
+/**
  * Central RPC call — activation register kiye bina abhi bhi license valid hai ya
  * nahi verify karta hai (daily re-check ke liye). Naya activation NAHI banta.
  */

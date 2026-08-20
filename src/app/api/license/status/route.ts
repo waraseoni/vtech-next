@@ -4,8 +4,8 @@ import { requireUser } from "@/lib/api-auth";
 import {
   isLicenseConfigured,
   maskKey,
+  fetchLicenseFromDB,
   checkRemoteLicense,
-  activateRemoteLicense,
   type LicenseStatus,
 } from "@/lib/license";
 
@@ -87,45 +87,42 @@ export async function GET(req: NextRequest) {
       const due = force || !lastChecked || Date.now() - lastChecked > effectiveInterval || localExpired;
 
       if (isLicenseConfigured() && due) {
-        // Central se fresh verify — check_license se basic validity + plan.
+        // PRIMARY: Direct table query (same approach as seller page).
+        // RPC check_license expiresAt return nahi karta — isliye tables se
+        // seedha read karo. Anon key se dono tables readable hain.
         try {
-          const res = await checkRemoteLicense(activationId);
+          const res = await fetchLicenseFromDB(activationId);
           const checkedAt = new Date().toISOString();
-          // Real RPC response mila (network error nahi) → result ko persist karo,
-          // taaki agle 24h ke status calls bhi yahi result maane — deleted/expired
-          // license ka gate reload par galat nahi hat sakta.
-          parsed.remoteValid = res.ok;
-          parsed.remoteError = res.error;
-          parsed.remoteCheckedAt = checkedAt;
-          if (res.plan) { parsed.plan = res.plan; plan = res.plan; }
-          if (res.shopName) { parsed.shopName = res.shopName; shopName = res.shopName; }
-          valid = res.ok;
-          error = res.ok ? undefined : res.error;
 
-          // check_license RPC kabhi expiresAt return nahi karta — sirf ok/plan/shopName.
-          // Agar expiresAt nahi aaya to activate_license call karke full details
-          // fetch karo (ye RPC expiresAt, plan, shopName sab deta hai).
-          if (res.ok && res.expiresAt === undefined && keyRaw) {
-            try {
-              const host = req.headers.get("host") || "localhost";
-              const full = await activateRemoteLicense({
-                key: keyRaw,
-                activationId,
-                shopUrl: host,
-                shopName: parsed.shopName || "",
-              });
-              if (full.ok && full.expiresAt !== undefined) {
-                expiresAt = full.expiresAt ?? null;
-                parsed.expiresAt = full.expiresAt ?? null;
-              }
-              if (full.plan) { parsed.plan = full.plan; plan = full.plan; }
-              if (full.shopName) { parsed.shopName = full.shopName; shopName = full.shopName; }
-            } catch {
-              // activate fallback fail → check_license ka basic result use karo.
+          if (res.ok || res.plan) {
+            // DB fetch successful — plan, shopName, expiresAt sab mil gaya.
+            parsed.remoteValid = res.ok;
+            parsed.remoteError = res.error;
+            parsed.remoteCheckedAt = checkedAt;
+            if (res.plan) { parsed.plan = res.plan; plan = res.plan; }
+            if (res.shopName) { parsed.shopName = res.shopName; shopName = res.shopName; }
+            if (res.expiresAt !== undefined) {
+              expiresAt = res.expiresAt ?? null;
+              parsed.expiresAt = res.expiresAt ?? null;
             }
-          } else if (res.expiresAt !== undefined) {
-            expiresAt = res.expiresAt ?? null;
-            parsed.expiresAt = res.expiresAt ?? null;
+            valid = res.ok;
+            error = res.ok ? undefined : res.error;
+          } else {
+            // DB fetch failed (table not readable / not found) → RPC fallback.
+            try {
+              const rpcRes = await checkRemoteLicense(activationId);
+              parsed.remoteValid = rpcRes.ok;
+              parsed.remoteError = rpcRes.error;
+              parsed.remoteCheckedAt = checkedAt;
+              if (rpcRes.plan) { parsed.plan = rpcRes.plan; plan = rpcRes.plan; }
+              if (rpcRes.shopName) { parsed.shopName = rpcRes.shopName; shopName = rpcRes.shopName; }
+              valid = rpcRes.ok;
+              error = rpcRes.ok ? undefined : rpcRes.error;
+            } catch {
+              // Both DB and RPC failed → offline grace.
+              valid = !localExpired && parsed.remoteValid !== false;
+              error = "LICENSE_CHECK_UNREACHABLE";
+            }
           }
 
           // Re-check timestamp hamesha save karo — offline grace window avoid karo.
@@ -135,7 +132,6 @@ export async function GET(req: NextRequest) {
           ]);
         } catch {
           // Central unreachable → offline grace: last verified result ko bharosha.
-          // Agar central ne kabhi revoke/delete bataya tha to wahi maano.
           valid = !localExpired && parsed.remoteValid !== false;
           error = "LICENSE_CHECK_UNREACHABLE";
         }
