@@ -28,7 +28,14 @@ export default function LicenseInfoCard() {
         const res = await fetch("/api/license/status?force=true", { cache: "no-store" });
         if (!res.ok) return;
         const body = await res.json();
-        if (!cancelled && body && typeof body === "object") setLicense(body);
+        if (!cancelled && body && typeof body === "object") {
+          setLicense(body);
+          const exp = body.expiresAt;
+          if (exp) {
+            const days = Math.ceil((new Date(exp).getTime() - Date.now()) / 86400000);
+            if (days >= 0 && days <= 30) setContactOpen(true);
+          }
+        }
       } catch {
         /* ignore */
       }
