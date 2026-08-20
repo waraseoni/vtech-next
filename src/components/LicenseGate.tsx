@@ -207,29 +207,30 @@ export default function LicenseGate({
               </p>
             )}
 
-            <button
-              type="submit"
-              disabled={busy || key.trim().length < 5}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-black tracking-wide transition-all"
-            >
-              {busy ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" /> Activating...
-                </>
-              ) : (
-                <>
-                  <KeyRound size={15} /> Activate License
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => { setError(""); onActivated(); }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors"
-            >
-              <RefreshCw size={13} /> Status refresh karein
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={busy || key.trim().length < 5}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black tracking-wide transition-all"
+              >
+                {busy ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" /> Activating...
+                  </>
+                ) : (
+                  <>
+                    <KeyRound size={13} /> Activate License
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setError(""); onActivated(); }}
+                className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-[#21293d] text-xs font-bold text-slate-500 hover:text-slate-300 hover:border-slate-500/50 transition-colors"
+              >
+                <RefreshCw size={12} /> Refresh
+              </button>
+            </div>
           </form>
 
           {/* ── Non-admin: auto-fix button ── */}
