@@ -22,6 +22,7 @@ dist/
 # 3. Secret Environment Variables (CRITICAL - kabhi push mat karna!)
 .env
 .env.local
+.env.local.vtech
 .env.*.local
 .env.production
 .env*.7z

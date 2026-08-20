@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import {
   ShieldCheck, Store, KeyRound, CalendarClock, CheckCircle2,
-  AlertTriangle, ShieldX, Clock, User, Phone, MessageCircle, MapPin, Pencil,
+  AlertTriangle, ShieldX, Clock, User, Phone, MessageCircle, MapPin, Mail,
 } from "lucide-react";
 import type { LicenseStatus } from "@/lib/license";
+import { SELLER_INFO } from "@/lib/seller-info";
 import { formatIST } from "@/lib/dateUtils";
 
 const fmtExpiry = (d: string) =>
@@ -18,10 +19,6 @@ function daysLeft(expiresAt: string | null): number | null {
 
 export default function LicenseInfoCard() {
   const [license, setLicense] = useState<LicenseStatus | null>(null);
-  const [seller, setSeller] = useState<{ name?: string | null; phone?: string | null; whatsapp?: string | null; address?: string | null } | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", whatsapp: "", address: "" });
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,41 +34,6 @@ export default function LicenseInfoCard() {
     })();
     return () => { cancelled = true; };
   }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/license/seller-contact", { cache: "no-store" });
-        if (!res.ok) return;
-        const body = await res.json();
-        if (!cancelled && body && typeof body === "object") {
-          setSeller(body);
-          setForm({
-            name: body.name || "",
-            phone: body.phone || "",
-            whatsapp: body.whatsapp || "",
-            address: body.address || "",
-          });
-        }
-      } catch { /* ignore */ }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  const saveSeller = async () => {
-    setSaving(true);
-    try {
-      await fetch("/api/license/seller-contact", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      setSeller({ ...form });
-      setEditing(false);
-    } catch { /* ignore */ }
-    setSaving(false);
-  };
 
   if (!license?.activated || !license.valid) return null;
 
@@ -146,73 +108,32 @@ export default function LicenseInfoCard() {
         </div>
       )}
 
-      {/* ── Seller Contact Info ── */}
-      {(seller?.name || seller?.phone || seller?.whatsapp || seller?.address || editing) && (
-        <div className="mt-3 bg-blue-500/[0.04] border border-blue-500/15 rounded-xl px-3.5 py-3">
-          {editing ? (
-            <div className="space-y-2.5">
-              <p className="text-[10px] font-black uppercase tracking-widest text-blue-400/70">Seller Contact Info</p>
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Naam" className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-slate-200 outline-none focus:border-blue-500/50" />
-              <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone Number" className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-slate-200 outline-none focus:border-blue-500/50" />
-              <input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="WhatsApp Number (country code ke saath)" className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-slate-200 outline-none focus:border-blue-500/50" />
-              <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Address" className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-slate-200 outline-none focus:border-blue-500/50" />
-              <div className="flex gap-2">
-                <button onClick={saveSeller} disabled={saving} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-[11px] font-bold text-white transition-colors disabled:opacity-50">
-                  {saving ? "Saving..." : "Save"}
-                </button>
-                <button onClick={() => setEditing(false)} className="px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:text-slate-300 transition-colors">
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-start justify-between gap-2">
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-black uppercase tracking-widest text-blue-400/70 mb-2">Seller Contact</p>
-                {seller?.name && (
-                  <div className="flex items-center gap-2">
-                    <User size={11} className="text-slate-500" />
-                    <span className="text-[11px] text-slate-300">{seller.name}</span>
-                  </div>
-                )}
-                {seller?.address && (
-                  <div className="flex items-center gap-2">
-                    <MapPin size={11} className="text-slate-500" />
-                    <span className="text-[11px] text-slate-300">{seller.address}</span>
-                  </div>
-                )}
-                {seller?.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone size={11} className="text-slate-500" />
-                    <a href={`tel:${seller.phone}`} className="text-[11px] text-blue-400 hover:text-blue-300">{seller.phone}</a>
-                  </div>
-                )}
-                {seller?.whatsapp && (
-                  <div className="flex items-center gap-2">
-                    <MessageCircle size={11} className="text-emerald-500" />
-                    <a href={`https://wa.me/${seller.whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="text-[11px] text-emerald-400 hover:text-emerald-300">
-                      WhatsApp par message karein
-                    </a>
-                  </div>
-                )}
-              </div>
-              <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg hover:bg-white/5 text-slate-500 hover:text-slate-300 transition-colors shrink-0" title="Edit seller info">
-                <Pencil size={12} />
-              </button>
-            </div>
-          )}
+      {/* ── Seller Contact Info (hardcoded branding) ── */}
+      <div className="mt-3 bg-blue-500/[0.04] border border-blue-500/15 rounded-xl px-3.5 py-3 space-y-1.5">
+        <p className="text-[10px] font-black uppercase tracking-widest text-blue-400/70 mb-2">Seller Contact</p>
+        <div className="flex items-center gap-2">
+          <User size={11} className="text-slate-500" />
+          <span className="text-[11px] text-slate-300">{SELLER_INFO.name}</span>
         </div>
-      )}
-
-      {/* ── Add seller info button (if none set yet) ── */}
-      {!seller?.name && !seller?.phone && !seller?.whatsapp && !editing && (
-        <button
-          onClick={() => setEditing(true)}
-          className="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-dashed border-[#21293d] text-[11px] font-bold text-slate-500 hover:text-slate-300 hover:border-slate-500/50 transition-all"
-        >
-          <Pencil size={11} /> Seller contact info add karein
-        </button>
-      )}
+        <div className="flex items-center gap-2">
+          <MapPin size={11} className="text-slate-500" />
+          <span className="text-[11px] text-slate-300">{SELLER_INFO.address}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Phone size={11} className="text-slate-500" />
+          <a href={`tel:${SELLER_INFO.phone}`} className="text-[11px] text-blue-400 hover:text-blue-300">{SELLER_INFO.phone}</a>
+        </div>
+        <div className="flex items-center gap-2">
+          <MessageCircle size={11} className="text-emerald-500" />
+          <a href={`https://wa.me/${SELLER_INFO.whatsapp}`} target="_blank" rel="noopener noreferrer" className="text-[11px] text-emerald-400 hover:text-emerald-300">
+            WhatsApp par message karein
+          </a>
+        </div>
+        <div className="flex items-center gap-2">
+          <Mail size={11} className="text-slate-500" />
+          <a href={`mailto:${SELLER_INFO.email}`} className="text-[11px] text-blue-400 hover:text-blue-300">{SELLER_INFO.email}</a>
+        </div>
+      </div>
     </section>
   );
 }

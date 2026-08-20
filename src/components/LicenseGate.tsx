@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { KeyRound, LogOut, RefreshCw, ShieldAlert, ShieldCheck, Loader2, Phone, MessageCircle, MapPin, User } from "lucide-react";
+import { KeyRound, LogOut, RefreshCw, ShieldAlert, ShieldCheck, Loader2, Phone, MessageCircle, MapPin, User, Mail } from "lucide-react";
 import type { LicenseStatus } from "@/lib/license";
+import { SELLER_INFO } from "@/lib/seller-info";
 
 // License expiry / trial mode ke time par full-screen gate.
 // Login hamesha allowed hai — login ke BAAD ye gate dikhta hai taaki admin naya
@@ -140,44 +141,38 @@ export default function LicenseGate({
           )}
 
           {/* ── Seller contact info — renewal ke liye ── */}
-          {(status.sellerName || status.sellerPhone || status.sellerWhatsApp || status.sellerAddress) && (
-            <div className="mt-4 bg-[#0f1a2e] border border-blue-500/15 rounded-xl p-4 space-y-2.5">
-              <p className="text-[10px] font-black uppercase tracking-widest text-blue-400/70 mb-3">
-                License Renewal ke liye sampark karein
-              </p>
-              {status.sellerName && (
-                <div className="flex items-center gap-2.5">
-                  <User size={13} className="text-slate-500 shrink-0" />
-                  <span className="text-xs text-slate-300">{status.sellerName}</span>
-                </div>
-              )}
-              {status.sellerAddress && (
-                <div className="flex items-center gap-2.5">
-                  <MapPin size={13} className="text-slate-500 shrink-0" />
-                  <span className="text-xs text-slate-300">{status.sellerAddress}</span>
-                </div>
-              )}
-              {status.sellerPhone && (
-                <div className="flex items-center gap-2.5">
-                  <Phone size={13} className="text-slate-500 shrink-0" />
-                  <a href={`tel:${status.sellerPhone}`} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">{status.sellerPhone}</a>
-                </div>
-              )}
-              {status.sellerWhatsApp && (
-                <div className="flex items-center gap-2.5">
-                  <MessageCircle size={13} className="text-emerald-500 shrink-0" />
-                  <a
-                    href={`https://wa.me/${status.sellerWhatsApp.replace(/[^0-9]/g, "")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
-                  >
-                    WhatsApp par message karein
-                  </a>
-                </div>
-              )}
+          <div className="mt-4 bg-[#0f1a2e] border border-blue-500/15 rounded-xl p-4 space-y-2.5">
+            <p className="text-[10px] font-black uppercase tracking-widest text-blue-400/70 mb-3">
+              License Renewal ke liye sampark karein
+            </p>
+            <div className="flex items-center gap-2.5">
+              <User size={13} className="text-slate-500 shrink-0" />
+              <span className="text-xs text-slate-300">{SELLER_INFO.name}</span>
             </div>
-          )}
+            <div className="flex items-center gap-2.5">
+              <MapPin size={13} className="text-slate-500 shrink-0" />
+              <span className="text-xs text-slate-300">{SELLER_INFO.address}</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <Phone size={13} className="text-slate-500 shrink-0" />
+              <a href={`tel:${SELLER_INFO.phone}`} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">{SELLER_INFO.phone}</a>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <MessageCircle size={13} className="text-emerald-500 shrink-0" />
+              <a
+                href={`https://wa.me/${SELLER_INFO.whatsapp}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+              >
+                WhatsApp par message karein
+              </a>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <Mail size={13} className="text-slate-500 shrink-0" />
+              <a href={`mailto:${SELLER_INFO.email}`} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">{SELLER_INFO.email}</a>
+            </div>
+          </div>
 
           {/* ── Key form (hamesha dikhao — server par admin check hai) ── */}
           <form onSubmit={handleActivate} className="mt-6 space-y-3">

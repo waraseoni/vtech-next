@@ -58,11 +58,6 @@ export type LicenseStatus = {
   /** Seller/Developer portals is deployment par enabled hain ya nahi (env se). */
   sellerEnabled?: boolean;
   devEnabled?: boolean;
-  /** Seller ki contact info — client ko renewal ke liye sampark karne ke liye. */
-  sellerName?: string;
-  sellerPhone?: string;
-  sellerWhatsApp?: string;
-  sellerAddress?: string;
 };
 
 /** Central RPC call — validate key + register/refresh this instance. */
