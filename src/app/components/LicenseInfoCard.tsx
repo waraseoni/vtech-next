@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   ShieldCheck, Store, KeyRound, CalendarClock, CheckCircle2,
-  AlertTriangle, ShieldX, Clock, User, Phone, MessageCircle, MapPin, Mail,
+  AlertTriangle, ShieldX, Clock, User, Phone, MessageCircle, MapPin, Mail, ChevronDown,
 } from "lucide-react";
 import type { LicenseStatus } from "@/lib/license";
 import { SELLER_INFO } from "@/lib/seller-info";
@@ -19,6 +19,7 @@ function daysLeft(expiresAt: string | null): number | null {
 
 export default function LicenseInfoCard() {
   const [license, setLicense] = useState<LicenseStatus | null>(null);
+  const [contactOpen, setContactOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,32 +109,46 @@ export default function LicenseInfoCard() {
         </div>
       )}
 
-      {/* ── Seller Contact Info (hardcoded branding) ── */}
-      <div className="mt-3 bg-blue-500/[0.04] border border-blue-500/15 rounded-xl px-3.5 py-3 space-y-1.5">
-        <p className="text-[10px] font-black uppercase tracking-widest text-blue-400/70 mb-2">Seller Contact</p>
-        <div className="flex items-center gap-2">
-          <User size={11} className="text-slate-500" />
-          <span className="text-[11px] text-slate-300">{SELLER_INFO.name}</span>
+      {/* ── Seller Contact (collapsible) ── */}
+      <button
+        type="button"
+        onClick={() => setContactOpen(!contactOpen)}
+        className="mt-3 w-full flex items-center justify-between gap-2 bg-blue-500/[0.04] border border-blue-500/15 rounded-xl px-3.5 py-2.5 hover:bg-blue-500/[0.07] transition-colors"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Phone size={11} className="text-blue-400 shrink-0" />
+          <span className="text-[11px] font-bold text-slate-300 truncate">{SELLER_INFO.name}</span>
+          <span className="text-[10px] text-slate-500 hidden sm:inline">·</span>
+          <span className="text-[10px] text-slate-500 hidden sm:inline">{SELLER_INFO.phone}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <MapPin size={11} className="text-slate-500" />
-          <span className="text-[11px] text-slate-300">{SELLER_INFO.address}</span>
+        <ChevronDown size={13} className={`text-slate-500 shrink-0 transition-transform ${contactOpen ? "rotate-180" : ""}`} />
+      </button>
+      {contactOpen && (
+        <div className="mt-1.5 bg-[#0f1a2e] border border-blue-500/10 rounded-xl px-3.5 py-2.5 space-y-1.5">
+          <div className="flex items-center gap-2">
+            <User size={11} className="text-slate-500" />
+            <span className="text-[11px] text-slate-300">{SELLER_INFO.name}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin size={11} className="text-slate-500" />
+            <span className="text-[11px] text-slate-300 leading-snug">{SELLER_INFO.address}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Phone size={11} className="text-slate-500" />
+            <a href={`tel:${SELLER_INFO.phone}`} className="text-[11px] text-blue-400 hover:text-blue-300">{SELLER_INFO.phone}</a>
+          </div>
+          <div className="flex items-center gap-2">
+            <MessageCircle size={11} className="text-emerald-500" />
+            <a href={`https://wa.me/${SELLER_INFO.whatsapp}`} target="_blank" rel="noopener noreferrer" className="text-[11px] text-emerald-400 hover:text-emerald-300">
+              WhatsApp
+            </a>
+          </div>
+          <div className="flex items-center gap-2">
+            <Mail size={11} className="text-slate-500" />
+            <a href={`mailto:${SELLER_INFO.email}`} className="text-[11px] text-blue-400 hover:text-blue-300">{SELLER_INFO.email}</a>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Phone size={11} className="text-slate-500" />
-          <a href={`tel:${SELLER_INFO.phone}`} className="text-[11px] text-blue-400 hover:text-blue-300">{SELLER_INFO.phone}</a>
-        </div>
-        <div className="flex items-center gap-2">
-          <MessageCircle size={11} className="text-emerald-500" />
-          <a href={`https://wa.me/${SELLER_INFO.whatsapp}`} target="_blank" rel="noopener noreferrer" className="text-[11px] text-emerald-400 hover:text-emerald-300">
-            WhatsApp par message karein
-          </a>
-        </div>
-        <div className="flex items-center gap-2">
-          <Mail size={11} className="text-slate-500" />
-          <a href={`mailto:${SELLER_INFO.email}`} className="text-[11px] text-blue-400 hover:text-blue-300">{SELLER_INFO.email}</a>
-        </div>
-      </div>
+      )}
     </section>
   );
 }
