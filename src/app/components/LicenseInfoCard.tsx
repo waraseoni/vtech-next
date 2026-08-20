@@ -23,7 +23,7 @@ export default function LicenseInfoCard() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/license/status", { cache: "no-store" });
+        const res = await fetch("/api/license/status?force=true", { cache: "no-store" });
         if (!res.ok) return;
         const body = await res.json();
         if (!cancelled && body && typeof body === "object") setLicense(body);
