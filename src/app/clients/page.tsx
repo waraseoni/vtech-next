@@ -13,6 +13,8 @@ import {
   ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, SlidersHorizontal,
   CheckSquare, Square, Send,
 } from "lucide-react";
+import { substituteTemplate, firmVars } from "@/lib/whatsapp";
+import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell,
@@ -69,22 +71,14 @@ function getBalanceMeta(balance: number, lastTxnDate: string | null) {
   };
 }
 
-// ─── WhatsApp Templates ───────────────────────────────────────────────────────
-const FIRM = { name: "V-Technologies", phone: "9179105875", address: "Jabalpur, MP", owner: "Vikram Jain" };
-const WA = {
-  welcome:  (n: string) =>
-    `नमस्ते ${n} जी! 🙏\n\n${FIRM.name} में आपका स्वागत है! 🛠️✨\n\n🔧 SMPS / Power Supply Repair\n🔧 Stage Light Repair\n🔧 DMX Controller Repair\n\n🎯 जेनुइन पार्ट्स • एक्सपर्ट टेक्नीशियन • किफायती मूल्य\n\n📞 ${FIRM.phone}\n📍 ${FIRM.address}\n\nधन्यवाद,\n${FIRM.owner}`,
-  reminder: (n: string, bal: number) =>
-    `नमस्ते ${n} जी! 🙏\n\nआपका बकाया बैलेंस *${inr(bal)}* है।\n\nकृपया शीघ्र भुगतान करने का कष्ट करें।\n\n🔸 Payment Methods:\n• Cash (Shop पर)\n• UPI / Google Pay\n• Bank Transfer\n\n📞 ${FIRM.phone}\n\nधन्यवाद,\n${FIRM.owner}`,
-  followup: (n: string) =>
-    `नमस्ते ${n} जी! 🙏\n\n${FIRM.name} से आपकी याद आई! 🤗\n\n🎁 पुराने ग्राहकों के लिए विशेष ऑफर: 15% छूट!\n\n📞 ${FIRM.phone}\n📍 ${FIRM.address}\n\nधन्यवाद,\n${FIRM.owner}`,
-  offer:    (n: string) =>
-    `नमस्ते ${n} जी! 🎉\n\n${FIRM.name} की तरफ से विशेष ऑफर!\n\n🔥 20% OFF — इस महीने तक!\n\n📞 ${FIRM.phone}\nधन्यवाद,\n${FIRM.owner}`,
+// ─── WhatsApp Templates (dynamic from system_info) ────────────────────────────
+type WaTemplateType = "welcome" | "reminder" | "followup" | "offer";
+const WA_TEMPLATE_KEY: Record<WaTemplateType, string> = {
+  welcome: "whatsapp_welcome",
+  reminder: "whatsapp_reminder",
+  followup: "whatsapp_followup",
+  offer: "whatsapp_offer",
 };
-function buildAutoMsg(c: Client): string {
-  if (c.balance > 0) return WA.reminder(c.name, c.balance);
-  return daysSince(c.last_txn_date) > 30 ? WA.followup(c.name) : WA.welcome(c.name);
-}
 
 // ─── Chart Tooltip ────────────────────────────────────────────────────────────
 const BarTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string | number }) => {
@@ -103,6 +97,7 @@ export default function ClientsPage() {
   const [loading,    setLoading]   = useState(true);
   const [userRole,   setUserRole]  = useState<string>("staff");
   const [isMobile,   setIsMobile]  = useState(false);
+  const [firmInfo,   setFirmInfo]  = useState<Record<string, string>>({});
 
   const [searchTerm, setSearchTerm] = useState("");
   const [minBal,     setMinBal]     = useState("");
@@ -143,6 +138,11 @@ export default function ClientsPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      const { data: sys } = await supabase.from("system_info").select("meta_field, meta_value");
+      const info: Record<string, string> = {};
+      (sys || []).forEach(r => { info[r.meta_field] = r.meta_value; });
+      setFirmInfo(info);
+
       const { data: cls } = await supabase
         .from("client_list")
         .select("id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance, image_path, login_allowed")
@@ -232,12 +232,14 @@ export default function ClientsPage() {
   };
 
   const openWaModal = (client: Client) => {
-    const at = client.balance>0?"reminder":daysSince(client.last_txn_date)>30?"followup":"welcome";
-    setWaClient(client); setWaMsgType(at as typeof waMsgType); setWaText(buildAutoMsg(client)); setWaModal(true);
+    const at: WaTemplateType = client.balance>0?"reminder":daysSince(client.last_txn_date)>30?"followup":"welcome";
+    const tpl = firmInfo[WA_TEMPLATE_KEY[at]] || DEFAULT_TEMPLATES[WA_TEMPLATE_KEY[at]] || "";
+    setWaClient(client); setWaMsgType(at); setWaText(substituteTemplate(tpl, { client_name: client.name, balance: inr(client.balance), ...firmVars(firmInfo) })); setWaModal(true);
   };
   const handleWaTypeChange = (type: typeof waMsgType) => {
-    if (!waClient) return; setWaMsgType(type);
-    setWaText(type==="welcome"?WA.welcome(waClient.name):type==="reminder"?WA.reminder(waClient.name,waClient.balance):type==="followup"?WA.followup(waClient.name):type==="offer"?WA.offer(waClient.name):waText);
+    if (!waClient || type === "custom") return; setWaMsgType(type);
+    const tpl = firmInfo[WA_TEMPLATE_KEY[type]] || DEFAULT_TEMPLATES[WA_TEMPLATE_KEY[type]] || "";
+    setWaText(substituteTemplate(tpl, { client_name: waClient.name, balance: inr(waClient.balance), ...firmVars(firmInfo) }));
   };
   const sendWhatsApp = () => {
     if (!waClient?.contact) { alert("Phone number nahi hai!"); return; }
@@ -271,16 +273,9 @@ export default function ClientsPage() {
     setBulkWaMsgType(type);
     const selected = clients.filter(c => selectedClients.has(c.id));
     if (type === "custom") { setBulkWaText(""); return; }
-    if (type === "reminder") {
-      const totalBal = selected.reduce((s, c) => s + (c.balance > 0 ? c.balance : 0), 0);
-      setBulkWaText(`नमस्ते सर/मैडम! 🙏\n\nआपका बकाया बैलेंस ₹${totalBal.toLocaleString("en-IN", { minimumFractionDigits: 2 })} है।\n\nकृपया शीघ्र भुगतान करने का कष्ट करें।\n\n📞 ${FIRM.phone}\n\nधन्यवाद,\n${FIRM.owner}`);
-    } else if (type === "welcome") {
-      setBulkWaText(`नमस्ते! 🙏\n\n${FIRM.name} में आपका स्वागत है! 🛠️\n\n🔧 SMPS / Power Supply Repair\n🔧 Stage Light Repair\n🔧 DMX Controller Repair\n\n📞 ${FIRM.phone}\n📍 ${FIRM.address}\n\nधन्यवाद,\n${FIRM.owner}`);
-    } else if (type === "followup") {
-      setBulkWaText(`नमस्ते! 🙏\n\n${FIRM.name} से आपकी याद आई! 🤗\n\n🎁 पुराने ग्राहकों के लिए विशेष ऑफर: 15% छूट!\n\n📞 ${FIRM.phone}\n📍 ${FIRM.address}\n\nधन्यवाद,\n${FIRM.owner}`);
-    } else if (type === "offer") {
-      setBulkWaText(`नमस्ते! 🎉\n\n${FIRM.name} की तरफ से विशेष ऑफर!\n\n🔥 20% OFF — इस महीने तक!\n\n📞 ${FIRM.phone}\nधन्यवाद,\n${FIRM.owner}`);
-    }
+    const totalBal = selected.reduce((s, c) => s + (c.balance > 0 ? c.balance : 0), 0);
+    const tpl = firmInfo[WA_TEMPLATE_KEY[type]] || DEFAULT_TEMPLATES[WA_TEMPLATE_KEY[type]] || "";
+    setBulkWaText(substituteTemplate(tpl, { client_name: "सर/मैडम", balance: inr(totalBal), ...firmVars(firmInfo) }));
   };
   const sendBulkWhatsApp = () => {
     if (!bulkWaText.trim()) { alert("Message likho pehle!"); return; }
