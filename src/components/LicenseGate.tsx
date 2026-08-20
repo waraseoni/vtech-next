@@ -100,82 +100,91 @@ export default function LicenseGate({
     <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <div className="bg-[#111520] border border-[#21293d] rounded-3xl p-8 shadow-2xl shadow-black/50 anim-fade">
-          {/* Icon */}
-          <div
-            className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-5 ${
-              expired ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-400"
-            }`}
-          >
-            {expired ? <ShieldAlert size={26} /> : <KeyRound size={26} />}
+
+          {/* ── Header: icon + title + badge + message — sab compact ── */}
+          <div className="flex items-start gap-3.5">
+            <div
+              className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                expired ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-400"
+              }`}
+            >
+              {expired ? <ShieldAlert size={22} /> : <KeyRound size={22} />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-lg font-black text-white tracking-tight">
+                  {expired ? "License Expired" : status.activated ? "License Invalid" : "Trial Mode"}
+                </h1>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${
+                  expired
+                    ? "text-red-400 border-red-500/25 bg-red-500/10"
+                    : "text-amber-400 border-amber-500/25 bg-amber-500/10"
+                }`}>
+                  {expired ? "Expired" : status.activated ? "Invalid" : "Trial"}
+                </span>
+              </div>
+              <p className="text-[12px] text-slate-400 mt-1 leading-relaxed">
+                {expired ? (
+                  <>
+                    Aapka license{" "}
+                    <span className="text-red-400 font-bold">
+                      {new Date(status.expiresAt!).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                    </span>{" "}
+                    ko khatam ho gaya hai.
+                  </>
+                ) : status.activated ? (
+                  reasonText || "License abhi active nahi hai. System ko chalaane ke liye naya key chahiye."
+                ) : (
+                  "System unlock karne ke liye license key daalein."
+                )}
+              </p>
+            </div>
           </div>
 
-          {/* Title */}
-          <h1 className="text-xl font-black text-white tracking-tight">
-            {expired ? "License Expired" : status.activated ? "License Invalid" : "Trial Mode"}
-          </h1>
-          <p className="text-[13px] text-slate-400 mt-1.5 leading-relaxed">
-            {expired ? (
-              <>
-                Aapka license{" "}
-                <span className="text-red-400 font-bold">
-                  {new Date(status.expiresAt!).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
-                </span>{" "}
-                ko khatam ho gaya hai.
-              </>
-            ) : status.activated ? (
-              reasonText ? (
-                <>{reasonText}</>
-              ) : (
-                "License abhi active nahi hai. System ko chalaane ke liye naya key chahiye."
-              )
-            ) : (
-              "Ye system bina license (trial mode) mein hai. System unlock karne ke liye license key daalein."
-            )}
-          </p>
-
+          {/* ── Shop name ── */}
           {status.shopName && (
-            <div className="mt-4 flex items-center justify-between bg-[#1a2234] rounded-xl px-4 py-3">
+            <div className="mt-3.5 flex items-center justify-between bg-[#1a2234] rounded-xl px-4 py-2.5">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Shop</span>
               <span className="text-xs font-bold text-slate-200">{status.shopName}</span>
             </div>
           )}
 
-          {/* ── Seller contact info — renewal ke liye ── */}
-          <div className="mt-4 bg-[#0f1a2e] border border-blue-500/15 rounded-xl p-4 space-y-2.5">
-            <p className="text-[10px] font-black uppercase tracking-widest text-blue-400/70 mb-3">
-              License Renewal ke liye sampark karein
+          {/* ── Seller contact info ── */}
+          <div className="mt-3.5 bg-[#0f1a2e] border border-blue-500/15 rounded-xl p-3.5 space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-blue-400/70 mb-2">
+              License ke liye sampark karein
             </p>
             <div className="flex items-center gap-2.5">
-              <User size={13} className="text-slate-500 shrink-0" />
-              <span className="text-xs text-slate-300">{SELLER_INFO.name}</span>
+              <User size={12} className="text-slate-500 shrink-0" />
+              <span className="text-[11px] text-slate-300">{SELLER_INFO.name}</span>
             </div>
             <div className="flex items-center gap-2.5">
-              <MapPin size={13} className="text-slate-500 shrink-0" />
-              <span className="text-xs text-slate-300">{SELLER_INFO.address}</span>
+              <MapPin size={12} className="text-slate-500 shrink-0" />
+              <span className="text-[11px] text-slate-300 leading-snug">{SELLER_INFO.address}</span>
             </div>
             <div className="flex items-center gap-2.5">
-              <Phone size={13} className="text-slate-500 shrink-0" />
-              <a href={`tel:${SELLER_INFO.phone}`} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">{SELLER_INFO.phone}</a>
+              <Phone size={12} className="text-slate-500 shrink-0" />
+              <a href={`tel:${SELLER_INFO.phone}`} className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors">{SELLER_INFO.phone}</a>
             </div>
             <div className="flex items-center gap-2.5">
-              <MessageCircle size={13} className="text-emerald-500 shrink-0" />
+              <MessageCircle size={12} className="text-emerald-500 shrink-0" />
               <a
                 href={`https://wa.me/${SELLER_INFO.whatsapp}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                className="text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors"
               >
                 WhatsApp par message karein
               </a>
             </div>
             <div className="flex items-center gap-2.5">
-              <Mail size={13} className="text-slate-500 shrink-0" />
-              <a href={`mailto:${SELLER_INFO.email}`} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">{SELLER_INFO.email}</a>
+              <Mail size={12} className="text-slate-500 shrink-0" />
+              <a href={`mailto:${SELLER_INFO.email}`} className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors">{SELLER_INFO.email}</a>
             </div>
           </div>
 
-          {/* ── Key form (hamesha dikhao — server par admin check hai) ── */}
-          <form onSubmit={handleActivate} className="mt-6 space-y-3">
+          {/* ── Key form ── */}
+          <form onSubmit={handleActivate} className="mt-5 space-y-3">
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">
                 License Key (VTC-XXXX-XXXX-XXXX-XXXX)
@@ -249,8 +258,8 @@ export default function LicenseGate({
             </div>
           )}
 
-          {/* ── Logout — kabhi bhi available, taaki koi atka na rahe ── */}
-          <div className="mt-6 pt-5 border-t border-[#1a2234] flex items-center justify-between">
+          {/* ── Footer ── */}
+          <div className="mt-5 pt-4 border-t border-[#1a2234] flex items-center justify-between">
             <span className="text-[9px] font-black uppercase tracking-widest text-slate-700">
               V-TECH PRO · Licensing
             </span>
