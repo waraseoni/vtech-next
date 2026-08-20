@@ -5,6 +5,7 @@ import {
   isLicenseConfigured,
   maskKey,
   checkRemoteLicense,
+  activateRemoteLicense,
   type LicenseStatus,
 } from "@/lib/license";
 
@@ -86,7 +87,7 @@ export async function GET(req: NextRequest) {
       const due = force || !lastChecked || Date.now() - lastChecked > effectiveInterval || localExpired;
 
       if (isLicenseConfigured() && due) {
-        // Central se fresh verify — naya activation NAHI, sirf check_license.
+        // Central se fresh verify — check_license se basic validity + plan.
         try {
           const res = await checkRemoteLicense(activationId);
           const checkedAt = new Date().toISOString();
@@ -96,14 +97,37 @@ export async function GET(req: NextRequest) {
           parsed.remoteValid = res.ok;
           parsed.remoteError = res.error;
           parsed.remoteCheckedAt = checkedAt;
-          if (res.expiresAt !== undefined) {
-            expiresAt = res.expiresAt ?? null;
-            parsed.expiresAt = res.expiresAt ?? null;
-          }
           if (res.plan) { parsed.plan = res.plan; plan = res.plan; }
           if (res.shopName) { parsed.shopName = res.shopName; shopName = res.shopName; }
           valid = res.ok;
           error = res.ok ? undefined : res.error;
+
+          // check_license RPC kabhi expiresAt return nahi karta — sirf ok/plan/shopName.
+          // Agar expiresAt nahi aaya to activate_license call karke full details
+          // fetch karo (ye RPC expiresAt, plan, shopName sab deta hai).
+          if (res.ok && res.expiresAt === undefined && keyRaw) {
+            try {
+              const host = req.headers.get("host") || "localhost";
+              const full = await activateRemoteLicense({
+                key: keyRaw,
+                activationId,
+                shopUrl: host,
+                shopName: parsed.shopName || "",
+              });
+              if (full.ok && full.expiresAt !== undefined) {
+                expiresAt = full.expiresAt ?? null;
+                parsed.expiresAt = full.expiresAt ?? null;
+              }
+              if (full.plan) { parsed.plan = full.plan; plan = full.plan; }
+              if (full.shopName) { parsed.shopName = full.shopName; shopName = full.shopName; }
+            } catch {
+              // activate fallback fail → check_license ka basic result use karo.
+            }
+          } else if (res.expiresAt !== undefined) {
+            expiresAt = res.expiresAt ?? null;
+            parsed.expiresAt = res.expiresAt ?? null;
+          }
+
           // Re-check timestamp hamesha save karo — offline grace window avoid karo.
           await Promise.all([
             upsertField("license_last_checked", checkedAt),
