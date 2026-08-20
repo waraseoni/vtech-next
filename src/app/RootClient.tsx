@@ -400,6 +400,11 @@ function SidebarNav({
                 </Link>
               </li>
               <li>
+                <Link href="/inventory/locations/manage" className={subLinkCls(pathname === "/inventory/locations/manage")} onClick={onNavClick}>
+                  <Settings2 size={12} className="text-slate-400" />Location Hierarchy
+                </Link>
+              </li>
+              <li>
                 <Link href="/inventory/locate" className={subLinkCls(pathname === "/inventory/locate")} onClick={onNavClick}>
                   <MapPin size={12} className="text-amber-400" />Spare Finder
                 </Link>
@@ -477,44 +482,41 @@ function SidebarNav({
               <li><Link href="/backup"        className={subLinkCls(pathname === "/backup")}        onClick={onNavClick}><Database size={12} />Backup</Link></li>
             </SubMenu>
 
-            {/* ══ LICENSING ════════════════════════════════════════════════ */}
+            {/* ══ DEVELOPER ════════════════════════════════════════════════ */}
             {(sellerEnabled || devEnabled) && (
-              <>
-                <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
-                  Licensing
-                </li>
+              <SubMenu title="Developer" icon={<Code2 size={15} />} matchPaths={["/developer", "/sync", "/images", "/seller", "/back-office/db-tools"]}>
                 {sellerEnabled && (
                   <li>
-                    <Link href="/seller" className={navLinkCls(pathname === "/seller")} onClick={onNavClick}>
-                      <KeyRound size={16} className="text-amber-400" /><span>Seller Portal</span>
+                    <Link href="/seller" className={subLinkCls(pathname === "/seller")} onClick={onNavClick}>
+                      <KeyRound size={12} className="text-amber-400" />Seller Portal
                     </Link>
                   </li>
                 )}
                 {devEnabled && (
                   <>
                     <li>
-                      <Link href="/developer" className={navLinkCls(pathname === "/developer")} onClick={onNavClick}>
-                        <Code2 size={16} className="text-indigo-400" /><span>Developer</span>
+                      <Link href="/developer" className={subLinkCls(pathname === "/developer")} onClick={onNavClick}>
+                        <Code2 size={12} className="text-indigo-400" />Developer
                       </Link>
                     </li>
                     <li>
-                      <Link href="/sync" className={navLinkCls(pathname === "/sync")} onClick={onNavClick}>
-                        <RefreshCw size={16} className="text-emerald-400" /><span>MariaDB Sync</span>
+                      <Link href="/sync" className={subLinkCls(pathname === "/sync")} onClick={onNavClick}>
+                        <RefreshCw size={12} className="text-emerald-400" />MariaDB Sync
                       </Link>
                     </li>
                     <li>
-                      <Link href="/images" className={navLinkCls(pathname === "/images")} onClick={onNavClick}>
-                        <Images size={16} className="text-amber-400" /><span>Images</span>
+                      <Link href="/images" className={subLinkCls(pathname === "/images")} onClick={onNavClick}>
+                        <Images size={12} className="text-amber-400" />Images
                       </Link>
                     </li>
                     <li>
-                      <Link href="/back-office/db-tools" className={navLinkCls(pathname === "/back-office/db-tools")} onClick={onNavClick}>
-                        <Terminal size={16} className="text-orange-400" /><span>DB Tools</span>
+                      <Link href="/back-office/db-tools" className={subLinkCls(pathname === "/back-office/db-tools")} onClick={onNavClick}>
+                        <Terminal size={12} className="text-orange-400" />DB Tools
                       </Link>
                     </li>
                   </>
                 )}
-              </>
+              </SubMenu>
             )}
           </>
         )}

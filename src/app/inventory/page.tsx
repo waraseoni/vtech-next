@@ -506,17 +506,17 @@ export default function InventoryPage() {
                   <th className="px-4 py-3 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-600 w-10">#</th>
 
                   {/* Sortable: Product */}
-                  <th className="px-4 py-3 text-left">
+                  <th className="px-4 py-3 text-left w-[280px]">
                     <button onClick={() => toggleSort("name")}
                       className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 hover:text-slate-400 transition-colors">
                       Product <ArrowUpDown size={10} className={sortKey === "name" ? "text-blue-400" : ""} />
                     </button>
                   </th>
 
-                  <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Stock</th>
+                  <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600 w-28">Stock</th>
 
                   {/* Sortable: Available */}
-                  <th className="px-4 py-3 text-right">
+                  <th className="px-4 py-3 text-right w-20">
                     <button onClick={() => toggleSort("available")}
                       className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 hover:text-slate-400 transition-colors ml-auto">
                       Avail <ArrowUpDown size={10} className={sortKey === "available" ? "text-blue-400" : ""} />
@@ -524,7 +524,7 @@ export default function InventoryPage() {
                   </th>
 
                   {/* Sortable: Sold */}
-                  <th className="px-4 py-3 text-right">
+                  <th className="px-4 py-3 text-right w-20">
                     <button onClick={() => toggleSort("total_sold")}
                       className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 hover:text-slate-400 transition-colors ml-auto">
                       Sold <ArrowUpDown size={10} className={sortKey === "total_sold" ? "text-blue-400" : ""} />
@@ -532,19 +532,16 @@ export default function InventoryPage() {
                   </th>
 
                   {/* Sortable: Value */}
-                  <th className="px-4 py-3 text-right">
+                  <th className="px-4 py-3 text-right w-24">
                     <button onClick={() => toggleSort("stock_value")}
                       className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 hover:text-slate-400 transition-colors ml-auto">
                       Value <ArrowUpDown size={10} className={sortKey === "stock_value" ? "text-blue-400" : ""} />
                     </button>
                   </th>
 
-                  <th className="px-4 py-3 text-right text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Cost</th>
-                  <th className="px-4 py-3 text-right text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Margin</th>
-
-                  <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Status</th>
-                  <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Place</th>
-                  <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Action</th>
+                  <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600 w-24">Status</th>
+                  <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600 w-32">Place</th>
+                  <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600 w-20">Action</th>
                 </tr>
               </thead>
 
@@ -569,10 +566,10 @@ export default function InventoryPage() {
                             </div>
                           )}
                           <div className="min-w-0">
-                            <div className="font-bold text-slate-200 text-sm truncate max-w-[200px]" title={p.name}>
+                            <div className="font-bold text-slate-200 text-sm truncate max-w-[250px]" title={p.name}>
                               {p.name}
                             </div>
-                            <div className="text-xs text-slate-600 truncate max-w-[200px]" title={p.description}>
+                            <div className="text-xs text-slate-600 truncate max-w-[250px]" title={p.description}>
                               {p.description}
                             </div>
                             {p.barcode && (
@@ -617,28 +614,6 @@ export default function InventoryPage() {
                         <span className={`text-xs font-bold ${p.stock_value > 0 ? "text-teal-400" : "text-slate-700"}`}>
                           {p.stock_value > 0 ? `₹${p.stock_value.toLocaleString("en-IN")}` : "—"}
                         </span>
-                      </td>
-
-                      <td className="px-4 py-3 text-right">
-                        <span className={`text-xs font-bold ${p.cost_value > 0 ? "text-slate-400" : "text-slate-700"}`}>
-                          {p.cost_value > 0 ? `₹${p.cost_value.toLocaleString("en-IN")}` : "—"}
-                        </span>
-                      </td>
-
-                      <td className="px-4 py-3 text-right">
-                        {p.cost_price && p.price > 0 ? (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
-                            p.margin_pct >= 30
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                              : p.margin_pct >= 15
-                                ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                                : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                          }`}>
-                            {p.margin_pct}%
-                          </span>
-                        ) : (
-                          <span className="text-slate-700 text-xs">—</span>
-                        )}
                       </td>
 
                       <td className="px-4 py-3 text-center">
@@ -692,7 +667,7 @@ export default function InventoryPage() {
 
                 {paginated.length === 0 && (
                   <tr>
-                    <td colSpan={11} className="py-20 text-center">
+                    <td colSpan={9} className="py-20 text-center">
                       <Package size={36} className="mx-auto text-slate-800 mb-3" />
                       <p className="text-slate-600 font-bold text-sm">No products found</p>
                       <p className="text-slate-700 text-xs mt-1">Try adjusting your search or filter</p>
@@ -717,10 +692,7 @@ export default function InventoryPage() {
                     <td className="px-4 py-2.5 text-right font-black text-teal-400 text-sm">
                       ₹{filtered.reduce((s, p) => s + p.stock_value, 0).toLocaleString("en-IN")}
                     </td>
-                    <td className="px-4 py-2.5 text-right font-black text-slate-500 text-sm">
-                      ₹{filtered.reduce((s, p) => s + p.cost_value, 0).toLocaleString("en-IN")}
-                    </td>
-                    <td colSpan={2} />
+                    <td colSpan={3} />
                   </tr>
                 </tfoot>
               )}
