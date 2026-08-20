@@ -53,10 +53,11 @@ export async function GET(req: NextRequest) {
     // client tak pahunchen.
     const force = req.nextUrl.searchParams.get("force") === "true";
 
-    const [keyRaw, statusRaw, lastCheckedRaw] = await Promise.all([
+    const [keyRaw, statusRaw, lastCheckedRaw, sellerContactRaw] = await Promise.all([
       readField("license_key"),
       readField("license_status"),
       readField("license_last_checked"),
+      readField("seller_contact"),
     ]);
 
     let parsed: Partial<LicenseStatus> = {};
@@ -71,6 +72,11 @@ export async function GET(req: NextRequest) {
     let plan = parsed.plan;
     let shopName = parsed.shopName;
     let expiresAt = parsed.expiresAt ?? null;
+
+    let sellerContact: { name?: string; phone?: string; whatsapp?: string; address?: string } = {};
+    if (sellerContactRaw) {
+      try { sellerContact = JSON.parse(sellerContactRaw); } catch { /* ignore */ }
+    }
 
     if (activated && activationId) {
       // Locally stored expiry (agar ho) — re-check trigger aur fallback ke liye.
@@ -132,6 +138,10 @@ export async function GET(req: NextRequest) {
       expiresAt,
       activationId,
       error,
+      sellerName: sellerContact.name,
+      sellerPhone: sellerContact.phone,
+      sellerWhatsApp: sellerContact.whatsapp,
+      sellerAddress: sellerContact.address,
       // Env vars set hain to portals enabled (sirf seller ke deployment par).
       sellerEnabled:
         !!process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY &&
