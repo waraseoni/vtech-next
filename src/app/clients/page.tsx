@@ -13,8 +13,7 @@ import {
   ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, SlidersHorizontal,
   CheckSquare, Square, Send,
 } from "lucide-react";
-import { substituteTemplate, firmVars } from "@/lib/whatsapp";
-import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
+import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell,
@@ -72,12 +71,13 @@ function getBalanceMeta(balance: number, lastTxnDate: string | null) {
 }
 
 // ─── WhatsApp Templates (dynamic from system_info) ────────────────────────────
-type WaTemplateType = "welcome" | "reminder" | "followup" | "offer";
+type WaTemplateType = "welcome" | "reminder" | "followup" | "offer" | "greeting";
 const WA_TEMPLATE_KEY: Record<WaTemplateType, string> = {
   welcome: "whatsapp_welcome",
   reminder: "whatsapp_reminder",
   followup: "whatsapp_followup",
   offer: "whatsapp_offer",
+  greeting: "whatsapp_greeting",
 };
 
 // ─── Chart Tooltip ────────────────────────────────────────────────────────────
@@ -109,13 +109,13 @@ export default function ClientsPage() {
 
   const [waModal,   setWaModal]   = useState(false);
   const [waClient,  setWaClient]  = useState<Client | null>(null);
-  const [waMsgType, setWaMsgType] = useState<"welcome"|"reminder"|"followup"|"offer"|"custom">("welcome");
+  const [waMsgType, setWaMsgType] = useState<"welcome"|"reminder"|"followup"|"offer"|"greeting"|"custom">("welcome");
   const [waText,    setWaText]    = useState("");
 
   // Bulk WhatsApp
   const [selectedClients, setSelectedClients] = useState<Set<number>>(new Set());
   const [bulkWaModal, setBulkWaModal] = useState(false);
-  const [bulkWaMsgType, setBulkWaMsgType] = useState<"welcome"|"reminder"|"followup"|"offer"|"custom">("custom");
+  const [bulkWaMsgType, setBulkWaMsgType] = useState<"welcome"|"reminder"|"followup"|"offer"|"greeting"|"custom">("custom");
   const [bulkWaText, setBulkWaText] = useState("");
 
   const [pageSize,    setPageSize]    = useState<number>(25);
@@ -233,12 +233,12 @@ export default function ClientsPage() {
 
   const openWaModal = (client: Client) => {
     const at: WaTemplateType = client.balance>0?"reminder":daysSince(client.last_txn_date)>30?"followup":"welcome";
-    const tpl = firmInfo[WA_TEMPLATE_KEY[at]] || DEFAULT_TEMPLATES[WA_TEMPLATE_KEY[at]] || "";
+    const tpl = resolveTemplate(firmInfo, WA_TEMPLATE_KEY[at]);
     setWaClient(client); setWaMsgType(at); setWaText(substituteTemplate(tpl, { client_name: client.name, balance: inr(client.balance), ...firmVars(firmInfo) })); setWaModal(true);
   };
   const handleWaTypeChange = (type: typeof waMsgType) => {
     if (!waClient || type === "custom") return; setWaMsgType(type);
-    const tpl = firmInfo[WA_TEMPLATE_KEY[type]] || DEFAULT_TEMPLATES[WA_TEMPLATE_KEY[type]] || "";
+    const tpl = resolveTemplate(firmInfo, WA_TEMPLATE_KEY[type]);
     setWaText(substituteTemplate(tpl, { client_name: waClient.name, balance: inr(waClient.balance), ...firmVars(firmInfo) }));
   };
   const sendWhatsApp = () => {
@@ -274,7 +274,7 @@ export default function ClientsPage() {
     const selected = clients.filter(c => selectedClients.has(c.id));
     if (type === "custom") { setBulkWaText(""); return; }
     const totalBal = selected.reduce((s, c) => s + (c.balance > 0 ? c.balance : 0), 0);
-    const tpl = firmInfo[WA_TEMPLATE_KEY[type]] || DEFAULT_TEMPLATES[WA_TEMPLATE_KEY[type]] || "";
+    const tpl = resolveTemplate(firmInfo, WA_TEMPLATE_KEY[type]);
     setBulkWaText(substituteTemplate(tpl, { client_name: "सर/मैडम", balance: inr(totalBal), ...firmVars(firmInfo) }));
   };
   const sendBulkWhatsApp = () => {
@@ -875,6 +875,7 @@ export default function ClientsPage() {
                   <option value="reminder">Balance Reminder</option>
                   <option value="followup">Follow-up Message</option>
                   <option value="offer">Special Offer</option>
+                  <option value="greeting">Greeting</option>
                   <option value="custom">Custom</option>
                 </select>
               </div>
@@ -929,7 +930,7 @@ export default function ClientsPage() {
               <div>
                 <label className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest block mb-1.5">Message Type</label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {(["reminder","welcome","followup","offer","custom"] as const).map(type => (
+                  {(["reminder","welcome","followup","offer","greeting","custom"] as const).map(type => (
                     <button key={type} onClick={() => handleBulkWaTypeChange(type)}
                       className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
                         bulkWaMsgType === type
@@ -937,13 +938,15 @@ export default function ClientsPage() {
                           : type === "welcome" ? "bg-blue-600 border-blue-600 text-white"
                           : type === "followup" ? "bg-teal-600 border-teal-600 text-white"
                           : type === "offer" ? "bg-purple-600 border-purple-600 text-white"
+                          : type === "greeting" ? "bg-amber-600 border-amber-600 text-white"
                           : "bg-slate-600 border-slate-600 text-white"
                           : "bg-[#0d1117] border-[#21293d] text-slate-400 hover:bg-[#1e2637]"
                       }`}>
-                      {type === "reminder" ? "🔔 Reminder" 
+                      {type === "reminder" ? "🔔 Reminder"
                        : type === "welcome" ? "👋 Welcome"
                        : type === "followup" ? "📞 Follow-up"
                        : type === "offer" ? "🎉 Offer"
+                       : type === "greeting" ? "🙏 Greeting"
                        : "✏️ Custom"}
                     </button>
                   ))}

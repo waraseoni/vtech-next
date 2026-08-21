@@ -34,8 +34,7 @@ import {
   Square, CheckSquare, Zap, ArrowRight, User, PenSquare,
   FileText, Copy, Send, MessageCircle, Truck, LayoutGrid, List,
 } from "lucide-react";
-import { substituteTemplate, firmVars } from "@/lib/whatsapp";
-import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
+import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/activity";
 import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import { openImageLightbox } from "@/components/ImageLightbox";
@@ -50,7 +49,6 @@ const STATUS_WA_KEY: Record<number, string> = {
   4: "whatsapp_status_cancelled",
   5: "whatsapp_status_delivered",
 };
-const WA_FALLBACK = (st: number) => DEFAULT_TEMPLATES[STATUS_WA_KEY[st]] || DEFAULT_TEMPLATES.whatsapp_status_pending;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Transaction {
@@ -738,7 +736,7 @@ function JobsListContent() {
     if (!phone || phone.length < 10) { alert("Valid mobile number nahi mila!"); return; }
     const name = getClientName(txn);
     const key  = STATUS_WA_KEY[txn.status] || "whatsapp_status_pending";
-    const tpl  = sysInfo[key] || WA_FALLBACK(txn.status);
+    const tpl  = resolveTemplate(sysInfo, key);
     const msg  = substituteTemplate(tpl, {
       client_name: name,
       item: txn.item || "",

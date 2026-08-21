@@ -12,8 +12,7 @@ import {
 } from "lucide-react";
 import { todayIST, startOfMonthIST, endOfMonthIST, formatIST, parseISTDate } from "@/lib/dateUtils";
 import { logActivity } from "@/lib/activity";
-import { substituteTemplate, firmVars } from "@/lib/whatsapp";
-import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
+import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DirectSale {
@@ -81,7 +80,7 @@ function DirectSalesPageInner() {
   }, []);
 
   const waHref = (s: DirectSale) => {
-    const msg = substituteTemplate(sysInfo.whatsapp_sale || DEFAULT_TEMPLATES.whatsapp_sale, {
+    const msg = substituteTemplate(resolveTemplate(sysInfo, "whatsapp_sale"), {
       client_name: s.client_name || "Customer",
       sale_code: s.sale_code,
       total_amount: "₹" + (s.total_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }),

@@ -1,6 +1,6 @@
 import { X, Send } from "lucide-react";
 
-type WaType = "welcome" | "reminder" | "followup" | "offer" | "custom";
+type WaType = "welcome" | "reminder" | "followup" | "offer" | "greeting" | "custom";
 
 type WhatsAppModalProps = {
   waModal: boolean;
@@ -25,7 +25,7 @@ export function WhatsAppModal({ waModal, setWaModal, waClient, waMsgType, handle
         </div>
         <div className="p-4 space-y-4">
           <div className="flex flex-wrap gap-2">
-            {(["welcome","reminder","followup","offer","custom"] as const).map(type => (
+            {(["welcome","reminder","followup","offer","greeting","custom"] as const).map(type => (
               <button key={type} onClick={() => handleWaTypeChange(type)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${waMsgType === type ? "bg-blue-600 border-blue-600 text-white" : "border-[#21293d] text-slate-400 hover:bg-[#1e2637]"}`}>
                 {type}

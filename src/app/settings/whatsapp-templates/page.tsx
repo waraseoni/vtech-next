@@ -73,6 +73,23 @@ export default function WhatsAppTemplatesPage() {
   const getCurrentValue = (key: string) =>
     systemInfo[key] || systemInfo[`wp_default_${key}`] || DEFAULT_TEMPLATES[key] || "";
 
+  const upsertMeta = async (metaField: string, metaValue: string): Promise<string | null> => {
+    const { data: existing, error: selErr } = await supabase
+      .from("system_info").select("id").eq("meta_field", metaField).maybeSingle();
+    if (selErr) return `select failed for ${metaField}: ${selErr.message}`;
+
+    if (existing) {
+      const { error: updErr } = await supabase
+        .from("system_info").update({ meta_value: metaValue }).eq("id", existing.id);
+      if (updErr) return `update failed for ${metaField}: ${updErr.message}`;
+    } else {
+      const { error: insErr } = await supabase
+        .from("system_info").insert({ meta_field: metaField, meta_value: metaValue });
+      if (insErr) return `insert failed for ${metaField}: ${insErr.message}`;
+    }
+    return null;
+  };
+
   const saveTemplates = async (applyCurrent: boolean = false) => {
     setSaving(true);
     try {
@@ -81,18 +98,17 @@ export default function WhatsAppTemplatesPage() {
       const userName = [profile?.firstname, profile?.lastname].filter(Boolean).join(" ") || "Admin";
 
       const histInserts: HistoryInsert[] = [];
+      const errors: string[] = [];
 
       for (const [key, newValue] of Object.entries(templates)) {
         const oldValue = getCurrentValue(key);
 
-        // Save default
-        await supabase.from("system_info")
-          .upsert({ meta_field: `wp_default_${key}`, meta_value: newValue }, { onConflict: "meta_field" });
+        const defErr = await upsertMeta(`wp_default_${key}`, newValue);
+        if (defErr) errors.push(defErr);
 
-        // If applyCurrent, also update the active value (canonical field = key, no wp_ prefix)
         if (applyCurrent) {
-          await supabase.from("system_info")
-            .upsert({ meta_field: key, meta_value: newValue }, { onConflict: "meta_field" });
+          const actErr = await upsertMeta(key, newValue);
+          if (actErr) errors.push(actErr);
 
           if (oldValue !== newValue) {
             histInserts.push({
@@ -107,10 +123,15 @@ export default function WhatsAppTemplatesPage() {
       }
 
       if (histInserts.length > 0) {
-        await supabase.from("wp_template_history").insert(histInserts);
+        const { error: histErr } = await supabase.from("wp_template_history").insert(histInserts);
+        if (histErr) errors.push(`History save failed: ${histErr.message}`);
       }
 
-      setToast({ type: "success", msg: applyCurrent ? "Templates saved + applied!" : "Defaults saved!" });
+      if (errors.length > 0) {
+        setToast({ type: "error", msg: errors.join(" | ") });
+      } else {
+        setToast({ type: "success", msg: applyCurrent ? "Templates saved + applied!" : "Defaults saved!" });
+      }
       fetchData();
     } catch (err) {
       setToast({ type: "error", msg: err instanceof Error ? err.message : String(err) });
@@ -128,14 +149,15 @@ export default function WhatsAppTemplatesPage() {
       const userName = [profile?.firstname, profile?.lastname].filter(Boolean).join(" ") || "Admin";
 
       const histInserts: HistoryInsert[] = [];
+      const errors: string[] = [];
 
       for (const [key, defaultValue] of Object.entries(DEFAULT_TEMPLATES)) {
         const oldDefault = templates[key];
 
-        await supabase.from("system_info")
-          .upsert({ meta_field: `wp_default_${key}`, meta_value: defaultValue }, { onConflict: "meta_field" });
-        await supabase.from("system_info")
-          .upsert({ meta_field: key, meta_value: defaultValue }, { onConflict: "meta_field" });
+        const defErr = await upsertMeta(`wp_default_${key}`, defaultValue);
+        if (defErr) errors.push(defErr);
+        const actErr = await upsertMeta(key, defaultValue);
+        if (actErr) errors.push(actErr);
 
         if (oldDefault !== defaultValue) {
           histInserts.push({
@@ -149,11 +171,16 @@ export default function WhatsAppTemplatesPage() {
       }
 
       if (histInserts.length > 0) {
-        await supabase.from("wp_template_history").insert(histInserts);
+        const { error: histErr } = await supabase.from("wp_template_history").insert(histInserts);
+        if (histErr) errors.push(`History save failed: ${histErr.message}`);
       }
 
-      setTemplates({ ...DEFAULT_TEMPLATES });
-      setToast({ type: "success", msg: "Factory defaults restored!" });
+      if (errors.length > 0) {
+        setToast({ type: "error", msg: errors.join(" | ") });
+      } else {
+        setTemplates({ ...DEFAULT_TEMPLATES });
+        setToast({ type: "success", msg: "Factory defaults restored!" });
+      }
       fetchData();
     } catch (err) {
       setToast({ type: "error", msg: err instanceof Error ? err.message : String(err) });

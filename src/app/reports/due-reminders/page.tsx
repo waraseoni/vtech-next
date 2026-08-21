@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { todayIST, parseISTDate, toLocalStr } from "@/lib/dateUtils";
-import { substituteTemplate, firmVars } from "@/lib/whatsapp";
+import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { pageAll } from "@/lib/fetch-all";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
@@ -104,7 +104,7 @@ function DueRemindersContent() {
       const info: Record<string, string> = {};
       (sys || []).forEach(r => { info[r.meta_field] = r.meta_value; });
       setFirmInfo(info);
-      setReminderTpl(info.whatsapp_reminder || FALLBACK_REMINDER);
+      setReminderTpl(resolveTemplate(info, "whatsapp_reminder") || FALLBACK_REMINDER);
 
       // All clients
       const { data: clients, error } = await supabase

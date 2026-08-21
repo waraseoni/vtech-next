@@ -4,8 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { numberToWords } from "@/lib/utils";
-import { substituteTemplate, firmVars } from "@/lib/whatsapp";
-import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
+import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import {
   ArrowLeft, Edit3, Printer, Phone, User,
   ShoppingBag, MapPin, Calendar, Clock, Hash, UserCog,
@@ -298,7 +297,7 @@ export default function ViewSalePage() {
                       <a
                         href={`https://wa.me/91${sale.client_contact.replace(/\D/g, "")}?text=${encodeURIComponent(
                           substituteTemplate(
-                            sysInfo.whatsapp_sale || DEFAULT_TEMPLATES.whatsapp_sale,
+                            resolveTemplate(sysInfo, "whatsapp_sale"),
                             {
                               client_name: sale.client_name || "Customer",
                               sale_code: sale.sale_code,

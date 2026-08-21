@@ -17,8 +17,7 @@ import {
   Plus, X, CheckCircle, FileText,
   RefreshCw, Image as ImageIcon,
 } from "lucide-react";
-import { substituteTemplate, firmVars } from "@/lib/whatsapp";
-import { DEFAULT_TEMPLATES } from "@/lib/whatsappTemplates";
+import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/activity";
 
 // ─── IST HELPERS ─────────────────────────────────────────────────────────────
@@ -127,7 +126,6 @@ const STATUS_WA_KEY: Record<number, string> = {
   4: "whatsapp_status_cancelled",
   5: "whatsapp_status_delivered",
 };
-const WA_FALLBACK = (st: number) => DEFAULT_TEMPLATES[STATUS_WA_KEY[st]] || DEFAULT_TEMPLATES.whatsapp_status_pending;
 
 // ─── FIELDSET COMPONENT (PHP jaisi styling) ───────────────────────────────────
 function Fieldset({ title, icon: Icon, children, color = "primary" }: {
@@ -281,13 +279,13 @@ export default function JobDetailsPage() {
     const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
     const amt  = (job.amount || 0).toLocaleString("en-IN");
     const key  = STATUS_WA_KEY[job.status] || "whatsapp_status_pending";
-    const tpl  = firmInfo[key] || WA_FALLBACK(job.status);
+    const tpl  = resolveTemplate(firmInfo, key);
     const msg  = substituteTemplate(tpl, {
       client_name: name,
       item: job.item,
       job_id: job.job_id,
       code: job.code,
-      amount: `₹${amt}`,
+      amount: amt,
       ...firmVars(firmInfo),
     });
     window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
