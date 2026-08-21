@@ -187,113 +187,56 @@ export default function Dashboard() {
 
         // BUG FIX 2: use todayIST() — not new Date().toISOString().split('T')[0]
         const today = todayIST();
-
-        // Fetch today's data for the summary stats
         const startToday = `${today}T00:00:00+05:30`;
         const endToday   = `${today}T23:59:59+05:30`;
 
-        const [
-          { data: todayRepairRes },
-          { data: todayDirectRes },
-          { count: clientCount },
-          { count: mechCount },
-          { data: lowProds },
-          { data: lowInvAll },
-          { data: lowJobItems },
-          { data: lowSaleItems },
-          { data: recentTransRaw },
-          { data: paymentsRaw },
-        ] = await Promise.all([
-          // Today's Repair Income
-          supabase.from("transaction_list").select("amount").eq("status", 5).eq("del_status", 0).gte("date_completed", startToday).lte("date_completed", endToday),
-          // Today's Direct Sales
-          supabase.from("direct_sales").select("total_amount").gte("date_created", startToday).lte("date_created", endToday),
-          // Other stats
-          supabase.from("client_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0),
-          supabase.from("mechanic_list").select("*", { count: "exact", head: true }).eq("delete_flag", 0).eq("status", 1),
-          // Low stock — products with alert level
-          pageAll(supabase.from("product_list").select("id, name, alert_quantity").eq("delete_flag", 0).gt("alert_quantity", 0)),
-          pageAll(supabase.from("inventory_list").select("product_id, quantity")),
-          pageAll(supabase.from("transaction_products").select("product_id, qty, transaction_id")),
-          pageAll(supabase.from("direct_sale_items").select("product_id, qty")),
-          supabase.from("transaction_list").select("id, job_id, client_name, item, amount, status").eq("del_status", 0).order("id", { ascending: false }).limit(5),
-          supabase.from("client_payments").select("id, amount, payment_mode, payment_date, client_id").order("payment_date", { ascending: false }).order("id", { ascending: false }).limit(10),
+        // ── PERFORMANCE: 3 RPC calls replace 40+ individual queries ──
+        const [statsRes, revenueRes, miscRes] = await Promise.all([
+          supabase.rpc("get_dashboard_stats", { p_today_start: startToday, p_today_end: endToday }),
+          supabase.rpc("get_monthly_revenue", { p_months: 12 }),
+          // Low stock + recent data (small queries, kept client-side)
+          Promise.all([
+            pageAll(supabase.from("product_list").select("id, name, alert_quantity").eq("delete_flag", 0).gt("alert_quantity", 0)),
+            pageAll(supabase.from("inventory_list").select("product_id, quantity")),
+            pageAll(supabase.from("transaction_products").select("product_id, qty, transaction_id")),
+            pageAll(supabase.from("direct_sale_items").select("product_id, qty")),
+            supabase.from("transaction_list").select("id, job_id, client_name, item, amount, status").eq("del_status", 0).order("id", { ascending: false }).limit(5),
+            supabase.from("client_payments").select("id, amount, payment_mode, payment_date, client_id").order("payment_date", { ascending: false }).order("id", { ascending: false }).limit(10),
+          ]),
         ]);
 
-        const todayR = (todayRepairRes || []).reduce((s, r) => s + n(r.amount), 0);
-        const todayD = (todayDirectRes || []).reduce((s, r) => s + n(r.total_amount), 0);
-
-        // Fetch counts accurately using head-only count queries for ALL possible statuses
-        const [
-          { count: totalJobsCount },
-          { count: pendingCount },
-          { count: inProgressCount },
-          { count: finishedCount },
-          { count: paidCount },
-          { count: cancelledCount },
-          { count: deliveredCount },
-        ] = await Promise.all([
-          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0),
-          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0).eq("status", 0),
-          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0).eq("status", 1),
-          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0).eq("status", 2),
-          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0).eq("status", 3),
-          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0).eq("status", 4),
-          supabase.from("transaction_list").select("*", { count: "exact", head: true }).eq("del_status", 0).eq("status", 5),
-        ]);
-
-
-        let lowStock = 0;
-
-        // todayR and todayD are already calculated above from targeted queries
-
-
+        // Dashboard stats from RPC
+        const sd = (statsRes.data ?? {}) as Record<string, number>;
         setStats({
-          totalJobs: totalJobsCount || 0,
-          totalClients: clientCount ?? 0,
-          totalMechanics: mechCount ?? 0,
-          lowStock,
-          todayRevenue: todayR + todayD,
-          pendingJobs: pendingCount || 0,
-          inProgressJobs: inProgressCount || 0,
-          finishedJobs: finishedCount || 0,
-          deliveredJobs: deliveredCount || 0,
+          totalJobs:       sd.totalJobs || 0,
+          totalClients:    sd.totalClients || 0,
+          totalMechanics:  sd.totalMechanics || 0,
+          lowStock:        0,
+          todayRevenue:    (sd.todayRepair || 0) + (sd.todayDirect || 0),
+          pendingJobs:     sd.pendingJobs || 0,
+          inProgressJobs:  sd.inProgressJobs || 0,
+          finishedJobs:    sd.finishedJobs || 0,
+          deliveredJobs:   sd.deliveredJobs || 0,
         });
 
         setStatusData(
           STATUS_META.map((m, i) => {
-            let val = 0;
-            if (i === 0) val = pendingCount || 0;
-            else if (i === 1) val = inProgressCount || 0;
-            else if (i === 2) val = finishedCount || 0;
-            else if (i === 3) val = paidCount || 0;
-            else if (i === 4) val = cancelledCount || 0;
-            else if (i === 5) val = deliveredCount || 0;
-            return { name: m.label, color: m.color, value: val };
+            const keys = ["pendingJobs", "inProgressJobs", "finishedJobs", "paidJobs", "cancelledJobs", "deliveredJobs"];
+            return { name: m.label, color: m.color, value: sd[keys[i]] || 0 };
           }).filter(d => d.value > 0)
         );
 
-        // Monthly revenue chart - targeted queries for last 12 months
-        const pts: RevenuePoint[] = [];
-        for (let i = 11; i >= 0; i--) {
-          const md = new Date();
-          md.setDate(1); 
-          md.setMonth(md.getMonth() - i);
+        // Monthly revenue chart from RPC
+        setRevenueData((revenueRes.data ?? []) as RevenuePoint[]);
 
-          const start = `${startOfMonthIST(md)}T00:00:00+05:30`;
-          const end = `${endOfMonthIST(md)}T23:59:59+05:30`;
-          
-          const [{data: repMonth}, {data: dirMonth}] = await Promise.all([
-             pageAll(supabase.from("transaction_list").select("amount").eq("status", 5).eq("del_status", 0).gte("date_completed", start).lte("date_completed", end)),
-             pageAll(supabase.from("direct_sales").select("total_amount").gte("date_created", start).lte("date_created", end))
-          ]);
-
-          pts.push({
-            month: md.toLocaleString("default", { month: "short", year: "2-digit" }),
-            revenue: ((repMonth || []).reduce((s, r) => s + n(r.amount), 0)) + ((dirMonth || []).reduce((s, r) => s + n(r.total_amount), 0)),
-          });
-        }
-        setRevenueData(pts);
+        // Unpack misc queries — extract .data from each PostgrestResponse
+        const [lpR, liR, ljR, lsR, rjR, rpR] = miscRes;
+        const lowProds = lpR.data;
+        const lowInvAll = liR.data;
+        const lowJobItems = ljR.data;
+        const lowSaleItems = lsR.data;
+        const recentTransRaw = rjR.data;
+        const paymentsRaw = rpR.data;
 
         // Recent jobs — resolve client names
         if (recentTransRaw?.length) {
@@ -323,6 +266,7 @@ export default function Dashboard() {
 
         // Low stock — compute available stock (in − sold) vs alert_quantity
         if ((lowProds || []).length) {
+          let lowStock = 0;
           const txnIds = [...new Set((lowJobItems || []).map((i) => i.transaction_id))];
           let validTxnSet = new Set<number>();
           if (txnIds.length) {
@@ -420,63 +364,22 @@ export default function Dashboard() {
     if (!profile || profile.role !== "admin") return;
     setFinLoading(true);
     try {
-      const f0 = `${from}T00:00:00+05:30`;
-      const t0 = `${to}T23:59:59+05:30`;
+      // PERFORMANCE: Single RPC replaces 8+ queries + parts cost join
+      const { data, error } = await supabase.rpc("get_financial_summary", { p_from: from, p_to: to });
+      if (error) throw error;
 
-      const [
-        { data: tD }, { data: dD },
-        { data: txIds }, { data: dIds },
-        { data: discD }, { data: attD },
-        { data: loanD }, { data: expD },
-      ] = await Promise.all([
-        pageAll(supabase.from("transaction_list").select("amount").eq("status", 5).eq("del_status", 0).gte("date_completed", f0).lte("date_completed", t0)),
-        pageAll(supabase.from("direct_sales").select("total_amount").gte("date_created", f0).lte("date_created", t0)),
-        pageAll(supabase.from("transaction_list").select("id").eq("status", 5).eq("del_status", 0).gte("date_completed", f0).lte("date_completed", t0)),
-        pageAll(supabase.from("direct_sales").select("id").gte("date_created", f0).lte("date_created", t0)),
-        pageAll(supabase.from("client_payments").select("discount").gte("payment_date", from).lte("payment_date", to)),
-        pageAll(supabase.from("attendance_list").select("status, mechanic_id").gte("curr_date", from).lte("curr_date", to).in("status", [1, 3])),
-        pageAll(supabase.from("loan_payments").select("amount_paid").gte("payment_date", from).lte("payment_date", to)),
-        pageAll(supabase.from("expense_list").select("amount").gte("date_created", f0).lte("date_created", t0)),
-      ]);
-
-      const repairInc = (tD ?? []).reduce((s: number, t) => s + n(t.amount), 0);
-      const directInc = (dD ?? []).reduce((s: number, d) => s + n(d.total_amount), 0);
-      const totalSales = repairInc + directInc;
-
-      const txList = (txIds ?? []).map((t) => t.id);
-      let partsTrans = 0;
-      if (txList.length) {
-        const { data: tp } = await supabase.from("transaction_products").select("qty, price").in("transaction_id", txList);
-        partsTrans = (tp ?? []).reduce((s: number, r) => s + n(r.qty) * n(r.price), 0);
-      }
-      const dList = (dIds ?? []).map((d) => d.id);
-      let partsDirect = 0;
-      if (dList.length) {
-        const { data: di } = await supabase.from("direct_sale_items").select("qty, price").in("sale_id", dList);
-        partsDirect = (di ?? []).reduce((s: number, r) => s + n(r.qty) * n(r.price), 0);
-      }
-
-      const partsCost = (partsTrans + partsDirect) * 0.9;
-      const grossProfit = totalSales - partsCost;
-      const discounts = (discD ?? []).reduce((s: number, p) => s + n(p.discount), 0);
-
-      let salary = 0;
-      if (attD?.length) {
-        const mIds = [...new Set(attD.map((a) => a.mechanic_id).filter(Boolean))];
-        const { data: mechs } = await supabase.from("mechanic_list").select("id, daily_salary").in("id", mIds);
-        const sMap = Object.fromEntries((mechs ?? []).map((m) => [m.id, n(m.daily_salary)]));
-        salary = attD.reduce((s: number, a) => {
-          const d = sMap[a.mechanic_id] ?? 0;
-          return s + (a.status === 1 ? d : a.status === 3 ? d / 2 : 0);
-        }, 0);
-      }
-
-      const loanPaid = (loanD ?? []).reduce((s: number, l) => s + n(l.amount_paid), 0);
-      const expenses = (expD ?? []).reduce((s: number, e) => s + n(e.amount), 0);
-      const totalOutflow = discounts + salary + loanPaid + expenses;
-      const netProfit = grossProfit - totalOutflow;
-
-      setFinancial({ totalSales, partsCost, grossProfit, discounts, salary, loanPaid, expenses, totalOutflow, netProfit });
+      const fd = (data ?? {}) as Record<string, number>;
+      setFinancial({
+        totalSales:   fd.totalSales || 0,
+        partsCost:    fd.partsCost || 0,
+        grossProfit:  fd.grossProfit || 0,
+        discounts:    fd.discounts || 0,
+        salary:       fd.salary || 0,
+        loanPaid:     fd.loanPaid || 0,
+        expenses:     fd.expenses || 0,
+        totalOutflow: fd.totalOutflow || 0,
+        netProfit:    fd.netProfit || 0,
+      });
     } catch (e) {
       console.error("Financial fetch error:", e);
     } finally {
@@ -730,7 +633,7 @@ export default function Dashboard() {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <FinCard icon={<DollarSign size={18} />} label="Total Sales" value={financial.totalSales} color="blue" />
-                <FinCard icon={<Wrench size={18} />} label="Parts Cost (90%)" value={financial.partsCost} color="amber" isExpense />
+                    <FinCard icon={<Wrench size={18} />} label="Parts Cost" value={financial.partsCost} color="amber" isExpense />
                 <FinCard icon={<Activity size={18} />} label="Gross Profit" value={financial.grossProfit} color="cyan" />
                 <FinCard icon={<AlertCircle size={18} />} label="Discounts" value={financial.discounts} color="red" isExpense />
                 <FinCard icon={<Users size={18} />} label="Staff Salary" value={financial.salary} color="slate" isExpense />
@@ -787,7 +690,7 @@ export default function Dashboard() {
                 <p className="text-[9px] font-black text-slate-500 uppercase tracking-wider mb-2">Calculation Summary</p>
                 <div className="space-y-1 text-[10px] text-slate-500 font-mono">
                   <div><span className="text-emerald-400">Total Sales</span> = Repair Jobs Income + Direct Sales Income</div>
-                  <div><span className="text-cyan-400">Gross Profit</span> = Total Sales − Parts Cost (90%)</div>
+                  <div><span className="text-cyan-400">Gross Profit</span> = Total Sales − Parts Cost (actual cost_price se, fallback 90%)</div>
                   <div><span className="text-red-400">Total Outflow</span> = Discounts + Staff Salary + Loan Repaid + Other Expenses</div>
                   <div><span className="text-blue-400">Net Profit</span> = Gross Profit − Total Outflow</div>
                 </div>

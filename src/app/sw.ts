@@ -142,4 +142,54 @@ if (self.location.hostname === "localhost" || self.location.hostname === "127.0.
   });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PUSH NOTIFICATION HANDLER (100% Free — VAPID)
+// ─────────────────────────────────────────────────────────────────────────────
+// Jab server se push aaye → browser ko notification dikhao.
+// Payload format: { title, body, icon, badge, tag, url, data }
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  let payload: { title: string; body: string; icon?: string; badge?: string; tag?: string; url?: string; data?: Record<string, unknown> };
+  try {
+    payload = event.data.json();
+  } catch {
+    payload = { title: "V-Tech", body: event.data.text() };
+  }
+
+  const opts: Record<string, unknown> = {
+    body: payload.body,
+    icon: payload.icon || "/icons/icon-192x192.png",
+    badge: payload.badge || "/icons/icon-192x192.png",
+    tag: payload.tag || "vtech-notification",
+    data: { url: payload.url || "/dashboard", ...payload.data },
+    vibrate: [100, 50, 100],
+  };
+
+  event.waitUntil(self.registration.showNotification(payload.title, opts as NotificationOptions));
+});
+
+// Notification click → URL par navigate karo
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/dashboard";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      // Agar already open hai to focus karo
+      for (const client of clients) {
+        if ("focus" in client) {
+          client.focus();
+          if ("navigate" in client) {
+            (client as WindowClient).navigate(url);
+          }
+          return;
+        }
+      }
+      // Naya window open karo
+      self.clients.openWindow(url);
+    })
+  );
+});
+
 serwist.addEventListeners();

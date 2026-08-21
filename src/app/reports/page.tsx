@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 // --- Types ---
-type ReportCategory = "Job Reports" | "Finance & Accounts" | "Sales & Services" | "Other Reports";
+type ReportCategory = "Job Reports" | "Finance & Accounts" | "Sales & Services" | "Staff & Performance" | "Other Reports";
 
 interface ReportItem {
   title: string;
@@ -174,6 +174,17 @@ const REPORTS: ReportItem[] = [
     color: "from-lime-500 to-green-600"
   },
 
+  // Staff & Performance
+  {
+    title: "Technician Performance",
+    description: "Jobs completed, revenue, attendance, avg repair time per mechanic.",
+    href: "/reports/technician-performance",
+    icon: <Users size={16} />,
+    category: "Staff & Performance",
+    color: "from-violet-500 to-purple-700",
+    isNew: true
+  },
+
   // Others
   {
     title: "Loan Report",
@@ -223,6 +234,7 @@ const CATEGORIES: { name: ReportCategory; icon: React.ReactNode }[] = [
   { name: "Job Reports", icon: <Wrench size={14} /> },
   { name: "Finance & Accounts", icon: <DollarSign size={14} /> },
   { name: "Sales & Services", icon: <ShoppingCart size={14} /> },
+  { name: "Staff & Performance", icon: <Users size={14} /> },
   { name: "Other Reports", icon: <Info size={14} /> },
 ];
 

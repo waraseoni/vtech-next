@@ -17,6 +17,7 @@ import {
   ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert, KeyRound, Code2, Images, FileText, Layers, MapPin, Terminal,
 } from "lucide-react";
 import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
+import { Toaster } from "sonner";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
 type SearchResult = {
@@ -987,6 +988,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     <>
       <PWAHead />
       <ImageLightbox />
+      <Toaster theme="dark" position="top-right" richColors closeButton />
 
       {/* ══════════════════════ DESKTOP SIDEBAR ══════════════════════ */}
         {isMobile === false && !isAiPage && (
