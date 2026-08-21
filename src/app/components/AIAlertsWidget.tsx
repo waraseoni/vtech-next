@@ -86,7 +86,7 @@ export default function AIAlertsWidget() {
   if (dismissed) {
     return (
       <button onClick={show}
-        className="flex items-center gap-2 self-start bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-blue-400 px-3 py-2 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all">
+        className="flex items-center gap-2 self-start bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] hover:border-blue-500/40 text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 px-3 py-2 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all">
         <Bell size={14} /> AI Alerts <ChevronRight size={12} />
       </button>
     );
@@ -105,7 +105,7 @@ export default function AIAlertsWidget() {
       <div className="flex items-center gap-3 px-5 py-3.5">
         <button onClick={() => setOpen(v => !v)} className="flex-1 flex items-center gap-3 text-left">
           <div className="relative">
-            <div className="w-9 h-9 rounded-xl border flex items-center justify-center bg-[#161b27] border-[#21293d]">
+            <div className="w-9 h-9 rounded-xl border flex items-center justify-center bg-slate-50 dark:bg-[#161b27] border-slate-200 dark:border-[#21293d]">
               <Bell size={16} className={hasWarn ? "text-amber-400" : "text-sky-400"} />
             </div>
             <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center">
@@ -113,7 +113,7 @@ export default function AIAlertsWidget() {
             </span>
           </div>
           <div>
-            <p className="text-sm font-black text-white flex items-center gap-2">
+            <p className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
               AI Alerts
               <Sparkles size={12} className="text-blue-400" />
             </p>
@@ -122,7 +122,7 @@ export default function AIAlertsWidget() {
           <ChevronDown size={16} className={`ml-auto text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
         <button onClick={load} title="Refresh"
-          className="w-8 h-8 bg-[#161b27] border border-[#21293d] hover:border-slate-600 rounded-xl flex items-center justify-center text-slate-500 hover:text-white transition-all">
+          className="w-8 h-8 bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] hover:border-slate-400 dark:hover:border-slate-600 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all">
           <RefreshCw size={13} />
         </button>
         <Link href="/ai" title="AI Sahayak"
@@ -130,7 +130,7 @@ export default function AIAlertsWidget() {
           <Sparkles size={13} />
         </Link>
         <button onClick={hide} title="Hide"
-          className="w-8 h-8 bg-[#161b27] border border-[#21293d] hover:border-red-500/40 rounded-xl flex items-center justify-center text-slate-500 hover:text-red-400 transition-all">
+          className="w-8 h-8 bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] hover:border-red-500/40 rounded-xl flex items-center justify-center text-slate-500 hover:text-red-400 transition-all">
           <X size={13} />
         </button>
       </div>
@@ -143,10 +143,10 @@ export default function AIAlertsWidget() {
             const Icon = meta.icon;
             const isWarn = group.severity === "warning";
             return (
-              <div key={gi} className="rounded-2xl bg-[#111520] border border-[#21293d] p-3.5">
+              <div key={gi} className="rounded-2xl bg-slate-100 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] p-3.5">
                 <div className="flex items-center gap-2 mb-2">
                   <Icon size={14} className={meta.color} />
-                  <span className="text-xs font-bold text-slate-200">{group.title}</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{group.title}</span>
                   <span className={`ml-auto text-[10px] font-black px-2 py-0.5 rounded-full border ${
                     isWarn ? "text-amber-400 border-amber-500/20 bg-amber-500/10" : "text-sky-400 border-sky-500/20 bg-sky-500/10"
                   }`}>{group.items.length}</span>
@@ -162,9 +162,9 @@ export default function AIAlertsWidget() {
                       || (it.opening_balance !== undefined ? `₹${Number(it.opening_balance).toLocaleString("en-IN")}` : "")
                       || (it.total_payable !== undefined ? `₹${Number(it.total_payable).toLocaleString("en-IN")}` : "");
                     return (
-                      <div key={ii} className="flex items-center justify-between gap-2 text-xs text-slate-400">
+                      <div key={ii} className="flex items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400">
                         <span className="truncate">{label}</span>
-                        {sub && <span className="shrink-0 font-bold text-slate-500">{sub}</span>}
+                        {sub && <span className="shrink-0 font-bold text-slate-500 dark:text-slate-500">{sub}</span>}
                       </div>
                     );
                   })}
@@ -177,7 +177,7 @@ export default function AIAlertsWidget() {
             <p className="lg:col-span-2 text-[10px] text-slate-600 font-bold italic">{data.note}</p>
           )}
 
-          <Link href="/ai" className="lg:col-span-2 flex items-center justify-center gap-2 bg-[#161b27] border border-[#21293d] hover:border-blue-500/30 text-slate-400 hover:text-blue-400 rounded-xl py-2.5 text-[11px] font-extrabold uppercase tracking-wider transition-all no-underline">
+          <Link href="/ai" className="lg:col-span-2 flex items-center justify-center gap-2 bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] hover:border-blue-500/30 text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 rounded-xl py-2.5 text-[11px] font-extrabold uppercase tracking-wider transition-all no-underline">
             AI Sahayak me baat karein <ChevronRight size={12} />
           </Link>
         </div>

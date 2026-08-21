@@ -64,7 +64,7 @@ const inr = (v: number, digits = 0) =>
 const RevTooltip = ({ active, payload, label }: { active?: boolean; payload?: TooltipItem[]; label?: string | number }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#111520] border border-[#21293d] rounded-xl px-3 py-2 shadow-xl text-xs">
+    <div className="bg-slate-100 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2 shadow-xl text-xs">
       <p className="text-slate-500 mb-0.5 font-bold">{label}</p>
       <p className="text-blue-400 font-black text-sm">{inr(n(payload[0]?.value), 2)}</p>
     </div>
@@ -74,15 +74,25 @@ const StatusTooltip = ({ active, payload }: { active?: boolean; payload?: Toolti
   if (!active || !payload?.length) return null;
   const d = payload[0]?.payload as StatusPoint;
   return (
-    <div className="bg-[#111520] border border-[#21293d] rounded-xl px-3 py-2 shadow-xl text-xs">
+    <div className="bg-slate-100 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2 shadow-xl text-xs">
       <p className="font-bold mb-0.5" style={{ color: d.color }}>{d.name}</p>
-      <p className="text-white font-black">{d.value} jobs</p>
+      <p className="text-slate-900 dark:text-white font-black">{d.value} jobs</p>
     </div>
   );
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
 export default function Dashboard() {
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  useEffect(() => {
+    const check = () => setTheme((document.documentElement.getAttribute("data-theme") as "dark" | "light") || "dark");
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
+  const isDark = theme === "dark";
+
   const [authChecked, setAuthChecked] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -518,12 +528,12 @@ export default function Dashboard() {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="dashboard-page min-h-screen flex flex-col items-center justify-center gap-4 bg-[#0d1117]">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-white dark:bg-[#0d1117]">
         <div className="relative">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-600/40">
-            <Wrench className="text-white" size={30} />
+            <Wrench className="text-slate-900 dark:text-white" size={30} />
           </div>
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-[#0d1117] animate-ping" />
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-white dark:border-[#0d1117] animate-ping" />
         </div>
         <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.35em]">V-TECH Loading…</p>
       </div>
@@ -534,7 +544,7 @@ export default function Dashboard() {
   // in case the dashboard is ever opened directly while signed out.
   if (authChecked && !isLoggedIn) {
     return (
-      <div className="dashboard-page min-h-screen bg-[#0d1117] flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#0d1117] flex items-center justify-center">
         <Loader2 size={24} className="animate-spin text-slate-600" />
       </div>
     );
@@ -547,10 +557,10 @@ export default function Dashboard() {
 
   // ═══════════════════════════════════════════════════════════════════════
   return (
-    <div className="dashboard-page min-h-screen bg-[#0d1117] text-white space-y-4 font-sans">
+    <div className="min-h-screen bg-white dark:bg-[#0d1117] text-slate-900 dark:text-white space-y-4 font-sans">
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ HERO HEADER */}
-      <header className="relative overflow-hidden rounded-3xl border border-[#21293d] bg-[#0d1117]">
+      <header className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-[#21293d] bg-white dark:bg-[#0d1117]">
         {/* Dot grid */}
         <div className="absolute inset-0 opacity-[0.025]"
           style={{ backgroundImage: "radial-gradient(circle,#fff 1px,transparent 1px)", backgroundSize: "24px 24px" }} />
@@ -562,12 +572,12 @@ export default function Dashboard() {
           <div className="flex items-center gap-4">
             <div className="relative flex-shrink-0">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-600/30">
-                <Wrench className="text-white" size={24} />
+                <Wrench className="text-slate-900 dark:text-white" size={24} />
               </div>
-              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-[#0d1117] animate-pulse" />
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-white dark:border-[#0d1117] animate-pulse" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-white leading-none">
+              <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-slate-900 dark:text-white leading-none">
                 V-TECH <span className="text-blue-400">COMMAND</span>
               </h1>
               <p className="text-slate-600 text-[10px] font-black mt-1.5 tracking-[0.2em] uppercase">
@@ -579,7 +589,7 @@ export default function Dashboard() {
             <button
               onClick={() => setQrOpen(true)}
               title="Phone pe site kholo"
-              className="flex items-center gap-2 bg-[#111520] border border-[#21293d] hover:border-blue-500/50 text-slate-300 hover:text-white px-4 py-2.5 rounded-2xl font-bold text-xs transition-all active:scale-95"
+              className="flex items-center gap-2 bg-slate-100 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] hover:border-blue-500/50 text-slate-300 hover:text-slate-900 dark:hover:text-white px-4 py-2.5 rounded-2xl font-bold text-xs transition-all active:scale-95"
             >
               <QrCode size={16} strokeWidth={2.5} /> QR
             </button>
@@ -591,7 +601,7 @@ export default function Dashboard() {
                   if (outcome === 'accepted') setIsInstalled(true);
                   setInstallPrompt(null);
                 }}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white px-4 py-2.5 rounded-2xl font-bold text-xs shadow-lg shadow-emerald-600/25 transition-all"
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-slate-900 dark:text-white px-4 py-2.5 rounded-2xl font-bold text-xs shadow-lg shadow-emerald-600/25 transition-all"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                 Install App
@@ -599,7 +609,7 @@ export default function Dashboard() {
             )}
             <Link
               href="/jobs/new"
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white px-5 py-2.5 rounded-2xl font-bold text-sm shadow-lg shadow-blue-600/25 transition-all no-underline"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-95 text-slate-900 dark:text-white px-5 py-2.5 rounded-2xl font-bold text-sm shadow-lg shadow-blue-600/25 transition-all no-underline"
             >
               <Zap size={15} strokeWidth={2.5} /> New Job
             </Link>
@@ -614,21 +624,21 @@ export default function Dashboard() {
       <AIAlertsWidget />
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ FILTER */}
-      <section className="bg-[#161b27] rounded-2xl border border-[#21293d] p-4">
+      <section className="bg-slate-50 dark:bg-[#161b27] rounded-2xl border border-slate-200 dark:border-[#21293d] p-4">
         <div className="flex flex-wrap items-end gap-2.5">
           {[{ label: "From", val: from, fn: setFrom }, { label: "To", val: to, fn: setTo }].map(({ label, val, fn }) => (
             <div key={label} className="flex flex-col gap-1.5">
               <label className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">{label}</label>
               <input type="date" value={val} onChange={e => fn(e.target.value)}
-                className="bg-[#111520] border border-[#21293d] text-white rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all [color-scheme:dark]" />
+                className="bg-slate-100 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all" style={{ colorScheme: isDark ? "dark" : "light" }} />
             </div>
           ))}
           <button onClick={fetchFinancial} disabled={finLoading}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl font-bold text-sm transition h-[38px] shadow-lg shadow-blue-600/20">
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-slate-900 dark:text-white px-4 py-2 rounded-xl font-bold text-sm transition h-[38px] shadow-lg shadow-blue-600/20">
             {finLoading ? <Loader2 size={14} className="animate-spin" /> : <Filter size={14} />} Apply
           </button>
           <button onClick={resetDates}
-            className="flex items-center gap-2 bg-[#111520] border border-[#21293d] hover:border-slate-600 text-slate-400 hover:text-white px-4 py-2 rounded-xl font-bold text-sm transition h-[38px]">
+            className="flex items-center gap-2 bg-slate-100 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] hover:border-slate-600 text-slate-400 hover:text-slate-900 dark:hover:text-white px-4 py-2 rounded-xl font-bold text-sm transition h-[38px]">
             <RotateCcw size={14} /> Reset
           </button>
         </div>
@@ -651,10 +661,10 @@ export default function Dashboard() {
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Revenue Bar Chart */}
-        <div className="lg:col-span-2 bg-[#161b27] rounded-3xl border border-[#21293d] p-5">
+        <div className="lg:col-span-2 bg-slate-50 dark:bg-[#161b27] rounded-3xl border border-slate-200 dark:border-[#21293d] p-5">
           <div className="flex items-start justify-between mb-5">
             <div>
-              <h3 className="text-sm font-black text-white">Monthly Revenue</h3>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">Monthly Revenue</h3>
               <p className="text-slate-600 text-[10px] mt-0.5 font-bold uppercase tracking-wider">Last 12 months · Repair + Direct Sales</p>
             </div>
             <span className="bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black rounded-xl px-3 py-1 uppercase tracking-wider">₹ Revenue</span>
@@ -670,11 +680,11 @@ export default function Dashboard() {
                     <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.5} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1a2234" vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: "#475569", fontSize: 10 }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#1a2234" : "#e2e8f0"} vertical={false} />
+                <XAxis dataKey="month" tick={{ fill: isDark ? "#475569" : "#94a3b8", fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis
                   tickFormatter={v => v >= 100000 ? `₹${(v / 100000).toFixed(1)}L` : v >= 1000 ? `₹${(v / 1000).toFixed(0)}k` : `₹${v}`}
-                  tick={{ fill: "#475569", fontSize: 10 }} axisLine={false} tickLine={false} width={50}
+                  tick={{ fill: isDark ? "#475569" : "#94a3b8", fontSize: 10 }} axisLine={false} tickLine={false} width={50}
                 />
                 <Tooltip content={<RevTooltip />} cursor={{ fill: "rgba(59,130,246,0.05)" }} />
                 <Bar dataKey="revenue" fill="url(#revGrad)" radius={[5, 5, 0, 0]} maxBarSize={40} />
@@ -684,13 +694,13 @@ export default function Dashboard() {
         </div>
 
         {/* Status Donut */}
-        <div className="bg-[#161b27] rounded-3xl border border-[#21293d] p-5">
+        <div className="bg-slate-50 dark:bg-[#161b27] rounded-3xl border border-slate-200 dark:border-[#21293d] p-5">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h3 className="text-sm font-black text-white">Job Status</h3>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">Job Status</h3>
               <p className="text-slate-600 text-[10px] mt-0.5 font-bold uppercase tracking-wider">{totalJobs} total active jobs</p>
             </div>
-            <span className="bg-[#111520] text-slate-600 text-[10px] font-black rounded-xl px-3 py-1 uppercase tracking-wider">All Time</span>
+            <span className="bg-slate-100 dark:bg-[#111520] text-slate-600 text-[10px] font-black rounded-xl px-3 py-1 uppercase tracking-wider">All Time</span>
           </div>
           {statusData.length === 0 ? (
             <EmptyChart label="Koi job nahi mili" />
@@ -712,7 +722,7 @@ export default function Dashboard() {
                       <span className="text-slate-500">{d.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-black">{d.value}</span>
+                      <span className="text-slate-900 dark:text-white font-black">{d.value}</span>
                       <span className="text-slate-700 text-[10px] w-7 text-right">{totalJobs > 0 ? ((d.value / totalJobs) * 100).toFixed(0) : 0}%</span>
                     </div>
                   </div>
@@ -725,10 +735,10 @@ export default function Dashboard() {
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ FINANCIAL (admin only) */}
       {isAdmin && (
-        <section className="bg-[#161b27] rounded-3xl border border-[#21293d] p-5 md:p-6">
+        <section className="bg-slate-50 dark:bg-[#161b27] rounded-3xl border border-slate-200 dark:border-[#21293d] p-5 md:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
             <div>
-              <h3 className="text-sm font-black text-white">Financial Summary</h3>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">Financial Summary</h3>
               {/* BUG FIX 4 applied: fmtDate now parses local, not UTC */}
               <p className="text-slate-600 text-[10px] mt-0.5 font-bold uppercase tracking-wider">
                 {fmtDate(from)} — {fmtDate(to)}
@@ -779,12 +789,12 @@ export default function Dashboard() {
               </div>
 
               {/* Progress bar */}
-              <div className="mt-4 bg-[#111520] rounded-2xl p-4 border border-[#21293d]">
+              <div className="mt-4 bg-slate-100 dark:bg-[#111520] rounded-2xl p-4 border border-slate-200 dark:border-[#21293d]">
                 <div className="flex justify-between text-[10px] text-slate-600 font-bold mb-2">
                   <span>Revenue vs Outflow</span>
                   <span>Total Sales {inr(financial.totalSales)}</span>
                 </div>
-                <div className="h-2 bg-[#21293d] rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-200 dark:bg-[#21293d] rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-700 ${financial.netProfit >= 0
                         ? "bg-gradient-to-r from-blue-500 to-emerald-500"
@@ -806,7 +816,7 @@ export default function Dashboard() {
               </div>
 
               {/* Calculation Note */}
-              <div className="mt-3 bg-slate-900/50 border border-slate-800 rounded-xl p-3">
+              <div className="mt-3 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3">
                 <p className="text-[9px] font-black text-slate-500 uppercase tracking-wider mb-2">Calculation Summary</p>
                 <div className="space-y-1 text-[10px] text-slate-500 font-mono">
                   <div><span className="text-emerald-400">Total Sales</span> = Repair Jobs Income + Direct Sales Income</div>
@@ -824,23 +834,23 @@ export default function Dashboard() {
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* Recent Jobs */}
-        <div className="bg-[#161b27] rounded-3xl border border-[#21293d] overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#21293d]">
+        <div className="bg-slate-50 dark:bg-[#161b27] rounded-3xl border border-slate-200 dark:border-[#21293d] overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-[#21293d]">
             <div>
-              <h3 className="text-sm font-black text-white">Recent Jobs</h3>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">Recent Jobs</h3>
               <p className="text-slate-600 text-[10px] font-bold uppercase tracking-wider">Latest 5 transactions</p>
             </div>
             <Link href="/jobs" className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs font-black transition no-underline uppercase tracking-wider">
               View All <ChevronRight size={12} />
             </Link>
           </div>
-          <div className="divide-y divide-[#1a2234]">
+          <div className="divide-y divide-slate-200 dark:divide-[#1a2234]">
             {recentJobs.length === 0 ? (
               <EmptyRow icon={<Wrench size={26} />} label="Koi job nahi mili" />
             ) : recentJobs.map(job => {
               const sc = STATUS_META[job.status] ?? { color: "#94a3b8", label: "Unknown" };
               return (
-                <div key={job.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-white/[0.02] transition">
+                <div key={job.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-100 dark:hover:bg-white/[0.02] transition">
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: sc.color }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2">
@@ -850,7 +860,7 @@ export default function Dashboard() {
                     <p className="text-slate-600 text-xs truncate mt-0.5">{job.item}</p>
                   </div>
                   <div className="text-right flex-shrink-0 ml-2">
-                    <p className="text-white font-black text-sm">{inr(job.amount)}</p>
+                    <p className="text-slate-900 dark:text-white font-black text-sm">{inr(job.amount)}</p>
                     <span className="text-[9px] font-black px-2 py-0.5 rounded-full" style={{ backgroundColor: sc.color + "25", color: sc.color }}>
                       {sc.label}
                     </span>
@@ -862,28 +872,28 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Payments */}
-        <div className="bg-[#161b27] rounded-3xl border border-[#21293d] overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#21293d]">
+        <div className="bg-slate-50 dark:bg-[#161b27] rounded-3xl border border-slate-200 dark:border-[#21293d] overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-[#21293d]">
             <div>
-              <h3 className="text-sm font-black text-white">Recent Payments</h3>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">Recent Payments</h3>
               <p className="text-slate-600 text-[10px] font-bold uppercase tracking-wider">Latest client payments</p>
             </div>
             <Link href="/payments" className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs font-black transition no-underline uppercase tracking-wider">
               View All <ChevronRight size={12} />
             </Link>
           </div>
-          <div className="divide-y divide-[#1a2234]">
+          <div className="divide-y divide-slate-200 dark:divide-[#1a2234]">
             {recentPayments.length === 0 ? (
               <EmptyRow icon={<CreditCard size={26} />} label="Koi payment nahi mili" />
             ) : recentPayments.map(pay => (
-              <div key={pay.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-white/[0.02] transition">
+              <div key={pay.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-100 dark:hover:bg-white/[0.02] transition">
                 <div className="w-9 h-9 rounded-xl bg-emerald-500/8 border border-emerald-500/15 flex items-center justify-center flex-shrink-0">
                   <IndianRupee size={13} className="text-emerald-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-bold truncate">{pay.client_name}</p>
+                  <p className="text-slate-900 dark:text-white text-sm font-bold truncate">{pay.client_name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="bg-[#111520] text-slate-500 text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider">{pay.payment_mode}</span>
+                    <span className="bg-slate-100 dark:bg-[#111520] text-slate-500 text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider">{pay.payment_mode}</span>
                     <span className="text-slate-600 text-[10px] font-bold">
                       {/* BUG FIX 4 applied to payment date too */}
                       {formatIST(pay.payment_date, { day: "2-digit", month: "short" })}
@@ -898,10 +908,10 @@ export default function Dashboard() {
       </section>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ LOW STOCK */}
-      <section className="bg-[#161b27] rounded-3xl border border-[#21293d] overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#21293d]">
+      <section className="bg-slate-50 dark:bg-[#161b27] rounded-3xl border border-slate-200 dark:border-[#21293d] overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-[#21293d]">
           <div>
-            <h3 className="text-sm font-black text-white flex items-center gap-2">
+            <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
               <AlertCircle size={13} className="text-red-400" /> Low Stock Alert
             </h3>
             <p className="text-slate-600 text-[10px] font-bold uppercase tracking-wider">Items below their alert level</p>
@@ -930,7 +940,7 @@ export default function Dashboard() {
                     {item.quantity}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-white text-sm font-bold truncate">{item.name}</p>
+                    <p className="text-slate-900 dark:text-white text-sm font-bold truncate">{item.name}</p>
                     <p className="text-slate-600 text-xs truncate">{item.place} · alert {item.alert}</p>
                   </div>
                 </div>
@@ -941,10 +951,10 @@ export default function Dashboard() {
       </section>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ DUE REMINDERS */}
-      <section className="bg-[#161b27] rounded-3xl border border-[#21293d] overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#21293d]">
+      <section className="bg-slate-50 dark:bg-[#161b27] rounded-3xl border border-slate-200 dark:border-[#21293d] overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-[#21293d]">
           <div>
-            <h3 className="text-sm font-black text-white flex items-center gap-2">
+            <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
               <CalendarClock size={13} className="text-red-400" /> Payment Due Reminders
             </h3>
             <p className="text-slate-600 text-[10px] font-bold uppercase tracking-wider">
@@ -960,25 +970,25 @@ export default function Dashboard() {
             <p className="text-[10px] font-black uppercase tracking-wider text-red-400 flex items-center gap-1.5">
               <AlertCircle size={12} /> Overdue
             </p>
-            <p className="text-2xl font-black text-white mt-1">{dueStats.overdue}</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{dueStats.overdue}</p>
           </div>
           <div className="bg-orange-500/8 border border-orange-500/20 rounded-2xl p-4">
             <p className="text-[10px] font-black uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
               <Clock size={12} /> Due Today
             </p>
-            <p className="text-2xl font-black text-white mt-1">{dueStats.today}</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{dueStats.today}</p>
           </div>
           <div className="bg-cyan-500/8 border border-cyan-500/20 rounded-2xl p-4">
             <p className="text-[10px] font-black uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
               <CalendarClock size={12} /> Upcoming 7d
             </p>
-            <p className="text-2xl font-black text-white mt-1">{dueStats.upcoming}</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{dueStats.upcoming}</p>
           </div>
           <div className="bg-violet-500/8 border border-violet-500/20 rounded-2xl p-4">
             <p className="text-[10px] font-black uppercase tracking-wider text-violet-400 flex items-center gap-1.5">
               <IndianRupee size={12} /> Total Due
             </p>
-            <p className="text-2xl font-black text-white mt-1">{inr(dueStats.amount)}</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{inr(dueStats.amount)}</p>
           </div>
         </div>
         {dueStats.overdue > 0 && (
@@ -997,11 +1007,11 @@ export default function Dashboard() {
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ QR MODAL */}
       {qrOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setQrOpen(false)}>
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-xs shadow-2xl p-5 text-center"
+          <div className="bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl w-full max-w-xs shadow-2xl p-5 text-center"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-white text-sm flex items-center gap-2"><QrCode size={15} className="text-blue-400" /> Site QR</h3>
-              <button onClick={() => setQrOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"><X size={16} /></button>
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2"><QrCode size={15} className="text-blue-400" /> Site QR</h3>
+              <button onClick={() => setQrOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition"><X size={16} /></button>
             </div>
             {qrDataUrl ? (
               <Image src={qrDataUrl} alt="Site QR Code" className="mx-auto rounded-xl bg-white p-2" width={220} height={220} unoptimized />
@@ -1014,7 +1024,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <p className="text-center text-slate-800 text-xs font-bold pb-2">
+      <p className="text-center text-slate-400 dark:text-slate-800 text-xs font-bold pb-2">
         V-TECH Management System &mdash; {new Date().getFullYear()}
       </p>
     </div>
@@ -1045,7 +1055,7 @@ const STAT_C: Record<string, { border: string; icon: string; bg: string; value: 
   pink: { border: "border-pink-500/30", icon: "text-pink-400    bg-pink-500/15", bg: "bg-pink-500/10", value: "text-pink-400" },
   red: { border: "border-red-500/30", icon: "text-red-400     bg-red-500/15", bg: "bg-red-500/10", value: "text-red-400" },
   indigo: { border: "border-indigo-500/30", icon: "text-indigo-400  bg-indigo-500/15", bg: "bg-indigo-500/10", value: "text-indigo-400" },
-  slate: { border: "border-slate-500/30", icon: "text-slate-400    bg-slate-500/15", bg: "bg-slate-500/10", value: "text-slate-300" },
+  slate: { border: "border-slate-500/30", icon: "text-slate-400    bg-slate-500/15", bg: "bg-slate-500/10", value: "text-slate-600 dark:text-slate-300" },
 };
 
 function StatCard({ label, value, icon, color, href }: {
@@ -1070,7 +1080,7 @@ const FIN_C: Record<string, { bg: string; icon: string }> = {
   amber: { bg: "bg-amber-500/10", icon: "text-amber-400" },
   cyan: { bg: "bg-cyan-500/10", icon: "text-cyan-400" },
   red: { bg: "bg-red-500/10", icon: "text-red-400" },
-  slate: { bg: "bg-slate-700/30", icon: "text-slate-400" },
+  slate: { bg: "bg-slate-200 dark:bg-slate-700/30", icon: "text-slate-500 dark:text-slate-400" },
   violet: { bg: "bg-violet-500/10", icon: "text-violet-400" },
   rose: { bg: "bg-rose-500/10", icon: "text-rose-400" },
 };
@@ -1080,13 +1090,13 @@ function FinCard({ icon, label, value, color, isExpense }: {
 }) {
   const c = FIN_C[color] ?? FIN_C.blue;
   return (
-    <div className="bg-[#111520] rounded-2xl border border-[#21293d] p-4 flex items-center gap-3">
+    <div className="bg-slate-100 dark:bg-[#111520] rounded-2xl border border-slate-200 dark:border-[#21293d] p-4 flex items-center gap-3">
       <div className={`p-2.5 rounded-xl ${c.bg} flex-shrink-0`}>
         <div className={c.icon}>{icon}</div>
       </div>
       <div className="min-w-0">
         <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.12em] truncate">{label}</p>
-        <p className={`text-lg font-black truncate ${isExpense ? "text-red-400" : "text-white"}`}>
+        <p className={`text-lg font-black truncate ${isExpense ? "text-red-400" : "text-slate-900 dark:text-white"}`}>
           {inr(value, 0)}
         </p>
       </div>

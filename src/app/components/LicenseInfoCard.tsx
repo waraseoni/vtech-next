@@ -56,7 +56,7 @@ export default function LicenseInfoCard() {
       : { label: `${dl} days left`, cls: soon ? "text-amber-400 border-amber-500/25 bg-amber-500/10" : "text-emerald-400 border-emerald-500/25 bg-emerald-500/10" };
 
   return (
-    <section className={`rounded-3xl border p-4 md:p-5 ${expired ? "border-red-500/25 bg-red-500/[0.03]" : soon ? "border-amber-500/25 bg-amber-500/[0.03]" : "border-[#21293d] bg-[#161b27]"}`}>
+    <section className={`rounded-3xl border p-4 md:p-5 ${expired ? "border-red-500/25 bg-red-500/[0.03]" : soon ? "border-amber-500/25 bg-amber-500/[0.03]" : "border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#161b27]"}`}>
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
@@ -70,7 +70,7 @@ export default function LicenseInfoCard() {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm font-black text-white">License</p>
+              <p className="text-sm font-black text-slate-900 dark:text-white">License</p>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-500/10 border border-purple-500/25 text-purple-400 text-[9px] font-black uppercase tracking-wider">
                 {license.plan || "standard"}
               </span>
@@ -83,17 +83,17 @@ export default function LicenseInfoCard() {
             <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500">
               <span className="inline-flex items-center gap-1.5 min-w-0">
                 <Store size={11} className="shrink-0 text-slate-600" />
-                <span className="truncate font-bold text-slate-300">
+                <span className="truncate font-bold text-slate-700 dark:text-slate-300">
                   {license.shopName || "—"}
                 </span>
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <KeyRound size={11} className="shrink-0 text-slate-600" />
-                <span className="font-mono font-bold text-slate-300">{license.keyMasked || "—"}</span>
+                <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{license.keyMasked || "—"}</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <CalendarClock size={11} className="shrink-0 text-slate-600" />
-                <span className="font-bold text-slate-300">
+                <span className="font-bold text-slate-700 dark:text-slate-300">
                   {license.expiresAt ? fmtExpiry(license.expiresAt) : "Lifetime"}
                 </span>
               </span>
@@ -109,8 +109,8 @@ export default function LicenseInfoCard() {
       {soon && dl !== null && license.expiresAt && (
         <div className="mt-3 flex items-start gap-2.5 bg-amber-500/[0.06] border border-amber-500/20 rounded-xl px-3.5 py-3">
           <Clock size={14} className="text-amber-400 mt-0.5 shrink-0" />
-          <p className="text-[11px] text-amber-300/90 leading-relaxed">
-            Aapka license <span className="font-black text-amber-300">{fmtExpiry(license.expiresAt)}</span> ko expire ho jayega.
+          <p className="text-[11px] text-amber-700 dark:text-amber-300/90 leading-relaxed">
+            Aapka license <span className="font-black text-amber-700 dark:text-amber-300">{fmtExpiry(license.expiresAt)}</span> ko expire ho jayega.
             Krupaya samay rehte seller se sampark karein aur license renew karwayein taaki aapka system bina ruke chalta rahe.
           </p>
         </div>
@@ -124,21 +124,21 @@ export default function LicenseInfoCard() {
       >
         <div className="flex items-center gap-2 min-w-0">
           <Phone size={11} className="text-blue-400 shrink-0" />
-          <span className="text-[11px] font-bold text-slate-300 truncate">{SELLER_INFO.name}</span>
+          <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">{SELLER_INFO.name}</span>
           <span className="text-[10px] text-slate-500 hidden sm:inline">·</span>
           <span className="text-[10px] text-slate-500 hidden sm:inline">{SELLER_INFO.phone}</span>
         </div>
         <ChevronDown size={13} className={`text-slate-500 shrink-0 transition-transform ${contactOpen ? "rotate-180" : ""}`} />
       </button>
       {contactOpen && (
-        <div className="mt-1.5 bg-[#0f1a2e] border border-blue-500/10 rounded-xl px-3.5 py-2.5 space-y-1.5">
+        <div className="mt-1.5 bg-slate-100 dark:bg-[#0f1a2e] border border-blue-500/10 rounded-xl px-3.5 py-2.5 space-y-1.5">
           <div className="flex items-center gap-2">
             <User size={11} className="text-slate-500" />
-            <span className="text-[11px] text-slate-300">{SELLER_INFO.name}</span>
+            <span className="text-[11px] text-slate-700 dark:text-slate-300">{SELLER_INFO.name}</span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin size={11} className="text-slate-500" />
-            <span className="text-[11px] text-slate-300 leading-snug">{SELLER_INFO.address}</span>
+            <span className="text-[11px] text-slate-700 dark:text-slate-300 leading-snug">{SELLER_INFO.address}</span>
           </div>
           <div className="flex items-center gap-2">
             <Phone size={11} className="text-slate-500" />

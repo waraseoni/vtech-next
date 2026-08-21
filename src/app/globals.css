@@ -198,6 +198,7 @@ html[data-theme="light"] {
   .bg-\[\#253048\] { background-color: #e3e8f0 !important; }
   .bg-\[\#252f45\] { background-color: #e3e8f0 !important; }
   .bg-\[\#1e2030\] { background-color: #e9edf4 !important; }
+  .bg-\[\#0f1a2e\] { background-color: #f1f5f9 !important; }
 
   /* AI Copilot / chat surfaces */
   .bg-\[\#090b10\] { background-color: #f8f9fc !important; }
@@ -824,21 +825,6 @@ html[data-theme="light"] {
   /* Check In button (white bg) keeps its dark navy text */
   .attendance-page .bg-white   { color: #001f3f !important; }
   .attendance-page .bg-white * { color: #001f3f !important; }
-
-  /* ---- DASHBOARD PAGE — hardcoded dark backgrounds/borders get
-         remapped to LIGHT in light mode so the page reads like the
-         rest of the app. Text colors are handled by the global light
-         overrides (text-white/slate -> dark, -400 shades -> darker). ---- */
-  .dashboard-page { background-color: #f8f9fc !important; }
-  .dashboard-page .bg-\[\#0d1117\]  { background-color: #ffffff !important; }
-  .dashboard-page .bg-\[\#111520\]  { background-color: #ffffff !important; }
-  .dashboard-page .bg-\[\#161b27\]  { background-color: #ffffff !important; }
-  .dashboard-page .bg-\[\#21293d\]  { background-color: #e2e8f0 !important; }
-  .dashboard-page .bg-slate-900\/50 { background-color: #f1f5f9 !important; }
-  .dashboard-page .border-\[\#0d1117\]  { border-color: #f8f9fc !important; }
-  .dashboard-page .border-\[\#21293d\]  { border-color: #e2e8f0 !important; }
-  .dashboard-page .border-slate-800 { border-color: #e2e8f0 !important; }
-  .dashboard-page .border-slate-600 { border-color: #cbd5e1 !important; }
 }
 
 /* ============================================
