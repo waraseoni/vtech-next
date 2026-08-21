@@ -630,6 +630,21 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
           role:      pd?.role || "staff",
           avatar_url: pd?.avatar_url || null,
         });
+
+        // Auto-subscribe push notifications (fire-and-forget).
+        // Agar permission pehle se granted hai to silently subscribe.
+        // Agar "default" hai to browser ek baar prompt dikhayega (only once).
+        if (typeof window !== "undefined" && "Notification" in window && "serviceWorker" in navigator) {
+          const perm = Notification.permission;
+          if (perm === "granted") {
+            import("@/lib/push").then(m => m.subscribeToPush()).catch(() => {});
+          } else if (perm === "default" && !localStorage.getItem("vtech_push_prompted")) {
+            localStorage.setItem("vtech_push_prompted", "1");
+            Notification.requestPermission().then(p => {
+              if (p === "granted") import("@/lib/push").then(m => m.subscribeToPush()).catch(() => {});
+            }).catch(() => {});
+          }
+        }
       } catch (e) {
         console.error("Auth error:", e);
       } finally {
