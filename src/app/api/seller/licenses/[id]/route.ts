@@ -12,6 +12,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 const VALID_PLANS = ["standard", "premium", "lifetime"];
 const VALID_STATUS = ["active", "disabled", "revoked"];
+const VALID_MODULES = ["dashboard", "jobs", "sales", "clients", "inventory", "finance", "people", "reports"];
 
 async function parseId(ctx: Ctx): Promise<number | null> {
   const { id } = await ctx.params;
@@ -83,6 +84,12 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       }
       input.expires_at = t.toISOString();
     }
+  }
+  if (body.enabled_modules !== undefined) {
+    const mods = Array.isArray(body.enabled_modules)
+      ? (body.enabled_modules as unknown[]).filter((m): m is string => typeof m === "string" && VALID_MODULES.includes(m))
+      : [];
+    input.enabled_modules = mods;
   }
   if (body.notes !== undefined) input.notes = String(body.notes ?? "");
 

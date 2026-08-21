@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
       activatedAt: now,
       expiresAt: res.expiresAt ?? null,
       activationId,
+      enabledModules: res.enabledModules ?? null,
     });
     await Promise.all([
       upsertField("license_key", key.trim().toUpperCase()),

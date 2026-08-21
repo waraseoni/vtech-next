@@ -8,6 +8,7 @@ import {
   Store, KeyRound, CalendarDays, Server, FolderGit2, Triangle, ExternalLink, RefreshCw, Download,
 } from "lucide-react";
 import PortalGate from "@/components/PortalGate";
+import { ALL_MODULES } from "@/lib/modules";
 
 type License = {
   id: number;
@@ -19,6 +20,7 @@ type License = {
   max_activations: number;
   expires_at: string | null;
   status: string;
+  enabled_modules: string[] | null;
   notes: string | null;
   created_at: string;
   activation_count?: number;
@@ -362,6 +364,19 @@ export default function ClientDetailPage() {
                   <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Instances</p><p className="font-bold text-slate-200 mt-0.5">{license.activation_count ?? 0}/{license.max_activations}</p></div>
                   <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Owner</p><p className="font-bold text-slate-200 mt-0.5">{license.owner_name || "—"}</p></div>
                   <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Email</p><p className="font-bold text-slate-200 mt-0.5 break-all">{license.owner_email || "—"}</p></div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-[#1a2234]">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1.5">Enabled Modules</p>
+                  <div className="flex flex-wrap gap-1">
+                    {(license.enabled_modules ?? ALL_MODULES.map(m => m.key)).map((m) => {
+                      const mod = ALL_MODULES.find(x => x.key === m);
+                      return (
+                        <span key={m} className={`px-2 py-0.5 rounded text-[10px] font-bold ${mod?.always ? "bg-slate-500/15 text-slate-400 border border-slate-500/20" : "bg-blue-500/15 text-blue-400 border border-blue-500/20"}`}>
+                          {mod?.label ?? m}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
               <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">

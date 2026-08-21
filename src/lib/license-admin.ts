@@ -42,6 +42,7 @@ export type LicenseRow = {
   max_activations: number;
   expires_at: string | null;
   status: string;
+  enabled_modules: string[] | null;
   notes: string | null;
   created_at: string;
   activation_count?: number;
@@ -109,6 +110,7 @@ export type LicenseInput = {
   max_activations?: number;
   expires_at?: string | null;
   status?: string;
+  enabled_modules?: string[] | null;
   notes?: string;
 };
 
@@ -127,6 +129,7 @@ export async function createLicense(input: LicenseInput): Promise<LicenseRow> {
         max_activations: input.max_activations ?? 1,
         expires_at: input.expires_at ?? null,
         status: input.status || "active",
+        enabled_modules: input.enabled_modules ?? null,
         notes: input.notes || null,
       })
       .select()
@@ -147,6 +150,7 @@ export async function updateLicense(id: number, input: LicenseInput): Promise<Li
   if (input.max_activations !== undefined) patch.max_activations = input.max_activations;
   if (input.expires_at !== undefined) patch.expires_at = input.expires_at ?? null;
   if (input.status !== undefined) patch.status = input.status;
+  if (input.enabled_modules !== undefined) patch.enabled_modules = input.enabled_modules;
   if (input.notes !== undefined) patch.notes = input.notes || null;
 
   const { data, error } = await sb.from("licenses").update(patch).eq("id", id).select().single();

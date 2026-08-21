@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Plus, Copy, Check, Pencil, Trash2, X, Loader2, RefreshCw, KeyRound,
-  Store, Package, Ban, Clock, ShieldCheck, Eye,
+  Store, Package, Ban, Clock, ShieldCheck, Eye, ListChecks,
 } from "lucide-react";
 import PortalGate from "@/components/PortalGate";
+import { ALL_MODULES, TOGGLEABLE_KEYS, PLAN_DEFAULTS, type ModuleKey } from "@/lib/modules";
 
 type License = {
   id: number;
@@ -18,6 +19,7 @@ type License = {
   max_activations: number;
   expires_at: string | null;
   status: string;
+  enabled_modules: string[] | null;
   notes: string | null;
   created_at: string;
   activation_count?: number;
@@ -153,6 +155,7 @@ export default function SellerPage() {
                     <th className="px-4 py-3">Key</th>
                     <th className="px-4 py-3">Shop / Owner</th>
                     <th className="px-4 py-3">Plan</th>
+                    <th className="px-4 py-3">Modules</th>
                     <th className="px-4 py-3">Instances</th>
                     <th className="px-4 py-3">Expiry</th>
                     <th className="px-4 py-3">Status</th>
@@ -183,6 +186,11 @@ export default function SellerPage() {
                         </td>
                         <td className="px-4 py-3">
                           <span className="text-[10px] font-black uppercase text-purple-400">{l.plan}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-[10px] font-bold text-slate-400">
+                            {(l.enabled_modules ?? ALL_MODULES.map(m => m.key)).filter(k => k !== "dashboard").length} active
+                          </span>
                         </td>
                         <td className="px-4 py-3">
                           <span className="text-xs font-bold text-slate-300">
@@ -238,9 +246,42 @@ export default function SellerPage() {
   );
 }
 
+// ─── Module select (shared by New + Edit modals) ────────────────────────────
+function ModuleSelect({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const allSelected = TOGGLEABLE_KEYS.every(k => value.includes(k));
+  const toggleAll = () => onChange(allSelected ? [] : [...TOGGLEABLE_KEYS]);
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <label className={labelCls}>Enabled Modules</label>
+        <button type="button" onClick={toggleAll}
+          className="text-[9px] font-bold text-blue-400 hover:text-blue-300 transition-colors">
+          {allSelected ? "Deselect All" : "Select All"}
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {ALL_MODULES.filter(m => !m.always).map(m => (
+          <label key={m.key} className="flex items-center gap-2 px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl cursor-pointer hover:border-blue-500/30 transition-all">
+            <input
+              type="checkbox"
+              checked={value.includes(m.key)}
+              onChange={(e) => {
+                onChange(e.target.checked ? [...value, m.key] : value.filter(k => k !== m.key));
+              }}
+              className="rounded border-[#21293d] text-blue-500 focus:ring-blue-500/20"
+            />
+            <span className="text-xs font-bold text-slate-300">{m.label}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── New License modal ───────────────────────────────────────────────────────
 function NewLicenseModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
   const [form, setForm] = useState({ shop_name: "", owner_name: "", owner_email: "", plan: "standard", max_activations: "1", expires_at: "", status: "active", notes: "" });
+  const [modules, setModules] = useState<string[]>([...PLAN_DEFAULTS.standard]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [createdKey, setCreatedKey] = useState<string | null>(null);
@@ -266,6 +307,7 @@ function NewLicenseModal({ open, onClose, onCreated }: { open: boolean; onClose:
           expires_at: form.expires_at || null,
           status: form.status,
           notes: form.notes,
+          enabled_modules: modules,
         }),
       });
       const data = await res.json();
@@ -328,7 +370,11 @@ function NewLicenseModal({ open, onClose, onCreated }: { open: boolean; onClose:
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className={labelCls}>Plan</label>
-                <select className={inputCls} value={form.plan} onChange={set("plan")}>
+                <select className={inputCls} value={form.plan} onChange={(e) => {
+                  const p = e.target.value;
+                  setForm(f => ({ ...f, plan: p }));
+                  setModules([...(PLAN_DEFAULTS[p] || PLAN_DEFAULTS.standard)]);
+                }}>
                   {PLANS.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
@@ -347,6 +393,7 @@ function NewLicenseModal({ open, onClose, onCreated }: { open: boolean; onClose:
               <label className={labelCls}>License Duration (khali = lifetime)</label>
               <input className={inputCls} value={form.expires_at} onChange={set("expires_at")} type="date" />
             </div>
+            <ModuleSelect value={modules} onChange={setModules} />
             <div>
               <label className={labelCls}>Notes</label>
               <input className={inputCls} value={form.notes} onChange={set("notes")} placeholder="Optional" />
@@ -366,6 +413,7 @@ function NewLicenseModal({ open, onClose, onCreated }: { open: boolean; onClose:
 // ─── Edit / Renew modal ──────────────────────────────────────────────────────
 function EditLicenseModal({ license, onClose, onSaved }: { license: License | null; onClose: () => void; onSaved: () => void }) {
   const [form, setForm] = useState({ shop_name: "", owner_name: "", owner_email: "", plan: "standard", max_activations: "1", expires_at: "", status: "active", notes: "" });
+  const [modules, setModules] = useState<string[]>([...PLAN_DEFAULTS.standard]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -381,6 +429,7 @@ function EditLicenseModal({ license, onClose, onSaved }: { license: License | nu
       status: license.status,
       notes: license.notes || "",
     });
+    setModules(license.enabled_modules ?? TOGGLEABLE_KEYS);
     setErr("");
   }, [license]);
 
@@ -404,6 +453,7 @@ function EditLicenseModal({ license, onClose, onSaved }: { license: License | nu
           expires_at: form.expires_at || null,
           status: form.status,
           notes: form.notes,
+          enabled_modules: modules,
         }),
       });
       const data = await res.json();
@@ -451,7 +501,11 @@ function EditLicenseModal({ license, onClose, onSaved }: { license: License | nu
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className={labelCls}>Plan</label>
-              <select className={inputCls} value={form.plan} onChange={set("plan")}>
+              <select className={inputCls} value={form.plan} onChange={(e) => {
+                const p = e.target.value;
+                setForm(f => ({ ...f, plan: p }));
+                setModules([...(PLAN_DEFAULTS[p] || PLAN_DEFAULTS.standard)]);
+              }}>
                 {PLANS.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
@@ -470,6 +524,7 @@ function EditLicenseModal({ license, onClose, onSaved }: { license: License | nu
             <label className={labelCls}>License Duration (khali = lifetime)</label>
             <input className={inputCls} value={form.expires_at} onChange={set("expires_at")} type="date" />
           </div>
+          <ModuleSelect value={modules} onChange={setModules} />
           <div>
             <label className={labelCls}>Notes</label>
             <input className={inputCls} value={form.notes} onChange={set("notes")} />

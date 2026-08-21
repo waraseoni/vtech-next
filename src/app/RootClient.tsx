@@ -16,6 +16,7 @@ import {
   Toolbox, FolderOpen, UsersRound, Database, Settings2, MessageSquare,
   ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert, KeyRound, Code2, Images, FileText, Layers, MapPin, Terminal,
 } from "lucide-react";
+import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
 type SearchResult = {
@@ -301,10 +302,10 @@ const subLinkCls = (active: boolean) =>
 
 // ─── Sidebar nav (shared by desktop + mobile drawer) ─────────────────────────
 function SidebarNav({
-  pathname, isAdmin, isClient, onNavClick, sellerEnabled, devEnabled,
+  pathname, isAdmin, isClient, onNavClick, sellerEnabled, devEnabled, enabledModules,
 }: {
   pathname: string; isAdmin: boolean; isClient?: boolean; onNavClick?: () => void;
-  sellerEnabled?: boolean; devEnabled?: boolean;
+  sellerEnabled?: boolean; devEnabled?: boolean; enabledModules?: string[] | null;
 }) {
   const lk = (href: string, exact = false) =>
     exact ? pathname === href : pathname.startsWith(href);
@@ -346,21 +347,27 @@ function SidebarNav({
             <CalendarCheck size={16} /><span>Attendance</span>
           </Link>
         </li>
-        <li>
-          <Link href="/jobs" className={navLinkCls(lk("/jobs"))} onClick={onNavClick}>
-            <ClipboardList size={16} /><span>Jobs</span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/direct-sales" className={navLinkCls(lk("/direct-sales"))} onClick={onNavClick}>
-            <ShoppingCart size={16} /><span>Sales</span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/clients" className={navLinkCls(lk("/clients"))} onClick={onNavClick}>
-            <Users size={16} /><span>Clients</span>
-          </Link>
-        </li>
+        {isModuleEnabled(enabledModules, "jobs") && (
+          <li>
+            <Link href="/jobs" className={navLinkCls(lk("/jobs"))} onClick={onNavClick}>
+              <ClipboardList size={16} /><span>Jobs</span>
+            </Link>
+          </li>
+        )}
+        {isModuleEnabled(enabledModules, "sales") && (
+          <li>
+            <Link href="/direct-sales" className={navLinkCls(lk("/direct-sales"))} onClick={onNavClick}>
+              <ShoppingCart size={16} /><span>Sales</span>
+            </Link>
+          </li>
+        )}
+        {isModuleEnabled(enabledModules, "clients") && (
+          <li>
+            <Link href="/clients" className={navLinkCls(lk("/clients"))} onClick={onNavClick}>
+              <Users size={16} /><span>Clients</span>
+            </Link>
+          </li>
+        )}
         <li>
           <Link href="/inquiries" className={navLinkCls(lk("/inquiries", true))} onClick={onNavClick}>
             <HelpCircle size={16} /><span>Enquiries</span>
@@ -370,10 +377,12 @@ function SidebarNav({
         {isAdmin && (
           <>
             {/* ══ INVENTORY ════════════════════════════════════════════════ */}
-            <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
-              Inventory
-            </li>
-            <SubMenu title="Inventory" icon={<Package size={15} />} basePath="/inventory" matchPaths={["/products", "/suppliers"]}>
+            {isModuleEnabled(enabledModules, "inventory") && (
+              <>
+                <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+                  Inventory
+                </li>
+                <SubMenu title="Inventory" icon={<Package size={15} />} basePath="/inventory" matchPaths={["/products", "/suppliers"]}>
               <li>
                 <Link href="/inventory" className={subLinkCls(pathname === "/inventory" || (pathname.startsWith("/inventory/") && !pathname.startsWith("/inventory/purchase-orders") && !pathname.startsWith("/inventory/locate")))} onClick={onNavClick}>
                   <Package size={12} className="text-emerald-400" />Stock Overview
@@ -409,13 +418,17 @@ function SidebarNav({
                   <MapPin size={12} className="text-amber-400" />Spare Finder
                 </Link>
               </li>
-            </SubMenu>
+              </SubMenu>
+              </>
+            )}
 
             {/* ══ FINANCE ══════════════════════════════════════════════════ */}
-            <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
-              Finance
-            </li>
-            <SubMenu title="Finance" icon={<DollarSign size={15} />} matchPaths={["/back-office", "/payments", "/expenses", "/advance", "/clients-admin", "/client-loans", "/lenders", "/mechanics/salary"]}>
+            {isModuleEnabled(enabledModules, "finance") && (
+              <>
+                <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+                  Finance
+                </li>
+                <SubMenu title="Finance" icon={<DollarSign size={15} />} matchPaths={["/back-office", "/payments", "/expenses", "/advance", "/clients-admin", "/client-loans", "/lenders", "/mechanics/salary"]}>
               <li><Link href="/back-office"   className={subLinkCls(pathname === "/back-office")}   onClick={onNavClick}><Sparkles size={12} className="text-purple-400" />Overview</Link></li>
               <li><Link href="/payments"      className={subLinkCls(pathname === "/payments")}      onClick={onNavClick}><Receipt size={12} />Payments</Link></li>
               <li><Link href="/expenses"      className={subLinkCls(pathname === "/expenses")}      onClick={onNavClick}><DollarSign size={12} />Expenses</Link></li>
@@ -425,22 +438,30 @@ function SidebarNav({
               <li><Link href="/client-loans" className={subLinkCls(pathname === "/client-loans")} onClick={onNavClick}><CreditCard size={12} />Client Loans</Link></li>
               <li><Link href="/lenders"        className={subLinkCls(pathname === "/lenders")}        onClick={onNavClick}><History size={12} />Lenders</Link></li>
             </SubMenu>
+              </>
+            )}
 
             {/* ══ PEOPLE ═══════════════════════════════════════════════════ */}
-            <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
-              People
-            </li>
-            <SubMenu title="People" icon={<UsersRound size={15} />} matchPaths={["/services"]}>
+            {isModuleEnabled(enabledModules, "people") && (
+              <>
+                <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+                  People
+                </li>
+                <SubMenu title="People" icon={<UsersRound size={15} />} matchPaths={["/services"]}>
               <li><Link href="/mechanics"     className={subLinkCls(pathname.startsWith("/mechanics") && pathname !== "/mechanics/salary" && pathname !== "/mechanics/commission")}     onClick={onNavClick}><UsersRound size={12} />Staff</Link></li>
               <li><Link href="/mechanics/commission" className={subLinkCls(pathname === "/mechanics/commission")} onClick={onNavClick}><BarChart2 size={12} />Commission</Link></li>
               <li><Link href="/services"      className={subLinkCls(pathname === "/services")}      onClick={onNavClick}><Toolbox size={12} />Service Catalog</Link></li>
             </SubMenu>
+              </>
+            )}
 
             {/* ══ REPORTS ══════════════════════════════════════════════════ */}
-            <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
-              Reports
-            </li>
-            <SubMenu title="Reports" icon={<PieChart size={15} />} basePath="/reports" matchPaths={["/activity-logs"]}>
+            {isModuleEnabled(enabledModules, "reports") && (
+              <>
+                <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+                  Reports
+                </li>
+                <SubMenu title="Reports" icon={<PieChart size={15} />} basePath="/reports" matchPaths={["/activity-logs"]}>
               <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-2 pb-0.5 select-none">Overview</li>
               <li><Link href="/reports"                 className={subLinkCls(pathname === "/reports")}                onClick={onNavClick}><Sparkles size={12} className="text-blue-400" />All Reports</Link></li>
               <li><Link href="/reports/vyapar-darpan"   className={subLinkCls(pathname === "/reports/vyapar-darpan")}   onClick={onNavClick}><PieChart size={12} className="text-amber-400" />Vyapar Darpan</Link></li>
@@ -469,6 +490,8 @@ function SidebarNav({
               <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">Audit</li>
               <li><Link href="/activity-logs"          className={subLinkCls(pathname === "/activity-logs")}          onClick={onNavClick}><Activity size={12} />Activity Log</Link></li>
             </SubMenu>
+              </>
+            )}
 
             {/* ══ SYSTEM ═══════════════════════════════════════════════════ */}
             <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
@@ -934,6 +957,28 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     );
   }
 
+  // ── MODULE ROUTE GUARD ──
+  // Agar current page disabled module ka hai → "Module not available" dikhao.
+  if (isAdmin && license?.enabledModules && isRouteDisabled(pathname, license.enabledModules)) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#0d1117]">
+        <div className="text-center max-w-sm mx-auto px-6">
+          <div className="w-16 h-16 mx-auto bg-amber-500/15 text-amber-400 rounded-2xl flex items-center justify-center mb-5">
+            <Package size={28} />
+          </div>
+          <h1 className="text-lg font-black text-white mb-2">Module Not Available</h1>
+          <p className="text-sm text-slate-400 mb-6">
+            Ye module aapke plan mein included nahi hai. Seller se contact karein ya <span className="font-bold text-slate-300">Settings &rarr; License</span> mein plan upgrade karein.
+          </p>
+          <button onClick={() => router.push("/dashboard")}
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black transition-all">
+            Dashboard par jao
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const isAiPage    = pathname === "/ai";
   const displayName = profile?.full_name ?? "User";
   const initials    = displayName.slice(0, 2).toUpperCase();
@@ -967,7 +1012,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               </Link>
             </div>
 
-            <SidebarNav pathname={pathname} isAdmin={isAdmin} isClient={isClient} sellerEnabled={license?.sellerEnabled} devEnabled={license?.devEnabled} />
+            <SidebarNav pathname={pathname} isAdmin={isAdmin} isClient={isClient} sellerEnabled={license?.sellerEnabled} devEnabled={license?.devEnabled} enabledModules={license?.enabledModules} />
 
             <div className="px-4 py-3 border-t border-[#1a2234] flex items-center justify-between">
               <span className="text-[9px] text-slate-500 dark:text-slate-300 font-black tracking-widest uppercase">V-TECH PRO v4.2</span>
@@ -1019,7 +1064,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               </div>
 
               {/* Same full nav as desktop */}
-              <SidebarNav pathname={pathname} isAdmin={isAdmin} isClient={isClient} onNavClick={() => setDrawerOpen(false)} sellerEnabled={license?.sellerEnabled} devEnabled={license?.devEnabled} />
+              <SidebarNav pathname={pathname} isAdmin={isAdmin} isClient={isClient} onNavClick={() => setDrawerOpen(false)} sellerEnabled={license?.sellerEnabled} devEnabled={license?.devEnabled} enabledModules={license?.enabledModules} />
 
               {/* User info at drawer bottom */}
               <div className="px-3 py-3 border-t border-[#1a2234]">

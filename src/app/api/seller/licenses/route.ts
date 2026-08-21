@@ -25,6 +25,7 @@ export async function GET() {
 
 const VALID_PLANS = ["standard", "premium", "lifetime"];
 const VALID_STATUS = ["active", "disabled", "revoked"];
+const VALID_MODULES = ["dashboard", "jobs", "sales", "clients", "inventory", "finance", "people", "reports"];
 
 export async function POST(req: NextRequest) {
   if (!isLicenseAdminConfigured()) {
@@ -58,6 +59,13 @@ export async function POST(req: NextRequest) {
     expiresAt = t.toISOString();
   }
 
+  let enabledModules: string[] | null = null;
+  if (Array.isArray(body.enabled_modules)) {
+    enabledModules = (body.enabled_modules as unknown[]).filter(
+      (m): m is string => typeof m === "string" && VALID_MODULES.includes(m)
+    );
+  }
+
   try {
     const input: LicenseInput = {
       shop_name: typeof body.shop_name === "string" ? body.shop_name : undefined,
@@ -68,6 +76,7 @@ export async function POST(req: NextRequest) {
       max_activations: maxActivations,
       status,
       expires_at: expiresAt,
+      enabled_modules: enabledModules,
     };
     const created = await createLicense(input);
     return NextResponse.json(created, { status: 201 });

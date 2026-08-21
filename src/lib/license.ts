@@ -58,6 +58,8 @@ export type LicenseStatus = {
   /** Seller/Developer portals is deployment par enabled hain ya nahi (env se). */
   sellerEnabled?: boolean;
   devEnabled?: boolean;
+  /** Seller ne client ke liye kaunse modules enable kiye hain. null = sab enabled. */
+  enabledModules?: string[] | null;
 };
 
 /** Central RPC call — validate key + register/refresh this instance. */
@@ -66,7 +68,7 @@ export async function activateRemoteLicense(opts: {
   activationId: string;
   shopUrl: string;
   shopName: string;
-}): Promise<{ ok: boolean; error?: string; plan?: string; shopName?: string; expiresAt?: string | null; alreadyActivated?: boolean }> {
+}): Promise<{ ok: boolean; error?: string; plan?: string; shopName?: string; expiresAt?: string | null; alreadyActivated?: boolean; enabledModules?: string[] | null }> {
   if (!isLicenseConfigured()) {
     return { ok: false, error: "LICENSE_SERVICE_NOT_CONFIGURED" };
   }
@@ -88,6 +90,7 @@ export async function activateRemoteLicense(opts: {
     shopName: typeof raw.shop_name === "string" ? raw.shop_name : undefined,
     expiresAt: "expires_at" in raw ? (raw.expires_at as string | null) : undefined,
     alreadyActivated: typeof raw.already_activated === "boolean" ? raw.already_activated : undefined,
+    enabledModules: Array.isArray(raw.enabled_modules) ? raw.enabled_modules as string[] : null,
   };
 }
 
@@ -101,6 +104,7 @@ export async function checkRemoteLicense(activationId: string): Promise<{
   plan?: string;
   shopName?: string;
   expiresAt?: string | null;
+  enabledModules?: string[] | null;
 }> {
   if (!isLicenseConfigured()) {
     return { ok: false, error: "LICENSE_SERVICE_NOT_CONFIGURED" };
@@ -119,5 +123,6 @@ export async function checkRemoteLicense(activationId: string): Promise<{
     plan: typeof raw.plan === "string" ? raw.plan : undefined,
     shopName: typeof raw.shop_name === "string" ? raw.shop_name : undefined,
     expiresAt: "expires_at" in raw ? (raw.expires_at as string | null) : undefined,
+    enabledModules: Array.isArray(raw.enabled_modules) ? raw.enabled_modules as string[] : null,
   };
 }

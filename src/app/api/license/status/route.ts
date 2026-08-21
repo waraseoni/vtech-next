@@ -99,6 +99,9 @@ export async function GET(req: NextRequest) {
             expiresAt = res.expiresAt ?? null;
             parsed.expiresAt = res.expiresAt ?? null;
           }
+          if (res.enabledModules !== undefined) {
+            parsed.enabledModules = res.enabledModules;
+          }
           valid = res.ok;
           error = res.ok ? undefined : res.error;
 
@@ -132,6 +135,7 @@ export async function GET(req: NextRequest) {
       expiresAt,
       activationId,
       error,
+      enabledModules: parsed.enabledModules ?? null,
       // Env vars set hain to portals enabled (sirf seller ke deployment par).
       sellerEnabled:
         !!process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY &&

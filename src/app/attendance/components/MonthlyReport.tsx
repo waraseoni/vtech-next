@@ -92,16 +92,27 @@ export default function MonthlyReport({
       .gte('curr_date', startDate)
       .lte('curr_date', endDate);
 
+    const now = new Date();
+    const todayIST = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+
     const result: MechanicMonthData[] = mechs.map(mech => {
       const days: DayData[] = [];
       let fullDays = 0, halfDays = 0, absentDays = 0;
       for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${month}-${d.toString().padStart(2, '0')}`;
         const att     = attData?.find(a => a.mechanic_id === mech.id && a.curr_date === dateStr);
-        const status  = att ? (att.status as 1 | 2 | 3) : 2;
+        const isFuture = dateStr >= todayIST;
+        let status: 0 | 1 | 2 | 3;
+        if (att) {
+          status = att.status as 1 | 2 | 3;
+        } else if (isFuture) {
+          status = 0; // future = no attendance yet
+        } else {
+          status = 2; // past without record = absent
+        }
         if (status === 1) fullDays++;
         else if (status === 3) halfDays++;
-        absentDays++; // default = absent
+        else if (status === 2) absentDays++;
         const timeIn  = (att?.time_in as string)?.slice(0, 5) || '';
         const timeOut = (att?.time_out as string)?.slice(0, 5) || '';
         days.push({ day: d, status, isSunday: parseISTDate(dateStr).getDay() === 0, timeIn, timeOut, hours: hoursBetweenIST(timeIn || null, timeOut || null) });
@@ -152,7 +163,7 @@ export default function MonthlyReport({
         updatedDays.forEach(d => {
           if (d.status === 1) fullDays++;
           else if (d.status === 3) halfDays++;
-          absentDays++;
+          else if (d.status === 2) absentDays++;
         });
 
         return { ...md, days: updatedDays, fullDays, halfDays, absentDays };
@@ -261,12 +272,14 @@ export default function MonthlyReport({
               {md.days.map(day => {
                 const dateStr = `${month}-${day.day.toString().padStart(2, '0')}`;
                 let cls = 'bg-red-500/70 text-white'; // default = absent
-                if (day.status === 1) cls = 'bg-emerald-500 text-white';
+                if (day.status === 0) cls = 'bg-[#1a2234] text-slate-600';       // future = empty
+                else if (day.status === 1) cls = 'bg-emerald-500 text-white';
                 else if (day.status === 3) cls = 'bg-amber-500 text-white';
                 else if (day.isSunday)     cls = 'bg-red-900/30 text-red-500';
 
                 const statusLabel =
-                  day.status === 1 ? 'Present'
+                  day.status === 0 ? 'Upcoming'
+                  : day.status === 1 ? 'Present'
                   : day.status === 3 ? 'Half Day'
                   : 'Absent';
                 const tooltip =
