@@ -854,7 +854,7 @@ export default function Dashboard() {
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: sc.color }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2">
-                      <Link href={`/jobs/${job.id}`} className="text-blue-400 hover:text-blue-300 font-black text-sm no-underline">{job.job_id ?? "N/A"}</Link>
+                      <Link href={`/jobs/${job.id}/view`} className="text-blue-400 hover:text-blue-300 font-black text-sm no-underline">{job.job_id ?? "N/A"}</Link>
                       <span className="text-slate-500 text-xs truncate">{job.client_name}</span>
                     </div>
                     <p className="text-slate-600 text-xs truncate mt-0.5">{job.item}</p>

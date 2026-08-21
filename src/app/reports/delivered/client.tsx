@@ -416,7 +416,7 @@ Mob: 9179105875`;
                         {formatIST(tx.date_completed, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })}
                       </td>
                       <td className="px-3 py-3">
-                        <Link href={`/clients/${tx.client_id}`}
+                        <Link href={`/clients/${tx.client_id}/view`}
                           className="text-sm font-bold text-slate-200 hover:text-white transition-colors">
                           {tx.client_name}
                         </Link>

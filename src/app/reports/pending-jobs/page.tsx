@@ -236,13 +236,13 @@ function PendingJobsContent() {
                 <tr key={job.id} className="hover:bg-white/[0.02] transition-colors group">
                   <td className="px-6 py-5">
                     <div className="flex flex-col">
-                      <Link href={`/jobs/${job.id}`} className="text-white font-black hover:text-amber-500 transition-colors">#{job.job_id}</Link>
+                      <Link href={`/jobs/${job.id}/view`} className="text-white font-black hover:text-amber-500 transition-colors">#{job.job_id}</Link>
                       <span className="text-[10px] text-slate-500 mt-1 font-bold">{formatIST(job.date_created, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                     </div>
                   </td>
                   <td className="px-6 py-5">
                     <div className="flex flex-col">
-                      <Link href={`/clients/${job.client_name}`} className="text-slate-200 font-bold hover:text-blue-400 transition-colors">
+                      <Link href={`/clients/${job.client_name}/view`} className="text-slate-200 font-bold hover:text-blue-400 transition-colors">
                         {job.client?.firstname} {job.client?.lastname}
                       </Link>
                       <span className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
@@ -269,7 +269,7 @@ function PendingJobsContent() {
                       <button onClick={() => sendWhatsApp(job)} className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm group/btn" title="WhatsApp Reminder">
                         <MessageSquare size={16} className="group-hover/btn:scale-110 transition-transform" />
                       </button>
-                      <Link href={`/jobs/${job.id}`} className="p-2.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl hover:bg-blue-500 hover:text-white transition-all shadow-sm group/btn">
+                      <Link href={`/jobs/${job.id}/view`} className="p-2.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl hover:bg-blue-500 hover:text-white transition-all shadow-sm group/btn">
                         <ChevronRight size={16} className="group-hover/btn:translate-x-0.5 transition-transform" />
                       </Link>
                     </div>

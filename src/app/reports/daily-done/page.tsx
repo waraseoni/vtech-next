@@ -322,7 +322,7 @@ export default function DailyDoneReportPage() {
                         {item.remark || "—"}
                       </td>
                       <td className="px-4 py-3.5">
-                        <Link href={`/clients/${item.client_id}`} className="font-bold text-slate-200 hover:text-teal-400 transition-colors block">
+                        <Link href={`/clients/${item.client_id}/view`} className="font-bold text-slate-200 hover:text-teal-400 transition-colors block">
                           {item.client_name}
                         </Link>
                         <div className="text-xs text-slate-500">{item.item}</div>
