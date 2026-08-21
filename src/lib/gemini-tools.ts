@@ -714,10 +714,24 @@ export async function executeGeminiTool(functionCall: { name: string; args?: obj
                     .slice(0, 5);
                 if (ob.length) alerts.push({ type: "high_outstanding", severity: "warning", title: "High Outstanding (Admin)", items: ob });
 
-                const { data: cLoans } = await supabase.from("client_loans")
-                    .select("id, client_id, principal_amount, total_payable, emi_amount, status")
-                    .eq("status", 1);
-                if ((cLoans || []).length) alerts.push({ type: "active_loans", severity: "info", title: "Active Client Loans (Admin)", items: cLoans });
+                const [cLoansRes, loanClientsRes] = await Promise.all([
+                    supabase.from("client_loans")
+                        .select("id, client_id, principal_amount, total_payable, emi_amount, status")
+                        .eq("status", 1),
+                    pageAll(supabase.from("client_list").select("id, firstname, lastname")),
+                ]);
+                const loanClientNames = new Map<number, string>(
+                    (loanClientsRes.data || []).map((c) => [c.id, `${c.firstname} ${c.lastname}`.trim()])
+                );
+                const cLoans = (cLoansRes.data || []).map((l) => ({
+                    loan_id: l.id,
+                    client_id: l.client_id,
+                    name: loanClientNames.get(l.client_id) || `Client #${l.client_id}`,
+                    principal_amount: Number(l.principal_amount) || 0,
+                    total_payable: Number(l.total_payable) || 0,
+                    emi_amount: Number(l.emi_amount) || 0,
+                }));
+                if (cLoans.length) alerts.push({ type: "active_loans", severity: "info", title: "Active Client Loans (Admin)", items: cLoans });
             }
 
             return {
