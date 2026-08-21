@@ -123,7 +123,7 @@ declare
   v_tx_ids      int[];
   v_ds_ids      int[];
 begin
-  v_from := p_from::timestamptz;
+  v_from := (p_from || 'T00:00:00+05:30')::timestamptz;
   v_to   := (p_to || 'T23:59:59+05:30')::timestamptz;
 
   -- Repair + Direct income
