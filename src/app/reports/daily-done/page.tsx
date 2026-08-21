@@ -240,14 +240,14 @@ export default function DailyDoneReportPage() {
         </div>
 
         {/* Summary Dashboard */}
-        <div className="px-5 py-4 border-b border-[#1a2234] bg-[#0d1117]/30 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-[#1a2234] bg-slate-100 dark:bg-[#0d1117]/30 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 rounded-xl bg-gradient-to-br from-teal-500/10 to-emerald-500/5 border border-teal-500/20 flex items-center gap-4">
             <div className="p-3 bg-teal-500/20 rounded-xl">
               <CheckSquare size={24} className="text-teal-400" />
             </div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-teal-500">Items Completed Today</p>
-              <h3 className="text-2xl font-black text-white mt-0.5">{totals.count} <span className="text-sm text-slate-400 font-medium ml-1">Jobs</span></h3>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{totals.count} <span className="text-sm text-slate-500 dark:text-slate-400 font-medium ml-1">Jobs</span></h3>
             </div>
           </div>
           <div className="p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-amber-500/5 border border-orange-500/20 flex items-center gap-4">
@@ -256,7 +256,7 @@ export default function DailyDoneReportPage() {
             </div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-orange-500">Estimated Billable Value</p>
-              <h3 className="text-2xl font-black text-white mt-0.5">{inr(totals.amount)}</h3>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{inr(totals.amount)}</h3>
             </div>
           </div>
         </div>
