@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireStaff } from "@/lib/api-auth";
 import { fetchAll, pageAll, fetchAllIn } from "@/lib/fetch-all";
+import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -52,32 +53,21 @@ export async function GET(request: NextRequest) {
   const [{ data: repairs }, { data: dirSales }, { data: payments }, { data: loans }] = await Promise.all([
     pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
     fetchAllIn((ids: number[]) => supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids), ids).then(rows => ({ data: rows })),
-    fetchAllIn((ids: number[]) => supabase.from("client_payments").select("client_id, amount, discount").in("client_id", ids), ids).then(rows => ({ data: rows })),
-    fetchAllIn((ids: number[]) => supabase.from("client_loans").select("client_id, total_payable").in("client_id", ids), ids).then(rows => ({ data: rows })),
+    fetchAllIn((ids: number[]) => supabase.from("client_payments").select("client_id, amount, discount, loan_id").in("client_id", ids), ids).then(rows => ({ data: rows })),
+    fetchAllIn((ids: number[]) => supabase.from("client_loans").select("id, client_id, total_payable").in("client_id", ids).eq("status", 1), ids).then(rows => ({ data: rows })),
   ]);
 
-  const toNum = (v: unknown) => { const x = Number(v); return isNaN(x) ? 0 : x; };
   const daysSince = (d: string | null) => d ? Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000) : 999;
 
-  const repMap: Record<number, number> = {};
-  repairs?.forEach((r) => { const cid = parseInt(r.client_name ?? "", 10); if (!isNaN(cid)) repMap[cid] = (repMap[cid] || 0) + toNum(r.amount); });
-
-  const dirMap: Record<number, number> = {};
-  dirSales?.forEach((d) => { if (d.client_id) dirMap[d.client_id] = (dirMap[d.client_id] || 0) + toNum(d.total_amount); });
-
-  const payMap: Record<number, number> = {};
-  payments?.forEach((p) => { payMap[p.client_id] = (payMap[p.client_id] || 0) + toNum(p.amount) + toNum(p.discount); });
-
-  const loanMap: Record<number, number> = {};
-  loans?.forEach((l) => { loanMap[l.client_id] = (loanMap[l.client_id] || 0) + toNum(l.total_payable); });
+  const m = buildDueMaps({ repairs, directSales: dirSales, payments, loans });
 
   const clients = cls.map((c) => {
     const name = [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ");
-    const repairBilled = repMap[c.id] || 0;
-    const directSales = dirMap[c.id] || 0;
-    const paid = payMap[c.id] || 0;
-    const loanGiven = loanMap[c.id] || 0;
-    const balance = (c.opening_balance || 0) + repairBilled + directSales + loanGiven - paid;
+    const repairBilled = m.repairBilled[c.id] || 0;
+    const directSales = m.directSalesBilled[c.id] || 0;
+    const paid = (m.servicePaid[c.id] || 0) + (m.loanRepaid[c.id] || 0);
+    const loanGiven = m.activeLoanGiven[c.id] || 0;
+    const balance = balanceFromMaps(m, c.id, c.opening_balance || 0);
     return {
       id: c.id, name, contact: c.contact || "", email: c.email || "", address: c.address || "",
       date_created: c.date_created, opening_balance: c.opening_balance || 0,

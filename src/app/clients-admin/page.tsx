@@ -5,6 +5,7 @@ import Link from "next/link";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
+import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
 import {
   AlertCircle,
   CheckCircle2,
@@ -112,46 +113,28 @@ export default function ClientAmtPage() {
       }
 
       const ids = clientList.map((client) => client.id);
-      const [repairRes, saleRes, paymentRes] = await Promise.all([
+      const [repairRes, saleRes, paymentRes, loanRes] = await Promise.all([
         pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
         pageAll(supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids)),
-        pageAll(supabase.from("client_payments").select("client_id, amount, discount").in("client_id", ids)),
+        pageAll(supabase.from("client_payments").select("client_id, amount, discount, loan_id").in("client_id", ids)),
+        pageAll(supabase.from("client_loans").select("id, client_id, total_payable").eq("status", 1).in("client_id", ids)),
       ]);
 
-      const repairMap = new Map<number, number>();
-      (repairRes.data || []).forEach((row) => {
-        const clientId = Number(row.client_name);
-        if (!Number.isNaN(clientId)) {
-          repairMap.set(clientId, (repairMap.get(clientId) || 0) + Number(row.amount || 0));
-        }
-      });
-
-      const saleMap = new Map<number, number>();
-      (saleRes.data || []).forEach((row) => {
-        if (row.client_id) {
-          saleMap.set(row.client_id, (saleMap.get(row.client_id) || 0) + Number(row.total_amount || 0));
-        }
-      });
-
-      const paymentMap = new Map<number, number>();
-      (paymentRes.data || []).forEach((row) => {
-        paymentMap.set(
-          row.client_id,
-          (paymentMap.get(row.client_id) || 0) + Number(row.amount || 0) + Number(row.discount || 0)
-        );
+      const m = buildDueMaps({
+        repairs: repairRes.data,
+        directSales: saleRes.data,
+        payments: paymentRes.data,
+        loans: loanRes.data,
       });
 
       const built = clientList.map((client) => {
         const opening = Number(client.opening_balance || 0);
-        const repair = repairMap.get(client.id) || 0;
-        const direct = saleMap.get(client.id) || 0;
-        const paid = paymentMap.get(client.id) || 0;
         return {
           ...client,
-          repair_billed: repair,
-          direct_sale_billed: direct,
-          total_paid: paid,
-          balance: opening + repair + direct - paid,
+          repair_billed: m.repairBilled[client.id] || 0,
+          direct_sale_billed: m.directSalesBilled[client.id] || 0,
+          total_paid: (m.servicePaid[client.id] || 0) + (m.loanRepaid[client.id] || 0),
+          balance: balanceFromMaps(m, client.id, opening),
         };
       });
 

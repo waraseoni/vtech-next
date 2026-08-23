@@ -1,6 +1,7 @@
 ﻿import { createClient } from "@supabase/supabase-js";
 import { todayIST } from "./dateUtils";
 import { pageAll } from "./fetch-all";
+import { buildDueMaps, balanceFromMaps } from "./client-due";
 
 type ToolParam = {
     type: string;
@@ -80,7 +81,7 @@ WORKFLOW & DATA MODEL:
 - GST on bills: CGST 9% + SGST 9% = 18%.
 
 FINANCIAL RULES:
-- Client balance = opening_balance + repair_billed (Delivered jobs) + direct_sales_billed + loan_given (Î£ client loan total_payable) âˆ’ total_paid (Î£ payments incl. discount).
+- Client balance = opening_balance + repair_billed (Delivered jobs, status 5 only) + direct_sales_billed − service_paid (payments without loan_id) + active_loan_given (Σ client loan total_payable, status 1) − loan_repaid (Σ payments with loan_id of an active loan).
 - Profit = Revenue âˆ’ (salaries + mechanic commissions + shop expenses + EMI + discounts). Don't double-count walk-in sales as revenue when they are only cash-in.
 - Loans: client loans (money shop lent to customers) status 1 = Active; lender loans (shop's own debts) with EMI instalments.
 
@@ -658,23 +659,16 @@ export async function executeGeminiTool(functionCall: { name: string; args?: obj
                 const [txRes, dirRes, payRes, loanRes] = await Promise.all([
                     pageAll(supabase.from("transaction_list").select("client_name, amount").eq("del_status", 0).eq("status", 5).in("client_name", ids.map(String))),
                     pageAll(supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids)),
-                    pageAll(supabase.from("client_payments").select("client_id, amount, discount").in("client_id", ids)),
-                    pageAll(supabase.from("client_loans").select("client_id, total_payable").in("client_id", ids)),
+                    pageAll(supabase.from("client_payments").select("client_id, amount, discount, loan_id").in("client_id", ids)),
+                    pageAll(supabase.from("client_loans").select("id, client_id, total_payable").eq("status", 1).in("client_id", ids)),
                 ]);
-                const repairBilled: Record<number, number> = {};
-                (txRes.data || []).forEach((t) => { const id = Number(t.client_name); if (id) repairBilled[id] = (repairBilled[id] || 0) + (Number(t.amount) || 0); });
-                const directBilled: Record<number, number> = {};
-                (dirRes.data || []).forEach((d) => { if (d.client_id) directBilled[d.client_id] = (directBilled[d.client_id] || 0) + (Number(d.total_amount) || 0); });
-                const loanGiven: Record<number, number> = {};
-                (loanRes.data || []).forEach((l) => { if (l.client_id) loanGiven[l.client_id] = (loanGiven[l.client_id] || 0) + (Number(l.total_payable) || 0); });
-                const totalPaid: Record<number, number> = {};
-                (payRes.data || []).forEach((p) => { totalPaid[p.client_id] = (totalPaid[p.client_id] || 0) + (Number(p.amount) || 0) + (Number(p.discount) || 0); });
+                const m = buildDueMaps({ repairs: txRes.data, directSales: dirRes.data, payments: payRes.data, loans: loanRes.data });
                 dueDate = crossed.map((c) => ({
                     client_id: c.id,
                     name: `${c.firstname} ${c.lastname}`.trim(),
                     contact: c.contact,
                     due_date: c.payment_due_date,
-                    outstanding: Math.round(((Number(c.opening_balance) || 0) + (repairBilled[c.id] || 0) + (directBilled[c.id] || 0) + (loanGiven[c.id] || 0) - (totalPaid[c.id] || 0)) * 100) / 100,
+                    outstanding: Math.round(balanceFromMaps(m, c.id, Number(c.opening_balance) || 0) * 100) / 100,
                 })).filter((c) => c.outstanding > 0);
             }
             if (dueDate.length) alerts.push({ type: "due_payment_date", severity: "warning", title: "Payment Due Date Crossed", items: dueDate });
@@ -693,21 +687,14 @@ export async function executeGeminiTool(functionCall: { name: string; args?: obj
                     pageAll(supabase.from("client_list").select("id, firstname, lastname, contact, opening_balance").eq("delete_flag", 0)),
                     pageAll(supabase.from("transaction_list").select("client_name, amount").eq("del_status", 0).eq("status", 5)),
                     pageAll(supabase.from("direct_sales").select("client_id, total_amount")),
-                    pageAll(supabase.from("client_payments").select("client_id, amount, discount")),
-                    pageAll(supabase.from("client_loans").select("client_id, total_payable")),
+                    pageAll(supabase.from("client_payments").select("client_id, amount, discount, loan_id")),
+                    pageAll(supabase.from("client_loans").select("id, client_id, total_payable").eq("status", 1)),
                 ]);
-                const repairBilled: Record<number, number> = {};
-                (txRes.data || []).forEach((t) => { const id = Number(t.client_name); if (id) repairBilled[id] = (repairBilled[id] || 0) + (Number(t.amount) || 0); });
-                const directBilled: Record<number, number> = {};
-                (dirRes.data || []).forEach((d) => { if (d.client_id) directBilled[d.client_id] = (directBilled[d.client_id] || 0) + (Number(d.total_amount) || 0); });
-                const loanGiven: Record<number, number> = {};
-                (loanRes.data || []).forEach((l) => { if (l.client_id) loanGiven[l.client_id] = (loanGiven[l.client_id] || 0) + (Number(l.total_payable) || 0); });
-                const totalPaid: Record<number, number> = {};
-                (payRes.data || []).forEach((p) => { totalPaid[p.client_id] = (totalPaid[p.client_id] || 0) + (Number(p.amount) || 0) + (Number(p.discount) || 0); });
+                const m = buildDueMaps({ repairs: txRes.data, directSales: dirRes.data, payments: payRes.data, loans: loanRes.data });
                 const ob = (clientsRes.data || [])
                     .map((c) => ({
                         id: c.id, firstname: c.firstname, lastname: c.lastname, contact: c.contact, opening_balance: Number(c.opening_balance) || 0,
-                        outstanding: Math.round(((Number(c.opening_balance) || 0) + (repairBilled[c.id] || 0) + (directBilled[c.id] || 0) + (loanGiven[c.id] || 0) - (totalPaid[c.id] || 0)) * 100) / 100,
+                        outstanding: Math.round(balanceFromMaps(m, c.id, Number(c.opening_balance) || 0) * 100) / 100,
                     }))
                     .filter((c) => c.outstanding > 0)
                     .sort((a, b) => b.outstanding - a.outstanding)
@@ -778,30 +765,23 @@ export async function executeGeminiTool(functionCall: { name: string; args?: obj
                 pageAll(supabase.from("client_list").select("id, firstname, middlename, lastname, contact, opening_balance").eq("delete_flag", 0)),
                 pageAll(supabase.from("transaction_list").select("client_name, amount").eq("del_status", 0).eq("status", 5)),
                 pageAll(supabase.from("direct_sales").select("client_id, total_amount")),
-                pageAll(supabase.from("client_payments").select("client_id, amount, discount")),
-                pageAll(supabase.from("client_loans").select("client_id, total_payable")),
+                pageAll(supabase.from("client_payments").select("client_id, amount, discount, loan_id")),
+                pageAll(supabase.from("client_loans").select("id, client_id, total_payable").eq("status", 1)),
             ]);
-            const repairBilled: Record<number, number> = {};
-            (txRes.data || []).forEach((t) => { const id = Number(t.client_name); if (id) repairBilled[id] = (repairBilled[id] || 0) + (Number(t.amount) || 0); });
-            const directBilled: Record<number, number> = {};
-            (dirRes.data || []).forEach((d) => { if (d.client_id) directBilled[d.client_id] = (directBilled[d.client_id] || 0) + (Number(d.total_amount) || 0); });
-            const loanGiven: Record<number, number> = {};
-            (loanRes.data || []).forEach((l) => { if (l.client_id) loanGiven[l.client_id] = (loanGiven[l.client_id] || 0) + (Number(l.total_payable) || 0); });
-            const totalPaid: Record<number, number> = {};
-            (payRes.data || []).forEach((p) => { totalPaid[p.client_id] = (totalPaid[p.client_id] || 0) + (Number(p.amount) || 0) + (Number(p.discount) || 0); });
+            const m = buildDueMaps({ repairs: txRes.data, directSales: dirRes.data, payments: payRes.data, loans: loanRes.data });
             const list = (clientsRes.data || [])
                 .map((c) => {
                     const ob = Number(c.opening_balance) || 0;
-                    const rep = repairBilled[c.id] || 0;
-                    const dir = directBilled[c.id] || 0;
-                    const loan = loanGiven[c.id] || 0;
-                    const paid = totalPaid[c.id] || 0;
-                    return { client_id: c.id, name: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ").trim(), contact: c.contact, opening_balance: ob, repair_billed: rep, direct_sales_billed: dir, loan_given: loan, total_paid: paid, net_balance: Math.round((ob + rep + dir + loan - paid) * 100) / 100 };
+                    const rep = m.repairBilled[c.id] || 0;
+                    const dir = m.directSalesBilled[c.id] || 0;
+                    const loan = m.activeLoanGiven[c.id] || 0;
+                    const paid = (m.servicePaid[c.id] || 0) + (m.loanRepaid[c.id] || 0);
+                    return { client_id: c.id, name: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ").trim(), contact: c.contact, opening_balance: ob, repair_billed: rep, direct_sales_billed: dir, loan_given: loan, total_paid: paid, net_balance: Math.round(balanceFromMaps(m, c.id, ob) * 100) / 100 };
                 })
                 .filter((x) => x.net_balance > 0)
                 .sort((a, b) => b.net_balance - a.net_balance)
                 .slice(0, limit);
-            return { outstanding_clients: list, note: "Balance = opening balance + delivered repairs + direct sales + loans given - total payments (incl. discounts)." };
+            return { outstanding_clients: list, note: "Balance = opening balance + delivered repairs (status 5) + direct sales - service payments + active loans - loan repayments." };
         }
 
         if (name === "get_expense_report") {
@@ -899,8 +879,8 @@ export async function getLiveContext(role: AiRole): Promise<string> {
         pageAll(supabase.from("product_list").select("id, name, alert_quantity").eq("delete_flag", 0)),
         pageAll(supabase.from("client_list").select("id, firstname, lastname, contact, opening_balance").eq("delete_flag", 0)),
         pageAll(supabase.from("direct_sales").select("client_id, total_amount")),
-        pageAll(supabase.from("client_payments").select("client_id, amount, discount")),
-        pageAll(supabase.from("client_loans").select("client_id, total_payable, status")),
+        pageAll(supabase.from("client_payments").select("client_id, amount, discount, loan_id")),
+        pageAll(supabase.from("client_loans").select("id, client_id, total_payable, status").eq("status", 1)),
     ]);
 
     const lines: string[] = [];
@@ -928,20 +908,13 @@ export async function getLiveContext(role: AiRole): Promise<string> {
         : "- Pending jobs: 0");
 
     // 3. Top 5 clients by outstanding balance (shared balance formula)
-    const repairBilled: Record<number, number> = {};
-    (jobs).forEach((t) => { if (t.status === 5) { const id = Number(t.client_name); if (id) repairBilled[id] = (repairBilled[id] || 0) + (Number(t.amount) || 0); } });
-    const directBilled: Record<number, number> = {};
-    (dirRes.data || []).forEach((d) => { if (d.client_id) directBilled[d.client_id] = (directBilled[d.client_id] || 0) + (Number(d.total_amount) || 0); });
-    const loanGiven: Record<number, number> = {};
-    (loanRes.data || []).forEach((l) => { if (l.client_id) loanGiven[l.client_id] = (loanGiven[l.client_id] || 0) + (Number(l.total_payable) || 0); });
-    const totalPaid: Record<number, number> = {};
-    (payRes.data || []).forEach((p) => { totalPaid[p.client_id] = (totalPaid[p.client_id] || 0) + (Number(p.amount) || 0) + (Number(p.discount) || 0); });
+    const m = buildDueMaps({ repairs: jobs.filter((t) => t.status === 5), directSales: dirRes.data, payments: payRes.data, loans: loanRes.data });
     const outstanding = (clientsRes.data || [])
         .map((c) => ({
             id: c.id,
             name: `${c.firstname} ${c.lastname}`.trim(),
             contact: c.contact,
-            net: Math.round(((Number(c.opening_balance) || 0) + (repairBilled[c.id] || 0) + (directBilled[c.id] || 0) + (loanGiven[c.id] || 0) - (totalPaid[c.id] || 0)) * 100) / 100,
+            net: Math.round(balanceFromMaps(m, c.id, Number(c.opening_balance) || 0) * 100) / 100,
         }))
         .filter((c) => c.net > 0);
     const topClients = outstanding.slice().sort((a, b) => b.net - a.net).slice(0, 5);

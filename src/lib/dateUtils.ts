@@ -85,6 +85,21 @@ export const parseISTDate = (dateStr: string): Date => {
 };
 
 /**
+ * Convert a naive datetime-local input value ("YYYY-MM-DDTHH:mm[:ss]") into an
+ * ISO 8601 string with an explicit +05:30 offset.
+ *
+ * WHY: transaction_list.date_completed is a timestamptz column — Postgres reads a
+ * bare "YYYY-MM-DDTHH:mm" as UTC, so an IST evening delivery got displayed as the
+ * NEXT day (+5:30 shift). PHP saved the picked wall-clock time as-is; this mirrors
+ * that by stamping it with the shop timezone explicitly.
+ */
+export const dtLocalToIST = (v: string): string => {
+  if (!v) return "";
+  if (/([zZ]|[+-]\d{2}:?\d{2})$/.test(v)) return v; // already has an offset
+  return v.length === 16 ? `${v}:00+05:30` : `${v}+05:30`;
+};
+
+/**
  * Current time in IST as "HH:mm:ss" (24h). Used for attendance
  * check-in / check-out stamps, mirroring PHP's server-side clock.
  */

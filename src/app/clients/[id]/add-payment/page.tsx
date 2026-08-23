@@ -103,28 +103,40 @@ export default function AddPaymentPage({
           );
 
           // BUG FIX 12: calculate live balance to show context
-          // BUG FIX 6: client_name in transaction_list stores id as TEXT
-          const [{ data: txns }, { data: sales }, { data: pays }] = await Promise.all([
+          // Canonical PHP formula: sirf Delivered (status=5) jobs billed hote hain;
+          // service payments (loan_id null/0) + active loans ka hisaab lagta hai.
+          const [{ data: txns }, { data: sales }, { data: pays }, { data: loans }] = await Promise.all([
             supabase
               .from("transaction_list")
-              .select("amount, status")
-              .eq("client_name", String(clientId)),
+              .select("amount")
+              .eq("client_name", String(clientId))
+              .eq("status", 5),
             supabase
               .from("direct_sales")
               .select("total_amount")
               .eq("client_id", clientId),
             supabase
               .from("client_payments")
-              .select("amount, discount")
+              .select("amount, discount, loan_id")
+              .eq("client_id", clientId),
+            supabase
+              .from("client_loans")
+              .select("id, total_payable")
               .eq("client_id", clientId)
-              .is("loan_id", null),
+              .eq("status", 1),
           ]);
-          const repairBilled = (txns  || [])
-            .filter(j => j.status === 2 || j.status === 3 || j.status === 5)
-            .reduce((s, j) => s + (j.amount || 0), 0);
+          const activeLoanIds = new Set((loans || []).map(l => l.id));
+          let loanRepaid = 0;
+          const repairBilled = (txns  || []).reduce((s, j) => s + (j.amount || 0), 0);
           const directBilled = (sales || []).reduce((s, d) => s + (d.total_amount || 0), 0);
-          const totalPaid    = (pays  || []).reduce((s, p) => s + (p.amount + (p.discount || 0)), 0);
-          setBalance(cd.opening_balance + repairBilled + directBilled - totalPaid);
+          let totalPaid      = 0;
+          (pays || []).forEach(p => {
+            const credit = p.amount + (p.discount || 0);
+            if (!p.loan_id) totalPaid += credit;
+            else if (activeLoanIds.has(p.loan_id)) loanRepaid += credit;
+          });
+          const loanGiven = (loans || []).reduce((s, l) => s + (l.total_payable || 0), 0);
+          setBalance(cd.opening_balance + repairBilled + directBilled - totalPaid + loanGiven - loanRepaid);
         }
 
         // BUG FIX 5: table = transaction_list (not "jobs")

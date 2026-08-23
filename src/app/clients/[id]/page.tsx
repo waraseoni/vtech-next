@@ -118,18 +118,24 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Calculations
+  // Calculations — canonical PHP formula (view_client.php / client_api.php):
+  // due = opening + delivered repairs + direct sales − service payments
+  //       + active loans − repayments on active loans
   const repairBilled = repairs.filter(r => r.status === 5).reduce((s, r) => s + toNum(r.amount), 0);
   const saleBilled = directSales.reduce((s, d) => s + toNum(d.total_amount), 0);
   const totalBilled = repairBilled + saleBilled;
-  const totalPaid = payments.reduce((s, p) => s + toNum(p.amount) + toNum(p.discount), 0);
-  const loanGiven = loans.reduce((s, l) => s + toNum(l.total_payable), 0);
-  const loanBalance = loans.filter(l => l.status === 1).reduce((s, l) => {
-    const p = payments.filter(pay => pay.loan_id === l.id).reduce((acc, pay) => acc + toNum(pay.amount) + toNum(pay.discount), 0);
-    return s + (toNum(l.total_payable) - p);
+  const totalPaid = payments.filter(p => !p.loan_id).reduce((s, p) => s + toNum(p.amount) + toNum(p.discount), 0);
+  const activeLoans = loans.filter(l => l.status === 1);
+  const activeLoanIds = new Set(activeLoans.map(l => l.id));
+  const loanGiven = activeLoans.reduce((s, l) => s + toNum(l.total_payable), 0);
+  const loanRepaid = payments.filter(p => p.loan_id && activeLoanIds.has(p.loan_id)).reduce((s, p) => s + toNum(p.amount) + toNum(p.discount), 0);
+  const loanBalance = loanGiven - loanRepaid;
+  const netBalance = (toNum(client?.opening_balance) || 0) + totalBilled - totalPaid + loanGiven - loanRepaid;
+  const monthlyEmi = activeLoans.reduce((s, l) => {
+    const paidL = payments.filter(pay => pay.loan_id === l.id).reduce((acc, pay) => acc + toNum(pay.amount) + toNum(pay.discount), 0);
+    const remaining = toNum(l.total_payable) - paidL;
+    return s + (remaining > 0 ? Math.min(toNum(l.emi_amount), remaining) : 0);
   }, 0);
-  const netBalance = (toNum(client?.opening_balance) || 0) + repairBilled + saleBilled + loanGiven - totalPaid;
-  const monthlyEmi = loans.filter(l => l.status === 1).reduce((s, l) => s + toNum(l.emi_amount), 0);
 
   // Filtered repairs by date
   const filteredRepairs = repairs.filter(r => {

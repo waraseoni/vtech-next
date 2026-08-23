@@ -12,6 +12,7 @@ import Link from "next/link";
 import { todayIST, parseISTDate, toLocalStr } from "@/lib/dateUtils";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { pageAll } from "@/lib/fetch-all";
+import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
@@ -118,24 +119,12 @@ function DueRemindersContent() {
       const [repairs, sales, loans, payments, reminders] = await Promise.all([
         pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
         pageAll(supabase.from("direct_sales").select("client_id, total_amount")),
-        pageAll(supabase.from("client_loans").select("client_id, total_payable")),
-        pageAll(supabase.from("client_payments").select("client_id, amount, discount")),
+        pageAll(supabase.from("client_loans").select("id, client_id, total_payable").eq("status", 1)),
+        pageAll(supabase.from("client_payments").select("client_id, amount, discount, loan_id")),
         pageAll(supabase.from("payment_reminders").select("client_id, reminder_date")),
       ]);
 
-      const sumBy = (arr: ReturnType<typeof JSON.parse>[] | null, key: string, valFn: (r: ReturnType<typeof JSON.parse>) => number) => {
-        const m = new Map<number, number>();
-        (arr || []).forEach(r => {
-          const id = Number(r[key]);
-          if (!id) return;
-          m.set(id, (m.get(id) || 0) + valFn(r));
-        });
-        return m;
-      };
-      const repairsMap = sumBy(repairs.data, "client_name", r => Number(r.amount) || 0);
-      const salesMap   = sumBy(sales.data,   "client_id",   r => Number(r.total_amount) || 0);
-      const loansMap   = sumBy(loans.data,   "client_id",   r => Number(r.total_payable) || 0);
-      const payMap     = sumBy(payments.data, "client_id",  r => (Number(r.amount) || 0) + (Number(r.discount) || 0));
+      const m = buildDueMaps({ repairs: repairs.data, directSales: sales.data, payments: payments.data, loans: loans.data });
       const lastRemMap = new Map<number, string>();
       const countMap   = new Map<number, number>();
       (reminders.data || []).forEach(r => {
@@ -150,11 +139,7 @@ function DueRemindersContent() {
       const todayMs = today.getTime();
 
       const built: DueRow[] = clients.map(c => {
-        const balance = (Number(c.opening_balance) || 0)
-          + (repairsMap.get(c.id) || 0)
-          + (salesMap.get(c.id) || 0)
-          + (loansMap.get(c.id) || 0)
-          - (payMap.get(c.id) || 0);
+        const balance = balanceFromMaps(m, c.id, Number(c.opening_balance) || 0);
 
         let status_key: DueRow["status_key"] = "no_date";
         if (c.payment_due_date) {
@@ -171,10 +156,10 @@ function DueRemindersContent() {
           opening_balance: Number(c.opening_balance) || 0,
           payment_due_date: c.payment_due_date || null,
           payment_due_remarks: c.payment_due_remarks || null,
-          total_repairs: repairsMap.get(c.id) || 0,
-          total_direct_sales: salesMap.get(c.id) || 0,
-          total_loans: loansMap.get(c.id) || 0,
-          total_payments: payMap.get(c.id) || 0,
+          total_repairs: m.repairBilled[c.id] || 0,
+          total_direct_sales: m.directSalesBilled[c.id] || 0,
+          total_loans: m.activeLoanGiven[c.id] || 0,
+          total_payments: (m.servicePaid[c.id] || 0) + (m.loanRepaid[c.id] || 0),
           last_reminder: lastRemMap.get(c.id) || null,
           reminder_count: countMap.get(c.id) || 0,
           balance,

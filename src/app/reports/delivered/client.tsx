@@ -61,10 +61,12 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
     const total = transactions.reduce((s, t) => s + t.amount, 0);
     const unique = new Set(transactions.map(t => t.client_id)).size;
     const avg = count > 0 ? total / count : 0;
-    const totalBalance = transactions.reduce((s, t) => {
-      const ct = clientTotals[t.client_id];
-      if (!ct) return s;
-      return s + t.opening_balance + ct.billed + ct.sales - ct.paid;
+    // Har client ka balance sirf EK baar jodo (opening_balance row-level repeat hota hai)
+    const openings: Record<number, number> = {};
+    transactions.forEach(t => { openings[t.client_id] = t.opening_balance; });
+    const totalBalance = Object.entries(clientTotals).reduce((s, [idStr, ct]) => {
+      const id = Number(idStr);
+      return s + (openings[id] || 0) + ct.billed + ct.sales - ct.paid;
     }, 0);
     return { count, total, unique, avg, totalBalance };
   }, [transactions, clientTotals]);

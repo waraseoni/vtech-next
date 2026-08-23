@@ -10,6 +10,7 @@ import {
   Smartphone, X,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
+import { fetchClientDue, dueLabel } from "@/lib/client-due";
 import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import SearchableSelect from "@/components/SearchableSelect";
 
@@ -115,26 +116,11 @@ function ManageJobPageInner({
   }, [toast]);
 
   // ── CLIENT BALANCE ────────────────────────────────────────────────────
-  // Balance = Opening + All Billed (repairs + direct sales) - All Settled (payments + discounts)
-  // matches Client List and Ledger Print calculation
+  // Canonical PHP formula (SalesTrait::get_client_balance): opening + delivered
+  // repairs + direct sales − service payments + active loans − loan repayments.
   const fetchClientBalance = useCallback(async (cid: number) => {
-    const [{ data: txns }, { data: sales }, { data: pays }] = await Promise.all([
-      supabase.from("transaction_list").select("amount").eq("client_name", String(cid)),
-      supabase.from("direct_sales").select("total_amount").eq("client_id", cid),
-      supabase.from("client_payments").select("amount, discount").eq("client_id", cid).is("loan_id", null),
-    ]);
-    const { data: cd } = await supabase.from("client_list").select("opening_balance").eq("id", cid).single();
-    const ob  = cd?.opening_balance || 0;
-    const dr  = (txns  || []).reduce((s, r) => s + (r.amount || 0), 0)
-              + (sales || []).reduce((s, r) => s + (r.total_amount || 0), 0);
-    // FIXED: credit = amount + discount (both clear the balance)
-    const cr  = (pays  || []).reduce((s, p) => s + (p.amount || 0) + (p.discount || 0), 0);
-    const bal = ob + dr - cr;
-    setClientBalance(
-      bal > 0.005  ? { amount: bal, label: "Due",     type: "due"      } :
-      bal < -0.005 ? { amount: Math.abs(bal), label: "Advance", type: "advance"  } :
-                     { amount: 0,   label: "Settled",  type: "settled"  }
-    );
+    const d = await fetchClientDue(supabase, cid);
+    setClientBalance(dueLabel(d.netBalance));
   }, []);
 
   // ── FETCH MASTER DATA ─────────────────────────────────────────────────

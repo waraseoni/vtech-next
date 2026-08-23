@@ -25,7 +25,8 @@ import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { todayIST, toISTString, parseISTDate, formatIST } from "@/lib/dateUtils";
+import { todayIST, toISTString, parseISTDate, formatIST, dtLocalToIST } from "@/lib/dateUtils";
+import { buildDueMaps } from "@/lib/client-due";
 import {
   Plus, Eye, Settings, Wrench, Search, Loader2, Trash2, Phone,
   Filter, Printer, FileSpreadsheet, History, Layers,
@@ -72,10 +73,11 @@ interface Transaction {
   client_lastname?: string;
   client_contact?: string;
   client_image?: string;
-  client_opening_balance?: number;
-  total_billed?: number;
-  total_paid?: number;
-  total_sale?: number;
+client_opening_balance?: number;
+total_billed?: number;
+total_paid?: number;
+total_sale?: number;
+loan_due?: number;
 }
 
 // ─── Status Config ────────────────────────────────────────────────────────────
@@ -360,13 +362,14 @@ function JobsListContent() {
             .order("date_created", { ascending: false })
         : Promise.resolve({ data: [] });
 
-      const [clientsRes, billedRes, paidRes, salesRes, logsRes] = await Promise.all([
+      const [clientsRes, billedRes, paidRes, salesRes, loansRes, logsRes] = await Promise.all([
         supabase.from("client_list").select("id, firstname, middlename, lastname, contact, opening_balance, image_path").in("id", clientIdsNum),
-        // Only Delivered (5) & Paid (3) jobs count toward balance — Done (2) items still at shop are NOT billed yet
-        supabase.from("transaction_list").select("client_name, amount").in("status", [3, 5]).neq("del_status", 1).in("client_name", clientIdsStr),
-        // Exclude loan repayments — matches PHP WHERE loan_id IS NULL OR loan_id = 0
-        supabase.from("client_payments").select("client_id, amount, discount").in("client_id", clientIdsNum).or("loan_id.is.null,loan_id.eq.0"),
+        // Only Delivered (5) jobs count toward balance — canonical PHP formula
+        supabase.from("transaction_list").select("client_name, amount").eq("status", 5).neq("del_status", 1).in("client_name", clientIdsStr),
+        supabase.from("client_payments").select("client_id, amount, discount, loan_id").in("client_id", clientIdsNum),
         supabase.from("direct_sales").select("client_id, total_amount").in("client_id", clientIdsNum),
+        // Active loans only — closed loans balance me count nahi hote
+        supabase.from("client_loans").select("id, client_id, total_payable").eq("status", 1).in("client_id", clientIdsNum),
         logPromise,
       ]);
 
@@ -378,18 +381,11 @@ function JobsListContent() {
         }
       }
 
-      const billedMap = new Map<number, number>();
-      billedRes.data?.forEach(r => {
-        const cid = Number(r.client_name);
-        billedMap.set(cid, (billedMap.get(cid) || 0) + (r.amount || 0));
-      });
-      const paidMap = new Map<number, number>();
-      paidRes.data?.forEach(r => {
-        paidMap.set(r.client_id, (paidMap.get(r.client_id) || 0) + (r.amount || 0) + (r.discount || 0));
-      });
-      const salesMap = new Map<number, number>();
-      salesRes.data?.forEach(r => {
-        salesMap.set(r.client_id, (salesMap.get(r.client_id) || 0) + (r.total_amount || 0));
+      const m = buildDueMaps({
+        repairs: billedRes.data,
+        directSales: salesRes.data,
+        payments: paidRes.data,
+        loans: loansRes.data,
       });
       const clientMap = new Map(clientsRes.data?.map(c => [c.id, c]) ?? []);
 
@@ -406,9 +402,10 @@ function JobsListContent() {
           client_contact:         client?.contact         || "",
           client_image:           client?.image_path      || undefined,
           client_opening_balance: client?.opening_balance || 0,
-          total_billed:           billedMap.get(cid) || 0,
-          total_paid:             paidMap.get(cid)   || 0,
-          total_sale:             salesMap.get(cid)  || 0,
+          total_billed:           m.repairBilled[cid] || 0,
+          total_paid:             m.servicePaid[cid]  || 0,
+          total_sale:             m.directSalesBilled[cid] || 0,
+          loan_due:               (m.activeLoanGiven[cid] || 0) - (m.loanRepaid[cid] || 0),
           status_changed_at:      statusDate,
         };
       }));
@@ -434,7 +431,8 @@ function JobsListContent() {
     const bil = t.total_billed || 0;
     const sal = t.total_sale   || 0;
     const pai = t.total_paid   || 0;
-    return ob + bil + sal - pai;
+    const ln  = t.loan_due     || 0;
+    return ob + bil + sal + ln - pai;
   };
 
   const BalanceBadge = ({ bal }: { bal: number }) => {
@@ -512,11 +510,13 @@ function JobsListContent() {
     if (!confirm(`${selectedIds.size} jobs ka status change karein?`)) return;
     
     setBulkActionLoading(true);
-    // PHP parity: Delivered → set date_completed (delivery datetime); others → clear it
+    // PHP parity: Delivered → set date_completed (delivery datetime); others → clear it.
+    // datetime-local value par +05:30 stamp zaroori hai warna Postgres use UTC maan ke
+    // date agle din dikhati hai.
     const updates: Record<string, unknown> = {
       status: newStatus,
       date_updated: toISTString(),
-      date_completed: newStatus === 5 ? (bulkDeliverDate || toISTString()) : null,
+      date_completed: newStatus === 5 ? (dtLocalToIST(bulkDeliverDate) || toISTString()) : null,
     };
 
     const ids = [...selectedIds];
@@ -827,10 +827,8 @@ function JobsListContent() {
             const v = e.target.value;
             setBulkStatus(v);
             if (v === "5" && !bulkDeliverDate) {
-              const now = new Date();
-              const pad = (n: number) => String(n).padStart(2, "0");
-              const local = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-              setBulkDeliverDate(local);
+              // IST clock se prefill (browser-local nahi) — "YYYY-MM-DDTHH:mm"
+              setBulkDeliverDate(toISTString().slice(0, 16));
             }
           }}
           className="border-none rounded-lg px-2 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px]"

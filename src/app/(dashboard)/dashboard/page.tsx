@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import QRCode from "qrcode";
 import { pageAll } from "@/lib/fetch-all";
+import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
 import AIAlertsWidget from "@/app/components/AIAlertsWidget";
 import LicenseInfoCard from "@/app/components/LicenseInfoCard";
 
@@ -385,22 +386,14 @@ export default function Dashboard() {
           supabase.from("client_list").select("id, opening_balance, payment_due_date").eq("delete_flag", 0),
           pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
           pageAll(supabase.from("direct_sales").select("client_id, total_amount")),
-          pageAll(supabase.from("client_loans").select("client_id, total_payable")),
-          pageAll(supabase.from("client_payments").select("client_id, amount, discount")),
+          pageAll(supabase.from("client_loans").select("id, client_id, total_payable").eq("status", 1)),
+          pageAll(supabase.from("client_payments").select("client_id, amount, discount, loan_id")),
         ]);
-        const sumBy = <T,>(arr: T[] | null, key: keyof T, fn: (r: T) => number) => {
-          const m = new Map<number, number>();
-          (arr || []).forEach(r => { const id = Number(r[key]); if (id) m.set(id, (m.get(id) || 0) + fn(r)); });
-          return m;
-        };
-        const rM = sumBy(repairs, "client_name", r => n(r.amount));
-        const sM = sumBy(sales, "client_id", r => n(r.total_amount));
-        const lM = sumBy(loans, "client_id", r => n(r.total_payable));
-        const pM = sumBy(payments, "client_id", r => n(r.amount) + n(r.discount));
+        const m = buildDueMaps({ repairs, directSales: sales, payments, loans });
         const today = parseISTDate(todayIST()).getTime();
         let overdue = 0, todayC = 0, upcoming = 0, amount = 0;
         (clients || []).forEach((c) => {
-          const bal = n(c.opening_balance) + (rM.get(c.id) || 0) + (sM.get(c.id) || 0) + (lM.get(c.id) || 0) - (pM.get(c.id) || 0);
+          const bal = balanceFromMaps(m, c.id, n(c.opening_balance));
           if (bal <= 0.01) return;
           amount += bal;
           if (!c.payment_due_date) return;

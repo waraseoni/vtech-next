@@ -15,6 +15,10 @@ import {
 } from "lucide-react";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import {
+  buildDueMaps, balanceFromMaps,
+  JOB_STATUS_DELIVERED, LOAN_STATUS_ACTIVE,
+} from "@/lib/client-due";
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell,
 } from "recharts";
@@ -171,20 +175,13 @@ export default function ClientsPage() {
       };
 
       const [repairs, dirSales, payments, loans, lastTxns] = await Promise.all([
-        fetchByClient("transaction_list", "client_name, amount", "client_name", ids.map(String), q => q.eq("status", 5)),
+        fetchByClient("transaction_list", "client_name, amount", "client_name", ids.map(String), q => q.eq("status", JOB_STATUS_DELIVERED)),
         fetchByClient("direct_sales", "client_id, total_amount", "client_id", ids),
-        fetchByClient("client_payments", "client_id, amount, discount", "client_id", ids),
-        fetchByClient("client_loans", "client_id, total_payable", "client_id", ids),
+        fetchByClient("client_payments", "client_id, amount, discount, loan_id", "client_id", ids),
+        fetchByClient("client_loans", "id, client_id, total_payable", "client_id", ids, q => q.eq("status", LOAN_STATUS_ACTIVE)),
         fetchByClient("transaction_list", "client_name, date_created", "client_name", ids.map(String)),
       ]);
-      const repMap:  Record<number,number> = {};
-      repairs?.forEach((r) => { const cid=parseInt(r.client_name??"",10); if(!isNaN(cid)) repMap[cid]=(repMap[cid]||0)+toNum(r.amount); });
-      const dirMap:  Record<number,number> = {};
-      dirSales?.forEach((d) => { if(d.client_id) dirMap[d.client_id]=(dirMap[d.client_id]||0)+toNum(d.total_amount); });
-      const payMap:  Record<number,number> = {};
-      payments?.forEach((p) => { payMap[p.client_id]=(payMap[p.client_id]||0)+toNum(p.amount)+toNum(p.discount); });
-      const loanMap: Record<number,number> = {};
-      loans?.forEach((l) => { if(l.client_id) loanMap[l.client_id]=(loanMap[l.client_id]||0)+toNum(l.total_payable); });
+      const m = buildDueMaps({ repairs, directSales: dirSales, payments, loans });
       const lastTxnMap: Record<number,string> = {};
       lastTxns?.forEach((t) => {
         const cid=parseInt(t.client_name??"",10);
@@ -192,11 +189,13 @@ export default function ClientsPage() {
           lastTxnMap[cid]=t.date_created;
       });
       const built: Client[] = cls.map((c) => {
-        const ob=toNum(c.opening_balance),rep=repMap[c.id]??0,dir=dirMap[c.id]??0,loan=loanMap[c.id]??0,paid=payMap[c.id]??0;
+        const ob=toNum(c.opening_balance);
+        const rep=m.repairBilled[c.id]??0, dir=m.directSalesBilled[c.id]??0,
+          svcPaid=m.servicePaid[c.id]??0, loan=m.activeLoanGiven[c.id]??0, loanPaid=m.loanRepaid[c.id]??0;
         return { id:c.id, name:[c.firstname,c.middlename,c.lastname].filter(Boolean).join(" ").trim(),
           contact:c.contact||"", email:c.email||"", address:c.address||"", date_created:c.date_created||"",
           opening_balance:ob, repair_billed:rep, direct_sales_billed:dir, total_loan_given:loan,
-          total_paid:paid, balance:ob+rep+dir+loan-paid, last_txn_date:lastTxnMap[c.id]||null,
+          total_paid:svcPaid+loanPaid, balance:balanceFromMaps(m, c.id, ob), last_txn_date:lastTxnMap[c.id]||null,
           image_path:c.image_path || undefined, login_allowed:!!c.login_allowed };
       });
       built.sort((a,b) => b.balance-a.balance);

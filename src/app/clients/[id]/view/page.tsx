@@ -16,7 +16,7 @@ import {
   Camera, Loader, ImageIcon,
 } from 'lucide-react';
 
-import { todayIST, formatIST, parseISTDate, toISTString, toLocalStr } from "@/lib/dateUtils";
+import { todayIST, formatIST, parseISTDate, toISTString, toLocalStr, dtLocalToIST } from "@/lib/dateUtils";
 import { logActivity } from "@/lib/activity";
 import { firmVars } from "@/lib/whatsapp";
 import { compressImage } from "@/lib/imageCompression";
@@ -382,9 +382,15 @@ export default function ViewClientProfile() {
       );
       setLoans(enrichedLoans);
 
-      const totalLoanGiven  = enrichedLoans.reduce((s, l) => s + (l.total_payable || 0), 0);
-      const totalLoanRepaid = enrichedLoans.reduce((s, l) => s + (l.paid || 0), 0);
-      const totalEMI        = enrichedLoans.reduce((s, l) => s + (l.emi_amount || 0), 0);
+      // PHP view_client.php: sirf ACTIVE (status=1) loans balance me count hote hain;
+      // closed loans sirf history ke liye dikhte hain. EMI bhi remaining se capped hai.
+      const activeLoans = enrichedLoans.filter(l => l.status === 1);
+      const totalLoanGiven  = activeLoans.reduce((s, l) => s + (l.total_payable || 0), 0);
+      const totalLoanRepaid = activeLoans.reduce((s, l) => s + (l.paid || 0), 0);
+      const totalEMI        = activeLoans.reduce((s, l) => {
+        const remaining = l.total_payable - (l.paid || 0);
+        return s + (remaining > 0 ? Math.min(l.emi_amount || 0, remaining) : 0);
+      }, 0);
       setLoanGiven(totalLoanGiven);
       setLoanRepaid(totalLoanRepaid);
       setMonthlyEMI(totalEMI);
@@ -470,10 +476,12 @@ export default function ViewClientProfile() {
     if (!confirm(`${selectedIds.size} jobs ka status change karein?`)) return;
 
     setBulkActionLoading(true);
+    // datetime-local value par +05:30 stamp zaroori hai warna Postgres use UTC maan ke
+    // date agle din dikhati hai (PHP wall-clock as-is save karta tha).
     const updates: Record<string, unknown> = {
       status: newStatus,
       date_updated: toISTString(),
-      date_completed: newStatus === 5 ? (bulkDeliverDate || toISTString()) : null,
+      date_completed: newStatus === 5 ? (dtLocalToIST(bulkDeliverDate) || toISTString()) : null,
     };
 
     const ids = [...selectedIds];
@@ -1570,10 +1578,8 @@ export default function ViewClientProfile() {
                 const v = e.target.value;
                 setBulkStatus(v);
                 if (v === "5" && !bulkDeliverDate) {
-                  const now = new Date();
-                  const pad = (n: number) => String(n).padStart(2, "0");
-                  const local = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-                  setBulkDeliverDate(local);
+                  // IST clock se prefill (browser-local nahi) — "YYYY-MM-DDTHH:mm"
+                  setBulkDeliverDate(toISTString().slice(0, 16));
                 }
               }}
               className="border-none rounded-lg px-2 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px]"
