@@ -298,6 +298,28 @@ html[data-theme="light"] {
 }
 
 /* ============================================
+   NATIVE SELECT POPUP — readable options
+   Public site hardcoded-dark hai (koi data-theme attribute
+   nahi lagta), isliye default color-scheme dark; admin light
+   toggle par light. Isse browser ka native dropdown popup
+   (options list) bhi sahi colors me render hota hai.
+   ============================================ */
+html { color-scheme: dark; }
+html[data-theme="light"] { color-scheme: light; }
+
+select option,
+select optgroup {
+  background-color: #161b27;
+  color: #e2e8f0;
+}
+
+html[data-theme="light"] select option,
+html[data-theme="light"] select optgroup {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+/* ============================================
    FORM ELEMENTS - THEME AWARE
    ============================================ */
 html[data-theme="dark"] input,

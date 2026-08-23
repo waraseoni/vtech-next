@@ -855,7 +855,7 @@ function JobsListContent() {
       </div>
 
       {/* Row 2: actions */}
-      <div className="flex items-center gap-1.5 md:gap-3">
+      <div className="flex items-center flex-wrap gap-1.5 md:gap-3">
         <button
           onClick={() => {
             if (!bulkStatus) { alert("Please select a status first"); return; }
@@ -1293,7 +1293,7 @@ function JobsListContent() {
 
       {/* ── Sticky Header ── */}
       <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-900/90 to-[#0d1117]/95 backdrop-blur border-b border-[#21293d] p-3">
-        <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
           <div className="flex items-center gap-2">
             <div className="bg-blue-600/20 border border-blue-600/30 p-1.5 rounded-full">
               <Wrench size={16} className="text-blue-400" />

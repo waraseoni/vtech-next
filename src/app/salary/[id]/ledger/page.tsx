@@ -269,8 +269,8 @@ export default function MechanicLedgerPage() {
           <Link href="/salary" className={`${btnGhost} inline-flex items-center gap-2`}>
             <ArrowLeft size={14} /> Back
           </Link>
-          <div className="flex items-center gap-2">
-            <button className={btnGhost} onClick={() => goMonth(-1)} title="Prev Month">
+                  <div className="flex items-center flex-wrap gap-2">
+                      <button className={btnGhost} onClick={() => goMonth(-1)} title="Prev Month">
               <ChevronLeft size={16} />
             </button>
             <button className={btnGhost} onClick={() => goMonth(1)} title="Next Month">

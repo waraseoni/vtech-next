@@ -83,7 +83,8 @@ export default function SettingsPage() {
   const [aiTesting, setAiTesting] = useState(false);
   const [aiTestResult, setAiTestResult] = useState("");
 
-  const groqModels = ["llama-3.3-70b-versatile","llama-3.3-70b-specdec","llama3-70b-8192","mixtral-8x7b-32768","llama3-8b-8192"];
+  // Groq ne purane llama-3.3/mixtral models retire kar diye — current production list
+  const groqModels = ["openai/gpt-oss-120b","openai/gpt-oss-20b","qwen/qwen3.6-27b"];
   const geminiModels = ["gemini-2.5-flash","gemini-2.5-flash-lite","gemini-2.5-pro"];
 
   // License
@@ -973,7 +974,7 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className={labelCls}>Provider</label>
-                  <select value={aiProvider} onChange={e => { setAiProvider(e.target.value); setAiModel(e.target.value === "groq" ? "llama-3.3-70b-versatile" : "gemini-2.5-flash"); }}
+                  <select value={aiProvider} onChange={e => { setAiProvider(e.target.value); setAiModel(e.target.value === "groq" ? "openai/gpt-oss-120b" : "gemini-2.5-flash"); }}
                     className={inputCls}>
                     <option value="groq">Groq (Free)</option>
                     <option value="gemini">Gemini</option>

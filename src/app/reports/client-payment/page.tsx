@@ -239,7 +239,7 @@ export default function ClientPaymentReportPage() {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center flex-wrap justify-center gap-3">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}

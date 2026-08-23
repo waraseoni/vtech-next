@@ -294,7 +294,7 @@ function DailyIncomeContent() {
           <button type="submit" className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-600/20">
             Apply Filter
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center flex-wrap gap-2">
             <button type="button" onClick={() => shiftDay(-1)} className="p-2 rounded-xl bg-[#1e2637] text-slate-400 hover:text-white transition-all" title="Previous Day">
               <ChevronLeft size={16} />
             </button>

@@ -90,8 +90,8 @@ export default function DailyServiceReportPage() {
     <AdminPage title="Daily Service" subtitle="Jobs created per day">
       <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
         <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-2">
-            <button onClick={() => shiftDay(-1)} className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition">
+<div className="flex items-center flex-wrap gap-2">
+              <button onClick={() => shiftDay(-1)} className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition">
               <ChevronLeft size={16} />
             </button>
             <div className="flex items-center gap-2 bg-[#0d1117] border border-[#21293d] rounded-xl px-4 py-2">

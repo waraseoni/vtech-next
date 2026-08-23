@@ -437,8 +437,8 @@ export default function ClientDetailPage() {
                 <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
                   <Server size={13} className="text-blue-400" /> Client Credentials (encrypted at rest)
                 </h2>
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={downloadKit} disabled={kitLoading}
+                  <div className="flex items-center flex-wrap gap-2">
+                      <button type="button" onClick={downloadKit} disabled={kitLoading}
                     className="flex items-center gap-1.5 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 rounded-xl text-[10px] font-black text-blue-300 hover:text-blue-200 transition-all disabled:opacity-50">
                     {kitLoading ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />} Download Setup Kit
                   </button>

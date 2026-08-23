@@ -378,7 +378,7 @@ function SalaryContent() {
 
           {/* Month Navigator */}
           <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3 print:hidden">
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center flex-wrap gap-4">
               <button onClick={() => navigate("prev")} className="w-10 h-10 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-full text-slate-400 hover:text-white hover:border-blue-500/50 hover:bg-[#1c2231] transition-all"><ChevronLeft size={16} /></button>
               <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-4 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-sm font-black text-white outline-none focus:border-blue-500/50 text-center" />
               {month !== currentMonth && (

@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const role: AiRole = sessionRole === "admin" ? "admin" : "staff";
 
     const body = await request.json();
-    const { message, messages, type, context, provider } = body;
+    const { message, messages, type, context, provider, apiKey: bodyKey, model: bodyModel } = body;
 
     if (!message && (!messages || messages.length === 0)) {
       return NextResponse.json(
@@ -26,8 +26,10 @@ export async function POST(request: NextRequest) {
     const aiSettings = await getAiSettings();
 
     const activeProvider = provider || aiSettings.provider;
-    const apiKey = aiSettings.apiKey;
-    const modelName = aiSettings.model;
+    // Settings page "Test API" apni form values bhejta hai — unsaved values bhi
+    // test ho payein; assistant calls key/model nahi bhejte, DB wali chalti hai.
+    const apiKey = bodyKey || aiSettings.apiKey;
+    const modelName = bodyModel || aiSettings.model;
 
     // Fresh shop snapshot (role-aware) so replies are grounded in current data
     const liveContext = await getLiveContext(role);

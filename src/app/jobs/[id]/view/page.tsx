@@ -596,40 +596,40 @@ ${svcHtml}${prodHtml}
           <div className="bg-[#161b27] rounded shadow-sm border border-[#21293d]">
 
             {/* Card Header — PHP style navy */}
-            <div className="bg-[#0d1f35] text-white rounded-t px-4 py-3 flex items-center justify-between flex-wrap gap-2 border-b border-[#21293d]">
+            <div className="bg-[#0d1f35] text-white rounded-t px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#21293d]">
               <h5 className="font-bold text-base flex items-center gap-2 m-0">
                 <FileText size={16}/>
                 Transaction Details — {job.job_id} ({job.code})
               </h5>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:flex-wrap">
                 <Link href={`/clients/${job.client_name}/view`}
-                  className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
+                  className="flex items-center justify-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
                   <User size={12}/> View Client
                 </Link>
                 <Link href={`/api/print-bill?job_id=${job.job_id}&bill_type=gst`} target="_blank"
-                  className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
+                  className="flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
                   <FileText size={12}/> GST Bill
                 </Link>
                 <Link href={`/api/print-bill?job_id=${job.job_id}&type=thermal`} target="_blank"
-                  className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
+                  className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
                   <Printer size={12}/> Thermal Receipt
                 </Link>
                 <button onClick={handlePrint}
-                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+                  className="flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
                   <Printer size={12}/> Print Bill
                 </button>
                 <button onClick={() => safeBack(router, "/jobs")}
-                  className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+                  className="col-span-2 flex items-center justify-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors sm:col-span-1">
                   <ArrowLeft size={12}/> Back
                 </button>
                 <button onClick={() => prevJob && router.push(`/jobs/${prevJob.id}/view`)} disabled={!prevJob}
                   title={prevJob ? `Job ${prevJob.job_id}` : "No previous job"}
-                  className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                  className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                   <ChevronLeft size={12}/> Prev
                 </button>
                 <button onClick={() => nextJob && router.push(`/jobs/${nextJob.id}/view`)} disabled={!nextJob}
                   title={nextJob ? `Job ${nextJob.job_id}` : "No next job"}
-                  className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                  className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                   Next <ChevronRight size={12}/>
                 </button>
               </div>
@@ -1038,30 +1038,30 @@ ${svcHtml}${prodHtml}
 
               {/* ── ACTION BUTTONS (bottom — PHP style) ───────────────────── */}
               <hr className="my-4 border-[#21293d]"/>
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="grid grid-cols-2 gap-2 justify-center sm:flex sm:flex-wrap">
                 <button onClick={() => { setNewStatus(job.status); setShowStatusModal(true); }}
-                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
+                  className="flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
                   <RefreshCw size={15}/> Update Status
                 </button>
                 <Link href={`/jobs/${job.id}/edit`}
-                  className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline">
+                  className="flex items-center justify-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline">
                   <Edit size={15}/> Edit Transaction
                 </Link>
                 <button onClick={handlePrint}
-                  className="flex items-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
+                  className="flex items-center justify-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
                   <Printer size={15}/> Print Page
                 </button>
                 <Link href={`/api/print-bill?job_id=${job.job_id}&type=thermal`} target="_blank"
-                  className="flex items-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline">
+                  className="flex items-center justify-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline">
                   <Printer size={15}/> Thermal Receipt
                 </Link>
                 <button onClick={() => setShowPayModal(true)}
-                  className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
+                  className="flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
                   <Plus size={15}/> Add Payment
                 </button>
                 {userRole === "admin" && (
                   <button onClick={handleDelete} disabled={deleting}
-                    className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors disabled:opacity-50">
+                    className="flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors disabled:opacity-50">
                     <Trash2 size={15}/> {deleting ? "Deleting..." : "Delete Transaction"}
                   </button>
                 )}

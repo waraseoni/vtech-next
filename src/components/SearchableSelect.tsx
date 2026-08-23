@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Search, ChevronDown, Check, X } from "lucide-react";
 
@@ -27,6 +27,14 @@ type Props = {
   renderSelected?: (opt: SearchableOption) => ReactNode;
 };
 
+/** Menu ki fixed hisse: p-3 (24) + search input (~46) + mb-2 (8) */
+const MENU_CHROME = 78;
+const VIEWPORT_MARGIN = 8;
+const MIN_LIST_H = 88;
+const MAX_LIST_H = 208;
+
+type MenuPos = { top: number; left: number; width: number; maxListH: number };
+
 export default function SearchableSelect({
   value,
   options,
@@ -39,11 +47,66 @@ export default function SearchableSelect({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [pos, setPos] = useState<MenuPos | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const close = () => { setOpen(false); setSearch(""); };
+
+  /**
+   * Trigger ke around available space nikaal kar menu ko hamesha viewport ke
+   * andar rakhta hai — niche jagah kam ho to upar flip, aur list ki height
+   * available space se capped (mobile/modal dono cover).
+   */
+  const computePos = useCallback((): MenuPos | null => {
+    const r = btnRef.current?.getBoundingClientRect();
+    if (!r || typeof window === "undefined") return null;
+    const vv = window.visualViewport;
+    const vw = Math.round(vv?.width ?? window.innerWidth);
+    const vh = Math.round(vv?.height ?? window.innerHeight);
+
+    const width = Math.min(r.width, vw - VIEWPORT_MARGIN * 2);
+    const left = Math.max(VIEWPORT_MARGIN, Math.min(r.left, vw - VIEWPORT_MARGIN - width));
+
+    const spaceBelow = vh - VIEWPORT_MARGIN - r.bottom;
+    const spaceAbove = r.top - VIEWPORT_MARGIN;
+
+    let top: number;
+    let maxListH: number;
+    if (spaceBelow >= spaceAbove) {
+      maxListH = Math.max(MIN_LIST_H, Math.min(MAX_LIST_H, spaceBelow - MENU_CHROME));
+      top = r.bottom + VIEWPORT_MARGIN;
+    } else {
+      maxListH = Math.max(MIN_LIST_H, Math.min(MAX_LIST_H, spaceAbove - MENU_CHROME));
+      top = r.top - VIEWPORT_MARGIN - MENU_CHROME - maxListH;
+    }
+    // Final safety clamp — menu kabhi screen se bahar na jaye
+    top = Math.max(VIEWPORT_MARGIN, Math.min(top, vh - VIEWPORT_MARGIN - MENU_CHROME - maxListH));
+
+    return { top, left, width, maxListH };
+  }, []);
+
+  const toggle = () => {
+    if (!open) setPos(computePos());
+    setOpen(v => !v);
+    setSearch("");
+  };
+
+  // Open rehte hue scroll/resize/keyboard-open par menu ko trigger ke sath
+  // reposition karo — warna fixed menu purani jagah atka rehta hai.
+  useEffect(() => {
+    if (!open) return;
+    const reposition = () => setPos(computePos());
+    window.addEventListener("resize", reposition);
+    window.visualViewport?.addEventListener("resize", reposition);
+    // capture: true — kisi bhi scrollable ancestor/container ke scroll par pakdo
+    document.addEventListener("scroll", reposition, true);
+    return () => {
+      window.removeEventListener("resize", reposition);
+      window.visualViewport?.removeEventListener("resize", reposition);
+      document.removeEventListener("scroll", reposition, true);
+    };
+  }, [open, computePos]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -55,15 +118,6 @@ export default function SearchableSelect({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
-
-  const toggle = () => {
-    if (!open) {
-      const r = btnRef.current?.getBoundingClientRect();
-      if (r) setPos({ top: r.bottom + 8, left: r.left, width: r.width });
-    }
-    setOpen(v => !v);
-    setSearch("");
-  };
 
   const selected = options.find(o => String(o.id) === String(value ?? ""));
 
@@ -108,14 +162,19 @@ export default function SearchableSelect({
           <div className="relative mb-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={15} />
             <input
-              autoFocus
+              /* Mobile par keyboard turant na khule — user khud search tap kare,
+                 warna keyboard aate hi menu screen se bahar ho jata tha. */
+              autoFocus={typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches}
               placeholder={searchPlaceholder}
               className="w-full pl-9 pr-3 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-white text-sm outline-none focus:border-blue-500/60 placeholder:text-slate-700"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
-          <div className="max-h-52 overflow-y-auto space-y-0.5">
+          <div
+            className="overflow-y-auto space-y-0.5"
+            style={{ maxHeight: pos.maxListH }}
+          >
             {clearLabel && (
               <div
                 onClick={() => pick("")}

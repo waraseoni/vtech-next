@@ -11,7 +11,7 @@ import {
   CreditCard, Plus, Filter, ShoppingCart, Wrench, Receipt,
   Banknote, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, X,
   Printer, MessageCircle, ExternalLink, Trash2,
-  PencilLine, IndianRupee, RefreshCw, MessageSquare,
+  PencilLine, IndianRupee, RefreshCw, MessageSquare, Mail,
   CheckSquare, Square, Copy, Send, FileText,
   Camera, Loader, ImageIcon,
 } from 'lucide-react';
@@ -217,6 +217,7 @@ export default function ViewClientProfile() {
   const [client,         setClient]         = useState<Client | null>(null);
   const [reminders,      setReminders]      = useState<PaymentReminder[]>([]);
   const [dueModal,       setDueModal]       = useState(false);
+  const [fabOpen,        setFabOpen]        = useState(false);
   const [dueForm,        setDueForm]       = useState({ due_date: '', due_remarks: '' });
   const [savingDue,      setSavingDue]      = useState(false);
   const [jobs,           setJobs]           = useState<Job[]>([]);
@@ -714,50 +715,58 @@ export default function ViewClientProfile() {
         <div
           className="rounded-2xl border p-5 flex flex-col md:flex-row md:items-center justify-between gap-5 theme-card"
         >
-          {/* Profile — photo agar upload hui to photo, warna initials */}
-          <div className="flex items-center gap-4">
-            <div className="relative flex-shrink-0">
-              <ClientAvatar name={client.fullName} imagePath={client.image_path} />
-              <button
-                onClick={() => setPhotoPopup(!photoPopup)}
-                disabled={photoSaving}
-                className="absolute -bottom-1.5 -right-1.5 w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors disabled:opacity-60"
-                title="Photo upload"
-              >
-                {photoSaving ? <Loader size={16} className="animate-spin" /> : <Camera size={16} />}
-              </button>
-              {photoPopup && (
-                <div className="absolute -bottom-20 right-0 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
-                  <button onClick={() => { setPhotoPopup(false); photoCamRef.current?.click(); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
-                    <Camera size={12}/> Camera
+          {/* Profile — photo + info side-by-side (heights match), niche quick-contact bar */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start gap-4">
+              {/* Photo column — delete button photo ke theek neeche */}
+              <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                <div className="relative">
+                  <ClientAvatar name={client.fullName} imagePath={client.image_path} />
+                  <button
+                    onClick={() => setPhotoPopup(!photoPopup)}
+                    disabled={photoSaving}
+                    className="absolute -bottom-1.5 -right-1.5 w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors disabled:opacity-60"
+                    title="Photo upload"
+                  >
+                    {photoSaving ? <Loader size={16} className="animate-spin" /> : <Camera size={16} />}
                   </button>
-                  <button onClick={() => { setPhotoPopup(false); photoRef.current?.click(); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
-                    <ImageIcon size={12}/> Gallery
-                  </button>
+                  {photoPopup && (
+                    <div className="absolute -bottom-20 right-0 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                      <button onClick={() => { setPhotoPopup(false); photoCamRef.current?.click(); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
+                        <Camera size={12}/> Camera
+                      </button>
+                      <button onClick={() => { setPhotoPopup(false); photoRef.current?.click(); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
+                        <ImageIcon size={12}/> Gallery
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-              <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-              <input ref={photoCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoUpload} />
-            </div>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-black text-white uppercase leading-tight tracking-tight">
-                {client.fullName}
-              </h1>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-400 font-medium">
-                <span className="flex items-center gap-1"><User size={11} /> ID: #{client.id}</span>
-                <span className="flex items-center gap-1"><Phone size={11} />{client.contact}</span>
-                {client.address && <span className="flex items-center gap-1"><MapPin size={11} />{client.address}</span>}
-                <span className="flex items-center gap-1"><Calendar size={11} />Since {fmtDate(client.date_created)}</span>
+                {client.image_path && (
+                  <button onClick={handlePhotoDelete}
+                    disabled={photoSaving}
+                    className="w-full flex items-center justify-center gap-1 text-[10px] font-bold py-1.5 px-2 rounded-lg bg-red-500/10 border border-red-500/25 text-red-300 hover:bg-red-500/20 transition-colors disabled:opacity-60"
+                    title="Delete photo">
+                    <Trash2 size={11} /> Delete
+                  </button>
+                )}
+                <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                <input ref={photoCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoUpload} />
               </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                <a href={`tel:${client.contact}`}
-                  className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-300 hover:bg-blue-500/25 transition-colors no-underline">
-                  <Phone size={11} /> Call
-                </a>
+              {/* Info column */}
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl md:text-3xl font-black text-white uppercase leading-tight tracking-tight break-words">
+                  {client.fullName}
+                </h1>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-slate-400 font-medium">
+                  <span className="flex items-center gap-1"><User size={11} /> ID: #{client.id}</span>
+                  <span className="flex items-center gap-1"><Phone size={11} />{client.contact}</span>
+                  {client.address && <span className="flex items-center gap-1"><MapPin size={11} />{client.address}</span>}
+                  <span className="flex items-center gap-1"><Calendar size={11} />Since {fmtDate(client.date_created)}</span>
+                </div>
                 {client.payment_due_date && netBalance > 0 && (
-                  <span className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${
+                  <span className={`mt-2 inline-flex max-w-full items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${
                     (new Date(client.payment_due_date).getTime() < Date.now())
                       ? 'bg-red-500/15 border-red-500/25 text-red-300'
                       : 'bg-amber-500/15 border-amber-500/25 text-amber-300'
@@ -766,66 +775,71 @@ export default function ViewClientProfile() {
                     {client.payment_due_remarks && <span className="opacity-80 truncate max-w-[140px]" title={client.payment_due_remarks}>· “{client.payment_due_remarks}”</span>}
                   </span>
                 )}
-                <a href={`https://wa.me/91${client.contact}`} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-green-500/15 border border-green-500/25 text-green-300 hover:bg-green-500/25 transition-colors no-underline">
-                  <MessageCircle size={11} /> WhatsApp
-                </a>
-                <a href={`sms:${client.contact}`}
-                  className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-300 hover:bg-violet-500/25 transition-colors no-underline">
-                  <MessageSquare size={11} /> SMS
-                </a>
-                {client.email && (
-                  <a href={`mailto:${client.email}`}
-                    className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/25 text-cyan-300 hover:bg-cyan-500/25 transition-colors no-underline">
-                    {client.email}
-                  </a>
-                )}
-                {client.image_path && (
-                  <button onClick={handlePhotoDelete}
-                    disabled={photoSaving}
-                    className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-red-500/15 border border-red-500/25 text-red-300 hover:bg-red-500/25 transition-colors disabled:opacity-60">
-                    <Trash2 size={11} /> Photo Delete
-                  </button>
-                )}
               </div>
-              {photoErr && <p className="text-[11px] text-red-400 font-semibold mt-1.5">{photoErr}</p>}
             </div>
+
+            {/* Quick contact — screen ke hisaab se 4 equal tiles */}
+            <div className={`grid gap-2 ${client.email ? "grid-cols-4" : "grid-cols-3"}`}>
+              <a href={`tel:${client.contact}`}
+                className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 hover:bg-blue-500/25 active:scale-[0.97] transition-all no-underline">
+                <Phone size={16} />
+                <span className="text-[10px] font-black">Call</span>
+              </a>
+              <a href={`https://wa.me/91${client.contact}`} target="_blank" rel="noreferrer"
+                className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-green-500/10 border border-green-500/20 text-green-300 hover:bg-green-500/25 active:scale-[0.97] transition-all no-underline">
+                <MessageCircle size={16} />
+                <span className="text-[10px] font-black">WhatsApp</span>
+              </a>
+              <a href={`sms:${client.contact}`}
+                className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300 hover:bg-violet-500/25 active:scale-[0.97] transition-all no-underline">
+                <MessageSquare size={16} />
+                <span className="text-[10px] font-black">SMS</span>
+              </a>
+              {client.email && (
+                <a href={`mailto:${client.email}`}
+                  className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/25 active:scale-[0.97] transition-all no-underline">
+                  <Mail size={16} />
+                  <span className="text-[10px] font-black">Email</span>
+                </a>
+              )}
+            </div>
+            {photoErr && <p className="text-[11px] text-red-400 font-semibold">{photoErr}</p>}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2">
+          {/* Action Buttons — desktop-only; mobile par sticky bottom bar hai */}
+          <div className="hidden md:flex md:flex-wrap gap-2">
             <button onClick={openDueModal}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-red-600 hover:bg-red-700 text-white transition-all">
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-red-600 hover:bg-red-700 text-white transition-all">
               <Calendar size={15} /> Set Due Date
             </button>
             <Link href={`/clients/${client.id}/edit`}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-all no-underline">
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-all no-underline">
               <Edit3 size={15} /> Edit
             </Link>
             <Link href={`/jobs/new?client_id=${client.id}`}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-violet-600 hover:bg-violet-700 text-white transition-all no-underline">
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-violet-600 hover:bg-violet-700 text-white transition-all no-underline">
               <Plus size={15} /> New Job
             </Link>
             <Link href={`/clients/${client.id}/add-payment`}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-700 text-white transition-all no-underline">
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-700 text-white transition-all no-underline">
               <CreditCard size={15} /> Add Payment
             </Link>
             <Link href={`/clients/${client.id}/give-loan`}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-amber-600 hover:bg-amber-700 text-white transition-all no-underline">
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-amber-600 hover:bg-amber-700 text-white transition-all no-underline">
               <Banknote size={15} /> Give Loan
             </Link>
             <Link href={`/clients/${client.id}/collect-emi`}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-orange-600 hover:bg-orange-700 text-white transition-all no-underline">
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-orange-600 hover:bg-orange-700 text-white transition-all no-underline">
               <TrendingUp size={15} /> Collect EMI
             </Link>
             <Link
               href={`/clients/${client.id}/ledger-print`}
               target="_blank"
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all no-underline">
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all no-underline">
               <Printer size={15} /> Print Ledger
             </Link>
             <button onClick={() => safeBack(router, "/clients")}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all">
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all">
               <ArrowLeft size={15} /> Back
             </button>
           </div>
@@ -1606,7 +1620,7 @@ export default function ViewClientProfile() {
           </div>
 
           {/* Row 2: actions */}
-          <div className="flex items-center gap-1.5 md:gap-3">
+          <div className="flex items-center flex-wrap gap-1.5 md:gap-3">
             <button
               onClick={() => {
                 if (!bulkStatus) { alert("Please select a status first"); return; }
@@ -1644,6 +1658,47 @@ export default function ViewClientProfile() {
           </div>
         </div>
       )}
+
+      {/* ── FAB (mobile) — saare client actions ek menu me ── */}
+      <div className="md:hidden fixed bottom-4 right-4 z-30 flex flex-col gap-3 items-end">
+        <button onClick={() => setFabOpen(!fabOpen)}
+          className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center text-white border border-blue-500/30 transition-all active:scale-95">
+          <Plus size={22} className={`transition-transform ${fabOpen ? "rotate-45" : ""}`} />
+        </button>
+        {fabOpen && (
+          <div className="absolute bottom-14 right-0 bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl py-1.5 w-44 text-sm overflow-hidden">
+            {[
+              { href: `/clients/${client.id}/add-payment`, icon: CreditCard,  label: "Add Payment",  cls: "text-emerald-400" },
+              { href: `/jobs/new?client_id=${client.id}`,   icon: Plus,        label: "New Job",      cls: "text-violet-400"  },
+              { href: `/clients/${client.id}/collect-emi`,  icon: TrendingUp,  label: "Collect EMI",  cls: "text-orange-400"  },
+              { href: `/clients/${client.id}/give-loan`,    icon: Banknote,    label: "Give Loan",    cls: "text-amber-400"   },
+            ].map(({ href, icon: Icon, label, cls }) => (
+              <Link key={label} href={href} onClick={() => setFabOpen(false)}
+                className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 hover:text-slate-200 transition-colors">
+                <Icon size={14} className={cls} /> {label}
+              </Link>
+            ))}
+            <button onClick={() => { openDueModal(); setFabOpen(false); }}
+              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 hover:text-slate-200 transition-colors w-full">
+              <Calendar size={14} className="text-red-400" /> Set Due Date
+            </button>
+            {[
+              { href: `/clients/${client.id}/edit`,         icon: Edit3,       label: "Edit Client",  cls: "text-blue-400"    },
+              { href: `/clients/${client.id}/ledger-print`, icon: Printer,     label: "Print Ledger", cls: "text-cyan-400", newTab: true },
+            ].map(({ href, icon: Icon, label, cls, newTab }) => (
+              <Link key={label} href={href} target={newTab ? "_blank" : undefined} onClick={() => setFabOpen(false)}
+                className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 hover:text-slate-200 transition-colors">
+                <Icon size={14} className={cls} /> {label}
+              </Link>
+            ))}
+            <hr className="my-1 border-[#21293d]" />
+            <button onClick={() => { safeBack(router, "/clients"); setFabOpen(false); }}
+              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 w-full transition-colors">
+              <ArrowLeft size={14} className="text-slate-500" /> Back
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* ── WHATSAPP MODAL (PHP parity: jobs page) ── */}
       {waModal && (

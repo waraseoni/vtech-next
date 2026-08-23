@@ -805,7 +805,7 @@ export default function ClientsPage() {
             {/* Pagination */}
             {pageSize!==0&&totalPages>1&&(
               <div className="flex items-center justify-between px-5 py-3 bg-[#111520] border-t border-[#21293d] flex-wrap gap-3">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center flex-wrap gap-1.5">
                   <button onClick={()=>setCurrentPage(1)} disabled={currentPage===1}
                     className="px-2.5 py-1.5 rounded-lg text-xs font-extrabold border border-[#21293d] text-slate-600 disabled:opacity-30 cursor-pointer hover:bg-[#1e2637]">«</button>
                   <button onClick={()=>setCurrentPage(p=>Math.max(1,p-1))} disabled={currentPage===1}

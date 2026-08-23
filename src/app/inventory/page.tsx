@@ -376,8 +376,8 @@ export default function InventoryPage() {
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-2">
-              <Link href="/inventory/locate"
+                <div className="flex items-center flex-wrap gap-2">
+                  <Link href="/inventory/locate"
                 className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
                 <MapPin size={13} /> Spare Finder
               </Link>
@@ -866,7 +866,7 @@ export default function InventoryPage() {
 
           {/* Mobile pagination footer */}
           {filtered.length > 0 && (
-            <div className="flex items-center justify-between gap-3 pt-2">
+            <div className="flex items-center justify-between flex-wrap gap-3 pt-2">
               <div className="flex items-center gap-2 text-[11px] text-slate-600 font-bold">
                 <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))}
                   className="bg-[#161b27] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1.5 text-[11px] font-bold outline-none focus:border-blue-500/60">

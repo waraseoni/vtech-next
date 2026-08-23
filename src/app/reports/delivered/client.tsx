@@ -269,7 +269,7 @@ Mob: 9179105875`;
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-lg font-black text-white flex items-center gap-2">
             <Package size={20} className="text-emerald-400" />

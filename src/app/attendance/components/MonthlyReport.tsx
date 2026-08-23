@@ -193,7 +193,7 @@ export default function MonthlyReport({
     <div>
 
       {/* ── Month Navigation & Reset Filter ── */}
-      <div className="flex items-center justify-between mb-6 gap-4">
+      <div className="flex items-center justify-between flex-wrap mb-6 gap-4">
         <button
           onClick={() => changeMonth(-1)}
           className="p-2.5 bg-[#161b27] hover:bg-[#21293d] border border-[#21293d] rounded-xl transition-all text-slate-400 hover:text-white"

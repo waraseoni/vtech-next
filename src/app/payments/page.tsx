@@ -372,7 +372,7 @@ function PaymentsPageInner() {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-4 border-t border-[#21293d]">
+              <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-4 border-t border-[#21293d]">
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <span>Show</span>
                   <select value={itemsPerPage} onChange={(e) => handleItemsPerPage(Number(e.target.value))} className="bg-[#0d1117] border border-[#21293d] rounded-lg px-2 py-1.5 text-white text-xs font-bold">

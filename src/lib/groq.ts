@@ -17,7 +17,7 @@ export async function getGroqChatResponse(messages: ChatCompletionMessageParam[]
         return "ERROR: Groq API Key missing. Settings page se API key daalein ya .env.local mein GROQ_API_KEY set karein.";
     }
     const groq = new Groq({ apiKey: key });
-    const modelId = modelName || "llama-3.3-70b-versatile";
+    const modelId = modelName || "openai/gpt-oss-120b";
 
     const systemInstruction = buildSystemPrompt(role);
 

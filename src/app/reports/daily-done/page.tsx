@@ -194,7 +194,7 @@ export default function DailyDoneReportPage() {
         <div className="px-5 py-4 border-b border-[#21293d] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             {/* Date Navigation */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center flex-wrap gap-2">
               <button onClick={() => shiftDay(-1)} className="p-2 rounded-xl bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition">
                 <ChevronLeft size={16} />
               </button>

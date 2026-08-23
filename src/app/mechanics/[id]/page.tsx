@@ -616,7 +616,7 @@ export default function MechanicDetailPage() {
                     </table>
                   </div>
                   {totalJobPages > 1 && (
-                    <div className="flex items-center justify-between px-4 py-4 border-t border-[#21293d]">
+                    <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-4 border-t border-[#21293d]">
                       <div className="flex items-center gap-2 text-xs text-slate-400">
                         <span>Show</span>
                         <select value={itemsPerPage} onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }} className="bg-[#0d1117] border border-[#21293d] rounded-lg px-2 py-1.5 text-white text-xs font-bold">
@@ -627,7 +627,7 @@ export default function MechanicDetailPage() {
                         </select>
                         <span>of {jobs.length} entries</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center flex-wrap gap-2">
                         <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs font-bold text-slate-400 hover:bg-[#1a2234] disabled:opacity-40 disabled:cursor-not-allowed">
                           <ChevronLeft size={14} />
                         </button>

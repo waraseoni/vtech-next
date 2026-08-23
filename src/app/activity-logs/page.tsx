@@ -430,7 +430,7 @@ export default function ActivityLogsPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-5 py-4 border-t border-[#21293d] bg-[#0d1117]/30">
+              <div className="flex items-center justify-between flex-wrap gap-3 px-5 py-4 border-t border-[#21293d] bg-[#0d1117]/30">
                 <span className="text-[11px] text-slate-500 font-bold">
                   Page {page + 1} of {totalPages}
                 </span>
