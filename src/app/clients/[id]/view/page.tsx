@@ -148,14 +148,15 @@ function StatCard({
     cyan:    { bg: 'bg-cyan-500/10',    border: 'border-cyan-500/20',    icon: 'bg-cyan-500/15 border-cyan-500/25 text-cyan-400' },
   };
   const c = colorMap[color];
+  // Mobile-first: icon chhota chip label ke sath upar, amount neeche FULL width — koi truncate nahi
   return (
-    <div className={`${c.bg} border ${c.border} rounded-xl p-4 flex items-center gap-4`}>
-      <div className={`${c.icon} border rounded-xl p-3 flex-shrink-0`}>{icon}</div>
-      <div className="min-w-0 flex-1">
-        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider truncate">{label}</p>
-        <p className="text-white text-lg font-black truncate">{value}</p>
-        {sub && <p className="text-slate-500 text-[10px] mt-0.5 truncate">{sub}</p>}
+    <div className={`${c.bg} border ${c.border} rounded-xl p-3 md:p-4 flex flex-col`}>
+      <div className="flex items-center gap-2">
+        <div className={`${c.icon} border rounded-lg w-7 h-7 md:w-8 md:h-8 flex-shrink-0 flex items-center justify-center`}>{icon}</div>
+        <p className="text-slate-400 text-[9px] md:text-[10px] font-bold uppercase tracking-wider leading-tight">{label}</p>
       </div>
+      <p className="text-white text-lg md:text-xl font-black mt-2 tabular-nums">{value}</p>
+      {sub && <p className="text-slate-500 text-[9px] md:text-[10px] mt-1 leading-snug">{sub}</p>}
     </div>
   );
 }
