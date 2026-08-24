@@ -1,4 +1,4 @@
-﻿import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { todayIST } from "./dateUtils";
 import { pageAll } from "./fetch-all";
 import { buildDueMaps, balanceFromMaps } from "./client-due";
@@ -673,8 +673,8 @@ export async function executeGeminiTool(functionCall: { name: string; args?: obj
             }
             if (dueDate.length) alerts.push({ type: "due_payment_date", severity: "warning", title: "Payment Due Date Crossed", items: dueDate });
 
-            // 4. Today's attendance pending
-            const { data: mechs } = await pageAll(supabase.from("mechanic_list").select("id, firstname, lastname").eq("delete_flag", 0));
+            // 4. Today's attendance pending (active mechanics only)
+            const { data: mechs } = await pageAll(supabase.from("mechanic_list").select("id, firstname, lastname").eq("delete_flag", 0).eq("status", 1));
             const { data: attToday } = await pageAll(supabase.from("attendance_list").select("mechanic_id").eq("curr_date", today));
             const presentIds = new Set((attToday || []).map((a) => a.mechanic_id));
             const missing = (mechs || []).filter((m) => !presentIds.has(m.id))
