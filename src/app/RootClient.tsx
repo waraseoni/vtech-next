@@ -569,7 +569,9 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [drawerOpen,   setDrawerOpen]   = useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
-  const [theme,        setTheme]        = useState<"dark" | "light" | null>(null);
+  // Default "dark" — DOM ka pre-paint attribute bhi dark hai (layout script),
+  // isliye React state ko pehle render se hi match rakhta hai.
+  const [theme,        setTheme]        = useState<"dark" | "light">("dark");
   const [license,      setLicense]      = useState<LicenseStatus | null>(null);
   const [brandLogo,    setBrandLogo]    = useState<string | null>(null);
   const [showIdleWarning, setShowIdleWarning] = useState(false);
@@ -873,44 +875,39 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     try {
       const saved = localStorage.getItem("vtech_theme") as "dark" | "light" | null;
-      const initial = saved || null;
-      setTheme(initial);
-      if (initial) {
-        document.documentElement.setAttribute("data-theme", initial);
-        document.body.style.backgroundColor = initial === "dark" ? "#0d1117" : "#f8f9fc";
-        document.body.style.color = initial === "dark" ? "#e2e8f0" : "#0f172a";
-      } else {
-        document.documentElement.removeAttribute("data-theme");
-        document.body.style.backgroundColor = "#0d1117";
-        document.body.style.color = "#e2e8f0";
-      }
+      const initial = saved || "dark"; // DEFAULT DARK — attribute hamesha SET rahe
+      setTheme(initial);               // (pehle null par attribute REMOVE hota tha,
+      document.documentElement.setAttribute("data-theme", initial); // jisse vars light
+      document.body.style.backgroundColor = initial === "dark" ? "#0d1117" : "#f8f9fc"; // + body dark = mix)
+      document.body.style.color = initial === "dark" ? "#e2e8f0" : "#0f172a";
     } catch {
-      // ignore
+      document.documentElement.setAttribute("data-theme", "dark");
     }
   }, []);
 
-  // Public site is hardcoded dark-only. Yahan app ka saved light theme apply
+  // Public site is hardcoded dark-only. Saved light theme public par apply
   // mat karo — warna globals.css ke `html[data-theme="light"]` overrides public
-  // ke dark colors par chal jate hain (text near-black on dark navy = unreadable,
-  // sirf un browsers me dikhta hai jahan `vtech_theme=light` saved hai).
+  // ke dark colors par chal jate hain (text near-black on dark navy = unreadable).
+  // Pehle attribute REMOVE hota tha — jisse vars LIGHT ho jate the jabki page
+  // hardcoded DARK tha = wahi mix bug. Ab explicit "dark" set karte hain:
+  // saved-light bhi leak nahi hota aur poora DOM coherent dark rehta hai.
   useEffect(() => {
     const pub = pathname === "/" ||
       ["/login", "/setup", "/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"]
         .some(p => pathname === p || pathname.startsWith(p + "/"));
     try {
       if (pub) {
-        document.documentElement.removeAttribute("data-theme");
+        document.documentElement.setAttribute("data-theme", "dark");
         document.body.style.backgroundColor = "#070714";
         document.body.style.color = "#e2e8f0";
         setTheme("dark");
       } else {
         const saved = localStorage.getItem("vtech_theme") as "dark" | "light" | null;
-        if (saved) {
-          document.documentElement.setAttribute("data-theme", saved);
-          document.body.style.backgroundColor = saved === "dark" ? "#0d1117" : "#f8f9fc";
-          document.body.style.color = saved === "dark" ? "#e2e8f0" : "#0f172a";
-          setTheme(saved);
-        }
+        const t = saved || "dark";
+        document.documentElement.setAttribute("data-theme", t);
+        document.body.style.backgroundColor = t === "dark" ? "#0d1117" : "#f8f9fc";
+        document.body.style.color = t === "dark" ? "#e2e8f0" : "#0f172a";
+        setTheme(t);
       }
     } catch {
       // ignore
