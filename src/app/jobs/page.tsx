@@ -68,6 +68,7 @@ interface Transaction {
   date_completed: string | null;
   status_changed_at: string | null;
   del_status: number;
+  mechanic_id?: number | null;
   client_firstname?: string;
   client_middlename?: string;
   client_lastname?: string;
@@ -160,7 +161,16 @@ function JobsListContent() {
   const [localSearch,   setLocalSearch]   = useState("");
   const [dateFrom,      setDateFrom]      = useState(urlDateFrom);
   const [dateTo,        setDateTo]        = useState(urlDateTo);
-  const [hideDelivered, setHideDelivered] = useState(urlHideDelivered);
+  // Lazy init: URL param > localStorage last choice. Synchronous init zaroori hai
+  // taaki PEHLA fetch hi filtered ho (restore-effect race se delivered leak nahi hoga).
+  const [hideDelivered, setHideDelivered] = useState<boolean>(() => {
+    const p = searchParams.get("hide_delivered");
+    if (p !== null) return p === "1";
+    if (typeof window !== "undefined") {
+      try { return localStorage.getItem("jobs_hide_delivered") === "1"; } catch { return false; }
+    }
+    return urlHideDelivered;
+  });
   const [statusFilter,  setStatusFilter]  = useState<number | "">("");
   const [showFilterModal, setShowFilterModal] = useState(false);
 
@@ -185,16 +195,22 @@ function JobsListContent() {
   }, [mobileView]);
 
   // ── Hide Delivered yaad rakhna (localStorage) — refresh par last choice rahe ──
-  // URL me explicit param ho to wahi jeetega, warna last saved choice restore hoti hai
-  useEffect(() => {
-    if (searchParams.get("hide_delivered") === null) {
-      setHideDelivered(localStorage.getItem("jobs_hide_delivered") === "1");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Restore lazy-init me hota hai (upar); yahan sirf har change persist karo.
   useEffect(() => {
     try { localStorage.setItem("jobs_hide_delivered", hideDelivered ? "1" : "0"); } catch {}
   }, [hideDelivered]);
+
+  // ── Mechanic names (job id/code ke neeche assigned mechanic dikhane ke liye) ──
+  const [mechNames, setMechNames] = useState<Record<number, string>>({});
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("mechanic_list").select("id, firstname, middlename, lastname");
+      if (!data) return;
+      const m: Record<number, string> = {};
+      data.forEach(r => { m[r.id] = [r.firstname, r.middlename, r.lastname].filter(Boolean).join(" ").trim(); });
+      setMechNames(m);
+    })();
+  }, []);
 
   // ── NEW: Quick Create Modal ───────────────────────────────
   const [showQuickCreate, setShowQuickCreate] = useState(false);
@@ -1039,6 +1055,12 @@ function JobsListContent() {
                         {txn.code}
                       </Link>
                     )}
+                    {txn.mechanic_id != null && mechNames[txn.mechanic_id] && (
+                      <div className="text-[9px] font-medium text-slate-500 truncate max-w-[110px] mt-0.5"
+                        title={`Mechanic: ${mechNames[txn.mechanic_id]}`}>
+                        {mechNames[txn.mechanic_id]}
+                      </div>
+                    )}
                   </td>
 
                   {/* Client with avatar + phone number text (PHP feature) */}
@@ -1464,6 +1486,12 @@ function JobsListContent() {
                           {fmtDate(txn.date_created)}
                         </span>
                       </div>
+                      {txn.mechanic_id != null && mechNames[txn.mechanic_id] && (
+                        <div className="text-[9px] font-medium text-slate-500 truncate mt-0.5"
+                          title={`Mechanic: ${mechNames[txn.mechanic_id]}`}>
+                          {mechNames[txn.mechanic_id]}
+                        </div>
+                      )}
                       {txn.status_changed_at && (
                         <div className="flex items-center gap-1 mt-1 text-[9px] text-slate-500">
                           <Clock size={9} />
