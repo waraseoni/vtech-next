@@ -324,13 +324,13 @@ export default function DailyAttendance({
       {/* ── Self Check-In / Check-Out Card ── */}
       {selfName && (
         <div className="mb-6 rounded-2xl overflow-hidden bg-gradient-to-r from-[#001f3f] to-[#003d7a] border border-[#1a3a5f] shadow-lg">
-          <div className="px-5 py-4 flex items-center justify-between flex-wrap gap-4">
+          <div className="px-5 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <MechAvatar image={selfImage} name={selfName} cls="w-11 h-11 text-lg" />
               <div className="min-w-0">
                 <h6 className="text-white font-extrabold text-sm flex items-center gap-1.5">
-                  <Fingerprint size={13} className="opacity-70" />
-                  {selfName}
+                  <Fingerprint size={13} className="opacity-70 shrink-0" />
+                  <span className="truncate">{selfName}</span>
                 </h6>
                 <p className="text-white/60 text-[11px] mb-1">
                   {new Date(`${today}T00:00:00+05:30`).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -341,23 +341,24 @@ export default function DailyAttendance({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-center min-w-[84px]">
+            {/* In → Out → Hours: mobile pe 3 equal tiles, desktop pe compact chips */}
+            <div className="grid grid-cols-3 gap-2 lg:flex lg:items-center">
+              <div className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-center lg:min-w-[84px]">
                 <span className="block text-[9px] uppercase tracking-wider text-white/70 font-bold"><LogIn size={9} className="inline mr-0.5" /> In</span>
                 <span className="block text-white font-extrabold text-sm">{fmtTimeIST(selfStatus.time_in)}</span>
               </div>
-              <ArrowRight size={14} className="text-white/40" />
-              <div className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-center min-w-[84px]">
+              <ArrowRight size={14} className="hidden lg:block text-white/40 place-self-center" />
+              <div className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-center lg:min-w-[84px]">
                 <span className="block text-[9px] uppercase tracking-wider text-white/70 font-bold"><LogOut size={9} className="inline mr-0.5" /> Out</span>
                 <span className="block text-white font-extrabold text-sm">{fmtTimeIST(selfStatus.time_out)}</span>
               </div>
-              <div className="bg-emerald-600 rounded-xl px-3 py-2 text-center min-w-[78px]">
+              <div className="bg-emerald-600 rounded-xl px-3 py-2 text-center lg:min-w-[78px]">
                 <span className="block text-white font-extrabold text-sm">{hoursBetweenIST(selfStatus.time_in, selfStatus.time_out)}</span>
                 <span className="block text-[9px] uppercase tracking-wider text-white/85 font-bold">Hours</span>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2 lg:flex">
               <button
                 type="button"
                 onClick={() => handleSelfAction('in')}
@@ -490,19 +491,19 @@ export default function DailyAttendance({
                 <th className="px-4 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Hours</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#21293d]">
+            <tbody className="divide-y divide-slate-200 dark:divide-[#21293d]">
               {mechanics.map(mech => {
                 const st = attendance[mech.id];
                 const t = times[mech.id];
                 const tIn = t?.timeIn ?? '';
                 const tOut = t?.timeOut ?? '';
                 return (
-                  <tr key={mech.id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={mech.id} className="hover:bg-black/[0.03] dark:hover:bg-white/[0.02] transition-colors">
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
                         <MechAvatar image={mech.image} name={mech.name} />
                         <div>
-                          <div className="font-bold text-slate-200 text-sm">{mech.name}</div>
+                          <div className="font-bold text-slate-800 dark:text-slate-100 text-sm">{mech.name}</div>
                           <div className="text-xs text-slate-600">{mech.designation}</div>
                         </div>
                         {userRole === 'admin' && st === 2 && !times[mech.id]?.timeIn && (
@@ -523,7 +524,7 @@ export default function DailyAttendance({
                               className={`px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase transition-all border ${
                                 st === btn.value
                                   ? btn.activeClass
-                                  : `bg-transparent text-slate-500 border-[#21293d] ${btn.hoverClass}`
+                                  : `bg-transparent text-slate-500 border-slate-300 dark:border-[#21293d] ${btn.hoverClass}`
                               }`}
                             >
                               {btn.label}
@@ -582,11 +583,11 @@ export default function DailyAttendance({
             const tIn = t?.timeIn ?? '';
             const tOut = t?.timeOut ?? '';
             return (
-              <div key={mech.id} className="bg-[#161b27] border border-[#21293d] p-4 rounded-2xl">
+              <div key={mech.id} className="bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] p-4 rounded-2xl">
                 <div className="flex items-center gap-3 mb-3">
                   <MechAvatar image={mech.image} name={mech.name} />
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-slate-200 text-sm truncate">{mech.name}</div>
+                    <div className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{mech.name}</div>
                     <div className="text-xs text-slate-600">{mech.designation}</div>
                   </div>
                   {userRole === 'admin' && st === 2 && !times[mech.id]?.timeIn && (

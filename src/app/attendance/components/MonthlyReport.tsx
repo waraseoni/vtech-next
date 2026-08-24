@@ -240,13 +240,13 @@ export default function MonthlyReport({
       {/* ── Mechanics Grid ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {mechanicsData.map(md => (
-          <div key={md.mechanic.id} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+          <div key={md.mechanic.id} className="bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl p-4">
 
             {/* Card Header */}
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-2">
                 <MechAvatar image={md.mechanic.image} name={md.mechanic.name} />
-                <h3 className="font-extrabold text-slate-200 text-sm">{md.mechanic.name}</h3>
+                <h3 className="font-extrabold text-slate-800 dark:text-slate-100 text-sm">{md.mechanic.name}</h3>
               </div>
               <div className="flex gap-1.5 text-[10px]">
                 <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">P:{md.fullDays}</span>
