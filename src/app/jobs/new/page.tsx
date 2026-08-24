@@ -440,9 +440,8 @@ function ManageJobPageInner({
     setProductRows(prev => prev.filter(r => r.tempId !== tempId));
 
   const updateProductQty = (tempId: number, val: string) => {
-    const prd    = productRows.find(r => r.tempId === tempId);
-    const stock  = products.find(p => p.id === prd?.product_id)?.available_stock ?? Infinity;
-    const newQty = Math.min(Math.max(1, parseInt(val) || 1), stock);
+    // No stock cap — overselling allowed by design (negative inventory)
+    const newQty = Math.max(1, parseInt(val) || 1);
     setProductRows(prev => prev.map(r => r.tempId === tempId ? { ...r, qty: newQty } : r));
   };
 
@@ -454,14 +453,8 @@ function ManageJobPageInner({
     if (!fault.trim())   { setToast({ type: "error", msg: "Fault description zaroori hai!" }); return; }
     if (!selectedMechanic) { setToast({ type: "error", msg: "Mechanic select karo!" }); return; }
 
-    // Stock validation
-    for (const pr of productRows) {
-      const stock = products.find(p => p.id === pr.product_id)?.available_stock ?? 0;
-      if (!isEdit && pr.qty > stock) {
-        setToast({ type: "error", msg: `${pr.product_name}: stock (${stock}) se zyada qty nahi ho sakti!` });
-        return;
-      }
-    }
+    // NOTE: No hard stock validation — out-of-stock products can still be sold.
+    // Shortfall is shown as an amber warning in the product rows.
 
     setSaving(true);
     try {
@@ -913,9 +906,7 @@ function ManageJobPageInner({
                 options={products.map(p => ({
                   id: p.id,
                   label: p.name,
-                  sub: `${inr(p.price)} — Stock: ${p.available_stock}`,
-                  disabled: p.available_stock <= 0,
-                  disabledNote: "Stock khatam hai",
+                  sub: `${inr(p.price)} — ${p.available_stock > 0 ? `Stock: ${p.available_stock}` : "Stock khatam"}`,
                 }))}
                 onSelect={id => addProduct(parseInt(id))}
                 placeholder="— Product search karke select karo —"
@@ -937,13 +928,13 @@ function ManageJobPageInner({
                 const stock = products.find(p => p.id === r.product_id)?.available_stock ?? 0;
                 const overStock = !isEdit && r.qty > stock;
                 return (
-                  <div key={r.tempId} className={`grid grid-cols-[1fr_50px_80px_80px_36px] items-center px-3 py-2 border-t border-[#21293d] hover:bg-white/[0.02] ${overStock ? "bg-red-500/5" : ""}`}>
+                  <div key={r.tempId} className={`grid grid-cols-[1fr_50px_80px_80px_36px] items-center px-3 py-2 border-t border-[#21293d] hover:bg-white/[0.02] ${overStock ? "bg-amber-500/5" : ""}`}>
                     <span className="text-white text-xs font-medium truncate" title={r.product_name}>{r.product_name}</span>
                     <input
-                      type="number" min={1} max={isEdit ? undefined : stock}
+                      type="number" min={1}
                       value={r.qty}
                       onChange={e => updateProductQty(r.tempId, e.target.value)}
-                      className={`bg-transparent text-center text-sm font-black outline-none w-full transition-colors ${overStock ? "text-red-400" : "text-white"}`}
+                      className={`bg-transparent text-center text-sm font-black outline-none w-full transition-colors ${overStock ? "text-amber-400" : "text-white"}`}
                     />
                     <input
                       type="number" step="0.01" value={r.price}

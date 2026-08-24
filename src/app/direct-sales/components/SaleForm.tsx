@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import {
   Plus, Trash2, Save, Loader2, Package, CreditCard,
   Banknote, Smartphone, Building2, MessageSquare, ShoppingCart,
-  AlertTriangle, Minus, UserCog, Search,
+  AlertTriangle, Minus, UserCog,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
 import { safeBack } from "@/lib/utils";
@@ -72,7 +72,6 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
   const [remarks,          setRemarks]          = useState("");
   const [items,            setItems]            = useState<SaleItem[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<number | "">("");
-  const [productSearch,    setProductSearch]    = useState("");
   const [totalAmount,      setTotalAmount]      = useState(0);
   const [originalSaleData, setOriginalSaleData] = useState<DbRow | null>(null);
   const [formError,        setFormError]        = useState<string | null>(null);
@@ -235,6 +234,8 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
     list.reduce((s, i) => s + i.qty * i.price, 0);
 
   // ── Add product ───────────────────────────────────────────────────────────
+  // NOTE: Out-of-stock products are ALLOWED (negative inventory / overselling).
+  // Stock info stays visible as a warning, but it never blocks a sale.
   const addProduct = () => {
     setFormError(null);
     if (!selectedProductId) { setFormError("Please select a product first."); return; }
@@ -242,9 +243,6 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
     if (!product) return;
     if (items.some(i => i.product_id === product.id)) {
       setFormError(`"${product.name}" is already in the list.`); return;
-    }
-    if (product.available_stock <= 0) {
-      setFormError(`"${product.name}" is out of stock.`); return;
     }
     const newItems: SaleItem[] = [...items, {
       product_id:      product.id,
@@ -257,21 +255,11 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
     setItems(newItems);
     setTotalAmount(recalcTotal(newItems));
     setSelectedProductId("");
-    setProductSearch("");
   };
 
   // ── Update qty ────────────────────────────────────────────────────────────
   const updateQty = (idx: number, raw: number) => {
     const qty  = Math.max(1, isNaN(raw) ? 1 : raw);
-    const item = items[idx];
-    // BUG FIX 6: Original compared extraNeeded > available_stock but that formula
-    // was wrong for edit mode. Correct: max allowed = available_stock + original_qty
-    const maxAllowed = item.available_stock + (item.original_qty ?? 0);
-    if (qty > maxAllowed) {
-      setFormError(`Max allowed qty for "${item.product_name}" is ${maxAllowed}.`);
-      return;
-    }
-    setFormError(null);
     const newItems = items.map((it, i) => i === idx ? { ...it, qty } : it);
     setItems(newItems);
     setTotalAmount(recalcTotal(newItems));
@@ -301,14 +289,8 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
       setFormError("Please select a staff member."); return;
     }
 
-    // Final stock re-validation
-    for (const item of items) {
-      const maxAllowed = item.available_stock + (item.original_qty ?? 0);
-      if (item.qty > maxAllowed) {
-        setFormError(`Insufficient stock for "${item.product_name}". Max: ${maxAllowed}`);
-        return;
-      }
-    }
+    // NOTE: No hard stock validation — overselling is allowed by design.
+    // Stock shortfall is shown as a warning in the items list instead.
 
     setSaving(true);
     try {
@@ -399,11 +381,6 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
       setSaving(false);
     }
   };
-
-  // ── Filtered product list for dropdown ───────────────────────────────────
-  const filteredProducts = productSearch
-    ? products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
-    : products;
 
   // ── Loading state ─────────────────────────────────────────────────────────
   if (pageLoading) {
@@ -496,28 +473,20 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
           </span>
         </div>
 
-        {/* Search filter */}
-        <div className="relative">
-          <Search size={12} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
-          <input type="text" placeholder="Type to filter products..."
-            value={productSearch} onChange={e => setProductSearch(e.target.value)}
-            className={`${inputCls} pl-9 text-xs`} />
-        </div>
-
-        {/* Dropdown + button */}
+        {/* Dropdown + button — search dropdown ke andar hi hota hai */}
         <div className="flex gap-2">
           <div className="flex-1">
             <SearchableSelect
               value={selectedProductId}
-              options={filteredProducts.map(p => ({
+              options={products.map(p => ({
                 id: p.id,
                 label: p.name,
-                sub: `₹${p.price.toLocaleString("en-IN")} · Stock: ${p.available_stock}`,
-                disabled: p.available_stock <= 0,
-                disabledNote: "Stock khatam hai",
+                sub: `₹${p.price.toLocaleString("en-IN")} · ${p.available_stock > 0 ? `Stock: ${p.available_stock}` : "Stock khatam"}`,
               }))}
               onSelect={v => setSelectedProductId(v ? Number(v) : "")}
-              placeholder="— Select a product —"
+              placeholder="— Search karke product select karo —"
+              searchPlaceholder="Product ka naam type karo…"
+              emptyText="Koi product nahi mila"
               clearLabel="— Select a product —"
             />
           </div>
@@ -537,10 +506,12 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
                 ? "text-emerald-400 bg-emerald-500/5 border-emerald-500/15"
                 : p.available_stock > 0
                 ? "text-amber-400 bg-amber-500/5 border-amber-500/15"
-                : "text-red-400 bg-red-500/5 border-red-500/15"
+                : "text-amber-400 bg-amber-500/10 border-amber-500/30"
             }`}>
               <Package size={10} />
-              {p.name} · Available: {p.available_stock} units · ₹{p.price.toLocaleString("en-IN")} each
+              {p.available_stock > 0
+                ? `${p.name} · Available: ${p.available_stock} units · ₹${p.price.toLocaleString("en-IN")} each`
+                : `${p.name} · Stock khatam hai — phir bhi sale kar sakte ho (negative inventory)`}
             </div>
           );
         })()}
@@ -573,9 +544,9 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
             </thead>
             <tbody className="divide-y divide-[#21293d]">
               {items.map((item, idx) => {
-                const maxAllowed = item.available_stock + (item.original_qty ?? 0);
-                const atMax      = item.qty >= maxAllowed;
-                const rowTotal   = item.qty * item.price;
+                const totalAvailable = item.available_stock + (item.original_qty ?? 0);
+                const overStock      = item.qty > totalAvailable;
+                const rowTotal       = item.qty * item.price;
                 return (
                   <tr key={`${item.product_id}-${idx}`} className="hover:bg-white/[0.02] transition-colors">
 
@@ -587,11 +558,12 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
                         </div>
                         <div>
                           <div className="text-slate-200 font-semibold text-xs leading-tight">{item.product_name}</div>
-                          <div className="text-[9px] text-slate-700 mt-0.5 font-bold">
-                            {atMax
-                              ? <span className="text-amber-500/80">Max qty reached</span>
-                              : `Max: ${maxAllowed}`
-                            }
+                          <div className={`text-[9px] mt-0.5 font-bold ${
+                            overStock ? "text-amber-500/90" : "text-slate-700"
+                          }`}>
+                            {overStock
+                              ? `Over stock · available: ${totalAvailable}`
+                              : `Available: ${totalAvailable}`}
                           </div>
                         </div>
                       </div>
@@ -605,17 +577,16 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
                           className="w-6 h-6 flex items-center justify-center bg-[#21293d] hover:bg-red-600/20 border border-[#21293d] hover:border-red-500/30 rounded-lg text-slate-600 hover:text-red-400 transition-all disabled:opacity-25 disabled:cursor-not-allowed">
                           <Minus size={10} />
                         </button>
-                        <input type="number" min={1} max={maxAllowed} value={item.qty}
+                        <input type="number" min={1} value={item.qty}
                           onChange={e => updateQty(idx, parseInt(e.target.value))}
                           className={`w-12 text-center text-sm font-black rounded-lg py-1 outline-none transition-all bg-[#111520] border [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none ${
-                            atMax
+                            overStock
                               ? "border-amber-500/40 text-amber-400"
                               : "border-[#21293d] text-white focus:border-blue-500/50"
                           }`}
                         />
                         <button type="button" onClick={() => updateQty(idx, item.qty + 1)}
-                          disabled={atMax}
-                          className="w-6 h-6 flex items-center justify-center bg-[#21293d] hover:bg-blue-600/20 border border-[#21293d] hover:border-blue-500/30 rounded-lg text-slate-600 hover:text-blue-400 transition-all disabled:opacity-25 disabled:cursor-not-allowed">
+                          className="w-6 h-6 flex items-center justify-center bg-[#21293d] hover:bg-blue-600/20 border border-[#21293d] hover:border-blue-500/30 rounded-lg text-slate-600 hover:text-blue-400 transition-all">
                           <Plus size={10} />
                         </button>
                       </div>
