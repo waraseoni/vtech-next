@@ -13,6 +13,7 @@ import { logActivity } from "@/lib/activity";
 import { fetchClientDue, dueLabel } from "@/lib/client-due";
 import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import SearchableSelect from "@/components/SearchableSelect";
+import JobSpotPicker from "@/components/JobSpotPicker";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STYLES
@@ -94,7 +95,9 @@ function ManageJobPageInner({
   const [txnCode,          setTxnCode]           = useState<string>("");  // code column (YYYYMMDD+seq)
   const [item,             setItem]              = useState("");
   const [fault,            setFault]             = useState("");
-  const [uniqId,           setUniqId]            = useState("");
+  const [uniqId,           setUniqId]            = useState("");  // legacy free-text (bina location_id wale rows ka fallback)
+  const [locId,            setLocId]             = useState<number | null>(null);  // locations.id (kind='job')
+  const [locName,          setLocName]           = useState("");  // selected spot ka naam (dual-write -> uniq_id)
   const [remark,           setRemark]            = useState("");
   const [serviceRows,      setServiceRows]       = useState<ServiceRow[]>([]);
   const [productRows,      setProductRows]       = useState<ProductRow[]>([]);
@@ -265,6 +268,8 @@ function ManageJobPageInner({
         setItem(data.item || "");
         setFault(data.fault || "");
         setUniqId(data.uniq_id || "");
+        setLocId(data.location_id ?? null);
+        setLocName(data.location_id ? (data.uniq_id || "") : "");  // dual-write: naam = uniq_id
         setRemark(data.remark || "");
         setCommissionAmt(String(data.mechanic_commission_amount || 0));
         setSelectedMechanic(String(data.mechanic_id || ""));
@@ -467,7 +472,8 @@ function ManageJobPageInner({
         job_id:                     jobCode,   // global seq e.g. "27270
         item:                       item.trim(),
         fault:                      fault.trim(),
-        uniq_id:                    uniqId.trim() || "",   // NOT NULL in DB — empty string safe
+        uniq_id:                    (locId ? locName : uniqId).trim() || "",   // dual-write: location ho to spot naam, warna legacy text
+        location_id:                locId,
         remark:                     remark.trim() || "",   // NOT NULL in DB — empty string safe
         amount:                     grandTotal,
         mechanic_commission_amount: parseFloat(commissionAmt) || 0,
@@ -825,8 +831,11 @@ function ManageJobPageInner({
               <input value={fault} onChange={e => setFault(e.target.value)} placeholder="e.g. Screen broken, Not charging" className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}><MapPin size={13} className="text-amber-400" />Location / Rack</label>
-              <input value={uniqId} onChange={e => setUniqId(e.target.value)} placeholder="e.g. Shelf A3, Counter 2" className={inputCls} />
+              <label className={labelCls}><MapPin size={13} className="text-amber-400" />Location / Spot</label>
+              <JobSpotPicker
+                value={locId}
+                onSelect={(id, spot) => { setLocId(id); setLocName(spot?.name || ""); }}
+              />
             </div>
             <div>
               <label className={labelCls}><MessageSquare size={13} className="text-slate-600" />Remarks</label>

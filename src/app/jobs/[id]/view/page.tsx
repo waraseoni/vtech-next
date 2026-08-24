@@ -15,7 +15,7 @@ import {
   Banknote, Send, Camera,
   Plus, X, CheckCircle, FileText,
   RefreshCw, Image as ImageIcon, Upload, Loader,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, MapPin,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
@@ -84,6 +84,7 @@ interface JobDetail {
   item: string; fault: string; remark: string; uniq_id: string;
   amount: number; mechanic_amount: number; mechanic_commission_amount: number;
   mechanic_id: number | null; user_id: number; del_status: number; status: number;
+  location_id?: number | null;
   date_created: string; date_updated: string; date_completed: string | null;
 }
 interface ActivityEntry {
@@ -469,6 +470,13 @@ export default function JobDetailsPage() {
       const timeStr = deliveryTime || "00:00";
       // Combine date + time with IST offset
       updates.date_completed = `${dateStr}T${timeStr}:00+05:30`;
+      // Delivery par spot khali karna? (jobs list ke bulk action jaisa hi)
+      if (job.uniq_id || job.location_id) {
+        if (window.confirm(`Item client ko deliver ho raha hai — uski location (spot "${job.uniq_id}") bhi khali kar dein?`)) {
+          updates.uniq_id = "";
+          updates.location_id = null;
+        }
+      }
     }
     const { error } = await supabase.from("transaction_list").update(updates).eq("id", job.id);
     if (error) {
@@ -668,7 +676,9 @@ ${svcHtml}${prodHtml}
                       <InfoRow label="Received" value={fmtDateTime(job.date_created)}/>
                       <InfoRow label="Job No." value={<span className="font-bold">{job.job_id}</span>}/>
                       <InfoRow label="Code"    value={<span className="font-bold font-mono">{job.code}</span>}/>
-                      <InfoRow label="Locate"  value={job.uniq_id || <em className="text-slate-600">N/A</em>}/>
+                      <InfoRow label="Locate"  value={job.uniq_id
+                        ? <Link href={`/jobs?search=${encodeURIComponent(job.uniq_id)}`} className="text-amber-400 hover:text-amber-300 flex items-center gap-1"><MapPin size={12}/>{job.uniq_id}</Link>
+                        : <em className="text-slate-600">N/A</em>}/>
                       <InfoRow label="Del. Status" value={DEL_STATUS[job.del_status]}/>
                     </Fieldset>
                   </div>

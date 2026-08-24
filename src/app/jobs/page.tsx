@@ -33,8 +33,9 @@ import {
   ChevronLeft, ChevronRight, AlertCircle, ChevronDown, X,
   TrendingUp, Clock, CheckCircle2, IndianRupee, MessageSquare,
   Square, CheckSquare, Zap, ArrowRight, User, PenSquare,
-  FileText, Copy, Send, MessageCircle, Truck, LayoutGrid, List,
+  FileText, Copy, Send, MessageCircle, Truck, LayoutGrid, List, MapPin, Eraser,
 } from "lucide-react";
+import JobSpotPicker from "@/components/JobSpotPicker";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/activity";
 import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
@@ -69,6 +70,7 @@ interface Transaction {
   status_changed_at: string | null;
   del_status: number;
   mechanic_id?: number | null;
+  location_id?: number | null;
   client_firstname?: string;
   client_middlename?: string;
   client_lastname?: string;
@@ -172,6 +174,14 @@ function JobsListContent() {
     return urlHideDelivered;
   });
   const [statusFilter,  setStatusFilter]  = useState<number | "">("");
+  // Spot filter: locations.id (kind='job') — "kahan rakha hai?" ek click me
+  const [spotFilter,    setSpotFilter]    = useState<string>("");
+  const [jobSpots,      setJobSpots]      = useState<Array<{ id: number; name: string; count: number }>>([]);
+  const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
+  const [bulkMoveId, setBulkMoveId] = useState<number | null>(null);
+  const [bulkMoveName, setBulkMoveName] = useState("");
+  // Delivered-but-spotted jobs ka one-click cleanup
+  const [spotCleaning, setSpotCleaning] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
 
   // Pagination
@@ -211,6 +221,63 @@ function JobsListContent() {
       setMechNames(m);
     })();
   }, []);
+
+  // ── Job spots (kind='job' locations) + live occupancy counts ──
+  const loadJobSpots = useCallback(async () => {
+    const [locRes, occRes] = await Promise.all([
+      supabase.from("locations").select("id, rack").eq("kind", "job").eq("zone", "").order("rack"),
+      supabase.from("transaction_list")
+        .select("location_id")
+        .eq("del_status", 0)
+        .not("status", "in", "(4,5)")
+        .not("location_id", "is", null),
+    ]);
+    const c: Record<number, number> = {};
+    (occRes.data || []).forEach(r => {
+      const lid = r.location_id as number;
+      c[lid] = (c[lid] || 0) + 1;
+    });
+    setJobSpots(
+      (locRes.data || [])
+        .map(l => ({ id: l.id, name: l.rack || "", count: c[l.id] || 0 }))
+        .sort((a, b) => a.count - b.count || a.name.localeCompare(b.name))
+    );
+  }, []);
+  useEffect(() => { loadJobSpots(); }, [loadJobSpots]);
+
+  // ── Stale alert: Done/Paid items jo 7+ din se spot par pade hain ──
+  const [staleOpen, setStaleOpen] = useState(false);
+  const [staleSeen, setStaleSeen] = useState(false);
+  const [staleItems, setStaleItems] = useState<Array<{
+    id: number; job_id: string; item: string; uniq_id: string; days: number;
+  }>>([]);
+  const loadStale = useCallback(async () => {
+    try {
+      const cutoff = new Date(Date.now() - 7 * 86400000).toISOString();
+      const { data } = await supabase
+        .from("transaction_list")
+        .select("id, job_id, item, uniq_id, status_changed_at")
+        .eq("del_status", 0)
+        .in("status", [2, 3])
+        .neq("uniq_id", "")
+        .lt("status_changed_at", cutoff)
+        .order("status_changed_at", { ascending: true })
+        .limit(50);
+      const now = Date.now();
+      setStaleItems(
+        (data || []).map(t => ({
+          id: t.id,
+          job_id: t.job_id,
+          item: t.item,
+          uniq_id: t.uniq_id || "",
+          days: Math.floor((now - new Date(t.status_changed_at || "").getTime()) / 86400000),
+        }))
+      );
+    } catch (err) {
+      console.error("loadStale error:", err);
+    }
+  }, []);
+  useEffect(() => { loadStale(); }, [loadStale]);
 
   // ── NEW: Quick Create Modal ───────────────────────────────
   const [showQuickCreate, setShowQuickCreate] = useState(false);
@@ -303,6 +370,7 @@ function JobsListContent() {
         if (dateTo) q = q.lte("date_created", `${dateTo}T23:59:59+05:30`);
         if (hideDelivered) q = q.neq("status", 5);
         if (statusFilter !== "") q = q.eq("status", statusFilter);
+        if (spotFilter) q = q.eq("location_id", parseInt(spotFilter));
         if (term) q = q.or(`job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`);
         return q;
       };
@@ -318,6 +386,7 @@ function JobsListContent() {
       if (dateTo) countQ = countQ.lte("date_created", `${dateTo}T23:59:59+05:30`);
       if (hideDelivered) countQ = countQ.neq("status", 5);
       if (statusFilter !== "") countQ = countQ.eq("status", statusFilter);
+      if (spotFilter) countQ = countQ.eq("location_id", parseInt(spotFilter));
       if (term) countQ = countQ.or(`job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`);
       const { count } = await countQ;
       const total = count || 0;
@@ -344,7 +413,7 @@ function JobsListContent() {
     } catch (err) {
       console.error("fetchStats error:", err);
     }
-  }, [dateFrom, dateTo, hideDelivered, statusFilter, debouncedSearch, searchClients]);
+  }, [dateFrom, dateTo, hideDelivered, statusFilter, spotFilter, debouncedSearch, searchClients]);
 
   // ── Page rows (filter + pagination dependent) ─────────────────────────────
   const fetchPage = useCallback(async () => {
@@ -360,6 +429,7 @@ function JobsListContent() {
       if (dateTo) query = query.lte("date_created", `${dateTo}T23:59:59+05:30`);
       if (hideDelivered) query = query.neq("status", 5);
       if (statusFilter !== "") query = query.eq("status", statusFilter);
+      if (spotFilter) query = query.eq("location_id", parseInt(spotFilter));
       if (term) {
         query = query.or(`job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`);
       }
@@ -453,7 +523,7 @@ function JobsListContent() {
       setHasLoaded(true);
       setLoading(false);
     }
-  }, [dateFrom, dateTo, hideDelivered, statusFilter, debouncedSearch, pageIndex, pageSize, searchClients]);
+  }, [dateFrom, dateTo, hideDelivered, statusFilter, spotFilter, debouncedSearch, pageIndex, pageSize, searchClients]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
   useEffect(() => { fetchPage(); }, [fetchPage]);
@@ -479,7 +549,7 @@ function JobsListContent() {
   };
 
   // BUG FIX 3: Reset pageIndex on actual filter/search change
-  useEffect(() => { setPageIndex(0); }, [debouncedSearch, hideDelivered, statusFilter, dateFrom, dateTo]);
+  useEffect(() => { setPageIndex(0); }, [debouncedSearch, hideDelivered, statusFilter, spotFilter, dateFrom, dateTo]);
 
   // We already have the paginated transactions from the server!
   const paginatedTransactions = transactions;
@@ -545,7 +615,13 @@ function JobsListContent() {
   const bulkUpdateStatus = async (newStatus: number) => {
     if (selectedIds.size === 0) { alert("Select jobs first!"); return; }
     if (!confirm(`${selectedIds.size} jobs ka status change karein?`)) return;
-    
+
+    // Deliver par spot khali karna — occupancy sahi rakhne ke liye
+    let clearLocation = false;
+    if (newStatus === 5) {
+      clearLocation = confirm("Items client ko deliver ho rahe hain — unki location (spot) bhi khali kar dein?");
+    }
+
     setBulkActionLoading(true);
     // PHP parity: Delivered → set date_completed (delivery datetime); others → clear it.
     // datetime-local value par +05:30 stamp zaroori hai warna Postgres use UTC maan ke
@@ -555,6 +631,7 @@ function JobsListContent() {
       date_updated: toISTString(),
       date_completed: newStatus === 5 ? (dtLocalToIST(bulkDeliverDate) || toISTString()) : null,
     };
+    if (clearLocation) { updates.uniq_id = ""; updates.location_id = null; }
 
     const ids = [...selectedIds];
     const { error } = await supabase
@@ -577,10 +654,77 @@ function JobsListContent() {
       }
       await logActivity('Bulk Status Update', 'Jobs', undefined, `${ids.length} job(s) updated to "${statusName}"`);
       fetchStats();
+      loadJobSpots();
+      loadStale();
     } else {
       alert("Bulk update failed: " + error.message);
     }
     setBulkActionLoading(false);
+  };
+
+  // ── Bulk Move: selected jobs ko dusre spot par le jao ──────────────
+  const applyBulkMove = async () => {
+    if (bulkMoveId == null) { alert("Pehle spot chuno!"); return; }
+    setBulkActionLoading(true);
+    const ids = [...selectedIds];
+    const { error } = await supabase
+      .from("transaction_list")
+      .update({ location_id: bulkMoveId, uniq_id: bulkMoveName, date_updated: toISTString() })
+      .in("id", ids);
+    if (!error) {
+      setTransactions(prev => prev.map(t =>
+        selectedIds.has(t.id)
+          ? { ...t, location_id: bulkMoveId, uniq_id: bulkMoveName } as Transaction
+          : t
+      ));
+      for (const id of ids) {
+        const txn = transactions.find(t => t.id === id);
+        await logActivity('Moved Job Item', 'Jobs', txn?.job_id || id, `Job #${txn?.job_id || id} → ${bulkMoveName} | ${txn?.item || ''}`);
+      }
+      setSelectedIds(new Set());
+      setBulkMoveOpen(false); setBulkMoveId(null); setBulkMoveName("");
+      loadJobSpots();
+    } else {
+      alert("Move failed: " + error.message);
+    }
+    setBulkActionLoading(false);
+  };
+
+  // ── Delivered jobs jinki spot abhi bhi lagi hai — sab ek saath clear ──────
+  const clearDeliveredSpots = async () => {
+    if (spotCleaning) return;
+    setSpotCleaning(true);
+    try {
+      // Count: location_id set hai YA uniq_id text bacha hai
+      const [{ count: cLoc }, { count: cTxt }] = await Promise.all([
+        supabase.from("transaction_list").select("id", { count: "exact", head: true })
+          .eq("del_status", 0).eq("status", 5).not("location_id", "is", null),
+        supabase.from("transaction_list").select("id", { count: "exact", head: true })
+          .eq("del_status", 0).eq("status", 5).neq("uniq_id", ""),
+      ]);
+      const total = (cLoc || 0) + (cTxt || 0);
+      if (total === 0) {
+        alert("Sab saaf hai! Koi delivered job aisa nahi jiski location abhi bachi ho.");
+        return;
+      }
+      if (!confirm(`${total} delivered job(s) ki location abhi bhi lagi hai — sab clear kar dein?`)) return;
+      // Do pass: (1) location_id wale, (2) sirf purana uniq_id text wale
+      const { error: e1 } = await supabase.from("transaction_list")
+        .update({ uniq_id: "", location_id: null, date_updated: toISTString() })
+        .eq("del_status", 0).eq("status", 5).not("location_id", "is", null);
+      const { error: e2 } = await supabase.from("transaction_list")
+        .update({ uniq_id: "", date_updated: toISTString() })
+        .eq("del_status", 0).eq("status", 5).neq("uniq_id", "");
+      if (e1 || e2) throw new Error((e1 || e2)!.message);
+      fetchStats();
+      fetchPage();
+      loadJobSpots();
+      alert(`${total} job(s) ki location clear ho gayi — spots ab bilkul saaf hain.`);
+    } catch (err) {
+      alert("Spot cleanup failed: " + (err as Error).message);
+    } finally {
+      setSpotCleaning(false);
+    }
   };
 
   // ── Bulk WhatsApp Report (PHP parity) ──────────────────────────────
@@ -837,7 +981,7 @@ function JobsListContent() {
 
   const resetFilters = () => {
     setDateFrom(""); setDateTo(""); setHideDelivered(false);
-    setStatusFilter(""); setLocalSearch("");
+    setStatusFilter(""); setLocalSearch(""); setSpotFilter("");
     try { localStorage.removeItem("jobs_hide_delivered"); } catch {}
     router.push("/jobs");
     setShowFilterModal(false);
@@ -910,6 +1054,15 @@ function JobsListContent() {
         </button>
 
         <button
+          onClick={() => { setBulkMoveId(null); setBulkMoveName(""); setBulkMoveOpen(true); }}
+          disabled={bulkActionLoading}
+          title="Selected jobs ko dusre spot par le jao"
+          className="!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap bg-amber-600 hover:bg-amber-700 shadow-sm"
+        >
+          <MapPin size={13} className="!text-white" /> Move
+        </button>
+
+        <button
           onClick={openBulkWhatsApp}
           className="!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap bg-[#25d366] hover:bg-[#20ba5a] shadow-sm"
         >
@@ -929,6 +1082,85 @@ function JobsListContent() {
         >
           <X size={13} /> Clear
         </button>
+      </div>
+    </div>
+  );
+
+  // ── Bulk Move Modal (shared desktop + mobile) ────────────────────────────
+  const bulkMoveModal = bulkMoveOpen && (
+    <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={() => !bulkActionLoading && setBulkMoveOpen(false)}>
+      <div className="w-full max-w-xs bg-[#161b27] border border-[#21293d] rounded-2xl p-5 shadow-2xl"
+        onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-1">
+          <p className="font-black text-white text-sm flex items-center gap-1.5">
+            <MapPin size={14} className="text-amber-400" /> Move {selectedIds.size} Job(s)
+          </p>
+          <button onClick={() => setBulkMoveOpen(false)} className="text-slate-500 hover:text-white">
+            <X size={16} />
+          </button>
+        </div>
+        <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-3">
+          Naya Spot chuno
+        </p>
+        <JobSpotPicker
+          value={bulkMoveId}
+          onSelect={(id, spot) => { setBulkMoveId(id); setBulkMoveName(spot?.name || ""); }}
+        />
+        <button
+          onClick={applyBulkMove}
+          disabled={bulkMoveId == null || bulkActionLoading}
+          className="mt-4 w-full bg-amber-600 hover:bg-amber-700 !text-white font-bold text-xs py-2.5 rounded-lg transition-colors disabled:opacity-50"
+        >
+          {bulkActionLoading ? "Moving…" : `${selectedIds.size} Job(s) Move karo`}
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── Stale Banner + Modal — Done/Paid items jo 7+ din se spot par hain ─────
+  const dismissStale = () => { setStaleOpen(false); setStaleSeen(true); };
+  const staleBanner = staleItems.length > 0 && !staleOpen && !staleSeen && (
+    <button
+      onClick={() => setStaleOpen(true)}
+      className="w-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl px-4 py-2.5 flex items-center justify-center gap-2 text-xs font-bold text-amber-400 transition-colors cursor-pointer"
+    >
+      <AlertCircle size={14} />
+      {staleItems.length} repaired item{staleItems.length === 1 ? "" : "s"} 7+ din se spot par pade hain — dekho
+    </button>
+  );
+  const staleModal = staleOpen && (
+    <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={dismissStale}>
+      <div className="w-full max-w-md bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col"
+        onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#21293d] bg-amber-500/10">
+          <p className="font-black text-amber-400 text-sm flex items-center gap-1.5">
+            <AlertCircle size={15} /> {staleItems.length} item(s) spot par atke hain (7+ din)
+          </p>
+          <button onClick={dismissStale} className="text-slate-500 hover:text-white">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="overflow-y-auto divide-y divide-[#21293d]">
+          {staleItems.map(t => (
+            <Link key={t.id} href={`/jobs/${t.id}/view`}
+              className="flex items-center gap-3 px-5 py-2.5 hover:bg-white/[0.04] no-underline transition-colors">
+              <span className="font-black text-blue-400 text-xs">#{t.job_id}</span>
+              <span className="text-slate-300 text-xs truncate flex-1">{t.item}</span>
+              <span className="text-[10px] text-amber-400/90 font-medium flex-shrink-0 flex items-center gap-0.5">
+                <MapPin size={9} /> {t.uniq_id}
+              </span>
+              <span className="text-[10px] text-red-400 font-bold flex-shrink-0">{t.days}d</span>
+            </Link>
+          ))}
+          {staleItems.length === 0 && (
+            <p className="text-center text-slate-600 text-xs py-8">Sab clear hai!</p>
+          )}
+        </div>
+        <div className="px-5 py-3 border-t border-[#21293d]">
+          <p className="text-[10px] text-slate-600">Tip: deliver hone par location khali karo, ya abhi Move karke ready-shelf par rakho.</p>
+        </div>
       </div>
     </div>
   );
@@ -1090,7 +1322,18 @@ function JobsListContent() {
 
                   <td className="px-3 py-2.5 text-xs text-slate-300 truncate" title={txn.item}>{txn.item}</td>
                   <td className="px-3 py-2.5 text-xs text-red-400 truncate" title={txn.fault}>{txn.fault}</td>
-                  <td className="px-3 py-2.5 text-xs text-slate-600">{txn.uniq_id || "—"}</td>
+                  <td className="px-3 py-2.5 text-xs">
+                    {txn.uniq_id ? (
+                      <Link href={`/jobs?search=${encodeURIComponent(txn.uniq_id)}`}
+                        title={`Spot: ${txn.uniq_id} — is spot ke sab items`}
+                        className="flex items-center gap-1 text-amber-400/90 hover:text-amber-300 no-underline transition-colors">
+                        <MapPin size={10} className="flex-shrink-0" />
+                        <span className="truncate">{txn.uniq_id}</span>
+                      </Link>
+                    ) : (
+                      <span className="text-slate-600">—</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2.5 text-right font-bold text-sm text-slate-200">₹{(txn.amount || 0).toFixed(0)}</td>
 
                   <td className="px-3 py-2.5 text-center">
@@ -1240,6 +1483,9 @@ function JobsListContent() {
             ))}
           </div>
 
+          {/* Stale alert — 7+ din se spot par pade Done/Paid items */}
+          {staleBanner}
+
           {/* ── Filter Bar ── */}
           <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-4">
             <div className="flex flex-wrap items-end gap-2 text-sm">
@@ -1264,10 +1510,33 @@ function JobsListContent() {
                   ))}
                 </select>
               </div>
+              {/* Spot filter — "kahan rakha hai?" (khali spots pehle, count ke saath) */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Spot</label>
+                <select value={spotFilter} onChange={e => setSpotFilter(e.target.value)}
+                  title="Job items ki physical location"
+                  className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:border-blue-500 outline-none transition-all max-w-[170px]">
+                  <option value="">All Spots</option>
+                  {jobSpots.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.count})</option>
+                  ))}
+                </select>
+              </div>
 
               <button onClick={applyDesktopFilter}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all">
                 <Filter size={13} /> Filter
+              </button>
+              <Link href="/jobs/spot-labels"
+                title="Har spot ka printable QR label — scan karke us spot ke items khulenge"
+                className="bg-[#21293d] hover:bg-[#2a3550] text-slate-400 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all no-underline">
+                <MapPin size={13} /> QR
+              </Link>
+              <button onClick={clearDeliveredSpots}
+                disabled={spotCleaning}
+                title="Delivered jobs jinki location abhi bhi lagi hai — sab ek saath khali karo"
+                className="bg-[#21293d] hover:bg-[#2a3550] text-slate-400 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-60">
+                {spotCleaning ? <Loader2 size={13} className="animate-spin" /> : <Eraser size={13} />} Spot Clean
               </button>
               <button onClick={resetFilters}
                 className="bg-[#21293d] hover:bg-[#2a3550] text-slate-400 px-4 py-1.5 rounded-lg text-xs font-bold transition-all">
@@ -1327,6 +1596,8 @@ function JobsListContent() {
         </div>
       {bulkActionBar}
       {bulkWaModal}
+      {bulkMoveModal}
+      {staleModal}
       </div>
     );
   }
@@ -1430,6 +1701,11 @@ function JobsListContent() {
           <span className="text-[10px] text-slate-600 font-bold uppercase">Total Amount</span>
           <span className="text-sm font-black text-purple-400">₹{stats.totalAmt.toLocaleString("en-IN")}</span>
         </div>
+      )}
+
+      {/* Stale alert (mobile) — 7+ din se spot par pade Done/Paid items */}
+      {staleBanner && (
+        <div className="mx-3 mt-2">{staleBanner}</div>
       )}
 
       {/* ── Search results indicator ── */}
@@ -1555,7 +1831,7 @@ function JobsListContent() {
                   {[
                     { label: "Item/Model", value: txn.item, cls: "text-slate-300 font-bold" },
                     { label: "Fault/Issue", value: txn.fault, cls: "text-red-400" },
-                    { label: "Location ID", value: txn.uniq_id || "—", cls: "text-slate-400" },
+                    { label: "Spot", value: txn.uniq_id || "—", cls: "text-amber-400/90" },
                   ].map(({ label, value, cls }) => (
                     <div key={label} className="flex justify-between gap-2">
                       <span className="text-slate-600 flex-shrink-0">{label}:</span>
@@ -1811,6 +2087,8 @@ function JobsListContent() {
 
       {bulkActionBar}
       {bulkWaModal}
+      {bulkMoveModal}
+      {staleModal}
       {/* ── Filter Modal ── */}
       {showFilterModal && (
         <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
@@ -1851,6 +2129,22 @@ function JobsListContent() {
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Spot (Location)</label>
+                <select value={spotFilter} onChange={e => setSpotFilter(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] text-slate-900 dark:text-slate-300 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 transition-all">
+                  <option value="">All Spots</option>
+                  {jobSpots.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.count})</option>
+                  ))}
+                </select>
+              </div>
+              <button onClick={clearDeliveredSpots}
+                disabled={spotCleaning}
+                className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-[#21293d] dark:hover:bg-[#2a3550] text-slate-700 dark:text-slate-400 p-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 transition-all disabled:opacity-60">
+                {spotCleaning ? <Loader2 size={14} className="animate-spin" /> : <Eraser size={14} />}
+                {spotCleaning ? "Clean ho raha hai…" : "Delivered Spots Clean karo"}
+              </button>
               <div className="flex gap-2 pt-1">
                 <button onClick={resetFilters}
                   className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-[#21293d] dark:hover:bg-[#2a3550] text-slate-700 dark:text-slate-400 p-2.5 rounded-xl text-sm font-bold transition-all">

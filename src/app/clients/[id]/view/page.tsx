@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -21,6 +21,7 @@ import { logActivity } from "@/lib/activity";
 import { firmVars } from "@/lib/whatsapp";
 import { compressImage } from "@/lib/imageCompression";
 import { JOB_STATUS } from "@/lib/status-colors";
+import JobSpotPicker from "@/components/JobSpotPicker";
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -60,6 +61,7 @@ type Job = {
   fault?: string;
   remark?: string;
   uniq_id?: string;
+  location_id?: number | null;
   status: number;
   amount?: number;
   date_created: string;
@@ -128,6 +130,12 @@ const fmtDate = (d: string) => {
 const STATUS_MAP: Record<number, { label: string; cls: string }> = Object.fromEntries(
   Object.entries(JOB_STATUS).map(([k, v]) => [Number(k), { label: v.label, cls: v.cls }])
 );
+
+// Status badge — jobs page jaisa hi look
+const getStatusBadge = (s: number) => {
+  const st = JOB_STATUS[s] ?? JOB_STATUS[0];
+  return `inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${st.cls}`;
+};
 
 // ─────────────────────────────────────────────────────────────
 // STAT CARD
@@ -246,6 +254,19 @@ export default function ViewClientProfile() {
   const [waEdited,           setWaEdited]           = useState(false);
   const [waGroups,           setWaGroups]           = useState<Array<{ phone: string; fullname: string; rows: Job[] }>>([]);
   const [sysInfo,            setSysInfo]            = useState<Record<string, string>>({});
+  // Bulk Move (jobs page jaisa) — selected jobs ka spot badlo
+  const [bulkMoveOpen,       setBulkMoveOpen]       = useState(false);
+  const [bulkMoveId,         setBulkMoveId]         = useState<number | null>(null);
+  const [bulkMoveName,       setBulkMoveName]       = useState("");
+
+  // Selected jobs ka current status distribution (bulk bar me dikhata hai — jobs page jaisa)
+  const selectedStatusCounts = useMemo(() => {
+    const counts: Record<number, number> = {};
+    jobs.forEach(j => {
+      if (selectedIds.has(j.id)) counts[j.status] = (counts[j.status] || 0) + 1;
+    });
+    return counts;
+  }, [jobs, selectedIds]);
 
   // ── CLIENT PHOTO ─────────────────────────────────────────────
   const [photoSaving,  setPhotoSaving]  = useState(false);
@@ -477,6 +498,12 @@ export default function ViewClientProfile() {
     if (selectedIds.size === 0) { alert("Select jobs first!"); return; }
     if (!confirm(`${selectedIds.size} jobs ka status change karein?`)) return;
 
+    // Deliver par spot khali karna — occupancy sahi rakhne ke liye (jobs page jaisa)
+    let clearLocation = false;
+    if (newStatus === 5 && jobs.some(j => selectedIds.has(j.id) && (j.uniq_id || j.location_id))) {
+      clearLocation = confirm("Items client ko deliver ho rahe hain — unki location (spot) bhi khali kar dein?");
+    }
+
     setBulkActionLoading(true);
     // datetime-local value par +05:30 stamp zaroori hai warna Postgres use UTC maan ke
     // date agle din dikhati hai (PHP wall-clock as-is save karta tha).
@@ -485,6 +512,7 @@ export default function ViewClientProfile() {
       date_updated: toISTString(),
       date_completed: newStatus === 5 ? (dtLocalToIST(bulkDeliverDate) || toISTString()) : null,
     };
+    if (clearLocation) { updates.uniq_id = ""; updates.location_id = null; }
 
     const ids = [...selectedIds];
     const { error } = await supabase
@@ -506,6 +534,33 @@ export default function ViewClientProfile() {
       await logActivity('Bulk Status Update', 'Transactions', undefined, `${ids.length} job(s) updated to "${statusName}"`);
     } else {
       alert("Bulk update failed: " + error.message);
+    }
+    setBulkActionLoading(false);
+  };
+
+  // ── BULK MOVE (jobs page parity) — selected jobs ka spot badlo ──
+  const applyBulkMove = async () => {
+    if (bulkMoveId == null) { alert("Pehle spot chuno!"); return; }
+    setBulkActionLoading(true);
+    const ids = [...selectedIds];
+    const { error } = await supabase
+      .from("transaction_list")
+      .update({ location_id: bulkMoveId, uniq_id: bulkMoveName, date_updated: toISTString() })
+      .in("id", ids);
+    if (!error) {
+      setJobs(prev => prev.map(j =>
+        selectedIds.has(j.id)
+          ? { ...j, location_id: bulkMoveId, uniq_id: bulkMoveName } as Job
+          : j
+      ));
+      for (const id of ids) {
+        const job = jobs.find(j => j.id === id);
+        await logActivity('Moved Job Item', 'Jobs', job?.job_id || id, `Job #${job?.job_id || id} → ${bulkMoveName} | ${job?.item || ''}`);
+      }
+      setSelectedIds(new Set());
+      setBulkMoveOpen(false); setBulkMoveId(null); setBulkMoveName("");
+    } else {
+      alert("Move failed: " + error.message);
     }
     setBulkActionLoading(false);
   };
@@ -1518,7 +1573,7 @@ export default function ViewClientProfile() {
                 <select
                   value={editForm.payment_mode}
                   onChange={e => setEditForm({ ...editForm, payment_mode: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors [color-scheme:light] dark:[color-scheme:dark]"
                 >
                   {['Cash','PhonePe/GPay','UPI','NEFT','Cheque','Bank Transfer','Credit Card'].map(m => (
                     <option key={m}>{m}</option>
@@ -1531,9 +1586,9 @@ export default function ViewClientProfile() {
                   <select
                     value={editForm.payment_type}
                     onChange={e => setEditForm({ ...editForm, payment_type: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                  >
-                    {['Full','Partial','Advance','On Account'].map(m => (
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors [color-scheme:light] dark:[color-scheme:dark]"
+                    >
+                      {['Full','Partial','Advance','On Account'].map(m => (
                       <option key={m}>{m}</option>
                     ))}
                   </select>
@@ -1581,10 +1636,18 @@ export default function ViewClientProfile() {
           }}
         >
           {/* Row 1: info + status + datetime */}
-          <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="flex items-center flex-wrap gap-2 w-full md:w-auto">
             <span className="bg-indigo-600 !text-white rounded-full px-2.5 py-0.5 font-bold text-xs whitespace-nowrap shadow-sm">
               {selectedIds.size} selected
             </span>
+
+            {/* Current status of selected jobs */}
+            {Object.entries(selectedStatusCounts).map(([s, n]) => (
+              <span key={s} className={`${getStatusBadge(Number(s))} whitespace-nowrap`} title="Current status">
+                {STATUS_MAP[Number(s)]?.label}{n > 1 ? ` ×${n}` : ""}
+              </span>
+            ))}
+
             <select
               value={bulkStatus}
               onChange={e => {
@@ -1595,9 +1658,9 @@ export default function ViewClientProfile() {
                   setBulkDeliverDate(toISTString().slice(0, 16));
                 }
               }}
-              className="rounded-lg px-2.5 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px] bg-slate-100 dark:bg-[#0d1117] border border-slate-300 dark:border-[#21293d] text-slate-900 dark:text-slate-200 focus:border-blue-500"
+              className="rounded-lg px-2.5 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px] bg-[#0d1117] border border-[#21293d] text-slate-200 focus:border-blue-500 transition-all [color-scheme:dark]"
             >
-              <option value="">-- Status --</option>
+              <option value="" disabled>-- New Status --</option>
               <option value="0">Pending</option>
               <option value="1">On-Progress</option>
               <option value="2">Done</option>
@@ -1611,7 +1674,7 @@ export default function ViewClientProfile() {
                 value={bulkDeliverDate}
                 onChange={e => setBulkDeliverDate(e.target.value)}
                 title="Delivery Date & Time"
-                className="rounded-lg px-2.5 py-1.5 text-xs outline-none cursor-pointer flex-1 md:flex-none bg-slate-100 dark:bg-[#0d1117] border border-slate-300 dark:border-[#21293d] text-slate-900 dark:text-slate-200 focus:border-blue-500"
+                className="rounded-lg px-2.5 py-1.5 text-xs outline-none cursor-pointer flex-1 md:flex-none bg-[#0d1117] border border-[#21293d] text-slate-200 focus:border-blue-500 transition-all [color-scheme:dark]"
               />
             )}
           </div>
@@ -1627,6 +1690,15 @@ export default function ViewClientProfile() {
               className="!text-white border-none rounded-lg px-3 md:px-5 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 shadow-sm"
             >
               <CheckCircle2 size={13} className="!text-white" /> {bulkActionLoading ? "Applying..." : "Apply"}
+            </button>
+
+            <button
+              onClick={() => { setBulkMoveId(null); setBulkMoveName(""); setBulkMoveOpen(true); }}
+              disabled={bulkActionLoading}
+              title="Selected jobs ko dusre spot par le jao"
+              className="!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap bg-amber-600 hover:bg-amber-700 shadow-sm"
+            >
+              <MapPin size={13} className="!text-white" /> Move
             </button>
 
             <button
@@ -1693,6 +1765,38 @@ export default function ViewClientProfile() {
           </div>
         )}
       </div>
+
+      {/* ── BULK MOVE MODAL (jobs page parity) ── */}
+      {bulkMoveOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => !bulkActionLoading && setBulkMoveOpen(false)}>
+          <div className="w-full max-w-xs bg-[#161b27] border border-[#21293d] rounded-2xl p-5 shadow-2xl"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <p className="font-black text-white text-sm flex items-center gap-1.5">
+                <MapPin size={14} className="text-amber-400" /> Move {selectedIds.size} Job(s)
+              </p>
+              <button onClick={() => setBulkMoveOpen(false)} className="text-slate-500 hover:text-white">
+                <X size={16} />
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-3">
+              Naya Spot chuno
+            </p>
+            <JobSpotPicker
+              value={bulkMoveId}
+              onSelect={(id, spot) => { setBulkMoveId(id); setBulkMoveName(spot?.name || ""); }}
+            />
+            <button
+              onClick={applyBulkMove}
+              disabled={bulkMoveId == null || bulkActionLoading}
+              className="mt-4 w-full bg-amber-600 hover:bg-amber-700 !text-white font-bold text-xs py-2.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {bulkActionLoading ? "Moving…" : `${selectedIds.size} Job(s) Move karo`}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── WHATSAPP MODAL (PHP parity: jobs page) ── */}
       {waModal && (
