@@ -142,7 +142,7 @@ export default function ViewSalePage() {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen theme-body flex flex-col items-center justify-center gap-4">
         <div className="relative">
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
             <ShoppingBag size={28} className="text-emerald-500/60" />
@@ -156,8 +156,8 @@ export default function ViewSalePage() {
 
   if (!sale) {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center">
-        <div className="text-center bg-[#161b27] border border-[#21293d] rounded-2xl p-10">
+      <div className="min-h-screen theme-body flex items-center justify-center">
+        <div className="text-center theme-card border border-[#21293d] rounded-2xl p-10">
           <ShoppingBag size={40} className="mx-auto text-slate-700 mb-3" />
           <h2 className="text-xl font-black text-white">Sale not found</h2>
           <Link href="/direct-sales" className="text-blue-400 hover:text-blue-300 text-sm mt-3 inline-flex items-center gap-1">
@@ -174,12 +174,12 @@ export default function ViewSalePage() {
 
   // ══════════════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
+    <div className="min-h-screen theme-body font-sans pb-16">
 
       {/* ── HERO HEADER ── */}
-      <div className="relative overflow-hidden bg-[#0d1117] border-b border-[#21293d]">
+      <div className="relative overflow-hidden border-b border-[#21293d]">
         <div className="absolute inset-0 opacity-[0.025]"
-          style={{ backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+          style={{ backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
         <div className="absolute -top-20 right-20 w-80 h-80 bg-emerald-600/6 rounded-full blur-3xl" />
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-5">
@@ -194,7 +194,7 @@ export default function ViewSalePage() {
             {/* Left */}
             <div className="flex items-start gap-4">
               <Link href="/direct-sales"
-                className="mt-1 p-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] rounded-xl text-slate-500 hover:text-slate-300 transition-all flex-shrink-0">
+                className="mt-1 p-2 theme-panel hover:bg-[var(--app-hover)] border border-[#21293d] rounded-xl text-slate-500 hover:text-slate-300 transition-all flex-shrink-0">
                 <ArrowLeft size={16} />
               </Link>
               <div className="flex items-start gap-3">
@@ -244,7 +244,7 @@ export default function ViewSalePage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 space-y-4">
 
         {/* ── COMPANY BANNER ── */}
-        <div className="relative bg-gradient-to-r from-[#161b27] via-[#1a2235] to-[#161b27] border border-[#21293d] rounded-2xl px-6 py-5 overflow-hidden">
+        <div className="relative bg-gradient-to-r from-[var(--app-panel)] via-[var(--app-hover)] to-[var(--app-panel)] border border-[#21293d] rounded-2xl px-6 py-5 overflow-hidden">
           <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-emerald-600/10 to-transparent" />
           <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-10">
             <Sparkles size={48} className="text-emerald-400" />
@@ -276,8 +276,8 @@ export default function ViewSalePage() {
         <div className="grid sm:grid-cols-2 gap-4">
 
           {/* Client card */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-[#21293d] bg-[#111520]">
+          <div className="theme-card border border-[#21293d] rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-[#21293d] theme-panel-2">
               <User size={12} className="text-blue-400" />
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Bill To</span>
             </div>
@@ -324,8 +324,8 @@ export default function ViewSalePage() {
           </div>
 
           {/* Invoice details */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-[#21293d] bg-[#111520]">
+          <div className="theme-card border border-[#21293d] rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-[#21293d] theme-panel-2">
               <FileText size={12} className="text-emerald-400" />
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Invoice Details</span>
             </div>
@@ -352,8 +352,8 @@ export default function ViewSalePage() {
         </div>
 
         {/* ── ITEMS TABLE ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-[#21293d] bg-[#111520]">
+        <div className="theme-card border border-[#21293d] rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-[#21293d] theme-panel-2">
             <Package size={13} className="text-purple-400" />
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
               Items ({sale.items.length})
@@ -372,9 +372,9 @@ export default function ViewSalePage() {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#21293d]">
+              <tbody>
                 {sale.items.map((item, idx) => (
-                  <tr key={item.id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={item.id} className="border-b border-[#21293d] last:border-0 hover:bg-white/[0.02] transition-colors">
                     <td className="px-5 py-3.5 text-slate-700 text-xs">{idx + 1}</td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
@@ -406,8 +406,8 @@ export default function ViewSalePage() {
 
         {/* ── BILL SUMMARY ── */}
         <div className="flex justify-end">
-          <div className="w-full sm:w-80 bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-[#21293d] bg-[#111520]">
+          <div className="w-full sm:w-80 theme-card border border-[#21293d] rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-[#21293d] theme-panel-2">
               <IndianRupee size={12} className="text-teal-400" />
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Bill Summary</span>
             </div>
@@ -430,7 +430,7 @@ export default function ViewSalePage() {
                   ₹{sale.total_amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="bg-[#111520] border border-[#21293d] rounded-xl px-3 py-2 mt-1">
+              <div className="theme-panel-2 border border-[#21293d] rounded-xl px-3 py-2 mt-1">
                 <p className="text-[10px] text-slate-600 leading-relaxed italic">
                   {numberToWords(sale.total_amount)} Rupees Only
                 </p>
