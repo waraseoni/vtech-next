@@ -20,7 +20,7 @@
 // ✅ remark field added to Transaction type + displayed in mobile card
 // ═══════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import Link from "next/link";
@@ -184,6 +184,18 @@ function JobsListContent() {
     localStorage.setItem("transactions_view", mobileView);
   }, [mobileView]);
 
+  // ── Hide Delivered yaad rakhna (localStorage) — refresh par last choice rahe ──
+  // URL me explicit param ho to wahi jeetega, warna last saved choice restore hoti hai
+  useEffect(() => {
+    if (searchParams.get("hide_delivered") === null) {
+      setHideDelivered(localStorage.getItem("jobs_hide_delivered") === "1");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem("jobs_hide_delivered", hideDelivered ? "1" : "0"); } catch {}
+  }, [hideDelivered]);
+
   // ── NEW: Quick Create Modal ───────────────────────────────
   const [showQuickCreate, setShowQuickCreate] = useState(false);
 
@@ -192,6 +204,15 @@ function JobsListContent() {
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [bulkDeliverDate, setBulkDeliverDate] = useState("");
   const [bulkStatus, setBulkStatus] = useState("");
+
+  // Selected jobs ka current status distribution (bulk bar me dikhata hai)
+  const selectedStatusCounts = useMemo(() => {
+    const counts: Record<number, number> = {};
+    transactions.forEach(t => {
+      if (selectedIds.has(t.id)) counts[t.status] = (counts[t.status] || 0) + 1;
+    });
+    return counts;
+  }, [transactions, selectedIds]);
 
   // ── Bulk WhatsApp Report (PHP: index.php sendBulkWhatsAppReport) ──
   const [waModal,   setWaModal]   = useState(false);
@@ -801,6 +822,7 @@ function JobsListContent() {
   const resetFilters = () => {
     setDateFrom(""); setDateTo(""); setHideDelivered(false);
     setStatusFilter(""); setLocalSearch("");
+    try { localStorage.removeItem("jobs_hide_delivered"); } catch {}
     router.push("/jobs");
     setShowFilterModal(false);
   };
@@ -815,10 +837,18 @@ function JobsListContent() {
       }}
     >
       {/* Row 1: info + status + datetime */}
-      <div className="flex items-center gap-2 w-full md:w-auto">
+      <div className="flex items-center flex-wrap gap-2 w-full md:w-auto">
         <span className="bg-indigo-600 !text-white rounded-full px-2.5 py-0.5 font-bold text-xs whitespace-nowrap shadow-sm">
           {selectedIds.size} selected
         </span>
+
+        {/* Current status of selected jobs */}
+        {Object.entries(selectedStatusCounts).map(([s, n]) => (
+          <span key={s} className={`${getStatusBadge(Number(s))} whitespace-nowrap`} title="Current status">
+            {STATUS_MAP[Number(s)]}{n > 1 ? ` ×${n}` : ""}
+          </span>
+        ))}
+
         <select
           value={bulkStatus}
           onChange={e => {
@@ -829,9 +859,9 @@ function JobsListContent() {
               setBulkDeliverDate(toISTString().slice(0, 16));
             }
           }}
-          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px] bg-slate-100 dark:bg-[#0d1117] border border-slate-300 dark:border-[#21293d] text-slate-900 dark:text-slate-200 focus:border-blue-500"
+          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px] bg-[#0d1117] border border-[#21293d] text-slate-200 focus:border-blue-500 transition-all [color-scheme:dark]"
         >
-          <option value="">-- Status --</option>
+          <option value="" disabled>-- New Status --</option>
           <option value="0">Pending</option>
           <option value="1">On-Progress</option>
           <option value="2">Done</option>
@@ -845,7 +875,7 @@ function JobsListContent() {
             value={bulkDeliverDate}
             onChange={e => setBulkDeliverDate(e.target.value)}
             title="Delivery Date & Time"
-            className="rounded-lg px-2.5 py-1.5 text-xs outline-none cursor-pointer flex-1 md:flex-none bg-slate-100 dark:bg-[#0d1117] border border-slate-300 dark:border-[#21293d] text-slate-900 dark:text-slate-200 focus:border-blue-500"
+            className="rounded-lg px-2.5 py-1.5 text-xs outline-none cursor-pointer flex-1 md:flex-none bg-[#0d1117] border border-[#21293d] text-slate-200 focus:border-blue-500 transition-all [color-scheme:dark]"
           />
         )}
       </div>
@@ -1024,8 +1054,9 @@ function JobsListContent() {
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                           <BalanceBadge bal={balance} />
                           {phone && (
-                            <a href={`https://wa.me/91${phone}`} target="_blank"
-                              className="flex items-center gap-0.5 text-emerald-500 hover:text-emerald-400 text-[10px]">
+                            <a href={`tel:${txn.client_contact}`}
+                              className="flex items-center gap-0.5 text-blue-400 hover:text-blue-300 text-[10px]"
+                              title="Call client">
                               <Phone size={10} />
                               <span className="hidden xl:inline">{txn.client_contact}</span>
                             </a>
@@ -1481,8 +1512,9 @@ function JobsListContent() {
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <BalanceBadge bal={balance} />
                       {phone && (
-                        <a href={`https://wa.me/91${phone}`} target="_blank"
-                          className="flex items-center gap-1 text-emerald-500 text-[10px] hover:text-emerald-400">
+                        <a href={`tel:${txn.client_contact}`}
+                          className="flex items-center gap-1 text-blue-400 text-[10px] hover:text-blue-300"
+                          title="Call client">
                           <Phone size={10} /> {txn.client_contact}
                         </a>
                       )}
