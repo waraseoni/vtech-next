@@ -676,8 +676,8 @@ ${svcHtml}${prodHtml}
                       <InfoRow label="Received" value={fmtDateTime(job.date_created)}/>
                       <InfoRow label="Job No." value={<span className="font-bold">{job.job_id}</span>}/>
                       <InfoRow label="Code"    value={<span className="font-bold font-mono">{job.code}</span>}/>
-                      <InfoRow label="Locate"  value={job.uniq_id
-                        ? <Link href={`/jobs?search=${encodeURIComponent(job.uniq_id)}`} className="text-amber-400 hover:text-amber-300 flex items-center gap-1"><MapPin size={12}/>{job.uniq_id}</Link>
+                      <InfoRow label="Locate"  value={(job.location_id || job.uniq_id)
+                        ? <Link href={job.location_id ? `/jobs?spot=${job.location_id}` : `/jobs?search=${encodeURIComponent(job.uniq_id || "")}`} className="text-amber-400 hover:text-amber-300 flex items-center gap-1"><MapPin size={12}/>{job.uniq_id}</Link>
                         : <em className="text-slate-600">N/A</em>}/>
                       <InfoRow label="Del. Status" value={DEL_STATUS[job.del_status]}/>
                     </Fieldset>

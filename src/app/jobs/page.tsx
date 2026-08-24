@@ -88,6 +88,33 @@ const STATUS_MAP: Record<number, string> = Object.fromEntries(
   Object.entries(JOB_STATUS).map(([k, v]) => [Number(k), v.label])
 );
 
+// ── DUAL-ERA status-log reader — docs/DATA_MIGRATION_NOTES.md zaroor padho ──
+// PHP yug ke logs aur naye Next.js ke logs activity_logs me ALAG conventions
+// me rehte hain, isliye dono ko unke apne rules se query karna padta hai:
+//   legacy (PHP):  module='Transactions', action='Transaction Status Changed',
+//                  meta_id = transaction_list.id (internal PK)
+//   modern (Next): module='Jobs', action='Updated Job Status',
+//                  meta_id = job_id string ("28201" jaisa)
+// Desc order aata hai → pehla hit per key hi latest hai. Naya code hamesha
+// canonical transaction_list.id se log kare (writers), readers dono dekhein.
+async function fetchStatusChangeLogs(
+  era: "legacy" | "modern",
+  ids: string[]
+): Promise<Array<{ meta_id: string; date_created: string }>> {
+  if (!ids.length) return [];
+  const cfg = era === "legacy"
+    ? { module: "Transactions", action: "Transaction Status Changed" }
+    : { module: "Jobs", action: "Updated Job Status" };
+  const { data } = await supabase
+    .from("activity_logs")
+    .select("meta_id, date_created")
+    .eq("module", cfg.module)
+    .eq("action", cfg.action)
+    .in("meta_id", ids)
+    .order("date_created", { ascending: false });
+  return (data || []) as Array<{ meta_id: string; date_created: string }>;
+}
+
 const STATUS_BORDER: Record<number, string> = {
   0: "border-l-slate-500", 1: "border-l-blue-500", 2: "border-l-teal-500",
   3: "border-l-emerald-500", 4: "border-l-red-500", 5: "border-l-purple-500",
@@ -160,7 +187,8 @@ function JobsListContent() {
   }, []);
 
   // Filters
-  const [localSearch,   setLocalSearch]   = useState("");
+  // Lazy init from URL (?search=) — QR labels / spot-links isi se deep-link karte hain
+  const [localSearch,   setLocalSearch]   = useState(() => searchParams.get("search") || "");
   const [dateFrom,      setDateFrom]      = useState(urlDateFrom);
   const [dateTo,        setDateTo]        = useState(urlDateTo);
   // Lazy init: URL param > localStorage last choice. Synchronous init zaroori hai
@@ -175,7 +203,11 @@ function JobsListContent() {
   });
   const [statusFilter,  setStatusFilter]  = useState<number | "">("");
   // Spot filter: locations.id (kind='job') — "kahan rakha hai?" ek click me
-  const [spotFilter,    setSpotFilter]    = useState<string>("");
+  // Lazy init from URL (?spot=<id>) — exact location filter, search se zyada precise
+  const [spotFilter,    setSpotFilter]    = useState<string>(() => {
+    const p = searchParams.get("spot");
+    return p && /^\d+$/.test(p) ? p : "";
+  });
   const [jobSpots,      setJobSpots]      = useState<Array<{ id: number; name: string; count: number }>>([]);
   const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
   const [bulkMoveId, setBulkMoveId] = useState<number | null>(null);
@@ -245,6 +277,26 @@ function JobsListContent() {
   }, []);
   useEffect(() => { loadJobSpots(); }, [loadJobSpots]);
 
+  // URL se aaya spot id agar DB me exist nahi karta (deleted spot ka purana QR/link)
+  // to filter khud reset ho jaye — blank list atki na rahe
+  useEffect(() => {
+    if (spotFilter && jobSpots.length > 0 && !jobSpots.some(s => String(s.id) === spotFilter)) {
+      setSpotFilter("");
+    }
+  }, [jobSpots, spotFilter]);
+
+  // Same-route navigation par bhi URL params apply ho — Loc/QR links /jobs?search=X
+  // ya ?spot=X par le jaate hain; useState lazy-init sirf mount par chalta hai,
+  // isliye param CHANGE hone par state sync karni zaroori hai.
+  const urlSearch = searchParams.get("search") || "";
+  const urlSpot   = searchParams.get("spot");
+  useEffect(() => {
+    setLocalSearch(urlSearch);
+  }, [urlSearch]);
+  useEffect(() => {
+    setSpotFilter(urlSpot && /^\d+$/.test(urlSpot) ? urlSpot : "");
+  }, [urlSpot]);
+
   // ── Stale alert: Done/Paid items jo 7+ din se spot par pade hain ──
   const [staleOpen, setStaleOpen] = useState(false);
   const [staleSeen, setStaleSeen] = useState(false);
@@ -253,25 +305,55 @@ function JobsListContent() {
   }>>([]);
   const loadStale = useCallback(async () => {
     try {
-      const cutoff = new Date(Date.now() - 7 * 86400000).toISOString();
-      const { data } = await supabase
+      // NOTE: transaction_list.status_changed_at column DB me exist nahi karta —
+      // stale time activity_logs se derive hota hai (dual-era helper, upar).
+      // Logs na mile to fallback date_updated (sirf stale-DETECTION ke liye).
+      const now = Date.now();
+      const cutoffIso = new Date(now - 7 * 86400000).toISOString();
+
+      const { data: cands, error: candErr } = await supabase
         .from("transaction_list")
-        .select("id, job_id, item, uniq_id, status_changed_at")
+        .select("id, job_id, item, uniq_id, date_created, date_updated")
         .eq("del_status", 0)
         .in("status", [2, 3])
         .neq("uniq_id", "")
-        .lt("status_changed_at", cutoff)
-        .order("status_changed_at", { ascending: true })
-        .limit(50);
-      const now = Date.now();
+        .lt("date_updated", cutoffIso)
+        .order("date_updated", { ascending: true })
+        .limit(300);
+      if (candErr) throw candErr;
+      const list = cands || [];
+      if (!list.length) { setStaleItems([]); return; }
+
+      // Har job ki LAST status-change time — dono yug parallel
+      const [legacyRows, modernRows] = await Promise.all([
+        fetchStatusChangeLogs("legacy", list.map(t => String(t.id))),
+        fetchStatusChangeLogs("modern", [...new Set(list.map(t => String(t.job_id || "")).filter(Boolean))]),
+      ]);
+      const logMap = new Map<string, string>();
+      for (const log of [...legacyRows, ...modernRows]) {
+        const k = String(log.meta_id);
+        if (!logMap.has(k)) logMap.set(k, log.date_created);
+      }
+
       setStaleItems(
-        (data || []).map(t => ({
-          id: t.id,
-          job_id: t.job_id,
-          item: t.item,
-          uniq_id: t.uniq_id || "",
-          days: Math.floor((now - new Date(t.status_changed_at || "").getTime()) / 86400000),
-        }))
+        list
+          .map(t => {
+            const changedAt = logMap.get(String(t.id)) ?? logMap.get(String(t.job_id))
+              ?? t.date_updated ?? t.date_created;
+            const ts = new Date(changedAt || "").getTime();
+            return {
+              id: t.id,
+              job_id: t.job_id,
+              item: t.item,
+              uniq_id: t.uniq_id || "",
+              ts,
+              days: Math.floor((now - ts) / 86400000),
+            };
+          })
+          .filter(it => it.ts > 0 && now - it.ts >= 7 * 86400000)
+          .sort((a, b) => a.ts - b.ts)
+          .slice(0, 50)
+          .map(it => ({ id: it.id, job_id: it.job_id, item: it.item, uniq_id: it.uniq_id, days: it.days }))
       );
     } catch (err) {
       console.error("loadStale error:", err);
@@ -457,17 +539,11 @@ function JobsListContent() {
       const clientIdsNum = [...new Set(pageTxns.map(t => Number(t.client_name)))];
       const clientIdsStr = clientIdsNum.map(String);
 
-      // Fetch status change timestamps from activity_logs
-      const jobIdList = pageTxns.map(t => t.job_id).filter(Boolean);
-      const logPromise = jobIdList.length > 0
-        ? supabase
-            .from("activity_logs")
-            .select("meta_id, date_created")
-            .eq("module", "Jobs")
-            .eq("action", "Updated Job Status")
-            .in("meta_id", jobIdList)
-            .order("date_created", { ascending: false })
-        : Promise.resolve({ data: [] });
+      // Status-change timestamps — dono yug parallel query (helper upar dekho)
+      const logPromise = Promise.all([
+        fetchStatusChangeLogs("legacy", pageTxns.map(t => String(t.id))),
+        fetchStatusChangeLogs("modern", [...new Set(pageTxns.map(t => String(t.job_id || "")).filter(Boolean))]),
+      ]).then(([legacyRows, modernRows]) => ({ data: [...legacyRows, ...modernRows] }));
 
       const [clientsRes, billedRes, paidRes, salesRes, loansRes, logsRes] = await Promise.all([
         supabase.from("client_list").select("id, firstname, middlename, lastname, contact, opening_balance, image_path").in("id", clientIdsNum),
@@ -483,8 +559,9 @@ function JobsListContent() {
       // Build latest status change map (activity_logs returns ordered desc, keep first per job)
       const statusChangeMap = new Map<string, string>();
       for (const log of logsRes?.data || []) {
-        if (!statusChangeMap.has(log.meta_id)) {
-          statusChangeMap.set(log.meta_id, log.date_created);
+        const k = String(log.meta_id);
+        if (!statusChangeMap.has(k)) {
+          statusChangeMap.set(k, log.date_created);
         }
       }
 
@@ -499,8 +576,15 @@ function JobsListContent() {
       setTransactions(pageTxns.map(txn => {
         const cid    = Number(txn.client_name);
         const client = clientMap.get(cid);
-        const statusDate = txn.status === 5 ? txn.date_completed
-          : statusChangeMap.get(txn.job_id as string) || txn.date_updated;
+        // Status-date sirf VERIFIED sources se: Delivered → date_completed,
+        // warna activity_logs ki last status-change entry (legacy key = txn id,
+        // modern key = job_id — dono try karo). date_updated fallback NAHI:
+        // sync/migration rows ko bulk touch kar deta hai (jhoothi aaj ki date).
+        const statusDate = txn.status === 5 && txn.date_completed
+          ? txn.date_completed
+          : statusChangeMap.get(String(txn.id))
+            || statusChangeMap.get(String(txn.job_id))
+            || null;
         return {
           ...txn,
           client_firstname:       client?.firstname       || "",
@@ -650,7 +734,8 @@ function JobsListContent() {
       for (const id of ids) {
         const txn = transactions.find(t => t.id === id);
         const oldStatus = (txn?.status != null ? STATUS_MAP[txn.status] : null) || String(txn?.status ?? '?');
-        await logActivity('Updated Job Status', 'Jobs', txn?.job_id || id, `Job #${txn?.job_id || id} | ${oldStatus} → ${statusName} | ${txn?.item || ''}`);
+        // Canonical PK hi meta_id — job_id string nahi (docs/DATA_MIGRATION_NOTES.md)
+        await logActivity('Updated Job Status', 'Jobs', id, `Job #${txn?.job_id || id} | ${oldStatus} → ${statusName} | ${txn?.item || ''}`);
       }
       await logActivity('Bulk Status Update', 'Jobs', undefined, `${ids.length} job(s) updated to "${statusName}"`);
       fetchStats();
@@ -679,7 +764,8 @@ function JobsListContent() {
       ));
       for (const id of ids) {
         const txn = transactions.find(t => t.id === id);
-        await logActivity('Moved Job Item', 'Jobs', txn?.job_id || id, `Job #${txn?.job_id || id} → ${bulkMoveName} | ${txn?.item || ''}`);
+        // Canonical PK hi meta_id — job_id string nahi (docs/DATA_MIGRATION_NOTES.md)
+        await logActivity('Moved Job Item', 'Jobs', id, `Job #${txn?.job_id || id} → ${bulkMoveName} | ${txn?.item || ''}`);
       }
       setSelectedIds(new Set());
       setBulkMoveOpen(false); setBulkMoveId(null); setBulkMoveName("");
@@ -1606,33 +1692,37 @@ function JobsListContent() {
   // MOBILE VIEW
   // ══════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#0d1117] pb-28">
+    <div className="min-h-screen theme-body pb-28">
 
       {/* ── Sticky Header ── */}
-      <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-900/90 to-[#0d1117]/95 backdrop-blur border-b border-[#21293d] p-3">
+      <div className="sticky top-0 z-10 bg-gradient-to-r from-[var(--app-panel)] via-[var(--app-hover)] to-[var(--app-panel)] backdrop-blur border-b border-[var(--app-border)] p-3">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
           <div className="flex items-center gap-2">
             <div className="bg-blue-600/20 border border-blue-600/30 p-1.5 rounded-full">
               <Wrench size={16} className="text-blue-400" />
             </div>
-            <h1 className="text-sm font-black text-white tracking-wide">Transactions</h1>
+            <h1 className="text-sm font-black text-[var(--app-text)] tracking-wide">Transactions</h1>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase">
+            <span className="text-[10px] font-bold text-[var(--app-muted)] uppercase">
               {totalRows} records
             </span>
+            <Link href="/jobs/spot-labels" title="Spot QR labels"
+              className="bg-[var(--app-panel-2)] hover:bg-[var(--app-hover)] text-[var(--app-text-2)] px-2 py-1 rounded-lg flex items-center gap-1 text-[10px] font-bold no-underline transition-all">
+              <MapPin size={11} /> QR
+            </Link>
             <Link href="/reports/delivered" title="Delivered Report"
               className="bg-[#48bb78] hover:bg-[#3da968] text-white px-2 py-1 rounded-lg flex items-center gap-1 text-[10px] font-bold no-underline transition-all">
               <Truck size={11} /> Delivered
             </Link>
-            <div className="flex items-center gap-0.5 bg-[#161b27] border border-[#21293d] p-0.5 rounded-lg">
+            <div className="flex items-center gap-0.5 bg-[var(--app-panel-2)] border border-[var(--app-border)] p-0.5 rounded-lg">
               <button onClick={() => setMobileView("card")}
-                className={`p-1 rounded transition-all ${mobileView === "card" ? "bg-blue-600 text-white" : "text-slate-500"}`}
+                className={`p-1 rounded transition-all ${mobileView === "card" ? "bg-blue-600 text-white" : "text-[var(--app-muted)]"}`}
                 title="Card View">
                 <LayoutGrid size={12} />
               </button>
               <button onClick={() => setMobileView("table")}
-                className={`p-1 rounded transition-all ${mobileView === "table" ? "bg-blue-600 text-white" : "text-slate-500"}`}
+                className={`p-1 rounded transition-all ${mobileView === "table" ? "bg-blue-600 text-white" : "text-[var(--app-muted)]"}`}
                 title="Table View">
                 <List size={12} />
               </button>
@@ -1642,10 +1732,10 @@ function JobsListContent() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={14} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--app-muted)] z-10 pointer-events-none" size={14} />
           <input type="text" placeholder="Search jobs, clients, items..."
             value={localSearch} onChange={e => setLocalSearch(e.target.value)}
-            className="w-full pl-9 pr-10 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 placeholder-slate-600 rounded-xl text-sm outline-none" />
+            className="theme-input w-full pl-9 pr-10 py-2 rounded-xl text-sm outline-none placeholder:text-[var(--app-muted-2)]" />
           <button onClick={() => setShowFilterModal(true)}
             className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 p-1.5 rounded-lg text-white">
             <Filter size={13} />
@@ -1660,15 +1750,15 @@ function JobsListContent() {
         )}
 
         <div className="flex items-center justify-between mt-2">
-          <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-[var(--app-muted)] cursor-pointer">
             <input type="checkbox" checked={hideDelivered} onChange={e => setHideDelivered(e.target.checked)} className="w-3.5 h-3.5 accent-blue-500" />
             Hide Delivered
           </label>
           <div className="flex gap-1">
-            <button onClick={() => shiftDay(-1)} className="text-[10px] bg-[#21293d] text-slate-400 px-2 py-1 rounded-lg flex items-center gap-0.5">
+            <button onClick={() => shiftDay(-1)} className="text-[10px] bg-[var(--app-panel-2)] hover:bg-[var(--app-hover)] text-[var(--app-muted)] px-2 py-1 rounded-lg flex items-center gap-0.5 transition-colors">
               <ChevronLeft size={11} /> Prev
             </button>
-            <button onClick={() => shiftDay(1)} className="text-[10px] bg-[#21293d] text-slate-400 px-2 py-1 rounded-lg flex items-center gap-0.5">
+            <button onClick={() => shiftDay(1)} className="text-[10px] bg-[var(--app-panel-2)] hover:bg-[var(--app-hover)] text-[var(--app-muted)] px-2 py-1 rounded-lg flex items-center gap-0.5 transition-colors">
               Next <ChevronRight size={11} />
             </button>
           </div>

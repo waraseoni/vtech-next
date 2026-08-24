@@ -1153,7 +1153,15 @@ export default function ViewClientProfile() {
                           </td>
                           <td className={`${tdCls} font-semibold text-white max-w-[180px] truncate`}>{job.item}</td>
                           <td className={`${tdCls} text-xs text-slate-400 max-w-[160px] truncate`}>{job.fault || '—'}</td>
-                          <td className={`${tdCls} text-xs text-slate-500`}>{job.uniq_id || '—'}</td>
+                          <td className={`${tdCls} text-xs`}>
+                            {job.uniq_id ? (
+                              <Link href={`/jobs?search=${encodeURIComponent(job.uniq_id)}`}
+                                title="Is spot ke sab jobs"
+                                className="inline-flex items-center gap-1 text-amber-400/90 hover:text-amber-300 no-underline transition-colors">
+                                <MapPin size={11} className="flex-shrink-0" />{job.uniq_id}
+                              </Link>
+                            ) : '—'}
+                          </td>
                           <td className={tdCls}>
                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${st.cls}`}>
                               {st.label}
@@ -1206,7 +1214,12 @@ export default function ViewClientProfile() {
                           {isSel ? 'Selected' : 'Select'}
                         </button>
                         <span>{fmtDate(job.date_created)}</span>
-                        {job.uniq_id && <span>📍 {job.uniq_id}</span>}
+                        {job.uniq_id && (
+                          <Link href={`/jobs?search=${encodeURIComponent(job.uniq_id)}`}
+                            className="text-amber-400/90 hover:text-amber-300 no-underline inline-flex items-center gap-0.5">
+                            <MapPin size={11} /> {job.uniq_id}
+                          </Link>
+                        )}
                         {job.code && <span className="font-mono">{job.code}</span>}
                       </div>
                     </div>

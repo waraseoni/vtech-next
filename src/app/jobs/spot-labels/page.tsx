@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { ArrowLeft, Printer, Loader2, Trash2 } from "lucide-react";
+import SpotJobsModal from "@/components/SpotJobsModal";
 
 type Spot = { id: number; name: string };
 
@@ -22,6 +23,25 @@ async function qrDataUrl(text: string, size = 220): Promise<string> {
   });
 }
 
+// HAR transaction reference (koi bhi status/del_status) — spot "khali" tabhi hai
+// jab iska koi link na ho; warna locations.delete() par FK violation aayega.
+async function fetchAllLinkedLocationIds(): Promise<Set<number>> {
+  const linked = new Set<number>();
+  let from = 0;
+  for (;;) {
+    const { data } = await supabase
+      .from("transaction_list")
+      .select("location_id")
+      .not("location_id", "is", null)
+      .range(from, from + 999);
+    const rows = (data || []) as Array<{ location_id: number }>;
+    rows.forEach(r => linked.add(r.location_id));
+    if (rows.length < 1000) break;
+    from += 1000;
+  }
+  return linked;
+}
+
 export default function SpotLabelsPage() {
   const [spots, setSpots] = useState<Spot[]>([]);
   const [urls, setUrls] = useState<Record<number, string>>({});
@@ -29,34 +49,49 @@ export default function SpotLabelsPage() {
   // Har spot par kitne live jobs pade hain (delete permission isi se decide hota hai)
   const [refs, setRefs] = useState<Record<number, number>>({});
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  // Jin spots ka KOI bhi transaction link hai (live ya purana) — inhe delete nahi kiya ja sakta
+  const [allLinkedIds, setAllLinkedIds] = useState<Set<number>>(new Set());
+  // Spot card click → us spot ke linked jobs ka modal (shared component)
+  const [jobsSpot, setJobsSpot] = useState<Spot | null>(null);
+
+  // Spots + live occupancy + saare references — ek jagah, taaki UI aur bulk-delete
+  // dono same data par chalein
+  const loadSpotsAndRefs = async (): Promise<Spot[]> => {
+    const { data } = await supabase
+      .from("locations")
+      .select("id, rack")
+      .eq("kind", "job")
+      .eq("zone", "")
+      .order("rack");
+    const list: Spot[] = (data || []).map(l => ({ id: l.id, name: l.rack || "" }));
+    setSpots(list);
+    setAllLinkedIds(await fetchAllLinkedLocationIds());
+
+    if (list.length > 0) {
+      const { data: refData } = await supabase
+        .from("transaction_list")
+        .select("location_id")
+        .in("location_id", list.map(s => s.id))
+        .eq("del_status", 0);
+      const counts: Record<number, number> = {};
+      ((refData || []) as Array<{ location_id: number }>).forEach(r => {
+        counts[r.location_id] = (counts[r.location_id] || 0) + 1;
+      });
+      setRefs(counts);
+    }
+    return list;
+  };
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("locations")
-        .select("id, rack")
-        .eq("kind", "job")
-        .eq("zone", "")
-        .order("rack");
-      const list: Spot[] = (data || []).map(l => ({ id: l.id, name: l.rack || "" }));
-      setSpots(list);
-
-      if (list.length > 0) {
-        const { data: refData } = await supabase
-          .from("transaction_list")
-          .select("location_id")
-          .in("location_id", list.map(s => s.id))
-          .eq("del_status", 0);
-        const counts: Record<number, number> = {};
-        ((refData || []) as Array<{ location_id: number }>).forEach(r => {
-          counts[r.location_id] = (counts[r.location_id] || 0) + 1;
-        });
-        setRefs(counts);
-      }
+      const list = await loadSpotsAndRefs();
 
       const origin = window.location.origin;
+      // QR me exact spot param — /jobs?spot=<id> location_id par filter karta hai
+      // (search=<naam> fuzzy hai, "A3" "A30" ko bhi pakad leta)
       const entries = await Promise.all(
-        list.map(async s => [s.id, await qrDataUrl(`${origin}/jobs?search=${encodeURIComponent(s.name)}`)] as const)
+        list.map(async s => [s.id, await qrDataUrl(`${origin}/jobs?spot=${s.id}`)] as const)
       );
       setUrls(Object.fromEntries(entries));
       setLoading(false);
@@ -72,6 +107,19 @@ export default function SpotLabelsPage() {
     }
     if (!confirm(`"${s.name}" spot ko delete karein?\n\nNote: pehle se print kiye hue QR labels ab scan karne par kuch nahi dikhayenge.`)) return;
     setDeleting(s.id);
+    // Live-check ke baad bhi purane delivered/cancelled jobs spot se linked rah
+    // sakte hain — unka reference hone par FK violation hota hai, isliye server
+    // se confirm karo ki spot ka KOI bhi link nahi bacha.
+    const { data: anyRef } = await supabase
+      .from("transaction_list")
+      .select("id")
+      .eq("location_id", s.id)
+      .limit(1);
+    if (anyRef && anyRef.length > 0) {
+      alert(`"${s.name}" abhi bhi purani records se linked hai (delivered/purane jobs).\nPehle jobs page ka "Spot Clean" chalao, phir delete karo.`);
+      setDeleting(null);
+      return;
+    }
     const { error } = await supabase.from("locations").delete().eq("id", s.id);
     if (error) {
       alert("Delete failed: " + error.message);
@@ -82,6 +130,69 @@ export default function SpotLabelsPage() {
     }
     setDeleting(null);
   };
+
+  // Bulk cleanup — jo spots par KOI bhi transaction link nahi (live ya purana),
+  // sab ek saath delete. Delete se pehle FRESH DB re-check hota hai taaki stale
+  // UI galat spot na delete kare (kisi ne abhi-abhi job rakha ho to wo safe rahega).
+  const handleDeleteEmptySpots = async () => {
+    setBulkDeleting(true);
+    try {
+      // Step 1+2: fresh spots + HAR reference (koi bhi status/del_status) — warna FK violation
+      const freshSpots = await loadSpotsAndRefs();
+      const usedIds = await fetchAllLinkedLocationIds();
+      if (!freshSpots.length) { alert("Koi job-spot hi nahi hai."); return; }
+
+      const emptyIds = freshSpots.filter(s => !usedIds.has(s.id)).map(s => s.id);
+      if (emptyIds.length === 0) {
+        alert("Sabhi spots busy hain — delete karne ko kuch khali nahi hai.");
+        return;
+      }
+      if (!confirm(
+        `${emptyIds.length} khali spot(s) delete honge — ${freshSpots.length - emptyIds.length} busy wale rahenge.\n\n` +
+        `Dhyan do: pehle print hue in spots ke QR labels ab scan par kuch nahi dikhayenge.\n\nContinue?`
+      )) return;
+
+      // Step 3: chunks me delete (URL length safe)
+      const CHUNK = 200;
+      let deleted = 0;
+      let failMsg = "";
+      const deletedIds = new Set<number>();
+      for (let i = 0; i < emptyIds.length; i += CHUNK) {
+        const chunk = emptyIds.slice(i, i + CHUNK);
+        const { error } = await supabase
+          .from("locations")
+          .delete()
+          .eq("kind", "job")
+          .eq("zone", "")
+          .in("id", chunk);
+        if (error) { failMsg = error.message; break; }
+        chunk.forEach(id => deletedIds.add(id));
+        deleted += chunk.length;
+      }
+
+      // Step 4: UI sync — jo successfully delete hue wahi hatado
+      if (deletedIds.size > 0) {
+        setSpots(prev => prev.filter(s => !deletedIds.has(s.id)));
+        setUrls(prev => Object.fromEntries(Object.entries(prev).filter(([id]) => !deletedIds.has(Number(id)))));
+        setRefs(prev => Object.fromEntries(Object.entries(prev).filter(([id]) => !deletedIds.has(Number(id)))));
+      }
+
+      alert(
+        failMsg
+          ? `${deleted} spot(s) delete hue, phir error aaya: ${failMsg}`
+          : `${deleted} khali spot(s) delete ho gaye.`
+      );
+    } catch (err) {
+      console.error("handleDeleteEmptySpots error:", err);
+      alert("Bulk delete failed: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  // Khali = jiska KOI bhi transaction link nahi — isi se bulk-delete button ka
+  // dikhna/hatna decide hota hai
+  const emptyCount = spots.filter(s => !allLinkedIds.has(s.id)).length;
 
   return (
     <div className="min-h-screen bg-[#0d1117]">
@@ -97,13 +208,25 @@ export default function SpotLabelsPage() {
             {spots.length} spots
           </span>
         </div>
-        <button
-          onClick={() => window.print()}
-          disabled={loading}
-          className="!text-white border-none rounded-lg px-4 py-2 font-bold text-xs cursor-pointer hover:opacity-90 disabled:opacity-60 flex items-center gap-1.5 bg-blue-600"
-        >
-          <Printer size={13} /> Print Sheet
-        </button>
+        <div className="flex items-center gap-2">
+          {!loading && emptyCount > 0 && (
+            <button
+              onClick={handleDeleteEmptySpots}
+              disabled={bulkDeleting}
+              title={`${emptyCount} spot(s) bilkul khali hain — sab ek saath delete karo`}
+              className="border-none rounded-lg px-4 py-2 font-bold text-xs cursor-pointer hover:opacity-90 disabled:opacity-60 flex items-center gap-1.5 bg-red-600/90 hover:bg-red-600 !text-white"
+            >
+              {bulkDeleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />} Khali Delete ({emptyCount})
+            </button>
+          )}
+          <button
+            onClick={() => window.print()}
+            disabled={loading}
+            className="!text-white border-none rounded-lg px-4 py-2 font-bold text-xs cursor-pointer hover:opacity-90 disabled:opacity-60 flex items-center gap-1.5 bg-blue-600"
+          >
+            <Printer size={13} /> Print Sheet
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -128,7 +251,9 @@ export default function SpotLabelsPage() {
             {spots.map(s => {
               const used = refs[s.id] || 0;
               return (
-                <div key={s.id} className="relative bg-white rounded-xl p-4 flex flex-col items-center text-center border border-slate-200 shadow-sm break-inside-avoid">
+                <div key={s.id} onClick={() => setJobsSpot(s)}
+                  title="Click karke is spot par rakhe jobs dekho"
+                  className="relative bg-white rounded-xl p-4 flex flex-col items-center text-center border border-slate-200 shadow-sm break-inside-avoid cursor-pointer hover:border-blue-500 hover:shadow-md transition-all">
                   {/* Screen-only controls — print me nahi aate */}
                   <div className="no-print absolute top-1.5 right-1.5 flex items-center gap-1">
                     {used > 0 && (
@@ -137,7 +262,7 @@ export default function SpotLabelsPage() {
                       </span>
                     )}
                     <button
-                      onClick={() => handleDeleteSpot(s)}
+                      onClick={e => { e.stopPropagation(); handleDeleteSpot(s); }}
                       disabled={deleting === s.id}
                       title={used > 0 ? `${used} job(s) pade hain — pehle khali karo` : `"${s.name}" delete karo`}
                       className={`p-1 rounded-md transition-colors ${used > 0
@@ -157,13 +282,17 @@ export default function SpotLabelsPage() {
                     ? // eslint-disable-next-line @next/next/no-img-element
                       <img src={urls[s.id]} alt={`QR ${s.name}`} className="w-full h-auto" />
                     : <div className="w-full aspect-square bg-slate-100 animate-pulse rounded" />}
-                  <p className="text-[9px] text-slate-400 mt-2 break-all leading-tight">Scan → /jobs?search={s.name}</p>
+                  <p className="text-[9px] text-slate-400 mt-2 break-all leading-tight">Scan → Jobs @ {s.name}</p>
                 </div>
               );
             })}
           </div>
         </div>
       )}
+
+      {/* Spot ke linked jobs modal — card click par (shared component) */}
+      <SpotJobsModal spot={jobsSpot} onClose={() => setJobsSpot(null)} />
+
 
       <style jsx global>{`
         @media print {
