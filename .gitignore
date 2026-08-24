@@ -114,5 +114,6 @@ packages/
 scripts/clients.json
 # 19. Kapil's env backup + legacy MariaDB dump (do not commit)
 .env.local.kapil
+.env.local.namdev
 mariadb dump/
 
