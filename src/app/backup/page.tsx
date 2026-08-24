@@ -11,48 +11,56 @@ import {
 // Parent tables phle restore honge, phir child tables
 const BACKUP_TABLES_ORDERED = [
   // Step 1: System & Counters (no FK)
-  { table: "system_info",         order: 1 },
-  { table: "job_id_counter",     order: 1 },
+  { table: "system_info",                 order: 1 },
+  { table: "job_id_counter",             order: 1 },
   // Step 2: Master tables (no FK dependencies)
-  { table: "mechanic_list",       order: 2 },
-  { table: "client_list",         order: 2 },
-  { table: "product_list",        order: 2 },
-  { table: "service_list",       order: 2 },
-  { table: "suppliers",          order: 2 },
-  // Step 2b: Pivot tables (FK: product_list, suppliers)
-  { table: "spare_supplier",     order: 2 },
-  // Step 3: Inventory (FK: product_list)
-  { table: "inventory_list",      order: 3 },
+  { table: "mechanic_list",               order: 2 },
+  { table: "users",                       order: 2 },
+  { table: "client_list",                 order: 2 },
+  { table: "product_list",                order: 2 },
+  { table: "service_list",               order: 2 },
+  { table: "suppliers",                  order: 2 },
+  { table: "locations",                  order: 2 },
+  // Step 2b: Pivot tables (FK: product_list, suppliers, locations)
+  { table: "spare_supplier",             order: 2 },
+  { table: "product_locations",          order: 2 },
+  // Step 2c: Purchase Orders (FK: suppliers, product_list)
+  { table: "purchase_orders",            order: 2 },
+  { table: "purchase_order_items",       order: 2 },
+  // Step 3: Inventory (FK: product_list, suppliers, purchase_orders)
+  { table: "inventory_list",              order: 3 },
   // Step 4: Finance - Lenders first (parent of loan_payments)
-  { table: "lender_list",         order: 4 },
-  { table: "loan_payments",       order: 4 },  // FK: lender_list
-  { table: "expense_list",        order: 4 },
+  { table: "lender_list",                 order: 4 },
+  { table: "loan_payments",               order: 4 },  // FK: lender_list
+  { table: "expense_list",                order: 4 },
   // Step 5: Transactions (main job table, no FK from other backup tables)
-  { table: "transaction_list",      order: 5 },
-  // Step 6: Transaction sub-tables (FK: transaction_list)
-  { table: "transaction_products",  order: 6 },  // Composite PK: (transaction_id, product_id)
-  { table: "transaction_services",  order: 6 },  // Composite PK: (transaction_id, service_id)
-  { table: "transaction_images",   order: 6 },
+  { table: "transaction_list",            order: 5 },
+  // Step 6: Transaction sub-tables (FK: transaction_list, product_list, service_list)
+  { table: "transaction_products",        order: 6 },  // Composite PK: (transaction_id, product_id)
+  { table: "transaction_services",        order: 6 },  // Composite PK: (transaction_id, service_id)
+  { table: "transaction_images",          order: 6 },
   // Step 7: Client loans & payments (FK: client_list, transaction_list)
-  { table: "client_loans",        order: 7 },
-  { table: "client_payments",     order: 7 },
-  // Step 8: Direct sales (FK: client_list, mechanic_list)
-  { table: "direct_sales",        order: 8 },
-  { table: "direct_sale_items",   order: 8 },   // FK: direct_sales, product_list
+  { table: "client_loans",                order: 7 },
+  { table: "client_payments",             order: 7 },
+  // Step 8: Direct sales (FK: client_list, mechanic_list, product_list)
+  { table: "direct_sales",                order: 8 },
+  { table: "direct_sale_items",           order: 8 },   // FK: direct_sales, product_list
   // Step 9: Attendance & Advances (FK: mechanic_list)
-  { table: "attendance_list",      order: 9 },
-  { table: "advance_payments",    order: 9 },
+  { table: "attendance_list",              order: 9 },
+  { table: "advance_payments",            order: 9 },
   // Step 10: Salary & Commission history (FK: mechanic_list)
   { table: "mechanic_salary_history",     order: 10 },
   { table: "mechanic_commission_history", order: 10 },
   // Step 11: Messages
-  { table: "message_list",        order: 11 },
+  { table: "message_list",                order: 11 },
   // Step 12: WhatsApp Templates
-  { table: "wp_template_history",  order: 12 },
+  { table: "wp_template_history",          order: 12 },
   // Step 13: Activity logs (no FK dependencies)
-  { table: "activity_logs",        order: 13 },
-  // Step 14: Due-reminder logs (no FK dependencies)
-  { table: "payment_reminders",    order: 14 },
+  { table: "activity_logs",                order: 13 },
+  // Step 14: Due-reminder logs (FK: client_list)
+  { table: "payment_reminders",            order: 14 },
+  // Step 15: Push subscriptions
+  { table: "push_subscriptions",          order: 15 },
 ];
 
 const BACKUP_TABLES = BACKUP_TABLES_ORDERED.map(t => t.table);
@@ -69,15 +77,20 @@ const TABLE_COLUMNS: Record<string, string[]> = {
   "message_list": ["id", "fullname", "contact", "email", "message", "status", "date_created"],
   "client_payments": ["id", "client_id", "job_id", "loan_id", "bill_no", "payment_date", "amount", "discount", "net_amount", "payment_mode", "payment_type", "remarks", "created_at"],
   "mechanic_list": ["id", "firstname", "middlename", "lastname", "contact", "designation", "daily_salary", "avatar", "commission_percent", "status", "delete_flag", "date_added", "date_updated", "salary_per_day", "image_path"],
+  "users": ["id", "firstname", "lastname", "username", "password", "avatar", "last_login", "type", "mechanic_id", "date_added", "date_updated"],
   "loan_payments": ["id", "lender_id", "amount_paid", "payment_date", "remarks"],
   "service_list": ["id", "name", "description", "price", "status", "delete_flag", "date_created", "date_updated", "hsn"],
   "advance_payments": ["id", "mechanic_id", "amount", "date_paid", "reason", "date_created"],
-  "inventory_list": ["id", "product_id", "quantity", "place", "stock_date", "supplier_id", "date_created", "date_updated", "purchase_cost", "courier_charges"],
+  "inventory_list": ["id", "product_id", "quantity", "place", "stock_date", "supplier_id", "date_created", "date_updated", "purchase_cost", "courier_charges", "place_zone", "place_rack", "place_bin", "place_box", "purchase_order_id"],
   "direct_sale_items": ["id", "sale_id", "product_id", "qty", "price"],
   "suppliers": ["id", "name", "contact", "email", "address", "status", "delete_flag", "date_created", "date_updated"],
   "spare_supplier": ["spare_id", "supplier_id"],
+  "locations": ["id", "zone", "rack", "bin", "box", "label", "created_at", "delete_flag", "status", "code", "zone_id", "rack_id", "bin_id", "box_id"],
+  "product_locations": ["product_id", "location_id", "created_at"],
+  "purchase_orders": ["id", "po_code", "supplier_id", "status", "expected_date", "notes", "total_amount", "received_date", "date_created", "date_updated"],
+  "purchase_order_items": ["id", "purchase_order_id", "product_id", "qty_ordered", "qty_received", "unit_cost", "date_created"],
   "transaction_list": ["id", "user_id", "mechanic_id", "code", "job_id", "client_name", "fault", "remark", "item", "uniq_id", "amount", "mechanic_amount", "mechanic_commission_amount", "del_status", "status", "date_created", "date_updated", "date_completed"],
-  "product_list": ["id", "name", "description", "cost_price", "price", "image_path", "status", "delete_flag", "date_created", "date_updated", "hsn", "alert_quantity", "barcode"],
+  "product_list": ["id", "name", "description", "cost_price", "price", "image_path", "status", "delete_flag", "date_created", "date_updated", "hsn", "alert_quantity", "barcode", "place_zone", "place_rack", "place_bin", "place_box"],
   "lender_list": ["id", "fullname", "contact", "loan_amount", "interest_rate", "tenure_months", "reason", "emi_amount", "start_date", "status", "date_created"],
   "attendance_list": ["id", "mechanic_id", "status", "curr_date", "time_in", "time_out", "lat_in", "lng_in", "lat_out", "lng_out"],
   "expense_list": ["id", "category", "amount", "remarks", "date_created"],
@@ -94,6 +107,7 @@ const TABLE_COLUMNS: Record<string, string[]> = {
   "wp_template_history": ["id", "template_key", "action", "old_value", "new_value", "changed_by", "changed_at"],
   "activity_logs": ["id", "user_id", "action", "module", "meta_id", "details", "date_created"],
   "payment_reminders": ["id", "client_id", "amount_due", "reminder_date", "channel", "status", "remarks"],
+  "push_subscriptions": ["id", "user_id", "endpoint", "p256dh", "auth", "device_name", "enabled", "date_created", "date_updated"],
 };
 
 // ── FK violations to skip (bad data that would cause FK error) ───────────────
