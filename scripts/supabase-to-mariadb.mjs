@@ -341,12 +341,15 @@ async function syncMissingColumns(conn, tables) {
 }
 
 // ── Paginated row fetch (PostgREST 1000-row cap) ───────────────────────────
-async function fetchRows(table) {
+// ORDER BY PK zaroori hai: bina stable order ke Range/offset pagination me
+// concurrent inserts/deletes par rows SKIP ya REPEAT ho sakti hain.
+async function fetchRows(table, pk) {
   const out = [];
   let from = 0;
+  const orderQs = pk ? `&order=${encodeURIComponent(pk)}.asc.nullslast` : "";
   for (;;) {
     const to = from + 999;
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*${orderQs}`, {
       headers: {
         apikey: SUPABASE_KEY,
         Authorization: `Bearer ${SUPABASE_KEY}`,
@@ -492,7 +495,7 @@ async function main() {
     await conn.query("SET FOREIGN_KEY_CHECKS = 0");
     const totals = {};
     for (const t of tables) {
-      const rows = await fetchRows(t.name);
+      const rows = await fetchRows(t.name, t.pks[0] || null);
       await conn.query(`TRUNCATE TABLE \`${t.name}\``);
       if (rows.length) {
         const metas = t.cols;
