@@ -18,8 +18,10 @@ import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 interface DirectSale {
   id: number;
   sale_code: string;
+  client_id?: number | null;
   client_name: string | null;
   client_contact?: string | null;
+  client_due?: number | null;
   staff_name: string;
   total_amount: number;
   payment_mode: string;
@@ -125,11 +127,34 @@ function DirectSalesPageInner() {
       const mechIds    = [...new Set(salesData.map(s => s.mechanic_id).filter(Boolean))];
       const editorIds  = [...new Set(salesData.map(s => s.last_edited_by).filter(id => id != null && id !== 0))];
 
-      const [clientsRes, mechsRes, editorsRes] = await Promise.all([
-        clientIds.length  ? supabase.from("client_list").select("id, firstname, middlename, lastname, contact, image_path").in("id", clientIds) : Promise.resolve({ data: [] }),
+      // Due data: same formula as Clients page →
+      // due = opening_balance + repairs(status=5) + direct_sales + loans − payments(amount+discount)
+      const [clientsRes, mechsRes, editorsRes, repRes, dirAllRes, payRes, loanRes] = await Promise.all([
+        clientIds.length  ? supabase.from("client_list").select("id, firstname, middlename, lastname, contact, image_path, opening_balance").in("id", clientIds) : Promise.resolve({ data: [] }),
         mechIds.length    ? supabase.from("mechanic_list").select("id, firstname, lastname").in("id", mechIds)   : Promise.resolve({ data: [] }),
         editorIds.length  ? supabase.from("mechanic_list").select("id, firstname, lastname").in("id", editorIds) : Promise.resolve({ data: [] }),
+        clientIds.length  ? supabase.from("transaction_list").select("client_name, amount").eq("status", 5).in("client_name", clientIds.map(String)) : Promise.resolve({ data: [] }),
+        clientIds.length  ? supabase.from("direct_sales").select("client_id, total_amount").in("client_id", clientIds) : Promise.resolve({ data: [] }),
+        clientIds.length  ? supabase.from("client_payments").select("client_id, amount, discount").in("client_id", clientIds) : Promise.resolve({ data: [] }),
+        clientIds.length  ? supabase.from("client_loans").select("client_id, total_payable").in("client_id", clientIds) : Promise.resolve({ data: [] }),
       ]);
+
+      // Per-client outstanding due map
+      const dueMap = new Map<number, number>();
+      (clientsRes.data || []).forEach(c => dueMap.set(c.id, Number(c.opening_balance) || 0));
+      (repRes.data || []).forEach(r => {
+        const cid = parseInt(r.client_name ?? "", 10);
+        if (!isNaN(cid)) dueMap.set(cid, (dueMap.get(cid) || 0) + (Number(r.amount) || 0));
+      });
+      (dirAllRes.data || []).forEach(d => {
+        if (d.client_id) dueMap.set(d.client_id, (dueMap.get(d.client_id) || 0) + (Number(d.total_amount) || 0));
+      });
+      (payRes.data || []).forEach(p => {
+        if (p.client_id) dueMap.set(p.client_id, (dueMap.get(p.client_id) || 0) - ((Number(p.amount) || 0) + (Number(p.discount) || 0)));
+      });
+      (loanRes.data || []).forEach(l => {
+        if (l.client_id) dueMap.set(l.client_id, (dueMap.get(l.client_id) || 0) + (Number(l.total_payable) || 0));
+      });
 
       const cMap = new Map((clientsRes.data || []).map((c) => [c.id, {
         name: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" "),
@@ -145,6 +170,7 @@ function DirectSalesPageInner() {
           client_name:      c?.name    || null,
           client_contact:   c?.contact || null,
           client_image:     c?.image_path || null,
+          client_due:       s.client_id ? (dueMap.get(s.client_id) ?? null) : null,
           staff_name:       mMap.get(s.mechanic_id) || "Admin",
           last_editor_name: s.last_edited_by === 0 ? "Admin" : eMap.get(s.last_edited_by) || null,
         };
@@ -369,18 +395,36 @@ function DirectSalesPageInner() {
                   </div>
 
                   {/* Client */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <div className="w-6 h-6 bg-slate-700/50 rounded-full flex items-center justify-center flex-shrink-0">
                         <User size={11} className="text-slate-500" />
                       </div>
-                      <span className="text-xs text-slate-400 font-medium">
-                        {s.client_name || "Walk-in Customer"}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                        {s.client_id ? (
+                          <Link href={`/clients/${s.client_id}/view`}
+                            className="text-xs text-slate-300 hover:text-blue-300 font-medium truncate max-w-[130px] transition-colors underline-offset-2 active:text-blue-300"
+                            title={`${s.client_name} — view client`}>
+                            {s.client_name}
+                          </Link>
+                        ) : (
+                          <span className="text-xs text-slate-400 font-medium">Walk-in Customer</span>
+                        )}
+                        {s.client_due != null && s.client_due > 0 && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-md border border-red-500/20 bg-red-500/10 text-red-400 text-[9px] font-black whitespace-nowrap">
+                            Due ₹{Math.abs(s.client_due).toLocaleString("en-IN")}
+                          </span>
+                        )}
+                        {s.client_due != null && s.client_due <= 0 && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[9px] font-black whitespace-nowrap">
+                            Clear
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {s.client_contact && (
                       <a href={waHref(s)} target="_blank"
-                        className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold">
+                        className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold flex-shrink-0">
                         <Send size={10} /> WA
                       </a>
                     )}
@@ -643,9 +687,28 @@ function DirectSalesPageInner() {
                         <User size={13} className="text-slate-600" />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-slate-200 font-semibold text-xs truncate max-w-[140px]" title={s.client_name || "Walk-in"}>
-                          {s.client_name || <span className="text-slate-600 italic">Walk-in</span>}
-                        </div>
+                        {s.client_id ? (
+                          <Link href={`/clients/${s.client_id}/view`}
+                            className="block text-slate-200 hover:text-blue-300 font-semibold text-xs truncate max-w-[140px] transition-colors underline-offset-2 hover:underline"
+                            title={`${s.client_name} — view client`}>
+                            {s.client_name}
+                          </Link>
+                        ) : (
+                          <div className="text-slate-200 font-semibold text-xs truncate max-w-[140px]" title="Walk-in">
+                            <span className="text-slate-600 italic">Walk-in</span>
+                          </div>
+                        )}
+                        {s.client_due != null && (
+                          s.client_due > 0 ? (
+                            <div className="text-[9px] font-black text-red-400 mt-0.5">
+                              Due: ₹{Math.abs(s.client_due).toLocaleString("en-IN")}
+                            </div>
+                          ) : (
+                            <div className="text-[9px] font-black text-emerald-500 mt-0.5">
+                              Clear
+                            </div>
+                          )
+                        )}
                         {s.client_contact && (
                           <a href={waHref(s)} target="_blank"
                             className="flex items-center gap-1 text-[10px] text-emerald-500 hover:text-emerald-400 transition-colors mt-0.5">
