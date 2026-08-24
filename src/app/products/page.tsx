@@ -224,7 +224,9 @@ export default function ProductsPage() {
         if (imgRemoved && imgPath) await removeProductImage(editing.id);
         if (imgFile) await uploadProductImage(editing.id);
       } else {
-        const { data: inserted, error } = await supabase.from("product_list").insert([{ ...payload, delete_flag: 0 }]).select("id");
+        // image_path DB me NOT NULL hai — image baad me upload hoti hai (productId chahiye),
+        // isliye abhi empty string bhejte hain taaki insert fail na ho
+        const { data: inserted, error } = await supabase.from("product_list").insert([{ ...payload, image_path: imgPath || "", delete_flag: 0 }]).select("id");
         if (error) throw error;
         if (inserted && inserted[0]) {
           await syncSuppliers(inserted[0].id);
@@ -233,8 +235,11 @@ export default function ProductsPage() {
       }
       setShowModal(false);
       fetchData();
-    } catch (err) {
-      setFormErr(err instanceof Error ? err.message : String(err));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message
+        : (err && typeof err === "object" && "message" in err) ? String((err as { message?: unknown }).message)
+        : String(err);
+      setFormErr(msg || "Save failed");
     } finally {
       setSaving(false);
     }
