@@ -1,3 +1,9 @@
+# ⚠️ PROJECT NOTE (must-read before any DB/data work)
+
+PHP software retire ho chuka hai — Next.js ab main hai, par DB ka purana data
+PHP conventions se aaya hai. Dual-era rules (activity_logs modules, meta_id
+keys, date display) ke liye **`docs/DATA_MIGRATION_NOTES.md` zaroor padho**.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
