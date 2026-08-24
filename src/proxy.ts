@@ -1,8 +1,7 @@
 // proxy.ts — Public website + Protected dashboard (Next 16: renamed from middleware.ts)
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-
-const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000; // 8 hours
+import { ABSOLUTE_MS } from '@/lib/session-policy'
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next({
@@ -60,11 +59,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Session age check: 8 hour max via login timestamp cookie
+  // Session age check: absolute hard cap via login timestamp cookie
   const loginTs = request.cookies.get("vtech_session_start")?.value;
   if (loginTs) {
     const age = Date.now() - Number(loginTs);
-    if (age > SESSION_MAX_AGE_MS) {
+    if (age > ABSOLUTE_MS) {
       await supabase.auth.signOut();
       const allCookies = request.cookies.getAll();
       const res = NextResponse.redirect(new URL("/login?reason=idle", request.url));

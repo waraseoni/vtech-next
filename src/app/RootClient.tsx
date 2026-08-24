@@ -9,6 +9,10 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import {
+  IDLE_MS, WARN_BEFORE_MS, REVOKED_CHECK_MS, REVOKED_401_TOLERANCE,
+  LAST_ACTIVE_KEY,
+} from "@/lib/session-policy";
+import {
   LayoutDashboard, Users, Package, Settings, Wrench, Search,
   User, LogOut, Sparkles, Loader2, ShieldCheck, CalendarCheck,
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
@@ -606,15 +610,20 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         const isPublicPage = PUBLIC_PAGES.some(p => pathname === p || pathname.startsWith(p + "/"));
 
         // BUG FIX: getUser() kabhi-kabhi network par hang ho jata hai → "V-TECH
-        // Secure Boot" loader hamesha ke liye atak jata tha. 6s timeout: public
-        // page par bina user ke bhi render ho jao (proxy server-side guard hai).
+        // Secure Boot" loader hamesha ke liye atak jata tha. 6s timeout + EK
+        // retry: pehle sirf ek 6s race thi — slow network par valid session
+        // bhi "not logged in" samajh kar /login par chala jata tha.
         const AUTH_TIMEOUT_MS = 6000;
-        const { data: { user } } = await Promise.race([
+        const TIMED_OUT = Symbol("auth-timeout");
+        const getUserWithTimeout = () => Promise.race([
           supabase.auth.getUser(),
-          new Promise<{ data: { user: null } }>(resolve =>
-            setTimeout(() => resolve({ data: { user: null } }), AUTH_TIMEOUT_MS)
+          new Promise<typeof TIMED_OUT>(resolve =>
+            setTimeout(() => resolve(TIMED_OUT), AUTH_TIMEOUT_MS)
           ),
         ]);
+        let authResult = await getUserWithTimeout();
+        if (authResult === TIMED_OUT) authResult = await getUserWithTimeout(); // ek retry — false logout se bachne ke liye
+        const user = authResult === TIMED_OUT ? null : authResult.data.user;
         if (cancelled) return;
         if (!user) {
           if (!isPublicPage) router.push("/login");
@@ -759,9 +768,10 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     refreshLicense(isFirst);
   }, [profile, pathname, refreshLicense]);
 
-  // ── Client portal session security ──────────────────────────────────────
-  // 1) Access revoked (login_allowed=false) → auto-logoff.
-  // 2) Idle timeout → kuchh der browser na chalane par auto-logoff.
+  // ── Client portal revoked-access check ─────────────────────────────────
+  // login_allowed=false (ya session revoke) → auto-logoff.
+  // TOLERANCE: ek akela 401 network/token-refresh hiccup ho sakta hai —
+  // CONSECUTIVE 2 hi real revoke mane (pehle 1 par turant logout hota tha).
   const forceClientLogout = useCallback(async (reason: "revoked" | "idle") => {
     try { await supabase.auth.signOut(); } catch { /* ignore */ }
     // Intentional full reload: client session state clean karna zaroori hai
@@ -769,77 +779,83 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     window.location.href = "/login?reason=" + reason;
   }, []);
 
-  const CLIENT_IDLE_MIN = 10; // minutes of inactivity → logoff
-  const CLIENT_CHECK_MS = 30_000; // access re-check interval
-
-  useEffect(() => {
-    if (profile?.role !== "client") return;
-    const IDLE_MS = CLIENT_IDLE_MIN * 60 * 1000;
-    const bump = () => { try { sessionStorage.setItem("vtech_client_last_active", String(Date.now())); } catch { /* ignore */ } };
-    bump();
-    const events: (keyof WindowEventMap)[] = ["mousemove", "keydown", "touchstart", "click", "scroll"];
-    events.forEach(e => window.addEventListener(e, bump, { passive: true }));
-    const interval = setInterval(() => {
-      try {
-        const last = Number(sessionStorage.getItem("vtech_client_last_active") || "0");
-        if (last && Date.now() - last > IDLE_MS) forceClientLogout("idle");
-      } catch { /* ignore */ }
-    }, 15_000);
-    return () => {
-      events.forEach(e => window.removeEventListener(e, bump));
-      clearInterval(interval);
-    };
-  }, [profile?.role, forceClientLogout]);
-
   useEffect(() => {
     if (profile?.role !== "client") return;
     let cancelled = false;
+    let strikes = 0;
     const check = async () => {
       try {
         const res = await fetch("/api/client/me", { cache: "no-store" });
-        if (res.status === 401 && !cancelled) forceClientLogout("revoked");
-      } catch { /* ignore */ }
+        if (res.status === 401) {
+          strikes += 1;
+          if (strikes >= REVOKED_401_TOLERANCE && !cancelled) forceClientLogout("revoked");
+        } else {
+          strikes = 0;
+        }
+      } catch { /* network glitch ≠ revoke */ }
     };
     check();
-    const interval = setInterval(check, CLIENT_CHECK_MS);
+    const interval = setInterval(check, REVOKED_CHECK_MS);
     return () => { cancelled = true; clearInterval(interval); };
   }, [profile?.role, forceClientLogout]);
 
-  // ── Staff / Admin / Developer idle timeout ──────────────────────────────
-  // 30 min inactivity → auto-logout, last 2 min me warning modal dikhata hai.
-  // Client ka alag 10-min timeout hai (upar). Refs use karte hain taaki
-  // setInterval closure me stale state na rahe.
+  // ── UNIFIED IDLE TIMEOUT — sab roles ke liye EK hi mechanism ────────────
+  // Pehle client(10min)/staff(30min) alag timers the → timing uneven thi.
+  // Ab sab IDLE_MS (30 min) par logout, last WARN_BEFORE_MS me warning modal.
+  // Activity localStorage (LAST_ACTIVE_KEY) me mirror hoti hai aur doosre
+  // tabs 'storage' event se sunte hain → MULTI-TAB BUG FIX: tab A idle baithe
+  // jabki aap tab B me kaam kar rahe ho, to tab A ab bhi "active" count hota
+  // hai (pehle tab A khud signOut() bula deta tha).
   useEffect(() => {
-    if (!profile?.role || profile.role === "client") return;
-    const IDLE_MS    = 30 * 60 * 1000; // 30 minutes
-    const WARNING_MS =  2 * 60 * 1000; // warning 2 min before logout
+    if (!profile?.role) return;
 
+    let lastWrite = 0;
     const resetTimer = () => {
       lastActiveRef.current = Date.now();
       if (showIdleWarningRef.current) {
         showIdleWarningRef.current = false;
         setShowIdleWarning(false);
       }
+      const now = Date.now();
+      if (now - lastWrite > 5000) { // har mousemove par localStorage write na karein
+        lastWrite = now;
+        try { localStorage.setItem(LAST_ACTIVE_KEY, String(now)); } catch { /* ignore */ }
+      }
     };
 
-    const events: (keyof WindowEventMap)[] = ["mousemove", "keydown", "touchstart", "click", "scroll"];
-    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }));
-    resetTimer();
+    // Doosre tab ne activity report ki → is tab ka timer bhi refresh
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== LAST_ACTIVE_KEY || !e.newValue) return;
+      lastActiveRef.current = Number(e.newValue) || lastActiveRef.current;
+    };
 
-    const interval = setInterval(() => {
+    const evaluate = () => {
       const elapsed = Date.now() - lastActiveRef.current;
       if (elapsed >= IDLE_MS) {
         supabase.auth.signOut().catch(() => {});
         // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = "/login?reason=idle";
-      } else if (elapsed >= IDLE_MS - WARNING_MS && !showIdleWarningRef.current) {
+      } else if (elapsed >= IDLE_MS - WARN_BEFORE_MS && !showIdleWarningRef.current) {
         showIdleWarningRef.current = true;
         setShowIdleWarning(true);
       }
-    }, 10_000);
+    };
+
+    // Sleep/wake ya tab-switch par turant evaluate (interval ka wait nahi)
+    const onVisible = () => { if (!document.hidden) evaluate(); };
+
+    const events: (keyof WindowEventMap)[] = ["mousemove", "keydown", "touchstart", "click", "scroll"];
+    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }));
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("storage", onStorage);
+    resetTimer();
+
+    const interval = setInterval(evaluate, 10_000);
 
     return () => {
       events.forEach(e => window.removeEventListener(e, resetTimer));
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("storage", onStorage);
       clearInterval(interval);
       showIdleWarningRef.current = false;
       setShowIdleWarning(false);

@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { KeyRound, Loader2, LogOut, ShieldCheck } from "lucide-react";
+import { PORTAL_LOCK_MS } from "@/lib/session-policy";
 
-// 15 minute inactivity ke baad portal auto-lock (cookie clear). Timer har
-// activity (mouse/key/touch/scroll) par reset hota hai.
-const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+// Portal inactivity lock — value session-policy.ts me hai (single source of
+// truth). Ye auth session se alag cheez hai: sirf portal cookie clear hota
+// hai, app login intact rehta hai.
 const IDLE_EVENTS = ["mousemove", "mousedown", "keydown", "touchstart", "touchmove", "scroll", "wheel"] as const;
 
 // Portal gate: "double password" ka UI hissa.
@@ -101,7 +102,7 @@ export default function PortalGate({
     let timer: ReturnType<typeof setTimeout>;
     const reset = () => {
       clearTimeout(timer);
-      timer = setTimeout(() => { void logout(); }, IDLE_TIMEOUT_MS);
+      timer = setTimeout(() => { void logout(); }, PORTAL_LOCK_MS);
     };
     IDLE_EVENTS.forEach((ev) => window.addEventListener(ev, reset, { passive: true }));
     reset();
