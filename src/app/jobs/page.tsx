@@ -808,17 +808,15 @@ function JobsListContent() {
   // ── Bulk Action Bar + WhatsApp Modal (shared desktop + mobile) ────────────
   const bulkActionBar = selectedIds.size > 0 && (
     <div
-      className="fixed bottom-5 left-1/2 z-[60] text-white rounded-2xl px-3 py-2.5 flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-3 w-[calc(100%-2rem)] md:min-w-[300px] md:max-w-[95vw]"
+      className="fixed bottom-5 left-1/2 z-[60] rounded-2xl px-3 py-2.5 flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-3 w-[calc(100%-2rem)] md:min-w-[300px] md:max-w-[95vw] bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] shadow-2xl text-slate-900 dark:text-white"
       style={{
-        background: "linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)",
-        boxShadow: "0 -4px 30px rgba(0,0,0,0.35)",
         transform: "translateX(-50%)",
         animation: "bulkBarPop 0.35s cubic-bezier(0.34,1.56,0.64,1)",
       }}
     >
       {/* Row 1: info + status + datetime */}
       <div className="flex items-center gap-2 w-full md:w-auto">
-        <span className="bg-[#667eea] text-white rounded-full px-2.5 py-0.5 font-bold text-xs whitespace-nowrap">
+        <span className="bg-indigo-600 !text-white rounded-full px-2.5 py-0.5 font-bold text-xs whitespace-nowrap shadow-sm">
           {selectedIds.size} selected
         </span>
         <select
@@ -831,8 +829,7 @@ function JobsListContent() {
               setBulkDeliverDate(toISTString().slice(0, 16));
             }
           }}
-          className="border-none rounded-lg px-2 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px]"
-          style={{ backgroundColor: "#ffffff !important", color: "#1a1a2e !important" }}
+          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px] bg-slate-100 dark:bg-[#0d1117] border border-slate-300 dark:border-[#21293d] text-slate-900 dark:text-slate-200 focus:border-blue-500"
         >
           <option value="">-- Status --</option>
           <option value="0">Pending</option>
@@ -848,8 +845,7 @@ function JobsListContent() {
             value={bulkDeliverDate}
             onChange={e => setBulkDeliverDate(e.target.value)}
             title="Delivery Date & Time"
-            className="border-none rounded-lg px-2 py-1.5 text-xs outline-none cursor-pointer flex-1 md:flex-none"
-            style={{ backgroundColor: "#ffffff !important", color: "#1a1a2e !important" }}
+            className="rounded-lg px-2.5 py-1.5 text-xs outline-none cursor-pointer flex-1 md:flex-none bg-slate-100 dark:bg-[#0d1117] border border-slate-300 dark:border-[#21293d] text-slate-900 dark:text-slate-200 focus:border-blue-500"
           />
         )}
       </div>
@@ -862,31 +858,28 @@ function JobsListContent() {
             bulkUpdateStatus(Number(bulkStatus));
           }}
           disabled={bulkActionLoading}
-          className="text-white border-none rounded-lg px-3 md:px-5 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap"
-          style={{ background: "linear-gradient(135deg,#48bb78 0%,#38a169 100%)" }}
+          className="!text-white border-none rounded-lg px-3 md:px-5 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 shadow-sm"
         >
-          <CheckCircle2 size={13} /> {bulkActionLoading ? "Applying..." : "Apply"}
+          <CheckCircle2 size={13} className="!text-white" /> {bulkActionLoading ? "Applying..." : "Apply"}
         </button>
 
         <button
           onClick={openBulkWhatsApp}
-          className="text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap"
-          style={{ background: "#25d366" }}
+          className="!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap bg-[#25d366] hover:bg-[#20ba5a] shadow-sm"
         >
-          <MessageCircle size={13} /> WA Report
+          <MessageCircle size={13} className="!text-white" /> WA Report
         </button>
 
         <button
           onClick={() => openCombinedInvoice("non_gst")}
-          className="text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap"
-          style={{ background: "#6c757d" }}
+          className="!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap bg-slate-600 hover:bg-slate-700 shadow-sm"
         >
-          <FileText size={13} /> Estimate
+          <FileText size={13} className="!text-white" /> Estimate
         </button>
 
         <button
           onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); setBulkDeliverDate(""); }}
-          className="bg-white/15 text-white border border-white/30 rounded-lg px-2.5 md:px-3.5 py-1.5 md:py-2 text-xs md:text-sm cursor-pointer transition-colors hover:bg-white/25 flex items-center gap-1 whitespace-nowrap"
+          className="bg-slate-100 hover:bg-slate-200 dark:bg-white/15 dark:hover:bg-white/25 text-slate-700 dark:text-white border border-slate-300 dark:border-white/30 rounded-lg px-2.5 md:px-3.5 py-1.5 md:py-2 text-xs md:text-sm cursor-pointer transition-colors flex items-center gap-1 whitespace-nowrap"
         >
           <X size={13} /> Clear
         </button>
@@ -895,19 +888,19 @@ function JobsListContent() {
   );
 
   const bulkWaModal = waModal && (
-    <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4">
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
-        <div className="bg-green-600/90 px-5 py-3.5 flex items-center justify-between">
-          <h3 className="font-black text-white text-sm flex items-center gap-2">
-            <MessageCircle size={16} /> Send WhatsApp Message
+    <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+      <div className="bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+        <div className="bg-emerald-600 px-5 py-3.5 flex items-center justify-between">
+          <h3 className="font-black !text-white text-sm flex items-center gap-2">
+            <MessageCircle size={16} className="!text-white" /> Send WhatsApp Message
           </h3>
-          <button onClick={() => setWaModal(false)} className="text-white/80 hover:text-white transition-colors">
+          <button onClick={() => setWaModal(false)} className="!text-white/80 hover:!text-white transition-colors">
             <X size={18} />
           </button>
         </div>
         <div className="p-5 space-y-3">
           {waGroups.length > 1 && (
-            <p className="text-[11px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
+            <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-lg px-3 py-2">
               Ye message {waGroups.length} clients ko send hoga — har client ko uski apni jobs ke saath. Message edit karne par same text sabko jayega.
             </p>
           )}
@@ -915,21 +908,21 @@ function JobsListContent() {
             rows={10}
             value={waText}
             onChange={e => { setWaText(e.target.value); setWaEdited(true); }}
-            className="w-full bg-[#0d1117] border border-green-500/40 text-slate-200 rounded-xl p-3 text-sm font-mono leading-relaxed outline-none focus:border-green-500 resize-none"
+            className="w-full bg-slate-50 dark:bg-[#0d1117] border border-emerald-500/40 text-slate-900 dark:text-slate-200 rounded-xl p-3 text-sm font-mono leading-relaxed outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 resize-none"
           />
         </div>
-        <div className="px-5 py-3.5 bg-[#111520] flex items-center justify-end gap-2 border-t border-[#21293d]">
+        <div className="px-5 py-3.5 bg-slate-50 dark:bg-[#111520] flex items-center justify-end gap-2 border-t border-slate-200 dark:border-[#21293d]">
           <button onClick={() => setWaModal(false)}
-            className="px-4 py-2 rounded-xl text-sm font-bold text-slate-400 bg-[#21293d] hover:bg-[#2a3550] transition-colors">
+            className="px-4 py-2 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-400 bg-slate-200 hover:bg-slate-300 dark:bg-[#21293d] dark:hover:bg-[#2a3550] transition-colors">
             Close
           </button>
           <button onClick={copyWAMessage}
-            className="px-4 py-2 rounded-xl text-sm font-bold text-blue-400 bg-blue-600/15 border border-blue-500/30 hover:bg-blue-600/25 transition-colors flex items-center gap-1.5">
+            className="px-4 py-2 rounded-xl text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-600/15 border border-blue-200 dark:border-blue-500/30 hover:bg-blue-100 dark:hover:bg-blue-600/25 transition-colors flex items-center gap-1.5">
             <Copy size={13} /> Copy
           </button>
           <button onClick={sendBulkWA}
-            className="px-4 py-2 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-colors flex items-center gap-1.5">
-            <Send size={13} /> Send
+            className="px-4 py-2 rounded-xl text-sm font-bold !text-white bg-emerald-600 hover:bg-emerald-700 transition-colors flex items-center gap-1.5 shadow-sm">
+            <Send size={13} className="!text-white" /> Send
           </button>
         </div>
       </div>
@@ -1582,34 +1575,34 @@ function JobsListContent() {
           <Plus size={22} className={`transition-transform ${fabOpen ? "rotate-45" : ""}`} />
         </button>
         {fabOpen && (
-          <div className="absolute bottom-14 right-0 bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl py-1.5 w-44 text-sm overflow-hidden">
+          <div className="absolute bottom-14 right-0 bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl shadow-2xl py-1.5 w-44 text-sm overflow-hidden">
             {[
-              { action: () => setShowQuickCreate(true), icon: Zap, label: "Quick Create", cls: "text-blue-400"    },
-              { href: "/jobs/new",  icon: Plus,          label: "Create New",   cls: "text-blue-300"    },
-              { href: "/jobs/old",  icon: History,       label: "Old Jobs",    cls: "text-amber-400"   },
-              { href: "/jobs/bulk", icon: Layers,        label: "Bulk Entry",  cls: "text-emerald-400" },
-              { href: "/jobs/bulk-edit", icon: PenSquare, label: "Bulk Edit",   cls: "text-purple-400"  },
+              { action: () => setShowQuickCreate(true), icon: Zap, label: "Quick Create", cls: "text-blue-600 dark:text-blue-400"    },
+              { href: "/jobs/new",  icon: Plus,          label: "Create New",   cls: "text-blue-500 dark:text-blue-300"    },
+              { href: "/jobs/old",  icon: History,       label: "Old Jobs",    cls: "text-amber-600 dark:text-amber-400"   },
+              { href: "/jobs/bulk", icon: Layers,        label: "Bulk Entry",  cls: "text-emerald-600 dark:text-emerald-400" },
+              { href: "/jobs/bulk-edit", icon: PenSquare, label: "Bulk Edit",   cls: "text-purple-600 dark:text-purple-400"  },
             ].map(({ href, action, icon: Icon, label, cls }) =>
               href ? (
                 <Link key={label} href={href} onClick={() => setFabOpen(false)}
-                  className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 hover:text-slate-200 transition-colors">
+                  className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors">
                   <Icon size={14} className={cls} /> {label}
                 </Link>
               ) : (
                 <button key={label} onClick={() => { action?.(); setFabOpen(false); }}
-                  className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 hover:text-slate-200 transition-colors w-full">
+                  className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors w-full">
                   <Icon size={14} className={cls} /> {label}
                 </button>
               )
             )}
-            <hr className="my-1 border-[#21293d]" />
+            <hr className="my-1 border-slate-200 dark:border-[#21293d]" />
             <button onClick={() => { printReport(); setFabOpen(false); }}
-              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 w-full transition-colors">
-              <Printer size={14} className="text-emerald-400" /> Print
+              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 w-full transition-colors">
+              <Printer size={14} className="text-emerald-600 dark:text-emerald-400" /> Print
             </button>
             <button onClick={() => { exportExcel(); setFabOpen(false); }}
-              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 w-full transition-colors">
-              <FileSpreadsheet size={14} className="text-teal-400" /> Excel
+              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 w-full transition-colors">
+              <FileSpreadsheet size={14} className="text-teal-600 dark:text-teal-400" /> Excel
             </button>
           </div>
         )}
@@ -1618,19 +1611,19 @@ function JobsListContent() {
       {/* ── Quick Create Modal ── */}
       {showQuickCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             {/* Header */}
-            <div className="sticky top-0 bg-[#161b27] border-b border-[#21293d] flex items-center justify-between p-4 z-10">
+            <div className="sticky top-0 bg-white dark:bg-[#161b27] border-b border-slate-200 dark:border-[#21293d] flex items-center justify-between p-4 z-10">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
-                  <Zap size={18} className="text-white" />
+                  <Zap size={18} className="!text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white">Quick Create Job</h3>
+                  <h3 className="font-bold text-slate-900 dark:text-white">Quick Create Job</h3>
                   <p className="text-xs text-slate-500">Create job instantly</p>
                 </div>
               </div>
-              <button onClick={() => setShowQuickCreate(false)} className="w-8 h-8 flex items-center justify-center bg-[#111520] hover:bg-[#21293d] rounded-lg text-slate-500 hover:text-white transition-all">
+              <button onClick={() => setShowQuickCreate(false)} className="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-[#111520] dark:hover:bg-[#21293d] rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all">
                 <X size={16} />
               </button>
             </div>
@@ -1643,40 +1636,40 @@ function JobsListContent() {
                   <User size={12} className="inline mr-1" />Client (Optional)
                 </label>
                 {quickClientId ? (
-                  <div className="flex items-center justify-between bg-[#111520] border border-[#21293d] rounded-xl px-3 py-2.5">
-                    <span className="text-sm text-white font-medium">
+                  <div className="flex items-center justify-between bg-slate-50 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5">
+                    <span className="text-sm text-slate-900 dark:text-white font-medium">
                       {quickClients.find(c => c.id === quickClientId)?.firstname}{" "}
                       {quickClients.find(c => c.id === quickClientId)?.lastname}
                     </span>
-                    <button onClick={() => setQuickClientId(null)} className="text-slate-500 hover:text-red-400">
+                    <button onClick={() => setQuickClientId(null)} className="text-slate-400 hover:text-red-500">
                       <X size={14} />
                     </button>
                   </div>
                 ) : (
                   <div className="relative">
                     <button onClick={() => setQuickClientOpen(!quickClientOpen)}
-                      className="w-full flex items-center justify-between px-3 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-left hover:border-slate-600 transition-all">
-                      <span className="text-slate-600">Search client...</span>
+                      className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-xl text-sm text-left hover:border-slate-400 dark:hover:border-slate-600 transition-all">
+                      <span className="text-slate-500">Search client...</span>
                       <ChevronDown size={14} className="text-slate-500" />
                     </button>
                     {quickClientOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-[#161b27] border border-[#21293d] rounded-xl shadow-2xl z-20 p-2">
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-xl shadow-2xl z-20 p-2">
                         <input
                           autoFocus
                           placeholder="Search by name or contact..."
                           value={quickClientSearch}
                           onChange={e => setQuickClientSearch(e.target.value)}
-                          className="w-full px-3 py-2 bg-[#111520] border border-[#21293d] rounded-lg text-white text-sm outline-none mb-2"
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-lg text-slate-900 dark:text-white text-sm outline-none mb-2"
                         />
                         <div className="max-h-40 overflow-y-auto space-y-0.5">
                           {filteredQuickClients.length === 0 ? (
-                            <p className="text-slate-600 text-xs text-center py-4">Koi client nahi mila</p>
+                            <p className="text-slate-500 text-xs text-center py-4">Koi client nahi mila</p>
                           ) : filteredQuickClients.map(c => (
                             <div key={c.id}
                               onClick={() => { setQuickClientId(c.id); setQuickClientOpen(false); setQuickClientSearch(""); }}
-                              className="px-3 py-2 rounded-lg hover:bg-white/5 cursor-pointer transition-all">
-                              <div className="text-sm font-bold text-white">{c.firstname} {c.lastname}</div>
-                              <div className="text-xs text-slate-600">{c.contact}</div>
+                              className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer transition-all">
+                              <div className="text-sm font-bold text-slate-900 dark:text-white">{c.firstname} {c.lastname}</div>
+                              <div className="text-xs text-slate-500">{c.contact}</div>
                             </div>
                           ))}
                         </div>
@@ -1689,40 +1682,40 @@ function JobsListContent() {
               {/* Item */}
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-1.5">
-                  Item / Model <span className="text-red-400">*</span>
+                  Item / Model <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   placeholder="e.g. iPhone 15, Samsung S24"
                   value={quickForm.item}
                   onChange={e => setQuickForm(p => ({ ...p, item: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-white text-sm placeholder:text-slate-700 outline-none focus:border-blue-500/60"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-xl text-slate-900 dark:text-white text-sm placeholder:text-slate-400 dark:placeholder:text-slate-700 outline-none focus:border-blue-500"
                 />
               </div>
 
               {/* Fault */}
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-1.5">
-                  Fault Reported <span className="text-red-400">*</span>
+                  Fault Reported <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   placeholder="e.g. Screen broken, Battery drain"
                   value={quickForm.fault}
                   onChange={e => setQuickForm(p => ({ ...p, fault: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-white text-sm placeholder:text-slate-700 outline-none focus:border-blue-500/60"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-xl text-slate-900 dark:text-white text-sm placeholder:text-slate-400 dark:placeholder:text-slate-700 outline-none focus:border-blue-500"
                 />
               </div>
 
               {/* Mechanic */}
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-1.5">
-                  Mechanic <span className="text-red-400">*</span>
+                  Mechanic <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={quickForm.mechanicId}
                   onChange={e => setQuickForm(p => ({ ...p, mechanicId: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-white text-sm outline-none focus:border-blue-500/60"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-xl text-slate-900 dark:text-white text-sm outline-none focus:border-blue-500"
                 >
                   <option value="">Select Mechanic</option>
                   {quickMechanics.map(m => (
@@ -1735,20 +1728,20 @@ function JobsListContent() {
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 bg-[#161b27] border-t border-[#21293d] p-4 flex gap-3">
+            <div className="sticky bottom-0 bg-slate-50 dark:bg-[#161b27] border-t border-slate-200 dark:border-[#21293d] p-4 flex gap-3">
               <button
                 onClick={handleQuickCreate}
                 disabled={quickCreateLoading}
-                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:opacity-50 !text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-sm"
               >
                 {quickCreateLoading ? (
-                  <><Loader2 size={16} className="animate-spin" />Creating...</>
+                  <><Loader2 size={16} className="animate-spin !text-white" />Creating...</>
                 ) : (
-                  <><Zap size={16} />Create Job</>
+                  <><Zap size={16} className="!text-white" />Create Job</>
                 )}
               </button>
               <button onClick={() => setShowQuickCreate(false)}
-                className="px-6 py-3 bg-[#111520] hover:bg-[#21293d] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm transition-all">
+                className="px-6 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-[#111520] dark:hover:bg-[#21293d] border border-slate-300 dark:border-[#21293d] text-slate-700 dark:text-slate-400 rounded-xl font-bold text-sm transition-all">
                 Cancel
               </button>
             </div>
@@ -1760,11 +1753,11 @@ function JobsListContent() {
       {bulkWaModal}
       {/* ── Filter Modal ── */}
       {showFilterModal && (
-        <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm p-5 shadow-2xl">
+        <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl w-full max-w-sm p-5 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-black text-white">Filter Transactions</h3>
-              <button onClick={() => setShowFilterModal(false)} className="text-slate-500 hover:text-slate-300">
+              <h3 className="font-black text-slate-900 dark:text-white">Filter Transactions</h3>
+              <button onClick={() => setShowFilterModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                 <X size={18} />
               </button>
             </div>
@@ -1776,22 +1769,22 @@ function JobsListContent() {
                 <div key={label}>
                   <label className="block text-xs font-bold text-slate-500 mb-1">{label}</label>
                   <input type="date" value={value} onChange={e => set(e.target.value)}
-                    className="w-full bg-[#0d1117] border border-[#21293d] text-slate-200 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 transition-all" />
+                    className="w-full bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] text-slate-900 dark:text-slate-200 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 transition-all" />
                 </div>
               ))}
               {/* Mobile day nav in modal */}
               <div className="flex gap-2">
-                <button onClick={() => shiftDay(-1)} className="flex-1 bg-[#21293d] text-slate-400 p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1">
+                <button onClick={() => shiftDay(-1)} className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-[#21293d] dark:hover:bg-[#2a3550] text-slate-700 dark:text-slate-400 p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors">
                   <ChevronLeft size={13} /> Prev Day
                 </button>
-                <button onClick={() => shiftDay(1)} className="flex-1 bg-[#21293d] text-slate-400 p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1">
+                <button onClick={() => shiftDay(1)} className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-[#21293d] dark:hover:bg-[#2a3550] text-slate-700 dark:text-slate-400 p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors">
                   Next Day <ChevronRight size={13} />
                 </button>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">Status</label>
                 <select value={statusFilter} onChange={e => setStatusFilter(e.target.value ? parseInt(e.target.value) : "")}
-                  className="w-full bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 transition-all">
+                  className="w-full bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] text-slate-900 dark:text-slate-300 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 transition-all">
                   <option value="">All Status</option>
                   {Object.entries(STATUS_MAP).map(([v, l]) => (
                     <option key={v} value={v}>{l}</option>
@@ -1800,11 +1793,11 @@ function JobsListContent() {
               </div>
               <div className="flex gap-2 pt-1">
                 <button onClick={resetFilters}
-                  className="flex-1 bg-[#21293d] text-slate-400 p-2.5 rounded-xl text-sm font-bold transition-all hover:bg-[#2a3550]">
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-[#21293d] dark:hover:bg-[#2a3550] text-slate-700 dark:text-slate-400 p-2.5 rounded-xl text-sm font-bold transition-all">
                   Reset
                 </button>
                 <button onClick={applyMobileFilter}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-xl text-sm font-bold transition-all">
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 !text-white p-2.5 rounded-xl text-sm font-bold transition-all">
                   Apply Filter
                 </button>
               </div>

@@ -844,32 +844,32 @@ export default function ClientsPage() {
       {/* ━━━━━━ WHATSAPP MODAL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {waModal&&waClient&&(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+          <div className="bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 bg-[#128C7E]">
               <div className="flex items-center gap-2">
-                <MessageCircle className="text-white" size={18}/>
-                <span className="text-white font-black text-sm">WhatsApp Message</span>
+                <MessageCircle className="!text-white" size={18}/>
+                <span className="!text-white font-black text-sm">WhatsApp Message</span>
               </div>
               <button onClick={()=>setWaModal(false)}
-                className="text-white/80 hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition cursor-pointer">
+                className="!text-white/80 hover:!text-white hover:bg-white/10 p-1.5 rounded-lg transition cursor-pointer">
                 <X size={15}/>
               </button>
             </div>
             <div className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-3 bg-[#0d1117] p-3.5 rounded-xl border border-[#21293d]">
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-[#0d1117] p-3.5 rounded-xl border border-slate-200 dark:border-[#21293d]">
                 <div>
-                  <p className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest">Client</p>
-                  <p className="font-extrabold text-white text-sm mt-0.5">{waClient.name}</p>
+                  <p className="text-[9px] font-extrabold text-slate-500 dark:text-slate-600 uppercase tracking-widest">Client</p>
+                  <p className="font-extrabold text-slate-900 dark:text-white text-sm mt-0.5">{waClient.name}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest">Balance</p>
-                  <p className={`font-extrabold text-sm mt-0.5 ${waClient.balance>0?"text-red-400":"text-emerald-400"}`}>{inr(waClient.balance)}</p>
+                  <p className="text-[9px] font-extrabold text-slate-500 dark:text-slate-600 uppercase tracking-widest">Balance</p>
+                  <p className={`font-extrabold text-sm mt-0.5 ${waClient.balance>0?"text-red-500 dark:text-red-400":"text-emerald-600 dark:text-emerald-400"}`}>{inr(waClient.balance)}</p>
                 </div>
               </div>
               <div>
-                <label className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest block mb-1.5">Message Type</label>
+                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-600 uppercase tracking-widest block mb-1.5">Message Type</label>
                 <select value={waMsgType} onChange={(e)=>handleWaTypeChange(e.target.value as typeof waMsgType)}
-                  className="w-full bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-2.5 text-sm font-bold text-slate-200 focus:outline-none focus:border-green-500 transition">
+                  className="w-full bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5 text-sm font-bold text-slate-900 dark:text-slate-200 focus:outline-none focus:border-green-500 transition">
                   <option value="welcome">Welcome Message</option>
                   <option value="reminder">Balance Reminder</option>
                   <option value="followup">Follow-up Message</option>
@@ -879,18 +879,18 @@ export default function ClientsPage() {
                 </select>
               </div>
               <div>
-                <label className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest block mb-1.5">Message</label>
+                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-600 uppercase tracking-widest block mb-1.5">Message</label>
                 <textarea value={waText} onChange={(e)=>setWaText(e.target.value)} rows={7}
-                  className="w-full bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-3 text-sm font-mono text-slate-200 focus:outline-none focus:border-green-500 transition resize-none"/>
+                  className="w-full bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-3 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-green-500 transition resize-none"/>
               </div>
               <div className="flex gap-2">
                 <button onClick={()=>navigator.clipboard.writeText(waText)}
-                  className="flex-1 py-2.5 border border-[#21293d] rounded-xl font-extrabold text-xs text-slate-400 hover:bg-[#1e2637] transition cursor-pointer">
+                  className="flex-1 py-2.5 border border-slate-300 dark:border-[#21293d] rounded-xl font-extrabold text-xs text-slate-700 dark:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-[#111520] dark:hover:bg-[#1e2637] transition cursor-pointer">
                   Copy
                 </button>
                 <button onClick={sendWhatsApp}
-                  className="flex-1 py-2.5 bg-[#25D366] hover:bg-[#1DA851] text-white rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition cursor-pointer active:scale-95">
-                  <MessageCircle size={14}/> Open WhatsApp
+                  className="flex-1 py-2.5 bg-[#25D366] hover:bg-[#1DA851] !text-white rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition cursor-pointer active:scale-95 shadow-sm">
+                  <MessageCircle size={14} className="!text-white"/> Open WhatsApp
                 </button>
               </div>
             </div>
@@ -901,25 +901,25 @@ export default function ClientsPage() {
       {/* ━━━━━━ BULK WHATSAPP MODAL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {bulkWaModal&&(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+          <div className="bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 bg-[#25D366]">
               <div className="flex items-center gap-2">
-                <Send className="text-white" size={18}/>
-                <span className="text-white font-black text-sm">Bulk WhatsApp — {selectedClients.size} Clients</span>
+                <Send className="!text-white" size={18}/>
+                <span className="!text-white font-black text-sm">Bulk WhatsApp — {selectedClients.size} Clients</span>
               </div>
               <button onClick={()=>setBulkWaModal(false)}
-                className="text-white/80 hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition cursor-pointer">
+                className="!text-white/80 hover:!text-white hover:bg-white/10 p-1.5 rounded-lg transition cursor-pointer">
                 <X size={15}/>
               </button>
             </div>
             <div className="p-5 space-y-4">
-              <div className="bg-[#0d1117] border border-[#21293d] rounded-xl p-3.5">
-                <p className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest mb-1">Selected Clients</p>
+              <div className="bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl p-3.5">
+                <p className="text-[9px] font-extrabold text-slate-500 dark:text-slate-600 uppercase tracking-widest mb-1">Selected Clients</p>
                 <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
                   {Array.from(selectedClients).map(id => {
                     const c = clients.find(x => x.id === id);
                     return c ? (
-                      <span key={id} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded text-[10px] font-bold">
+                      <span key={id} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold">
                         {c.name} {c.contact && `(${c.contact})`}
                       </span>
                     ) : null;
@@ -927,19 +927,19 @@ export default function ClientsPage() {
                 </div>
               </div>
               <div>
-                <label className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest block mb-1.5">Message Type</label>
+                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-600 uppercase tracking-widest block mb-1.5">Message Type</label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {(["reminder","welcome","followup","offer","greeting","custom"] as const).map(type => (
                     <button key={type} onClick={() => handleBulkWaTypeChange(type)}
                       className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
                         bulkWaMsgType === type
-                          ? type === "reminder" ? "bg-red-600 border-red-600 text-white"
-                          : type === "welcome" ? "bg-blue-600 border-blue-600 text-white"
-                          : type === "followup" ? "bg-teal-600 border-teal-600 text-white"
-                          : type === "offer" ? "bg-purple-600 border-purple-600 text-white"
-                          : type === "greeting" ? "bg-amber-600 border-amber-600 text-white"
-                          : "bg-slate-600 border-slate-600 text-white"
-                          : "bg-[#0d1117] border-[#21293d] text-slate-400 hover:bg-[#1e2637]"
+                          ? type === "reminder" ? "bg-red-600 border-red-600 !text-white"
+                          : type === "welcome" ? "bg-blue-600 border-blue-600 !text-white"
+                          : type === "followup" ? "bg-teal-600 border-teal-600 !text-white"
+                          : type === "offer" ? "bg-purple-600 border-purple-600 !text-white"
+                          : type === "greeting" ? "bg-amber-600 border-amber-600 !text-white"
+                          : "bg-slate-600 border-slate-600 !text-white"
+                          : "bg-slate-100 dark:bg-[#0d1117] border-slate-200 dark:border-[#21293d] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#1e2637]"
                       }`}>
                       {type === "reminder" ? "🔔 Reminder"
                        : type === "welcome" ? "👋 Welcome"
@@ -952,22 +952,22 @@ export default function ClientsPage() {
                 </div>
               </div>
               <div>
-                <label className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest block mb-1.5">Message</label>
+                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-600 uppercase tracking-widest block mb-1.5">Message</label>
                 <textarea value={bulkWaText} onChange={(e) => setBulkWaText(e.target.value)} rows={6}
                   placeholder="Type your message or select a template above..."
-                  className="w-full bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-3 text-sm font-mono text-slate-200 focus:outline-none focus:border-green-500 transition resize-none"/>
+                  className="w-full bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-3 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-green-500 transition resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600"/>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => navigator.clipboard.writeText(bulkWaText)}
-                  className="flex-1 py-2.5 border border-[#21293d] rounded-xl font-extrabold text-xs text-slate-400 hover:bg-[#1e2637] transition cursor-pointer">
+                  className="flex-1 py-2.5 border border-slate-300 dark:border-[#21293d] rounded-xl font-extrabold text-xs text-slate-700 dark:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-[#111520] dark:hover:bg-[#1e2637] transition cursor-pointer">
                   Copy
                 </button>
                 <button onClick={sendBulkWhatsApp}
-                  className="flex-1 py-2.5 bg-[#25D366] hover:bg-[#1DA851] text-white rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition cursor-pointer active:scale-95">
-                  <Send size={14}/> Send to All ({selectedClients.size})
+                  className="flex-1 py-2.5 bg-[#25D366] hover:bg-[#1DA851] !text-white rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition cursor-pointer active:scale-95 shadow-sm">
+                  <Send size={14} className="!text-white"/> Send to All ({selectedClients.size})
                 </button>
               </div>
-              <p className="text-[10px] text-slate-600 text-center">
+              <p className="text-[10px] text-slate-500 text-center">
                 ⚠️ WhatsApp windows will open for each client. Allow popups if asked.
               </p>
             </div>

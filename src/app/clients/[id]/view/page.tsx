@@ -1436,39 +1436,39 @@ export default function ViewClientProfile() {
       {/* ── SET PROMISED DUE DATE MODAL ── */}
       {dueModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border p-6 shadow-2xl theme-card">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-[#21293d] p-6 shadow-2xl bg-white dark:bg-[#161b27]">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Calendar size={16} className="text-red-400" /> Set Promised Due Date
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Calendar size={16} className="text-red-500 dark:text-red-400" /> Set Promised Due Date
               </h3>
               <button onClick={() => setDueModal(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 transition-colors">
+                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
                 <X size={18} />
               </button>
             </div>
             <form onSubmit={handleSaveDueDate} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Promised Due Date</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Promised Due Date</label>
                 <input
                   type="date"
                   value={dueForm.due_date}
                   onChange={e => setDueForm({ ...dueForm, due_date: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors [color-scheme:dark]"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Remarks / Promise Details</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Remarks / Promise Details</label>
                 <textarea
                   rows={3} placeholder="e.g. promised to pay full amount via PhonePe"
                   value={dueForm.due_remarks}
                   onChange={e => setDueForm({ ...dueForm, due_remarks: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors resize-none"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
                 />
               </div>
               <div className="flex gap-3 pt-1">
                 <button type="submit" disabled={savingDue}
-                  className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-all disabled:opacity-50">
-                  {savingDue ? <Loader2 className="inline animate-spin" size={14} /> : null} Save Due Date
+                  className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 !text-white transition-all disabled:opacity-50 shadow-sm">
+                  {savingDue ? <Loader2 className="inline animate-spin !text-white mr-1" size={14} /> : null} Save Due Date
                 </button>
                 <button type="button"
                   onClick={async () => {
@@ -1476,7 +1476,7 @@ export default function ViewClientProfile() {
                     setDueForm({ due_date: '', due_remarks: '' });
                     await handleSaveDueDate();
                   }}
-                  className="flex-1 py-2.5 rounded-xl font-bold text-sm border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all">
+                  className="flex-1 py-2.5 rounded-xl font-bold text-sm border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">
                   Clear Due Date
                 </button>
               </div>
@@ -1488,11 +1488,11 @@ export default function ViewClientProfile() {
       {/* ── EDIT PAYMENT MODAL ── */}
       {editingPayment && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border p-6 shadow-2xl theme-card">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-[#21293d] p-6 shadow-2xl bg-white dark:bg-[#161b27]">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-bold text-white">Edit Payment</h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Edit Payment</h3>
               <button onClick={() => setEditingPayment(null)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 transition-colors">
+                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -1503,22 +1503,22 @@ export default function ViewClientProfile() {
                 { label: 'Discount',     key: 'discount',     type: 'number' },
               ].map(f => (
                 <div key={f.key}>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{f.label}</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">{f.label}</label>
                   <input
                     type={f.type} step="0.01"
                     required={f.key !== 'discount'}
                     value={editForm[f.key as keyof typeof editForm]}
                     onChange={e => setEditForm({ ...editForm, [f.key]: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
               ))}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Payment Mode</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Payment Mode</label>
                 <select
                   value={editForm.payment_mode}
                   onChange={e => setEditForm({ ...editForm, payment_mode: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors"
                 >
                   {['Cash','PhonePe/GPay','UPI','NEFT','Cheque','Bank Transfer','Credit Card'].map(m => (
                     <option key={m}>{m}</option>
@@ -1527,11 +1527,11 @@ export default function ViewClientProfile() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Payment Type</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Payment Type</label>
                   <select
                     value={editForm.payment_type}
                     onChange={e => setEditForm({ ...editForm, payment_type: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors"
                   >
                     {['Full','Partial','Advance','On Account'].map(m => (
                       <option key={m}>{m}</option>
@@ -1539,30 +1539,30 @@ export default function ViewClientProfile() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Bill No.</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Bill No.</label>
                   <input
                     type="text" placeholder="Optional"
                     value={editForm.bill_no}
                     onChange={e => setEditForm({ ...editForm, bill_no: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-600"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Remarks</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Remarks</label>
                 <textarea
                   rows={2} value={editForm.remarks}
                   onChange={e => setEditForm({ ...editForm, remarks: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border text-sm theme-input focus:outline-none focus:border-blue-500 transition-colors resize-none"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
                 />
               </div>
               <div className="flex gap-3 pt-1">
                 <button type="submit"
-                  className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-all">
+                  className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-700 !text-white transition-all shadow-sm">
                   Update
                 </button>
                 <button type="button" onClick={() => setEditingPayment(null)}
-                  className="flex-1 py-2.5 rounded-xl font-bold text-sm border border-[#2a3550] text-slate-300 hover:bg-white/5 transition-all">
+                  className="flex-1 py-2.5 rounded-xl font-bold text-sm border border-slate-300 dark:border-[#2a3550] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-all">
                   Cancel
                 </button>
               </div>
@@ -1574,17 +1574,15 @@ export default function ViewClientProfile() {
       {/* ── BULK ACTION BAR (PHP parity: jobs page) ── */}
       {selectedIds.size > 0 && (
         <div
-          className="fixed bottom-5 left-1/2 z-[60] text-white rounded-2xl px-3 py-2.5 flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-3 w-[calc(100%-2rem)] md:min-w-[300px] md:max-w-[95vw]"
+          className="fixed bottom-5 left-1/2 z-[60] rounded-2xl px-3 py-2.5 flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-3 w-[calc(100%-2rem)] md:min-w-[300px] md:max-w-[95vw] bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] shadow-2xl text-slate-900 dark:text-white"
           style={{
-            background: "linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)",
-            boxShadow: "0 -4px 30px rgba(0,0,0,0.35)",
             transform: "translateX(-50%)",
             animation: "bulkBarPop 0.35s cubic-bezier(0.34,1.56,0.64,1)",
           }}
         >
           {/* Row 1: info + status + datetime */}
           <div className="flex items-center gap-2 w-full md:w-auto">
-            <span className="bg-[#667eea] text-white rounded-full px-2.5 py-0.5 font-bold text-xs whitespace-nowrap">
+            <span className="bg-indigo-600 !text-white rounded-full px-2.5 py-0.5 font-bold text-xs whitespace-nowrap shadow-sm">
               {selectedIds.size} selected
             </span>
             <select
@@ -1597,8 +1595,7 @@ export default function ViewClientProfile() {
                   setBulkDeliverDate(toISTString().slice(0, 16));
                 }
               }}
-              className="border-none rounded-lg px-2 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px]"
-              style={{ backgroundColor: "#ffffff !important", color: "#1a1a2e !important" }}
+              className="rounded-lg px-2.5 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px] bg-slate-100 dark:bg-[#0d1117] border border-slate-300 dark:border-[#21293d] text-slate-900 dark:text-slate-200 focus:border-blue-500"
             >
               <option value="">-- Status --</option>
               <option value="0">Pending</option>
@@ -1614,8 +1611,7 @@ export default function ViewClientProfile() {
                 value={bulkDeliverDate}
                 onChange={e => setBulkDeliverDate(e.target.value)}
                 title="Delivery Date & Time"
-                className="border-none rounded-lg px-2 py-1.5 text-xs outline-none cursor-pointer flex-1 md:flex-none"
-                style={{ backgroundColor: "#ffffff !important", color: "#1a1a2e !important" }}
+                className="rounded-lg px-2.5 py-1.5 text-xs outline-none cursor-pointer flex-1 md:flex-none bg-slate-100 dark:bg-[#0d1117] border border-slate-300 dark:border-[#21293d] text-slate-900 dark:text-slate-200 focus:border-blue-500"
               />
             )}
           </div>
@@ -1628,31 +1624,28 @@ export default function ViewClientProfile() {
                 bulkUpdateStatus(Number(bulkStatus));
               }}
               disabled={bulkActionLoading}
-              className="text-white border-none rounded-lg px-3 md:px-5 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap"
-              style={{ background: "linear-gradient(135deg,#48bb78 0%,#38a169 100%)" }}
+              className="!text-white border-none rounded-lg px-3 md:px-5 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 shadow-sm"
             >
-              <CheckCircle2 size={13} /> {bulkActionLoading ? "Applying..." : "Apply"}
+              <CheckCircle2 size={13} className="!text-white" /> {bulkActionLoading ? "Applying..." : "Apply"}
             </button>
 
             <button
               onClick={openBulkWhatsApp}
-              className="text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap"
-              style={{ background: "#25d366" }}
+              className="!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap bg-[#25d366] hover:bg-[#20ba5a] shadow-sm"
             >
-              <MessageCircle size={13} /> WA Report
+              <MessageCircle size={13} className="!text-white" /> WA Report
             </button>
 
             <button
               onClick={() => openCombinedInvoice("non_gst")}
-              className="text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap"
-              style={{ background: "#6c757d" }}
+              className="!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap bg-slate-600 hover:bg-slate-700 shadow-sm"
             >
-              <FileText size={13} /> Estimate
+              <FileText size={13} className="!text-white" /> Estimate
             </button>
 
             <button
               onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); setBulkDeliverDate(""); }}
-              className="bg-white/15 text-white border border-white/30 rounded-lg px-2.5 md:px-3.5 py-1.5 md:py-2 text-xs md:text-sm cursor-pointer transition-colors hover:bg-white/25 flex items-center gap-1 whitespace-nowrap"
+              className="bg-slate-100 hover:bg-slate-200 dark:bg-white/15 dark:hover:bg-white/25 text-slate-700 dark:text-white border border-slate-300 dark:border-white/30 rounded-lg px-2.5 md:px-3.5 py-1.5 md:py-2 text-xs md:text-sm cursor-pointer transition-colors flex items-center gap-1 whitespace-nowrap"
             >
               <X size={13} /> Clear
             </button>
@@ -1663,38 +1656,38 @@ export default function ViewClientProfile() {
       {/* ── FAB (mobile) — saare client actions ek menu me ── */}
       <div className="md:hidden fixed bottom-4 right-4 z-30 flex flex-col gap-3 items-end">
         <button onClick={() => setFabOpen(!fabOpen)}
-          className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center text-white border border-blue-500/30 transition-all active:scale-95">
+          className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center !text-white border border-blue-500/30 transition-all active:scale-95">
           <Plus size={22} className={`transition-transform ${fabOpen ? "rotate-45" : ""}`} />
         </button>
         {fabOpen && (
-          <div className="absolute bottom-14 right-0 bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl py-1.5 w-44 text-sm overflow-hidden">
+          <div className="absolute bottom-14 right-0 bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl shadow-2xl py-1.5 w-44 text-sm overflow-hidden">
             {[
-              { href: `/clients/${client.id}/add-payment`, icon: CreditCard,  label: "Add Payment",  cls: "text-emerald-400" },
-              { href: `/jobs/new?client_id=${client.id}`,   icon: Plus,        label: "New Job",      cls: "text-violet-400"  },
-              { href: `/clients/${client.id}/collect-emi`,  icon: TrendingUp,  label: "Collect EMI",  cls: "text-orange-400"  },
-              { href: `/clients/${client.id}/give-loan`,    icon: Banknote,    label: "Give Loan",    cls: "text-amber-400"   },
+              { href: `/clients/${client.id}/add-payment`, icon: CreditCard,  label: "Add Payment",  cls: "text-emerald-600 dark:text-emerald-400" },
+              { href: `/jobs/new?client_id=${client.id}`,   icon: Plus,        label: "New Job",      cls: "text-violet-600 dark:text-violet-400"  },
+              { href: `/clients/${client.id}/collect-emi`,  icon: TrendingUp,  label: "Collect EMI",  cls: "text-orange-600 dark:text-orange-400"  },
+              { href: `/clients/${client.id}/give-loan`,    icon: Banknote,    label: "Give Loan",    cls: "text-amber-600 dark:text-amber-400"   },
             ].map(({ href, icon: Icon, label, cls }) => (
               <Link key={label} href={href} onClick={() => setFabOpen(false)}
-                className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 hover:text-slate-200 transition-colors">
+                className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors">
                 <Icon size={14} className={cls} /> {label}
               </Link>
             ))}
             <button onClick={() => { openDueModal(); setFabOpen(false); }}
-              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 hover:text-slate-200 transition-colors w-full">
-              <Calendar size={14} className="text-red-400" /> Set Due Date
+              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors w-full">
+              <Calendar size={14} className="text-red-600 dark:text-red-400" /> Set Due Date
             </button>
             {[
-              { href: `/clients/${client.id}/edit`,         icon: Edit3,       label: "Edit Client",  cls: "text-blue-400"    },
-              { href: `/clients/${client.id}/ledger-print`, icon: Printer,     label: "Print Ledger", cls: "text-cyan-400", newTab: true },
+              { href: `/clients/${client.id}/edit`,         icon: Edit3,       label: "Edit Client",  cls: "text-blue-600 dark:text-blue-400"    },
+              { href: `/clients/${client.id}/ledger-print`, icon: Printer,     label: "Print Ledger", cls: "text-cyan-600 dark:text-cyan-400", newTab: true },
             ].map(({ href, icon: Icon, label, cls, newTab }) => (
               <Link key={label} href={href} target={newTab ? "_blank" : undefined} onClick={() => setFabOpen(false)}
-                className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 hover:text-slate-200 transition-colors">
+                className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors">
                 <Icon size={14} className={cls} /> {label}
               </Link>
             ))}
-            <hr className="my-1 border-[#21293d]" />
+            <hr className="my-1 border-slate-200 dark:border-[#21293d]" />
             <button onClick={() => { safeBack(router, "/clients"); setFabOpen(false); }}
-              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.04] text-slate-400 w-full transition-colors">
+              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 hover:text-slate-900 w-full transition-colors">
               <ArrowLeft size={14} className="text-slate-500" /> Back
             </button>
           </div>
@@ -1703,13 +1696,13 @@ export default function ViewClientProfile() {
 
       {/* ── WHATSAPP MODAL (PHP parity: jobs page) ── */}
       {waModal && (
-        <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
-            <div className="bg-green-600/90 px-5 py-3.5 flex items-center justify-between">
-              <h3 className="font-black text-white text-sm flex items-center gap-2">
-                <MessageCircle size={16} /> Send WhatsApp Message
+        <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+            <div className="bg-emerald-600 px-5 py-3.5 flex items-center justify-between">
+              <h3 className="font-black !text-white text-sm flex items-center gap-2">
+                <MessageCircle size={16} className="!text-white" /> Send WhatsApp Message
               </h3>
-              <button onClick={() => setWaModal(false)} className="text-white/80 hover:text-white transition-colors">
+              <button onClick={() => setWaModal(false)} className="!text-white/80 hover:!text-white transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -1718,21 +1711,21 @@ export default function ViewClientProfile() {
                 rows={10}
                 value={waText}
                 onChange={e => { setWaText(e.target.value); setWaEdited(true); }}
-                className="w-full bg-[#0d1117] border border-green-500/40 text-slate-200 rounded-xl p-3 text-sm font-mono leading-relaxed outline-none focus:border-green-500 resize-none"
+                className="w-full bg-slate-50 dark:bg-[#0d1117] border border-emerald-500/40 text-slate-900 dark:text-slate-200 rounded-xl p-3 text-sm font-mono leading-relaxed outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 resize-none"
               />
             </div>
-            <div className="px-5 py-3.5 bg-[#111520] flex items-center justify-end gap-2 border-t border-[#21293d]">
+            <div className="px-5 py-3.5 bg-slate-50 dark:bg-[#111520] flex items-center justify-end gap-2 border-t border-slate-200 dark:border-[#21293d]">
               <button onClick={() => setWaModal(false)}
-                className="px-4 py-2 rounded-xl text-sm font-bold text-slate-400 bg-[#21293d] hover:bg-[#2a3550] transition-colors">
+                className="px-4 py-2 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-400 bg-slate-200 hover:bg-slate-300 dark:bg-[#21293d] dark:hover:bg-[#2a3550] transition-colors">
                 Close
               </button>
               <button onClick={copyWAMessage}
-                className="px-4 py-2 rounded-xl text-sm font-bold text-blue-400 bg-blue-600/15 border border-blue-500/30 hover:bg-blue-600/25 transition-colors flex items-center gap-1.5">
+                className="px-4 py-2 rounded-xl text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-600/15 border border-blue-200 dark:border-blue-500/30 hover:bg-blue-100 dark:hover:bg-blue-600/25 transition-colors flex items-center gap-1.5">
                 <Copy size={13} /> Copy
               </button>
               <button onClick={sendBulkWA}
-                className="px-4 py-2 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-colors flex items-center gap-1.5">
-                <Send size={13} /> Send
+                className="px-4 py-2 rounded-xl text-sm font-bold !text-white bg-emerald-600 hover:bg-emerald-700 transition-colors flex items-center gap-1.5 shadow-sm">
+                <Send size={13} className="!text-white" /> Send
               </button>
             </div>
           </div>
