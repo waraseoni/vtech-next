@@ -2,6 +2,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { requireAdmin } from "@/lib/api-auth";
+import { logger } from "@/lib/logger";
 
 const rootDir = process.cwd();
 const ALLOWED = ["vikram_db_supabase.txt"];
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("backup download error:", error);
+      logger.error("backup download error:", error);
     return new NextResponse("Requested backup file not found", { status: 404 });
   }
 }
