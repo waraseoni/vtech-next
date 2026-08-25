@@ -515,6 +515,7 @@ export default function JobDetailsPage() {
       setToast({ type: "success", msg: "Payment save ho gayi!" });
       setShowPayModal(false);
       setPayAmount(""); setPayDiscount("0"); setPayRemarks(""); setPayBillNo(""); setPayType("Full"); setPayDate(todayISTStr());
+      fetchData();
     }
     setSavingPay(false);
   };

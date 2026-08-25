@@ -338,6 +338,7 @@ export default function JobDetailsPage() {
       setToast({ type: "success", msg: "Payment save ho gayi!" });
       setShowPayModal(false);
       setPayAmount(""); setPayDiscount("0"); setPayRemarks("");
+      fetchData();
     }
     setSavingPay(false);
   };
