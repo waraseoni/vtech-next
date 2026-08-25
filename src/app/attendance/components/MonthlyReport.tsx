@@ -64,7 +64,7 @@ export default function MonthlyReport({
   const [modalOpen, setModalOpen]     = useState(false);
   const [selected, setSelected]       = useState<{ mechanicId: number; mechanicName: string; mechanicImage: string | null; date: string; timeIn?: string; timeOut?: string } | null>(null);
   // BUG FIX 3: trigger refetch without hard reload
-  const [, setRefreshKey]                 = useState(0);
+  const [refreshKey, setRefreshKey]                 = useState(0);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -126,7 +126,7 @@ export default function MonthlyReport({
     setLoading(false);
   }, [month, userRole, mechanicId]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData, refreshKey]);
 
   // BUG FIX 2: use router.push instead of window.history.pushState
   const changeMonth = (delta: -1 | 1) => {
