@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { fetchAll, pageAll } from '@/lib/fetch-all';
 import { requireStaff, UNAUTHORIZED } from '@/lib/api-auth';
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   if (!(await requireStaff())) return UNAUTHORIZED();
@@ -496,7 +497,7 @@ export async function GET(request: Request) {
     });
 
   } catch (err) {
-    console.error('Ledger API error:', err);
+    logger.error('Ledger API error:', err);
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }

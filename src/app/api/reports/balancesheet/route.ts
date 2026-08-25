@@ -2,6 +2,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { requireStaff, UNAUTHORIZED } from '@/lib/api-auth';
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   if (!(await requireStaff())) return UNAUTHORIZED();
@@ -42,7 +43,7 @@ export async function GET(request: Request) {
         let q = makeQuery(table, select);
         q = builder(q);
         const { data, error } = await q.range(page * 1000, (page + 1) * 1000 - 1);
-        if (error) console.error(error);
+        if (error) logger.error(error);
         if (data) list.push(...data);
         if (!data || data.length < 1000) break;
         page++;
@@ -414,7 +415,7 @@ export async function GET(request: Request) {
     });
 
   } catch (err) {
-    console.error('Balance Sheet API error:', err);
+    logger.error('Balance Sheet API error:', err);
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 ﻿import Groq from "groq-sdk";
 import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 import { geminiTools, executeGeminiTool, buildSystemPrompt, type AiRole } from "./gemini-tools";
+import { logger } from "@/lib/logger";
 
 const groqTools = geminiTools.map((t) => ({
     type: "function",
@@ -54,7 +55,7 @@ export async function getGroqChatResponse(messages: ChatCompletionMessageParam[]
                 try {
                     functionArgs = JSON.parse(toolCall.function.arguments);
                 } catch(e) {
-                    console.error("Arg parse error:", e);
+                    logger.error("Arg parse error:", e);
                 }
                 
                 const apiResponse = await executeGeminiTool({
@@ -91,7 +92,7 @@ export async function getGroqChatResponse(messages: ChatCompletionMessageParam[]
                     const argString = funcMatch[2].trim();
                     if (argString) args = JSON.parse(argString);
                 } catch (e) {
-                    console.error("Failed to parse textual tool args:", e);
+                    logger.error("Failed to parse textual tool args:", e);
                 }
 
                 console.debug(`Groq text fallback tool request: ${name}`, args);
@@ -117,7 +118,7 @@ export async function getGroqChatResponse(messages: ChatCompletionMessageParam[]
         return content || "No response generated.";
 
     } catch (error) {
-        console.error("Groq Execution Error:", error);
+        logger.error("Groq Execution Error:", error);
         
         const errorMessage = (error instanceof Error ? error.message : String(error)) || JSON.stringify(error);
 
@@ -169,7 +170,7 @@ export async function getGroqChatResponse(messages: ChatCompletionMessageParam[]
                 }
             }
         } catch (recoverError) {
-            console.error("Failed to recover from 400 Error:", recoverError);
+            logger.error("Failed to recover from 400 Error:", recoverError);
             return `Data fetched successfully, but AI failed to generate final response. (Inner Error: ${recoverError instanceof Error ? recoverError.message : String(recoverError)})`;
         }
 

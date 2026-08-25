@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
 import { Toaster } from "sonner";
+import { logger } from "@/lib/logger";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
 type SearchResult = {
@@ -160,7 +161,7 @@ function NavbarSearch() {
 
       setResults(out);
     } catch (e) {
-      console.error("Search error:", e);
+      logger.error("Search error:", e);
     } finally {
       setLoading(false);
     }
@@ -657,7 +658,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
           }
         }
       } catch (e) {
-        console.error("Auth error:", e);
+        logger.error("Auth error:", e);
       } finally {
         if (!cancelled) setLoading(false);
       }

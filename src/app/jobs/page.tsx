@@ -41,6 +41,7 @@ import { logActivity } from "@/lib/activity";
 import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import { JOB_STATUS } from "@/lib/status-colors";
+import { logger } from "@/lib/logger";
 
 // ─── WhatsApp status template keys (PHP: pending=0, repairing=1, ready=2, delivered=3/5, cancelled=4) ─
 const STATUS_WA_KEY: Record<number, string> = {
@@ -356,7 +357,7 @@ function JobsListContent() {
           .map(it => ({ id: it.id, job_id: it.job_id, item: it.item, uniq_id: it.uniq_id, days: it.days }))
       );
     } catch (err) {
-      console.error("loadStale error:", err);
+      logger.error("loadStale error:", err);
     }
   }, []);
   useEffect(() => { loadStale(); }, [loadStale]);
@@ -493,7 +494,7 @@ function JobsListContent() {
 
       setStats({ total, pending, progress, completed, totalAmt });
     } catch (err) {
-      console.error("fetchStats error:", err);
+      logger.error("fetchStats error:", err);
     }
   }, [dateFrom, dateTo, hideDelivered, statusFilter, spotFilter, debouncedSearch, searchClients]);
 
@@ -602,7 +603,7 @@ function JobsListContent() {
       }));
 
     } catch (err) {
-      console.error("fetchPage error:", err);
+      logger.error("fetchPage error:", err);
     } finally {
       setHasLoaded(true);
       setLoading(false);

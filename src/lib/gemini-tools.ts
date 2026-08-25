@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { todayIST } from "./dateUtils";
 import { pageAll } from "./fetch-all";
 import { buildDueMaps, balanceFromMaps } from "./client-due";
+import { logger } from "@/lib/logger";
 
 type ToolParam = {
     type: string;
@@ -857,7 +858,7 @@ export async function executeGeminiTool(functionCall: { name: string; args?: obj
 
         return { error: "Unknown function call" };
     } catch (error) {
-        console.error("Tool Execution Error:", error);
+        logger.error("Tool Execution Error:", error);
         return { error: (error as Error).message };
     }
 }

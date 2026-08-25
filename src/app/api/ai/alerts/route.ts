@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireStaff, getSessionRole } from "@/lib/api-auth";
 import { executeGeminiTool, type AiRole } from "@/lib/gemini-tools";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -14,7 +15,7 @@ export async function GET() {
 
     return NextResponse.json({ role, alerts });
   } catch (error) {
-    console.error("Alerts API Error:", error);
+    logger.error("Alerts API Error:", error);
     return NextResponse.json(
       { error: "Failed to load alerts", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }

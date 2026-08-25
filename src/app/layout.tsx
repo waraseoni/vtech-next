@@ -2,9 +2,48 @@ import "./globals.css";
 import Script from "next/script";
 import RootClient from "./RootClient";
 import { Outfit, Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: "swap" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+
+const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "V-Technologies";
+const SITE_TAGLINE = process.env.NEXT_PUBLIC_SITE_TAGLINE || "Repair & Service Management System";
+
+export const metadata: Metadata = {
+  title: {
+    default: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: `${SITE_NAME} repair shop management system. Track jobs, manage clients, inventory, and payments — all in one place.`,
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_NAME }],
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: `Repair shop management system by ${SITE_NAME}. Track jobs, manage clients, and streamline your service business.`,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: `Repair shop management system by ${SITE_NAME}.`,
+  },
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false },
+  },
+  manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#0a0e17",
+};
 
 // ─── Boot Guard (pre-hydration) ──────────────────────────────────────────────
 // Firefox me stale HTML → missing chunks → scripts fail → React KABHI hydrate

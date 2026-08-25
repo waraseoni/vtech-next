@@ -19,6 +19,7 @@ import { pageAll } from "@/lib/fetch-all";
 import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
 import AIAlertsWidget from "@/app/components/AIAlertsWidget";
 import LicenseInfoCard from "@/app/components/LicenseInfoCard";
+import { logger } from "@/lib/logger";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Profile = { full_name: string; role: string };
@@ -30,6 +31,19 @@ type LowStockItem = { name: string; quantity: number; place: string; alert: numb
 type RevenuePoint = { month: string; revenue: number };
 type StatusPoint = { name: string; value: number; color: string };
 type TooltipItem = { value?: number | string; payload?: unknown };
+
+type TxnRow = { amount: number };
+type DirectSaleRow = { total_amount: number };
+type PartsTxnRow = { amount: number };
+type DiscountRow = { discount: number };
+type AttendanceRow = { mechanic_id: string | null; status: number };
+type MechRow = { id: string; daily_salary: number };
+type LoanRow = { amount_paid: number };
+type ExpenseRow = { amount: number };
+type PartsProductRow = { qty: number; price: number; products: { cost_price?: number }[] };
+type DirectItemRow = { item_total: number };
+type PlLocRow = { product_id: number; locations: { zone: string; rack: string; bin: string; box: string }[] };
+
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -231,8 +245,8 @@ export default function Dashboard() {
             supabase.from("transaction_list").select("amount").eq("status", 5).eq("del_status", 0).gte("date_completed", startToday).lte("date_completed", endToday),
             supabase.from("direct_sales").select("total_amount").gte("date_created", startToday).lte("date_created", endToday),
           ]);
-          const todayR = (todayRepairRes || []).reduce((s: number, r: any) => s + n(r.amount), 0);
-          const todayD = (todayDirectRes || []).reduce((s: number, r: any) => s + n(r.total_amount), 0);
+const todayR = (todayRepairRes || []).reduce((s: number, r: TxnRow) => s + n(r.amount), 0);
+const todayD = (todayDirectRes || []).reduce((s: number, r: DirectSaleRow) => s + n(r.total_amount), 0);
           setStats({
             totalJobs: totalJobsCount || 0, totalClients: clientCount ?? 0, totalMechanics: mechCount ?? 0,
             lowStock: 0, todayRevenue: todayR + todayD,
@@ -276,7 +290,7 @@ export default function Dashboard() {
             ]);
             pts.push({
               month: md.toLocaleString("default", { month: "short", year: "2-digit" }),
-              revenue: ((repMonth || []).reduce((s: number, r: any) => s + n(r.amount), 0)) + ((dirMonth || []).reduce((s: number, r: any) => s + n(r.total_amount), 0)),
+              revenue: ((repMonth || []).reduce((s: number, r: TxnRow) => s + n(r.amount), 0)) + ((dirMonth || []).reduce((s: number, r: DirectSaleRow) => s + n(r.total_amount), 0)),
             });
           }
           setRevenueData(pts);
@@ -351,7 +365,7 @@ export default function Dashboard() {
               .from("product_locations")
               .select("product_id, locations!inner(zone, rack, bin, box)")
               .in("product_id", lowProdIds);
-            (plLocs || []).forEach((row: any) => {
+            (plLocs || []).forEach((row: PlLocRow) => {
               if (placeMap.has(row.product_id)) return;
               const loc = Array.isArray(row.locations) ? row.locations[0] : row.locations;
               const parts = [loc?.zone, loc?.rack, loc?.bin, loc?.box].filter(Boolean);
@@ -372,7 +386,7 @@ export default function Dashboard() {
           setStats(prev => ({ ...prev, lowStock }));
         }
       } catch (e) {
-        console.error("Dashboard fetch error:", e);
+        logger.error("Dashboard fetch error:", e);
       } finally {
         clearTimeout(watchdog);
         setLoading(false);
@@ -406,7 +420,7 @@ export default function Dashboard() {
         });
         setDueStats({ overdue, today: todayC, upcoming, amount });
       } catch (e) {
-        console.error("Due stats fetch error:", e);
+        logger.error("Due stats fetch error:", e);
       }
     })();
   }, []);
@@ -466,8 +480,8 @@ export default function Dashboard() {
           .from("transaction_products")
           .select("qty, price, product_id, products(cost_price)")
           .in("transaction_id", txList);
-        partsTrans = (tp ?? []).reduce((s: number, r: any) => {
-          const cp = r.products?.cost_price;
+        partsTrans = (tp ?? []).reduce((s: number, r: PartsProductRow) => {
+          const cp = r.products?.[0]?.cost_price;
           return s + n(r.qty) * (cp != null && cp > 0 ? cp : n(r.price) * 0.9);
         }, 0);
       }
@@ -478,35 +492,36 @@ export default function Dashboard() {
           .from("direct_sale_items")
           .select("qty, price, product_id, products(cost_price)")
           .in("sale_id", dList);
-        partsDirect = (di ?? []).reduce((s: number, r: any) => {
-          const cp = r.products?.cost_price;
+        partsDirect = (di ?? []).reduce((s: number, r: PartsProductRow) => {
+          const cp = r.products?.[0]?.cost_price;
           return s + n(r.qty) * (cp != null && cp > 0 ? cp : n(r.price) * 0.9);
         }, 0);
       }
 
       const partsCost = partsTrans + partsDirect;
       const grossProfit = totalSales - partsCost;
-      const discounts = (discD ?? []).reduce((s: number, p: any) => s + n(p.discount), 0);
+      const discounts = (discD ?? []).reduce((s: number, p: DiscountRow) => s + n(p.discount), 0);
 
       let salary = 0;
       if (attD?.length) {
-        const mIds = [...new Set(attD.map((a: any) => a.mechanic_id).filter(Boolean))];
+        const mIds = [...new Set(attD.map((a: AttendanceRow) => a.mechanic_id).filter(Boolean))];
         const { data: mechs } = await supabase.from("mechanic_list").select("id, daily_salary").in("id", mIds);
-        const sMap = Object.fromEntries((mechs ?? []).map((m: any) => [m.id, n(m.daily_salary)]));
-        salary = attD.reduce((s: number, a: any) => {
+        const sMap = Object.fromEntries((mechs ?? []).map((m: MechRow) => [m.id, n(m.daily_salary)]));
+        salary = attD.reduce((s: number, a: AttendanceRow) => {
+          if (!a.mechanic_id) return s;
           const d = sMap[a.mechanic_id] ?? 0;
           return s + (a.status === 1 ? d : a.status === 3 ? d / 2 : 0);
         }, 0);
       }
 
-      const loanPaid = (loanD ?? []).reduce((s: number, l: any) => s + n(l.amount_paid), 0);
-      const expenses = (expD ?? []).reduce((s: number, e: any) => s + n(e.amount), 0);
+      const loanPaid = (loanD ?? []).reduce((s: number, l: LoanRow) => s + n(l.amount_paid), 0);
+      const expenses = (expD ?? []).reduce((s: number, e: ExpenseRow) => s + n(e.amount), 0);
       const totalOutflow = discounts + salary + loanPaid + expenses;
       const netProfit = grossProfit - totalOutflow;
 
       setFinancial({ totalSales, partsCost, grossProfit, discounts, salary, loanPaid, expenses, totalOutflow, netProfit });
     } catch (e) {
-      console.error("Financial fetch error:", JSON.stringify(e));
+      logger.error("Financial fetch error:", JSON.stringify(e));
     } finally {
       setFinLoading(false);
     }

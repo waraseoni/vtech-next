@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { logger } from "@/lib/logger";
 
 /**
  * Logs a system activity into the activity_logs table
@@ -36,9 +37,9 @@ export async function logActivity(action: string, module: string, metaId?: strin
       });
 
     if (error) {
-      console.warn("Activity log insert failed:", error.message);
+      logger.warn("Activity log insert failed:", error.message);
     }
   } catch (err) {
-    console.error("Critical error in logActivity:", err);
+    logger.error("Critical error in logActivity:", err);
   }
 }

@@ -2,6 +2,7 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/api-auth';
+import { logger } from "@/lib/logger";
 
 type DbRow = ReturnType<typeof JSON.parse>;
 
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ user: data.user });
 
   } catch (err) {
-    console.error('🔥 API Error:', err);
+    logger.error('🔥 API Error:', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },
       { status: 500 }

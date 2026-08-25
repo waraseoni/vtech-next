@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/activity";
+import { logger } from "@/lib/logger";
 
 // ─── IST HELPERS ─────────────────────────────────────────────────────────────
 function fmtDate(d: string | null) {
@@ -265,7 +266,7 @@ export default function JobDetailsPage() {
         setServices(svcs.map(s => ({ ...s, service_name: s.service_name || sm[s.service_id] || null })));
       } else { setServices(svcs); }
 
-    } catch (err) { console.error("fetchData:", err); }
+    } catch (err) { logger.error("fetchData:", err); }
     finally { setLoading(false); }
   }, [jobId, router]);
 

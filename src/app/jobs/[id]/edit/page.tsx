@@ -13,6 +13,7 @@ import SearchableSelect from "@/components/SearchableSelect";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import { fetchClientDue, dueLabel } from "@/lib/client-due";
+import { logger } from "@/lib/logger";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STYLES
@@ -301,7 +302,7 @@ export default function ManageJobPage({
         })));
 
       } catch (e) {
-        console.error("load job:", e instanceof Error ? e.message : JSON.stringify(e));
+        logger.error("load job:", e instanceof Error ? e.message : JSON.stringify(e));
         setToast({ type: "error", msg: "Job load karne mein galti!" });
         router.push("/jobs");
       } finally {
@@ -350,7 +351,7 @@ export default function ManageJobPage({
       setToast({ type: "success", msg: "Naya client add ho gaya! ✅" });
 
     } catch (e) {
-      console.error("save client error:", e instanceof Error ? e.message : e);
+      logger.error("save client error:", e instanceof Error ? e.message : e);
       setToast({ type: "error", msg: "Client save nahi hua: " + (e instanceof Error ? e.message : "Unknown error") });
     } finally {
       setSavingClient(false);
@@ -540,7 +541,7 @@ export default function ManageJobPage({
       setTimeout(() => router.replace(`/jobs/${txnId}/view`), 1000);
 
     } catch (e) {
-      console.error("save error:", e instanceof Error ? e.message : JSON.stringify(e));
+      logger.error("save error:", e instanceof Error ? e.message : JSON.stringify(e));
       setToast({ type: "error", msg: e instanceof Error ? e.message : "Save karne mein galti!" });
     } finally {
       setSaving(false);

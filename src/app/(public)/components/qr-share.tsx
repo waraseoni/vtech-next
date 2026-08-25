@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { QrCode, X, Copy, Check, Share2, Smartphone, MessageCircle, Send, Mail, ArrowLeft, Globe, AtSign, Download } from "lucide-react";
+import Image from "next/image";
 import { SITE } from "../site";
 
 export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -132,8 +133,7 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
 
         <div className="relative mt-5 mx-auto w-48 h-48 rounded-2xl bg-white p-3 shadow-inner">
           {qrDataUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- QR is a generated data URL, not a static asset
-            <img src={qrDataUrl} alt="Website QR code" className="w-full h-full object-contain" />
+            <Image src={qrDataUrl} alt="Website QR code" width={200} height={200} className="w-full h-full object-contain" unoptimized />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400">
               <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />

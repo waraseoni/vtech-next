@@ -4,6 +4,7 @@ import { getGroqChatResponse } from "@/lib/groq";
 import { getAiSettings } from "@/lib/ai-settings";
 import { requireStaff, getSessionRole } from "@/lib/api-auth";
 import { getLiveContext, type AiRole } from "@/lib/gemini-tools";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ response: responseText });
 
   } catch (error) {
-    console.error("Chat API Error:", error);
+    logger.error("Chat API Error:", error);
     return NextResponse.json(
       { 
         error: "Failed to get response", 

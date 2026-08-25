@@ -11,6 +11,7 @@ import {
   encodeLocationToken,
 } from "@/lib/locations";
 import { logActivity } from "@/lib/activity";
+import Image from "next/image";
 import {
   Search,
   Plus,
@@ -608,7 +609,7 @@ export default function LocationsPage() {
               </button>
             </div>
             <div className="p-6 flex flex-col items-center gap-4">
-              <img src={qrUrl(toParts(qrModalLoc))} alt="Location QR" width={200} height={200} className="rounded-xl bg-white p-2" />
+              <Image src={qrUrl(toParts(qrModalLoc))} alt="Location QR" width={200} height={200} className="rounded-xl bg-white p-2" unoptimized />
               <div className="text-center">
                 {qrModalLoc.code && (
                   <p className="text-xs font-mono font-bold text-blue-400 mb-1">{qrModalLoc.code}</p>

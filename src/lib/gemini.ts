@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, type FunctionDeclaration } from "@google/generative-ai";
 import { geminiTools, executeGeminiTool, buildSystemPrompt, type AiRole } from "./gemini-tools";
+import { logger } from "@/lib/logger";
 
 export type ChatMessage = {
   role: "user" | "model" | "assistant" | "function" | "system";
@@ -79,7 +80,7 @@ export async function getChatResponse(
 
     return result.response.text();
   } catch (error) {
-    console.error("Gemini Execution Error:", error);
+    logger.error("Gemini Execution Error:", error);
     
     const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
     

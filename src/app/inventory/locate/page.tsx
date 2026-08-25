@@ -8,6 +8,7 @@ import {
   EMPTY_LOCATION, type LocationParts,
 } from "@/lib/locations";
 import BarcodeCameraScanner from "@/app/components/BarcodeCameraScanner";
+import Image from "next/image";
 import {
   MapPin, Search, QrCode, Printer, Copy, Check, Camera, Loader2, RefreshCw,
   ChevronDown, ChevronRight, Package, AlertTriangle, Boxes, X, ScanLine, FileText, Link as LinkIcon,
@@ -710,8 +711,7 @@ export default function LocatePage() {
             <h3 className="text-white font-black">Shelf Location QR</h3>
             <p className="text-[11px] text-slate-500 font-bold mt-1 break-words">{locPath(qrOpen)}</p>
             <div className="mt-4 bg-white rounded-2xl p-3 inline-block mx-auto">
-              {/* eslint-disable-next-line @next/next/no-img-element -- QR data URL cannot use next/image */}
-              {qrUrl ? <img src={qrUrl} alt="QR" className="w-44 h-44" /> : <Loader2 size={40} className="animate-spin text-slate-500" />}
+              {qrUrl ? <Image src={qrUrl} alt="QR" width={176} height={176} className="w-44 h-44" unoptimized /> : <Loader2 size={40} className="animate-spin text-slate-500" />}
             </div>
             <p className="text-[9px] text-slate-600 mt-3 font-bold uppercase tracking-widest">
               Label chipkao · Spare Finder me scan karo

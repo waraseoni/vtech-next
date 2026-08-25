@@ -21,6 +21,7 @@ import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { compressImage } from "@/lib/imageCompression";
 import { JOB_STATUS } from "@/lib/status-colors";
+import { logger } from "@/lib/logger";
 
 // ─── IST HELPERS ─────────────────────────────────────────────────────────────
 // Legacy PHP/MariaDB activity logs predate the Next.js handover (Aug 15, 2026)
@@ -301,7 +302,7 @@ export default function JobDetailsPage() {
       .in("meta_id", metaIds)
       .order("date_created", { ascending: false })
       .limit(60);
-    if (actErr) { console.warn("activity fetch:", actErr.message); }
+    if (actErr) { logger.warn("activity fetch:", actErr.message); }
 
     const actList = (actRows || []).filter(a => a.action && a.date_created) as ActivityEntry[];
     setActivityLogs(actList);
@@ -334,7 +335,7 @@ export default function JobDetailsPage() {
         }
         setUserNames(nm);
       } catch (err) {
-        console.warn("activity user-name fetch:", err);
+        logger.warn("activity user-name fetch:", err);
       }
     }
   }, []);
@@ -430,7 +431,7 @@ export default function JobDetailsPage() {
         hsn: shsn[s.service_id] || null,
       })));
 
-    } catch (err) { console.error("fetchData:", err); }
+    } catch (err) { logger.error("fetchData:", err); }
     finally { setLoading(false); }
   }, [jobId, router, loadActivity]);
 

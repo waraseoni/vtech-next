@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
 
 // Resolves activity log user_id → display name.
 // Three naming systems coexist:
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ users, mechanics });
   } catch (err) {
-    console.error("activity-users error:", err);
+    logger.error("activity-users error:", err);
     return NextResponse.json({ users: {}, mechanics: {} }, { status: 500 });
   }
 }

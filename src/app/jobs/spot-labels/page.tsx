@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { ArrowLeft, Printer, Loader2, Trash2 } from "lucide-react";
+import Image from "next/image";
 import SpotJobsModal from "@/components/SpotJobsModal";
 
 type Spot = { id: number; name: string };
@@ -279,8 +280,7 @@ export default function SpotLabelsPage() {
                   </p>
                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2">V-TECH · Job Spot</p>
                   {urls[s.id]
-                    ? // eslint-disable-next-line @next/next/no-img-element
-                      <img src={urls[s.id]} alt={`QR ${s.name}`} className="w-full h-auto" />
+                    ? <Image src={urls[s.id]} alt={`QR ${s.name}`} width={200} height={200} className="w-full h-auto" unoptimized />
                     : <div className="w-full aspect-square bg-slate-100 animate-pulse rounded" />}
                   <p className="text-[9px] text-slate-400 mt-2 break-all leading-tight">Scan → Jobs @ {s.name}</p>
                 </div>
