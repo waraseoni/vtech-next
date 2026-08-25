@@ -1020,7 +1020,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
       {/* ══════════════════════ DESKTOP SIDEBAR ══════════════════════ */}
         {isMobile === false && !isAiPage && (
-          <aside className="fixed top-0 left-0 h-full w-[260px] theme-sidebar border-r border-[#21293d] flex flex-col z-50 theme-sidebar">
+          <aside className="fixed top-0 left-0 h-full w-[260px] glass border-r flex flex-col z-50">
             {/* Brand — click karo → public website (logged-in user bhi) */}
             <div className="relative overflow-hidden px-5 py-4 border-b border-[#1a2234]">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-700/15 to-transparent pointer-events-none" />
@@ -1063,7 +1063,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             />
             {/* Full sidebar drawer — same content as desktop */}
             <aside
-              className={`fixed top-0 left-0 h-full w-[280px] theme-sidebar border-r border-[#21293d] flex flex-col z-50 transition-transform duration-300 ease-out ${
+              className={`fixed top-0 left-0 h-full w-[280px] glass border-r flex flex-col z-50 transition-transform duration-300 ease-out ${
                 drawerOpen ? "translate-x-0" : "-translate-x-full"
               }`}
             >
@@ -1087,7 +1087,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                 </Link>
                 <button
                   onClick={() => setDrawerOpen(false)}
-                  className="relative w-8 h-8 flex items-center justify-center bg-[#1a2234] hover:bg-[#21293d] rounded-lg text-slate-500 hover:text-white transition-all"
+                  className="relative w-8 h-8 flex items-center justify-center glass border rounded-lg text-slate-500 hover:text-white transition-all"
                 >
                   <X size={15} />
                 </button>
@@ -1098,7 +1098,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
               {/* User info at drawer bottom */}
               <div className="px-3 py-3 border-t border-[#1a2234]">
-                <div className="flex items-center gap-3 px-3 py-2.5 bg-[#111520] rounded-xl">
+                <div className="flex items-center gap-3 px-3 py-2.5 glass rounded-xl">
                   {profile?.avatar_url ? (
                     <Image src={profile.avatar_url} alt={displayName}
                       width={32} height={32} unoptimized
@@ -1131,13 +1131,13 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
           {/* ── TOPBAR ── */}
           {!isAiPage && (
-          <header className="sticky top-0 z-40 h-14 theme-topbar backdrop-blur border-b border-[#21293d] flex items-center justify-between px-4 gap-3">
+          <header className="sticky top-0 z-40 h-14 glass border-b flex items-center justify-between px-4 gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               {/* Mobile: hamburger menu */}
               {isMobile === true && (
                 <button
                   onClick={() => setDrawerOpen(true)}
-                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all"
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all"
                 >
                   <Menu size={16} />
                 </button>
@@ -1146,7 +1146,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               {isMobile === false && (
                 <button
                   onClick={() => setDrawerOpen(true)}
-                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all hidden lg:flex"
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all hidden lg:flex"
                 >
                   <Menu size={16} />
                 </button>
@@ -1160,7 +1160,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             {isMobile === false && (
               <button
                 onClick={() => router.refresh()}
-                className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-emerald-500/40 rounded-xl text-slate-500 hover:text-emerald-400 transition-all"
+                className="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-emerald-500/40 rounded-xl text-slate-500 hover:text-emerald-400 transition-all"
                 title="Refresh page"
               >
                 <RefreshCw size={15} />
@@ -1182,7 +1182,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             {isMobile === false && (
               <button
                 onClick={toggleTheme}
-                className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-500 hover:text-white transition-all"
+                className="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-blue-500/40 rounded-xl text-slate-500 hover:text-white transition-all"
                 title={theme === "light" ? "Switch to Dark" : "Switch to Light"}
               >
                 {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
@@ -1215,7 +1215,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               {dropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-52 bg-[#111520] border border-[#1a2234] rounded-2xl shadow-2xl shadow-black/60 p-1.5 z-50">
+                  <div className="absolute right-0 mt-2 w-52 glass border rounded-2xl shadow-2xl shadow-black/60 p-1.5 z-50">
                     <div className="px-3 py-2.5 border-b border-[#1a2234] mb-1">
                       <p className="text-[9px] font-black text-slate-700 uppercase tracking-wider">Logged in as</p>
                       <p className="text-xs font-bold text-slate-400 truncate mt-0.5">{userEmail}</p>
@@ -1274,10 +1274,10 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             )}
 
             {/* Right Drawer */}
-            <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-[#0d1117] border-l border-[#21293d] z-[100] transition-transform duration-300 ease-out ${aiDrawerOpen ? "translate-x-0" : "translate-x-full"}`}>
+            <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] glass border-l z-[100] transition-transform duration-300 ease-out ${aiDrawerOpen ? "translate-x-0" : "translate-x-full"}`}>
               <div className="flex flex-col h-full">
                 {/* Drawer Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[#21293d] bg-[#161b27]">
+                <div className="flex items-center justify-between px-4 py-3 border-b glass">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
                       <Sparkles size={16} className="text-white" />
@@ -1286,7 +1286,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                   </div>
                   <button
                     onClick={() => setAiDrawerOpen(false)}
-                    className="w-8 h-8 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-lg text-slate-500 hover:text-white hover:border-red-500/40 transition-all"
+                    className="w-8 h-8 flex items-center justify-center glass border rounded-lg text-slate-500 hover:text-white hover:border-red-500/40 transition-all"
                   >
                     <X size={16} />
                   </button>
@@ -1316,7 +1316,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       {/* ── Idle timeout warning (staff/admin/developer) ─────────────── */}
       {showIdleWarning && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-6 max-w-sm mx-4 shadow-2xl text-center">
+          <div className="glass-lg border rounded-2xl p-6 max-w-sm mx-4 shadow-2xl text-center">
             <div className="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
               <Clock size={24} className="text-amber-400" />
             </div>

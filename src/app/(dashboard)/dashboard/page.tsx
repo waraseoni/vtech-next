@@ -523,7 +523,7 @@ export default function Dashboard() {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-white dark:bg-[#0d1117]">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 theme-body">
         <div className="relative">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-600/40">
             <Wrench className="text-slate-900 dark:text-white" size={30} />
@@ -539,7 +539,7 @@ export default function Dashboard() {
   // in case the dashboard is ever opened directly while signed out.
   if (authChecked && !isLoggedIn) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0d1117] flex items-center justify-center">
+      <div className="min-h-screen theme-body flex items-center justify-center">
         <Loader2 size={24} className="animate-spin text-slate-600" />
       </div>
     );
@@ -552,10 +552,10 @@ export default function Dashboard() {
 
   // ═══════════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0d1117] text-slate-900 dark:text-white space-y-4 font-sans">
+    <div className="min-h-screen theme-body space-y-4 font-sans">
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ HERO HEADER */}
-      <header className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-[#21293d] bg-white dark:bg-[#0d1117]">
+      <header className="relative overflow-hidden rounded-3xl border theme-border glass">
         {/* Dot grid */}
         <div className="absolute inset-0 opacity-[0.025]"
           style={{ backgroundImage: "radial-gradient(circle,#fff 1px,transparent 1px)", backgroundSize: "24px 24px" }} />
@@ -633,7 +633,7 @@ export default function Dashboard() {
       <AIAlertsWidget />
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ FILTER */}
-      <section className="bg-slate-50 dark:bg-[#161b27] rounded-2xl border border-slate-200 dark:border-[#21293d] p-4">
+      <section className="glass rounded-2xl border theme-border p-4">
         <div className="flex flex-wrap items-end gap-2.5">
           {[{ label: "From", val: from, fn: setFrom }, { label: "To", val: to, fn: setTo }].map(({ label, val, fn }) => (
             <div key={label} className="flex flex-col gap-1.5">
@@ -670,7 +670,7 @@ export default function Dashboard() {
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Revenue Bar Chart */}
-        <div className="lg:col-span-2 bg-slate-50 dark:bg-[#161b27] rounded-3xl border border-slate-200 dark:border-[#21293d] p-5">
+        <div className="lg:col-span-2 glass rounded-3xl border theme-border p-5">
           <div className="flex items-start justify-between mb-5">
             <div>
               <h3 className="text-sm font-black text-slate-900 dark:text-white">Monthly Revenue</h3>
@@ -703,7 +703,7 @@ export default function Dashboard() {
         </div>
 
         {/* Status Donut */}
-        <div className="bg-slate-50 dark:bg-[#161b27] rounded-3xl border border-slate-200 dark:border-[#21293d] p-5">
+        <div className="glass rounded-3xl border theme-border p-5">
           <div className="flex items-start justify-between mb-4">
             <div>
               <h3 className="text-sm font-black text-slate-900 dark:text-white">Job Status</h3>
@@ -744,7 +744,7 @@ export default function Dashboard() {
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ FINANCIAL (admin only) */}
       {isAdmin && (
-        <section className="bg-slate-50 dark:bg-[#161b27] rounded-3xl border border-slate-200 dark:border-[#21293d] p-5 md:p-6">
+        <section className="glass rounded-3xl border theme-border p-5 md:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
             <div>
               <h3 className="text-sm font-black text-slate-900 dark:text-white">Financial Summary</h3>
@@ -798,7 +798,7 @@ export default function Dashboard() {
               </div>
 
               {/* Progress bar */}
-              <div className="mt-4 bg-slate-100 dark:bg-[#111520] rounded-2xl p-4 border border-slate-200 dark:border-[#21293d]">
+              <div className="mt-4 glass-2 rounded-2xl p-4 border theme-border">
                 <div className="flex justify-between text-[10px] text-slate-600 font-bold mb-2">
                   <span>Revenue vs Outflow</span>
                   <span>Total Sales {inr(financial.totalSales)}</span>
@@ -843,7 +843,7 @@ export default function Dashboard() {
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* Recent Jobs */}
-        <div className="bg-slate-50 dark:bg-[#161b27] rounded-3xl border border-slate-200 dark:border-[#21293d] overflow-hidden">
+        <div className="glass rounded-3xl border theme-border overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-[#21293d]">
             <div>
               <h3 className="text-sm font-black text-slate-900 dark:text-white">Recent Jobs</h3>
@@ -881,7 +881,7 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Payments */}
-        <div className="bg-slate-50 dark:bg-[#161b27] rounded-3xl border border-slate-200 dark:border-[#21293d] overflow-hidden">
+        <div className="glass rounded-3xl border theme-border overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-[#21293d]">
             <div>
               <h3 className="text-sm font-black text-slate-900 dark:text-white">Recent Payments</h3>
@@ -917,7 +917,7 @@ export default function Dashboard() {
       </section>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ LOW STOCK */}
-      <section className="bg-slate-50 dark:bg-[#161b27] rounded-3xl border border-slate-200 dark:border-[#21293d] overflow-hidden">
+      <section className="glass rounded-3xl border theme-border overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-[#21293d]">
           <div>
             <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
@@ -960,7 +960,7 @@ export default function Dashboard() {
       </section>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ DUE REMINDERS */}
-      <section className="bg-slate-50 dark:bg-[#161b27] rounded-3xl border border-slate-200 dark:border-[#21293d] overflow-hidden">
+      <section className="glass rounded-3xl border theme-border overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-[#21293d]">
           <div>
             <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
@@ -1016,7 +1016,7 @@ export default function Dashboard() {
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ QR MODAL */}
       {qrOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setQrOpen(false)}>
-          <div className="bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl w-full max-w-xs shadow-2xl p-5 text-center"
+          <div className="glass border theme-border rounded-2xl w-full max-w-xs shadow-2xl p-5 text-center"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2"><QrCode size={15} className="text-blue-400" /> Site QR</h3>
@@ -1144,7 +1144,7 @@ function FinCard({ icon, label, value, color, isExpense }: {
 }) {
   const c = FIN_C[color] ?? FIN_C.blue;
   return (
-    <div className="bg-slate-100 dark:bg-[#111520] rounded-2xl border border-slate-200 dark:border-[#21293d] p-4 flex items-center gap-3">
+    <div className="glass-2 rounded-2xl border theme-border p-4 flex items-center gap-3">
       <div className={`p-2.5 rounded-xl ${c.bg} flex-shrink-0`}>
         <div className={c.icon}>{icon}</div>
       </div>
