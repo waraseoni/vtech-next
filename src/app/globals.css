@@ -28,46 +28,84 @@
   --app-hover: #f1f5f9;
   --background: var(--app-bg);
   --foreground: var(--app-text);
+
+  /* Glass Morphism — Light */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg-2: rgba(241, 245, 249, 0.65);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-border-2: rgba(0, 0, 0, 0.03);
+  --glass-blur: 16px;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --glass-glow: rgba(59, 130, 246, 0.08);
+
+  /* Vibrant Gradients */
+  --grad-cyan: linear-gradient(135deg, #17a2b8, #20c997);
+  --grad-blue: linear-gradient(135deg, #007bff, #6610f2);
+  --grad-purple: linear-gradient(135deg, #6f42c1, #e83e8c);
+  --grad-orange: linear-gradient(135deg, #fd7e14, #ffc107);
+  --grad-red: linear-gradient(135deg, #dc3545, #fd7e14);
+  --grad-green: linear-gradient(135deg, #28a745, #20c997);
 }
 
 html[data-theme="dark"] {
-  --app-bg: #0d1117;
-  --app-panel: #161b27;
-  --app-panel-2: #111520;
-  --app-topbar: rgba(8, 13, 20, 0.95);
-  --app-sidebar: #080d14;
-  --app-border: #21293d;
-  --app-border-2: #1a2234;
-  --app-text: #e2e8f0;
-  --app-text-2: #cbd5e1;
-  --app-muted: #64748b;
-  --app-muted-2: #475569;
-  --app-input-bg: #0d1117;
-  --app-card-bg: #161b27;
-  --app-hover: #1a2234;
+  --app-bg: #0a0e17;
+  --app-panel: #111827;
+  --app-panel-2: #0d1321;
+  --app-topbar: rgba(10, 14, 23, 0.8);
+  --app-sidebar: #080c14;
+  --app-border: rgba(255, 255, 255, 0.06);
+  --app-border-2: rgba(255, 255, 255, 0.03);
+  --app-text: #e8edf5;
+  --app-text-2: #b0bac9;
+  --app-muted: #5e6e85;
+  --app-muted-2: #3d4d63;
+  --app-input-bg: #0d1220;
+  --app-card-bg: #111827;
+  --app-hover: rgba(255, 255, 255, 0.04);
   --background: var(--app-bg);
   --foreground: var(--app-text);
+
+  /* Glass Morphism — Dark */
+  --glass-bg: rgba(17, 24, 39, 0.65);
+  --glass-bg-2: rgba(13, 19, 33, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-2: rgba(255, 255, 255, 0.04);
+  --glass-blur: 20px;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2);
+  --glass-glow: rgba(59, 130, 246, 0.12);
 }
 
 html[data-theme="light"] {
-  --app-bg: #f8f9fc;
-  --app-panel: #ffffff;
-  --app-panel-2: #f1f5f9;
-  --app-topbar: rgba(255, 255, 255, 0.95);
+  --app-bg: #f4f6fb;
+  --app-panel: rgba(255, 255, 255, 0.82);
+  --app-panel-2: rgba(241, 245, 249, 0.75);
+  --app-topbar: rgba(255, 255, 255, 0.85);
   --app-sidebar: #ffffff;
-  --app-border: #e2e8f0;
-  --app-border-2: #cbd5e1;
+  --app-border: rgba(0, 0, 0, 0.06);
+  --app-border-2: rgba(0, 0, 0, 0.03);
   --app-text: #0f172a;
   --app-text-2: #1e293b;
   --app-muted: #64748b;
   --app-muted-2: #94a3b8;
-  --app-input-bg: #f8fafc;
-  --app-card-bg: #ffffff;
-  --app-hover: #f1f5f9;
+  --app-input-bg: rgba(255, 255, 255, 0.8);
+  --app-card-bg: rgba(255, 255, 255, 0.82);
+  --app-hover: rgba(0, 0, 0, 0.03);
   --background: var(--app-bg);
   --foreground: var(--app-text);
 
-  /* Vibrant PHP-style Gradients */
+  /* Glass Morphism — Light */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg-2: rgba(241, 245, 249, 0.65);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-border-2: rgba(0, 0, 0, 0.03);
+  --glass-blur: 16px;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --glass-glow: rgba(59, 130, 246, 0.08);
+
+  /* Vibrant Gradients */
   --grad-cyan: linear-gradient(135deg, #17a2b8, #20c997);
   --grad-blue: linear-gradient(135deg, #007bff, #6610f2);
   --grad-purple: linear-gradient(135deg, #6f42c1, #e83e8c);
@@ -78,22 +116,30 @@ html[data-theme="light"] {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --app-bg: #0d1117;
-    --app-panel: #161b27;
-    --app-panel-2: #111520;
-    --app-topbar: rgba(8, 13, 20, 0.95);
-    --app-sidebar: #080d14;
-    --app-border: #21293d;
-    --app-border-2: #1a2234;
-    --app-text: #e2e8f0;
-    --app-text-2: #cbd5e1;
-    --app-muted: #64748b;
-    --app-muted-2: #475569;
-    --app-input-bg: #0d1117;
-    --app-card-bg: #161b27;
-    --app-hover: #1a2234;
+    --app-bg: #0a0e17;
+    --app-panel: #111827;
+    --app-panel-2: #0d1321;
+    --app-topbar: rgba(10, 14, 23, 0.8);
+    --app-sidebar: #080c14;
+    --app-border: rgba(255, 255, 255, 0.06);
+    --app-border-2: rgba(255, 255, 255, 0.03);
+    --app-text: #e8edf5;
+    --app-text-2: #b0bac9;
+    --app-muted: #5e6e85;
+    --app-muted-2: #3d4d63;
+    --app-input-bg: #0d1220;
+    --app-card-bg: #111827;
+    --app-hover: rgba(255, 255, 255, 0.04);
     --background: var(--app-bg);
     --foreground: var(--app-text);
+    --glass-bg: rgba(17, 24, 39, 0.65);
+    --glass-bg-2: rgba(13, 19, 33, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-border-2: rgba(255, 255, 255, 0.04);
+    --glass-blur: 20px;
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+    --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2);
+    --glass-glow: rgba(59, 130, 246, 0.12);
   }
 }
 
@@ -124,10 +170,10 @@ body {
    ============================================ */
 html[data-theme="dark"] {
   /* Core backgrounds */
-  .bg-\[\#0d1117\] { background-color: #0d1117 !important; }
-  .bg-\[\#161b27\] { background-color: #161b27 !important; }
-  .bg-\[\#111520\] { background-color: #111520 !important; }
-  .bg-\[\#080d14\] { background-color: #080d14 !important; }
+  .bg-\[\#0d1117\] { background-color: var(--app-bg) !important; }
+  .bg-\[\#161b27\] { background-color: var(--app-panel) !important; }
+  .bg-\[\#111520\] { background-color: var(--app-panel-2) !important; }
+  .bg-\[\#080d14\] { background-color: var(--app-sidebar) !important; }
   .bg-\[\#080d14\]\/90 { background-color: var(--app-topbar) !important; }
   .bg-\[\#0d1117\]\/90 { background-color: var(--app-topbar) !important; }
   .bg-\[\#0d1f35\] { background-color: #0d1f35 !important; }
@@ -172,9 +218,6 @@ html[data-theme="dark"] {
   .hover\:bg-white\/\[0\.05\]:hover { background-color: rgba(255,255,255,0.08) !important; }
   .hover\:bg-white\/\[0\.07\]:hover { background-color: rgba(255,255,255,0.1) !important; }
   .hover\:bg-white\/\[0\.10\]:hover { background-color: rgba(255,255,255,0.12) !important; }
-  
-  /* Loading screen */
-  .bg-\[\#0d1117\] { background-color: var(--app-bg) !important; }
 }
 
 /* ============================================
@@ -295,6 +338,32 @@ html[data-theme="light"] {
   .bg-grad-orange { background: var(--grad-orange, #fd7e14); }
   .bg-grad-red { background: var(--grad-red, #dc3545); }
   .bg-grad-green { background: var(--grad-green, #28a745); }
+
+  /* Glass Morphism Utilities */
+  .glass {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(var(--glass-blur)) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+  }
+  .glass-2 {
+    background: var(--glass-bg-2) !important;
+    backdrop-filter: blur(var(--glass-blur)) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+  }
+  .glass-lg {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: var(--glass-shadow-lg) !important;
+  }
+  .glass-glow {
+    box-shadow: var(--glass-shadow), 0 0 40px var(--glass-glow) !important;
+  }
 }
 
 /* ============================================
@@ -309,14 +378,12 @@ html[data-theme="light"] { color-scheme: light; }
 
 select option,
 select optgroup {
-  background-color: #161b27;
-  color: #e2e8f0;
+  background-color: var(--app-panel);\n  color: var(--app-text);
 }
 
 html[data-theme="light"] select option,
 html[data-theme="light"] select optgroup {
-  background-color: #ffffff;
-  color: #0f172a;
+  background-color: var(--app-panel);\n  color: var(--app-text);
 }
 
 /* ============================================
@@ -325,25 +392,23 @@ html[data-theme="light"] select optgroup {
 html[data-theme="dark"] input,
 html[data-theme="dark"] select,
 html[data-theme="dark"] textarea {
-  color: #e2e8f0 !important;
-}
+  color: var(--app-text) !important;\n}
 
 html[data-theme="light"] input,
 html[data-theme="light"] select,
 html[data-theme="light"] textarea {
-  color: #0f172a !important;
-  background-color: #f8fafc !important;
+  color: var(--app-text) !important;\n    background-color: var(--app-input-bg) !important;
 }
 
 /* ============================================
    TABLE STYLES - THEME AWARE
    ============================================ */
 html[data-theme="dark"] table {
-  color: #e2e8f0;
+  color: var(--app-text);
 }
 
 html[data-theme="light"] table {
-  color: #0f172a;
+  color: var(--app-text);
 }
 
 /* ============================================
@@ -383,21 +448,39 @@ html[data-theme="light"] .bg-red-600 {
 
 .theme-panel {
   background-color: var(--app-panel) !important;
+  backdrop-filter: blur(var(--glass-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
 }
 
 .theme-panel-2 {
   background-color: var(--app-panel-2) !important;
+  backdrop-filter: blur(var(--glass-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
+  border-color: var(--glass-border) !important;
 }
 
 .theme-card {
   background-color: var(--app-panel) !important;
-  border-color: var(--app-border) !important;
+  backdrop-filter: blur(var(--glass-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
 }
 
 .theme-input {
   background-color: var(--app-input-bg) !important;
   border-color: var(--app-border) !important;
   color: var(--app-text) !important;
+}
+
+.theme-border {
+  border-color: var(--app-border) !important;
+}
+
+.theme-border-2 {
+  border-color: var(--app-border-2) !important;
 }
 
 /* ============================================
@@ -413,9 +496,7 @@ html[data-theme="light"] {
   input[type="date"],
   select,
   textarea {
-    background-color: #ffffff !important;
-    color: #0f172a !important;
-    border: 1px solid #e2e8f0 !important;
+    background-color: var(--app-input-bg) !important;\n    color: var(--app-text) !important;\n    border: 1px solid var(--app-border) !important;
   }
   
   /* Select dropdown arrow */
@@ -461,8 +542,7 @@ html[data-theme="light"] {
 
   /* Table cells */
   table td, table th {
-    color: #0f172a !important;
-    border-color: #e2e8f0 !important;
+    color: var(--app-text) !important;\n    border-color: var(--app-border) !important;
   }
   
   /* Tab/badges */
@@ -494,16 +574,16 @@ html[data-theme="light"] ::-webkit-scrollbar {
 }
 
 html[data-theme="light"] ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--app-panel-2);
 }
 
 html[data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--app-border-2);
   border-radius: 4px;
 }
 
 html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--app-muted);
 }
 
 html[data-theme="dark"] ::-webkit-scrollbar {
@@ -512,119 +592,119 @@ html[data-theme="dark"] ::-webkit-scrollbar {
 }
 
 html[data-theme="dark"] ::-webkit-scrollbar-track {
-  background: #0d1117;
+  background: var(--app-bg);
 }
 
 html[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: #21293d;
+  background: var(--app-border);
   border-radius: 4px;
 }
 
 html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: var(--app-muted);
 }
 
 /* ============================================
    BODY BACKGROUND OVERRIDES (HIGHEST PRIORITY)
    ============================================ */
 html[data-theme="light"] body {
-  background-color: #f8f9fc !important;
-  color: #0f172a !important;
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
 }
 
 html[data-theme="dark"] body {
-  background-color: #0d1117 !important;
-  color: #e2e8f0 !important;
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
 }
 
 /* Theme-aware body class for components */
 html[data-theme="light"] .theme-body {
-  background-color: #f8f9fc !important;
-  color: #0f172a !important;
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
 }
 
 html[data-theme="dark"] .theme-body {
-  background-color: #0d1117 !important;
-  color: #e2e8f0 !important;
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
 }
 
 html[data-theme="light"] .theme-panel,
 html[data-theme="light"] .theme-card {
-  background-color: #ffffff !important;
+  background-color: var(--app-panel) !important;
 }
 
 html[data-theme="dark"] .theme-panel,
 html[data-theme="dark"] .theme-card {
-  background-color: #161b27 !important;
+  background-color: var(--app-panel) !important;
 }
 
 html[data-theme="light"] .theme-panel-2 {
-  background-color: #f1f5f9 !important;
+  background-color: var(--app-panel-2) !important;
 }
 
 html[data-theme="dark"] .theme-panel-2 {
-  background-color: #111520 !important;
+  background-color: var(--app-panel-2) !important;
 }
 
 html[data-theme="light"] .theme-topbar {
-  background-color: rgba(255, 255, 255, 0.95) !important;
+  background-color: var(--app-topbar) !important;
 }
 
 html[data-theme="dark"] .theme-topbar {
-  background-color: rgba(8, 13, 20, 0.95) !important;
+  background-color: var(--app-topbar) !important;
 }
 
 html[data-theme="light"] .theme-sidebar {
-  background-color: #ffffff !important;
+  background-color: var(--app-panel) !important;
 }
 
 /* VERY HIGH SPECIFICITY - Theme body classes */
 html[data-theme="light"] .theme-light body,
 html[data-theme="light"] body.theme-light {
-  background-color: #f8f9fc !important;
-  color: #0f172a !important;
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
 }
 
 html[data-theme="dark"] .theme-dark body,
 html[data-theme="dark"] body.theme-dark {
-  background-color: #0d1117 !important;
-  color: #e2e8f0 !important;
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
 }
 
 /* Theme body class variations */
 body.theme-light {
-  background-color: #f8f9fc !important;
-  color: #0f172a !important;
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
 }
 
 body.theme-dark {
-  background-color: #0d1117 !important;
-  color: #e2e8f0 !important;
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
 }
 
 /* Body bg override for all theme variations */
 html[data-theme="light"] body,
 body.theme-light {
-  background-color: #f8f9fc !important;
+  background-color: var(--app-bg) !important;
 }
 
 html,
 html[data-theme="light"] {
-  background-color: #f8f9fc !important;
+  background-color: var(--app-bg) !important;
 }
 
 html,
 html[data-theme="dark"] {
-  background-color: #0d1117 !important;
+  background-color: var(--app-bg) !important;
 }
 
 /* Force background on html element */
 html:has([data-theme="light"]) {
-  background-color: #f8f9fc !important;
+  background-color: var(--app-bg) !important;
 }
 
 html:has([data-theme="dark"]) {
-  background-color: #0d1117 !important;
+  background-color: var(--app-bg) !important;
 }
 
 /* Text colors for theme classes in light mode */
@@ -647,7 +727,7 @@ html[data-theme="light"] .theme-card h3 {
 }
 
 html[data-theme="dark"] .theme-sidebar {
-  background-color: #080d14 !important;
+  background-color: var(--app-sidebar) !important;
 }
 
 /* PRO span – adjust blue for theme */

@@ -12,7 +12,7 @@ import {
   Wrench, Clock, CheckCircle, IndianRupee, TrendingUp, TrendingDown,
   Users, ArrowRight, AlertCircle, Zap, Loader2, DollarSign, CreditCard,
   Filter, RotateCcw, Package, Activity, ChevronRight, CalendarClock, MessageCircle,
-  QrCode, X,
+  QrCode, X, UserPlus, ShoppingBag, Layers,
 } from "lucide-react";
 import QRCode from "qrcode";
 import { pageAll } from "@/lib/fetch-all";
@@ -101,6 +101,7 @@ export default function Dashboard() {
   const [qrOpen, setQrOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [qrUrl, setQrUrl] = useState("");
+  const [jobMenuOpen, setJobMenuOpen] = useState(false);
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as unknown as { standalone?: boolean }).standalone) {
@@ -144,6 +145,7 @@ export default function Dashboard() {
     })();
     return () => { cancelled = true; };
   }, [qrOpen]);
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stats, setStats] = useState<Stat>({ totalJobs: 0, totalClients: 0, pendingJobs: 0, inProgressJobs: 0, finishedJobs: 0, deliveredJobs: 0, totalMechanics: 0, lowStock: 0, todayRevenue: 0 });
   const [financial, setFinancial] = useState<Financial>({ totalSales: 0, partsCost: 0, grossProfit: 0, discounts: 0, salary: 0, loanPaid: 0, expenses: 0, totalOutflow: 0, netProfit: 0 });
@@ -578,13 +580,13 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-          <div className="self-start sm:self-center flex items-center gap-2">
+          <div className="self-start sm:self-center flex flex-wrap items-center gap-1.5 sm:gap-2">
             <button
               onClick={() => setQrOpen(true)}
               title="Phone pe site kholo"
-              className="flex items-center gap-2 bg-slate-100 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] hover:border-blue-500/50 text-slate-300 hover:text-slate-900 dark:hover:text-white px-4 py-2.5 rounded-2xl font-bold text-xs transition-all active:scale-95"
+              className="flex items-center gap-2 theme-panel-2 border theme-border hover:border-blue-500/50 text-slate-300 hover:text-slate-900 dark:hover:text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs transition-all active:scale-95"
             >
-              <QrCode size={16} strokeWidth={2.5} /> QR
+              <QrCode size={15} strokeWidth={2.5} /> <span className="hidden sm:inline">QR</span>
             </button>
             {installPrompt && !isInstalled && (
               <button
@@ -594,17 +596,31 @@ export default function Dashboard() {
                   if (outcome === 'accepted') setIsInstalled(true);
                   setInstallPrompt(null);
                 }}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-slate-900 dark:text-white px-4 py-2.5 rounded-2xl font-bold text-xs shadow-lg shadow-emerald-600/25 transition-all"
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-slate-900 dark:text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs shadow-lg shadow-emerald-600/25 transition-all"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                Install App
+                <span className="hidden sm:inline">Install</span>
               </button>
             )}
-            <Link
-              href="/jobs/new"
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-95 text-slate-900 dark:text-white px-5 py-2.5 rounded-2xl font-bold text-sm shadow-lg shadow-blue-600/25 transition-all no-underline"
+            <button
+              onClick={() => setJobMenuOpen(true)}
+              className="flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs shadow-lg shadow-blue-600/25 transition-all"
             >
-              <Zap size={15} strokeWidth={2.5} /> New Job
+              <Zap size={14} strokeWidth={2.5} /> Job
+            </button>
+            <Link
+              href="/clients/new"
+              title="Naya client banao"
+              className="flex items-center gap-1.5 sm:gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs shadow-lg shadow-emerald-600/25 transition-all no-underline"
+            >
+              <UserPlus size={14} strokeWidth={2.5} /> Client
+            </Link>
+            <Link
+              href="/direct-sales/new"
+              title="Naya direct sale banao"
+              className="flex items-center gap-1.5 sm:gap-2 bg-violet-600 hover:bg-violet-500 active:scale-95 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs shadow-lg shadow-violet-600/25 transition-all no-underline"
+            >
+              <ShoppingBag size={14} strokeWidth={2.5} /> Sale
             </Link>
           </div>
         </div>
@@ -1013,6 +1029,51 @@ export default function Dashboard() {
             )}
             <p className="text-slate-400 text-xs font-bold mt-3">Mobile camera se scan karke site kholo</p>
             <p className="text-slate-600 text-[10px] mt-1 break-all font-bold">{qrUrl || "…"}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ JOB TYPE MODAL */}
+      {jobMenuOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setJobMenuOpen(false)}>
+          <div className="theme-panel rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden"
+            onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b theme-border">
+              <h3 className="font-black text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                <Zap size={15} className="text-blue-400" /> Job Type Chuno
+              </h3>
+              <p className="text-slate-500 text-[10px] mt-0.5 font-bold uppercase tracking-wider">Kaunsa job banana hai?</p>
+            </div>
+            <div className="p-4 space-y-3">
+              <Link
+                href="/jobs/new"
+                onClick={() => setJobMenuOpen(false)}
+                className="flex items-center gap-4 p-4 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/5 hover:bg-blue-100 dark:hover:bg-blue-500/15 hover:border-blue-400 dark:hover:border-blue-500/50 transition group no-underline"
+              >
+                <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/25 group-hover:scale-105 transition">
+                  <Zap size={22} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-blue-600 dark:text-blue-400 font-black text-base">New Job</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs font-bold">Single repair job — client, item, services</p>
+                </div>
+                <ChevronRight size={18} className="ml-auto text-blue-400 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                href="/jobs/bulk"
+                onClick={() => setJobMenuOpen(false)}
+                className="flex items-center gap-4 p-4 rounded-xl border-2 border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/5 hover:bg-emerald-100 dark:hover:bg-emerald-500/15 hover:border-emerald-400 dark:hover:border-emerald-500/50 transition group no-underline"
+              >
+                <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-600/25 group-hover:scale-105 transition">
+                  <Layers size={22} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-emerald-600 dark:text-emerald-400 font-black text-base">Bulk Job</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs font-bold">Sheet entry — ek saath kai jobs add karo</p>
+                </div>
+                <ChevronRight size={18} className="ml-auto text-emerald-400 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
           </div>
         </div>
       )}
