@@ -295,6 +295,7 @@ export default function DailyAttendance({
         }
       }));
       setSaveMsg({ type: 'ok', text: 'Attendance saved successfully!' });
+      await fetchAttendance();
     } catch (err) {
       setSaveMsg({ type: 'err', text: (err instanceof Error ? err.message : String(err)) || 'Error saving attendance.' });
     } finally {
