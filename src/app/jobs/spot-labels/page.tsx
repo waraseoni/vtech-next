@@ -196,7 +196,7 @@ export default function SpotLabelsPage() {
   const emptyCount = spots.filter(s => !allLinkedIds.has(s.id)).length;
 
   return (
-    <div className="min-h-screen bg-[#0d1117]">
+    <div className="min-h-screen bg-[#0d1117] print-area-wrapper">
       {/* Screen-only toolbar */}
       <div className="no-print sticky top-0 z-10 bg-[#161b27] border-b border-[#21293d] px-4 py-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -231,17 +231,17 @@ export default function SpotLabelsPage() {
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-3">
+        <div className="no-print flex flex-col items-center justify-center py-24 gap-3">
           <Loader2 className="animate-spin text-blue-500" size={36} />
           <p className="text-slate-600 text-xs font-bold uppercase tracking-widest">QR bana rahe hain…</p>
         </div>
       ) : spots.length === 0 ? (
-        <p className="text-center text-slate-600 text-sm py-24">
+        <p className="no-print text-center text-slate-600 text-sm py-24">
           Koi spot nahi — pehle jobs form me &quot;+&quot; se spots banao.
         </p>
       ) : (
         /* Labels grid — print me yahi dikhega */
-        <div className="p-6 max-w-5xl mx-auto">
+        <div className="p-6 max-w-5xl mx-auto print-area-labels">
           {/^https?:\/\/(localhost|127\.0\.0\.1|(\d{1,3}\.){3}\d{1,3})(:\d+)?$/.test(window.location.origin) && (
             <div className="no-print mb-4 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2.5 text-[11px] font-bold text-amber-400">
               Warning: ye labels abhi <code>{window.location.origin}</code> ka QR banate hain — phone se scan karne par
@@ -297,7 +297,23 @@ export default function SpotLabelsPage() {
       <style jsx global>{`
         @media print {
           .no-print { display: none !important; }
-          body { background: #ffffff !important; }
+          body { background: #ffffff !important; margin: 0 !important; padding: 0 !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+          /* Hide everything except labels grid */
+          .print-area-wrapper { background: none !important; min-height: auto !important; }
+          .print-area-wrapper > *:not(.print-area-labels) { display: none !important; }
+
+          /* Labels grid — no padding, full width */
+          .print-area-labels { padding: 0 !important; max-width: none !important; margin: 0 !important; }
+
+          /* Label cards — remove hover effects, shadows */
+          .print-area-labels .break-inside-avoid {
+            box-shadow: none !important;
+            border: 1.5px solid #ccc !important;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
         }
       `}</style>
     </div>
