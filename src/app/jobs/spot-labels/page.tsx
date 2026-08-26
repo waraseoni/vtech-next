@@ -394,18 +394,65 @@ export default function SpotLabelsPage() {
 
       <style jsx global>{`
         @media print {
+          /* NUCLEAR: reset everything */
+          * { 
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important; 
+            color-adjust: exact !important; 
+          }
+          
+          html, body { 
+            background: #ffffff !important; 
+            margin: 0 !important; 
+            padding: 0 !important; 
+          }
+          
+          /* Hide sidebar (desktop + mobile drawer) */
+          aside { display: none !important; }
+          
+          /* Hide topbar */
+          header { display: none !important; }
+          
+          /* Hide all modals */
+          [role="dialog"], [data-headlessui-state] { display: none !important; }
+          
+          /* Hide all elements with no-print */
           .no-print { display: none !important; }
-          body { background: #ffffff !important; margin: 0 !important; padding: 0 !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-
-          /* Hide everything except labels grid */
-          .print-area-wrapper { background: none !important; min-height: auto !important; }
-          .print-area-wrapper > *:not(.print-area-labels) { display: none !important; }
-
+          
+          /* Main content area — remove sidebar margin + dark bg */
+          .lg\\:ml-\\[260px\\], .ml-0 { 
+            margin-left: 0 !important; 
+            min-height: auto !important; 
+          }
+          
+          /* Force white bg on main wrapper */
+          .min-h-screen { 
+            background: #ffffff !important; 
+            min-height: auto !important; 
+          }
+          
+          /* Override ALL dark theme backgrounds */
+          [data-theme="dark"] body,
+          [data-theme="dark"] .min-h-screen,
+          [data-theme="dark"] .bg-\\[\\#0d1117\\],
+          [data-theme="dark"] .bg-\\[\\#161b27\\],
+          [data-theme="dark"] .bg-\\[\\#111520\\] {
+            background: #ffffff !important;
+          }
+          
+          /* Only show labels grid */
+          .print-area-wrapper > *:not(.print-area-labels) { 
+            display: none !important; 
+          }
+          
           /* Labels grid — no padding, full width */
-          .print-area-labels { padding: 0 !important; max-width: none !important; margin: 0 !important; }
-
-          /* Label cards — remove hover effects, shadows, force white bg */
+          .print-area-labels { 
+            padding: 0 !important; 
+            max-width: none !important; 
+            margin: 0 !important; 
+          }
+          
+          /* Label cards — clean print style */
           .print-area-labels .break-inside-avoid {
             box-shadow: none !important;
             border: 1.5px solid #ccc !important;
@@ -414,8 +461,6 @@ export default function SpotLabelsPage() {
             break-inside: avoid;
           }
         }
-
-        /* Dynamic @page — server-side rendered via inline style */
       `}</style>
 
       {/* Dynamic print page size/orientation */}
