@@ -8,11 +8,33 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Printer, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Printer, Loader2, Trash2, RotateCw } from "lucide-react";
 import Image from "next/image";
 import SpotJobsModal from "@/components/SpotJobsModal";
 
 type Spot = { id: number; name: string };
+type Orientation = "portrait" | "landscape";
+type PaperSize = "a4" | "a5" | "letter";
+type QRSize = "small" | "medium" | "large";
+type LabelMargin = "tight" | "normal" | "wide";
+
+const PAPER_CONFIG: Record<PaperSize, Record<Orientation, { pageW: string; pageH: string }>> = {
+  a4:    { portrait: { pageW: "210mm", pageH: "297mm" }, landscape: { pageW: "297mm", pageH: "210mm" } },
+  a5:    { portrait: { pageW: "148mm", pageH: "210mm" }, landscape: { pageW: "210mm", pageH: "148mm" } },
+  letter:{ portrait: { pageW: "216mm", pageH: "279mm" }, landscape: { pageW: "279mm", pageH: "216mm" } },
+};
+
+const QR_SIZES: Record<QRSize, { label: string; img: string; cols: string }> = {
+  small:  { label: "Small",  img: "max-w-[80px]",  cols: "grid-cols-4 lg:grid-cols-5" },
+  medium: { label: "Medium", img: "max-w-[130px]", cols: "grid-cols-3 lg:grid-cols-4" },
+  large:  { label: "Large",  img: "max-w-[190px]", cols: "grid-cols-2 lg:grid-cols-3" },
+};
+
+const MARGINS: Record<LabelMargin, { label: string; card: string; grid: string }> = {
+  tight:  { label: "Tight",  card: "p-2.5 gap-1.5", grid: "gap-2" },
+  normal: { label: "Normal", card: "p-4 gap-2",     grid: "gap-4" },
+  wide:   { label: "Wide",   card: "p-5 gap-3",     grid: "gap-6" },
+};
 
 async function qrDataUrl(text: string, size = 220): Promise<string> {
   const QRCode = (await import("qrcode")).default;
@@ -55,6 +77,11 @@ export default function SpotLabelsPage() {
   const [allLinkedIds, setAllLinkedIds] = useState<Set<number>>(new Set());
   // Spot card click → us spot ke linked jobs ka modal (shared component)
   const [jobsSpot, setJobsSpot] = useState<Spot | null>(null);
+  // Print settings
+  const [orientation, setOrientation] = useState<Orientation>("landscape");
+  const [paperSize,   setPaperSize]   = useState<PaperSize>("a4");
+  const [qrSize,      setQrSize]      = useState<QRSize>("medium");
+  const [margin,       setMargin]       = useState<LabelMargin>("normal");
 
   // Spots + live occupancy + saare references — ek jagah, taaki UI aur bulk-delete
   // dono same data par chalein
@@ -230,6 +257,77 @@ export default function SpotLabelsPage() {
         </div>
       </div>
 
+      {/* Print settings bar — screen only */}
+      {!loading && spots.length > 0 && (
+        <div className="no-print bg-[#111520] border-b border-[#21293d] px-4 py-2.5 flex flex-wrap items-center gap-4 text-[11px]">
+          {/* Paper */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-500 font-bold uppercase tracking-wider">Paper</span>
+            {(["a4", "a5", "letter"] as PaperSize[]).map(ps => (
+              <button key={ps} onClick={() => setPaperSize(ps)}
+                className={`px-2.5 py-1 rounded-md font-bold uppercase transition-all border ${
+                  paperSize === ps
+                    ? "bg-blue-600/20 border-blue-500/40 text-blue-400"
+                    : "bg-transparent border-transparent text-slate-500 hover:text-slate-300"
+                }`}>
+                {ps === "letter" ? "Letter" : ps.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          {/* Orientation */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-500 font-bold uppercase tracking-wider">Layout</span>
+            {(["portrait", "landscape"] as Orientation[]).map(o => (
+              <button key={o} onClick={() => setOrientation(o)}
+                className={`px-2.5 py-1 rounded-md font-bold capitalize transition-all border ${
+                  orientation === o
+                    ? "bg-blue-600/20 border-blue-500/40 text-blue-400"
+                    : "bg-transparent border-transparent text-slate-500 hover:text-slate-300"
+                }`}>
+                <RotateCw size={11} className={`inline mr-1 ${o === "landscape" ? "" : "-rotate-90"}`} />
+                {o}
+              </button>
+            ))}
+          </div>
+
+          {/* QR Size */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-500 font-bold uppercase tracking-wider">QR</span>
+            {(["small", "medium", "large"] as QRSize[]).map(q => (
+              <button key={q} onClick={() => setQrSize(q)}
+                className={`px-2.5 py-1 rounded-md font-bold capitalize transition-all border ${
+                  qrSize === q
+                    ? "bg-blue-600/20 border-blue-500/40 text-blue-40"
+                    : "bg-transparent border-transparent text-slate-500 hover:text-slate-300"
+                }`}>
+                {QR_SIZES[q].label}
+              </button>
+            ))}
+          </div>
+
+          {/* Margin */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-500 font-bold uppercase tracking-wider">Gap</span>
+            {(["tight", "normal", "wide"] as LabelMargin[]).map(m => (
+              <button key={m} onClick={() => setMargin(m)}
+                className={`px-2.5 py-1 rounded-md font-bold capitalize transition-all border ${
+                  margin === m
+                    ? "bg-blue-600/20 border-blue-500/40 text-blue-400"
+                    : "bg-transparent border-transparent text-slate-500 hover:text-slate-300"
+                }`}>
+                {MARGINS[m].label}
+              </button>
+            ))}
+          </div>
+
+          {/* Preview label count */}
+          <span className="ml-auto text-slate-600 font-bold">
+            {spots.length} label{spots.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+      )}
+
       {loading ? (
         <div className="no-print flex flex-col items-center justify-center py-24 gap-3">
           <Loader2 className="animate-spin text-blue-500" size={36} />
@@ -241,20 +339,20 @@ export default function SpotLabelsPage() {
         </p>
       ) : (
         /* Labels grid — print me yahi dikhega */
-        <div className="p-6 max-w-5xl mx-auto print-area-labels">
+        <div className={`p-6 max-w-5xl mx-auto print-area-labels ${MARGINS[margin].grid}`}>
           {/^https?:\/\/(localhost|127\.0\.0\.1|(\d{1,3}\.){3}\d{1,3})(:\d+)?$/.test(window.location.origin) && (
             <div className="no-print mb-4 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2.5 text-[11px] font-bold text-amber-400">
               Warning: ye labels abhi <code>{window.location.origin}</code> ka QR banate hain — phone se scan karne par
               ye address khulega. Asli labels print karne se pehle production website par yahi page kholo.
             </div>
           )}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+          <div className={`grid grid-cols-2 md:${QR_SIZES[qrSize].cols} ${MARGINS[margin].grid}`}>
             {spots.map(s => {
               const used = refs[s.id] || 0;
               return (
                 <div key={s.id} onClick={() => setJobsSpot(s)}
                   title="Click karke is spot par rakhe jobs dekho"
-                  className="relative bg-white rounded-xl p-4 flex flex-col items-center text-center border border-slate-200 shadow-sm break-inside-avoid cursor-pointer hover:border-blue-500 hover:shadow-md transition-all">
+                  className={`relative bg-white rounded-xl flex flex-col items-center text-center border border-slate-200 shadow-sm break-inside-avoid cursor-pointer hover:border-blue-500 hover:shadow-md transition-all ${MARGINS[margin].card}`}>
                   {/* Screen-only controls — print me nahi aate */}
                   <div className="no-print absolute top-1.5 right-1.5 flex items-center gap-1">
                     {used > 0 && (
@@ -275,14 +373,14 @@ export default function SpotLabelsPage() {
                   </div>
 
                   <p className="font-black text-[#0d1117] text-sm leading-tight break-words w-full">{s.name}</p>
-                  <p className={`no-print text-[9px] font-bold uppercase tracking-widest mt-0.5 mb-2 ${used > 0 ? "text-amber-600" : "text-emerald-600"}`}>
+                  <p className={`no-print text-[9px] font-bold uppercase tracking-widest mt-0.5 mb-1 ${used > 0 ? "text-amber-600" : "text-emerald-600"}`}>
                     {used > 0 ? `${used} item(s) · busy` : "khali"}
                   </p>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2">V-TECH · Job Spot</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">V-TECH · Job Spot</p>
                   {urls[s.id]
-                    ? <Image src={urls[s.id]} alt={`QR ${s.name}`} width={200} height={200} className="w-full h-auto" unoptimized />
-                    : <div className="w-full aspect-square bg-slate-100 animate-pulse rounded" />}
-                  <p className="text-[9px] text-slate-400 mt-2 break-all leading-tight">Scan → Jobs @ {s.name}</p>
+                    ? <Image src={urls[s.id]} alt={`QR ${s.name}`} width={200} height={200} className={`${QR_SIZES[qrSize].img} h-auto`} unoptimized />
+                    : <div className={`${QR_SIZES[qrSize].img} aspect-square bg-slate-100 animate-pulse rounded`} />}
+                  <p className="text-[9px] text-slate-400 mt-1 break-all leading-tight">Scan → Jobs @ {s.name}</p>
                 </div>
               );
             })}
@@ -307,12 +405,25 @@ export default function SpotLabelsPage() {
           /* Labels grid — no padding, full width */
           .print-area-labels { padding: 0 !important; max-width: none !important; margin: 0 !important; }
 
-          /* Label cards — remove hover effects, shadows */
+          /* Label cards — remove hover effects, shadows, force white bg */
           .print-area-labels .break-inside-avoid {
             box-shadow: none !important;
             border: 1.5px solid #ccc !important;
+            background: #ffffff !important;
             page-break-inside: avoid;
             break-inside: avoid;
+          }
+        }
+
+        /* Dynamic @page — server-side rendered via inline style */
+      `}</style>
+
+      {/* Dynamic print page size/orientation */}
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: ${PAPER_CONFIG[paperSize][orientation].pageW} ${PAPER_CONFIG[paperSize][orientation].pageH};
+            margin: 5mm;
           }
         }
       `}</style>
