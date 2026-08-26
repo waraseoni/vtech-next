@@ -25,9 +25,9 @@ const PAPER_CONFIG: Record<PaperSize, Record<Orientation, { pageW: string; pageH
 };
 
 const QR_SIZES: Record<QRSize, { label: string; img: string; cols: string }> = {
-  small:  { label: "Small",  img: "max-w-[80px]",  cols: "grid-cols-4 lg:grid-cols-5" },
-  medium: { label: "Medium", img: "max-w-[130px]", cols: "grid-cols-3 lg:grid-cols-4" },
-  large:  { label: "Large",  img: "max-w-[190px]", cols: "grid-cols-2 lg:grid-cols-3" },
+  small:  { label: "Small",  img: "max-w-[80px] mx-auto",  cols: "grid-cols-4 lg:grid-cols-5" },
+  medium: { label: "Medium", img: "max-w-[130px] mx-auto", cols: "grid-cols-3 lg:grid-cols-4" },
+  large:  { label: "Large",  img: "max-w-[190px] mx-auto", cols: "grid-cols-2 lg:grid-cols-3" },
 };
 
 const MARGINS: Record<LabelMargin, { label: string; card: string; grid: string }> = {
@@ -378,8 +378,8 @@ export default function SpotLabelsPage() {
                   </p>
                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">V-TECH · Job Spot</p>
                   {urls[s.id]
-                    ? <Image src={urls[s.id]} alt={`QR ${s.name}`} width={200} height={200} className={`${QR_SIZES[qrSize].img} h-auto`} unoptimized />
-                    : <div className={`${QR_SIZES[qrSize].img} aspect-square bg-slate-100 animate-pulse rounded`} />}
+                    ? <Image src={urls[s.id]} alt={`QR ${s.name}`} width={200} height={200} className={`${QR_SIZES[qrSize].img} w-full h-auto`} unoptimized />
+                    : <div className={`${QR_SIZES[qrSize].img} w-full aspect-square bg-slate-100 animate-pulse rounded`} />}
                   <p className="text-[9px] text-slate-400 mt-1 break-all leading-tight">Scan → Jobs @ {s.name}</p>
                 </div>
               );
@@ -391,77 +391,6 @@ export default function SpotLabelsPage() {
       {/* Spot ke linked jobs modal — card click par (shared component) */}
       <SpotJobsModal spot={jobsSpot} onClose={() => setJobsSpot(null)} />
 
-
-      <style jsx global>{`
-        @media print {
-          /* NUCLEAR: reset everything */
-          * { 
-            -webkit-print-color-adjust: exact !important; 
-            print-color-adjust: exact !important; 
-            color-adjust: exact !important; 
-          }
-          
-          html, body { 
-            background: #ffffff !important; 
-            margin: 0 !important; 
-            padding: 0 !important; 
-          }
-          
-          /* Hide sidebar (desktop + mobile drawer) */
-          aside { display: none !important; }
-          
-          /* Hide topbar */
-          header { display: none !important; }
-          
-          /* Hide all modals */
-          [role="dialog"], [data-headlessui-state] { display: none !important; }
-          
-          /* Hide all elements with no-print */
-          .no-print { display: none !important; }
-          
-          /* Main content area — remove sidebar margin + dark bg */
-          .lg\\:ml-\\[260px\\], .ml-0 { 
-            margin-left: 0 !important; 
-            min-height: auto !important; 
-          }
-          
-          /* Force white bg on main wrapper */
-          .min-h-screen { 
-            background: #ffffff !important; 
-            min-height: auto !important; 
-          }
-          
-          /* Override ALL dark theme backgrounds */
-          [data-theme="dark"] body,
-          [data-theme="dark"] .min-h-screen,
-          [data-theme="dark"] .bg-\\[\\#0d1117\\],
-          [data-theme="dark"] .bg-\\[\\#161b27\\],
-          [data-theme="dark"] .bg-\\[\\#111520\\] {
-            background: #ffffff !important;
-          }
-          
-          /* Only show labels grid */
-          .print-area-wrapper > *:not(.print-area-labels) { 
-            display: none !important; 
-          }
-          
-          /* Labels grid — no padding, full width */
-          .print-area-labels { 
-            padding: 0 !important; 
-            max-width: none !important; 
-            margin: 0 !important; 
-          }
-          
-          /* Label cards — clean print style */
-          .print-area-labels .break-inside-avoid {
-            box-shadow: none !important;
-            border: 1.5px solid #ccc !important;
-            background: #ffffff !important;
-            page-break-inside: avoid;
-            break-inside: avoid;
-          }
-        }
-      `}</style>
 
       {/* Dynamic print page size/orientation */}
       <style jsx global>{`

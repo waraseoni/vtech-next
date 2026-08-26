@@ -997,3 +997,86 @@ html[data-theme="dark"] {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 .anim-scale { animation: popIn 0.25s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+
+/* ===========================================================
+   PRINT — Spot Labels Page (QR sheet only)
+   =========================================================== */
+@media print {
+  /* Reset */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Hide sidebar (desktop + mobile drawer) */
+  aside { display: none !important; }
+
+  /* Hide topbar */
+  header { display: none !important; }
+
+  /* Hide modals */
+  [role="dialog"], [data-headlessui-state], [data-radix-dialog] {
+    display: none !important;
+  }
+
+  /* Hide sonner toasts */
+  [data-sonner-toaster] { display: none !important; }
+
+  /* Override ALL dark theme backgrounds */
+  body,
+  [data-theme="dark"] body,
+  [data-theme="dark"] {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Force white on common dark bg classes */
+  .min-h-screen,
+  .bg-\[\#0d1117\],
+  .bg-\[\#161b27\],
+  .bg-\[\#111520\],
+  [data-theme="dark"] .min-h-screen,
+  [data-theme="dark"] .bg-\[\#0d1117\],
+  [data-theme="dark"] .bg-\[\#161b27\],
+  [data-theme="dark"] .bg-\[\#111520\] {
+    background: #ffffff !important;
+    min-height: auto !important;
+  }
+
+  /* Remove sidebar margin from main content */
+  .lg\:ml-\[260px\] {
+    margin-left: 0 !important;
+  }
+
+  /* Hide everything except labels grid */
+  .print-area-wrapper > *:not(.print-area-labels) {
+    display: none !important;
+  }
+
+  /* Labels grid — full width, no padding */
+  .print-area-labels {
+    padding: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  /* Label cards — clean print */
+  .print-area-labels .break-inside-avoid {
+    box-shadow: none !important;
+    border: 1.5px solid #ccc !important;
+    background: #ffffff !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Force hidden */
+  .no-print { display: none !important; }
+}
