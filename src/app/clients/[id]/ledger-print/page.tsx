@@ -763,15 +763,15 @@ ${el.innerHTML}
                           display:"inline-block", padding:"2px 7px", borderRadius:3,
                           fontSize:9, fontWeight:700, textTransform:"uppercase",
                           minWidth:65, textAlign:"center", lineHeight:1.3,
-                          background: isPaymentType ? cfg.bg : cfg.bg,
-                          color: isPaymentType ? cfg.color : (cfg.color === "#fff" ? "#fff" : "#333"),
+                          background: cfg.bg,
+                          color: cfg.color,
                           border:`1px solid ${isPaymentType ? cfg.bg : "transparent"}`,
                         }}>
                           {cfg.label}
                         </span>
                       ) : "—"}
                       {r.deliveredDate && (
-                        <div style={{ fontSize:8, color:"#28a745", fontWeight:600, marginTop:2 }}>
+                        <div className="text-emerald-400" style={{ fontSize:8, fontWeight:600, marginTop:2 }}>
                           ✓ {fmtDateShort(r.deliveredDate)}
                         </div>
                       )}
