@@ -79,6 +79,7 @@ export default function ManageJobPage({
   const [selectedClient,   setSelectedClient]   = useState<Client | null>(null);
   const [clientBalance,    setClientBalance]     = useState<{ amount: number; label: string; type: "due"|"advance"|"settled" } | null>(null);
   const [selectedMechanic, setSelectedMechanic]  = useState<string>("");
+  const [userRole, setUserRole] = useState<string>("staff");
   const [jobCode,          setJobCode]           = useState<string>("");  // job_id column
   const [txnCode,          setTxnCode]           = useState<string>("");  // code column (YYYYMMDD+seq)
   const [item,             setItem]              = useState("");
@@ -123,10 +124,11 @@ export default function ManageJobPage({
           // Fall back to 0 if profile not found (will still error if DB enforces NOT NULL)
           const { data: profile } = await supabase
             .from("profiles")
-            .select("mechanic_id")
+            .select("mechanic_id, role")
             .eq("id", user.id)
             .single();
           setCurrentUserId(profile?.mechanic_id ?? 0);
+          setUserRole(profile?.role ?? "staff");
         }
       } catch { /* silently ignore — user_id will be 0 */ }
 
@@ -798,7 +800,7 @@ export default function ManageJobPage({
                 options={mechanics.map(m => ({
                   id: m.id,
                   label: m.fullname,
-                  sub: m.commission_percent > 0 ? `${m.commission_percent}% commission` : undefined,
+                  sub: (userRole === "admin" || userRole === "developer") && m.commission_percent > 0 ? `${m.commission_percent}% commission` : undefined,
                 }))}
                 onSelect={id => setSelectedMechanic(id)}
                 placeholder="— Select Mechanic —"

@@ -92,6 +92,7 @@ function ManageJobPageInner({
   const [selectedClient,   setSelectedClient]   = useState<Client | null>(null);
   const [clientBalance,    setClientBalance]     = useState<{ amount: number; label: string; type: "due"|"advance"|"settled" } | null>(null);
   const [selectedMechanic, setSelectedMechanic]  = useState<string>("");
+  const [userRole, setUserRole] = useState<string>("staff");
   const [jobCode,          setJobCode]           = useState<string>("");  // job_id column
   const [txnCode,          setTxnCode]           = useState<string>("");  // code column (YYYYMMDD+seq)
   const [item,             setItem]              = useState("");
@@ -138,10 +139,11 @@ function ManageJobPageInner({
           // Fall back to 0 if profile not found (will still error if DB enforces NOT NULL)
           const { data: profile } = await supabase
             .from("profiles")
-            .select("mechanic_id")
+            .select("mechanic_id, role")
             .eq("id", user.id)
             .single();
           setCurrentUserId(profile?.mechanic_id ?? 0);
+          setUserRole(profile?.role ?? "staff");
         }
       } catch { /* silently ignore — user_id will be 0 */ }
 
@@ -464,6 +466,16 @@ function ManageJobPageInner({
 
     setSaving(true);
     try {
+      // Auto-calculate commission for staff (they can't see the input)
+      let finalCommission = parseFloat(commissionAmt) || 0;
+      if ((userRole !== "admin" && userRole !== "developer") && selectedMechanic) {
+        const svcTotal = serviceRows.reduce((sum, r) => sum + (r.price || 0), 0);
+        const mech = mechanics.find(m => m.id === parseInt(selectedMechanic));
+        if (mech && mech.commission_percent > 0) {
+          finalCommission = Math.round(svcTotal * mech.commission_percent / 100);
+        }
+      }
+
       const payload = {
         // user_id = logged-in user's numeric id (profiles.mechanic_id → old PHP users.id)
         user_id:                    currentUserId,
@@ -477,7 +489,7 @@ function ManageJobPageInner({
         location_id:                locId,
         remark:                     remark.trim() || "",   // NOT NULL in DB — empty string safe
         amount:                     grandTotal,
-        mechanic_commission_amount: parseFloat(commissionAmt) || 0,
+        mechanic_commission_amount: finalCommission,
         status:                     0,  // Pending
         date_updated:               (() => { const p = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).formatToParts(new Date()); const g = (t: string) => p.find(x => x.type === t)?.value ?? "00"; return `${g("year")}-${g("month")}-${g("day")}T${g("hour")}:${g("minute")}:${g("second")}+05:30`; })(),
       };
@@ -806,7 +818,7 @@ function ManageJobPageInner({
                 options={mechanics.map(m => ({
                   id: m.id,
                   label: m.fullname,
-                  sub: m.commission_percent > 0 ? `${m.commission_percent}% commission` : undefined,
+                  sub: (userRole === "admin" || userRole === "developer") && m.commission_percent > 0 ? `${m.commission_percent}% commission` : undefined,
                 }))}
                 onSelect={id => setSelectedMechanic(id)}
                 placeholder="— Select Mechanic —"
@@ -982,7 +994,8 @@ function ManageJobPageInner({
               <IndianRupee className="text-blue-500/30" size={48} strokeWidth={1.5} />
             </div>
 
-            {/* Mechanic Commission */}
+            {/* Mechanic Commission — admin/developer only */}
+            {(userRole === "admin" || userRole === "developer") && (
             <div>
               <label className={labelCls}>Mechanic Commission (₹)</label>
               <div className="relative">
@@ -1003,6 +1016,7 @@ function ManageJobPageInner({
 })()}
               </div>
             </div>
+            )}
           </div>
         </div>
 
