@@ -231,7 +231,7 @@ export default function ClientsPage() {
   };
 
   const openWaModal = (client: Client) => {
-    const at: WaTemplateType = client.balance>0?"reminder":daysSince(client.last_txn_date)>30?"followup":"welcome";
+    const at: WaTemplateType = client.balance>0?"reminder":!client.last_txn_date?"welcome":daysSince(client.last_txn_date)>30?"followup":"welcome";
     const tpl = resolveTemplate(firmInfo, WA_TEMPLATE_KEY[at]);
     setWaClient(client); setWaMsgType(at); setWaText(substituteTemplate(tpl, { client_name: client.name, balance: inr(client.balance), ...firmVars(firmInfo) })); setWaModal(true);
   };
