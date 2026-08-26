@@ -844,7 +844,7 @@ export default function ClientsPage() {
       {/* ━━━━━━ WHATSAPP MODAL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {waModal&&waClient&&(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+          <div className="glass rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-[var(--glass-border)]">
             <div className="flex items-center justify-between px-5 py-4 bg-[#128C7E]">
               <div className="flex items-center gap-2">
                 <MessageCircle className="!text-white" size={18}/>
@@ -856,20 +856,20 @@ export default function ClientsPage() {
               </button>
             </div>
             <div className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-[#0d1117] p-3.5 rounded-xl border border-slate-200 dark:border-[#21293d]">
+              <div className="grid grid-cols-2 gap-3 theme-card p-3.5 rounded-xl">
                 <div>
-                  <p className="text-[9px] font-extrabold text-slate-500 dark:text-slate-600 uppercase tracking-widest">Client</p>
-                  <p className="font-extrabold text-slate-900 dark:text-white text-sm mt-0.5">{waClient.name}</p>
+                  <p className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Client</p>
+                  <p className="font-extrabold theme-heading text-sm mt-0.5">{waClient.name}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-extrabold text-slate-500 dark:text-slate-600 uppercase tracking-widest">Balance</p>
+                  <p className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Balance</p>
                   <p className={`font-extrabold text-sm mt-0.5 ${waClient.balance>0?"text-red-500 dark:text-red-400":"text-emerald-600 dark:text-emerald-400"}`}>{inr(waClient.balance)}</p>
                 </div>
               </div>
               <div>
-                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-600 uppercase tracking-widest block mb-1.5">Message Type</label>
+                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">Message Type</label>
                 <select value={waMsgType} onChange={(e)=>handleWaTypeChange(e.target.value as typeof waMsgType)}
-                  className="w-full bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5 text-sm font-bold text-slate-900 dark:text-slate-200 focus:outline-none focus:border-green-500 transition">
+                  className="w-full theme-input rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:border-green-500 transition">
                   <option value="welcome">Welcome Message</option>
                   <option value="reminder">Balance Reminder</option>
                   <option value="followup">Follow-up Message</option>
@@ -879,13 +879,13 @@ export default function ClientsPage() {
                 </select>
               </div>
               <div>
-                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-600 uppercase tracking-widest block mb-1.5">Message</label>
+                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">Message</label>
                 <textarea value={waText} onChange={(e)=>setWaText(e.target.value)} rows={7}
-                  className="w-full bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-3 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-green-500 transition resize-none"/>
+                  className="w-full theme-input rounded-xl px-3 py-3 text-sm font-mono focus:outline-none focus:border-green-500 transition resize-none"/>
               </div>
               <div className="flex gap-2">
                 <button onClick={()=>navigator.clipboard.writeText(waText)}
-                  className="flex-1 py-2.5 border border-slate-300 dark:border-[#21293d] rounded-xl font-extrabold text-xs text-slate-700 dark:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-[#111520] dark:hover:bg-[#1e2637] transition cursor-pointer">
+                  className="flex-1 py-2.5 theme-card theme-heading rounded-xl font-extrabold text-xs hover:opacity-80 transition cursor-pointer">
                   Copy
                 </button>
                 <button onClick={sendWhatsApp}
@@ -901,7 +901,7 @@ export default function ClientsPage() {
       {/* ━━━━━━ BULK WHATSAPP MODAL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {bulkWaModal&&(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+          <div className="glass rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-[var(--glass-border)]">
             <div className="flex items-center justify-between px-5 py-4 bg-[#25D366]">
               <div className="flex items-center gap-2">
                 <Send className="!text-white" size={18}/>
@@ -913,8 +913,8 @@ export default function ClientsPage() {
               </button>
             </div>
             <div className="p-5 space-y-4">
-              <div className="bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl p-3.5">
-                <p className="text-[9px] font-extrabold text-slate-500 dark:text-slate-600 uppercase tracking-widest mb-1">Selected Clients</p>
+              <div className="theme-card rounded-xl p-3.5">
+                <p className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Selected Clients</p>
                 <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
                   {Array.from(selectedClients).map(id => {
                     const c = clients.find(x => x.id === id);
@@ -927,7 +927,7 @@ export default function ClientsPage() {
                 </div>
               </div>
               <div>
-                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-600 uppercase tracking-widest block mb-1.5">Message Type</label>
+                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">Message Type</label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {(["reminder","welcome","followup","offer","greeting","custom"] as const).map(type => (
                     <button key={type} onClick={() => handleBulkWaTypeChange(type)}
@@ -939,27 +939,27 @@ export default function ClientsPage() {
                           : type === "offer" ? "bg-purple-600 border-purple-600 !text-white"
                           : type === "greeting" ? "bg-amber-600 border-amber-600 !text-white"
                           : "bg-slate-600 border-slate-600 !text-white"
-                          : "bg-slate-100 dark:bg-[#0d1117] border-slate-200 dark:border-[#21293d] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#1e2637]"
+                          : "theme-card text-slate-600 dark:text-slate-400 hover:opacity-80"
                       }`}>
-                      {type === "reminder" ? "🔔 Reminder"
-                       : type === "welcome" ? "👋 Welcome"
-                       : type === "followup" ? "📞 Follow-up"
-                       : type === "offer" ? "🎉 Offer"
-                       : type === "greeting" ? "🙏 Greeting"
-                       : "✏️ Custom"}
+                      {type === "reminder" ? "Reminder"
+                       : type === "welcome" ? "Welcome"
+                       : type === "followup" ? "Follow-up"
+                       : type === "offer" ? "Offer"
+                       : type === "greeting" ? "Greeting"
+                       : "Custom"}
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-600 uppercase tracking-widest block mb-1.5">Message</label>
+                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">Message</label>
                 <textarea value={bulkWaText} onChange={(e) => setBulkWaText(e.target.value)} rows={6}
                   placeholder="Type your message or select a template above..."
-                  className="w-full bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-3 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-green-500 transition resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600"/>
+                  className="w-full theme-input rounded-xl px-3 py-3 text-sm font-mono focus:outline-none focus:border-green-500 transition resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"/>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => navigator.clipboard.writeText(bulkWaText)}
-                  className="flex-1 py-2.5 border border-slate-300 dark:border-[#21293d] rounded-xl font-extrabold text-xs text-slate-700 dark:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-[#111520] dark:hover:bg-[#1e2637] transition cursor-pointer">
+                  className="flex-1 py-2.5 theme-card theme-heading rounded-xl font-extrabold text-xs hover:opacity-80 transition cursor-pointer">
                   Copy
                 </button>
                 <button onClick={sendBulkWhatsApp}
@@ -968,7 +968,7 @@ export default function ClientsPage() {
                 </button>
               </div>
               <p className="text-[10px] text-slate-500 text-center">
-                ⚠️ WhatsApp windows will open for each client. Allow popups if asked.
+                WhatsApp windows will open for each client. Allow popups if asked.
               </p>
             </div>
           </div>
