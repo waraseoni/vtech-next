@@ -464,10 +464,10 @@ ${el.innerHTML}
   // LOADING
   // ─────────────────────────────────────────────────────────────────────────
   if (loading) return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Arial,sans-serif" }}>
+    <div className="min-h-screen theme-body flex items-center justify-center" style={{ fontFamily:"Arial,sans-serif" }}>
       <div style={{ textAlign:"center" }}>
         <div style={{ width:40, height:40, border:"3px solid #001f3f", borderTop:"3px solid transparent", borderRadius:"50%", animation:"spin 0.8s linear infinite", margin:"0 auto 12px" }} />
-        <p style={{ color:"#666", fontSize:13 }}>Loading ledger…</p>
+        <p className="text-slate-500" style={{ fontSize:13 }}>Loading ledger…</p>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
@@ -477,28 +477,30 @@ ${el.innerHTML}
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="ledger-outer-wrap" style={{ background:"#f4f6f9", minHeight:"100vh", fontFamily:"Arial,sans-serif", fontSize:13, color:"#333" }}>
+    <div className="ledger-outer-wrap theme-body" style={{ minHeight:"100vh", fontFamily:"Arial,sans-serif", fontSize:13 }}>
 
       {/* ── FILTER PANEL (screen only) ────────────────────────────────── */}
-      <div className="no-print" style={{ background:"#fff", borderBottom:"1px solid #ddd", padding:"12px 20px" }}>
+      <div className="no-print glass border-b border-white/10" style={{ padding:"12px 20px" }}>
         <div style={{ maxWidth:1100, margin:"0 auto" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
             {/* Left: Title + back */}
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
               <button
                 onClick={() => router.push(`/clients/${resolvedParams.id}/view`)}
-                style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", background:"#f0f0f0", border:"1px solid #ccc", borderRadius:6, cursor:"pointer", fontSize:12, fontWeight:600 }}
+                className="theme-card theme-heading"
+                style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", border:"1px solid rgba(255,255,255,0.1)", borderRadius:6, cursor:"pointer", fontSize:12, fontWeight:600 }}
               >
                 <X size={14} /> Close
               </button>
-              <span style={{ fontWeight:700, fontSize:15 }}>Client Ledger</span>
+              <span className="theme-heading" style={{ fontWeight:700, fontSize:15 }}>Client Ledger</span>
             </div>
 
             {/* Right: Filter toggle + Print */}
             <div style={{ display:"flex", gap:8 }}>
               <button
                 onClick={() => setFilterOpen(v => !v)}
-                style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 14px", background: isFiltered ? "#001f3f" : "#f0f0f0", color: isFiltered ? "#fff" : "#333", border:"1px solid #ccc", borderRadius:6, cursor:"pointer", fontSize:12, fontWeight:600 }}
+                className={isFiltered ? "bg-blue-600 !text-white" : "theme-card theme-heading"}
+                style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 14px", border:"1px solid rgba(255,255,255,0.1)", borderRadius:6, cursor:"pointer", fontSize:12, fontWeight:600 }}
               >
                 <Filter size={13} />
                 Filters {isFiltered && "(On)"}
@@ -515,21 +517,23 @@ ${el.innerHTML}
 
           {/* Filter Panel */}
           {filterOpen && (
-            <div style={{ marginTop:12, padding:16, background:"#f8f9fa", border:"1px solid #dee2e6", borderRadius:8 }}>
+            <div className="theme-panel-2" style={{ marginTop:12, padding:16, borderRadius:8 }}>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
                 {/* Date range */}
                 <div>
-                  <div style={{ fontWeight:700, fontSize:12, marginBottom:8, color:"#495057" }}>
+                  <div className="theme-heading" style={{ fontWeight:700, fontSize:12, marginBottom:8 }}>
                     <Calendar size={13} style={{ verticalAlign:"middle", marginRight:4 }}/>
                     Date Range
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
                     <input type="date" value={localFrom} onChange={e => setLocalFrom(e.target.value)}
-                      style={{ flex:1, padding:"6px 10px", border:"1px solid #ccc", borderRadius:6, fontSize:12, colorScheme:"light" }} />
-                    <span style={{ color:"#6c757d", fontWeight:700 }}>to</span>
+                      className="theme-input"
+                      style={{ flex:1, padding:"6px 10px", borderRadius:6, fontSize:12, colorScheme:"light dark" }} />
+                    <span className="text-slate-500" style={{ fontWeight:700 }}>to</span>
                     <input type="date" value={localTo} onChange={e => setLocalTo(e.target.value)}
                       min={localFrom}
-                      style={{ flex:1, padding:"6px 10px", border:"1px solid #ccc", borderRadius:6, fontSize:12, colorScheme:"light" }} />
+                      className="theme-input"
+                      style={{ flex:1, padding:"6px 10px", borderRadius:6, fontSize:12, colorScheme:"light dark" }} />
                   </div>
                   <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                     {([
@@ -537,7 +541,8 @@ ${el.innerHTML}
                       { label:"This Month", t:"thisMonth" }, { label:"Last Month", t:"lastMonth" },
                     ] as const).map(q => (
                       <button key={q.t} onClick={() => quickDate(q.t)}
-                        style={{ padding:"3px 8px", fontSize:11, background:"#fff", border:"1px solid #007bff", color:"#007bff", borderRadius:4, cursor:"pointer" }}>
+                        className="theme-card text-blue-500 border border-blue-500/30"
+                        style={{ padding:"3px 8px", fontSize:11, borderRadius:4, cursor:"pointer" }}>
                         {q.label}
                       </button>
                     ))}
@@ -546,7 +551,7 @@ ${el.innerHTML}
 
                 {/* Status filter */}
                 <div>
-                  <div style={{ fontWeight:700, fontSize:12, marginBottom:8, color:"#495057" }}>
+                  <div className="theme-heading" style={{ fontWeight:700, fontSize:12, marginBottom:8 }}>
                     Filter by Status / Type
                   </div>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
@@ -559,10 +564,10 @@ ${el.innerHTML}
                             padding:"3px 10px", fontSize:11, borderRadius:4, cursor:"pointer",
                             fontWeight: active ? 700 : 400,
                             border: `1px solid ${cfg?.bg || "#ccc"}`,
-                            background: active ? (cfg?.bg || "#eee") : "#fff",
+                            background: active ? (cfg?.bg || "#eee") : "transparent",
                             color: active
                               ? (["payment","direct_sale","loan","brought_fwd"].includes(String(opt.key)) ? "#fff" : "#333")
-                              : "#555",
+                              : "#888",
                           }}>
                           {opt.label}
                         </button>
@@ -570,7 +575,7 @@ ${el.innerHTML}
                     })}
                   </div>
                   {localStatus.length > 0 && (
-                    <p style={{ fontSize:10, color:"#6c757d", marginTop:6 }}>
+                    <p className="text-slate-500" style={{ fontSize:10, marginTop:6 }}>
                       Leave empty to show all types
                     </p>
                   )}
@@ -580,7 +585,8 @@ ${el.innerHTML}
               {/* Buttons */}
               <div style={{ display:"flex", gap:8, marginTop:12, justifyContent:"flex-end" }}>
                 <button onClick={clearFilter}
-                  style={{ padding:"7px 16px", background:"#6c757d", color:"#fff", border:"none", borderRadius:6, cursor:"pointer", fontSize:12, fontWeight:600 }}>
+                  className="theme-card theme-heading"
+                  style={{ padding:"7px 16px", border:"none", borderRadius:6, cursor:"pointer", fontSize:12, fontWeight:600 }}>
                   Clear All
                 </button>
                 <button onClick={applyFilter}
@@ -594,24 +600,24 @@ ${el.innerHTML}
       </div>
 
       {/* ── STATEMENT CONTAINER ───────────────────────────────────────── */}
-      <div id="ledger-statement" style={{ maxWidth:1100, margin:"16px auto", background:"#fff", padding:20, borderRadius:6, boxShadow:"0 0 20px rgba(0,0,0,0.1)", border:"1px solid #ddd" }}>
+      <div id="ledger-statement" className="theme-panel" style={{ maxWidth:1100, margin:"16px auto", padding:20, borderRadius:6, boxShadow:"0 0 20px rgba(0,0,0,0.1)" }}>
 
         {/* ── HEADER ──────────────────────────────────────────────────── */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
           <div>
-            <div style={{ fontWeight:900, fontSize:"1.2rem", color:"#001f3f", textTransform:"uppercase", letterSpacing:1 }}>
+            <div className="theme-heading" style={{ fontWeight:900, fontSize:"1.2rem", textTransform:"uppercase", letterSpacing:1 }}>
               {firmInfo.name}
             </div>
-            <div style={{ fontSize:11, color:"#666", marginTop:2 }}>{firmInfo.address}</div>
-            {firmInfo.contact && <div style={{ fontSize:11, color:"#666" }}>📞 {firmInfo.contact}</div>}
+            <div className="text-slate-500" style={{ fontSize:11, marginTop:2 }}>{firmInfo.address}</div>
+            {firmInfo.contact && <div className="text-slate-500" style={{ fontSize:11 }}>📞 {firmInfo.contact}</div>}
           </div>
           <div style={{ textAlign:"right" }}>
-            <div style={{ fontWeight:900, fontSize:"1.5rem", letterSpacing:2, color:"#555" }}>STATEMENT</div>
-            <div style={{ fontSize:11, color:"#666", marginTop:2 }}>
+            <div className="theme-heading" style={{ fontWeight:900, fontSize:"1.5rem", letterSpacing:2 }}>STATEMENT</div>
+            <div className="text-slate-500" style={{ fontSize:11, marginTop:2 }}>
               Generated: {fmtDate(new Date().toISOString())}
             </div>
             {isFiltered && (
-              <div style={{ fontSize:10, color:"#6c757d", marginTop:2 }}>
+              <div className="text-slate-500" style={{ fontSize:10, marginTop:2 }}>
                 Period: {fromDate ? fmtDateShort(fromDate+"T00:00") : "All"} — {toDate ? fmtDateShort(toDate+"T00:00") : "All"}
                 {activeStatuses.length > 0 && (
                   <><br />Status: {activeStatuses.map(s => STATUS_CONFIG[s]?.label || s).join(", ")}</>
@@ -626,10 +632,10 @@ ${el.innerHTML}
         {/* ── CLIENT + BALANCE ─────────────────────────────────────────── */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
           <div>
-            <div style={{ fontSize:10, color:"#6c757d", fontWeight:600, textTransform:"uppercase", letterSpacing:0.5 }}>Account Holder</div>
-            <div style={{ fontWeight:900, fontSize:"1.1rem", marginTop:2 }}>{clientName}</div>
-            {client?.contact && <div style={{ fontSize:11, color:"#555", marginTop:2 }}>📞 {client.contact}</div>}
-            {client?.address && <div style={{ fontSize:11, color:"#555", marginTop:1 }}>📍 {client.address}</div>}
+            <div className="text-slate-500" style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.5 }}>Account Holder</div>
+            <div className="theme-heading" style={{ fontWeight:900, fontSize:"1.1rem", marginTop:2 }}>{clientName}</div>
+            {client?.contact && <div className="text-slate-500" style={{ fontSize:11, marginTop:2 }}>📞 {client.contact}</div>}
+            {client?.address && <div className="text-slate-500" style={{ fontSize:11, marginTop:1 }}>📍 {client.address}</div>}
           </div>
 
           {/* Balance box */}
@@ -661,32 +667,32 @@ ${el.innerHTML}
 
         {/* ── PERIOD SUMMARY (when filtered) ───────────────────────────── */}
         {isFiltered && (
-          <div style={{ background:"#f0f4f8", border:"1px solid #d0dce8", borderRadius:6, padding:"10px 14px", marginBottom:14 }}>
-            <div style={{ fontWeight:700, fontSize:11, color:"#001f3f", marginBottom:6 }}>
+          <div className="theme-panel-2" style={{ borderRadius:6, padding:"10px 14px", marginBottom:14 }}>
+            <div className="theme-heading" style={{ fontWeight:700, fontSize:11, marginBottom:6 }}>
               📅 Display Period Summary
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
               {[
-                { label: "Brought Forward", val: rows.find(r=>r.isBroughtFwd)?.balance ?? 0, color:"#555" },
-                { label: "Period Debits",   val: periodDebit,   color:"#c62828" },
-                { label: "Period Credits",  val: periodCredit,  color:"#2e7d32" },
-                { label: "Period Discount", val: periodDiscount, color:"#0277bd" },
+                { label: "Brought Forward", val: rows.find(r=>r.isBroughtFwd)?.balance ?? 0, className:"text-slate-400" },
+                { label: "Period Debits",   val: periodDebit,   className:"text-red-400" },
+                { label: "Period Credits",  val: periodCredit,  className:"text-emerald-400" },
+                { label: "Period Discount", val: periodDiscount, className:"text-blue-400" },
               ].map(item => (
                 <div key={item.label}>
-                  <div style={{ fontSize:9, color:"#6c757d", fontWeight:600 }}>{item.label}</div>
-                  <div style={{ fontSize:12, fontWeight:700, color:item.color }}>{inr(item.val)}</div>
+                  <div className="text-slate-500" style={{ fontSize:9, fontWeight:600 }}>{item.label}</div>
+                  <div className={item.className} style={{ fontSize:12, fontWeight:700 }}>{inr(item.val)}</div>
                 </div>
               ))}
             </div>
-            <div style={{ marginTop:8, fontSize:10, color:"#e67e22", fontStyle:"italic" }}>
+            <div className="text-amber-400" style={{ marginTop:8, fontSize:10, fontStyle:"italic" }}>
               ⚠ Display filter applied. Current outstanding (top right) calculated from ALL transactions.
             </div>
           </div>
         )}
 
         {/* ── OVERALL SUMMARY ───────────────────────────────────────────── */}
-        <div style={{ background:"#f8f9fa", border:"1px solid #dee2e6", borderRadius:6, padding:"10px 14px", marginBottom:14 }}>
-          <div style={{ fontWeight:700, fontSize:11, color:"#001f3f", marginBottom:6 }}>
+        <div className="theme-panel-2" style={{ borderRadius:6, padding:"10px 14px", marginBottom:14 }}>
+          <div className="theme-heading" style={{ fontWeight:700, fontSize:11, marginBottom:6 }}>
             📊 Overall Account Summary (All Time)
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
@@ -698,8 +704,8 @@ ${el.innerHTML}
               { label:"Total Payments",  val: totals.payments + totals.discount },
               { label:"Total Discount Given",  val: totals.discount },
             ].map(item => (
-              <div key={item.label} style={{ fontSize:10 }}>
-                <span style={{ color:"#6c757d" }}>{item.label}:</span>{" "}
+              <div key={item.label} className="theme-heading" style={{ fontSize:10 }}>
+                <span className="text-slate-500">{item.label}:</span>{" "}
                 <strong>{inr(item.val)}</strong>
               </div>
             ))}
@@ -708,14 +714,14 @@ ${el.innerHTML}
 
         {/* ── LEDGER TABLE ─────────────────────────────────────────────── */}
         <div style={{ overflowX:"auto" }}>
-          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11, border:"1px solid #444" }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
             <thead>
               <tr style={{ background:"#001f3f", color:"#fff" }}>
                 {["#","Date","Description","Ref ID","Status","Remark","Debit (Dr)","Credit (Cr)","Balance"].map((h,i) => (
                   <th key={h} style={{
                     padding:"8px 6px", fontSize:10, fontWeight:700, textTransform:"uppercase",
                     textAlign: i >= 6 ? "right" : i === 0 ? "center" : "left",
-                    border:"1px solid #444", letterSpacing:0.5,
+                    border:"1px solid rgba(255,255,255,0.15)", letterSpacing:0.5,
                   }}>{h}</th>
                 ))}
               </tr>
@@ -723,7 +729,7 @@ ${el.innerHTML}
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ padding:24, textAlign:"center", color:"#999", background:"#fafafa" }}>
+                  <td colSpan={9} className="text-slate-500" style={{ padding:24, textAlign:"center" }}>
                     <AlertTriangle size={20} style={{ verticalAlign:"middle", marginRight:8, color:"#f39c12" }} />
                     No records found with current filters
                   </td>
@@ -731,27 +737,27 @@ ${el.innerHTML}
               ) : rows.map((r, i) => {
                 const cfg = r.statusKey !== null ? STATUS_CONFIG[r.statusKey] : null;
                 const isPaymentType = r.statusKey === "payment" || r.statusKey === "brought_fwd";
-                const rowBg = r.isBroughtFwd ? "#f0f4ff"
-                  : r.debit > 0 ? "#fff9f9"
-                  : r.effectiveCr > 0 ? "#f9fff9"
-                  : "#fff";
-                const balColor = r.balance > 0.005 ? "#c62828" : r.balance < -0.005 ? "#2e7d32" : "#616161";
+                const rowBg = r.isBroughtFwd ? "rgba(99,102,241,0.08)"
+                  : r.debit > 0 ? "rgba(239,68,68,0.04)"
+                  : r.effectiveCr > 0 ? "rgba(16,185,129,0.04)"
+                  : "transparent";
+                const balColor = r.balance > 0.005 ? "#ef4444" : r.balance < -0.005 ? "#22c55e" : "#888";
 
                 return (
-                  <tr key={i} style={{ background:rowBg, borderBottom:"1px solid #e0e0e0" }}>
-                    <td style={{ padding:"6px 5px", textAlign:"center", color:"#999", border:"1px solid #ddd" }}>
+                  <tr key={i} style={{ background:rowBg, borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
+                    <td className="text-slate-500" style={{ padding:"6px 5px", textAlign:"center", border:"1px solid rgba(255,255,255,0.06)" }}>
                       {r.isBroughtFwd ? "—" : i}
                     </td>
-                    <td style={{ padding:"6px 5px", whiteSpace:"nowrap", border:"1px solid #ddd", fontSize:11 }}>
+                    <td style={{ padding:"6px 5px", whiteSpace:"nowrap", border:"1px solid rgba(255,255,255,0.06)", fontSize:11 }}>
                       {fmtDateShort(r.date)}
                     </td>
-                    <td style={{ padding:"6px 5px", fontWeight:600, border:"1px solid #ddd" }}>
+                    <td className="font-semibold" style={{ padding:"6px 5px", border:"1px solid rgba(255,255,255,0.06)" }}>
                       {r.desc}
                     </td>
-                    <td style={{ padding:"6px 5px", textAlign:"center", fontFamily:"monospace", fontSize:10, border:"1px solid #ddd" }}>
+                    <td className="text-slate-500" style={{ padding:"6px 5px", textAlign:"center", fontFamily:"monospace", fontSize:10, border:"1px solid rgba(255,255,255,0.06)" }}>
                       {r.ref}
                     </td>
-                    <td style={{ padding:"6px 5px", textAlign:"center", border:"1px solid #ddd" }}>
+                    <td style={{ padding:"6px 5px", textAlign:"center", border:"1px solid rgba(255,255,255,0.06)" }}>
                       {cfg ? (
                         <span style={{
                           display:"inline-block", padding:"2px 7px", borderRadius:3,
@@ -770,26 +776,26 @@ ${el.innerHTML}
                         </div>
                       )}
                     </td>
-                    <td style={{ padding:"6px 5px", color:"#6c757d", fontStyle:"italic", border:"1px solid #ddd", maxWidth:110, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}
+                    <td className="text-slate-400" style={{ padding:"6px 5px", fontStyle:"italic", border:"1px solid rgba(255,255,255,0.06)", maxWidth:110, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}
                       title={r.remark}>
                       {r.remark ? (r.remark.length > 18 ? r.remark.slice(0,18)+"…" : r.remark) : "—"}
                     </td>
-                    <td style={{ padding:"6px 5px", textAlign:"right", color: r.debit>0 ? "#c62828" : "#bbb", fontWeight: r.debit>0 ? 700 : 400, border:"1px solid #ddd" }}>
+                    <td style={{ padding:"6px 5px", textAlign:"right", color: r.debit>0 ? "#ef4444" : "#555", fontWeight: r.debit>0 ? 700 : 400, border:"1px solid rgba(255,255,255,0.06)" }}>
                       {r.debit > 0 ? inr(r.debit) : "—"}
                     </td>
-                    <td style={{ padding:"6px 5px", textAlign:"right", border:"1px solid #ddd" }}>
+                    <td style={{ padding:"6px 5px", textAlign:"right", border:"1px solid rgba(255,255,255,0.06)" }}>
                       {r.effectiveCr > 0 || r.discount > 0 ? (
                         <div>
-                          <div style={{ color:"#2e7d32", fontWeight:700 }}>{inr(r.effectiveCr)}</div>
+                          <div className="text-emerald-400" style={{ fontWeight:700 }}>{inr(r.effectiveCr)}</div>
                           {r.discount > 0 && (
-                            <div style={{ fontSize:9, color:"#0277bd", fontStyle:"italic" }}>
+                            <div className="text-blue-400" style={{ fontSize:9, fontStyle:"italic" }}>
                               ({inr(r.credit)} + {inr(r.discount)} disc)
                             </div>
                           )}
                         </div>
                       ) : "—"}
                     </td>
-                    <td style={{ padding:"6px 5px", textAlign:"right", fontWeight:700, fontSize:11, color:balColor, border:"1px solid #ddd" }}>
+                    <td style={{ padding:"6px 5px", textAlign:"right", fontWeight:700, fontSize:11, color:balColor, border:"1px solid rgba(255,255,255,0.06)" }}>
                       {inr(Math.abs(r.balance))}
                       <span style={{ fontSize:9, marginLeft:2 }}>{r.balance > 0.005 ? "Dr" : r.balance < -0.005 ? "Cr" : ""}</span>
                     </td>
@@ -798,19 +804,19 @@ ${el.innerHTML}
               })}
             </tbody>
             <tfoot>
-              <tr style={{ background:"#f0f0f0", fontWeight:700 }}>
-                <th colSpan={6} style={{ padding:"8px 10px", textAlign:"right", fontSize:11 }}>Period Totals:</th>
-                <th style={{ padding:"8px 6px", textAlign:"right", color:"#c62828", fontSize:11, border:"1px solid #ccc" }}>{inr(periodDebit)}</th>
-                <th style={{ padding:"8px 6px", textAlign:"right", color:"#2e7d32", fontSize:11, border:"1px solid #ccc" }}>
+              <tr className="theme-panel-2" style={{ fontWeight:700 }}>
+                <th colSpan={6} className="theme-heading" style={{ padding:"8px 10px", textAlign:"right", fontSize:11 }}>Period Totals:</th>
+                <th className="text-red-400" style={{ padding:"8px 6px", textAlign:"right", fontSize:11, border:"1px solid rgba(255,255,255,0.06)" }}>{inr(periodDebit)}</th>
+                <th className="text-emerald-400" style={{ padding:"8px 6px", textAlign:"right", fontSize:11, border:"1px solid rgba(255,255,255,0.06)" }}>
                   {/* Show total settled = cash + discount */}
                   <div>{inr(periodCredit + periodDiscount)}</div>
                   {periodDiscount > 0 && (
-                    <div style={{ fontSize:9, color:"#0277bd", fontStyle:"italic" }}>
+                    <div className="text-blue-400" style={{ fontSize:9, fontStyle:"italic" }}>
                       Cash: {inr(periodCredit)} + Disc: {inr(periodDiscount)}
                     </div>
                   )}
                 </th>
-                <th style={{ padding:"8px 6px", textAlign:"right", border:"1px solid #ccc" }}>—</th>
+                <th style={{ padding:"8px 6px", textAlign:"right", border:"1px solid rgba(255,255,255,0.06)" }}>—</th>
               </tr>
               <tr style={{ background:"#001f3f", color:"#fff", fontWeight:700 }}>
                 <th colSpan={8} style={{ padding:"10px", textAlign:"right", fontSize:12 }}>

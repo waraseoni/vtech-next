@@ -1504,13 +1504,13 @@ export default function ViewClientProfile() {
       {/* ── SET PROMISED DUE DATE MODAL ── */}
       {dueModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-[#21293d] p-6 shadow-2xl bg-white dark:bg-[#161b27]">
+          <div className="w-full max-w-md rounded-2xl glass border border-[var(--glass-border)] p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <h3 className="text-base font-bold theme-heading flex items-center gap-2">
                 <Calendar size={16} className="text-red-500 dark:text-red-400" /> Set Promised Due Date
               </h3>
               <button onClick={() => setDueModal(false)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
+                className="p-1.5 rounded-lg hover:bg-white/10 theme-heading transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -1521,7 +1521,7 @@ export default function ViewClientProfile() {
                   type="date"
                   value={dueForm.due_date}
                   onChange={e => setDueForm({ ...dueForm, due_date: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2.5 rounded-xl theme-input text-sm focus:outline-none focus:border-blue-500 transition-colors"
                 />
               </div>
               <div>
@@ -1530,7 +1530,7 @@ export default function ViewClientProfile() {
                   rows={3} placeholder="e.g. promised to pay full amount via PhonePe"
                   value={dueForm.due_remarks}
                   onChange={e => setDueForm({ ...dueForm, due_remarks: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                  className="w-full px-3 py-2.5 rounded-xl theme-input text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 />
               </div>
               <div className="flex gap-3 pt-1">
@@ -1556,11 +1556,11 @@ export default function ViewClientProfile() {
       {/* ── EDIT PAYMENT MODAL ── */}
       {editingPayment && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-[#21293d] p-6 shadow-2xl bg-white dark:bg-[#161b27]">
+          <div className="w-full max-w-md rounded-2xl glass border border-[var(--glass-border)] p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Edit Payment</h3>
+              <h3 className="text-base font-bold theme-heading">Edit Payment</h3>
               <button onClick={() => setEditingPayment(null)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
+                className="p-1.5 rounded-lg hover:bg-white/10 theme-heading transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -1577,7 +1577,7 @@ export default function ViewClientProfile() {
                     required={f.key !== 'discount'}
                     value={editForm[f.key as keyof typeof editForm]}
                     onChange={e => setEditForm({ ...editForm, [f.key]: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2.5 rounded-xl theme-input text-sm focus:outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
               ))}
@@ -1586,7 +1586,7 @@ export default function ViewClientProfile() {
                 <select
                   value={editForm.payment_mode}
                   onChange={e => setEditForm({ ...editForm, payment_mode: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors [color-scheme:light] dark:[color-scheme:dark]"
+                  className="w-full px-3 py-2.5 rounded-xl theme-input text-sm focus:outline-none focus:border-blue-500 transition-colors [color-scheme:light] dark:[color-scheme:dark]"
                 >
                   {['Cash','PhonePe/GPay','UPI','NEFT','Cheque','Bank Transfer','Credit Card'].map(m => (
                     <option key={m}>{m}</option>
@@ -1599,7 +1599,7 @@ export default function ViewClientProfile() {
                   <select
                     value={editForm.payment_type}
                     onChange={e => setEditForm({ ...editForm, payment_type: e.target.value })}
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors [color-scheme:light] dark:[color-scheme:dark]"
+                      className="w-full px-3 py-2.5 rounded-xl theme-input text-sm focus:outline-none focus:border-blue-500 transition-colors [color-scheme:light] dark:[color-scheme:dark]"
                     >
                       {['Full','Partial','Advance','On Account'].map(m => (
                       <option key={m}>{m}</option>
@@ -1612,7 +1612,7 @@ export default function ViewClientProfile() {
                     type="text" placeholder="Optional"
                     value={editForm.bill_no}
                     onChange={e => setEditForm({ ...editForm, bill_no: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                    className="w-full px-3 py-2.5 rounded-xl theme-input text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
                 </div>
               </div>
@@ -1621,7 +1621,7 @@ export default function ViewClientProfile() {
                 <textarea
                   rows={2} value={editForm.remarks}
                   onChange={e => setEditForm({ ...editForm, remarks: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                  className="w-full px-3 py-2.5 rounded-xl theme-input text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 />
               </div>
               <div className="flex gap-3 pt-1">
@@ -1630,7 +1630,7 @@ export default function ViewClientProfile() {
                   Update
                 </button>
                 <button type="button" onClick={() => setEditingPayment(null)}
-                  className="flex-1 py-2.5 rounded-xl font-bold text-sm border border-slate-300 dark:border-[#2a3550] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-all">
+                  className="flex-1 py-2.5 rounded-xl font-bold text-sm theme-card theme-heading hover:opacity-80 transition-all">
                   Cancel
                 </button>
               </div>
@@ -1642,7 +1642,7 @@ export default function ViewClientProfile() {
       {/* ── BULK ACTION BAR (PHP parity: jobs page) ── */}
       {selectedIds.size > 0 && (
         <div
-          className="fixed bottom-5 left-1/2 z-[60] rounded-2xl px-3 py-2.5 flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-3 w-[calc(100%-2rem)] md:min-w-[300px] md:max-w-[95vw] bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] shadow-2xl text-slate-900 dark:text-white"
+          className="fixed bottom-5 left-1/2 z-[60] rounded-2xl px-3 py-2.5 flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-3 w-[calc(100%-2rem)] md:min-w-[300px] md:max-w-[95vw] glass border border-[var(--glass-border)] shadow-2xl theme-heading"
           style={{
             transform: "translateX(-50%)",
             animation: "bulkBarPop 0.35s cubic-bezier(0.34,1.56,0.64,1)",
@@ -1671,7 +1671,7 @@ export default function ViewClientProfile() {
                   setBulkDeliverDate(toISTString().slice(0, 16));
                 }
               }}
-              className="rounded-lg px-2.5 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px] bg-[#0d1117] border border-[#21293d] text-slate-200 focus:border-blue-500 transition-all [color-scheme:dark]"
+              className="rounded-lg px-2.5 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px] theme-input focus:border-blue-500 transition-all [color-scheme:light] dark:[color-scheme:dark]"
             >
               <option value="" disabled>-- New Status --</option>
               <option value="0">Pending</option>
@@ -1687,7 +1687,7 @@ export default function ViewClientProfile() {
                 value={bulkDeliverDate}
                 onChange={e => setBulkDeliverDate(e.target.value)}
                 title="Delivery Date & Time"
-                className="rounded-lg px-2.5 py-1.5 text-xs outline-none cursor-pointer flex-1 md:flex-none bg-[#0d1117] border border-[#21293d] text-slate-200 focus:border-blue-500 transition-all [color-scheme:dark]"
+                className="rounded-lg px-2.5 py-1.5 text-xs outline-none cursor-pointer flex-1 md:flex-none theme-input focus:border-blue-500 transition-all [color-scheme:light] dark:[color-scheme:dark]"
               />
             )}
           </div>
@@ -1745,7 +1745,7 @@ export default function ViewClientProfile() {
           <Plus size={22} className={`transition-transform ${fabOpen ? "rotate-45" : ""}`} />
         </button>
         {fabOpen && (
-          <div className="absolute bottom-14 right-0 bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl shadow-2xl py-1.5 w-44 text-sm overflow-hidden">
+          <div className="absolute bottom-14 right-0 glass border border-[var(--glass-border)] rounded-2xl shadow-2xl py-1.5 w-44 text-sm overflow-hidden">
             {[
               { href: `/clients/${client.id}/add-payment`, icon: CreditCard,  label: "Add Payment",  cls: "text-emerald-600 dark:text-emerald-400" },
               { href: `/jobs/new?client_id=${client.id}`,   icon: Plus,        label: "New Job",      cls: "text-violet-600 dark:text-violet-400"  },
@@ -1753,12 +1753,12 @@ export default function ViewClientProfile() {
               { href: `/clients/${client.id}/give-loan`,    icon: Banknote,    label: "Give Loan",    cls: "text-amber-600 dark:text-amber-400"   },
             ].map(({ href, icon: Icon, label, cls }) => (
               <Link key={label} href={href} onClick={() => setFabOpen(false)}
-                className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors">
+                className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/10 theme-heading transition-colors">
                 <Icon size={14} className={cls} /> {label}
               </Link>
             ))}
             <button onClick={() => { openDueModal(); setFabOpen(false); }}
-              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors w-full">
+              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/10 theme-heading transition-colors w-full">
               <Calendar size={14} className="text-red-600 dark:text-red-400" /> Set Due Date
             </button>
             {[
@@ -1766,13 +1766,13 @@ export default function ViewClientProfile() {
               { href: `/clients/${client.id}/ledger-print`, icon: Printer,     label: "Print Ledger", cls: "text-cyan-600 dark:text-cyan-400", newTab: true },
             ].map(({ href, icon: Icon, label, cls, newTab }) => (
               <Link key={label} href={href} target={newTab ? "_blank" : undefined} onClick={() => setFabOpen(false)}
-                className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors">
+                className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/10 theme-heading transition-colors">
                 <Icon size={14} className={cls} /> {label}
               </Link>
             ))}
-            <hr className="my-1 border-slate-200 dark:border-[#21293d]" />
+            <hr className="my-1 border-white/10" />
             <button onClick={() => { safeBack(router, "/clients"); setFabOpen(false); }}
-              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 hover:text-slate-900 w-full transition-colors">
+              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/10 theme-heading transition-colors w-full">
               <ArrowLeft size={14} className="text-slate-500" /> Back
             </button>
           </div>
@@ -1783,7 +1783,7 @@ export default function ViewClientProfile() {
       {bulkMoveOpen && (
         <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => !bulkActionLoading && setBulkMoveOpen(false)}>
-          <div className="w-full max-w-xs bg-[#161b27] border border-[#21293d] rounded-2xl p-5 shadow-2xl"
+          <div className="w-full max-w-xs glass border border-[var(--glass-border)] rounded-2xl p-5 shadow-2xl"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-1">
               <p className="font-black text-white text-sm flex items-center gap-1.5">
@@ -1814,7 +1814,7 @@ export default function ViewClientProfile() {
       {/* ── WHATSAPP MODAL (PHP parity: jobs page) ── */}
       {waModal && (
         <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+          <div className="glass border border-[var(--glass-border)] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
             <div className="bg-emerald-600 px-5 py-3.5 flex items-center justify-between">
               <h3 className="font-black !text-white text-sm flex items-center gap-2">
                 <MessageCircle size={16} className="!text-white" /> Send WhatsApp Message
@@ -1828,12 +1828,12 @@ export default function ViewClientProfile() {
                 rows={10}
                 value={waText}
                 onChange={e => { setWaText(e.target.value); setWaEdited(true); }}
-                className="w-full bg-slate-50 dark:bg-[#0d1117] border border-emerald-500/40 text-slate-900 dark:text-slate-200 rounded-xl p-3 text-sm font-mono leading-relaxed outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 resize-none"
+                className="w-full theme-input border-emerald-500/40 rounded-xl p-3 text-sm font-mono leading-relaxed outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 resize-none"
               />
             </div>
-            <div className="px-5 py-3.5 bg-slate-50 dark:bg-[#111520] flex items-center justify-end gap-2 border-t border-slate-200 dark:border-[#21293d]">
+            <div className="px-5 py-3.5 theme-card flex items-center justify-end gap-2 border-t border-white/10">
               <button onClick={() => setWaModal(false)}
-                className="px-4 py-2 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-400 bg-slate-200 hover:bg-slate-300 dark:bg-[#21293d] dark:hover:bg-[#2a3550] transition-colors">
+                className="px-4 py-2 rounded-xl text-sm font-bold theme-card theme-heading hover:opacity-80 transition-colors">
                 Close
               </button>
               <button onClick={copyWAMessage}
