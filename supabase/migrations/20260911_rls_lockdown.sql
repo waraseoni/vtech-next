@@ -47,6 +47,19 @@
 --     `with check (true)` fix is DB par REAL kaam karta hai.
 --   • developer role: purani policies me admin/staff hi tha → ye migration
 --     developer ko bhi deta hai (app ke requireStaff/requireAdmin semantics).
+--   • APP-BREAK AUDIT (browser/user-JWT path, 28 Aug): staff/admin/developer
+--     ki saari UI reads+CRUD (jobs/clients/payments/inventory/reports...) in
+--     19+portal+PO tables par hai → migration ki staff policies (all) inhe
+--     cover karti hain. users/new + users/[id]/edit ki profiles writes
+--     service-role /api/admin/* se hoti hain (browser sirf read) → safe.
+--     Client portal sirf /api/client/* (service-role) → RLS se unaffected;
+--     RootClient ke sirf profiles(own row)+system_info reads hai (system_info
+--     migration me nahi hai). RPC (get_dashboard_stats etc.) untouched + tables
+--     already locked → dashboard aaj kaam karta hai, waisa hi rahega.
+--     → PROJECT BREAK NAHI HOGA. reCAP: sirf sachcha closing = with-check hole
+--     (client forge) + staff self-escalation (rlslock_profiles_staff with-check).
+--   • rlslock_profiles_staff ka with-check ab role/client_id IMMUTABLE rakhta
+--     hai (target row bhi) — staff browser se khud ko admin nahi bana sakta.
 -- ════════════════════════════════════════════════════════════════════════
 
 -- ── 1) RLS ON (idempotent) ──────────────────────────────────────────────
@@ -212,7 +225,13 @@ create policy rlslock_mech_commission_staff on public.mechanic_commission_histor
 create policy rlslock_profiles_staff on public.profiles
   for select, update to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  with check (
+    -- role/client_id immutable (target row bhi) — warna koi staff browser se update
+    -- profiles set role='admin' chala ke khud ko admin bana leta. Admin ki role
+    -- changes /api/admin/update-profile (service-role) se hoti hain, isse break nahi.
+    coalesce(role, '') = coalesce((select p.role from public.profiles p where p.id = profiles.id), '')
+    and coalesce(client_id, -1) is not distinct from coalesce((select p.client_id from public.profiles p where p.id = profiles.id), -1)
+  );
 
 create policy rlslock_profiles_client_self on public.profiles
   for select to authenticated
