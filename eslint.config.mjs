@@ -17,6 +17,14 @@ const eslintConfig = defineConfig([
       "react-hooks/preserve-manual-memoization": "off",
     },
   },
+  {
+    // ESLint 10 ne react version auto-detection ka API (context.getFilename)
+    // remove kar diya — plugin crash hota hai. Explicit version set karke
+    // bypass kiya ja raha hai.
+    settings: {
+      react: { version: "19" },
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
