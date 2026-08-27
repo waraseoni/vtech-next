@@ -98,8 +98,8 @@ async function prompt(q) {
       r = tk ? await restGet(tk, tbl, "select=*&limit=1") : { status: 0, count: null };
       ok(`profile-less → ${tbl} 0 rows`, r.count === 0 || r.status === 401, `status=${r.status}, rows=${r.count}`);
     }
-    await admin.from("profiles").delete().eq("id", testUser).then(() => {});
-    await admin.auth.admin.deleteUser(testUser).catch(() => {});
+    try { await admin.from("profiles").delete().eq("id", testUser); } catch {}
+    try { await admin.auth.admin.deleteUser(testUser); } catch {}
     testUser = null;
   }
 
@@ -142,8 +142,8 @@ async function prompt(q) {
         r = tk ? await restGet(tk, "client_payments", `select=*&client_id=eq.${c2}&limit=3`) : { status: 0, count: null };
         ok("doosre client ki payments BLOCKED (0 rows)", r.count === 0, `status=${r.status}, rows=${r.count}`);
       }
-      await admin.from("profiles").delete().eq("id", uid).then(() => {});
-      await admin.auth.admin.deleteUser(uid).catch(() => {});
+      try { await admin.from("profiles").delete().eq("id", uid); } catch {}
+      try { await admin.auth.admin.deleteUser(uid); } catch {}
     }
   }
 
