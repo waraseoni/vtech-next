@@ -169,7 +169,7 @@ security definer
 stable
 set search_path = public
 as $$
-  select public.is_frontend_staff();
+  select coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer');
 $$;
 
 -- ── 2) Purani policies hatao (Allow-all / broad auth / duplicate) ───────
