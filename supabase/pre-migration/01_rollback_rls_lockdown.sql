@@ -6,7 +6,7 @@
 -- `node scripts/verify-rls.cjs` bhi fail raha ho.
 --
 -- YE FILE KYA KARTI HAI:
---   Migration ki banayi hui 28 policies drop karti hai (idempotent — baar
+--   Migration ki banayi hui 30 policies drop karti hai (idempotent — baar
 --   baar chala sakte ho). RLS flags intentionally HATA nahi jaata: wo
 --   migration se pehle bhi ON the (live probe confirmed) — RLS off karna
 --   tables ko anon ke liye khol deta, wahi bug jisse lockdown tha.
@@ -44,6 +44,8 @@ drop policy if exists rlslock_transaction_images_staff       on public.transacti
 drop policy if exists rlslock_advance_payments_staff         on public.advance_payments;
 drop policy if exists rlslock_mech_salary_staff              on public.mechanic_salary_history;
 drop policy if exists rlslock_mech_commission_staff          on public.mechanic_commission_history;
+drop policy if exists rlslock_service_list_staff             on public.service_list;
+drop policy if exists rlslock_direct_sale_items_staff        on public.direct_sale_items;
 
 -- ── Section 4: profiles ──────────────────────────────────────────────────
 drop policy if exists rlslock_profiles_staff                 on public.profiles;

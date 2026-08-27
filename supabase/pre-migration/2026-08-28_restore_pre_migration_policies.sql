@@ -1,0 +1,403 @@
+-- ════════════════════════════════════════════════════════════════════
+-- 2026-08-28_restore_pre_migration_policies.sql
+-- EXACT pre-migration policy state (00b snapshot CSV se convert).
+-- Emergency EXACT-restore:
+--   1) 01_rollback_rls_lockdown.sql chalao (migration ki 28 policies hatao) +
+--      nayi added policies drop ho chuki hongi
+--   2) phir ye file chalao = EXACT purani policy state wapas
+-- NOTE: ye file PRIMARY nahi hai — 01_rollback kaafi hai app chalane ke;
+-- ye sirf tab jab EXACT purane policies bhi chahiye.
+-- ════════════════════════════════════════════════════════════════════
+
+-- 「hardening_activity_staff」 on public.activity_logs
+drop policy if exists hardening_activity_staff on public.activity_logs;
+create policy hardening_activity_staff on public.activity_logs
+  for all to authenticated
+  using ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])))
+  with check ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])));
+-- 「Allow authenticated access」 on public.advance_payments
+drop policy if exists "Allow authenticated access" on public.advance_payments;
+create policy "Allow authenticated access" on public.advance_payments
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「Allow authenticated access」 on public.attendance_list
+drop policy if exists "Allow authenticated access" on public.attendance_list;
+create policy "Allow authenticated access" on public.attendance_list
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「Allow authenticated access」 on public.client_list
+drop policy if exists "Allow authenticated access" on public.client_list;
+create policy "Allow authenticated access" on public.client_list
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「Allow select for clients」 on public.client_list
+drop policy if exists "Allow select for clients" on public.client_list;
+create policy "Allow select for clients" on public.client_list
+  for select to authenticated
+  using (true);
+-- 「portal_client_loans_staff」 on public.client_loans
+drop policy if exists portal_client_loans_staff on public.client_loans;
+create policy portal_client_loans_staff on public.client_loans
+  for all to authenticated
+  using ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])))
+  with check (true);
+-- 「portal_client_payments_client_own」 on public.client_payments
+drop policy if exists portal_client_payments_client_own on public.client_payments;
+create policy portal_client_payments_client_own on public.client_payments
+  for select to authenticated
+  using (((( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) = 'client'::text) AND (client_id = ( SELECT profiles.client_id
+   FROM profiles
+  WHERE (profiles.id = auth.uid())))));
+-- 「portal_client_payments_staff」 on public.client_payments
+drop policy if exists portal_client_payments_staff on public.client_payments;
+create policy portal_client_payments_staff on public.client_payments
+  for all to authenticated
+  using ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])))
+  with check (true);
+-- 「Allow authenticated access」 on public.direct_sale_items
+drop policy if exists "Allow authenticated access" on public.direct_sale_items;
+create policy "Allow authenticated access" on public.direct_sale_items
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「portal_direct_sales_staff」 on public.direct_sales
+drop policy if exists portal_direct_sales_staff on public.direct_sales;
+create policy portal_direct_sales_staff on public.direct_sales
+  for all to authenticated
+  using ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])))
+  with check (true);
+-- 「Allow authenticated access」 on public.expense_list
+drop policy if exists "Allow authenticated access" on public.expense_list;
+create policy "Allow authenticated access" on public.expense_list
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「Allow authenticated access」 on public.inventory_list
+drop policy if exists "Allow authenticated access" on public.inventory_list;
+create policy "Allow authenticated access" on public.inventory_list
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「Allow authenticated access」 on public.job_id_counter
+drop policy if exists "Allow authenticated access" on public.job_id_counter;
+create policy "Allow authenticated access" on public.job_id_counter
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「Allow authenticated access」 on public.lender_list
+drop policy if exists "Allow authenticated access" on public.lender_list;
+create policy "Allow authenticated access" on public.lender_list
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「Allow authenticated access」 on public.loan_payments
+drop policy if exists "Allow authenticated access" on public.loan_payments;
+create policy "Allow authenticated access" on public.loan_payments
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「Staff can delete bins」 on public.location_bins
+drop policy if exists "Staff can delete bins" on public.location_bins;
+create policy "Staff can delete bins" on public.location_bins
+  for delete to public
+  using (true);
+-- 「Staff can insert bins」 on public.location_bins
+drop policy if exists "Staff can insert bins" on public.location_bins;
+create policy "Staff can insert bins" on public.location_bins
+  for insert to public
+  with check (true);
+-- 「Staff can read bins」 on public.location_bins
+drop policy if exists "Staff can read bins" on public.location_bins;
+create policy "Staff can read bins" on public.location_bins
+  for select to public
+  using (true);
+-- 「Staff can update bins」 on public.location_bins
+drop policy if exists "Staff can update bins" on public.location_bins;
+create policy "Staff can update bins" on public.location_bins
+  for update to public
+  using (true);
+-- 「Staff can delete boxes」 on public.location_boxes
+drop policy if exists "Staff can delete boxes" on public.location_boxes;
+create policy "Staff can delete boxes" on public.location_boxes
+  for delete to public
+  using (true);
+-- 「Staff can insert boxes」 on public.location_boxes
+drop policy if exists "Staff can insert boxes" on public.location_boxes;
+create policy "Staff can insert boxes" on public.location_boxes
+  for insert to public
+  with check (true);
+-- 「Staff can read boxes」 on public.location_boxes
+drop policy if exists "Staff can read boxes" on public.location_boxes;
+create policy "Staff can read boxes" on public.location_boxes
+  for select to public
+  using (true);
+-- 「Staff can update boxes」 on public.location_boxes
+drop policy if exists "Staff can update boxes" on public.location_boxes;
+create policy "Staff can update boxes" on public.location_boxes
+  for update to public
+  using (true);
+-- 「Staff can delete racks」 on public.location_racks
+drop policy if exists "Staff can delete racks" on public.location_racks;
+create policy "Staff can delete racks" on public.location_racks
+  for delete to public
+  using (true);
+-- 「Staff can insert racks」 on public.location_racks
+drop policy if exists "Staff can insert racks" on public.location_racks;
+create policy "Staff can insert racks" on public.location_racks
+  for insert to public
+  with check (true);
+-- 「Staff can read racks」 on public.location_racks
+drop policy if exists "Staff can read racks" on public.location_racks;
+create policy "Staff can read racks" on public.location_racks
+  for select to public
+  using (true);
+-- 「Staff can update racks」 on public.location_racks
+drop policy if exists "Staff can update racks" on public.location_racks;
+create policy "Staff can update racks" on public.location_racks
+  for update to public
+  using (true);
+-- 「Staff can delete zones」 on public.location_zones
+drop policy if exists "Staff can delete zones" on public.location_zones;
+create policy "Staff can delete zones" on public.location_zones
+  for delete to public
+  using (true);
+-- 「Staff can insert zones」 on public.location_zones
+drop policy if exists "Staff can insert zones" on public.location_zones;
+create policy "Staff can insert zones" on public.location_zones
+  for insert to public
+  with check (true);
+-- 「Staff can read zones」 on public.location_zones
+drop policy if exists "Staff can read zones" on public.location_zones;
+create policy "Staff can read zones" on public.location_zones
+  for select to public
+  using (true);
+-- 「Staff can update zones」 on public.location_zones
+drop policy if exists "Staff can update zones" on public.location_zones;
+create policy "Staff can update zones" on public.location_zones
+  for update to public
+  using (true);
+-- 「Staff can delete locations」 on public.locations
+drop policy if exists "Staff can delete locations" on public.locations;
+create policy "Staff can delete locations" on public.locations
+  for delete to public
+  using (true);
+-- 「Staff can insert locations」 on public.locations
+drop policy if exists "Staff can insert locations" on public.locations;
+create policy "Staff can insert locations" on public.locations
+  for insert to public
+  with check (true);
+-- 「Staff can read locations」 on public.locations
+drop policy if exists "Staff can read locations" on public.locations;
+create policy "Staff can read locations" on public.locations
+  for select to public
+  using (true);
+-- 「Staff can update locations」 on public.locations
+drop policy if exists "Staff can update locations" on public.locations;
+create policy "Staff can update locations" on public.locations
+  for update to public
+  using (true);
+-- 「Allow authenticated access」 on public.mechanic_commission_history
+drop policy if exists "Allow authenticated access" on public.mechanic_commission_history;
+create policy "Allow authenticated access" on public.mechanic_commission_history
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「Allow authenticated access」 on public.mechanic_list
+drop policy if exists "Allow authenticated access" on public.mechanic_list;
+create policy "Allow authenticated access" on public.mechanic_list
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「Allow authenticated access」 on public.mechanic_salary_history
+drop policy if exists "Allow authenticated access" on public.mechanic_salary_history;
+create policy "Allow authenticated access" on public.mechanic_salary_history
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「hardening_msgs_anon_insert」 on public.message_list
+drop policy if exists hardening_msgs_anon_insert on public.message_list;
+create policy hardening_msgs_anon_insert on public.message_list
+  for insert to anon
+  with check (true);
+-- 「hardening_msgs_staff」 on public.message_list
+drop policy if exists hardening_msgs_staff on public.message_list;
+create policy hardening_msgs_staff on public.message_list
+  for all to authenticated
+  using ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])))
+  with check ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])));
+-- 「hardening_reminders_staff」 on public.payment_reminders
+drop policy if exists hardening_reminders_staff on public.payment_reminders;
+create policy hardening_reminders_staff on public.payment_reminders
+  for all to authenticated
+  using ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])))
+  with check ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])));
+-- 「Allow authenticated access」 on public.product_list
+drop policy if exists "Allow authenticated access" on public.product_list;
+create policy "Allow authenticated access" on public.product_list
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「portal_product_list_staff」 on public.product_list
+drop policy if exists portal_product_list_staff on public.product_list;
+create policy portal_product_list_staff on public.product_list
+  for all to authenticated
+  using ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])))
+  with check (true);
+-- 「Allow authenticated insert profiles」 on public.profiles
+drop policy if exists "Allow authenticated insert profiles" on public.profiles;
+create policy "Allow authenticated insert profiles" on public.profiles
+  for insert to authenticated
+  with check ((auth.uid() = id));
+-- 「Allow authenticated read profiles」 on public.profiles
+drop policy if exists "Allow authenticated read profiles" on public.profiles;
+create policy "Allow authenticated read profiles" on public.profiles
+  for select to authenticated
+  using (true);
+-- 「Allow users update own profile」 on public.profiles
+drop policy if exists "Allow users update own profile" on public.profiles;
+create policy "Allow users update own profile" on public.profiles
+  for update to authenticated
+  using ((auth.uid() = id))
+  with check ((auth.uid() = id));
+-- 「Allow authenticated access」 on public.purchase_order_items
+drop policy if exists "Allow authenticated access" on public.purchase_order_items;
+create policy "Allow authenticated access" on public.purchase_order_items
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「Allow authenticated access」 on public.purchase_orders
+drop policy if exists "Allow authenticated access" on public.purchase_orders;
+create policy "Allow authenticated access" on public.purchase_orders
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「Allow authenticated access」 on public.push_subscriptions
+drop policy if exists "Allow authenticated access" on public.push_subscriptions;
+create policy "Allow authenticated access" on public.push_subscriptions
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「Allow authenticated access」 on public.service_list
+drop policy if exists "Allow authenticated access" on public.service_list;
+create policy "Allow authenticated access" on public.service_list
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「hardening_spare_staff」 on public.spare_supplier
+drop policy if exists hardening_spare_staff on public.spare_supplier;
+create policy hardening_spare_staff on public.spare_supplier
+  for all to authenticated
+  using ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])))
+  with check ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])));
+-- 「hardening_suppliers_staff」 on public.suppliers
+drop policy if exists hardening_suppliers_staff on public.suppliers;
+create policy hardening_suppliers_staff on public.suppliers
+  for all to authenticated
+  using ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])))
+  with check ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])));
+-- 「hardening_sysinfo_anon_read」 on public.system_info
+drop policy if exists hardening_sysinfo_anon_read on public.system_info;
+create policy hardening_sysinfo_anon_read on public.system_info
+  for select to anon
+  using ((meta_field = ANY (ARRAY['name'::text, 'short_name'::text, 'logo'::text, 'cover'::text, 'email'::text, 'contact'::text, 'address'::text, 'owner'::text, 'biz_days'::text, 'biz_open'::text, 'biz_close'::text, 'gst_no'::text, 'gstin'::text, 'map_url'::text, 'map_iframe'::text, 'whatsapp'::text, 'facebook'::text, 'instagram'::text, 'youtube'::text, 'footer_text'::text, 'announcement'::text])));
+-- 「hardening_sysinfo_auth_read」 on public.system_info
+drop policy if exists hardening_sysinfo_auth_read on public.system_info;
+create policy hardening_sysinfo_auth_read on public.system_info
+  for select to authenticated
+  using ((meta_field <> ALL (ARRAY['ai_api_key'::text, 'csrf_token'::text])));
+-- 「hardening_sysinfo_staff」 on public.system_info
+drop policy if exists hardening_sysinfo_staff on public.system_info;
+create policy hardening_sysinfo_staff on public.system_info
+  for all to authenticated
+  using ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])))
+  with check ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])));
+-- 「Allow authenticated access」 on public.transaction_images
+drop policy if exists "Allow authenticated access" on public.transaction_images;
+create policy "Allow authenticated access" on public.transaction_images
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「portal_transaction_images_staff」 on public.transaction_images
+drop policy if exists portal_transaction_images_staff on public.transaction_images;
+create policy portal_transaction_images_staff on public.transaction_images
+  for all to authenticated
+  using ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])))
+  with check (true);
+-- 「portal_transaction_list_client_own」 on public.transaction_list
+drop policy if exists portal_transaction_list_client_own on public.transaction_list;
+create policy portal_transaction_list_client_own on public.transaction_list
+  for select to authenticated
+  using (((( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())) = 'client'::text) AND (client_name ~ '^[0-9]+$'::text) AND ((client_name)::bigint = ( SELECT profiles.client_id
+   FROM profiles
+  WHERE (profiles.id = auth.uid())))));
+-- 「portal_transaction_list_staff」 on public.transaction_list
+drop policy if exists portal_transaction_list_staff on public.transaction_list;
+create policy portal_transaction_list_staff on public.transaction_list
+  for all to authenticated
+  using ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])))
+  with check (true);
+-- 「Allow authenticated access」 on public.transaction_products
+drop policy if exists "Allow authenticated access" on public.transaction_products;
+create policy "Allow authenticated access" on public.transaction_products
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「Allow authenticated access」 on public.transaction_services
+drop policy if exists "Allow authenticated access" on public.transaction_services;
+create policy "Allow authenticated access" on public.transaction_services
+  for all to authenticated
+  using (true)
+  with check (true);
+-- 「hardening_wptpl_staff」 on public.wp_template_history
+drop policy if exists hardening_wptpl_staff on public.wp_template_history;
+create policy hardening_wptpl_staff on public.wp_template_history
+  for all to authenticated
+  using ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])))
+  with check ((COALESCE(( SELECT profiles.role
+   FROM profiles
+  WHERE (profiles.id = auth.uid())), ''::text) = ANY (ARRAY['admin'::text, 'staff'::text])));

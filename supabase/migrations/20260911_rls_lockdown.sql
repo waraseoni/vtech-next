@@ -60,7 +60,17 @@
 --     (client forge) + staff self-escalation (rlslock_profiles_staff with-check).
 --   • rlslock_profiles_staff ka with-check ab role/client_id IMMUTABLE rakhta
 --     hai (target row bhi) — staff browser se khud ko admin nahi bana sakta.
--- ════════════════════════════════════════════════════════════════════════
+--   • ══ SNAPSHOT-DUMP re-check (28 Aug, 62 policies wala pg_policies dump) ══
+--     • profiles LIVE me escalation-open tha: "Allow users update own profile"
+--       (auth.uid()=id, role/client_id free) → koi bhi khud ko admin bana leta
+--       aaj. Section 4 inhe drop karke immutable versions deta hai.
+--     • service_list + direct_sale_items LIVE me "Allow authenticated access"
+--       (read+WRITE kisi bhi logged-in user ko) the → migration me values add
+--       kar diye (staff gate) — warna ye hole client ko khula rehta.
+--     • locations + location_zones/racks/boxes/bins LIVE me `to public` CRUD
+--       policies hain (naam "Staff can..." par role = public = anon samet).
+--       Ye intentionally is migration me NAHI — alag review/follow-up.
+--   ════════════════════════════════════════════════════════════════════════
 
 -- ── 1) RLS ON (idempotent) ──────────────────────────────────────────────
 alter table public.client_list                    enable row level security;
@@ -80,6 +90,8 @@ alter table public.transaction_images             enable row level security;
 alter table public.advance_payments               enable row level security;
 alter table public.mechanic_salary_history        enable row level security;
 alter table public.mechanic_commission_history    enable row level security;
+alter table public.service_list                   enable row level security;
+alter table public.direct_sale_items              enable row level security;
 
 -- Provisioning tables (licenses/activations/client_credentials) — SIRF service-
 -- role (RLS ON + koi policy nahi → anon/authenticated = 0, service_role bypass).
@@ -125,7 +137,8 @@ begin
         'product_list', 'product_locations', 'job_id_counter',
         'transaction_products', 'transaction_services', 'transaction_images',
         'advance_payments', 'mechanic_salary_history',
-        'mechanic_commission_history', 'licenses', 'activations',
+        'mechanic_commission_history', 'service_list', 'direct_sale_items',
+        'licenses', 'activations',
         'client_credentials'
       )
   loop
@@ -213,6 +226,19 @@ create policy rlslock_mech_salary_staff on public.mechanic_salary_history
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
 create policy rlslock_mech_commission_staff on public.mechanic_commission_history
+  for all to authenticated
+  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
+  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+
+-- (Live-dump finding 28 Aug: service_list + direct_sale_items "Allow authenticated
+-- access" the = kisi bhi logged-in user ko read+write. Client ho to bhi! Staff UI
+-- tables hain (service catalog, POS items) — isliye staff/admin/developer gate.)
+create policy rlslock_service_list_staff on public.service_list
+  for all to authenticated
+  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
+  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+
+create policy rlslock_direct_sale_items_staff on public.direct_sale_items
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
@@ -318,6 +344,7 @@ where relnamespace = 'public'::regnamespace
     'product_locations','job_id_counter','transaction_products',
     'transaction_services','transaction_images','advance_payments',
     'mechanic_salary_history','mechanic_commission_history',
+    'service_list','direct_sale_items',
     'licenses','activations','client_credentials',
     'transaction_list','client_payments','direct_sales','client_loans',
     'purchase_orders','purchase_order_items','push_subscriptions'
