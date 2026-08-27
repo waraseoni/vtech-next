@@ -35,6 +35,15 @@
 -- hai — profiles policy ko 2 policy me split kiya (rlslock_profiles_staff =
 -- select; rlslock_profiles_staff_update = update, role/client_id immutable).
 --
+-- RECURSION FIX (28 Aug, LIVE 42P17): profiles ki apni policies khud profiles
+-- ko subquery karti thin → "infinite recursion detected in policy for relation
+-- profiles" → authenticated reads par 500. Fix: role/client_id lookup ab
+-- SECURITY DEFINER helper functions (get_my_role / get_my_client_id /
+-- is_frontend_staff) me hai — function body mai RLS bypass (owner=postgres,
+-- superuser) isliye koi recursion nahi. policies function call karti hain.
+-- → Pura file DUBARA apply karlo (idempotent — purani policies drop hoti hain,
+-- nayi function-based banti hain).
+--
 -- Apply: Supabase SQL Editor me run karo (ek baar, idempotent), phir
 -- `node scripts/verify-rls.cjs` + scripts/check_rls.sql se verify.
 --
@@ -127,6 +136,42 @@ alter table public.purchase_orders           enable row level security;
 alter table public.purchase_order_items      enable row level security;
 alter table public.push_subscriptions        enable row level security;
 
+-- ── 1.5) RLS policies ke liye helper functions (SECURITY DEFINER) ────────
+-- Ye standard Supabase pattern hai: policy ke andar profiles ko subquery karna
+-- recursion (42P17) deta hai jab profiles ki apni policies bhi profiles ko
+-- subquery karein. security definer + owner (postgres/superuser) = function
+-- body me RLS bypass → recursion break. auth.uid() caller ka uid deta hai.
+-- `set search_path = public` hijack-se bachata hai; saare refs qualified.
+create or replace function public.get_my_role()
+returns text
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select role from public.profiles where id = auth.uid();
+$$;
+
+create or replace function public.get_my_client_id()
+returns bigint
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select client_id from public.profiles where id = auth.uid();
+$$;
+
+create or replace function public.is_frontend_staff()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select public.is_frontend_staff();
+$$;
+
 -- ── 2) Purani policies hatao (Allow-all / broad auth / duplicate) ───────
 do $$
 declare p record;
@@ -158,98 +203,98 @@ end $$;
 drop policy if exists rlslock_client_list_staff on public.client_list;
 create policy rlslock_client_list_staff on public.client_list
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_mechanic_list_staff on public.mechanic_list;
 create policy rlslock_mechanic_list_staff on public.mechanic_list
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_expense_list_staff on public.expense_list;
 create policy rlslock_expense_list_staff on public.expense_list
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_lender_list_staff on public.lender_list;
 create policy rlslock_lender_list_staff on public.lender_list
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_loan_payments_staff on public.loan_payments;
 create policy rlslock_loan_payments_staff on public.loan_payments
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_attendance_list_staff on public.attendance_list;
 create policy rlslock_attendance_list_staff on public.attendance_list
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_inventory_list_staff on public.inventory_list;
 create policy rlslock_inventory_list_staff on public.inventory_list
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_product_list_staff on public.product_list;
 create policy rlslock_product_list_staff on public.product_list
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_product_locations_staff on public.product_locations;
 create policy rlslock_product_locations_staff on public.product_locations
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_job_id_counter_staff on public.job_id_counter;
 create policy rlslock_job_id_counter_staff on public.job_id_counter
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_transaction_products_staff on public.transaction_products;
 create policy rlslock_transaction_products_staff on public.transaction_products
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_transaction_services_staff on public.transaction_services;
 create policy rlslock_transaction_services_staff on public.transaction_services
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_transaction_images_staff on public.transaction_images;
 create policy rlslock_transaction_images_staff on public.transaction_images
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_advance_payments_staff on public.advance_payments;
 create policy rlslock_advance_payments_staff on public.advance_payments
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_mech_salary_staff on public.mechanic_salary_history;
 create policy rlslock_mech_salary_staff on public.mechanic_salary_history
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_mech_commission_staff on public.mechanic_commission_history;
 create policy rlslock_mech_commission_staff on public.mechanic_commission_history
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 -- (Live-dump finding 28 Aug: service_list + direct_sale_items "Allow authenticated
 -- access" the = kisi bhi logged-in user ko read+write. Client ho to bhi! Staff UI
@@ -257,14 +302,14 @@ create policy rlslock_mech_commission_staff on public.mechanic_commission_histor
 drop policy if exists rlslock_service_list_staff on public.service_list;
 create policy rlslock_service_list_staff on public.service_list
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_direct_sale_items_staff on public.direct_sale_items;
 create policy rlslock_direct_sale_items_staff on public.direct_sale_items
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 -- ── 4) profiles — staff/admin select + client self read; update immutable ──
 -- Note: profiles ka INSERT + DELETE sirf service-role hota hai (admin
@@ -277,7 +322,7 @@ create policy rlslock_direct_sale_items_staff on public.direct_sale_items
 drop policy if exists rlslock_profiles_staff on public.profiles;
 create policy rlslock_profiles_staff on public.profiles
   for select to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff());
 
 -- Staff/admin khud-apna profile update kar sakta hai, par OWN ROW + ROLE and
 -- CLIENT_ID immutable — warna koi staff browser se 'update profiles set
@@ -289,9 +334,9 @@ create policy rlslock_profiles_staff_update on public.profiles
   using (id = auth.uid())
   with check (
     id = auth.uid()
-    and coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer')
-    and coalesce(role, '') = coalesce((select role from public.profiles where id = auth.uid()), '')
-    and coalesce(client_id, -1) is not distinct from coalesce((select client_id from public.profiles where id = auth.uid()), -1)
+    and public.is_frontend_staff()
+    and coalesce(role, '') = public.get_my_role()
+    and coalesce(client_id, -1) is not distinct from public.get_my_client_id()
   );
 
 drop policy if exists rlslock_profiles_client_self on public.profiles;
@@ -307,8 +352,8 @@ create policy rlslock_profiles_client_self_update on public.profiles
   using (id = auth.uid())
   with check (
     id = auth.uid()
-    and coalesce(role, '') = coalesce((select role from public.profiles where id = auth.uid()), '')
-    and coalesce(client_id, -1) is not distinct from coalesce((select client_id from public.profiles where id = auth.uid()), -1)
+    and coalesce(role, '') = public.get_my_role()
+    and coalesce(client_id, -1) is not distinct from public.get_my_client_id()
   );
 
 -- ── 5) client_list — client ko sirf apna record ──────────────────────────
@@ -316,8 +361,8 @@ drop policy if exists rlslock_client_list_client_self on public.client_list;
 create policy rlslock_client_list_client_self on public.client_list
   for select to authenticated
   using (
-    coalesce((select role from public.profiles where id = auth.uid()), '') = 'client'
-    and id = (select client_id from public.profiles where id = auth.uid())
+    public.get_my_role() = 'client'
+    and id = public.get_my_client_id()
   );
 
 -- ── 6) Portal financial tables — `with check (true)` hole band karo ───────
@@ -325,48 +370,48 @@ create policy rlslock_client_list_client_self on public.client_list
 drop policy if exists portal_transaction_list_staff on public.transaction_list;
 create policy portal_transaction_list_staff on public.transaction_list
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists portal_client_payments_staff on public.client_payments;
 create policy portal_client_payments_staff on public.client_payments
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists portal_direct_sales_staff on public.direct_sales;
 create policy portal_direct_sales_staff on public.direct_sales
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists portal_client_loans_staff on public.client_loans;
 create policy portal_client_loans_staff on public.client_loans
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 -- ── 7) Purchase orders + Push subscriptions — broad auth band karo ───────
 drop policy if exists "Allow authenticated access" on public.purchase_orders;
 drop policy if exists rlslock_purchase_orders_staff on public.purchase_orders;
 create policy rlslock_purchase_orders_staff on public.purchase_orders
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists "Allow authenticated access" on public.purchase_order_items;
 drop policy if exists rlslock_purchase_order_items_staff on public.purchase_order_items;
 create policy rlslock_purchase_order_items_staff on public.purchase_order_items
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists "Allow authenticated access" on public.push_subscriptions;
 drop policy if exists rlslock_push_subscriptions_staff on public.push_subscriptions;
 create policy rlslock_push_subscriptions_staff on public.push_subscriptions
   for all to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
-  with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+  using (public.is_frontend_staff())
+  with check (public.is_frontend_staff());
 
 drop policy if exists rlslock_push_subscriptions_self on public.push_subscriptions;
 create policy rlslock_push_subscriptions_self on public.push_subscriptions

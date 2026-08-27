@@ -71,6 +71,14 @@ drop policy if exists rlslock_push_subscriptions_staff        on public.push_sub
 drop policy if exists rlslock_push_subscriptions_self         on public.push_subscriptions;
 
 -- ── Verify status ────────────────────────────────────────────────────────
+-- NOTE: migration ke SECURITY DEFINER helpers (get_my_role /
+-- get_my_client_id / is_frontend_staff) exact-pre-state restore me drop ho
+-- jaate hain (nicha). Agar migration dobara apply karo to wo create/replace
+-- ho jaayenge (rollback se pehle ke any old row-identity helper nahi the).
+drop function if exists public.get_my_role();
+drop function if exists public.get_my_client_id();
+drop function if exists public.is_frontend_staff();
+
 select p.tablename, p.policyname
 from pg_policies p
 where p.schemaname = 'public'
