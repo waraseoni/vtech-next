@@ -29,6 +29,12 @@
 -- karte hain. profiles self-update role/client_id immutable rakhta hai —
 -- koi client/staff khud ko admin nahi bana sakta.
 --
+-- FULLY IDEMPOTENT (28 Aug fix): har create policy se pehle `drop if
+-- exists` hai → partial-apply ke baad bhi poora file dubara run karna safe
+-- (no "policy already exists" abort). PostgreSQL `for select, update` INVALID
+-- hai — profiles policy ko 2 policy me split kiya (rlslock_profiles_staff =
+-- select; rlslock_profiles_staff_update = update, role/client_id immutable).
+--
 -- Apply: Supabase SQL Editor me run karo (ek baar, idempotent), phir
 -- `node scripts/verify-rls.cjs` + scripts/check_rls.sql se verify.
 --
@@ -57,9 +63,7 @@
 --     migration me nahi hai). RPC (get_dashboard_stats etc.) untouched + tables
 --     already locked → dashboard aaj kaam karta hai, waisa hi rahega.
 --     → PROJECT BREAK NAHI HOGA. reCAP: sirf sachcha closing = with-check hole
---     (client forge) + staff self-escalation (rlslock_profiles_staff with-check).
---   • rlslock_profiles_staff ka with-check ab role/client_id IMMUTABLE rakhta
---     hai (target row bhi) — staff browser se khud ko admin nahi bana sakta.
+--     (client forge) + staff self-escalation (profile policies immutable).
 --   • ══ SNAPSHOT-DUMP re-check (28 Aug, 62 policies wala pg_policies dump) ══
 --     • profiles LIVE me escalation-open tha: "Allow users update own profile"
 --       (auth.uid()=id, role/client_id free) → koi bhi khud ko admin bana leta
@@ -149,82 +153,99 @@ end $$;
 -- ── 3) Staff/Admin business CRUD policies ───────────────────────────────
 -- Role check: profile wala authenticated user hi — anon/ghost authenticated user
 -- ko in tables par kuch nahi (using + with check dono role-gated).
+-- Har create se pehle drop-if-exists (idempotent re-run ke liye).
 
+drop policy if exists rlslock_client_list_staff on public.client_list;
 create policy rlslock_client_list_staff on public.client_list
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_mechanic_list_staff on public.mechanic_list;
 create policy rlslock_mechanic_list_staff on public.mechanic_list
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_expense_list_staff on public.expense_list;
 create policy rlslock_expense_list_staff on public.expense_list
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_lender_list_staff on public.lender_list;
 create policy rlslock_lender_list_staff on public.lender_list
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_loan_payments_staff on public.loan_payments;
 create policy rlslock_loan_payments_staff on public.loan_payments
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_attendance_list_staff on public.attendance_list;
 create policy rlslock_attendance_list_staff on public.attendance_list
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_inventory_list_staff on public.inventory_list;
 create policy rlslock_inventory_list_staff on public.inventory_list
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_product_list_staff on public.product_list;
 create policy rlslock_product_list_staff on public.product_list
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_product_locations_staff on public.product_locations;
 create policy rlslock_product_locations_staff on public.product_locations
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_job_id_counter_staff on public.job_id_counter;
 create policy rlslock_job_id_counter_staff on public.job_id_counter
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_transaction_products_staff on public.transaction_products;
 create policy rlslock_transaction_products_staff on public.transaction_products
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_transaction_services_staff on public.transaction_services;
 create policy rlslock_transaction_services_staff on public.transaction_services
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_transaction_images_staff on public.transaction_images;
 create policy rlslock_transaction_images_staff on public.transaction_images
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_advance_payments_staff on public.advance_payments;
 create policy rlslock_advance_payments_staff on public.advance_payments
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_mech_salary_staff on public.mechanic_salary_history;
 create policy rlslock_mech_salary_staff on public.mechanic_salary_history
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_mech_commission_staff on public.mechanic_commission_history;
 create policy rlslock_mech_commission_staff on public.mechanic_commission_history
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
@@ -233,40 +254,54 @@ create policy rlslock_mech_commission_staff on public.mechanic_commission_histor
 -- (Live-dump finding 28 Aug: service_list + direct_sale_items "Allow authenticated
 -- access" the = kisi bhi logged-in user ko read+write. Client ho to bhi! Staff UI
 -- tables hain (service catalog, POS items) — isliye staff/admin/developer gate.)
+drop policy if exists rlslock_service_list_staff on public.service_list;
 create policy rlslock_service_list_staff on public.service_list
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_direct_sale_items_staff on public.direct_sale_items;
 create policy rlslock_direct_sale_items_staff on public.direct_sale_items
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
--- ── 4) profiles — staff/admin select/update + client self read/update ─────
+-- ── 4) profiles — staff/admin select + client self read; update immutable ──
 -- Note: profiles ka INSERT + DELETE sirf service-role hota hai (admin
 -- create-user / delete-user API, client onboard upsert) — isliye authenticated
 -- ko in tables par select/update se zyada nahi: koi bhi browser se role
 -- escalate / user bana / delete nahi kar sakta.
+--
+-- 28 Aug fix: `for select, update` PostgreSQL me INVALID hai — 2 alag policy:
+-- rlslock_profiles_staff (SELECT) + rlslock_profiles_staff_update (UPDATE).
+drop policy if exists rlslock_profiles_staff on public.profiles;
 create policy rlslock_profiles_staff on public.profiles
-  for select, update to authenticated
-  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
+  for select to authenticated
+  using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
+
+-- Staff/admin khud-apna profile update kar sakta hai, par OWN ROW + ROLE and
+-- CLIENT_ID immutable — warna koi staff browser se 'update profiles set
+-- role=admin' chala ke khud ko admin bana leta. Admin ki role-changes
+-- /api/admin/update-profile (service-role) se hoti hain, isse break nahi.
+drop policy if exists rlslock_profiles_staff_update on public.profiles;
+create policy rlslock_profiles_staff_update on public.profiles
+  for update to authenticated
+  using (id = auth.uid())
   with check (
-    -- role/client_id immutable (target row bhi) — warna koi staff browser se update
-    -- profiles set role='admin' chala ke khud ko admin bana leta. Admin ki role
-    -- changes /api/admin/update-profile (service-role) se hoti hain, isse break nahi.
-    coalesce(role, '') = coalesce((select p.role from public.profiles p where p.id = profiles.id), '')
-    and coalesce(client_id, -1) is not distinct from coalesce((select p.client_id from public.profiles p where p.id = profiles.id), -1)
+    id = auth.uid()
+    and coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer')
+    and coalesce(role, '') = coalesce((select role from public.profiles where id = auth.uid()), '')
+    and coalesce(client_id, -1) is not distinct from coalesce((select client_id from public.profiles where id = auth.uid()), -1)
   );
 
+drop policy if exists rlslock_profiles_client_self on public.profiles;
 create policy rlslock_profiles_client_self on public.profiles
   for select to authenticated
   using (id = auth.uid());
 
 -- Self-update: apna profile update allowed, par ROLE + CLIENT_ID immutable —
 -- warna koi client/staff khud ko 'admin' bana leta (privilege escalation).
--- `role = (select role ...)` with-check me naye row vs purane row ki tulna hai;
--- client_id bhi apni current value par hi rah sakta hai.
+drop policy if exists rlslock_profiles_client_self_update on public.profiles;
 create policy rlslock_profiles_client_self_update on public.profiles
   for update to authenticated
   using (id = auth.uid())
@@ -277,6 +312,7 @@ create policy rlslock_profiles_client_self_update on public.profiles
   );
 
 -- ── 5) client_list — client ko sirf apna record ──────────────────────────
+drop policy if exists rlslock_client_list_client_self on public.client_list;
 create policy rlslock_client_list_client_self on public.client_list
   for select to authenticated
   using (
@@ -312,23 +348,27 @@ create policy portal_client_loans_staff on public.client_loans
 
 -- ── 7) Purchase orders + Push subscriptions — broad auth band karo ───────
 drop policy if exists "Allow authenticated access" on public.purchase_orders;
+drop policy if exists rlslock_purchase_orders_staff on public.purchase_orders;
 create policy rlslock_purchase_orders_staff on public.purchase_orders
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
 drop policy if exists "Allow authenticated access" on public.purchase_order_items;
+drop policy if exists rlslock_purchase_order_items_staff on public.purchase_order_items;
 create policy rlslock_purchase_order_items_staff on public.purchase_order_items
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
 drop policy if exists "Allow authenticated access" on public.push_subscriptions;
+drop policy if exists rlslock_push_subscriptions_staff on public.push_subscriptions;
 create policy rlslock_push_subscriptions_staff on public.push_subscriptions
   for all to authenticated
   using (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'))
   with check (coalesce((select role from public.profiles where id = auth.uid()), '') in ('admin', 'staff', 'developer'));
 
+drop policy if exists rlslock_push_subscriptions_self on public.push_subscriptions;
 create policy rlslock_push_subscriptions_self on public.push_subscriptions
   for all to authenticated
   using (user_id = auth.uid())
