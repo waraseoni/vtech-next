@@ -1,5 +1,6 @@
+import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+
 import { requireUser } from "@/lib/api-auth";
 import {
   isLicenseConfigured,
@@ -8,11 +9,7 @@ import {
   type LicenseStatus,
 } from "@/lib/license";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+const supabaseAdmin = getAdminSupabase();
 
 // Re-check interval: default 24h. LICENSE_RECHECK_HOURS env se shorten kiya ja
 // sakta hai (seller ko delete/revoke ka asar jaldi dikhane ke liye).

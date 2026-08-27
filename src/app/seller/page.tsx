@@ -4,10 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Plus, Copy, Check, Pencil, Trash2, X, Loader2, RefreshCw, KeyRound,
-  Store, Package, Ban, Clock, ShieldCheck, Eye, ListChecks,
+  Store, Package, Ban, Clock, ShieldCheck, Eye,
 } from "lucide-react";
 import PortalGate from "@/components/PortalGate";
-import { ALL_MODULES, TOGGLEABLE_KEYS, PLAN_DEFAULTS, type ModuleKey } from "@/lib/modules";
+import { ALL_MODULES, TOGGLEABLE_KEYS, PLAN_DEFAULTS } from "@/lib/modules";
 
 type License = {
   id: number;

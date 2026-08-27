@@ -1,10 +1,11 @@
+import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+
 import { requireStaff } from "@/lib/api-auth";
 import { fetchAll, pageAll, fetchAllIn } from "@/lib/fetch-all";
 import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const supabase = getAdminSupabase();
 
 const SHOP = {
   name: "V-Technologies",

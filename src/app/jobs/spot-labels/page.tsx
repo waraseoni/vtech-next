@@ -176,17 +176,6 @@ export default function SpotLabelsPage() {
     return pages.length ? pages : [[]];
   }, [spots, labelsPerPage]);
 
-  // ── Keyboard shortcuts ──────────────────────────────────────────────────
-  useEffect(() => {
-    if (!previewOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPreviewOpen(false);
-      if (e.ctrlKey && e.key === "p") { e.preventDefault(); handlePopupPrint(); }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [previewOpen]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const zoomIn = () => setZoom(z => Math.min(z + 15, 200));
   const zoomOut = () => setZoom(z => Math.max(z - 15, 40));
   const zoomFit = () => setZoom(100);
@@ -259,6 +248,17 @@ html,body{width:100%;height:100%}
     }
   }, [spots, urls, paperSize, orientation, margin, gridCols, gridRows, labelsPerPage, previewPages]);
 
+  // ── Keyboard shortcuts ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (!previewOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewOpen(false);
+      if (e.ctrlKey && e.key === "p") { e.preventDefault(); handlePopupPrint(); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [previewOpen, handlePopupPrint]);
+
   const SettingBtn = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
     <button onClick={onClick}
       className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
@@ -292,7 +292,7 @@ html,body{width:100%;height:100%}
           margin: "2% 0 4%",
         }}>V-TECH · Job Spot</p>
         {urls[spot.id]
-          ? <img src={urls[spot.id]} alt={`QR ${spot.name}`}
+          ? <Image src={urls[spot.id]} alt={`QR ${spot.name}`} unoptimized width={150} height={150}
               style={{ width: "60%", maxWidth: 150, height: "auto", display: "block", margin: "0 auto" }} />
           : <div style={{ width: "60%", maxWidth: 150, aspectRatio: "1", background: "#f1f5f9", borderRadius: 8, margin: "0 auto" }} />
         }

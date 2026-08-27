@@ -103,13 +103,14 @@ export default function InventoryPage() {
       ]);
 
       const locMap = new Map<number, { zone: string; rack: string; bin: string; box: string }[]>();
-      (plLocs.data || []).forEach((row: any) => {
+      (plLocs.data || []).forEach((row: { product_id: number; locations: { zone: string | null; rack: string | null; bin: string | null; box: string | null }[] }) => {
+        const loc = row.locations?.[0];
         const arr = locMap.get(row.product_id) || [];
         arr.push({
-          zone: row.locations?.zone ?? "",
-          rack: row.locations?.rack ?? "",
-          bin:  row.locations?.bin  ?? "",
-          box:  row.locations?.box  ?? "",
+          zone: loc?.zone ?? "",
+          rack: loc?.rack ?? "",
+          bin:  loc?.bin  ?? "",
+          box:  loc?.box  ?? "",
         });
         locMap.set(row.product_id, arr);
       });

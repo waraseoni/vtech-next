@@ -4,7 +4,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
   X, ScanLine, Camera, CameraOff, Loader2, CheckCircle2, AlertCircle,
-  Package, Search, ArrowDownToLine, MapPin, Calendar, ExternalLink, Plus,
+  Package, Search, ArrowDownToLine, Calendar, ExternalLink, Plus,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
 import { todayIST, toISTDatePart } from "@/lib/dateUtils";

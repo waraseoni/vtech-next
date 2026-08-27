@@ -1,12 +1,9 @@
+import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+
 import { requireClient } from "@/lib/api-auth";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+const supabaseAdmin = getAdminSupabase();
 
 // Client ke apne payments (sirf uske client_id ke)
 export async function GET() {

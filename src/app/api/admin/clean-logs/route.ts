@@ -1,6 +1,7 @@
+import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
+
 import { cookies } from "next/headers";
 import { requireAdmin } from "@/lib/api-auth";
 
@@ -29,11 +30,7 @@ export async function POST() {
   const cutoffStr = cutoff.toISOString();
 
   // Use service-role for the actual delete (RLS may block batch deletes with user token)
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
+  const admin = getAdminSupabase();
 
   const { data, error } = await admin
     .from("activity_logs")

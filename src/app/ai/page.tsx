@@ -170,28 +170,55 @@ export default function AIChatPage() {
 
     try {
       const allMessages = [...messages, userMessage];
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input.trim(), messages: allMessages, type: "chat", provider: aiProvider }),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
 
-      const data = await response.json();
+      let response: Response;
+      try {
+        response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: input.trim(), messages: allMessages, type: "chat", provider: aiProvider }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      const text = await response.text();
+      let data: { response?: string; error?: string; details?: string } = {};
+      if (text) {
+        try { data = JSON.parse(text); } catch { data = {}; }
+      }
+
+      let content: string;
+      if (!response.ok) {
+        content = data.error
+          ? `AI server error (HTTP ${response.status}): ${data.details || data.error} — thodi der baad phir se try karein.`
+          : `AI server sahi jawab nahi de paya (HTTP ${response.status}). Thodi der baad phir se try karein.`;
+      } else if (data.response) {
+        content = data.response;
+      } else {
+        content = "Mafi chahunga, main abhi ye data process nahi kar pa raha. Phir se try karein.";
+      }
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.response || "Mafi chahunga, main abhi ye data process nahi kar pa raha. Phir se try karein.",
+        content,
         timestamp: new Date(),
         isNew: true
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch {
+    } catch (err) {
+      const isAbort = err instanceof DOMException && err.name === "AbortError";
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Network issue lag raha hai. Kripya apna internet connection check karein.",
+        content: isAbort
+          ? "AI server ko jawab dene me bahut time lag raha hai (timeout). Thodi der baad phir se try karein."
+          : "Network issue lag raha hai. Kripya apna internet connection check karein.",
         timestamp: new Date(),
         isNew: true
       };

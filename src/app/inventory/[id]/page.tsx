@@ -237,9 +237,9 @@ export default function ProductDetailPage() {
   // ── Computed ───────────────────────────────────────────────────────────────
   const st  = getStockStatus(stats.available, product?.alert_quantity);
   const costVal = Math.max(0, stats.available) * (product?.cost_price || 0);
-  const productLoc = productLocations.length > 0
+  const productLoc = useMemo(() => productLocations.length > 0
     ? { zone: productLocations[0].zone, rack: productLocations[0].rack, bin: productLocations[0].bin, box: productLocations[0].box }
-    : null;
+    : null, [productLocations]);
 
   // Running-balance ledger (stock-in + stock-out merged chronologically)
   const ledger = useMemo(() => {
@@ -262,7 +262,7 @@ export default function ProductDetailPage() {
       bal += r.direction === "in" ? r.qty : -r.qty;
       return { ...r, balance: bal };
     });
-  }, [stockIn, stockOut, poCodes]);
+  }, [stockIn, stockOut, poCodes, product, productLoc]);
 
   // Monthly movement chart data (last 6 months)
   const monthlyOut = useMemo(() => {

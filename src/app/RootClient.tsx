@@ -16,7 +16,7 @@ import {
   LayoutDashboard, Users, Package, Settings, Wrench, Search,
   User, LogOut, Sparkles, Loader2, ShieldCheck, CalendarCheck,
   HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
-  DollarSign, Truck, CreditCard, Clock, Briefcase, Coins, Receipt,
+  DollarSign, Truck, CreditCard, Clock, Coins, Receipt,
   Toolbox, FolderOpen, UsersRound, Database, Settings2, MessageSquare,
   ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert, KeyRound, Code2, Images, FileText, Layers, MapPin, Terminal,
 } from "lucide-react";
@@ -863,7 +863,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       showIdleWarningRef.current = false;
       setShowIdleWarning(false);
     };
-  }, [profile?.role]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile?.role]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);

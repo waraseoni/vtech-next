@@ -170,14 +170,6 @@ export default function ActivityLogsPage() {
     return null;
   };
 
-  const getActionStyles = (action: string) => {
-    const a = action.toLowerCase();
-    if (a.includes('delete') || a.includes('removed')) return 'text-red-400 bg-red-400/10 border-red-400/20';
-    if (a.includes('add') || a.includes('create') || a.includes('new')) return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
-    if (a.includes('status') || a.includes('update')) return 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
-    return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-  };
-
   const formatDetails = (details: string | null, module: string) => {
     if (!details) return <span className="italic text-slate-700">—</span>;
     // Highlight job IDs, amounts, status changes

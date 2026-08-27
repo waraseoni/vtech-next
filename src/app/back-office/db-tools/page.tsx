@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
   Database, Download, Upload, Copy, CheckCircle, AlertCircle,
-  Loader2, Terminal, FileCode, ArrowLeft, ChevronDown, ChevronUp,
-  Shield, HardDrive, PlayCircle, Clipboard, Check,
+  Terminal, FileCode, ArrowLeft, ChevronDown, ChevronUp,
+  HardDrive, PlayCircle, Clipboard, Check,
 } from "lucide-react";
 
 type Toast = { type: "success" | "error" | "info"; msg: string };
@@ -36,7 +36,7 @@ export default function DbToolsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedStep, setExpandedStep] = useState<number | null>(null);
   const [showSql, setShowSql] = useState<Record<string, boolean>>({});
-  const [tableCount, setTableCount] = useState<number | null>(null);
+  const [, setTableCount] = useState<number | null>(null);
 
   const showToast = (type: Toast["type"], msg: string) => {
     setToast({ type, msg });

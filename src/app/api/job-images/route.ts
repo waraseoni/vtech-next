@@ -1,13 +1,11 @@
+import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+
 import { requireStaff } from "@/lib/api-auth";
 
 // ─── Supabase Admin Client (service_role) ────────────────────────────────────
 // IMPORTANT: service_role key sirf server-side use karo — client-side kabhi nahi
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getAdminSupabase();
 
 const BUCKET = "job-images";
 

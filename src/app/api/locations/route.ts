@@ -1,12 +1,9 @@
+import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+
 import { requireStaff } from "@/lib/api-auth";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+const supabase = getAdminSupabase();
 
 function genCode(ids: { zone_id?: number; rack_id?: number; bin_id?: number; box_id?: number }) {
   const segs: string[] = [];

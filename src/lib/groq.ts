@@ -50,7 +50,7 @@ export async function getGroqChatResponse(messages: ChatCompletionMessageParam[]
 
             // Execute all requested tools
             for (const toolCall of toolCalls) {
-                console.debug(`Groq native tool request: ${toolCall.function.name}`);
+                logger.debug(`Groq native tool request: ${toolCall.function.name}`);
                 let functionArgs = {};
                 try {
                     functionArgs = JSON.parse(toolCall.function.arguments);
@@ -95,7 +95,7 @@ export async function getGroqChatResponse(messages: ChatCompletionMessageParam[]
                     logger.error("Failed to parse textual tool args:", e);
                 }
 
-                console.debug(`Groq text fallback tool request: ${name}`, args);
+                logger.debug(`Groq text fallback tool request: ${name}`, args);
                         const apiResponse = await executeGeminiTool({ name, args }, role);
 
                 // INSTEAD of throwing a native tool message (which causes 400 Bad Request if ID is fake),
@@ -131,7 +131,7 @@ export async function getGroqChatResponse(messages: ChatCompletionMessageParam[]
                 const failedGenStr = errorJson?.error?.failed_generation || "";
                 
                 if (failedGenStr) {
-                    console.debug("Intercepted Groq 400 Error failed_generation:", failedGenStr);
+                    logger.debug("Intercepted Groq 400 Error failed_generation:", failedGenStr);
                     
                     const nameMatch = failedGenStr.match(/<function=([\w_]+)/);
                     const argsMatch = failedGenStr.match(/{[\s\S]*}/); // Extract JSON args

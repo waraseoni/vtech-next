@@ -1,13 +1,10 @@
+import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 
 // Public business info — client apne Settings (system_info) se manage karta hai.
 // SIRF safe public fields return karte hain (name/contact/address/timing).
 // Service role bypasses RLS — isliye response sirf ye whitelisted fields deta hai.
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getAdminSupabase();
 
 function fmt12h(t: string): string {
   const m = /^(\d{1,2}):(\d{2})$/.exec(t);

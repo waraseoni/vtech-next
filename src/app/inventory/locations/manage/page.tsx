@@ -15,8 +15,6 @@ import {
   Grid3X3,
   Box,
   Package,
-  ChevronDown,
-  ChevronRight,
   ToggleLeft,
   ToggleRight,
 } from "lucide-react";
@@ -172,8 +170,6 @@ export default function ManageLocationsPage() {
   const filtered = getFiltered();
   const tabInfo = TABS.find((t) => t.key === activeTab)!;
   const parentOptions = getParentOptions();
-
-  const totalAll = Object.values(allData).reduce((s, arr) => s + arr.length, 0);
 
   return (
     <AdminPage title="Location Hierarchy" subtitle="Manage zones, racks, bins & boxes — the building blocks of your inventory locations">

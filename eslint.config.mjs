@@ -32,6 +32,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Dev/ops tooling — app source nahi hai (CommonJS scripts + throwaway scratch):
+    "scripts/**",
+    "scratch/**",
+    "backups/**",
+    "mariadb dump/**",
   ]),
 ]);
 

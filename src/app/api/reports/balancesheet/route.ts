@@ -1,11 +1,11 @@
 ﻿import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { requireStaff, UNAUTHORIZED } from '@/lib/api-auth';
+import { requireAdmin, UNAUTHORIZED } from '@/lib/api-auth';
 import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
-  if (!(await requireStaff())) return UNAUTHORIZED();
+  if (!(await requireAdmin())) return UNAUTHORIZED();
 
   const { searchParams } = new URL(request.url);
   const fromParam = searchParams.get('from');

@@ -1,15 +1,12 @@
+import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+
 import { requireStaff } from "@/lib/api-auth";
 
 // Service-role: system_info ab RLS se closed hai, isliye staff-guarded route
 // ko service-role key chahiye (session token anon hai, RLS select/insert/update
 // block karega). requireStaff() pehle hi guard hai.
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+const supabase = getAdminSupabase();
 
 async function upsertField(field: string, value: string) {
   const { data: existing } = await supabase

@@ -1,9 +1,10 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { requireStaff } from "@/lib/api-auth";
+import { getAdminSupabase } from "@/lib/admin-supabase";
+
+import { requireAdmin } from "@/lib/api-auth";
 import { pageAll } from "@/lib/fetch-all";
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const supabase = getAdminSupabase();
 
 const SHOP = {
   name: "V-Technologies",
@@ -20,7 +21,7 @@ function fmtDate(iso: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const user = await requireStaff();
+  const user = await requireAdmin();
   if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const from = searchParams.get("from") || new Date().toISOString().split("T")[0];

@@ -65,7 +65,7 @@ export default function NewUserPage() {
       if (!res.ok) throw new Error(data.error);
 
       setToast({ type: "success", msg: "User successfully create ho gaya!" });
-      setTimeout(() => { window.location.href = "/users"; }, 1200);
+      setTimeout(() => { router.push("/users"); }, 1200);
     } catch (err: unknown) {
       setToast({ type: "error", msg: err instanceof Error ? err.message : "Create failed!" });
       setLoading(false);

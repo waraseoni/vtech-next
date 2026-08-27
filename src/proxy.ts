@@ -2,6 +2,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { ABSOLUTE_MS } from '@/lib/session-policy'
+import { logger } from '@/lib/logger'
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next({
@@ -29,7 +30,7 @@ export async function proxy(request: NextRequest) {
     const { data: { user: u } } = await supabase.auth.getUser();
     user = u;
   } catch (err) {
-    console.debug("proxy: stale session cookie, clearing auth cookies:", (err as Error)?.message);
+    logger.debug("proxy: stale session cookie, clearing auth cookies:", (err as Error)?.message);
     request.cookies.getAll()
       .filter((c) => c.name.startsWith("sb-"))
       .forEach((c) => {

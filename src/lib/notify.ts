@@ -1,15 +1,8 @@
 import { sendPushToAll, sendPushToUser, type PushPayload } from "./push-send";
-import { createClient } from "@supabase/supabase-js";
 
 // ─── Pre-built Notification Triggers ───────────────────────────────────────
 // In functions ko kisi bhi API route / server action se call karo.
 // Sab free hai — sirf VAPID keys chahiye.
-
-const sb = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
 
 /** Payment due reminder — admin ko push bhejo */
 export async function notifyPaymentDue(opts: {

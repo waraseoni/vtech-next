@@ -6,7 +6,6 @@ import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import {
   LocationParts,
-  EMPTY_LOCATION,
   locPath,
   encodeLocationToken,
 } from "@/lib/locations";
@@ -192,23 +191,6 @@ export default function LocationsPage() {
       (r.label || "").toLowerCase().includes(q)
     );
   });
-
-  /* ─── cascading dropdown data ───────────────────────────────────────── */
-
-  const filteredRacks = form.zone_id
-    ? hierarchy.racks.filter((r) => {
-        const rackRow = hierarchy.racks.find((rk) => rk.id === r.id);
-        return rackRow;
-      })
-    : hierarchy.racks;
-
-  const filteredBins = form.rack_id
-    ? hierarchy.bins.filter((b) => true)
-    : hierarchy.bins;
-
-  const filteredBoxes = form.bin_id
-    ? hierarchy.boxes.filter((b) => true)
-    : hierarchy.boxes;
 
   /* ─── modal helpers ─────────────────────────────────────────────────── */
 

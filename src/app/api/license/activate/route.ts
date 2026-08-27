@@ -1,5 +1,6 @@
+import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+
 import { requireAdmin } from "@/lib/api-auth";
 import {
   isValidLicenseKey,
@@ -7,11 +8,7 @@ import {
   activateRemoteLicense,
 } from "@/lib/license";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+const supabaseAdmin = getAdminSupabase();
 
 async function getShopName() {
   const { data } = await supabaseAdmin

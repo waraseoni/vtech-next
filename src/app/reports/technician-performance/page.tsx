@@ -5,10 +5,10 @@ import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import {
-  Loader2, Users, Wrench, Clock, IndianRupee, TrendingUp, Calendar,
+  Loader2, Wrench, Clock, IndianRupee, Calendar,
   ChevronLeft, ChevronRight, Award, AlertCircle,
 } from "lucide-react";
-import { todayIST, startOfMonthIST, endOfMonthIST, formatIST } from "@/lib/dateUtils";
+import { startOfMonthIST, endOfMonthIST, formatIST } from "@/lib/dateUtils";
 
 type TechMetric = {
   id: number;

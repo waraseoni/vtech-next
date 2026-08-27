@@ -1,12 +1,10 @@
+import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { requireStaff } from "@/lib/api-auth";
+
+import { requireAdmin } from "@/lib/api-auth";
 import { fetchAll, pageAll } from "@/lib/fetch-all";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getAdminSupabase();
 
 const SHOP = {
   name: "V-Technologies",
@@ -31,7 +29,7 @@ function getEffectiveRate(mechanicId: number, dateStr: string, defaultRate: numb
 }
 
 export async function GET(request: NextRequest) {
-  const user = await requireStaff();
+  const user = await requireAdmin();
   if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const url = new URL(request.url);
   const month = url.searchParams.get("month") || "";

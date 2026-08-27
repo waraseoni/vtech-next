@@ -1,12 +1,9 @@
+import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+
 import { requireUser } from "@/lib/api-auth";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+const supabaseAdmin = getAdminSupabase();
 
 // Email OTP verify ke baad client ka profile banao/link karo.
 // client_id kabhi client se NAHI liya jata — auth user ke email se derive hota hai.

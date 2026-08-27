@@ -340,13 +340,20 @@ export async function executeGeminiTool(functionCall: { name: string; args?: obj
             const { data } = await query;
             const jobs = (data || []) as JobRow[];
             
-            // Map IDs to original names dynamically
+            // Map IDs to original names dynamically (ek hi .in() batch — N+1 nahi)
+            const clientIds = [...new Set(jobs.map((j) => j.client_name).filter(Boolean))] as string[];
+            const clientNameMap: Record<string, string> = {};
+            if (clientIds.length) {
+                const { data: clientRows } = await supabase.from("client_list")
+                    .select("id, firstname, lastname")
+                    .in("id", clientIds);
+                (clientRows || []).forEach((c) => {
+                    clientNameMap[c.id] = `${c.firstname || ''} ${c.lastname || ''}`.trim();
+                });
+            }
             for (const job of jobs) {
-                if (job.client_name) {
-                    const { data: clientInfo } = await supabase.from("client_list").select("firstname, lastname").eq("id", job.client_name).maybeSingle();
-                    if (clientInfo) {
-                        job.actual_client_name = `${clientInfo.firstname || ''} ${clientInfo.lastname || ''}`.trim();
-                    }
+                if (job.client_name && clientNameMap[job.client_name]) {
+                    job.actual_client_name = clientNameMap[job.client_name];
                 }
                 // Add status label
                 job.status_label = STATUS_MAP[job.status] || "Unknown";
@@ -552,20 +559,25 @@ export async function executeGeminiTool(functionCall: { name: string; args?: obj
             }
 
             // If we found a customer, fetch some of their recent jobs
-            const customerDetails = [];
-            for (const cust of customers) {
-               // The client_name column in transaction_list actually stores the client_list.id
-               const { data: jobs } = await supabase.from("transaction_list")
-                  .select("job_id, client_name, item, fault, status, amount, date_created")
-                  .eq("del_status", 0)
-                  .eq("client_name", cust.id)
-                  .order("date_created", { ascending: false })
-                  .limit(5);
-               
-               customerDetails.push({
-                   customer_info: cust,
-                   recent_jobs: jobs || []
-               });
+            // (ek hi .in() batch — N+1 nahi; per-client slice 5)
+            let customerDetails: unknown[] = [];
+            if (customers.length) {
+                const ids = customers.map((c) => c.id);
+                const { data: jobs } = await supabase.from("transaction_list")
+                   .select("job_id, client_name, item, fault, status, amount, date_created")
+                   .eq("del_status", 0)
+                   .in("client_name", ids)
+                   .order("date_created", { ascending: false });
+
+                const byClient: Record<string, unknown[]> = {};
+                (jobs || []).forEach((j) => {
+                    (byClient[j.client_name] = byClient[j.client_name] || []).push(j);
+                });
+
+                customerDetails = customers.map((cust) => ({
+                    customer_info: cust,
+                    recent_jobs: (byClient[String(cust.id)] || []).slice(0, 5),
+                }));
             }
 
             return { customers_found: customerDetails };
@@ -596,19 +608,20 @@ export async function executeGeminiTool(functionCall: { name: string; args?: obj
             }
 
             const jobRows = jobs as JobRow[];
+            // Client name lookup — ek hi .in() batch (N+1 nahi)
+            const jobClientIds = [...new Set(jobRows.map((j) => j.client_name).filter(Boolean))] as string[];
+            const jobClientNameMap: Record<string, string> = {};
+            if (jobClientIds.length) {
+                const { data: clientRows } = await supabase.from("client_list")
+                    .select("id, firstname, lastname")
+                    .in("id", jobClientIds);
+                (clientRows || []).forEach((c) => {
+                    jobClientNameMap[c.id] = `${c.firstname || ''} ${c.lastname || ''}`.trim();
+                });
+            }
             for (const job of jobRows) {
                 if (job.client_name) {
-                    // Fetch the actual client name based on ID
-                    const { data: clientInfo } = await supabase.from("client_list")
-                        .select("firstname, lastname")
-                        .eq("id", job.client_name)
-                        .maybeSingle();
-
-                    if (clientInfo) {
-                        job.actual_client_name = `${clientInfo.firstname || ''} ${clientInfo.lastname || ''}`.trim();
-                    } else {
-                        job.actual_client_name = "Unknown Client";
-                    }
+                    job.actual_client_name = jobClientNameMap[job.client_name] || "Unknown Client";
                 }
                 
                 // Add status label
@@ -745,7 +758,7 @@ export async function executeGeminiTool(functionCall: { name: string; args?: obj
                     .from("product_locations")
                     .select("product_id, locations!inner(zone, rack, bin, box)")
                     .in("product_id", prodIds);
-                (plLocs || []).forEach((row: any) => {
+                (plLocs || []).forEach((row: { product_id: number; locations?: { zone?: string | null; rack?: string | null; bin?: string | null; box?: string | null } | { zone?: string | null; rack?: string | null; bin?: string | null; box?: string | null }[] }) => {
                     if (locMap.has(row.product_id)) return;
                     const loc = Array.isArray(row.locations) ? row.locations[0] : row.locations;
                     const parts = [loc?.zone, loc?.rack, loc?.bin, loc?.box].filter(Boolean);
@@ -867,8 +880,25 @@ export async function executeGeminiTool(functionCall: { name: string; args?: obj
  * Fresh live shop snapshot injected into every chat request so the AI answers are
  * grounded in current data (no tool-call round-trip for common queries).
  * Role-aware: financial numbers (today's revenue, outstanding sum, loans) only for admin.
+ *
+ * Performance: har message pe 7 full-table scans rebounce hone se bachane ke liye
+ * module-level TTL cache (60s, role-aware). Snapshot 1 minut purana ho sakta hai —
+ * chat assistant ke liye acceptable; tools deep/filtered data ke liye hote hain.
  */
+const LIVE_CONTEXT_TTL_MS = 60 * 1000;
+const liveContextCache = new Map<AiRole, { ts: number; value: string }>();
+
 export async function getLiveContext(role: AiRole): Promise<string> {
+    const now = Date.now();
+    const cached = liveContextCache.get(role);
+    if (cached && now - cached.ts < LIVE_CONTEXT_TTL_MS) return cached.value;
+
+    const value = await buildLiveContext(role);
+    liveContextCache.set(role, { ts: now, value });
+    return value;
+}
+
+async function buildLiveContext(role: AiRole): Promise<string> {
     const today = todayIST();
     const isAdmin = role === "admin";
 

@@ -34,14 +34,12 @@ type TooltipItem = { value?: number | string; payload?: unknown };
 
 type TxnRow = { amount: number };
 type DirectSaleRow = { total_amount: number };
-type PartsTxnRow = { amount: number };
 type DiscountRow = { discount: number };
 type AttendanceRow = { mechanic_id: string | null; status: number };
 type MechRow = { id: string; daily_salary: number };
 type LoanRow = { amount_paid: number };
 type ExpenseRow = { amount: number };
 type PartsProductRow = { qty: number; price: number; products: { cost_price?: number }[] };
-type DirectItemRow = { item_total: number };
 type PlLocRow = { product_id: number; locations: { zone: string; rack: string; bin: string; box: string }[] };
 
 

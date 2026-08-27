@@ -147,10 +147,10 @@ export default function LocatePage() {
         .select("product_id, locations!inner(id, zone, rack, bin, box)")
         .in("product_id", ids);
       const prodLocMap = new Map<number, { zone: string; rack: string; bin: string; box: string }[]>();
-      (plLocs || []).forEach((row: any) => {
-        const loc = row.locations;
+      (plLocs || []).forEach((row: { product_id: number; locations: { zone: string | null; rack: string | null; bin: string | null; box: string | null }[] }) => {
+        const loc = row.locations?.[0];
         const arr = prodLocMap.get(row.product_id) || [];
-        arr.push({ zone: loc.zone || "", rack: loc.rack || "", bin: loc.bin || "", box: loc.box || "" });
+        arr.push({ zone: loc?.zone || "", rack: loc?.rack || "", bin: loc?.bin || "", box: loc?.box || "" });
         prodLocMap.set(row.product_id, arr);
       });
 
