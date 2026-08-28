@@ -1,3 +1,19 @@
+# Project Roadmap & Plans
+
+*Index of planning docs. Perf session (28 Aug 2026) ke baad: is file me roadmap pointers.*
+
+## Server Components Migration — DECIDED (gate-controlled)
+- 📄 `docs/plans/server_migration_gate_plan.md` — decision + trigger conditions + teeno SAFE-yes
+  conditions ko kaise achieve karein.
+- **Status: NOT STARTED (by design).** Start tabhi jab teeno gate-conditions SAFE-yes ho:
+  - G1: RootClient gate server-shell-aware (currently NO)
+  - G2: Baseline metrics captured (currently NO — Step A abhi FREE me kiya ja sakta hai)
+  - G3: Dedicated off-peak window (currently NO)
+- Pehla step = Step A (baseline capture, abhi karna hai) → fir G1 (RootClient gate-split) → fir G3
+  (window) → pilot `clients/page.tsx`.
+
+---
+
 # Project Dependency Updates
 
 The objective is to scan the project for outdated dependencies and apply the latest possible updates to ensure the codebase uses current library versions.
