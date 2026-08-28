@@ -39,6 +39,8 @@ create table if not exists public.purchase_orders (
 );
 
 alter table public.purchase_orders
+  drop constraint if exists purchase_orders_supplier_fk;
+alter table public.purchase_orders
   add constraint purchase_orders_supplier_fk
   foreign key (supplier_id) references public.suppliers (id)
   on delete set null;
@@ -62,10 +64,14 @@ create table if not exists public.purchase_order_items (
 );
 
 alter table public.purchase_order_items
+  drop constraint if exists purchase_order_items_po_fk;
+alter table public.purchase_order_items
   add constraint purchase_order_items_po_fk
   foreign key (purchase_order_id) references public.purchase_orders (id)
   on delete cascade;
 
+alter table public.purchase_order_items
+  drop constraint if exists purchase_order_items_product_fk;
 alter table public.purchase_order_items
   add constraint purchase_order_items_product_fk
   foreign key (product_id) references public.product_list (id)
@@ -91,6 +97,8 @@ create table if not exists public.push_subscriptions (
   date_updated   timestamp with time zone default now() not null
 );
 
+alter table public.push_subscriptions
+  drop constraint if exists push_subscriptions_user_fk;
 alter table public.push_subscriptions
   add constraint push_subscriptions_user_fk
   foreign key (user_id) references public.profiles (id)
