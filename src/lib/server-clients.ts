@@ -62,39 +62,48 @@ export type ClientsPageData = {
 export async function fetchClientsPageData(): Promise<ClientsPageData> {
   const supabase = await getServerSupabase();
 
-  // Logged-in staff role (admin/staff/developer) — page actions isi par depend
-  // karte hain (delete, portal-access sirf admin).
-  let userRole = "staff";
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
-      userRole = profile?.role ?? "staff";
-    }
-  } catch {
-    /* session nahi to unauthorized — proxy already redirect karta hai */
-  }
+  // ─── Batch 1: Parallel — auth/role + firmInfo + client list ──────────────
+  // Teen independent queries ek saath chalao — pehle sequential tha (~600ms),
+  // ab sab parallel (~200ms max).
+  const [roleResult, sysResult, clsResult] = await Promise.all([
+    // 1a. User role (2 chained queries — getUser → profile)
+    (async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return "staff";
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+        return profile?.role ?? "staff";
+      } catch {
+        return "staff";
+      }
+    })(),
 
-  // ── system_info (firm vars — WhatsApp templates) ────────────────
-  const { data: sys } = await supabase.from("system_info").select("meta_field, meta_value");
+    // 1b. system_info — firm vars for WhatsApp templates
+    supabase.from("system_info").select("meta_field, meta_value"),
+
+    // 1c. client_list — all active clients
+    supabase
+      .from("client_list")
+      .select(
+        "id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance, image_path, login_allowed"
+      )
+      .eq("delete_flag", 0),
+  ]);
+
+  const userRole = roleResult as string;
+
   const firmInfo: Record<string, string> = {};
-  ((sys as DbRow[] | null) || []).forEach((r) => {
+  ((sysResult.data as DbRow[] | null) || []).forEach((r) => {
     firmInfo[String(r.meta_field)] = String(r.meta_value ?? "");
   });
 
-  const { data: cls } = await supabase
-    .from("client_list")
-    .select(
-      "id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance, image_path, login_allowed"
-    )
-    .eq("delete_flag", 0);
-
+  const cls = clsResult.data;
   if (!cls?.length) {
     return { clients: [], firmInfo, userRole };
   }
@@ -134,33 +143,27 @@ export async function fetchClientsPageData(): Promise<ClientsPageData> {
   };
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
-  const repairs = await selectIn(
-    "transaction_list",
-    "client_name, amount",
-    "client_name",
-    ids.map(String),
-    (q) => q.eq("status", JOB_STATUS_DELIVERED)
-  );
-  const dirSales = await selectIn("direct_sales", "client_id, total_amount", "client_id", ids);
-  const payments = await selectIn(
-    "client_payments",
-    "client_id, amount, discount, loan_id",
-    "client_id",
-    ids
-  );
-  const loans = await selectIn(
-    "client_loans",
-    "id, client_id, total_payable",
-    "client_id",
-    ids,
-    (q) => q.eq("status", LOAN_STATUS_ACTIVE)
-  );
-  const lastTxns = await selectIn(
-    "transaction_list",
-    "client_name, date_created",
-    "client_name",
-    ids.map(String)
-  );
+  // ─── Batch 2: Parallel — all 5 financial queries ─────────────────────────
+  // Pehle ye sequential chalti thi (~1500ms+). Ab sab ek saath (~300ms max).
+  const [repairs, dirSales, payments, loans, lastTxns] = await Promise.all([
+    selectIn(
+      "transaction_list",
+      "client_name, amount",
+      "client_name",
+      ids.map(String),
+      (q) => q.eq("status", JOB_STATUS_DELIVERED)
+    ),
+    selectIn("direct_sales", "client_id, total_amount", "client_id", ids),
+    selectIn("client_payments", "client_id, amount, discount, loan_id", "client_id", ids),
+    selectIn(
+      "client_loans",
+      "id, client_id, total_payable",
+      "client_id",
+      ids,
+      (q) => q.eq("status", LOAN_STATUS_ACTIVE)
+    ),
+    selectIn("transaction_list", "client_name, date_created", "client_name", ids.map(String)),
+  ]);
 
   const m = buildDueMaps({ repairs, directSales: dirSales, payments, loans });
 
