@@ -42,16 +42,28 @@ Snapshot dir: `.next/diagnostics/analyze` (analyzer run, this session)
 > (React runtime, lucide, supabase-js, RSC infra), so most pages land ~1–1.7 MB.
 > Differential win from future work shows as a drop in these totals.
 
-## TTI / Core Web Vitals
-Not yet captured live (needs browser Lighthouse on logged-in app state).
-Record devtools Lighthouse TTI/FCP for the identical routes here when captured —
-this table is the Web-Vitals half of G2.
+## TTI / Core Web Vitals — captured via Lighthouse 13.4.1 (28 Aug 2026)
+- Prod `next start` build on `http://localhost:3939`; authenticated session
+  (staff user `preeti@vtech.com`) via a persistent Chrome profile; Lighthouse attached
+  to a `--headless=new --remote-debugging-port` Chrome with the session (so pages that
+  need auth are measured, not a redirect to /login).
+- Desktop-ish throttling is default Lighthouse mobile emulation (simulated 4G / 4x CPU)
+  — LCP/TTI/TBT numbers are the throttled/baseline values, for **comparison** across
+  refactors, not raw field data.
+- Perf score = Lighthouse `performance` category.
 
-| Route | FCP | LCP | TTI | CLS |
-|-------|-----|-----|-----|-----|
-| /dashboard |  |  |  |  |
-| /clients |  |  |  |  |
-| /jobs |  |  |  |  |
-| /reports/cash-flow |  |  |  |  |
-| /reports/monthly-profit |  |  |  |  |
-| /login |  |  |  |  |
+| Route | perf | FCP | LCP | TTI | CLS | SI | TBT |
+|-------|------|-----|-----|-----|-----|-----|-----|
+| /dashboard | 28 | 1.09s | 9.64s | 9.89s | 0.248 | 7.70s | 1865ms |
+| /clients | 42 | 1.08s | 10.13s | 10.40s | 0.005 | 5.95s | 2096ms |
+| /jobs | 41 | 1.12s | 10.23s | 10.25s | 0.000 | 5.71s | 2668ms |
+| /reports/cash-flow | 48 | 1.11s | 5.63s | 9.36s | 0.071 | 4.52s | 1730ms |
+| /reports/monthly-profit | 56 | 1.08s | 5.88s | 9.48s | 0.000 | 3.42s | 980ms |
+| /login | 31 | 1.08s | 9.72s | 9.80s | 0.248 | 5.99s | 1527ms |
+
+> Notes: /login first run (before Chrome-profile fix) measured FCP 1.22s / LCP 5.71s /
+> CLS 0 — superseded by the authenticated runs above. Large TBT on the app pages is the
+> main bottleneck (~1.8–2.7 s); CLS spikes on /dashboard (0.248) and /login warrant a
+> layout-stability look. Re-measure the same 6 routes with the identical command after
+> any migration:
+> `npx --yes lighthouse "http://<host>/<route>" --port=<chrome-debug-port> --only-categories=performance --output=json`
