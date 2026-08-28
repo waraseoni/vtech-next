@@ -34,8 +34,12 @@ const CUSTOM_CACHE: RuntimeCaching[] = [
   {
     matcher: ({ request }) => request.mode === "navigate",
     handler: async ({ request }) => {
+      // RSC soft-nav requests (carry _rsc= param + RSC:1 header) — let
+      // NetworkOnly handler below take care of them. Passing { cache } options
+      // alongside a Request object causes "Error in input stream" on Firefox.
+      if (request.headers.get("RSC") === "1") return fetch(request);
       try {
-        const res = await fetch(request, { cache: "no-store" });
+        const res = await fetch(new Request(request, { cache: "no-store" }));
         if (res && (res.ok || res.status === 304)) return res;
       } catch {
         const url = new URL(request.url);
@@ -43,7 +47,7 @@ const CUSTOM_CACHE: RuntimeCaching[] = [
           (await serwist.matchPrecache(url.pathname)) || (await serwist.matchPrecache("/"));
         if (fallback) return fallback;
       }
-      return fetch(request, { cache: "no-store" });
+      return fetch(new Request(request, { cache: "no-store" }));
     },
   },
   // ⛔ RSC / Flight payloads (soft-navigation data) — kabhi cache nahi.

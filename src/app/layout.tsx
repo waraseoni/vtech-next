@@ -1,11 +1,7 @@
 import "./globals.css";
 import Script from "next/script";
 import RootClient from "./RootClient";
-import { Outfit, Inter } from "next/font/google";
 import type { Metadata, Viewport } from "next";
-
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: "swap" });
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "V-Technologies";
 const SITE_TAGLINE = process.env.NEXT_PUBLIC_SITE_TAGLINE || "Repair & Service Management System";
@@ -99,7 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rule attribute ke hisaab se turant sahi color deta hai (pehle yahan
           bg-[#0d1117] text-slate-200 hardcoded tha jo light theme se ladta tha). */}
       <body
-        className={`h-full m-0 font-sans antialiased overflow-x-hidden ${outfit.variable} ${inter.variable}`}
+        className={`h-full m-0 font-sans antialiased overflow-x-hidden`}
       >
         <Script
           id="vtech-theme-boot"
