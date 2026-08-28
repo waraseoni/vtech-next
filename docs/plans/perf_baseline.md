@@ -67,3 +67,23 @@ Snapshot dir: `.next/diagnostics/analyze` (analyzer run, this session)
 > layout-stability look. Re-measure the same 6 routes with the identical command after
 > any migration:
 > `npx --yes lighthouse "http://<host>/<route>" --port=<chrome-debug-port> --only-categories=performance --output=json`
+
+## Session 2 (28 Aug 2026) — G3 pilot: /clients served server-side (cookie+RLS)
+`src/app/clients/page.tsx` → async server component; data at render time via
+`fetchClientsPageData()` (cookie+RLS client, **no service role**); interactive UI =
+`ClientsBody` client component receiving `{clients, firmInfo, userRole}` props.
+Route flipped `○ (Static)` → `ƒ (Dynamic)`. Same LH method as Session 1.
+
+| Route | perf | FCP | LCP | TTI | CLS | SI | TBT |
+|-------|------|-----|-----|-----|-----|-----|-----|
+| /clients (run 1) | 40 | 1.98s | 5.89s | 9.55s | 0.000 | 8.43s | 2397ms |
+| /clients (run 2) | 44 | 1.98s | 5.25s | 9.63s | 0.000 | 6.62s | 2384ms |
+| /clients (Session 1 baseline) | 42 | 1.08s | 10.13s | 10.40s | 0.005 | 5.95s | 2096ms |
+
+> G3 pilot verdict: clear **LCP win 10.13s → ~5.2–5.9s (-42–48%)** and TTI 10.40 → ~9.6s
+> (-8%), because the 453-row dataset now ships in the initial SSR HTML (measured
+> first-document ~772 KB) instead of after a client `.from().select()` + re-render.
+> Trade-offs: **FCP 1.08 → 1.98s** (heavier SSR HTML parsed before first paint) and a
+> small TBT uptick (2096 → ~2390ms, more HTML/JS to hydrate). Net: LCP/TTI improved;
+> FCP/SI/TBT regressed slightly — worth real-device validation. Next pages to migrate
+> via same cookie+RLS pattern: `jobs`, `dashboard`.
