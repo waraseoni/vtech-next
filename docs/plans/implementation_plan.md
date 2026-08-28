@@ -7,7 +7,8 @@
   conditions ko kaise achieve karein.
 - **Status: NOT STARTED (by design).** Start tabhi jab teeno gate-conditions SAFE-yes ho:
   - G1: RootClient gate server-shell-aware (currently NO)
-  - G2: Baseline metrics captured (currently NO — Step A abhi FREE me kiya ja sakta hai)
+  - G2: Baseline metrics captured (✅ bundle baseline done — see `docs/plans/perf_baseline.md`;
+    TTI/FCP Web-Vitals half pending as separate item)
   - G3: Dedicated off-peak window (currently NO)
 - Pehla step = Step A (baseline capture, abhi karna hai) → fir G1 (RootClient gate-split) → fir G3
   (window) → pilot `clients/page.tsx`.

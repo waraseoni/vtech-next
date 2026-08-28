@@ -42,7 +42,7 @@ Migration shuru karne ke liye **ALL 3 must be YES**:
 | # | Condition | Abhi (status) | Safe-yes hone ka matlab |
 |---|-----------|---------------|--------------------------|
 | **G1** | RootClient gate server-shell-aware | ❌ NO | `useEffect`-based auth fetch abhi chat client `loading` state par splash gate karta hai. Safe-yes = RootClient already server-rendered content ko display karta hai (ya ek standalone `RootClient` gate-split fix pehle hi merge ho gaya hai). |
-| **G2** | Baseline metrics captured | ❌ NO | Koi Web-Vitals/TTI baseline kisi key page par nahi liya. Safe-yes = dashboard, clients, jobs, cash-flow, monthly-profit ke TTI/FCP recorded ek stable state me. |
+| **G2** | Baseline metrics captured | ✅ **YES** (bundle baseline; Web-Vitals pending) | Bundle baseline (per-route client-JS) `docs/plans/perf_baseline.md` me recorded + `npm run analyze` tooling live. TTI/FCP half abhi browser-Lighthouse ke liye pending hai. |
 | **G3** | Dedicated off-peak window | ❌ NO | Koi freeze/refactor sprint scheduled nahi. Safe-yes = ek window hai jisme production churn low hai + rollback easy. |
 
 ---
@@ -119,7 +119,8 @@ Pilot = **`clients/page.tsx`** (1778 lines, sabse bada, highest traffic, RLS-cri
 
 ## 8. Entry checklist (publish se pehle poora):
 
-- [ ] G2 baseline captured (recorded)
+- [x] G2 baseline captured (bundle) — Web-Vitals TTI/FCP Live tabhi remaining (step A ka half)
+- [ ] G2 Web-Vitals (TTI/FCP) live capture (browser Lighthouse, logged-in state)
 - [ ] G1 RootClient gate-split fix merged + regression green
 - [ ] G3 off-peak window confirmed + QA available
 - [ ] Cookie `createServerClient` layer built + RLS-verified
