@@ -86,4 +86,26 @@ Route flipped `○ (Static)` → `ƒ (Dynamic)`. Same LH method as Session 1.
 > Trade-offs: **FCP 1.08 → 1.98s** (heavier SSR HTML parsed before first paint) and a
 > small TBT uptick (2096 → ~2390ms, more HTML/JS to hydrate). Net: LCP/TTI improved;
 > FCP/SI/TBT regressed slightly — worth real-device validation. Next pages to migrate
-> via same cookie+RLS pattern: `jobs`, `dashboard`.
+> via same cookie+RLS pattern: bounded fetch-once lists (see Session 3). Note: `jobs`
+> and `dashboard` re-query on-demand per filter/scroll, so the fetch-once SSR trick
+> does NOT fit them — they need a different approach, left out of scope.
+
+## Session 3 (28 Aug 2026) — G3: /mechanics served server-side (cookie+RLS)
+`src/app/mechanics/page.tsx` → async server component; data at render time via
+`fetchMechanicsPageData()` (cookie+RLS client, **no service role**); interactive UI =
+`MechanicsBody` client component receiving `{mechanics, userRole}` props (search,
+CRUD modals, salary-history writes stay client-side; `refreshData()` re-queries only
+after add/edit/delete/toggle). Route flipped `○ (Static)` → `ƒ (Dynamic)`.
+No pre-migration numeric baseline existed for /mechanics (not in Session 1 set), so
+"after" only; runtime verified SSR parity (4 mechanics, stats, search count).
+
+| Route | perf | FCP | LCP | TTI | CLS | SI | TBT |
+|-------|------|-----|-----|-----|-----|-----|-----|
+| /mechanics (run 1) | 55 | 1.10s | 5.38s | 6.67s | 0.000 | 4.24s | 1030ms |
+| /mechanics (run 2) | 60 | 1.11s | 5.46s | 6.82s | 0.000 | 3.30s | 762ms |
+
+> /mechanics after-state is well-controlled (LCP ~5.4s, TTI ~6.7s, CLS 0.000,
+> TBT ≤1030ms — far below the /jobs 2668ms / /clients 2096ms baselines), consistent
+> with the /clients LCP/SSR win. Ongoing direction: keep migrating bounded
+> fetch-once list pages (e.g. `expenses`) via this cookie+RLS pattern; leave
+> on-demand-query pages (`jobs`, `dashboard`, `inquiries`, `activity-logs`) alone.
