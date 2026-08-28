@@ -32,7 +32,7 @@ const BarTooltip = ({
 
 type Client = { id: number; name: string; balance: number };
 
-export function ClientChart({ clients }: { clients: Client[] }) {
+export default function ClientChart({ clients }: { clients: Client[] }) {
   const chartData = useMemo(
     () =>
       [...clients]

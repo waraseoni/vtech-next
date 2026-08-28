@@ -4,19 +4,18 @@ import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
 import { BarChart3, TrendingUp, DollarSign, Package, Receipt, Printer } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-  Line,
-} from "recharts";
 import { format, eachMonthOfInterval } from "date-fns";
 import { X } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const MonthlyProfitChart = dynamic(() => import("./MonthlyProfitChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs font-bold">
+      Load chart…
+    </div>
+  ),
+});
 
 const inr = (n: number) =>
   "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -422,57 +421,7 @@ export default function MonthlyProfitReport() {
         <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
           <TrendingUp size={16} className="text-indigo-500" /> Sales vs Profit Trend
         </h3>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-            <XAxis
-              dataKey="month"
-              stroke="#6b7280"
-              fontSize={10}
-              fontWeight="bold"
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis
-              stroke="#6b7280"
-              fontSize={10}
-              fontWeight="bold"
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(v) => `₹${v / 1000}k`}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#0d1117",
-                border: "1px solid #1f2937",
-                borderRadius: "12px",
-              }}
-              itemStyle={{ fontSize: "12px", fontWeight: "bold" }}
-              formatter={(v) => [inr(Number(v) || 0), ""]}
-            />
-            <Legend
-              verticalAlign="top"
-              align="right"
-              iconType="circle"
-              wrapperStyle={{ paddingBottom: "20px", fontSize: "12px", fontWeight: "bold" }}
-            />
-            <Bar
-              dataKey="revenue"
-              name="Total Revenue"
-              fill="#3b82f6"
-              radius={[6, 6, 0, 0]}
-              barSize={40}
-            />
-            <Line
-              type="monotone"
-              dataKey="profit"
-              name="Net Profit"
-              stroke="#10b981"
-              strokeWidth={3}
-              dot={{ r: 4, fill: "#10b981", strokeWidth: 2 }}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+        <MonthlyProfitChart data={data} />
       </div>
 
       {/* Summary Stats */}

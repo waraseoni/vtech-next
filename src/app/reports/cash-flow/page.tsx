@@ -21,18 +21,24 @@ import {
   Activity,
 } from "lucide-react";
 import { startOfMonthIST, endOfMonthIST, formatIST, toISTDatePart } from "@/lib/dateUtils";
-import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip as RechartsTooltip,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts";
+import dynamic from "next/dynamic";
+
+const CashFlowTrendChart = dynamic(() => import("./CashFlowTrendChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs font-bold">
+      Load chart…
+    </div>
+  ),
+});
+const CashFlowDonut = dynamic(() => import("./CashFlowDonut"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs font-bold">
+      Load chart…
+    </div>
+  ),
+});
 
 type LedgerEntry = {
   date: string;
@@ -391,69 +397,15 @@ function CashFlowPageInner() {
                   </div>
                 </div>
                 <div className="h-[300px] relative z-10">
-                  <ResponsiveContainer width="100%" minHeight={200} height="100%">
-                    <AreaChart
-                      data={stats.trendData}
-                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                    >
-                      <defs>
-                        <linearGradient id="colorInflow" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={isDark ? 0.3 : 0.15} />
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={isDark ? 0.3 : 0.15} />
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartGrid} />
-                      <XAxis
-                        dataKey="date"
-                        tickFormatter={(d) => formatIST(d, { day: "2-digit", month: "short" })}
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: chartAxis, fontSize: 10, fontWeight: 700 }}
-                        minTickGap={30}
-                      />
-                      <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: chartAxis, fontSize: 10, fontWeight: 700 }}
-                        tickFormatter={(v) => `₹${v / 1000}k`}
-                      />
-                      <RechartsTooltip
-                        contentStyle={{
-                          backgroundColor: tooltipBg,
-                          border: `1px solid ${tooltipBorder}`,
-                          borderRadius: "14px",
-                          color: tooltipColor,
-                          boxShadow: "0 8px 30px rgba(0,0,0,0.2)",
-                        }}
-                        labelFormatter={(l) => formatIST(String(l), { dateStyle: "medium" })}
-                        formatter={(v) => [rupee(Number(v)), ""]}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="inflow"
-                        stroke="#10b981"
-                        fillOpacity={1}
-                        fill="url(#colorInflow)"
-                        strokeWidth={3}
-                        dot={{ r: 3, fill: "#10b981", strokeWidth: 0 }}
-                        activeDot={{ r: 5 }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="net"
-                        stroke="#3b82f6"
-                        fillOpacity={1}
-                        fill="url(#colorNet)"
-                        strokeWidth={3}
-                        dot={{ r: 3, fill: "#3b82f6", strokeWidth: 0 }}
-                        activeDot={{ r: 5 }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  <CashFlowTrendChart
+                    data={stats.trendData}
+                    isDark={isDark}
+                    chartGrid={chartGrid}
+                    chartAxis={chartAxis}
+                    tooltipBg={tooltipBg}
+                    tooltipBorder={tooltipBorder}
+                    tooltipColor={tooltipColor}
+                  />
                 </div>
               </div>
 
@@ -463,35 +415,12 @@ function CashFlowPageInner() {
                   Inflow Sources <PieChartIcon size={13} className="text-emerald-400" />
                 </h4>
                 <div className="flex-1 h-[200px]">
-                  <ResponsiveContainer width="100%" minHeight={200} height="100%">
-                    <PieChart>
-                      <Pie
-                        data={stats.inflowDistribution}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={82}
-                        paddingAngle={8}
-                        dataKey="value"
-                        stroke="none"
-                        cornerRadius={4}
-                      >
-                        {stats.inflowDistribution.map((_, idx) => (
-                          <Cell key={idx} fill={COLORS.inflow[idx % COLORS.inflow.length]} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip
-                        contentStyle={{
-                          backgroundColor: tooltipBg,
-                          border: `1px solid ${tooltipBorder}`,
-                          borderRadius: "12px",
-                          fontSize: "12px",
-                          color: tooltipColor,
-                        }}
-                        formatter={(v) => rupee(Number(v))}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <CashFlowDonut
+                    data={stats.inflowDistribution}
+                    tooltipBg={tooltipBg}
+                    tooltipBorder={tooltipBorder}
+                    tooltipColor={tooltipColor}
+                  />
                 </div>
                 <div className="mt-4 space-y-2">
                   {stats.inflowDistribution.map((item, i) => (
