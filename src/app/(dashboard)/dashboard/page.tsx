@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -250,8 +250,7 @@ export default function Dashboard() {
 
   // ── AUTH CHECK ──────────────────────────────────────────────────────────
   useEffect(() => {
-    supabase.auth
-      .getUser()
+    getCachedUser()
       .then(({ data: { user } }) => {
         setIsLoggedIn(!!user);
         setAuthChecked(true);
@@ -276,7 +275,7 @@ export default function Dashboard() {
         setLoading(true);
         const {
           data: { user },
-        } = await supabase.auth.getUser();
+        } = await getCachedUser();
 
         // BUG FIX: logged-out user par heavy dashboard queries (transactions,
         // 12-month revenue loop ~24 calls, counts...) bilkul mat chalao — koi

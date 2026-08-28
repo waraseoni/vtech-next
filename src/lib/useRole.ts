@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 
 export function useRole() {
   const [role, setRole] = useState<string | null>(null);
@@ -9,7 +9,7 @@ export function useRole() {
     async function getRole() {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await getCachedUser();
       if (user) {
         const { data } = await supabase.from("profiles").select("role").eq("id", user.id).single();
         setRole(data?.role || "staff");

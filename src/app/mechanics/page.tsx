@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
@@ -101,7 +101,7 @@ export default function MechanicsPage() {
   const [formErr, setFormErr] = useState("");
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    getCachedUser().then(({ data: { user } }) => {
       if (!user) return;
       supabase
         .from("profiles")

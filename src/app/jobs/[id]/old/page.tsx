@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -138,7 +138,7 @@ export default function ManageJobPage() {
   const fetchMaster = useCallback(async () => {
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getCachedUser();
     if (user) {
       const { data: p } = await supabase
         .from("profiles")
@@ -335,7 +335,7 @@ export default function ManageJobPage() {
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await getCachedUser();
       const { data: profile } = await supabase
         .from("profiles")
         .select("mechanic_id")

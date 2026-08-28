@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import AdminPage from "@/app/components/AdminPage";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import {
   Search,
   Plus,
@@ -159,7 +159,7 @@ export default function ProductsPage() {
   };
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    getCachedUser().then(({ data: { user } }) => {
       if (!user) return;
       supabase
         .from("profiles")

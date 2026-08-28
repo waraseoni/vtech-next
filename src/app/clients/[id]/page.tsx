@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, use, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -179,7 +179,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
       // User role
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await getCachedUser();
       if (user) {
         const { data: p } = await supabase
           .from("profiles")

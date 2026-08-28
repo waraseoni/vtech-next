@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, invalidateCachedUser } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import {
   LogIn,
@@ -186,6 +186,7 @@ export default function LoginPage() {
     if (!onboardRes.ok) {
       setError(onboardData.error || "Account setup nahi hua.");
       await supabase.auth.signOut();
+      invalidateCachedUser();
       setLoading(false);
       setOtpStep("request");
       return;

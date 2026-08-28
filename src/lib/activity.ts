@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { supabase, getCachedUser } from "./supabase";
 import { logger } from "@/lib/logger";
 
 /**
@@ -17,7 +17,7 @@ export async function logActivity(
   try {
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getCachedUser();
     if (!user) return;
 
     // Get the numeric mechanic_id from profiles

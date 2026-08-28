@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────────────────────
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import { Loader2, ClipboardCheck, CalendarDays } from "lucide-react";
 import DailyAttendance from "./components/DailyAttendance";
 import MonthlyReport from "./components/MonthlyReport";
@@ -27,7 +27,7 @@ function AttendanceContent() {
     const getProfile = async () => {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await getCachedUser();
       if (!user) {
         router.push("/login");
         return;

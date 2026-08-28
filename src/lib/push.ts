@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { supabase, getCachedUser } from "./supabase";
 
 /**
  * Web Push subscription helper.
@@ -35,7 +35,7 @@ async function currentUserId(): Promise<string | null> {
   try {
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getCachedUser();
     return user?.id || null;
   } catch {
     return null;

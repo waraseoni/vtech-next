@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import { todayIST } from "@/lib/dateUtils";
 import Link from "next/link";
 import Image from "next/image";
@@ -184,7 +184,7 @@ export default function ClientsPage() {
     const onResize = () => setIsMobile(window.innerWidth < 768);
     onResize();
     window.addEventListener("resize", onResize);
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    getCachedUser().then(({ data: { user } }) => {
       if (!user) return;
       supabase
         .from("profiles")

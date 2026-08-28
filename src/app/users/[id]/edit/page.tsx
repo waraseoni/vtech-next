@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, use, useRef } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -122,7 +122,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       // Admin check
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await getCachedUser();
       if (!user) {
         router.push("/login");
         return;

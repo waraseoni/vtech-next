@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import AdminPage from "@/app/components/AdminPage";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
 import { formatIST, toISTDatePart } from "@/lib/dateUtils";
 import {
@@ -73,7 +73,7 @@ export default function ClientLoansPage() {
   const [formErr, setFormErr] = useState("");
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    getCachedUser().then(({ data: { user } }) => {
       if (!user) return;
       supabase
         .from("profiles")

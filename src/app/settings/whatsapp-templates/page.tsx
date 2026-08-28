@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import AdminPage from "@/app/components/AdminPage";
 import {
   Save,
@@ -114,7 +114,7 @@ export default function WhatsAppTemplatesPage() {
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await getCachedUser();
       const { data: profile } = await supabase
         .from("profiles")
         .select("firstname, lastname")
@@ -177,7 +177,7 @@ export default function WhatsAppTemplatesPage() {
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await getCachedUser();
       const { data: profile } = await supabase
         .from("profiles")
         .select("firstname, lastname")

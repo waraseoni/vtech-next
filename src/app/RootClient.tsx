@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { supabase } from "@/lib/supabase";
+import { supabase, invalidateCachedUser } from "@/lib/supabase";
 import {
   IDLE_MS,
   WARN_BEFORE_MS,
@@ -1206,6 +1206,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
+    invalidateCachedUser();
     // Intentional full reload: RootClient ke stale in-memory state ko puri tarah reset karta hai
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = "/login";
@@ -1437,6 +1438,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   const forceClientLogout = useCallback(async (reason: "revoked" | "idle") => {
     try {
       await supabase.auth.signOut();
+      invalidateCachedUser();
     } catch {
       /* ignore */
     }
@@ -1509,6 +1511,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       const elapsed = Date.now() - lastActiveRef.current;
       if (elapsed >= IDLE_MS) {
         supabase.auth.signOut().catch(() => {});
+        invalidateCachedUser();
         // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = "/login?reason=idle";
       } else if (elapsed >= IDLE_MS - WARN_BEFORE_MS && !showIdleWarningRef.current) {

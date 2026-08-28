@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import AdminPage from "@/app/components/AdminPage";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import { LocationParts, locPath, encodeLocationToken } from "@/lib/locations";
 import { logActivity } from "@/lib/activity";
 import Image from "next/image";
@@ -133,7 +133,7 @@ export default function LocationsPage() {
   /* ─── role check ────────────────────────────────────────────────────── */
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    getCachedUser().then(({ data: { user } }) => {
       if (!user) return;
       supabase
         .from("profiles")

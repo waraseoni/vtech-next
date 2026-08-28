@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { SITE, SERVICES, getSiteInfo, type SiteInfo } from "./site";
 import { QrShareModal } from "./components/qr-share";
-import { supabase } from "@/lib/supabase";
+import { getCachedUser } from "@/lib/supabase";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -36,8 +36,7 @@ function AuthAwareAction({ mobile = false }: { mobile?: boolean }) {
 
   useEffect(() => {
     let cancelled = false;
-    supabase.auth
-      .getUser()
+    getCachedUser()
       .then(({ data }) => {
         if (!cancelled) setLoggedIn(!!data.user);
       })

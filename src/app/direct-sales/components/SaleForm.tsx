@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import {
   Plus,
   Trash2,
@@ -156,7 +156,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
   const fetchUserRoleAndId = async (): Promise<["admin" | "staff", number | null]> => {
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getCachedUser();
     if (!user) return ["staff", null];
     const { data: profile } = await supabase
       .from("profiles")

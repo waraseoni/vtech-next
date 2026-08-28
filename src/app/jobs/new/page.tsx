@@ -1,6 +1,6 @@
 "use client";
 import { Suspense, useState, useEffect, use, useRef, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -160,7 +160,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       try {
         const {
           data: { user },
-        } = await supabase.auth.getUser();
+        } = await getCachedUser();
         if (user) {
           // profiles.mechanic_id is the numeric id used in transaction_list.user_id
           // Fall back to 0 if profile not found (will still error if DB enforces NOT NULL)
