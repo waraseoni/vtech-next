@@ -555,10 +555,10 @@ function JobsListContent() {
       const term = debouncedSearch.trim().toLowerCase();
       const matchedClientIds = await searchClients(term);
 
-      const buildStatsQuery = (rangeFrom: number, rangeTo: number) => {
+      const buildStatsQuery = (rangeFrom: number, rangeTo: number, withCount = false) => {
         let q = supabase
           .from("transaction_list")
-          .select("status, amount")
+          .select("status, amount", withCount ? { count: "exact" } : undefined)
           .eq("del_status", 0)
           .range(rangeFrom, rangeTo);
         if (dateFrom) q = q.gte("date_created", `${dateFrom}T00:00:00+05:30`);
@@ -573,35 +573,27 @@ function JobsListContent() {
         return q;
       };
 
-      const scanChunk = async (
-        rangeFrom: number,
-        rangeTo: number
-      ): Promise<Array<{ status: number; amount: number }>> => {
-        const { data } = await buildStatsQuery(rangeFrom, rangeTo);
-        return (data || []) as Array<{ status: number; amount: number }>;
-      };
-
-      // Exact total first (head query), then scan all chunks in parallel
-      let countQ = supabase
-        .from("transaction_list")
-        .select("id", { count: "exact", head: true })
-        .eq("del_status", 0);
-      if (dateFrom) countQ = countQ.gte("date_created", `${dateFrom}T00:00:00+05:30`);
-      if (dateTo) countQ = countQ.lte("date_created", `${dateTo}T23:59:59+05:30`);
-      if (hideDelivered) countQ = countQ.neq("status", 5);
-      if (statusFilter !== "") countQ = countQ.eq("status", statusFilter);
-      if (spotFilter) countQ = countQ.eq("location_id", parseInt(spotFilter));
-      if (term)
-        countQ = countQ.or(
-          `job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`
-        );
-      const { count } = await countQ;
+      // Chunk 0 carries the exact total (same filters as the scan) — removes a
+      // standalone full-table `count: exact` head round-trip (N+1 → N queries).
+      // Baki chunks parallel. Results/behaviour unchanged.
+      const { data: head, count } = await buildStatsQuery(0, 999, true);
       const total = count || 0;
+      const headRows = (head || []) as Array<{ status: number; amount: number }>;
 
       const chunkCount = Math.max(1, Math.ceil(total / 1000));
-      const chunks = await Promise.all(
-        Array.from({ length: chunkCount }, (_, i) => scanChunk(i * 1000, i * 1000 + 999))
-      );
+      const restChunks: Array<Array<{ status: number; amount: number }>> = [];
+      if (chunkCount > 1) {
+        const rest = await Promise.all(
+          Array.from({ length: chunkCount - 1 }, (_, i) =>
+            buildStatsQuery((i + 1) * 1000, (i + 1) * 1000 + 999)
+          )
+        );
+        rest.forEach((r) =>
+          restChunks.push((r.data || []) as Array<{ status: number; amount: number }>)
+        );
+      }
+
+      const chunks = [headRows, ...restChunks];
 
       let pending = 0;
       let progress = 0;
