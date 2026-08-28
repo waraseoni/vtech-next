@@ -58,7 +58,11 @@ export async function GET(req: NextRequest) {
 
     let parsed: Partial<LicenseStatus> = {};
     if (statusRaw) {
-      try { parsed = JSON.parse(statusRaw); } catch { /* ignore */ }
+      try {
+        parsed = JSON.parse(statusRaw);
+      } catch {
+        /* ignore */
+      }
     }
 
     const activationId = parsed.activationId;
@@ -80,7 +84,8 @@ export async function GET(req: NextRequest) {
       // "lifetime" result ghanton tak galat access de sakta hai.
       const NULL_EXPIRY_RECHECK_MS = 6 * 60 * 60 * 1000;
       const effectiveInterval = expiresAt === null ? NULL_EXPIRY_RECHECK_MS : RECHECK_MS;
-      const due = force || !lastChecked || Date.now() - lastChecked > effectiveInterval || localExpired;
+      const due =
+        force || !lastChecked || Date.now() - lastChecked > effectiveInterval || localExpired;
 
       if (isLicenseConfigured() && due) {
         try {
@@ -90,8 +95,14 @@ export async function GET(req: NextRequest) {
           parsed.remoteValid = res.ok;
           parsed.remoteError = res.error;
           parsed.remoteCheckedAt = checkedAt;
-          if (res.plan) { parsed.plan = res.plan; plan = res.plan; }
-          if (res.shopName) { parsed.shopName = res.shopName; shopName = res.shopName; }
+          if (res.plan) {
+            parsed.plan = res.plan;
+            plan = res.plan;
+          }
+          if (res.shopName) {
+            parsed.shopName = res.shopName;
+            shopName = res.shopName;
+          }
           if (res.expiresAt !== undefined) {
             expiresAt = res.expiresAt ?? null;
             parsed.expiresAt = res.expiresAt ?? null;
@@ -114,7 +125,8 @@ export async function GET(req: NextRequest) {
         valid = !localExpired;
       } else {
         valid = parsed.remoteValid !== undefined ? parsed.remoteValid : !localExpired;
-        error = parsed.remoteError ?? (parsed.remoteValid === false ? "LICENSE_NOT_ACTIVE" : undefined);
+        error =
+          parsed.remoteError ?? (parsed.remoteValid === false ? "LICENSE_NOT_ACTIVE" : undefined);
       }
     } else if (activated) {
       // Purani install jisme activationId store nahi hua — local expiry se verify.
@@ -135,11 +147,9 @@ export async function GET(req: NextRequest) {
       enabledModules: parsed.enabledModules ?? null,
       // Env vars set hain to portals enabled (sirf seller ke deployment par).
       sellerEnabled:
-        !!process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY &&
-        !!process.env.SELLER_PORTAL_PASSWORD,
+        !!process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY && !!process.env.SELLER_PORTAL_PASSWORD,
       devEnabled:
-        !!process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY &&
-        !!process.env.DEV_PORTAL_PASSWORD,
+        !!process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY && !!process.env.DEV_PORTAL_PASSWORD,
     };
 
     return NextResponse.json(status);

@@ -1,8 +1,8 @@
 // proxy.ts — Public website + Protected dashboard (Next 16: renamed from middleware.ts)
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
-import { ABSOLUTE_MS } from '@/lib/session-policy'
-import { logger } from '@/lib/logger'
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import { ABSOLUTE_MS } from "@/lib/session-policy";
+import { logger } from "@/lib/logger";
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next({
@@ -14,7 +14,9 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return request.cookies.getAll(); },
+        getAll() {
+          return request.cookies.getAll();
+        },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options });
@@ -27,11 +29,14 @@ export async function proxy(request: NextRequest) {
 
   let user = null;
   try {
-    const { data: { user: u } } = await supabase.auth.getUser();
+    const {
+      data: { user: u },
+    } = await supabase.auth.getUser();
     user = u;
   } catch (err) {
     logger.debug("proxy: stale session cookie, clearing auth cookies:", (err as Error)?.message);
-    request.cookies.getAll()
+    request.cookies
+      .getAll()
       .filter((c) => c.name.startsWith("sb-"))
       .forEach((c) => {
         response.cookies.set({ name: c.name, value: "", maxAge: 0, path: "/" });
@@ -39,9 +44,18 @@ export async function proxy(request: NextRequest) {
   }
   const path = request.nextUrl.pathname;
 
-  const isPublic = ["/", "/about", "/contact", "/job-status", "/track", "/login", "/setup", "/stage-lighting", "/industrial", "/power-supply"].some(r =>
-    path === r || path.startsWith(r + "/")
-  );
+  const isPublic = [
+    "/",
+    "/about",
+    "/contact",
+    "/job-status",
+    "/track",
+    "/login",
+    "/setup",
+    "/stage-lighting",
+    "/industrial",
+    "/power-supply",
+  ].some((r) => path === r || path.startsWith(r + "/"));
 
   if (
     path.startsWith("/_next") ||
@@ -81,5 +95,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

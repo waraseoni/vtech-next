@@ -11,18 +11,18 @@ interface PageHeaderProps {
   actions?: React.ReactNode;
 }
 
-export const PageHeader: React.FC<PageHeaderProps> = ({ 
-  title, 
-  subtitle, 
-  badge = "System Active", 
+export const PageHeader: React.FC<PageHeaderProps> = ({
+  title,
+  subtitle,
+  badge = "System Active",
   icon: Icon,
-  actions
+  actions,
 }) => {
   return (
     <div className="relative overflow-hidden mb-8 border-b border-black/[0.05] dark:border-white/[0.05] bg-gradient-to-b from-white dark:from-[#111114] to-slate-50 dark:to-[#09090b] rounded-[3rem] p-8 md:p-10 shadow-sm dark:shadow-none">
       {/* Glow Effects */}
       <div className="absolute -top-24 -left-20 w-64 h-64 bg-blue-600/5 dark:bg-blue-600/10 blur-[100px] rounded-full"></div>
-      
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
         <div className="flex items-center gap-6">
           <div className="relative group">

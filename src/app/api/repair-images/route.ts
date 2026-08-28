@@ -14,12 +14,48 @@ const STORAGE_URL_MARKER = "/storage/v1/object/public/";
 // paths aa gaye hote hain, par files storage bucket me maujood rehti hain.
 // File naam = {id}-{ts}.{ext} (user-avatars me {uuid}-{ts}.{ext}), isliye file
 // ka id-prefix DB row se match karke broken references wapas link ho sakti hain.
-const REPAIR_MAP: { bucket: string; table: string; column: string; idColumn: string; idMode: "numeric" | "uuid" }[] = [
-  { bucket: "client-photos",   table: "client_list",        column: "image_path", idColumn: "id",             idMode: "numeric" },
-  { bucket: "mechanic-photos", table: "mechanic_list",      column: "image_path", idColumn: "id",             idMode: "numeric" },
-  { bucket: "product-images",  table: "product_list",       column: "image_path", idColumn: "id",             idMode: "numeric" },
-  { bucket: "user-avatars",    table: "profiles",           column: "avatar_url", idColumn: "id",             idMode: "uuid" },
-  { bucket: "job-images",      table: "transaction_images", column: "image_path", idColumn: "transaction_id", idMode: "numeric" },
+const REPAIR_MAP: {
+  bucket: string;
+  table: string;
+  column: string;
+  idColumn: string;
+  idMode: "numeric" | "uuid";
+}[] = [
+  {
+    bucket: "client-photos",
+    table: "client_list",
+    column: "image_path",
+    idColumn: "id",
+    idMode: "numeric",
+  },
+  {
+    bucket: "mechanic-photos",
+    table: "mechanic_list",
+    column: "image_path",
+    idColumn: "id",
+    idMode: "numeric",
+  },
+  {
+    bucket: "product-images",
+    table: "product_list",
+    column: "image_path",
+    idColumn: "id",
+    idMode: "numeric",
+  },
+  {
+    bucket: "user-avatars",
+    table: "profiles",
+    column: "avatar_url",
+    idColumn: "id",
+    idMode: "uuid",
+  },
+  {
+    bucket: "job-images",
+    table: "transaction_images",
+    column: "image_path",
+    idColumn: "transaction_id",
+    idMode: "numeric",
+  },
 ];
 
 function isBroken(value: unknown): boolean {
@@ -46,7 +82,9 @@ async function listBucketFiles(bucket: string): Promise<string[]> {
     const { data, error } = await supabase.storage.from(bucket).list("", { limit: LIMIT, offset });
     if (error) throw new Error(error.message);
     if (!data || data.length === 0) break;
-    data.forEach(f => { if (f.metadata) names.push(f.name); });
+    data.forEach((f) => {
+      if (f.metadata) names.push(f.name);
+    });
     if (data.length < LIMIT) break;
   }
   return names;
@@ -67,7 +105,8 @@ function fileTimestamp(name: string): number {
 export async function POST() {
   try {
     const auth = await requireAdmin();
-    if (!auth) return NextResponse.json({ error: "Sirf Admin is action ko kar sakta hai" }, { status: 403 });
+    if (!auth)
+      return NextResponse.json({ error: "Sirf Admin is action ko kar sakta hai" }, { status: 403 });
 
     const report: Record<string, { files: number; fixed: number; skipped: number }> = {};
 
@@ -85,15 +124,20 @@ export async function POST() {
           byTxn.get(t)!.push(name);
         }
         const txnIds = [...byTxn.keys()];
-        if (txnIds.length === 0) { report[bucket] = { files: files.length, fixed: 0, skipped: 0 }; continue; }
+        if (txnIds.length === 0) {
+          report[bucket] = { files: files.length, fixed: 0, skipped: 0 };
+          continue;
+        }
 
         const { data: rows } = await supabase
           .from(table)
           .select(`id, ${idColumn}, ${column}`)
           .in(idColumn, txnIds);
-        const brokenRows = ((rows as unknown as Record<string, unknown>[]) || []).filter(r => isBroken(r[column]));
+        const brokenRows = ((rows as unknown as Record<string, unknown>[]) || []).filter((r) =>
+          isBroken(r[column])
+        );
         const brokenByTxn = new Map<number, Record<string, unknown>[]>();
-        brokenRows.forEach(r => {
+        brokenRows.forEach((r) => {
           const k = Number(r[idColumn]);
           if (!brokenByTxn.has(k)) brokenByTxn.set(k, []);
           brokenByTxn.get(k)!.push(r);
@@ -108,7 +152,10 @@ export async function POST() {
             const url = publicUrl(bucket, name);
             const row = queue.shift();
             if (row) {
-              const { error } = await supabase.from(table).update({ [column]: url }).eq("id", row.id);
+              const { error } = await supabase
+                .from(table)
+                .update({ [column]: url })
+                .eq("id", row.id);
               if (!error) fixed++;
             } else {
               toInsert.push({ [idColumn]: txn, [column]: url });
@@ -131,24 +178,41 @@ export async function POST() {
         const id = parseFileId(name, idMode);
         if (id == null) continue;
         const prev = latestByName.get(id);
-        if (prev === undefined || fileTimestamp(name) > fileTimestamp(prev)) latestByName.set(id, name);
+        if (prev === undefined || fileTimestamp(name) > fileTimestamp(prev))
+          latestByName.set(id, name);
       }
       const ids = [...latestByName.keys()];
-      if (ids.length === 0) { report[bucket] = { files: files.length, fixed: 0, skipped: 0 }; continue; }
+      if (ids.length === 0) {
+        report[bucket] = { files: files.length, fixed: 0, skipped: 0 };
+        continue;
+      }
 
       const { data: rows } = await supabase.from(table).select(`id, ${column}`).in("id", ids);
       const rowMap = new Map<string | number, Record<string, unknown>>(
-        ((rows as unknown as Record<string, unknown>[]) || []).map(r => [r.id as string | number, r])
+        ((rows as unknown as Record<string, unknown>[]) || []).map((r) => [
+          r.id as string | number,
+          r,
+        ])
       );
 
       let fixed = 0;
       let skipped = 0;
       for (const [id, name] of latestByName) {
         const row = rowMap.get(id);
-        if (!row) { skipped++; continue; }          // row exist nahi karti
-        if (!isBroken(row[column])) { skipped++; continue; } // valid URL already
-        const { error } = await supabase.from(table).update({ [column]: publicUrl(bucket, name) }).eq("id", id);
-        if (!error) fixed++; else skipped++;
+        if (!row) {
+          skipped++;
+          continue;
+        } // row exist nahi karti
+        if (!isBroken(row[column])) {
+          skipped++;
+          continue;
+        } // valid URL already
+        const { error } = await supabase
+          .from(table)
+          .update({ [column]: publicUrl(bucket, name) })
+          .eq("id", id);
+        if (!error) fixed++;
+        else skipped++;
       }
       report[bucket] = { files: files.length, fixed, skipped };
     }

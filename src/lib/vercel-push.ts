@@ -103,7 +103,9 @@ export async function triggerVercelDeploy(
   );
   if (!listRes.ok) {
     const d = await listRes.json().catch(() => ({}));
-    throw new Error((d?.error?.message as string) || `Vercel deployments list fail (${listRes.status})`);
+    throw new Error(
+      (d?.error?.message as string) || `Vercel deployments list fail (${listRes.status})`
+    );
   }
   const data = await listRes.json().catch(() => ({}));
   const last = data?.deployments?.[0];
@@ -113,7 +115,7 @@ export async function triggerVercelDeploy(
   // Nahi mila (naya project / list API mismatch) → connected Git repo se naya deploy trigger.
   let body: Record<string, unknown>;
   if (lastId) {
-    // POST /v13/deployments me `name` required hai — redeploy par bhi. 
+    // POST /v13/deployments me `name` required hai — redeploy par bhi.
     // List response me deployment ka project name milta hai.
     body = {
       name: last?.name || projectIdOrName,
@@ -128,7 +130,9 @@ export async function triggerVercelDeploy(
     );
     if (!projRes.ok) {
       const d = await projRes.json().catch(() => ({}));
-      throw new Error((d?.error?.message as string) || `Vercel project lookup fail (${projRes.status})`);
+      throw new Error(
+        (d?.error?.message as string) || `Vercel project lookup fail (${projRes.status})`
+      );
     }
     const proj = await projRes.json().catch(() => ({}));
     const link = proj?.link;
@@ -146,7 +150,7 @@ export async function triggerVercelDeploy(
     } else {
       throw new Error(
         "Is project ka koi deployment nahi mila aur Git repo (GitHub) bhi connect nahi hai. " +
-        "Pehle code push karke ek build hone do, phir ye dobara dabao."
+          "Pehle code push karke ek build hone do, phir ye dobara dabao."
       );
     }
   }

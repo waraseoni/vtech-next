@@ -9,7 +9,9 @@ import { getServerSupabase } from "@/lib/api-auth";
 export async function GET() {
   try {
     const supabase = await getServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+    const {
+      data: { user },
+    } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
 
     const adminClient = getAdminSupabase();
     const { data: admins, error } = await adminClient

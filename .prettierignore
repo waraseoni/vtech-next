@@ -1,0 +1,19 @@
+# Prettier ignore — build artifacts, dependencies, generated files
+
+node_modules
+.next
+out
+build
+coverage
+public/sw.js
+public/sw
+public/swe-worker.js
+android
+.git
+.env*
+*.lock
+package-lock.json
+backups
+scratch
+.freebuff
+mariadb dump

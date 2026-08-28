@@ -33,7 +33,9 @@ function base64UrlToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
 
 async function currentUserId(): Promise<string | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     return user?.id || null;
   } catch {
     return null;
@@ -61,16 +63,17 @@ export async function subscribeToPush(): Promise<PushResult> {
     const json = sub.toJSON();
     const userId = await currentUserId();
 
-    const { error } = await supabase
-      .from("push_subscriptions")
-      .upsert({
+    const { error } = await supabase.from("push_subscriptions").upsert(
+      {
         user_id: userId,
         endpoint: json.endpoint,
         p256dh: json.keys?.p256dh || "",
         auth: json.keys?.auth || "",
         enabled: true,
         device_name: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 120) : "",
-      }, { onConflict: "endpoint" });
+      },
+      { onConflict: "endpoint" }
+    );
 
     if (error) return { ok: false, error: error.message };
     return { ok: true, mode: "subscribed" };
@@ -88,10 +91,7 @@ export async function disablePush(): Promise<PushResult> {
 
     if (userId) {
       // Remove this device's subscription from the table.
-      const { error } = await supabase
-        .from("push_subscriptions")
-        .delete()
-        .eq("user_id", userId);
+      const { error } = await supabase.from("push_subscriptions").delete().eq("user_id", userId);
       if (error) return { ok: false, error: error.message };
     }
     return { ok: true, mode: "disabled" };
@@ -100,7 +100,12 @@ export async function disablePush(): Promise<PushResult> {
   }
 }
 
-export async function pushStatus(): Promise<{ supported: boolean; enabled: boolean; permission: string; vapidConfigured: boolean }> {
+export async function pushStatus(): Promise<{
+  supported: boolean;
+  enabled: boolean;
+  permission: string;
+  vapidConfigured: boolean;
+}> {
   const supported = "serviceWorker" in navigator && "PushManager" in window;
   let enabled = false;
   if (supported && typeof navigator !== "undefined" && navigator.serviceWorker) {
@@ -108,7 +113,9 @@ export async function pushStatus(): Promise<{ supported: boolean; enabled: boole
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       enabled = !!sub;
-    } catch { /* ignored */ }
+    } catch {
+      /* ignored */
+    }
   }
   return {
     supported,

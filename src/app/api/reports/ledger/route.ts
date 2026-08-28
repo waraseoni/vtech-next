@@ -1,19 +1,19 @@
-﻿import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
-import { fetchAll, pageAll } from '@/lib/fetch-all';
-import { requireStaff, UNAUTHORIZED } from '@/lib/api-auth';
+﻿import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+import { fetchAll, pageAll } from "@/lib/fetch-all";
+import { requireStaff, UNAUTHORIZED } from "@/lib/api-auth";
 import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   if (!(await requireStaff())) return UNAUTHORIZED();
 
   const { searchParams } = new URL(request.url);
-  const from = searchParams.get('from');
-  const to   = searchParams.get('to');
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
 
   if (!from || !to) {
-    return NextResponse.json({ error: 'Missing from or to date' }, { status: 400 });
+    return NextResponse.json({ error: "Missing from or to date" }, { status: 400 });
   }
 
   const cookieStore = await cookies();
@@ -22,18 +22,21 @@ export async function GET(request: Request) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll()             { return cookieStore.getAll(); },
-        setAll(cookiesToSet) { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); },
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+        },
       },
     }
   );
 
   // PHP-style date handling (local time)
   const start = `${from}T00:00:00+05:30`;
-  const end   = `${to}T23:59:59+05:30`;
+  const end = `${to}T23:59:59+05:30`;
 
   try {
-
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     //  MASTER LOOKUP MAPS
     //  Supabase foreign key joins kaam nahi karte (schema cache mein nahi),
@@ -46,23 +49,32 @@ export async function GET(request: Request) {
       { data: allProducts },
       { data: salaryHistory },
     ] = await Promise.all([
-      pageAll(supabase.from('client_list').select('id, firstname, middlename, lastname')),
-      pageAll(supabase.from('mechanic_list').select('id, firstname, lastname, daily_salary, delete_flag')),
-      pageAll(supabase.from('product_list').select('id, name, price')),
-      pageAll(supabase.from('mechanic_salary_history').select('mechanic_id, effective_date, salary')),
+      pageAll(supabase.from("client_list").select("id, firstname, middlename, lastname")),
+      pageAll(
+        supabase.from("mechanic_list").select("id, firstname, lastname, daily_salary, delete_flag")
+      ),
+      pageAll(supabase.from("product_list").select("id, name, price")),
+      pageAll(
+        supabase.from("mechanic_salary_history").select("mechanic_id, effective_date, salary")
+      ),
     ]);
 
-    const clientMap: Record<number, { firstname: string; middlename: string; lastname: string }> = {};
+    const clientMap: Record<number, { firstname: string; middlename: string; lastname: string }> =
+      {};
     allClients?.forEach((c) => {
-      clientMap[c.id] = { firstname: c.firstname || '', middlename: c.middlename || '', lastname: c.lastname || '' };
+      clientMap[c.id] = {
+        firstname: c.firstname || "",
+        middlename: c.middlename || "",
+        lastname: c.lastname || "",
+      };
     });
 
     const mechanicMap: Record<number, { firstname: string; lastname: string; daily: number }> = {};
     allMechanics?.forEach((m) => {
       mechanicMap[m.id] = {
-        firstname: m.firstname || '',
-        lastname:  m.lastname  || '',
-        daily:     Number(m.daily_salary) || 0,
+        firstname: m.firstname || "",
+        lastname: m.lastname || "",
+        daily: Number(m.daily_salary) || 0,
       };
     });
 
@@ -72,11 +84,13 @@ export async function GET(request: Request) {
       if (!salaryHistoryMap[h.mechanic_id]) salaryHistoryMap[h.mechanic_id] = [];
       salaryHistoryMap[h.mechanic_id].push({
         effective_date: h.effective_date,
-        salary:         Number(h.salary) || 0,
+        salary: Number(h.salary) || 0,
       });
     });
-    Object.values(salaryHistoryMap).forEach(arr =>
-      arr.sort((a, b) => new Date(a.effective_date).getTime() - new Date(b.effective_date).getTime())
+    Object.values(salaryHistoryMap).forEach((arr) =>
+      arr.sort(
+        (a, b) => new Date(a.effective_date).getTime() - new Date(b.effective_date).getTime()
+      )
     );
     const historyRateFor = (mechId: number, onDate: string): number | null => {
       const hist = salaryHistoryMap[mechId];
@@ -92,7 +106,7 @@ export async function GET(request: Request) {
 
     const productMap: Record<number, { name: string; price: number }> = {};
     allProducts?.forEach((p) => {
-      productMap[p.id] = { name: p.name || '', price: Number(p.price) || 0 };
+      productMap[p.id] = { name: p.name || "", price: Number(p.price) || 0 };
     });
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -116,71 +130,111 @@ export async function GET(request: Request) {
       { data: allAdvRaw },
     ] = await Promise.all([
       // 1. Repair jobs (PHP: status=5 + date range â€” no del_status filter)
-      pageAll(supabase.from('transaction_list')
-        .select('id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id')
-        .eq('status', 5)
-        .gte('date_completed', start).lte('date_completed', end)),
+      pageAll(
+        supabase
+          .from("transaction_list")
+          .select(
+            "id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id"
+          )
+          .eq("status", 5)
+          .gte("date_completed", start)
+          .lte("date_completed", end)
+      ),
 
       // 2. Walk-in sales
-      pageAll(supabase.from('direct_sales')
-        .select('id, sale_code, total_amount, date_created, client_id')
-        .or('client_id.is.null,client_id.eq.0')
-        .gte('date_created', start).lte('date_created', end)),
+      pageAll(
+        supabase
+          .from("direct_sales")
+          .select("id, sale_code, total_amount, date_created, client_id")
+          .or("client_id.is.null,client_id.eq.0")
+          .gte("date_created", start)
+          .lte("date_created", end)
+      ),
 
       // 3. Client sales
-      pageAll(supabase.from('direct_sales')
-        .select('id, sale_code, total_amount, date_created, client_id')
-        .not('client_id', 'is', null).neq('client_id', 0)
-        .gte('date_created', start).lte('date_created', end)),
+      pageAll(
+        supabase
+          .from("direct_sales")
+          .select("id, sale_code, total_amount, date_created, client_id")
+          .not("client_id", "is", null)
+          .neq("client_id", 0)
+          .gte("date_created", start)
+          .lte("date_created", end)
+      ),
 
       // 4. Client payments
-      pageAll(supabase.from('client_payments')
-        .select('id, client_id, amount, discount, payment_date, remarks, payment_mode')
-        .gte('payment_date', from).lte('payment_date', to)),
+      pageAll(
+        supabase
+          .from("client_payments")
+          .select("id, client_id, amount, discount, payment_date, remarks, payment_mode")
+          .gte("payment_date", from)
+          .lte("payment_date", to)
+      ),
 
       // 5. Attendance (period)
-      pageAll(supabase.from('attendance_list')
-        .select('mechanic_id, curr_date, status')
-        .in('status', [1, 3])
-        .gte('curr_date', from).lte('curr_date', to)),
+      pageAll(
+        supabase
+          .from("attendance_list")
+          .select("mechanic_id, curr_date, status")
+          .in("status", [1, 3])
+          .gte("curr_date", from)
+          .lte("curr_date", to)
+      ),
 
       // 6. Advances (period)
-      pageAll(supabase.from('advance_payments')
-        .select('mechanic_id, date_paid, amount, reason')
-        .gte('date_paid', from).lte('date_paid', to)),
+      pageAll(
+        supabase
+          .from("advance_payments")
+          .select("mechanic_id, date_paid, amount, reason")
+          .gte("date_paid", from)
+          .lte("date_paid", to)
+      ),
 
       // 7. Expenses (period)
-      pageAll(supabase.from('expense_list')
-        .select('id, category, amount, remarks, date_created')
-        .gte('date_created', start).lte('date_created', end)),
+      pageAll(
+        supabase
+          .from("expense_list")
+          .select("id, category, amount, remarks, date_created")
+          .gte("date_created", start)
+          .lte("date_created", end)
+      ),
 
       // 8. Loan payments (period)
-      pageAll(supabase.from('loan_payments')
-        .select('amount_paid, payment_date, remarks')
-        .gte('payment_date', from).lte('payment_date', to)),
+      pageAll(
+        supabase
+          .from("loan_payments")
+          .select("amount_paid, payment_date, remarks")
+          .gte("payment_date", from)
+          .lte("payment_date", to)
+      ),
 
       // 9. Inventory (no join - manual)
-      pageAll(supabase.from('inventory_list')
-        .select('product_id, quantity')),
+      pageAll(supabase.from("inventory_list").select("product_id, quantity")),
 
       // 10. Lenders (active)
-      pageAll(supabase.from('lender_list')
-        .select('loan_amount').eq('status', 1)),
+      pageAll(supabase.from("lender_list").select("loan_amount").eq("status", 1)),
 
       // 11. All-time loan paid
-      pageAll(supabase.from('loan_payments').select('amount_paid')),
+      pageAll(supabase.from("loan_payments").select("amount_paid")),
 
       // 12. All-time repairs (liability)
-      pageAll(supabase.from('transaction_list')
-        .select('mechanic_id, mechanic_commission_amount')
-        .eq('status', 5)),
+      pageAll(
+        supabase
+          .from("transaction_list")
+          .select("mechanic_id, mechanic_commission_amount")
+          .eq("status", 5)
+      ),
 
       // 13. All-time attendance (liability)
-      pageAll(supabase.from('attendance_list')
-        .select('mechanic_id, curr_date, status').in('status', [1, 3])),
+      pageAll(
+        supabase
+          .from("attendance_list")
+          .select("mechanic_id, curr_date, status")
+          .in("status", [1, 3])
+      ),
 
       // 14. All-time advances (liability)
-      pageAll(supabase.from('advance_payments').select('mechanic_id, amount')),
+      pageAll(supabase.from("advance_payments").select("mechanic_id, amount")),
     ]);
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -196,9 +250,9 @@ export async function GET(request: Request) {
     for (let i = 0; i < allSaleIds.length; i += 500) {
       const saleItems = await fetchAll(
         supabase
-          .from('direct_sale_items')
-          .select('sale_id, product_id, qty, price')
-          .in('sale_id', allSaleIds.slice(i, i + 500))
+          .from("direct_sale_items")
+          .select("sale_id, product_id, qty, price")
+          .in("sale_id", allSaleIds.slice(i, i + 500))
       );
       saleItems?.forEach((item) => {
         if (!saleItemsMap[item.sale_id]) saleItemsMap[item.sale_id] = [];
@@ -212,58 +266,58 @@ export async function GET(request: Request) {
 
     // Repair Jobs
     const repairJobs = (repairJobsRaw || []).map((j) => {
-      const cid    = parseInt(j.client_name);
+      const cid = parseInt(j.client_name);
       const client = !isNaN(cid) ? clientMap[cid] : null;
-      const mech   = mechanicMap[j.mechanic_id] || null;
+      const mech = mechanicMap[j.mechanic_id] || null;
       return {
-        id:                         j.id,
-        job_id:                     j.job_id,
-        date_completed:             j.date_completed,
-        item:                       j.item,
-        amount:                     Number(j.amount) || 0,
+        id: j.id,
+        job_id: j.job_id,
+        date_completed: j.date_completed,
+        item: j.item,
+        amount: Number(j.amount) || 0,
         mechanic_commission_amount: Number(j.mechanic_commission_amount) || 0,
-        client_firstname:           client?.firstname  || j.client_name || '',
-        client_middlename:          client?.middlename || '',
-        client_lastname:            client?.lastname   || '',
-        mechanic_firstname:         mech?.firstname    || '',
-        mechanic_lastname:          mech?.lastname     || '',
+        client_firstname: client?.firstname || j.client_name || "",
+        client_middlename: client?.middlename || "",
+        client_lastname: client?.lastname || "",
+        mechanic_firstname: mech?.firstname || "",
+        mechanic_lastname: mech?.lastname || "",
       };
     });
 
     // Walk-in Sales
     const walkinSales = (walkinRaw || []).map((s) => {
-      const items     = saleItemsMap[s.id] || [];
+      const items = saleItemsMap[s.id] || [];
       const firstItem = items[0];
-      const prod      = firstItem ? productMap[firstItem.product_id] : null;
+      const prod = firstItem ? productMap[firstItem.product_id] : null;
       return {
-        id:           s.id,
-        sale_code:    s.sale_code,
+        id: s.id,
+        sale_code: s.sale_code,
         total_amount: Number(s.total_amount) || 0,
         date_created: s.date_created,
-        client_id:    null,
-        product_name: prod?.name || (items.length > 1 ? 'Multiple Items' : null),
-        quantity:     firstItem?.qty   || null,
-        unit_price:   firstItem?.price ? Number(firstItem.price) : null,
+        client_id: null,
+        product_name: prod?.name || (items.length > 1 ? "Multiple Items" : null),
+        quantity: firstItem?.qty || null,
+        unit_price: firstItem?.price ? Number(firstItem.price) : null,
       };
     });
 
     // Client Sales
     const clientSales = (clientSalesRaw || []).map((s) => {
-      const client    = clientMap[s.client_id] || null;
-      const items     = saleItemsMap[s.id] || [];
+      const client = clientMap[s.client_id] || null;
+      const items = saleItemsMap[s.id] || [];
       const firstItem = items[0];
-      const prod      = firstItem ? productMap[firstItem.product_id] : null;
+      const prod = firstItem ? productMap[firstItem.product_id] : null;
       return {
-        id:               s.id,
-        sale_code:        s.sale_code,
-        total_amount:     Number(s.total_amount) || 0,
-        date_created:     s.date_created,
-        client_id:        s.client_id,
-        client_firstname: client?.firstname || '',
-        client_lastname:  client?.lastname  || '',
-        product_name:     prod?.name || (items.length > 1 ? 'Multiple Items' : null),
-        quantity:         firstItem?.qty   || null,
-        unit_price:       firstItem?.price ? Number(firstItem.price) : null,
+        id: s.id,
+        sale_code: s.sale_code,
+        total_amount: Number(s.total_amount) || 0,
+        date_created: s.date_created,
+        client_id: s.client_id,
+        client_firstname: client?.firstname || "",
+        client_lastname: client?.lastname || "",
+        product_name: prod?.name || (items.length > 1 ? "Multiple Items" : null),
+        quantity: firstItem?.qty || null,
+        unit_price: firstItem?.price ? Number(firstItem.price) : null,
       };
     });
 
@@ -271,15 +325,15 @@ export async function GET(request: Request) {
     const clientPayments = (clientPaymentsRaw || []).map((p) => {
       const client = clientMap[p.client_id] || null;
       return {
-        id:               p.id,
-        client_id:        p.client_id,
-        amount:           Number(p.amount)   || 0,
-        discount:         Number(p.discount) || 0,
-        payment_date:     p.payment_date,
-        remarks:          p.remarks || null,
-        payment_method:   p.payment_mode || 'Cash',
-        client_firstname: client?.firstname || '',
-        client_lastname:  client?.lastname  || '',
+        id: p.id,
+        client_id: p.client_id,
+        amount: Number(p.amount) || 0,
+        discount: Number(p.discount) || 0,
+        payment_date: p.payment_date,
+        remarks: p.remarks || null,
+        payment_method: p.payment_mode || "Cash",
+        client_firstname: client?.firstname || "",
+        client_lastname: client?.lastname || "",
       };
     });
 
@@ -287,22 +341,24 @@ export async function GET(request: Request) {
     const advancePayments = (advancesRaw || []).map((a) => {
       const mech = mechanicMap[a.mechanic_id];
       return {
-        date_paid:     a.date_paid,
-        mechanic_name: mech ? `${mech.firstname} ${mech.lastname}`.trim() : `Staff #${a.mechanic_id}`,
-        amount:        Number(a.amount) || 0,
-        reason:        a.reason || null,
-        payment_mode:  null,
+        date_paid: a.date_paid,
+        mechanic_name: mech
+          ? `${mech.firstname} ${mech.lastname}`.trim()
+          : `Staff #${a.mechanic_id}`,
+        amount: Number(a.amount) || 0,
+        reason: a.reason || null,
+        payment_mode: null,
       };
     });
 
     // Expenses
     const expenses = (expensesRaw || []).map((e) => ({
       date_created: e.date_created,
-      category:     e.category,
-      remarks:      e.remarks || '',
-      amount:       Number(e.amount) || 0,
+      category: e.category,
+      remarks: e.remarks || "",
+      amount: Number(e.amount) || 0,
       payment_mode: null,
-      reference:    null,
+      reference: null,
     }));
 
     // Stock Items (inventory_list â†’ product_list manual join)
@@ -312,48 +368,56 @@ export async function GET(request: Request) {
     (inventoryRaw || []).forEach((i) => {
       stockSumMap[i.product_id] = (stockSumMap[i.product_id] || 0) + (Number(i.quantity) || 0);
     });
-    const stockValue = Object.entries(stockSumMap)
-      .reduce((s, [pid, qty]) => s + (productMap[parseInt(pid)]?.price || 0) * qty, 0);
+    const stockValue = Object.entries(stockSumMap).reduce(
+      (s, [pid, qty]) => s + (productMap[parseInt(pid)]?.price || 0) * qty,
+      0
+    );
     const stockItems = Object.entries(stockSumMap)
       .filter(([, qty]) => qty > 0)
       .map(([pid, qty]) => {
         const prod = productMap[parseInt(pid)];
-        return { name: prod?.name || '', price: prod?.price || 0, quantity: qty };
+        return { name: prod?.name || "", price: prod?.price || 0, quantity: qty };
       })
-      .filter(i => i.name !== '');
+      .filter((i) => i.name !== "");
 
     // Loan Outstanding (all-time)
-    const totalLoan        = (lenders || []).reduce((s, l) => s + (Number(l.loan_amount) || 0), 0);
-    const totalLoanPaidAll = (allLoanPaid || []).reduce((s, l) => s + (Number(l.amount_paid) || 0), 0);
-    const loanOutstanding  = Math.max(0, totalLoan - totalLoanPaidAll);
+    const totalLoan = (lenders || []).reduce((s, l) => s + (Number(l.loan_amount) || 0), 0);
+    const totalLoanPaidAll = (allLoanPaid || []).reduce(
+      (s, l) => s + (Number(l.amount_paid) || 0),
+      0
+    );
+    const loanOutstanding = Math.max(0, totalLoan - totalLoanPaidAll);
 
     // Salary Calculation
-    const salaryMap: Record<number, { name: string; full: number; half: number; daily: number }> = {};
+    const salaryMap: Record<number, { name: string; full: number; half: number; daily: number }> =
+      {};
     (attendance || []).forEach((a) => {
       const mid = a.mechanic_id;
       if (!salaryMap[mid]) {
         const mech = mechanicMap[mid];
         salaryMap[mid] = {
-          name:  mech ? `${mech.firstname} ${mech.lastname}`.trim() : `Staff #${mid}`,
-          full:  0, half: 0,
+          name: mech ? `${mech.firstname} ${mech.lastname}`.trim() : `Staff #${mid}`,
+          full: 0,
+          half: 0,
           daily: mech?.daily || 0,
         };
       }
       if (a.status === 1) salaryMap[mid].full++;
       else if (a.status === 3) salaryMap[mid].half++;
     });
-    const salaryDetails = Object.values(salaryMap).map(d => ({
+    const salaryDetails = Object.values(salaryMap).map((d) => ({
       mechanic_name: d.name,
-      full_days:     d.full,
-      half_days:     d.half,
-      total_days:    d.full + d.half * 0.5,
-      daily_salary:  d.daily,
+      full_days: d.full,
+      half_days: d.half,
+      total_days: d.full + d.half * 0.5,
+      daily_salary: d.daily,
       salary_earned: (d.full + d.half * 0.5) * d.daily,
     }));
 
     // P&L salary (PHP: per attendance row, salary_history rate <= curr_date, else daily_salary)
     const totalSalary = (attendance || []).reduce((sum, a) => {
-      const rate = historyRateFor(a.mechanic_id, a.curr_date) ?? (mechanicMap[a.mechanic_id]?.daily || 0);
+      const rate =
+        historyRateFor(a.mechanic_id, a.curr_date) ?? (mechanicMap[a.mechanic_id]?.daily || 0);
       return sum + (a.status === 3 ? rate / 2 : rate);
     }, 0);
 
@@ -376,22 +440,25 @@ export async function GET(request: Request) {
         .filter((a) => a.mechanic_id === m.id)
         .reduce((s, a) => s + (Number(a.amount) || 0), 0);
 
-      staffLiability += (earnedComm + earnedSal) - paid;
+      staffLiability += earnedComm + earnedSal - paid;
     });
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     //  TOTALS
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-    const jobIncome              = repairJobs.reduce((s, j) => s + j.amount, 0);
-    const walkinIncome           = walkinSales.reduce((s, j) => s + j.total_amount, 0);
-    const clientSalesIncome      = clientSales.reduce((s, j) => s + j.total_amount, 0);
+    const jobIncome = repairJobs.reduce((s, j) => s + j.amount, 0);
+    const walkinIncome = walkinSales.reduce((s, j) => s + j.total_amount, 0);
+    const clientSalesIncome = clientSales.reduce((s, j) => s + j.total_amount, 0);
     const clientPaymentsReceived = clientPayments.reduce((s, p) => s + p.amount, 0);
-    const totalDiscountGiven     = clientPayments.reduce((s, p) => s + p.discount, 0);
-    const totalCommission        = repairJobs.reduce((s, j) => s + j.mechanic_commission_amount, 0);
-    const totalAdvanceGiven      = advancePayments.reduce((s, a) => s + a.amount, 0);
-    const totalOtherExpenses     = expenses.reduce((s, e) => s + e.amount, 0);
-    const totalEmiPaid           = (loanPaymentsRaw || []).reduce((s, l) => s + (Number(l.amount_paid) || 0), 0);
+    const totalDiscountGiven = clientPayments.reduce((s, p) => s + p.discount, 0);
+    const totalCommission = repairJobs.reduce((s, j) => s + j.mechanic_commission_amount, 0);
+    const totalAdvanceGiven = advancePayments.reduce((s, a) => s + a.amount, 0);
+    const totalOtherExpenses = expenses.reduce((s, e) => s + e.amount, 0);
+    const totalEmiPaid = (loanPaymentsRaw || []).reduce(
+      (s, l) => s + (Number(l.amount_paid) || 0),
+      0
+    );
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     //  LEDGER ENTRIES
@@ -401,7 +468,7 @@ export async function GET(request: Request) {
       date: string;
       category: string;
       details: string;
-      type: 'Cash In' | 'Cash Out';
+      type: "Cash In" | "Cash Out";
       net_amount: number;
       discount_amount?: number;
       client_id?: number | null;
@@ -409,53 +476,63 @@ export async function GET(request: Request) {
     };
     const ledgerEntries: LedgerEntry[] = [];
 
-    clientPayments.forEach(p => ledgerEntries.push({
-      date:            p.payment_date,
-      category:        'Client Payment',
-      details:         `${p.client_firstname} ${p.client_lastname}`.trim(),
-      type:            'Cash In',
-      net_amount:      p.amount,
-      discount_amount: p.discount || 0,
-      client_id:       p.client_id,
-      client_fullname: `${p.client_firstname} ${p.client_lastname}`.trim(),
-    }));
+    clientPayments.forEach((p) =>
+      ledgerEntries.push({
+        date: p.payment_date,
+        category: "Client Payment",
+        details: `${p.client_firstname} ${p.client_lastname}`.trim(),
+        type: "Cash In",
+        net_amount: p.amount,
+        discount_amount: p.discount || 0,
+        client_id: p.client_id,
+        client_fullname: `${p.client_firstname} ${p.client_lastname}`.trim(),
+      })
+    );
 
-    walkinSales.forEach(s => ledgerEntries.push({
-      date:       s.date_created,
-      category:   'Direct Sale (Walk-in)',
-      details:    `Invoice: ${s.sale_code}`,
-      type:       'Cash In',
-      net_amount: s.total_amount,
-      client_id:  s.client_id || null,
-    }));
+    walkinSales.forEach((s) =>
+      ledgerEntries.push({
+        date: s.date_created,
+        category: "Direct Sale (Walk-in)",
+        details: `Invoice: ${s.sale_code}`,
+        type: "Cash In",
+        net_amount: s.total_amount,
+        client_id: s.client_id || null,
+      })
+    );
 
-    // Direct Sales (Client) are credit sales. 
+    // Direct Sales (Client) are credit sales.
     // They are NOT pushed to ledgerEntries as 'Cash In' to avoid double counting,
     // since cash is received later via client_payments.
 
-    expenses.forEach(e => ledgerEntries.push({
-      date:       e.date_created,
-      category:   'Shop Expense',
-      details:    `${e.category}${e.remarks ? ' - ' + e.remarks : ''}`,
-      type:       'Cash Out',
-      net_amount: e.amount,
-    }));
+    expenses.forEach((e) =>
+      ledgerEntries.push({
+        date: e.date_created,
+        category: "Shop Expense",
+        details: `${e.category}${e.remarks ? " - " + e.remarks : ""}`,
+        type: "Cash Out",
+        net_amount: e.amount,
+      })
+    );
 
-    (loanPaymentsRaw || []).forEach((lp) => ledgerEntries.push({
-      date:       lp.payment_date,
-      category:   'Loan EMI',
-      details:    lp.remarks || 'EMI Payment',
-      type:       'Cash Out',
-      net_amount: Number(lp.amount_paid) || 0,
-    }));
+    (loanPaymentsRaw || []).forEach((lp) =>
+      ledgerEntries.push({
+        date: lp.payment_date,
+        category: "Loan EMI",
+        details: lp.remarks || "EMI Payment",
+        type: "Cash Out",
+        net_amount: Number(lp.amount_paid) || 0,
+      })
+    );
 
-    advancePayments.forEach(a => ledgerEntries.push({
-      date:       a.date_paid,
-      category:   'Staff Advance',
-      details:    `${a.mechanic_name}${a.reason ? ' - ' + a.reason : ''}`,
-      type:       'Cash Out',
-      net_amount: a.amount,
-    }));
+    advancePayments.forEach((a) =>
+      ledgerEntries.push({
+        date: a.date_paid,
+        category: "Staff Advance",
+        details: `${a.mechanic_name}${a.reason ? " - " + a.reason : ""}`,
+        type: "Cash Out",
+        net_amount: a.amount,
+      })
+    );
 
     ledgerEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -468,13 +545,13 @@ export async function GET(request: Request) {
       walkinSales,
       clientSales,
       clientPayments,
-      commissionData: repairJobs.map(j => ({
-        job_id:                     j.job_id,
-        amount:                     j.amount,
+      commissionData: repairJobs.map((j) => ({
+        job_id: j.job_id,
+        amount: j.amount,
         mechanic_commission_amount: j.mechanic_commission_amount,
-        date_completed:             j.date_completed,
-        mechanic_firstname:         j.mechanic_firstname,
-        mechanic_lastname:          j.mechanic_lastname,
+        date_completed: j.date_completed,
+        mechanic_firstname: j.mechanic_firstname,
+        mechanic_lastname: j.mechanic_lastname,
       })),
       salaryDetails,
       advancePayments,
@@ -495,9 +572,11 @@ export async function GET(request: Request) {
       staffLiability: Math.max(0, staffLiability),
       loanOutstanding,
     });
-
   } catch (err) {
-    logger.error('Ledger API error:', err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    logger.error("Ledger API error:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : String(err) },
+      { status: 500 }
+    );
   }
 }

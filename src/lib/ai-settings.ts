@@ -18,7 +18,9 @@ export async function getAiSettings(): Promise<AiSettings> {
     .in("meta_field", ["ai_provider", "ai_api_key", "ai_model"]);
 
   const info: Record<string, string> = {};
-  (data || []).forEach((r) => { info[r.meta_field] = r.meta_value; });
+  (data || []).forEach((r) => {
+    info[r.meta_field] = r.meta_value;
+  });
 
   const provider = info.ai_provider || "gemini";
   const envKey = provider === "groq" ? process.env.GROQ_API_KEY : process.env.GEMINI_API_KEY;

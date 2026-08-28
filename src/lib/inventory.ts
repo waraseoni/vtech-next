@@ -6,7 +6,8 @@
 export const DEFAULT_ALERT_QTY = 5;
 
 /** Effective low-stock threshold for a product (per-product alert_quantity, fallback 5). */
-export const alertThreshold = (alertQty?: number | null) => Math.max(1, alertQty || DEFAULT_ALERT_QTY);
+export const alertThreshold = (alertQty?: number | null) =>
+  Math.max(1, alertQty || DEFAULT_ALERT_QTY);
 
 export type StockStatus = "out" | "low" | "ok";
 
@@ -29,9 +30,32 @@ export interface StockStatusStyle {
 /** Tailwind styles for a stock status — single source of truth for list + detail. */
 export const stockStatusStyle = (available: number, alertQty?: number | null): StockStatusStyle => {
   const status = stockStatus(available, alertQty);
-  if (status === "out")  return { label: "Out of Stock", short: "OUT", color: "text-red-400",     bg: "bg-red-500/10 border-red-500/25",     bar: "bg-red-500",     glow: "shadow-red-500/20"   };
-  if (status === "low")  return { label: "Low Stock",    short: "LOW", color: "text-amber-400",   bg: "bg-amber-500/10 border-amber-500/25", bar: "bg-amber-400",   glow: "shadow-amber-500/20" };
-  return                       { label: "In Stock",     short: "OK",  color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/25", bar: "bg-emerald-500", glow: "shadow-emerald-500/20" };
+  if (status === "out")
+    return {
+      label: "Out of Stock",
+      short: "OUT",
+      color: "text-red-400",
+      bg: "bg-red-500/10 border-red-500/25",
+      bar: "bg-red-500",
+      glow: "shadow-red-500/20",
+    };
+  if (status === "low")
+    return {
+      label: "Low Stock",
+      short: "LOW",
+      color: "text-amber-400",
+      bg: "bg-amber-500/10 border-amber-500/25",
+      bar: "bg-amber-400",
+      glow: "shadow-amber-500/20",
+    };
+  return {
+    label: "In Stock",
+    short: "OK",
+    color: "text-emerald-400",
+    bg: "bg-emerald-500/10 border-emerald-500/25",
+    bar: "bg-emerald-500",
+    glow: "shadow-emerald-500/20",
+  };
 };
 
 /** Stock bar color for a progress bar. */
@@ -51,20 +75,22 @@ export const stockBarColor = (available: number, alertQty?: number | null): stri
 export const aggregateStock = (
   stockIn: { product_id: number; quantity: number; place?: string | null }[],
   soldJob: { product_id: number; qty: number }[],
-  soldSale: { product_id: number; qty: number }[],
+  soldSale: { product_id: number; qty: number }[]
 ) => {
   const inMap = new Map<number, { qty: number; place: string | null }>();
-  stockIn.forEach(r => {
+  stockIn.forEach((r) => {
     const prev = inMap.get(r.product_id) || { qty: 0, place: null };
     inMap.set(r.product_id, { qty: prev.qty + (r.quantity || 0), place: r.place || prev.place });
   });
   const jobMap = new Map<number, number>();
-  soldJob.forEach(r => jobMap.set(r.product_id, (jobMap.get(r.product_id) || 0) + (r.qty || 0)));
+  soldJob.forEach((r) => jobMap.set(r.product_id, (jobMap.get(r.product_id) || 0) + (r.qty || 0)));
   const saleMap = new Map<number, number>();
-  soldSale.forEach(r => saleMap.set(r.product_id, (saleMap.get(r.product_id) || 0) + (r.qty || 0)));
+  soldSale.forEach((r) =>
+    saleMap.set(r.product_id, (saleMap.get(r.product_id) || 0) + (r.qty || 0))
+  );
 
   const ids = new Set<number>([...inMap.keys(), ...jobMap.keys(), ...saleMap.keys()]);
-  return [...ids].map(id => {
+  return [...ids].map((id) => {
     const totalIn = inMap.get(id)?.qty || 0;
     const totalSold = (jobMap.get(id) || 0) + (saleMap.get(id) || 0);
     const available = totalIn - totalSold;

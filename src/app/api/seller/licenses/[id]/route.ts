@@ -12,7 +12,16 @@ type Ctx = { params: Promise<{ id: string }> };
 
 const VALID_PLANS = ["standard", "premium", "lifetime"];
 const VALID_STATUS = ["active", "disabled", "revoked"];
-const VALID_MODULES = ["dashboard", "jobs", "sales", "clients", "inventory", "finance", "people", "reports"];
+const VALID_MODULES = [
+  "dashboard",
+  "jobs",
+  "sales",
+  "clients",
+  "inventory",
+  "finance",
+  "people",
+  "reports",
+];
 
 async function parseId(ctx: Ctx): Promise<number | null> {
   const { id } = await ctx.params;
@@ -34,7 +43,10 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(row);
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -69,7 +81,8 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   }
   if (body.status !== undefined) {
     const s = String(body.status);
-    if (!VALID_STATUS.includes(s)) return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    if (!VALID_STATUS.includes(s))
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     input.status = s;
   }
   // Renewal/expiry: '' ya null → lifetime (expires_at null karo)
@@ -87,7 +100,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   }
   if (body.enabled_modules !== undefined) {
     const mods = Array.isArray(body.enabled_modules)
-      ? (body.enabled_modules as unknown[]).filter((m): m is string => typeof m === "string" && VALID_MODULES.includes(m))
+      ? (body.enabled_modules as unknown[]).filter(
+          (m): m is string => typeof m === "string" && VALID_MODULES.includes(m)
+        )
       : [];
     input.enabled_modules = mods;
   }
@@ -97,7 +112,10 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     const row = await updateLicense(id, input);
     return NextResponse.json(row);
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -114,6 +132,9 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
     await deleteLicense(id);
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }

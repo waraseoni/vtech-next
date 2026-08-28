@@ -2,8 +2,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import {
-  X, User, Phone, Mail, Calendar, MessageSquare,
-  CheckCircle2, Clock, Send, Loader2, Inbox, Sparkles, Copy, RefreshCw,
+  X,
+  User,
+  Phone,
+  Mail,
+  Calendar,
+  MessageSquare,
+  CheckCircle2,
+  Clock,
+  Send,
+  Loader2,
+  Inbox,
+  Sparkles,
+  Copy,
+  RefreshCw,
 } from "lucide-react";
 
 interface Inquiry {
@@ -25,27 +37,34 @@ interface Props {
 const fmtIST = (d: string) =>
   new Date(d).toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
   });
 
 export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
-  const [inquiry,  setInquiry]  = useState<Inquiry | null>(null);
-  const [loading,  setLoading]  = useState(true);
-  const [marking,  setMarking]  = useState(false);
+  const [inquiry, setInquiry] = useState<Inquiry | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [marking, setMarking] = useState(false);
   // BUG FIX 1: Local status state so badge updates instantly without full refetch
-  const [isRead,   setIsRead]   = useState(false);
+  const [isRead, setIsRead] = useState(false);
   const [receivedAgo, setReceivedAgo] = useState("");
-  const [aiReply,  setAiReply]  = useState("");
+  const [aiReply, setAiReply] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiError,  setAiError]  = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   // BUG FIX 2: onClose/onUpdate intentionally NOT in deps — parent re-creates them
   // each render → including them would re-run the effect on every parent render
   const fetchInquiry = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from("message_list").select("*").eq("id", inquiryId).single();
+      .from("message_list")
+      .select("*")
+      .eq("id", inquiryId)
+      .single();
 
     if (error || !data) {
       console.error(error);
@@ -77,8 +96,7 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
   const handleMarkRead = async () => {
     if (isRead) return;
     setMarking(true);
-    const { error } = await supabase
-      .from("message_list").update({ status: 1 }).eq("id", inquiryId);
+    const { error } = await supabase.from("message_list").update({ status: 1 }).eq("id", inquiryId);
     if (!error) {
       setIsRead(true);
       onUpdate(); // refresh parent list
@@ -115,12 +133,16 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
     if (!aiReply) return;
     try {
       await navigator.clipboard.writeText(aiReply);
-    } catch { /* clipboard unavailable — ignore */ }
+    } catch {
+      /* clipboard unavailable — ignore */
+    }
   };
 
   // Escape key close
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
@@ -131,7 +153,9 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-8 flex flex-col items-center gap-3">
           <Loader2 size={24} className="animate-spin text-blue-400" />
-          <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">Loading...</p>
+          <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">
+            Loading...
+          </p>
         </div>
       </div>
     );
@@ -146,7 +170,7 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
     >
       <div
         className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* ── Top accent bar by status ── */}
         <div className={`h-1 w-full ${isRead ? "bg-emerald-500" : "bg-blue-500"}`} />
@@ -166,18 +190,27 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
           </div>
           <div className="flex items-center gap-2">
             {/* Status badge */}
-            <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${
-              isRead
-                ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
-                : "bg-blue-500/10 border-blue-500/25 text-blue-400"
-            }`}>
-              {isRead
-                ? <><CheckCircle2 size={9} /> Read</>
-                : <><Inbox size={9} /> Unread</>
-              }
+            <span
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${
+                isRead
+                  ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+                  : "bg-blue-500/10 border-blue-500/25 text-blue-400"
+              }`}
+            >
+              {isRead ? (
+                <>
+                  <CheckCircle2 size={9} /> Read
+                </>
+              ) : (
+                <>
+                  <Inbox size={9} /> Unread
+                </>
+              )}
             </span>
-            <button onClick={onClose}
-              className="w-8 h-8 bg-[#21293d] hover:bg-white/10 border border-[#21293d] rounded-xl flex items-center justify-center text-slate-500 hover:text-white transition-all">
+            <button
+              onClick={onClose}
+              className="w-8 h-8 bg-[#21293d] hover:bg-white/10 border border-[#21293d] rounded-xl flex items-center justify-center text-slate-500 hover:text-white transition-all"
+            >
               <X size={14} />
             </button>
           </div>
@@ -185,14 +218,15 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
 
         {/* ── Body ── */}
         <div className="p-5 space-y-3">
-
           {/* Name */}
           <div className="flex items-center gap-3 bg-[#111520] border border-[#21293d] rounded-xl px-4 py-3">
             <div className="w-8 h-8 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
               <User size={13} className="text-purple-400" />
             </div>
             <div>
-              <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">Name</div>
+              <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">
+                Name
+              </div>
               <div className="text-sm font-extrabold text-white">{inquiry.fullname}</div>
             </div>
           </div>
@@ -204,9 +238,14 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
                 <Phone size={12} className="text-emerald-400" />
               </div>
               <div className="min-w-0">
-                <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">Phone</div>
-                <a href={`https://wa.me/91${inquiry.contact.replace(/\D/g, "")}`} target="_blank"
-                  className="text-xs font-extrabold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors truncate">
+                <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">
+                  Phone
+                </div>
+                <a
+                  href={`https://wa.me/91${inquiry.contact.replace(/\D/g, "")}`}
+                  target="_blank"
+                  className="text-xs font-extrabold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors truncate"
+                >
                   <Send size={9} /> {inquiry.contact}
                 </a>
               </div>
@@ -216,9 +255,13 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
                 <Mail size={12} className="text-cyan-400" />
               </div>
               <div className="min-w-0">
-                <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">Email</div>
-                <a href={`mailto:${inquiry.email}`}
-                  className="text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors truncate block">
+                <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">
+                  Email
+                </div>
+                <a
+                  href={`mailto:${inquiry.email}`}
+                  className="text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors truncate block"
+                >
                   {inquiry.email}
                 </a>
               </div>
@@ -231,8 +274,12 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
               <Calendar size={12} className="text-amber-400" />
             </div>
             <div>
-              <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">Received</div>
-              <div className="text-xs font-semibold text-slate-300">{fmtIST(inquiry.date_created)}</div>
+              <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">
+                Received
+              </div>
+              <div className="text-xs font-semibold text-slate-300">
+                {fmtIST(inquiry.date_created)}
+              </div>
             </div>
             <div className="ml-auto flex items-center gap-1 text-[10px] text-slate-700">
               <Clock size={9} />
@@ -244,7 +291,9 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
           <div className="bg-[#111520] border border-[#21293d] rounded-xl overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#21293d]">
               <MessageSquare size={11} className="text-blue-400" />
-              <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600">Message</span>
+              <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600">
+                Message
+              </span>
               <span className="ml-auto text-[9px] text-slate-700 font-bold">
                 {inquiry.message.length} chars
               </span>
@@ -258,10 +307,14 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
           <div className="bg-[#111520] border border-[#21293d] rounded-xl overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#21293d]">
               <Sparkles size={11} className="text-purple-400" />
-              <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600">AI Reply</span>
+              <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600">
+                AI Reply
+              </span>
               {!aiReply && !aiLoading && !aiError && (
-                <button onClick={generateReply}
-                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/25 text-purple-300 rounded-lg text-[10px] font-extrabold transition-all">
+                <button
+                  onClick={generateReply}
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/25 text-purple-300 rounded-lg text-[10px] font-extrabold transition-all"
+                >
                   <Sparkles size={10} /> Generate Reply
                 </button>
               )}
@@ -270,13 +323,17 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
             {aiLoading ? (
               <div className="px-4 py-6 flex flex-col items-center gap-2">
                 <Loader2 size={18} className="animate-spin text-purple-400" />
-                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">AI reply likh raha hai...</p>
+                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">
+                  AI reply likh raha hai...
+                </p>
               </div>
             ) : aiError ? (
               <div className="px-4 py-4">
                 <p className="text-xs text-red-400 mb-2">{aiError}</p>
-                <button onClick={generateReply}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/25 text-purple-300 rounded-lg text-[10px] font-extrabold transition-all">
+                <button
+                  onClick={generateReply}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/25 text-purple-300 rounded-lg text-[10px] font-extrabold transition-all"
+                >
                   <RefreshCw size={10} /> Retry
                 </button>
               </div>
@@ -284,23 +341,30 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
               <div className="p-3 space-y-2">
                 <textarea
                   value={aiReply}
-                  onChange={e => setAiReply(e.target.value)}
+                  onChange={(e) => setAiReply(e.target.value)}
                   rows={4}
                   className="w-full bg-[#0d1117] border border-[#21293d] focus:border-purple-500/40 text-slate-200 rounded-lg px-3 py-2.5 text-xs leading-relaxed outline-none resize-y"
                 />
                 <div className="flex items-center justify-between gap-2">
-                  <button onClick={generateReply}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#161b27] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-purple-300 rounded-lg text-[10px] font-extrabold transition-all">
+                  <button
+                    onClick={generateReply}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#161b27] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-purple-300 rounded-lg text-[10px] font-extrabold transition-all"
+                  >
                     <RefreshCw size={10} /> Regenerate
                   </button>
                   <div className="flex items-center gap-2">
-                    <button onClick={copyReply}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#161b27] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-white rounded-lg text-[10px] font-extrabold transition-all">
+                    <button
+                      onClick={copyReply}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#161b27] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-white rounded-lg text-[10px] font-extrabold transition-all"
+                    >
                       <Copy size={10} /> Copy
                     </button>
-                    <a href={`https://wa.me/91${inquiry.contact.replace(/\D/g, "")}?text=${encodeURIComponent(aiReply)}`}
-                      target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/25 text-emerald-300 rounded-lg text-[10px] font-extrabold transition-all">
+                    <a
+                      href={`https://wa.me/91${inquiry.contact.replace(/\D/g, "")}?text=${encodeURIComponent(aiReply)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/25 text-emerald-300 rounded-lg text-[10px] font-extrabold transition-all"
+                    >
                       <Send size={10} /> Open WhatsApp
                     </a>
                   </div>
@@ -312,17 +376,27 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
 
         {/* ── Footer ── */}
         <div className="flex items-center justify-between px-5 py-4 border-t border-[#21293d] bg-[#111520]">
-          <button onClick={onClose}
-            className="px-4 py-2 bg-[#161b27] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-extrabold transition-all">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-[#161b27] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-extrabold transition-all"
+          >
             Close
           </button>
           {!isRead ? (
-            <button onClick={handleMarkRead} disabled={marking}
-              className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-extrabold shadow-lg shadow-blue-500/20 transition-all active:scale-95">
-              {marking
-                ? <><Loader2 size={12} className="animate-spin" /> Marking...</>
-                : <><CheckCircle2 size={13} /> Mark as Read</>
-              }
+            <button
+              onClick={handleMarkRead}
+              disabled={marking}
+              className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-extrabold shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+            >
+              {marking ? (
+                <>
+                  <Loader2 size={12} className="animate-spin" /> Marking...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={13} /> Mark as Read
+                </>
+              )}
             </button>
           ) : (
             <div className="flex items-center gap-2 px-5 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-extrabold">

@@ -38,13 +38,16 @@ export const normalizePart = (s?: string | null): string => (s || "").trim();
 export const partsFrom = (p?: Partial<LocationParts> | null): LocationParts => ({
   zone: normalizePart(p?.zone),
   rack: normalizePart(p?.rack),
-  bin:  normalizePart(p?.bin),
-  box:  normalizePart(p?.box),
+  bin: normalizePart(p?.bin),
+  box: normalizePart(p?.box),
 });
 
 /** Koi bhi structured part set hai ya nahi. */
 export const hasParts = (p?: Partial<LocationParts> | null): boolean =>
-  partsFrom(p).zone !== "" || partsFrom(p).rack !== "" || partsFrom(p).bin !== "" || partsFrom(p).box !== "";
+  partsFrom(p).zone !== "" ||
+  partsFrom(p).rack !== "" ||
+  partsFrom(p).bin !== "" ||
+  partsFrom(p).box !== "";
 
 /** "Zone ▸ Rack ▸ Bin ▸ Box" — khali parts skip. Empty ho to "" return. */
 export const locPath = (p?: Partial<LocationParts> | null): string => {
@@ -61,7 +64,10 @@ export const locPathShort = (p?: Partial<LocationParts> | null): string => {
 };
 
 /** Do parts ko compare (trim ignore karke). */
-export const sameLoc = (a?: Partial<LocationParts> | null, b?: Partial<LocationParts> | null): boolean => {
+export const sameLoc = (
+  a?: Partial<LocationParts> | null,
+  b?: Partial<LocationParts> | null
+): boolean => {
   const A = partsFrom(a);
   const B = partsFrom(b);
   return A.zone === B.zone && A.rack === B.rack && A.bin === B.bin && A.box === B.box;
@@ -83,8 +89,8 @@ export const decodeLocationToken = (raw: string): LocationParts | null => {
     return {
       zone: zone ? decodeURIComponent(zone) : "",
       rack: rack ? decodeURIComponent(rack) : "",
-      bin:  bin  ? decodeURIComponent(bin)  : "",
-      box:  box  ? decodeURIComponent(box)  : "",
+      bin: bin ? decodeURIComponent(bin) : "",
+      box: box ? decodeURIComponent(box) : "",
     };
   } catch {
     return null;
@@ -96,8 +102,8 @@ export const partsFromRow = (row: LocationRow): LocationParts => {
   const structured = partsFrom({
     zone: row.place_zone ?? row.zone ?? undefined,
     rack: row.place_rack ?? row.rack ?? undefined,
-    bin:  row.place_bin  ?? row.bin  ?? undefined,
-    box:  row.place_box  ?? row.box  ?? undefined,
+    bin: row.place_bin ?? row.bin ?? undefined,
+    box: row.place_box ?? row.box ?? undefined,
   });
   if (hasParts(structured)) return structured;
   const legacy = normalizePart(row.place);

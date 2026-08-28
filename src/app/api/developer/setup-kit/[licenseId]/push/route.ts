@@ -42,7 +42,10 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   const vercelProjectUrl = str(body.vercelProjectUrl);
   const vercelProjectId = str(body.vercelProjectId);
   const vercelToken = str(body.vercelToken);
-  const customDomain = str(body.customDomain).toLowerCase().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  const customDomain = str(body.customDomain)
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/+$/, "");
   // Public site branding (optional)
   const siteName = str(body.siteName);
   const siteTagline = str(body.siteTagline);

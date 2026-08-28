@@ -8,7 +8,15 @@ import { PORTAL_LOCK_MS } from "@/lib/session-policy";
 // Portal inactivity lock — value session-policy.ts me hai (single source of
 // truth). Ye auth session se alag cheez hai: sirf portal cookie clear hota
 // hai, app login intact rehta hai.
-const IDLE_EVENTS = ["mousemove", "mousedown", "keydown", "touchstart", "touchmove", "scroll", "wheel"] as const;
+const IDLE_EVENTS = [
+  "mousemove",
+  "mousedown",
+  "keydown",
+  "touchstart",
+  "touchmove",
+  "scroll",
+  "wheel",
+] as const;
 
 // Portal gate: "double password" ka UI hissa.
 // 1) App login pehle (RootClient ise gate karta hai — non-logged-in user yahan nahi pahunchta)
@@ -36,7 +44,9 @@ export default function PortalGate({
 
   // onOpen ko ref me rakho taaki auth check effect stable rahe (deps change na ho).
   const onOpenRef = useRef(onOpen);
-  useEffect(() => { onOpenRef.current = onOpen; });
+  useEffect(() => {
+    onOpenRef.current = onOpen;
+  });
 
   // Gate open hone par data-load trigger karo. (load() page-mount par nahi chalna
   // chahiye — portal cookie set hone se pehle 401 aata hai. Refresh se pehle
@@ -58,7 +68,9 @@ export default function PortalGate({
         if (!cancelled) setState("locked");
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [authUrl, open]);
 
   const submit = async (e: React.FormEvent) => {
@@ -102,7 +114,9 @@ export default function PortalGate({
     let timer: ReturnType<typeof setTimeout>;
     const reset = () => {
       clearTimeout(timer);
-      timer = setTimeout(() => { void logout(); }, PORTAL_LOCK_MS);
+      timer = setTimeout(() => {
+        void logout();
+      }, PORTAL_LOCK_MS);
     };
     IDLE_EVENTS.forEach((ev) => window.addEventListener(ev, reset, { passive: true }));
     reset();
@@ -127,7 +141,9 @@ export default function PortalGate({
           <div className="w-14 h-14 bg-indigo-500/15 text-indigo-400 rounded-2xl flex items-center justify-center mb-5">
             <ShieldCheck size={26} />
           </div>
-          <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400">{badge}</span>
+          <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400">
+            {badge}
+          </span>
           <h1 className="text-xl font-black text-white tracking-tight mt-1">{title}</h1>
           <p className="text-[13px] text-slate-400 mt-1.5 leading-relaxed">{description}</p>
 
@@ -150,12 +166,23 @@ export default function PortalGate({
               disabled={busy || !password}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-black tracking-wide transition-all"
             >
-              {busy ? <><Loader2 size={16} className="animate-spin" /> Verifying...</> : <><KeyRound size={15} /> Unlock Portal</>}
+              {busy ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Verifying...
+                </>
+              ) : (
+                <>
+                  <KeyRound size={15} /> Unlock Portal
+                </>
+              )}
             </button>
           </form>
 
           <div className="mt-6 pt-5 border-t border-[#1a2234]">
-            <Link href="/" className="text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors">
+            <Link
+              href="/"
+              className="text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors"
+            >
               Dashboard par wapas
             </Link>
             <span className="text-[9px] block mt-2 text-slate-700 font-black uppercase tracking-widest">
@@ -172,7 +199,9 @@ export default function PortalGate({
       {children}
       <button
         type="button"
-        onClick={() => { void logout(); }}
+        onClick={() => {
+          void logout();
+        }}
         title="Portal se log out (15 min inactivity par auto-lock)"
         className="fixed bottom-5 right-5 z-[100] flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#161b27] border border-[#21293d] hover:border-red-500/40 text-slate-400 hover:text-red-400 text-xs font-black tracking-wide shadow-lg shadow-black/40 transition-all"
       >

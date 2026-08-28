@@ -12,12 +12,12 @@ import { NextRequest } from "next/server";
 // ════════════════════════════════════════════════════════════════
 
 const CONFIG = {
-  MAX_ATTEMPTS: 5,             // galat attempts allowed
-  WINDOW_MINUTES: 15,          // counting window
-  LOCKOUT_MINUTES: 15,         // base lockout duration
-  ESCALATE_FACTOR: 2,          // har repeat lock par duration ×2
-  MAX_LOCKOUT_MINUTES: 1440,   // cap: 24 hours
-  IP_MAX_ATTEMPTS: 30,         // ek IP se kitne alag emails par tries
+  MAX_ATTEMPTS: 5, // galat attempts allowed
+  WINDOW_MINUTES: 15, // counting window
+  LOCKOUT_MINUTES: 15, // base lockout duration
+  ESCALATE_FACTOR: 2, // har repeat lock par duration ×2
+  MAX_LOCKOUT_MINUTES: 1440, // cap: 24 hours
+  IP_MAX_ATTEMPTS: 30, // ek IP se kitne alag emails par tries
   IP_WINDOW_MINUTES: 60,
 };
 
@@ -44,7 +44,11 @@ export function getClientIp(request: NextRequest): string {
   }
   if (!ip) ip = request.headers.get("cf-connecting-ip") ?? "";
   // Normalize: strip IPv6 zone + unwrap IPv4-mapped IPv6
-  ip = ip.replace(/^::ffff:/, "").split("%").shift() ?? "";
+  ip =
+    ip
+      .replace(/^::ffff:/, "")
+      .split("%")
+      .shift() ?? "";
   return ip || "unknown";
 }
 
@@ -54,11 +58,7 @@ function normalizeEmail(email: string): string {
 
 async function getRow(email: string) {
   const sb = getAdmin();
-  const { data } = await sb
-    .from("login_throttle")
-    .select("*")
-    .eq("email", email)
-    .maybeSingle();
+  const { data } = await sb.from("login_throttle").select("*").eq("email", email).maybeSingle();
   return data ?? null;
 }
 
@@ -67,7 +67,10 @@ function now() {
 }
 
 /** Lock check — locked? remaining seconds? */
-export async function checkLockout(email: string, ip: string): Promise<{ locked: boolean; remaining_seconds?: number }> {
+export async function checkLockout(
+  email: string,
+  ip: string
+): Promise<{ locked: boolean; remaining_seconds?: number }> {
   const sb = getAdmin();
   const norm = normalizeEmail(email);
   const t = now();
@@ -97,7 +100,12 @@ export async function checkLockout(email: string, ip: string): Promise<{ locked:
         .maybeSingle();
       const o = oldest?.last_attempt_at as string | undefined;
       const remaining = o
-        ? Math.max(1, Math.round((new Date(o).getTime() + CONFIG.IP_WINDOW_MINUTES * 60000 - t.getTime()) / 1000))
+        ? Math.max(
+            1,
+            Math.round(
+              (new Date(o).getTime() + CONFIG.IP_WINDOW_MINUTES * 60000 - t.getTime()) / 1000
+            )
+          )
         : CONFIG.IP_WINDOW_MINUTES * 60;
       return remaining;
     })(),
@@ -111,7 +119,10 @@ export async function checkLockout(email: string, ip: string): Promise<{ locked:
   if (row?.lockout_until && new Date(row.lockout_until) > t) {
     return {
       locked: true,
-      remaining_seconds: Math.max(1, Math.round((new Date(row.lockout_until).getTime() - t.getTime()) / 1000)),
+      remaining_seconds: Math.max(
+        1,
+        Math.round((new Date(row.lockout_until).getTime() - t.getTime()) / 1000)
+      ),
     };
   }
 
@@ -148,7 +159,12 @@ export async function recordFailure(email: string, ip: string): Promise<FailResu
       .from("login_throttle")
       .update({ lockout_until: ipLockUntil, updated_at: t.toISOString() })
       .eq("ip_address", ip);
-    return { locked: true, attempts_left: 0, ip_locked: true, remaining_seconds: CONFIG.LOCKOUT_MINUTES * 60 };
+    return {
+      locked: true,
+      attempts_left: 0,
+      ip_locked: true,
+      remaining_seconds: CONFIG.LOCKOUT_MINUTES * 60,
+    };
   }
 
   if (!row) {
@@ -165,11 +181,16 @@ export async function recordFailure(email: string, ip: string): Promise<FailResu
   }
 
   // Window expired → fresh window
-  const windowExpired = !row.first_attempt_at || t.getTime() - new Date(row.first_attempt_at).getTime() > CONFIG.WINDOW_MINUTES * 60000;
+  const windowExpired =
+    !row.first_attempt_at ||
+    t.getTime() - new Date(row.first_attempt_at).getTime() > CONFIG.WINDOW_MINUTES * 60000;
   const attempts = windowExpired ? 1 : row.attempt_count + 1;
   const attemptTimes = windowExpired ? t : row.first_attempt_at;
 
-  const failResult: FailResult = { locked: false, attempts_left: Math.max(0, CONFIG.MAX_ATTEMPTS - attempts) };
+  const failResult: FailResult = {
+    locked: false,
+    attempts_left: Math.max(0, CONFIG.MAX_ATTEMPTS - attempts),
+  };
 
   let lockoutUntil: string | null = null;
   let lockRepeats = row.lock_repeats ?? 0;
@@ -179,11 +200,14 @@ export async function recordFailure(email: string, ip: string): Promise<FailResu
   // fail#1-4 ke updates lockout_until ko null kar dete hain; 5th attempt par
   // check karne se escalation kabhi nahi hota.
   if (windowExpired && row.lockout_until && new Date(row.lockout_until) <= t) {
-    lockRepeats = Math.min(lockRepeats + 1, 8);   // cap: 15 × 2^8 = 64h → 24h cap se limit
+    lockRepeats = Math.min(lockRepeats + 1, 8); // cap: 15 × 2^8 = 64h → 24h cap se limit
   }
 
   if (attempts >= CONFIG.MAX_ATTEMPTS) {
-    const mins = Math.min(CONFIG.LOCKOUT_MINUTES * Math.pow(CONFIG.ESCALATE_FACTOR, lockRepeats), CONFIG.MAX_LOCKOUT_MINUTES);
+    const mins = Math.min(
+      CONFIG.LOCKOUT_MINUTES * Math.pow(CONFIG.ESCALATE_FACTOR, lockRepeats),
+      CONFIG.MAX_LOCKOUT_MINUTES
+    );
     lockoutUntil = new Date(t.getTime() + mins * 60000).toISOString();
     failResult.locked = true;
     failResult.remaining_seconds = mins * 60;
@@ -194,7 +218,11 @@ export async function recordFailure(email: string, ip: string): Promise<FailResu
     .update({
       attempt_count: attempts,
       lock_repeats: lockRepeats,
-      first_attempt_at: attemptTimes ? (attemptTimes instanceof Date ? attemptTimes.toISOString() : attemptTimes) : null,
+      first_attempt_at: attemptTimes
+        ? attemptTimes instanceof Date
+          ? attemptTimes.toISOString()
+          : attemptTimes
+        : null,
       last_attempt_at: t.toISOString(),
       lockout_until: lockoutUntil,
       updated_at: t.toISOString(),
@@ -219,10 +247,7 @@ export async function reset(email: string): Promise<void> {
 export async function cleanupOld(olderThanMinutes = 1440): Promise<number> {
   const sb = getAdmin();
   const cutoff = new Date(now().getTime() - olderThanMinutes * 60000).toISOString();
-  const { error } = await sb
-    .from("login_throttle")
-    .delete()
-    .lt("updated_at", cutoff);
+  const { error } = await sb.from("login_throttle").delete().lt("updated_at", cutoff);
   if (error) return 0;
   return 1;
 }

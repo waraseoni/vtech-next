@@ -13,26 +13,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Sabhi fields required hain" }, { status: 400 });
     }
     if (password.length < 6) {
-      return NextResponse.json({ error: "Password kam se kam 6 characters ka hona chahiye" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Password kam se kam 6 characters ka hona chahiye" },
+        { status: 400 }
+      );
     }
 
     // ── Verify requester is admin via session cookie ──────────────────────
     const admin = await requireAdmin();
     if (!admin) {
-      return NextResponse.json({ error: "Sirf Admin naya user create kar sakta hai" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Sirf Admin naya user create kar sakta hai" },
+        { status: 403 }
+      );
     }
 
     // ── Developer role sirf dev PC (env vars wale deployment) par ─────────
-    const devEnabled = !!process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY && !!process.env.DEV_PORTAL_PASSWORD;
+    const devEnabled =
+      !!process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY && !!process.env.DEV_PORTAL_PASSWORD;
     if (role === "developer" && !devEnabled) {
-      return NextResponse.json({ error: "Developer role sirf dev PC par ban sakta hai" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Developer role sirf dev PC par ban sakta hai" },
+        { status: 403 }
+      );
     }
 
     // ── Create user using admin API (no email verification needed) ────────
     const { data: newUser, error: createErr } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true,    // Email verify ki zaroorat nahi
+      email_confirm: true, // Email verify ki zaroorat nahi
       user_metadata: { full_name: fullName },
     });
 
@@ -48,7 +58,10 @@ export async function POST(req: NextRequest) {
     if (profileErr) {
       // User created but profile failed — delete user to keep consistent
       await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
-      return NextResponse.json({ error: "Profile save nahi hua: " + profileErr.message }, { status: 400 });
+      return NextResponse.json(
+        { error: "Profile save nahi hua: " + profileErr.message },
+        { status: 400 }
+      );
     }
 
     return NextResponse.json({
@@ -56,7 +69,6 @@ export async function POST(req: NextRequest) {
       message: "User successfully create ho gaya!",
       userId: newUser.user.id,
     });
-
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Server error" },

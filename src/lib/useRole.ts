@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export function useRole() {
   const [role, setRole] = useState<string | null>(null);
@@ -7,14 +7,12 @@ export function useRole() {
 
   useEffect(() => {
     async function getRole() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        setRole(data?.role || 'staff');
+        const { data } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+        setRole(data?.role || "staff");
       }
       setLoading(false);
     }

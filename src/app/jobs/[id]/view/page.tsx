@@ -8,14 +8,34 @@ import { safeBack } from "@/lib/utils";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import {
-  ArrowLeft, Wrench, User, Clock,
-  Package, Settings2, AlertTriangle, CheckCircle2,
-  IndianRupee, Printer, Edit, Trash2,
-  Loader2, Box,
-  Banknote, Send, Camera,
-  Plus, X, CheckCircle, FileText,
-  RefreshCw, Image as ImageIcon, Upload, Loader,
-  ChevronLeft, ChevronRight, MapPin,
+  ArrowLeft,
+  Wrench,
+  User,
+  Clock,
+  Package,
+  Settings2,
+  AlertTriangle,
+  CheckCircle2,
+  IndianRupee,
+  Printer,
+  Edit,
+  Trash2,
+  Loader2,
+  Box,
+  Banknote,
+  Send,
+  Camera,
+  Plus,
+  X,
+  CheckCircle,
+  FileText,
+  RefreshCw,
+  Image as ImageIcon,
+  Upload,
+  Loader,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
@@ -32,61 +52,102 @@ const LEGACY_CUTOFF_MS = new Date("2026-08-15T00:00:00.000Z").getTime();
 function fmtDate(d: string | null) {
   if (!d) return "N/A";
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(d));
 }
 function fmtDateTime(d: string | null) {
   if (!d) return "N/A";
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
   }).format(new Date(d));
 }
 // Compact PHP-style timestamp for timeline: "14/08 20:57"
 function fmtLogTime(d: string | null) {
   if (!d) return "";
   const p = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "2-digit",
-    hour: "2-digit", minute: "2-digit", hour12: false,
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
   }).formatToParts(new Date(d));
-  const g = (t: string) => p.find(x => x.type === t)?.value ?? "";
+  const g = (t: string) => p.find((x) => x.type === t)?.value ?? "";
   return `${g("day")}/${g("month")} ${g("hour")}:${g("minute")}`;
 }
 function nowIST(): string {
   const p = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
   }).formatToParts(new Date());
-  const g = (t: string) => p.find(x => x.type === t)?.value ?? "00";
+  const g = (t: string) => p.find((x) => x.type === t)?.value ?? "00";
   return `${g("year")}-${g("month")}-${g("day")}T${g("hour")}:${g("minute")}:${g("second")}+05:30`;
 }
 function todayISTStr(): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   }).formatToParts(new Date());
   const p: Record<string, string> = {};
-  parts.forEach(x => { p[x.type] = x.value; });
+  parts.forEach((x) => {
+    p[x.type] = x.value;
+  });
   return `${p.year}-${p.month}-${p.day}`;
 }
 // Convert ISO/DB date to YYYY-MM-DD for <input type="date">
 function toDateInput(d: string | null): string {
   if (!d) return todayISTStr();
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   }).formatToParts(new Date(d));
   const p: Record<string, string> = {};
-  parts.forEach(x => { p[x.type] = x.value; });
+  parts.forEach((x) => {
+    p[x.type] = x.value;
+  });
   return `${p.year}-${p.month}-${p.day}`;
 }
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 interface JobDetail {
-  id: number; job_id: string; code: string; client_name: string;
-  item: string; fault: string; remark: string; uniq_id: string;
-  amount: number; mechanic_amount: number; mechanic_commission_amount: number;
-  mechanic_id: number | null; user_id: number; del_status: number; status: number;
+  id: number;
+  job_id: string;
+  code: string;
+  client_name: string;
+  item: string;
+  fault: string;
+  remark: string;
+  uniq_id: string;
+  amount: number;
+  mechanic_amount: number;
+  mechanic_commission_amount: number;
+  mechanic_id: number | null;
+  user_id: number;
+  del_status: number;
+  status: number;
   location_id?: number | null;
-  date_created: string; date_updated: string; date_completed: string | null;
+  date_created: string;
+  date_updated: string;
+  date_completed: string | null;
 }
 interface ActivityEntry {
   id: number;
@@ -97,52 +158,98 @@ interface ActivityEntry {
   date_created: string;
 }
 interface Client {
-  id: number; firstname: string; middlename: string;
-  lastname: string; contact: string; email: string; address: string;
+  id: number;
+  firstname: string;
+  middlename: string;
+  lastname: string;
+  contact: string;
+  email: string;
+  address: string;
 }
 interface Mechanic {
-  id: number; firstname: string; middlename: string;
-  lastname: string; designation: string; contact: string;
+  id: number;
+  firstname: string;
+  middlename: string;
+  lastname: string;
+  designation: string;
+  contact: string;
 }
 interface TransactionProduct {
-  transaction_id: number; product_id: number;
-  product_name: string | null; qty: number; price: number; hsn: string | null;
+  transaction_id: number;
+  product_id: number;
+  product_name: string | null;
+  qty: number;
+  price: number;
+  hsn: string | null;
 }
 interface TransactionService {
-  transaction_id: number; service_id: number;
-  service_name: string | null; price: number; hsn: string | null;
+  transaction_id: number;
+  service_id: number;
+  service_name: string | null;
+  price: number;
+  hsn: string | null;
 }
 interface TransactionImage {
-  id: number; transaction_id: number; image_path: string; date_created: string;
+  id: number;
+  transaction_id: number;
+  image_path: string;
+  date_created: string;
 }
 type Toast = { type: "success" | "error" | "info"; msg: string };
 
 // ─── STATUS CONFIG ────────────────────────────────────────────────────────────
-const STATUS_MAP: Record<number, {
-  label: string; explanation: string; cls: string;
-  badgeColor: string; // Bootstrap-like color name for PHP-style badge
-}> = {
-  0: { label: "Pending",     explanation: "Kaam shuru nahi hua hai",             badgeColor: "secondary", cls: "" },
-  1: { label: "On-Progress", explanation: "Kaam chal raha hai, jald ready hoga", badgeColor: "primary",   cls: "" },
-  2: { label: "Done",        explanation: "Kaam pura ho gaya hai",               badgeColor: "info",      cls: "" },
-  3: { label: "Paid",        explanation: "Bill chuka diya gaya hai",            badgeColor: "success",   cls: "" },
-  4: { label: "Cancelled",   explanation: "Transaction radd kar diya gaya hai",  badgeColor: "danger",    cls: "" },
-  5: { label: "Delivered",   explanation: "Aapko item mil chuka hai",            badgeColor: "warning",   cls: "" },
+const STATUS_MAP: Record<
+  number,
+  {
+    label: string;
+    explanation: string;
+    cls: string;
+    badgeColor: string; // Bootstrap-like color name for PHP-style badge
+  }
+> = {
+  0: { label: "Pending", explanation: "Kaam shuru nahi hua hai", badgeColor: "secondary", cls: "" },
+  1: {
+    label: "On-Progress",
+    explanation: "Kaam chal raha hai, jald ready hoga",
+    badgeColor: "primary",
+    cls: "",
+  },
+  2: { label: "Done", explanation: "Kaam pura ho gaya hai", badgeColor: "info", cls: "" },
+  3: { label: "Paid", explanation: "Bill chuka diya gaya hai", badgeColor: "success", cls: "" },
+  4: {
+    label: "Cancelled",
+    explanation: "Transaction radd kar diya gaya hai",
+    badgeColor: "danger",
+    cls: "",
+  },
+  5: {
+    label: "Delivered",
+    explanation: "Aapko item mil chuka hai",
+    badgeColor: "warning",
+    cls: "",
+  },
 };
-Object.entries(JOB_STATUS).forEach(([k, v]) => { if (STATUS_MAP[Number(k)]) STATUS_MAP[Number(k)].cls = v.cls; });
+Object.entries(JOB_STATUS).forEach(([k, v]) => {
+  if (STATUS_MAP[Number(k)]) STATUS_MAP[Number(k)].cls = v.cls;
+});
 
 // PHP-style badge colors mapped to Tailwind
 const BADGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  secondary: { bg: "bg-slate-600",   text: "text-white", border: "border-slate-700"  },
-  primary:   { bg: "bg-blue-600",   text: "text-white", border: "border-blue-700"  },
-  info:      { bg: "bg-cyan-500",   text: "text-white", border: "border-cyan-600"  },
-  success:   { bg: "bg-green-600",  text: "text-white", border: "border-green-700" },
-  danger:    { bg: "bg-red-600",    text: "text-white", border: "border-red-700"   },
-  warning:   { bg: "bg-yellow-500", text: "text-gray-900", border: "border-yellow-600" },
+  secondary: { bg: "bg-slate-600", text: "text-white", border: "border-slate-700" },
+  primary: { bg: "bg-blue-600", text: "text-white", border: "border-blue-700" },
+  info: { bg: "bg-cyan-500", text: "text-white", border: "border-cyan-600" },
+  success: { bg: "bg-green-600", text: "text-white", border: "border-green-700" },
+  danger: { bg: "bg-red-600", text: "text-white", border: "border-red-700" },
+  warning: { bg: "bg-yellow-500", text: "text-gray-900", border: "border-yellow-600" },
 };
 
 const DEL_STATUS: Record<number, string> = { 0: "In Shop", 1: "Delivered" };
-const FIRM = { name: "V-Technologies", contact: "9179105875", address: "Jabalpur", owner: "Vikram Jain" };
+const FIRM = {
+  name: "V-Technologies",
+  contact: "9179105875",
+  address: "Jabalpur",
+  owner: "Vikram Jain",
+};
 
 // Job status → WhatsApp template key (PHP: pending=0, repairing=1, ready=2, delivered=3/5, cancelled=4)
 const STATUS_WA_KEY: Record<number, string> = {
@@ -155,19 +262,29 @@ const STATUS_WA_KEY: Record<number, string> = {
 };
 
 // ─── FIELDSET COMPONENT (PHP jaisi styling) ───────────────────────────────────
-function Fieldset({ title, icon: Icon, children, color = "primary" }: {
-  title: string; icon?: React.ElementType; children: React.ReactNode; color?: "primary" | "success" | "info" | "danger";
+function Fieldset({
+  title,
+  icon: Icon,
+  children,
+  color = "primary",
+}: {
+  title: string;
+  icon?: React.ElementType;
+  children: React.ReactNode;
+  color?: "primary" | "success" | "info" | "danger";
 }) {
   const colors = {
     primary: "text-blue-400 border-blue-500/30",
     success: "text-emerald-400 border-emerald-500/30",
-    info:    "text-cyan-400 border-cyan-500/30",
-    danger:  "text-red-400 border-red-500/30",
+    info: "text-cyan-400 border-cyan-500/30",
+    danger: "text-red-400 border-red-500/30",
   };
   return (
     <fieldset className={`border-2 ${colors[color].split(" ")[1]} rounded-lg bg-[#111520] mb-4`}>
-      <legend className={`px-3 py-1 text-sm font-bold ${colors[color].split(" ")[0]} ml-3 flex items-center gap-1.5`}>
-        {Icon && <Icon size={14}/>}
+      <legend
+        className={`px-3 py-1 text-sm font-bold ${colors[color].split(" ")[0]} ml-3 flex items-center gap-1.5`}
+      >
+        {Icon && <Icon size={14} />}
         {title}
       </legend>
       <div className="px-4 pb-4 pt-1">{children}</div>
@@ -187,30 +304,30 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function JobDetailsPage() {
-  const params  = useParams();
-  const router  = useRouter();
-  const jobId   = params.id as string;
+  const params = useParams();
+  const router = useRouter();
+  const jobId = params.id as string;
 
-  const [job,      setJob]      = useState<JobDetail | null>(null);
-  const [client,   setClient]   = useState<Client | null>(null);
+  const [job, setJob] = useState<JobDetail | null>(null);
+  const [client, setClient] = useState<Client | null>(null);
   const [mechanic, setMechanic] = useState<Mechanic | null>(null);
   const [products, setProducts] = useState<TransactionProduct[]>([]);
   const [services, setServices] = useState<TransactionService[]>([]);
-  const [images,   setImages]   = useState<TransactionImage[]>([]);
+  const [images, setImages] = useState<TransactionImage[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityEntry[]>([]);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [userRole, setUserRole] = useState<string>("staff");
-  const [loading,  setLoading]  = useState(true);
+  const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
-  const [toast,    setToast]    = useState<Toast | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
   const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
-  const [prevJob,  setPrevJob]  = useState<{ id: number; job_id: string } | null>(null);
-  const [nextJob,  setNextJob]  = useState<{ id: number; job_id: string } | null>(null);
+  const [prevJob, setPrevJob] = useState<{ id: number; job_id: string } | null>(null);
+  const [nextJob, setNextJob] = useState<{ id: number; job_id: string } | null>(null);
 
   // ── Item photo upload/delete ─────────────────────────────────
-  const [uploading,   setUploading]   = useState(false);
-  const [photoErr,    setPhotoErr]    = useState("");
-  const [imgPopup,    setImgPopup]    = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [photoErr, setPhotoErr] = useState("");
+  const [imgPopup, setImgPopup] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
   const imgCamInputRef = useRef<HTMLInputElement>(null);
 
@@ -222,21 +339,23 @@ export default function JobDetailsPage() {
     setPhotoErr("");
     try {
       const numId = Number(jobId?.trim());
-      const compressed = await Promise.all(files.map(f => compressImage(f)));
-      const over = compressed.filter(c => c.bytes > 100 * 1024);
+      const compressed = await Promise.all(files.map((f) => compressImage(f)));
+      const over = compressed.filter((c) => c.bytes > 100 * 1024);
       if (over.length > 0) {
-        setPhotoErr(`${over.length} image(s) abhi bhi 100KB se bade hain — kam resolution try karein`);
+        setPhotoErr(
+          `${over.length} image(s) abhi bhi 100KB se bade hain — kam resolution try karein`
+        );
         setUploading(false);
         return;
       }
       const fd = new FormData();
       fd.append("action", "upload");
       fd.append("transactionId", String(numId));
-      compressed.forEach(c => fd.append("files", c.file));
+      compressed.forEach((c) => fd.append("files", c.file));
       const res = await fetch("/api/job-images", { method: "POST", body: fd });
       const json = await res.json();
       if (json.status !== "success") throw new Error(json.msg || "Upload failed");
-      setImages(prev => [...(json.uploaded as TransactionImage[]), ...prev]);
+      setImages((prev) => [...(json.uploaded as TransactionImage[]), ...prev]);
       setUploading(false);
     } catch (err: unknown) {
       setPhotoErr(err instanceof Error ? err.message : "Upload failed");
@@ -256,7 +375,7 @@ export default function JobDetailsPage() {
       const res = await fetch("/api/job-images", { method: "POST", body: fd });
       const json = await res.json();
       if (json.status !== "success") throw new Error(json.msg || "Delete failed");
-      setImages(prev => prev.filter(i => i.id !== img.id));
+      setImages((prev) => prev.filter((i) => i.id !== img.id));
     } catch (err: unknown) {
       setPhotoErr(err instanceof Error ? err.message : "Delete failed");
     }
@@ -264,21 +383,21 @@ export default function JobDetailsPage() {
 
   // Status modal
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [newStatus,       setNewStatus]       = useState(0);
-  const [deliveryDate,    setDeliveryDate]    = useState("");  // for Delivered status
-  const [deliveryTime,    setDeliveryTime]    = useState("");  // HH:MM
-  const [updatingStatus,  setUpdatingStatus]  = useState(false);
+  const [newStatus, setNewStatus] = useState(0);
+  const [deliveryDate, setDeliveryDate] = useState(""); // for Delivered status
+  const [deliveryTime, setDeliveryTime] = useState(""); // HH:MM
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   // Payment modal
   const [showPayModal, setShowPayModal] = useState(false);
-  const [payAmount,    setPayAmount]    = useState("");
-  const [payDiscount,  setPayDiscount]  = useState("0");
-  const [payMode,      setPayMode]      = useState("Cash");
-  const [payType,      setPayType]      = useState("Full");
-  const [payBillNo,    setPayBillNo]    = useState("");
-  const [payDate,      setPayDate]      = useState(todayISTStr());
-  const [payRemarks,   setPayRemarks]   = useState("");
-  const [savingPay,    setSavingPay]    = useState(false);
+  const [payAmount, setPayAmount] = useState("");
+  const [payDiscount, setPayDiscount] = useState("0");
+  const [payMode, setPayMode] = useState("Cash");
+  const [payType, setPayType] = useState("Full");
+  const [payBillNo, setPayBillNo] = useState("");
+  const [payDate, setPayDate] = useState(todayISTStr());
+  const [payRemarks, setPayRemarks] = useState("");
+  const [savingPay, setSavingPay] = useState(false);
 
   useEffect(() => {
     if (!toast) return;
@@ -290,163 +409,237 @@ export default function JobDetailsPage() {
   // Fetches activity history for this job from BOTH modules:
   //   - 'Jobs' (new Next.js system logs)
   //   - 'Transactions' (legacy PHP system logs — already in the same table)
-  const loadActivity = useCallback(async (row: { id: number; job_id?: string; user_id?: number } | null) => {
-    if (!row) { setActivityLogs([]); return; }
-    const jobIdStr = String(row.id);
-    const jobNoStr = String(row.job_id ?? "").trim();
-    const metaIds = jobNoStr && jobNoStr !== jobIdStr ? [jobIdStr, jobNoStr] : [jobIdStr];
-    const { data: actRows, error: actErr } = await supabase
-      .from("activity_logs")
-      .select("id, user_id, action, module, details, date_created")
-      .in("module", ["Jobs", "Transactions"])
-      .in("meta_id", metaIds)
-      .order("date_created", { ascending: false })
-      .limit(60);
-    if (actErr) { logger.warn("activity fetch:", actErr.message); }
-
-    const actList = (actRows || []).filter(a => a.action && a.date_created) as ActivityEntry[];
-    setActivityLogs(actList);
-    // User names: resolve via server route (users table is RLS-blocked for anon).
-    //   Legacy PHP/MariaDB logs (all modules, before Aug 15 2026) → `users` table
-    //   New system logs → 0 = Admin, else mechanic_list
-    //   Also include job creator (job.user_id) so "Job Created" shows a name.
-    const userIds = [...new Set([
-      ...actList.map(a => Number(a.user_id)),
-      row.user_id ? Number(row.user_id) : 0,
-    ].filter(n => n > 0))];
-    if (userIds.length > 0) {
-      try {
-        const res = await fetch(`/api/activity-users?ids=${userIds.join(",")}`);
-        const json = await res.json();
-        const nm: Record<string, string> = {};
-        (actList || []).forEach(a => {
-          const id = String(a.user_id);
-          const isLegacy = new Date(a.date_created).getTime() < LEGACY_CUTOFF_MS;
-          if (Number(a.user_id) === 0) { nm[id] = "Admin"; }
-          else if (isLegacy && json.users?.[id]) { nm[id] = json.users[id]; }
-          else if (json.mechanics?.[id]) { nm[id] = json.mechanics[id]; }
-          else if (json.users?.[id]) { nm[id] = json.users[id]; }
-          else { nm[id] = `User #${id}`; }
-        });
-        // Also map job creator name (row.user_id) — not in actList
-        const creatorId = row.user_id ? String(row.user_id) : "";
-        if (creatorId && !nm[creatorId] && Number(creatorId) > 0) {
-          nm[creatorId] = json.mechanics?.[creatorId] || json.users?.[creatorId] || `User #${creatorId}`;
-        }
-        setUserNames(nm);
-      } catch (err) {
-        logger.warn("activity user-name fetch:", err);
+  const loadActivity = useCallback(
+    async (row: { id: number; job_id?: string; user_id?: number } | null) => {
+      if (!row) {
+        setActivityLogs([]);
+        return;
       }
-    }
-  }, []);
+      const jobIdStr = String(row.id);
+      const jobNoStr = String(row.job_id ?? "").trim();
+      const metaIds = jobNoStr && jobNoStr !== jobIdStr ? [jobIdStr, jobNoStr] : [jobIdStr];
+      const { data: actRows, error: actErr } = await supabase
+        .from("activity_logs")
+        .select("id, user_id, action, module, details, date_created")
+        .in("module", ["Jobs", "Transactions"])
+        .in("meta_id", metaIds)
+        .order("date_created", { ascending: false })
+        .limit(60);
+      if (actErr) {
+        logger.warn("activity fetch:", actErr.message);
+      }
+
+      const actList = (actRows || []).filter((a) => a.action && a.date_created) as ActivityEntry[];
+      setActivityLogs(actList);
+      // User names: resolve via server route (users table is RLS-blocked for anon).
+      //   Legacy PHP/MariaDB logs (all modules, before Aug 15 2026) → `users` table
+      //   New system logs → 0 = Admin, else mechanic_list
+      //   Also include job creator (job.user_id) so "Job Created" shows a name.
+      const userIds = [
+        ...new Set(
+          [...actList.map((a) => Number(a.user_id)), row.user_id ? Number(row.user_id) : 0].filter(
+            (n) => n > 0
+          )
+        ),
+      ];
+      if (userIds.length > 0) {
+        try {
+          const res = await fetch(`/api/activity-users?ids=${userIds.join(",")}`);
+          const json = await res.json();
+          const nm: Record<string, string> = {};
+          (actList || []).forEach((a) => {
+            const id = String(a.user_id);
+            const isLegacy = new Date(a.date_created).getTime() < LEGACY_CUTOFF_MS;
+            if (Number(a.user_id) === 0) {
+              nm[id] = "Admin";
+            } else if (isLegacy && json.users?.[id]) {
+              nm[id] = json.users[id];
+            } else if (json.mechanics?.[id]) {
+              nm[id] = json.mechanics[id];
+            } else if (json.users?.[id]) {
+              nm[id] = json.users[id];
+            } else {
+              nm[id] = `User #${id}`;
+            }
+          });
+          // Also map job creator name (row.user_id) — not in actList
+          const creatorId = row.user_id ? String(row.user_id) : "";
+          if (creatorId && !nm[creatorId] && Number(creatorId) > 0) {
+            nm[creatorId] =
+              json.mechanics?.[creatorId] || json.users?.[creatorId] || `User #${creatorId}`;
+          }
+          setUserNames(nm);
+        } catch (err) {
+          logger.warn("activity user-name fetch:", err);
+        }
+      }
+    },
+    []
+  );
 
   // ── FETCH ──────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const numId = Number(jobId?.trim());
-      if (!jobId || isNaN(numId) || numId <= 0) { router.push("/jobs"); return; }
+      if (!jobId || isNaN(numId) || numId <= 0) {
+        router.push("/jobs");
+        return;
+      }
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
-        const { data: p } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+        const { data: p } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
         setUserRole(p?.role || "staff");
       }
 
       // Firm info + WhatsApp templates (system_info key-value)
       const { data: sys } = await supabase.from("system_info").select("meta_field, meta_value");
       const info: Record<string, string> = {};
-      (sys || []).forEach(r => { info[r.meta_field] = r.meta_value; });
+      (sys || []).forEach((r) => {
+        info[r.meta_field] = r.meta_value;
+      });
       setFirmInfo(info);
 
       const { data: jobData, error: jobErr } = await supabase
-        .from("transaction_list").select("*")
-        .eq("id", numId).eq("del_status", 0).single();
+        .from("transaction_list")
+        .select("*")
+        .eq("id", numId)
+        .eq("del_status", 0)
+        .single();
 
-      if (jobErr || !jobData) { router.push("/jobs"); return; }
+      if (jobErr || !jobData) {
+        router.push("/jobs");
+        return;
+      }
       setJob(jobData as JobDetail);
       loadActivity(jobData as { id: number; job_id?: string; user_id?: number });
       setNewStatus(jobData.status);
       // Neighboring active jobs for Prev/Next navigation (order by id, newest first)
       const [prevRes, nextRes] = await Promise.all([
-        supabase.from("transaction_list")
+        supabase
+          .from("transaction_list")
           .select("id, job_id")
-          .eq("del_status", 0).lt("id", numId)
-          .order("id", { ascending: false }).limit(1),
-        supabase.from("transaction_list")
+          .eq("del_status", 0)
+          .lt("id", numId)
+          .order("id", { ascending: false })
+          .limit(1),
+        supabase
+          .from("transaction_list")
           .select("id, job_id")
-          .eq("del_status", 0).gt("id", numId)
-          .order("id", { ascending: true }).limit(1),
+          .eq("del_status", 0)
+          .gt("id", numId)
+          .order("id", { ascending: true })
+          .limit(1),
       ]);
-      setPrevJob(prevRes.data?.[0] as { id: number; job_id: string } | null ?? null);
-      setNextJob(nextRes.data?.[0] as { id: number; job_id: string } | null ?? null);
+      setPrevJob((prevRes.data?.[0] as { id: number; job_id: string } | null) ?? null);
+      setNextJob((nextRes.data?.[0] as { id: number; job_id: string } | null) ?? null);
       // Pre-fill delivery date
       setDeliveryDate(toDateInput(jobData.date_completed));
-      setDeliveryTime(jobData.date_completed
-        ? new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(jobData.date_completed))
-        : new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date()));
+      setDeliveryTime(
+        jobData.date_completed
+          ? new Intl.DateTimeFormat("en-GB", {
+              timeZone: "Asia/Kolkata",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }).format(new Date(jobData.date_completed))
+          : new Intl.DateTimeFormat("en-GB", {
+              timeZone: "Asia/Kolkata",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }).format(new Date())
+      );
 
       const clientId = Number(jobData.client_name);
-      const [clientRes, mechRes, prodRes, svcRes, imgRes] = await Promise.all([        supabase.from("client_list")
+      const [clientRes, mechRes, prodRes, svcRes, imgRes] = await Promise.all([
+        supabase
+          .from("client_list")
           .select("id, firstname, middlename, lastname, contact, email, address")
-          .eq("id", clientId).single(),
+          .eq("id", clientId)
+          .single(),
         jobData.mechanic_id
-          ? supabase.from("mechanic_list")
+          ? supabase
+              .from("mechanic_list")
               .select("id, firstname, middlename, lastname, designation, contact")
-              .eq("id", jobData.mechanic_id).single()
+              .eq("id", jobData.mechanic_id)
+              .single()
           : Promise.resolve({ data: null }),
         supabase.from("transaction_products").select("*").eq("transaction_id", numId),
         supabase.from("transaction_services").select("*").eq("transaction_id", numId),
-        supabase.from("transaction_images").select("*").eq("transaction_id", numId)
+        supabase
+          .from("transaction_images")
+          .select("*")
+          .eq("transaction_id", numId)
           .order("date_created", { ascending: false }),
       ]);
 
       if (clientRes.data) setClient(clientRes.data as Client);
-      if (mechRes.data)   setMechanic(mechRes.data as Mechanic);
+      if (mechRes.data) setMechanic(mechRes.data as Mechanic);
       setImages((imgRes.data || []) as TransactionImage[]);
 
       const prods = (prodRes.data || []) as TransactionProduct[];
-      const prodIds = [...new Set(prods.map(p => p.product_id).filter(Boolean))];
-      const { data: plRows } = prodIds.length > 0
-        ? await supabase.from("product_list").select("id, name, hsn").in("id", prodIds)
-        : { data: null };
-      const pm = Object.fromEntries((plRows || []).map(p => [p.id, p.name]));
-      const phsn = Object.fromEntries((plRows || []).map(p => [p.id, p.hsn]));
-      setProducts(prods.map(p => ({
-        ...p,
-        product_name: p.product_name || pm[p.product_id] || null,
-        hsn: phsn[p.product_id] || null,
-      })));
+      const prodIds = [...new Set(prods.map((p) => p.product_id).filter(Boolean))];
+      const { data: plRows } =
+        prodIds.length > 0
+          ? await supabase.from("product_list").select("id, name, hsn").in("id", prodIds)
+          : { data: null };
+      const pm = Object.fromEntries((plRows || []).map((p) => [p.id, p.name]));
+      const phsn = Object.fromEntries((plRows || []).map((p) => [p.id, p.hsn]));
+      setProducts(
+        prods.map((p) => ({
+          ...p,
+          product_name: p.product_name || pm[p.product_id] || null,
+          hsn: phsn[p.product_id] || null,
+        }))
+      );
 
       const svcs = (svcRes.data || []) as TransactionService[];
-      const svcIds = [...new Set(svcs.map(s => s.service_id).filter(Boolean))];
-      const { data: slRows } = svcIds.length > 0
-        ? await supabase.from("service_list").select("id, name, hsn").in("id", svcIds)
-        : { data: null };
-      const sm = Object.fromEntries((slRows || []).map(s => [s.id, s.name]));
-      const shsn = Object.fromEntries((slRows || []).map(s => [s.id, s.hsn]));
-      setServices(svcs.map(s => ({
-        ...s,
-        service_name: s.service_name || sm[s.service_id] || null,
-        hsn: shsn[s.service_id] || null,
-      })));
-
-    } catch (err) { logger.error("fetchData:", err); }
-    finally { setLoading(false); }
+      const svcIds = [...new Set(svcs.map((s) => s.service_id).filter(Boolean))];
+      const { data: slRows } =
+        svcIds.length > 0
+          ? await supabase.from("service_list").select("id, name, hsn").in("id", svcIds)
+          : { data: null };
+      const sm = Object.fromEntries((slRows || []).map((s) => [s.id, s.name]));
+      const shsn = Object.fromEntries((slRows || []).map((s) => [s.id, s.hsn]));
+      setServices(
+        svcs.map((s) => ({
+          ...s,
+          service_name: s.service_name || sm[s.service_id] || null,
+          hsn: shsn[s.service_id] || null,
+        }))
+      );
+    } catch (err) {
+      logger.error("fetchData:", err);
+    } finally {
+      setLoading(false);
+    }
   }, [jobId, router, loadActivity]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // ── WHATSAPP ───────────────────────────────────────────────────────────────
   const sendWA = () => {
     if (!job || !client) return;
     const phone = client.contact?.replace(/\D/g, "");
-    if (!phone || phone.length < 10) { setToast({ type: "error", msg: "Valid mobile number nahi mila!" }); return; }
+    if (!phone || phone.length < 10) {
+      setToast({ type: "error", msg: "Valid mobile number nahi mila!" });
+      return;
+    }
     const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
-    const amt  = (job.amount || 0).toLocaleString("en-IN");
-    const key  = STATUS_WA_KEY[job.status] || "whatsapp_status_pending";
-    const tpl  = resolveTemplate(firmInfo, key);
-    const msg  = substituteTemplate(tpl, {
+    const amt = (job.amount || 0).toLocaleString("en-IN");
+    const key = STATUS_WA_KEY[job.status] || "whatsapp_status_pending";
+    const tpl = resolveTemplate(firmInfo, key);
+    const msg = substituteTemplate(tpl, {
       client_name: name,
       item: job.item,
       job_id: job.job_id,
@@ -473,7 +666,11 @@ export default function JobDetailsPage() {
       updates.date_completed = `${dateStr}T${timeStr}:00+05:30`;
       // Delivery par spot khali karna? (jobs list ke bulk action jaisa hi)
       if (job.uniq_id || job.location_id) {
-        if (window.confirm(`Item client ko deliver ho raha hai — uski location (spot "${job.uniq_id}") bhi khali kar dein?`)) {
+        if (
+          window.confirm(
+            `Item client ko deliver ho raha hai — uski location (spot "${job.uniq_id}") bhi khali kar dein?`
+          )
+        ) {
           updates.uniq_id = "";
           updates.location_id = null;
         }
@@ -484,9 +681,17 @@ export default function JobDetailsPage() {
       setToast({ type: "error", msg: "Status update failed: " + error.message });
     } else {
       setJob({ ...job, ...updates } as JobDetail);
-      await logActivity('Updated Job Status', 'Jobs', job.job_id, `Job #${job.job_id} | ${STATUS_MAP[job.status]?.label} → ${STATUS_MAP[newStatus]?.label} | ${job.item}`);
+      await logActivity(
+        "Updated Job Status",
+        "Jobs",
+        job.job_id,
+        `Job #${job.job_id} | ${STATUS_MAP[job.status]?.label} → ${STATUS_MAP[newStatus]?.label} | ${job.item}`
+      );
       loadActivity(job);
-      setToast({ type: "success", msg: `Status "${STATUS_MAP[newStatus]?.label}" update ho gaya!` });
+      setToast({
+        type: "success",
+        msg: `Status "${STATUS_MAP[newStatus]?.label}" update ho gaya!`,
+      });
       setShowStatusModal(false);
     }
     setUpdatingStatus(false);
@@ -495,26 +700,42 @@ export default function JobDetailsPage() {
   // ── ADD PAYMENT ────────────────────────────────────────────────────────────
   const handleAddPayment = async () => {
     if (!client || !job) return;
-    const amt  = parseFloat(payAmount);
+    const amt = parseFloat(payAmount);
     const disc = parseFloat(payDiscount) || 0;
-    if (isNaN(amt) || amt <= 0) { setToast({ type: "error", msg: "Valid amount enter karo!" }); return; }
+    if (isNaN(amt) || amt <= 0) {
+      setToast({ type: "error", msg: "Valid amount enter karo!" });
+      return;
+    }
     setSavingPay(true);
     const { error } = await supabase.from("client_payments").insert({
-      client_id: client.id, job_id: job.job_id,
-      amount: amt, discount: disc,
+      client_id: client.id,
+      job_id: job.job_id,
+      amount: amt,
+      discount: disc,
       payment_mode: payMode,
       payment_type: payType,
       bill_no: payBillNo.trim() || null,
       remarks: payRemarks.trim() || null,
       payment_date: payDate || `${todayISTStr()}T00:00:00+05:30`,
     });
-    if (error) { setToast({ type: "error", msg: "Payment save nahi hua: " + error.message }); }
-    else {
-      await logActivity('Added Job Payment', 'Jobs', job.job_id, `Job #${job.job_id} | ₹${amt} (${payMode}, ${payType}) | Client: ${client.firstname} ${client.lastname}`);
+    if (error) {
+      setToast({ type: "error", msg: "Payment save nahi hua: " + error.message });
+    } else {
+      await logActivity(
+        "Added Job Payment",
+        "Jobs",
+        job.job_id,
+        `Job #${job.job_id} | ₹${amt} (${payMode}, ${payType}) | Client: ${client.firstname} ${client.lastname}`
+      );
       loadActivity(job);
       setToast({ type: "success", msg: "Payment save ho gayi!" });
       setShowPayModal(false);
-      setPayAmount(""); setPayDiscount("0"); setPayRemarks(""); setPayBillNo(""); setPayType("Full"); setPayDate(todayISTStr());
+      setPayAmount("");
+      setPayDiscount("0");
+      setPayRemarks("");
+      setPayBillNo("");
+      setPayType("Full");
+      setPayDate(todayISTStr());
       fetchData();
     }
     setSavingPay(false);
@@ -522,26 +743,48 @@ export default function JobDetailsPage() {
 
   // ── DELETE ─────────────────────────────────────────────────────────────────
   const handleDelete = async () => {
-    if (userRole !== "admin") { setToast({ type: "error", msg: "Sirf Admin delete kar sakta hai!" }); return; }
+    if (userRole !== "admin") {
+      setToast({ type: "error", msg: "Sirf Admin delete kar sakta hai!" });
+      return;
+    }
     if (!confirm("Kya aap pakka is job ko delete karna chahte hain?")) return;
     setDeleting(true);
-    const { error } = await supabase.from("transaction_list").update({ del_status: 1 }).eq("id", jobId);
+    const { error } = await supabase
+      .from("transaction_list")
+      .update({ del_status: 1 })
+      .eq("id", jobId);
     if (!error) {
-      await logActivity('Deleted Job', 'Jobs', job?.job_id, `Job #${job?.job_id} | ${job?.item || 'Unknown'} | Client: ${client?.firstname || ''} ${client?.lastname || ''}`);
+      await logActivity(
+        "Deleted Job",
+        "Jobs",
+        job?.job_id,
+        `Job #${job?.job_id} | ${job?.item || "Unknown"} | Client: ${client?.firstname || ""} ${client?.lastname || ""}`
+      );
       router.replace("/jobs");
-    } else { setToast({ type: "error", msg: "Delete failed!" }); setDeleting(false); }
+    } else {
+      setToast({ type: "error", msg: "Delete failed!" });
+      setDeleting(false);
+    }
   };
 
   // ── PRINT ──────────────────────────────────────────────────────────────────
   const handlePrint = () => {
     if (!job) return;
-    const svcHtml = services.length > 0
-      ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Service</th><th style="padding:6px;text-align:right">Price</th></tr></thead><tbody>${services.map(s => `<tr><td style="padding:5px">${s.service_name || s.service_id}</td><td style="padding:5px;text-align:right">Rs.${s.price.toFixed(2)}</td></tr>`).join("")}</tbody></table>` : "";
-    const prodHtml = products.length > 0
-      ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Product</th><th style="padding:6px;text-align:center">Qty</th><th style="padding:6px;text-align:right">Price</th><th style="padding:6px;text-align:right">Total</th></tr></thead><tbody>${products.map(p => `<tr><td style="padding:5px">${p.product_name || p.product_id}</td><td style="padding:5px;text-align:center">${p.qty}</td><td style="padding:5px;text-align:right">Rs.${p.price.toFixed(2)}</td><td style="padding:5px;text-align:right">Rs.${(p.qty*p.price).toFixed(2)}</td></tr>`).join("")}</tbody></table>` : "";
+    const svcHtml =
+      services.length > 0
+        ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Service</th><th style="padding:6px;text-align:right">Price</th></tr></thead><tbody>${services.map((s) => `<tr><td style="padding:5px">${s.service_name || s.service_id}</td><td style="padding:5px;text-align:right">Rs.${s.price.toFixed(2)}</td></tr>`).join("")}</tbody></table>`
+        : "";
+    const prodHtml =
+      products.length > 0
+        ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Product</th><th style="padding:6px;text-align:center">Qty</th><th style="padding:6px;text-align:right">Price</th><th style="padding:6px;text-align:right">Total</th></tr></thead><tbody>${products.map((p) => `<tr><td style="padding:5px">${p.product_name || p.product_id}</td><td style="padding:5px;text-align:center">${p.qty}</td><td style="padding:5px;text-align:right">Rs.${p.price.toFixed(2)}</td><td style="padding:5px;text-align:right">Rs.${(p.qty * p.price).toFixed(2)}</td></tr>`).join("")}</tbody></table>`
+        : "";
     const win = window.open("", `Bill_${job.job_id}`, "width=900,height=700");
-    if (!win) { alert("Popup blocked! Browser mein allow karo."); return; }
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Job Bill - ${job.job_id}</title>
+    if (!win) {
+      alert("Popup blocked! Browser mein allow karo.");
+      return;
+    }
+    win.document
+      .write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Job Bill - ${job.job_id}</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#333;padding:20px}
 h1{font-size:18px;font-weight:900;color:#001f3f;margin-bottom:2px}h2{font-size:12px;color:#555;margin-bottom:10px}
 hr{border:1px solid #001f3f;margin:8px 0}.total{font-size:16px;font-weight:900;margin-top:12px;color:#155724}
@@ -553,30 +796,39 @@ hr{border:1px solid #001f3f;margin:8px 0}.total{font-size:16px;font-weight:900;m
 <p><b>Mechanic:</b> ${mechanic ? [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ") : "N/A"}&nbsp;&nbsp;<b>Date:</b> ${fmtDate(job.date_created)}</p>
 ${job.date_completed ? `<p><b>Delivered:</b> ${fmtDateTime(job.date_completed)}</p>` : ""}
 ${svcHtml}${prodHtml}
-<p class="total">Total Bill Amount: Rs.${job.amount.toLocaleString("en-IN", { minimumFractionDigits:2 })}</p>
+<p class="total">Total Bill Amount: Rs.${job.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
 </body></html>`);
     win.document.close();
-    win.onload = () => { win.print(); win.onafterprint = () => win.close(); };
-    setTimeout(() => { if (win && !win.closed) { win.print(); win.onafterprint = () => win.close(); } }, 800);
+    win.onload = () => {
+      win.print();
+      win.onafterprint = () => win.close();
+    };
+    setTimeout(() => {
+      if (win && !win.closed) {
+        win.print();
+        win.onafterprint = () => win.close();
+      }
+    }, 800);
   };
 
   // ── LOADING ────────────────────────────────────────────────────────────────
-  if (loading) return (
-    <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-3">
-      <Loader2 className="animate-spin text-blue-700" size={40}/>
-      <p className="text-slate-500 font-medium uppercase tracking-widest text-sm animate-pulse">
-        Loading Transaction Details...
-      </p>
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-3">
+        <Loader2 className="animate-spin text-blue-700" size={40} />
+        <p className="text-slate-500 font-medium uppercase tracking-widest text-sm animate-pulse">
+          Loading Transaction Details...
+        </p>
+      </div>
+    );
   if (!job) return null;
 
-  const st         = STATUS_MAP[job.status] || STATUS_MAP[0];
-  const badge      = BADGE_COLORS[st.badgeColor];
+  const st = STATUS_MAP[job.status] || STATUS_MAP[0];
+  const badge = BADGE_COLORS[st.badgeColor];
   const clientName = client
     ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
     : `Client #${job.client_name}`;
-  const mechName   = mechanic
+  const mechName = mechanic
     ? [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ")
     : null;
   const productsTotal = products.reduce((s, p) => s + p.price * p.qty, 0);
@@ -585,15 +837,18 @@ ${svcHtml}${prodHtml}
   // ── RENDER ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans">
-
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-2xl border text-sm font-semibold ${
-          toast.type === "success" ? "bg-green-50 border-green-300 text-green-800"
-          : toast.type === "info"  ? "bg-blue-50 border-blue-300 text-blue-800"
-          : "bg-red-50 border-red-300 text-red-800"
-        }`}>
-          {toast.type === "success" ? <CheckCircle size={16}/> : <AlertTriangle size={16}/>}
+        <div
+          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-2xl border text-sm font-semibold ${
+            toast.type === "success"
+              ? "bg-green-50 border-green-300 text-green-800"
+              : toast.type === "info"
+                ? "bg-blue-50 border-blue-300 text-blue-800"
+                : "bg-red-50 border-red-300 text-red-800"
+          }`}
+        >
+          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
           {toast.msg}
         </div>
       )}
@@ -601,46 +856,62 @@ ${svcHtml}${prodHtml}
       {/* ── PAGE CONTENT ─────────────────────────────────────────────────────── */}
       <div className="py-4 px-3 md:px-6 text-slate-200">
         <div className="max-w-5xl mx-auto">
-
           {/* Card */}
           <div className="bg-[#161b27] rounded shadow-sm border border-[#21293d]">
-
             {/* Card Header — PHP style navy */}
             <div className="bg-[#0d1f35] text-white rounded-t px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#21293d]">
               <h5 className="font-bold text-base flex items-center gap-2 m-0">
-                <FileText size={16}/>
+                <FileText size={16} />
                 Transaction Details — {job.job_id} ({job.code})
               </h5>
               <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:flex-wrap">
-                <Link href={`/clients/${job.client_name}/view`}
-                  className="flex items-center justify-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
-                  <User size={12}/> View Client
+                <Link
+                  href={`/clients/${job.client_name}/view`}
+                  className="flex items-center justify-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors"
+                >
+                  <User size={12} /> View Client
                 </Link>
-                <Link href={`/api/print-bill?job_id=${job.job_id}&bill_type=gst`} target="_blank"
-                  className="flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
-                  <FileText size={12}/> GST Bill
+                <Link
+                  href={`/api/print-bill?job_id=${job.job_id}&bill_type=gst`}
+                  target="_blank"
+                  className="flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors"
+                >
+                  <FileText size={12} /> GST Bill
                 </Link>
-                <Link href={`/api/print-bill?job_id=${job.job_id}&type=thermal`} target="_blank"
-                  className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
-                  <Printer size={12}/> Thermal Receipt
+                <Link
+                  href={`/api/print-bill?job_id=${job.job_id}&type=thermal`}
+                  target="_blank"
+                  className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors"
+                >
+                  <Printer size={12} /> Thermal Receipt
                 </Link>
-                <button onClick={handlePrint}
-                  className="flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-                  <Printer size={12}/> Print Bill
+                <button
+                  onClick={handlePrint}
+                  className="flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors"
+                >
+                  <Printer size={12} /> Print Bill
                 </button>
-                <button onClick={() => safeBack(router, "/jobs")}
-                  className="col-span-2 flex items-center justify-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors sm:col-span-1">
-                  <ArrowLeft size={12}/> Back
+                <button
+                  onClick={() => safeBack(router, "/jobs")}
+                  className="col-span-2 flex items-center justify-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors sm:col-span-1"
+                >
+                  <ArrowLeft size={12} /> Back
                 </button>
-                <button onClick={() => prevJob && router.push(`/jobs/${prevJob.id}/view`)} disabled={!prevJob}
+                <button
+                  onClick={() => prevJob && router.push(`/jobs/${prevJob.id}/view`)}
+                  disabled={!prevJob}
                   title={prevJob ? `Job ${prevJob.job_id}` : "No previous job"}
-                  className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                  <ChevronLeft size={12}/> Prev
+                  className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft size={12} /> Prev
                 </button>
-                <button onClick={() => nextJob && router.push(`/jobs/${nextJob.id}/view`)} disabled={!nextJob}
+                <button
+                  onClick={() => nextJob && router.push(`/jobs/${nextJob.id}/view`)}
+                  disabled={!nextJob}
                   title={nextJob ? `Job ${nextJob.job_id}` : "No next job"}
-                  className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                  Next <ChevronRight size={12}/>
+                  className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Next <ChevronRight size={12} />
                 </button>
               </div>
             </div>
@@ -648,46 +919,92 @@ ${svcHtml}${prodHtml}
             {/* Card Body */}
             <div className="p-4 text-slate-200">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-
                 {/* ── LEFT COLUMN (7/12) ─────────────────────────────────── */}
                 <div className="lg:col-span-7 lg:border-r lg:border-[#21293d] lg:pr-4">
-
                   {/* Client + Job Info row */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-
                     {/* Client Info */}
                     <Fieldset title="Client Information" icon={User} color="primary">
-                      <InfoRow label="Name"
+                      <InfoRow
+                        label="Name"
                         value={
-                          <Link href={`/clients/${job.client_name}/view`}
-                            className="text-blue-400 font-semibold hover:underline">
+                          <Link
+                            href={`/clients/${job.client_name}/view`}
+                            className="text-blue-400 font-semibold hover:underline"
+                          >
                             {clientName}
                           </Link>
-                        }/>
+                        }
+                      />
                       {client?.contact && (
-                        <InfoRow label="Contact"
-                          value={<a href={`tel:${client.contact}`} className="text-blue-400">{client.contact}</a>}/>
+                        <InfoRow
+                          label="Contact"
+                          value={
+                            <a href={`tel:${client.contact}`} className="text-blue-400">
+                              {client.contact}
+                            </a>
+                          }
+                        />
                       )}
-                      {client?.address && <InfoRow label="Address" value={<span className="text-slate-400 text-xs">{client.address}</span>}/>}
-                      {client?.email && <InfoRow label="Email" value={<span className="text-slate-400 text-xs">{client.email}</span>}/>}
+                      {client?.address && (
+                        <InfoRow
+                          label="Address"
+                          value={<span className="text-slate-400 text-xs">{client.address}</span>}
+                        />
+                      )}
+                      {client?.email && (
+                        <InfoRow
+                          label="Email"
+                          value={<span className="text-slate-400 text-xs">{client.email}</span>}
+                        />
+                      )}
                     </Fieldset>
 
                     {/* Job Details */}
                     <Fieldset title="Job Details" icon={Wrench} color="info">
-                      <InfoRow label="Mechanic" value={mechName || <em className="text-slate-600">Not Assigned</em>}/>
-                      <InfoRow label="Received" value={fmtDateTime(job.date_created)}/>
-                      <InfoRow label="Job No." value={<span className="font-bold">{job.job_id}</span>}/>
-                      <InfoRow label="Code"    value={<span className="font-bold font-mono">{job.code}</span>}/>
-                      <InfoRow label="Locate"  value={(job.location_id || job.uniq_id)
-                        ? <Link href={job.location_id ? `/jobs?spot=${job.location_id}` : `/jobs?search=${encodeURIComponent(job.uniq_id || "")}`} className="text-amber-400 hover:text-amber-300 flex items-center gap-1"><MapPin size={12}/>{job.uniq_id}</Link>
-                        : <em className="text-slate-600">N/A</em>}/>
-                      <InfoRow label="Del. Status" value={DEL_STATUS[job.del_status]}/>
+                      <InfoRow
+                        label="Mechanic"
+                        value={mechName || <em className="text-slate-600">Not Assigned</em>}
+                      />
+                      <InfoRow label="Received" value={fmtDateTime(job.date_created)} />
+                      <InfoRow
+                        label="Job No."
+                        value={<span className="font-bold">{job.job_id}</span>}
+                      />
+                      <InfoRow
+                        label="Code"
+                        value={<span className="font-bold font-mono">{job.code}</span>}
+                      />
+                      <InfoRow
+                        label="Locate"
+                        value={
+                          job.location_id || job.uniq_id ? (
+                            <Link
+                              href={
+                                job.location_id
+                                  ? `/jobs?spot=${job.location_id}`
+                                  : `/jobs?search=${encodeURIComponent(job.uniq_id || "")}`
+                              }
+                              className="text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                            >
+                              <MapPin size={12} />
+                              {job.uniq_id}
+                            </Link>
+                          ) : (
+                            <em className="text-slate-600">N/A</em>
+                          )
+                        }
+                      />
+                      <InfoRow label="Del. Status" value={DEL_STATUS[job.del_status]} />
                     </Fieldset>
                   </div>
 
                   {/* Item Description */}
                   <Fieldset title="Item Description" icon={Box} color="primary">
-                    <InfoRow label="Item / Model" value={<span className="font-semibold">{job.item}</span>}/>
+                    <InfoRow
+                      label="Item / Model"
+                      value={<span className="font-semibold">{job.item}</span>}
+                    />
                     <div className="mb-1.5 text-sm">
                       <span className="font-semibold text-slate-500">Fault Reported:</span>
                       <p className="mt-0.5 text-slate-300 whitespace-pre-line">{job.fault}</p>
@@ -715,16 +1032,29 @@ ${svcHtml}${prodHtml}
                           <tbody className="divide-y divide-[#21293d]">
                             {services.map((s, i) => (
                               <tr key={i} className={i % 2 === 0 ? "bg-[#111520]" : "bg-[#161b27]"}>
-                                <td className="px-3 py-2 text-slate-300">{s.service_name || `Service #${s.service_id}`}</td>
-                                <td className="px-3 py-2 text-center text-slate-500 text-xs">{s.hsn || "—"}</td>
-                                <td className="px-3 py-2 text-right font-medium text-slate-200">Rs.{s.price.toFixed(2)}</td>
+                                <td className="px-3 py-2 text-slate-300">
+                                  {s.service_name || `Service #${s.service_id}`}
+                                </td>
+                                <td className="px-3 py-2 text-center text-slate-500 text-xs">
+                                  {s.hsn || "—"}
+                                </td>
+                                <td className="px-3 py-2 text-right font-medium text-slate-200">
+                                  Rs.{s.price.toFixed(2)}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
                           <tfoot className="bg-[#0d1117] font-bold border-t border-[#21293d]">
                             <tr>
-                              <td colSpan={2} className="px-3 py-2 text-right text-sm text-slate-500">Services Total:</td>
-                              <td className="px-3 py-2 text-right text-emerald-400">Rs.{servicesTotal.toFixed(2)}</td>
+                              <td
+                                colSpan={2}
+                                className="px-3 py-2 text-right text-sm text-slate-500"
+                              >
+                                Services Total:
+                              </td>
+                              <td className="px-3 py-2 text-right text-emerald-400">
+                                Rs.{servicesTotal.toFixed(2)}
+                              </td>
                             </tr>
                           </tfoot>
                         </table>
@@ -749,18 +1079,33 @@ ${svcHtml}${prodHtml}
                           <tbody className="divide-y divide-[#21293d]">
                             {products.map((p, i) => (
                               <tr key={i} className={i % 2 === 0 ? "bg-[#111520]" : "bg-[#161b27]"}>
-                                <td className="px-3 py-2 text-slate-300">{p.product_name || `Product #${p.product_id}`}</td>
-                                <td className="px-3 py-2 text-center text-slate-500 text-xs">{p.hsn || "—"}</td>
+                                <td className="px-3 py-2 text-slate-300">
+                                  {p.product_name || `Product #${p.product_id}`}
+                                </td>
+                                <td className="px-3 py-2 text-center text-slate-500 text-xs">
+                                  {p.hsn || "—"}
+                                </td>
                                 <td className="px-3 py-2 text-center text-slate-400">{p.qty}</td>
-                                <td className="px-3 py-2 text-right text-slate-400">Rs.{p.price.toFixed(2)}</td>
-                                <td className="px-3 py-2 text-right font-medium text-slate-200">Rs.{(p.qty * p.price).toFixed(2)}</td>
+                                <td className="px-3 py-2 text-right text-slate-400">
+                                  Rs.{p.price.toFixed(2)}
+                                </td>
+                                <td className="px-3 py-2 text-right font-medium text-slate-200">
+                                  Rs.{(p.qty * p.price).toFixed(2)}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
                           <tfoot className="bg-[#0d1117] font-bold border-t border-[#21293d]">
                             <tr>
-                              <td colSpan={4} className="px-3 py-2 text-right text-sm text-slate-500">Products Total:</td>
-                              <td className="px-3 py-2 text-right text-emerald-400">Rs.{productsTotal.toFixed(2)}</td>
+                              <td
+                                colSpan={4}
+                                className="px-3 py-2 text-right text-sm text-slate-500"
+                              >
+                                Products Total:
+                              </td>
+                              <td className="px-3 py-2 text-right text-emerald-400">
+                                Rs.{productsTotal.toFixed(2)}
+                              </td>
                             </tr>
                           </tfoot>
                         </table>
@@ -771,63 +1116,109 @@ ${svcHtml}${prodHtml}
 
                 {/* ── RIGHT COLUMN (5/12) ────────────────────────────────── */}
                 <div className="lg:col-span-5">
-
                   {/* Current Status — PHP style big badge */}
                   <div className="text-center mb-5">
                     <p className="text-slate-400 font-semibold text-sm mb-2">Current Job Status</p>
-                    <span className={`inline-block px-8 py-4 rounded-sm shadow-sm font-black text-2xl ${badge.bg} ${badge.text} border ${badge.border}`}
-                      style={{ minWidth: "90%" }}>
+                    <span
+                      className={`inline-block px-8 py-4 rounded-sm shadow-sm font-black text-2xl ${badge.bg} ${badge.text} border ${badge.border}`}
+                      style={{ minWidth: "90%" }}
+                    >
                       {st.label}
                     </span>
                     <p className="text-slate-500 text-sm mt-2 italic">{st.explanation}</p>
                     {job.status === 5 && job.date_completed && (
                       <div className="mt-3 text-emerald-400 border-t border-[#21293d] pt-3">
-                        <CheckCircle2 className="inline mr-1" size={16}/>
-                        <span className="font-semibold">Delivered On:</span><br/>
+                        <CheckCircle2 className="inline mr-1" size={16} />
+                        <span className="font-semibold">Delivered On:</span>
+                        <br />
                         <span className="text-lg font-bold">{fmtDateTime(job.date_completed)}</span>
                       </div>
                     )}
                   </div>
 
                   {/* Item Photos */}
-                  <Fieldset title={`Item Photos (${images.length})`} icon={ImageIcon} color="primary">
+                  <Fieldset
+                    title={`Item Photos (${images.length})`}
+                    icon={ImageIcon}
+                    color="primary"
+                  >
                     <div className="flex items-center gap-2 mb-3">
                       <button
                         onClick={() => setImgPopup(!imgPopup)}
                         disabled={uploading}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-60"
                       >
-                        {uploading ? <Loader size={13} className="animate-spin" /> : <Upload size={13} />}
+                        {uploading ? (
+                          <Loader size={13} className="animate-spin" />
+                        ) : (
+                          <Upload size={13} />
+                        )}
                         {uploading ? "Uploading..." : "Upload Photos"}
                       </button>
                       {imgPopup && (
                         <div className="relative">
                           <div className="absolute top-full left-0 mt-1 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[140px]">
-                            <button onClick={() => { setImgPopup(false); imgCamInputRef.current?.click(); }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
-                              <Camera size={12}/> Camera
+                            <button
+                              onClick={() => {
+                                setImgPopup(false);
+                                imgCamInputRef.current?.click();
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors"
+                            >
+                              <Camera size={12} /> Camera
                             </button>
-                            <button onClick={() => { setImgPopup(false); imgInputRef.current?.click(); }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors">
-                              <ImageIcon size={12}/> Gallery
+                            <button
+                              onClick={() => {
+                                setImgPopup(false);
+                                imgInputRef.current?.click();
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors"
+                            >
+                              <ImageIcon size={12} /> Gallery
                             </button>
                           </div>
                         </div>
                       )}
-                      <span className="text-[10px] text-slate-500">JPEG/PNG · ≤100KB · auto-compressed</span>
-                      <input ref={imgInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-                      <input ref={imgCamInputRef} type="file" accept="image/*" multiple capture="environment" className="hidden" onChange={handleImageUpload} />
+                      <span className="text-[10px] text-slate-500">
+                        JPEG/PNG · ≤100KB · auto-compressed
+                      </span>
+                      <input
+                        ref={imgInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={handleImageUpload}
+                      />
+                      <input
+                        ref={imgCamInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        capture="environment"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                      />
                     </div>
-                    {photoErr && <p className="text-[11px] text-red-400 font-semibold mb-2">{photoErr}</p>}
+                    {photoErr && (
+                      <p className="text-[11px] text-red-400 font-semibold mb-2">{photoErr}</p>
+                    )}
                     {images.length > 0 ? (
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {images.map((img) => (
                           <div key={img.id} className="relative group">
-                            <Image src={img.image_path} alt="Item"
-                              width={640} height={128} unoptimized
+                            <Image
+                              src={img.image_path}
+                              alt="Item"
+                              width={640}
+                              height={128}
+                              unoptimized
                               className="w-full h-32 object-cover rounded-lg border border-[#21293d] hover:opacity-80 transition-opacity cursor-zoom-in"
                               onDoubleClick={() => openImageLightbox(img.image_path, "Job Photo")}
-                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}/>
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = "none";
+                              }}
+                            />
                             <button
                               onClick={() => handleImageDelete(img)}
                               className="absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors"
@@ -839,7 +1230,9 @@ ${svcHtml}${prodHtml}
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-500 italic">Koi photo upload nahi hui. Item ka photo add karein.</p>
+                      <p className="text-xs text-slate-500 italic">
+                        Koi photo upload nahi hui. Item ka photo add karein.
+                      </p>
                     )}
                   </Fieldset>
 
@@ -860,27 +1253,33 @@ ${svcHtml}${prodHtml}
                             <span>Rs.{productsTotal.toFixed(2)}</span>
                           </div>
                         )}
-                        <hr className="border-emerald-500/20"/>
+                        <hr className="border-emerald-500/20" />
                       </div>
                     )}
                     <div className="flex justify-between items-center border-b border-emerald-500/25 pb-2 mb-2">
                       <span className="font-medium text-sm text-slate-400">Total Amount:</span>
-                      <span className="text-2xl font-black text-white">Rs.{job.amount.toFixed(2)}</span>
+                      <span className="text-2xl font-black text-white">
+                        Rs.{job.amount.toFixed(2)}
+                      </span>
                     </div>
                     <div className="text-center">
-                      <p className="text-3xl font-black text-emerald-400">Rs.{job.amount.toFixed(2)}</p>
+                      <p className="text-3xl font-black text-emerald-400">
+                        Rs.{job.amount.toFixed(2)}
+                      </p>
                       <p className="text-slate-500 text-xs mt-1">Final Payable Amount</p>
                     </div>
                     {(job.mechanic_amount > 0 || job.mechanic_commission_amount > 0) && (
                       <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-1">
                         {job.mechanic_amount > 0 && (
                           <div className="flex justify-between text-xs text-slate-500">
-                            <span>Mechanic Amount:</span><span>Rs.{job.mechanic_amount.toFixed(0)}</span>
+                            <span>Mechanic Amount:</span>
+                            <span>Rs.{job.mechanic_amount.toFixed(0)}</span>
                           </div>
                         )}
                         {job.mechanic_commission_amount > 0 && (
                           <div className="flex justify-between text-xs text-slate-500">
-                            <span>Commission:</span><span>Rs.{job.mechanic_commission_amount.toFixed(0)}</span>
+                            <span>Commission:</span>
+                            <span>Rs.{job.mechanic_commission_amount.toFixed(0)}</span>
                           </div>
                         )}
                       </div>
@@ -888,9 +1287,11 @@ ${svcHtml}${prodHtml}
                   </div>
 
                   {/* WhatsApp Button */}
-                  <button onClick={sendWA}
-                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 shadow-sm mb-4 transition-colors">
-                    <Send size={16}/> Send Status on WhatsApp
+                  <button
+                    onClick={sendWA}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 shadow-sm mb-4 transition-colors"
+                  >
+                    <Send size={16} /> Send Status on WhatsApp
                   </button>
 
                   {/* Activity Timeline — Job Created pinned + activity_logs events + current status (actual timing) */}
@@ -901,12 +1302,17 @@ ${svcHtml}${prodHtml}
                       // Parse status transition from either format:
                       //   PHP:  "Job ID: 28921, Done → Delivered" / "Bulk Update → Delivered"
                       //   New:  "Status changed to: Done"
-                      const parseTransition = (details: string): { to: string; from?: string } | null => {
+                      const parseTransition = (
+                        details: string
+                      ): { to: string; from?: string } | null => {
                         const m1 = details.match(/Status changed to:\s*(.+)/);
                         if (m1) return { to: m1[1].trim() };
                         const m2 = details.match(/(?:→|->)\s*([A-Za-z][A-Za-z\s-]*?)\s*$/);
                         if (m2) {
-                          const arrowIdx = Math.max(details.lastIndexOf("→"), details.lastIndexOf("->"));
+                          const arrowIdx = Math.max(
+                            details.lastIndexOf("→"),
+                            details.lastIndexOf("->")
+                          );
                           const before = details.slice(0, arrowIdx).trim();
                           const fromMatch = before.match(/,?\s*([A-Za-z][A-Za-z\s-]*)$/);
                           return { to: m2[1].trim(), from: fromMatch?.[1]?.trim() };
@@ -916,47 +1322,80 @@ ${svcHtml}${prodHtml}
                       const statusColor = (label: string) => {
                         const map: Record<string, string> = {
                           "On-Progress": "bg-blue-500/20 border-blue-500/50 text-blue-400",
-                          "Done": "bg-teal-500/20 border-teal-500/50 text-teal-400",
-                          "Paid": "bg-emerald-500/20 border-emerald-500/50 text-emerald-400",
-                          "Cancelled": "bg-red-500/20 border-red-500/50 text-red-400",
-                          "Delivered": "bg-purple-500/20 border-purple-500/50 text-purple-400",
+                          Done: "bg-teal-500/20 border-teal-500/50 text-teal-400",
+                          Paid: "bg-emerald-500/20 border-emerald-500/50 text-emerald-400",
+                          Cancelled: "bg-red-500/20 border-red-500/50 text-red-400",
+                          Delivered: "bg-purple-500/20 border-purple-500/50 text-purple-400",
                         };
                         return map[label] || "";
                       };
                       const statusIcon = (label: string) => {
                         const map: Record<string, React.ReactNode> = {
                           "On-Progress": <Settings2 size={13} />,
-                          "Done": <CheckCircle size={13} />,
-                          "Paid": <Banknote size={13} />,
-                          "Cancelled": <AlertTriangle size={13} />,
-                          "Delivered": <CheckCircle2 size={13} />,
+                          Done: <CheckCircle size={13} />,
+                          Paid: <Banknote size={13} />,
+                          Cancelled: <AlertTriangle size={13} />,
+                          Delivered: <CheckCircle2 size={13} />,
                         };
                         return map[label] || null;
                       };
                       const entryIcon = (act: ActivityEntry, transition: { to: string } | null) => {
                         const lower = act.action.toLowerCase();
-                        if (lower.includes("payment")) return { icon: <Banknote size={13} />, cls: "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" };
-                        if (lower.includes("deleted")) return { icon: <Trash2 size={13} />, cls: "bg-red-500/20 border-red-500/50 text-red-400" };
+                        if (lower.includes("payment"))
+                          return {
+                            icon: <Banknote size={13} />,
+                            cls: "bg-emerald-500/20 border-emerald-500/50 text-emerald-400",
+                          };
+                        if (lower.includes("deleted"))
+                          return {
+                            icon: <Trash2 size={13} />,
+                            cls: "bg-red-500/20 border-red-500/50 text-red-400",
+                          };
                         if (lower.includes("status") || transition) {
                           const sc = statusColor(transition?.to || "");
-                          if (sc) return { icon: statusIcon(transition!.to) || <Settings2 size={13} />, cls: sc };
-                          return { icon: <Settings2 size={13} />, cls: "bg-blue-500/20 border-blue-500/50 text-blue-400" };
+                          if (sc)
+                            return {
+                              icon: statusIcon(transition!.to) || <Settings2 size={13} />,
+                              cls: sc,
+                            };
+                          return {
+                            icon: <Settings2 size={13} />,
+                            cls: "bg-blue-500/20 border-blue-500/50 text-blue-400",
+                          };
                         }
-                        if (lower.includes("update")) return { icon: <Edit size={13} />, cls: "bg-cyan-500/20 border-cyan-500/50 text-cyan-400" };
-                        if (lower.includes("created")) return { icon: <Plus size={13} />, cls: "bg-blue-500/20 border-blue-500/50 text-blue-400" };
-                        return { icon: <Settings2 size={13} />, cls: "bg-blue-500/20 border-blue-500/50 text-blue-400" };
+                        if (lower.includes("update"))
+                          return {
+                            icon: <Edit size={13} />,
+                            cls: "bg-cyan-500/20 border-cyan-500/50 text-cyan-400",
+                          };
+                        if (lower.includes("created"))
+                          return {
+                            icon: <Plus size={13} />,
+                            cls: "bg-blue-500/20 border-blue-500/50 text-blue-400",
+                          };
+                        return {
+                          icon: <Settings2 size={13} />,
+                          cls: "bg-blue-500/20 border-blue-500/50 text-blue-400",
+                        };
                       };
                       const whoName = (user_id: number | string) => {
                         if (Number(user_id) === 0) return "Admin";
                         return userNames[String(user_id)] || `User #${user_id}`;
                       };
-                      const statusBadges = [1, 2, 3, 4, 5].filter(s => s <= job.status);
-                      const fallbackBadges: Record<number, { label: string; icon: React.ReactNode; color: string }> = {
+                      const statusBadges = [1, 2, 3, 4, 5].filter((s) => s <= job.status);
+                      const fallbackBadges: Record<
+                        number,
+                        { label: string; icon: React.ReactNode; color: string }
+                      > = {
                         1: { label: "On-Progress", icon: <Settings2 size={12} />, color: "blue" },
                         2: { label: "Done", icon: <CheckCircle size={12} />, color: "teal" },
                         3: { label: "Paid", icon: <Banknote size={12} />, color: "emerald" },
                         4: { label: "Cancelled", icon: <AlertTriangle size={12} />, color: "red" },
-                        5: { label: "Delivered", icon: <CheckCircle2 size={12} />, color: "purple" },
+                        5: {
+                          label: "Delivered",
+                          icon: <CheckCircle2 size={12} />,
+                          color: "purple",
+                        },
                       };
                       const colorClasses: Record<string, string> = {
                         blue: "bg-blue-500/20 border-blue-500/50 text-blue-400",
@@ -973,12 +1412,15 @@ ${svcHtml}${prodHtml}
                               <div className="w-8 h-8 rounded-full bg-blue-500/20 border-2 border-blue-500/50 flex items-center justify-center">
                                 <Plus size={14} className="text-blue-400" />
                               </div>
-                              {entries.length > 0 && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
+                              {entries.length > 0 && (
+                                <div className="w-px flex-1 bg-[#21293d] mt-1" />
+                              )}
                             </div>
                             <div className="flex-1 pb-4">
                               <p className="text-sm text-slate-300 font-medium">Job Created</p>
                               <p className="text-[11px] text-slate-600 mt-1">
-                                {fmtLogTime(job.date_created)} · <span className="text-slate-500">{whoName(job.user_id)}</span>
+                                {fmtLogTime(job.date_created)} ·{" "}
+                                <span className="text-slate-500">{whoName(job.user_id)}</span>
                               </p>
                             </div>
                           </div>
@@ -992,7 +1434,9 @@ ${svcHtml}${prodHtml}
                             return (
                               <div key={act.id ?? idx} className="flex gap-3">
                                 <div className="flex flex-col items-center">
-                                  <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${st.cls}`}>
+                                  <div
+                                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${st.cls}`}
+                                  >
                                     {st.icon}
                                   </div>
                                   {!isLast && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
@@ -1001,7 +1445,9 @@ ${svcHtml}${prodHtml}
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <p className="text-sm text-slate-300 font-medium">{title}</p>
                                     {transition?.to && (
-                                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusColor(transition.to) || "border-[#21293d] text-slate-500"}`}>
+                                      <span
+                                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusColor(transition.to) || "border-[#21293d] text-slate-500"}`}
+                                      >
                                         {transition.to}
                                       </span>
                                     )}
@@ -1010,7 +1456,8 @@ ${svcHtml}${prodHtml}
                                     <p className="text-xs text-slate-500 mt-0.5">{act.details}</p>
                                   )}
                                   <p className="text-[11px] text-slate-600 mt-1">
-                                    {fmtLogTime(act.date_created)} · <span className="text-slate-500">{whoName(act.user_id)}</span>
+                                    {fmtLogTime(act.date_created)} ·{" "}
+                                    <span className="text-slate-500">{whoName(act.user_id)}</span>
                                   </p>
                                 </div>
                               </div>
@@ -1018,29 +1465,40 @@ ${svcHtml}${prodHtml}
                           })}
 
                           {/* Fallback: no activity logs recorded — show current status (real fields only) */}
-                          {entries.length === 0 && statusBadges.map((s, idx) => {
-                            const st = fallbackBadges[s];
-                            const isLast = idx === statusBadges.length - 1;
-                            return (
-                              <div key={s} className="flex gap-3">
-                                <div className="flex flex-col items-center">
-                                  <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${colorClasses[st.color]}`}>
-                                    {st.icon}
+                          {entries.length === 0 &&
+                            statusBadges.map((s, idx) => {
+                              const st = fallbackBadges[s];
+                              const isLast = idx === statusBadges.length - 1;
+                              return (
+                                <div key={s} className="flex gap-3">
+                                  <div className="flex flex-col items-center">
+                                    <div
+                                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${colorClasses[st.color]}`}
+                                    >
+                                      {st.icon}
+                                    </div>
+                                    {!isLast && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
                                   </div>
-                                  {!isLast && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
+                                  <div
+                                    className={`flex-1 pb-4 ${s === job.status ? "" : "opacity-60"}`}
+                                  >
+                                    <p className="text-sm text-slate-300 font-medium">
+                                      {s === job.status ? `${st.label} (current)` : st.label}
+                                    </p>
+                                    {s === 5 && job.date_completed && (
+                                      <p className="text-[11px] text-slate-600 mt-1">
+                                        {fmtLogTime(job.date_completed)}
+                                      </p>
+                                    )}
+                                    {s !== 5 && (
+                                      <p className="text-[11px] text-slate-600 mt-1">
+                                        {fmtLogTime(job.date_updated)}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className={`flex-1 pb-4 ${s === job.status ? "" : "opacity-60"}`}>
-                                  <p className="text-sm text-slate-300 font-medium">{s === job.status ? `${st.label} (current)` : st.label}</p>
-                                  {s === 5 && job.date_completed && (
-                                    <p className="text-[11px] text-slate-600 mt-1">{fmtLogTime(job.date_completed)}</p>
-                                  )}
-                                  {s !== 5 && (
-                                    <p className="text-[11px] text-slate-600 mt-1">{fmtLogTime(job.date_updated)}</p>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
                         </div>
                       );
                     })()}
@@ -1049,74 +1507,105 @@ ${svcHtml}${prodHtml}
               </div>
 
               {/* ── ACTION BUTTONS (bottom — PHP style) ───────────────────── */}
-              <hr className="my-4 border-[#21293d]"/>
+              <hr className="my-4 border-[#21293d]" />
               <div className="grid grid-cols-2 gap-2 justify-center sm:flex sm:flex-wrap">
-                <button onClick={() => { setNewStatus(job.status); setShowStatusModal(true); }}
-                  className="flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
-                  <RefreshCw size={15}/> Update Status
+                <button
+                  onClick={() => {
+                    setNewStatus(job.status);
+                    setShowStatusModal(true);
+                  }}
+                  className="flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors"
+                >
+                  <RefreshCw size={15} /> Update Status
                 </button>
-                <Link href={`/jobs/${job.id}/edit`}
-                  className="flex items-center justify-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline">
-                  <Edit size={15}/> Edit Transaction
+                <Link
+                  href={`/jobs/${job.id}/edit`}
+                  className="flex items-center justify-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline"
+                >
+                  <Edit size={15} /> Edit Transaction
                 </Link>
-                <button onClick={handlePrint}
-                  className="flex items-center justify-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
-                  <Printer size={15}/> Print Page
+                <button
+                  onClick={handlePrint}
+                  className="flex items-center justify-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors"
+                >
+                  <Printer size={15} /> Print Page
                 </button>
-                <Link href={`/api/print-bill?job_id=${job.job_id}&type=thermal`} target="_blank"
-                  className="flex items-center justify-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline">
-                  <Printer size={15}/> Thermal Receipt
+                <Link
+                  href={`/api/print-bill?job_id=${job.job_id}&type=thermal`}
+                  target="_blank"
+                  className="flex items-center justify-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline"
+                >
+                  <Printer size={15} /> Thermal Receipt
                 </Link>
-                <button onClick={() => setShowPayModal(true)}
-                  className="flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
-                  <Plus size={15}/> Add Payment
+                <button
+                  onClick={() => setShowPayModal(true)}
+                  className="flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors"
+                >
+                  <Plus size={15} /> Add Payment
                 </button>
                 {userRole === "admin" && (
-                  <button onClick={handleDelete} disabled={deleting}
-                    className="flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors disabled:opacity-50">
-                    <Trash2 size={15}/> {deleting ? "Deleting..." : "Delete Transaction"}
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 size={15} /> {deleting ? "Deleting..." : "Delete Transaction"}
                   </button>
                 )}
               </div>
-
-            </div>{/* /card-body */}
-          </div>{/* /card */}
+            </div>
+            {/* /card-body */}
+          </div>
+          {/* /card */}
         </div>
       </div>
 
       {/* ══ UPDATE STATUS MODAL ══════════════════════════════════════════════ */}
       {showStatusModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowStatusModal(false); }}>
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowStatusModal(false);
+          }}
+        >
           <div className="bg-[#161b27] rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-[#21293d]">
-
             {/* Modal Header */}
             <div className="bg-[#001f3f] text-white px-5 py-3.5 flex items-center justify-between">
               <h3 className="font-bold text-base flex items-center gap-2">
-                <RefreshCw size={16}/> Update Transaction Status
+                <RefreshCw size={16} /> Update Transaction Status
               </h3>
-              <button onClick={() => setShowStatusModal(false)} className="text-white/70 hover:text-white">
-                <X size={18}/>
+              <button
+                onClick={() => setShowStatusModal(false)}
+                className="text-white/70 hover:text-white"
+              >
+                <X size={18} />
               </button>
             </div>
 
             {/* Modal Body */}
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-400 mb-1.5">New Status</label>
+                <label className="block text-sm font-semibold text-slate-400 mb-1.5">
+                  New Status
+                </label>
                 <select
                   value={newStatus}
                   onChange={(e) => setNewStatus(parseInt(e.target.value))}
-                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 bg-[#0d1117]">
+                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 bg-[#0d1117]"
+                >
                   {Object.entries(STATUS_MAP).map(([val, info]) => (
-                    <option key={val} value={val}>{info.label} — {info.explanation}</option>
+                    <option key={val} value={val}>
+                      {info.label} — {info.explanation}
+                    </option>
                   ))}
                 </select>
               </div>
 
               {/* Status preview badge */}
               <div className="text-center">
-                <span className={`inline-block px-5 py-2 rounded font-bold text-sm ${BADGE_COLORS[STATUS_MAP[newStatus]?.badgeColor]?.bg} ${BADGE_COLORS[STATUS_MAP[newStatus]?.badgeColor]?.text}`}>
+                <span
+                  className={`inline-block px-5 py-2 rounded font-bold text-sm ${BADGE_COLORS[STATUS_MAP[newStatus]?.badgeColor]?.bg} ${BADGE_COLORS[STATUS_MAP[newStatus]?.badgeColor]?.text}`}
+                >
                   {STATUS_MAP[newStatus]?.label}
                 </span>
                 <p className="text-slate-500 text-xs mt-1">{STATUS_MAP[newStatus]?.explanation}</p>
@@ -1126,28 +1615,35 @@ ${svcHtml}${prodHtml}
               {newStatus === 5 && (
                 <div className="bg-emerald-500/5 border border-emerald-500/25 rounded-lg p-4 space-y-3">
                   <p className="text-emerald-400 font-semibold text-sm flex items-center gap-1.5">
-                    <CheckCircle2 size={15}/> Delivery Date & Time
+                    <CheckCircle2 size={15} /> Delivery Date & Time
                   </p>
                   <p className="text-slate-500 text-xs">
-                    Agar delivery pehle ho gayi thi aur ab entry kar rahe hain, to sahi date aur time enter karein.
+                    Agar delivery pehle ho gayi thi aur ab entry kar rahe hain, to sahi date aur
+                    time enter karein.
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1">Delivery Date</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">
+                        Delivery Date
+                      </label>
                       <input
                         type="date"
                         value={deliveryDate}
                         onChange={(e) => setDeliveryDate(e.target.value)}
                         max={todayISTStr()}
-                        className="w-full border border-[#2a3550] rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"/>
+                        className="w-full border border-[#2a3550] rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"
+                      />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1">Delivery Time</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">
+                        Delivery Time
+                      </label>
                       <input
                         type="time"
                         value={deliveryTime}
                         onChange={(e) => setDeliveryTime(e.target.value)}
-                        className="w-full border border-[#2a3550] rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"/>
+                        className="w-full border border-[#2a3550] rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"
+                      />
                     </div>
                   </div>
                   {deliveryDate && deliveryTime && (
@@ -1161,13 +1657,28 @@ ${svcHtml}${prodHtml}
 
             {/* Modal Footer */}
             <div className="px-5 py-4 bg-[#111520] border-t border-[#21293d] flex gap-3 justify-end flex-wrap">
-              <button onClick={() => setShowStatusModal(false)}
-                className="px-5 py-2 bg-[#1e2637] border border-[#2a3550] text-slate-400 rounded font-medium text-sm hover:bg-[#252f45] transition-colors">
+              <button
+                onClick={() => setShowStatusModal(false)}
+                className="px-5 py-2 bg-[#1e2637] border border-[#2a3550] text-slate-400 rounded font-medium text-sm hover:bg-[#252f45] transition-colors"
+              >
                 Cancel
               </button>
-              <button onClick={handleStatusUpdate} disabled={updatingStatus}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm disabled:opacity-50 flex items-center gap-2 transition-colors">
-                {updatingStatus ? <><Loader2 size={14} className="animate-spin"/>Updating...</> : <><RefreshCw size={14}/>Update Status</>}
+              <button
+                onClick={handleStatusUpdate}
+                disabled={updatingStatus}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm disabled:opacity-50 flex items-center gap-2 transition-colors"
+              >
+                {updatingStatus ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw size={14} />
+                    Update Status
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1176,16 +1687,22 @@ ${svcHtml}${prodHtml}
 
       {/* ══ ADD PAYMENT MODAL ════════════════════════════════════════════════ */}
       {showPayModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowPayModal(false); }}>
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPayModal(false);
+          }}
+        >
           <div className="bg-[#161b27] rounded-t-2xl sm:rounded-lg shadow-2xl w-full sm:max-w-md overflow-hidden border border-[#21293d]">
-
             <div className="bg-[#001f3f] text-white px-5 py-3.5 flex items-center justify-between">
               <h3 className="font-bold text-base flex items-center gap-2">
-                <IndianRupee size={16}/> Record New Payment
+                <IndianRupee size={16} /> Record New Payment
               </h3>
-              <button onClick={() => setShowPayModal(false)} className="text-white/70 hover:text-white">
-                <X size={18}/>
+              <button
+                onClick={() => setShowPayModal(false)}
+                className="text-white/70 hover:text-white"
+              >
+                <X size={18} />
               </button>
             </div>
 
@@ -1195,23 +1712,39 @@ ${svcHtml}${prodHtml}
                 <span className="text-slate-600 mx-2">·</span>
                 <span className="text-slate-400">Job #{job.job_id}</span>
                 <span className="text-slate-600 mx-2">·</span>
-                <span className="text-slate-400">Bill: <span className="font-bold text-white">Rs.{job.amount.toFixed(2)}</span></span>
+                <span className="text-slate-400">
+                  Bill: <span className="font-bold text-white">Rs.{job.amount.toFixed(2)}</span>
+                </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Amount (Rs.) *</label>
-                  <input type="number" step="0.01" min="0.01"
-                    value={payAmount} onChange={(e) => setPayAmount(e.target.value)}
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                    Amount (Rs.) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={payAmount}
+                    onChange={(e) => setPayAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
+                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Discount (Rs.)</label>
-                  <input type="number" step="0.01" min="0"
-                    value={payDiscount} onChange={(e) => setPayDiscount(e.target.value)}
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                    Discount (Rs.)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={payDiscount}
+                    onChange={(e) => setPayDiscount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
+                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                  />
                 </div>
               </div>
 
@@ -1219,29 +1752,50 @@ ${svcHtml}${prodHtml}
                 <div className="bg-emerald-500/5 border border-emerald-500/20 rounded px-4 py-2.5 flex justify-between items-center">
                   <span className="text-xs text-slate-500 font-semibold">Net Settled</span>
                   <span className="text-emerald-400 font-black text-base">
-                    Rs.{((parseFloat(payAmount)||0) + (parseFloat(payDiscount)||0)).toLocaleString("en-IN", { minimumFractionDigits:2 })}
+                    Rs.
+                    {((parseFloat(payAmount) || 0) + (parseFloat(payDiscount) || 0)).toLocaleString(
+                      "en-IN",
+                      { minimumFractionDigits: 2 }
+                    )}
                   </span>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Bill No.</label>
-                <input type="text" value={payBillNo} onChange={(e) => setPayBillNo(e.target.value)}
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                  Bill No.
+                </label>
+                <input
+                  type="text"
+                  value={payBillNo}
+                  onChange={(e) => setPayBillNo(e.target.value)}
                   placeholder="Optional — e.g. INV-001"
-                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
+                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Payment Date</label>
-                  <input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)}
-                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                    Payment Date
+                  </label>
+                  <input
+                    type="date"
+                    value={payDate}
+                    onChange={(e) => setPayDate(e.target.value)}
+                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Payment Type</label>
-                  <select value={payType} onChange={(e) => setPayType(e.target.value)}
-                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500">
-                    {["Full","Partial","Advance","On Account"].map(m => (
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                    Payment Type
+                  </label>
+                  <select
+                    value={payType}
+                    onChange={(e) => setPayType(e.target.value)}
+                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                  >
+                    {["Full", "Partial", "Advance", "On Account"].map((m) => (
                       <option key={m}>{m}</option>
                     ))}
                   </select>
@@ -1249,10 +1803,15 @@ ${svcHtml}${prodHtml}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Payment Mode *</label>
-                <select value={payMode} onChange={(e) => setPayMode(e.target.value)}
-                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500">
-                  {["Cash","PhonePe/GPay","UPI","NEFT","Cheque","Bank Transfer"].map(m => (
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                  Payment Mode *
+                </label>
+                <select
+                  value={payMode}
+                  onChange={(e) => setPayMode(e.target.value)}
+                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                >
+                  {["Cash", "PhonePe/GPay", "UPI", "NEFT", "Cheque", "Bank Transfer"].map((m) => (
                     <option key={m}>{m}</option>
                   ))}
                 </select>
@@ -1260,26 +1819,44 @@ ${svcHtml}${prodHtml}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1.5">Remarks</label>
-                <input type="text" value={payRemarks} onChange={(e) => setPayRemarks(e.target.value)}
+                <input
+                  type="text"
+                  value={payRemarks}
+                  onChange={(e) => setPayRemarks(e.target.value)}
                   placeholder="Koi notes..."
-                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
+                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                />
               </div>
             </div>
 
             <div className="px-5 py-4 bg-[#111520] border-t border-[#21293d] flex gap-3 flex-wrap">
-              <button onClick={() => setShowPayModal(false)}
-                className="flex-1 py-2.5 bg-[#1e2637] border border-[#2a3550] text-slate-400 rounded font-medium text-sm hover:bg-[#252f45] transition-colors">
+              <button
+                onClick={() => setShowPayModal(false)}
+                className="flex-1 py-2.5 bg-[#1e2637] border border-[#2a3550] text-slate-400 rounded font-medium text-sm hover:bg-[#252f45] transition-colors"
+              >
                 Cancel
               </button>
-              <button onClick={handleAddPayment} disabled={savingPay}
-                className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
-                {savingPay ? <><Loader2 size={14} className="animate-spin"/>Saving...</> : <><Plus size={14}/>Save Payment</>}
+              <button
+                onClick={handleAddPayment}
+                disabled={savingPay}
+                className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+              >
+                {savingPay ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={14} />
+                    Save Payment
+                  </>
+                )}
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

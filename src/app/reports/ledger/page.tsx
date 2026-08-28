@@ -19,7 +19,7 @@ export default async function LedgerReportPage({
 }) {
   const params = await searchParams;
   const from = isValidDate(params.from || "") ? params.from! : "";
-  const to   = isValidDate(params.to   || "") ? params.to!   : "";
+  const to = isValidDate(params.to || "") ? params.to! : "";
 
   return (
     <div className="min-h-screen bg-[#0d1117]">

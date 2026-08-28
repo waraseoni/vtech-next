@@ -64,7 +64,10 @@ export default function SearchableSelect({
     return () => mq.removeEventListener("change", apply);
   }, []);
 
-  const close = () => { setOpen(false); setSearch(""); };
+  const close = () => {
+    setOpen(false);
+    setSearch("");
+  };
 
   /**
    * Trigger ke around available space nikaal kar menu ko hamesha viewport ke
@@ -101,7 +104,7 @@ export default function SearchableSelect({
 
   const toggle = () => {
     if (!open && isDesktop) setPos(computePos());
-    setOpen(v => !v);
+    setOpen((v) => !v);
     setSearch("");
   };
 
@@ -146,14 +149,16 @@ export default function SearchableSelect({
     if (!open || isDesktop) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [open, isDesktop]);
 
-  const selected = options.find(o => String(o.id) === String(value ?? ""));
+  const selected = options.find((o) => String(o.id) === String(value ?? ""));
 
   const q = search.trim().toLowerCase();
   const filtered = q
-    ? options.filter(o => `${o.label} ${o.sub || ""}`.toLowerCase().includes(q))
+    ? options.filter((o) => `${o.label} ${o.sub || ""}`.toLowerCase().includes(q))
     : options;
 
   const pick = (id: string) => {
@@ -183,12 +188,14 @@ export default function SearchableSelect({
       {filtered.length === 0 ? (
         <p className="text-slate-600 text-xs text-center py-6">{emptyText}</p>
       ) : (
-        filtered.map(o => {
+        filtered.map((o) => {
           const isSel = String(o.id) === String(value ?? "");
           return (
             <div
               key={o.id}
-              onClick={() => { if (!o.disabled) pick(String(o.id)); }}
+              onClick={() => {
+                if (!o.disabled) pick(String(o.id));
+              }}
               title={o.disabled ? o.disabledNote || "Disabled" : undefined}
               className={`flex items-center justify-between px-3 min-h-[44px] py-2 rounded-xl transition-all group ${
                 o.disabled
@@ -197,9 +204,11 @@ export default function SearchableSelect({
               }`}
             >
               <div className="min-w-0">
-                <div className={`text-sm font-bold truncate transition-colors ${
-                  isSel ? "text-blue-300" : "text-white group-hover:text-blue-300"
-                }`}>
+                <div
+                  className={`text-sm font-bold truncate transition-colors ${
+                    isSel ? "text-blue-300" : "text-white group-hover:text-blue-300"
+                  }`}
+                >
                   {o.label}
                 </div>
                 {o.sub && <div className="text-xs text-slate-600 mt-0.5">{o.sub}</div>}
@@ -214,7 +223,10 @@ export default function SearchableSelect({
 
   const searchBox = (
     <div className="relative mb-2">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" size={15} />
+      <Search
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+        size={15}
+      />
       <input
         ref={searchRef}
         /* Mobile par keyboard turant na khule — user khud search tap kare,
@@ -226,12 +238,15 @@ export default function SearchableSelect({
         placeholder={searchPlaceholder}
         className="w-full pl-9 pr-9 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-white text-sm outline-none focus:border-blue-500/60 placeholder:text-slate-700"
         value={search}
-        onChange={e => setSearch(e.target.value)}
+        onChange={(e) => setSearch(e.target.value)}
       />
       {search && (
         <button
           type="button"
-          onClick={() => { setSearch(""); searchRef.current?.focus(); }}
+          onClick={() => {
+            setSearch("");
+            searchRef.current?.focus();
+          }}
           className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-[#21293d] text-slate-400 hover:text-white transition-colors"
         >
           <X size={12} />
@@ -248,7 +263,9 @@ export default function SearchableSelect({
         onClick={toggle}
         aria-expanded={open}
         className={`w-full min-h-[42px] flex items-center justify-between gap-2 px-3 py-2.5 bg-[#111520] border rounded-xl text-sm transition-all outline-none text-left ${
-          open ? "border-blue-500/60 ring-1 ring-blue-500/20" : "border-[#21293d] hover:border-slate-600"
+          open
+            ? "border-blue-500/60 ring-1 ring-blue-500/20"
+            : "border-[#21293d] hover:border-slate-600"
         }`}
       >
         <span className="min-w-0 flex-1">
@@ -262,59 +279,66 @@ export default function SearchableSelect({
             <span className="text-slate-600 font-medium">{placeholder}</span>
           )}
         </span>
-        <ChevronDown size={16} className={`text-slate-500 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown
+          size={16}
+          className={`text-slate-500 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+        />
       </button>
 
-      {open && typeof document !== "undefined" && !isDesktop && createPortal(
-        /* ── MOBILE: bottom sheet ── */
-        <div className="fixed inset-0 z-[100]" role="dialog" aria-modal="true">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/70 animate-[fade-in_150ms_ease-out]"
-            onClick={close}
-          />
-          {/* Sheet */}
+      {open &&
+        typeof document !== "undefined" &&
+        !isDesktop &&
+        createPortal(
+          /* ── MOBILE: bottom sheet ── */
+          <div className="fixed inset-0 z-[100]" role="dialog" aria-modal="true">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/70 animate-[fade-in_150ms_ease-out]"
+              onClick={close}
+            />
+            {/* Sheet */}
+            <div
+              ref={menuRef}
+              className="absolute bottom-0 left-0 right-0 bg-[#161b27] border-t border-[#21293d] rounded-t-2xl shadow-2xl flex flex-col max-h-[82vh] pb-[max(env(safe-area-inset-bottom),0.75rem)] animate-[sheet-up_220ms_cubic-bezier(0.22,1,0.36,1)]"
+            >
+              {/* Drag handle */}
+              <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0" onClick={close}>
+                <div className="w-10 h-1 rounded-full bg-slate-600" />
+              </div>
+
+              <div className="px-4 pb-2 flex-shrink-0">
+                <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2">
+                  {placeholder.replace(/[—-]/g, "").trim()}
+                </p>
+                {searchBox}
+              </div>
+
+              <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-2 space-y-0.5">
+                {listContent}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {open &&
+        pos &&
+        isDesktop &&
+        typeof document !== "undefined" &&
+        createPortal(
+          /* ── DESKTOP: anchored dropdown ── */
           <div
             ref={menuRef}
-            className="absolute bottom-0 left-0 right-0 bg-[#161b27] border-t border-[#21293d] rounded-t-2xl shadow-2xl flex flex-col max-h-[82vh] pb-[max(env(safe-area-inset-bottom),0.75rem)] animate-[sheet-up_220ms_cubic-bezier(0.22,1,0.36,1)]"
+            style={{ top: pos.top, left: pos.left, width: pos.width }}
+            className="fixed z-[100] bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl p-3 animate-[fade-in_120ms_ease-out]"
           >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0" onClick={close}>
-              <div className="w-10 h-1 rounded-full bg-slate-600" />
-            </div>
-
-            <div className="px-4 pb-2 flex-shrink-0">
-              <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2">
-                {placeholder.replace(/[—-]/g, "").trim()}
-              </p>
-              {searchBox}
-            </div>
-
-            <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-2 space-y-0.5">
+            {searchBox}
+            <div className="overflow-y-auto space-y-0.5" style={{ maxHeight: pos.maxListH }}>
               {listContent}
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {open && pos && isDesktop && typeof document !== "undefined" && createPortal(
-        /* ── DESKTOP: anchored dropdown ── */
-        <div
-          ref={menuRef}
-          style={{ top: pos.top, left: pos.left, width: pos.width }}
-          className="fixed z-[100] bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl p-3 animate-[fade-in_120ms_ease-out]"
-        >
-          {searchBox}
-          <div
-            className="overflow-y-auto space-y-0.5"
-            style={{ maxHeight: pos.maxListH }}
-          >
-            {listContent}
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

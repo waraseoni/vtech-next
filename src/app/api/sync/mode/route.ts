@@ -23,10 +23,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     mode = body?.mode;
   } catch {
-    return NextResponse.json(
-      { status: "error", error: "Invalid JSON body" },
-      { status: 400 }
-    );
+    return NextResponse.json({ status: "error", error: "Invalid JSON body" }, { status: 400 });
   }
 
   if (!SYNC_MODES.includes(mode as SyncMode)) {

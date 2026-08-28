@@ -1,6 +1,5 @@
 export const DEFAULT_TEMPLATES: Record<string, string> = {
-  whatsapp_welcome:
-`नमस्ते {client_name} जी! 🙏
+  whatsapp_welcome: `नमस्ते {client_name} जी! 🙏
 
 आपका {firm_name} में हार्दिक स्वागत है! 🛠️✨
 
@@ -30,8 +29,7 @@ export const DEFAULT_TEMPLATES: Record<string, string> = {
 {firm_owner}
 {firm_name}`,
 
-  whatsapp_reminder:
-`नमस्ते {client_name} जी! 🙏
+  whatsapp_reminder: `नमस्ते {client_name} जी! 🙏
 
 आपका बकाया बैलेंस (सेवा + लोन) *₹{balance}* है।
 
@@ -51,8 +49,7 @@ Contact: {firm_phone}
 {firm_owner}
 {firm_name}`,
 
-  whatsapp_followup:
-`नमस्ते {client_name} जी! 🙏
+  whatsapp_followup: `नमस्ते {client_name} जी! 🙏
 
 आप कैसे हैं? 🤗
 
@@ -73,8 +70,7 @@ Contact: {firm_phone}
 {firm_owner}
 {firm_name}`,
 
-  whatsapp_offer:
-`नमस्ते {client_name} जी! 🎉
+  whatsapp_offer: `नमस्ते {client_name} जी! 🎉
 
 {firm_name} की तरफ से विशेष ऑफर!
 
@@ -93,8 +89,7 @@ Contact: {firm_phone}
 {firm_owner}
 {firm_name}`,
 
-  whatsapp_greeting:
-`नमस्ते {client_name} जी! 🙏
+  whatsapp_greeting: `नमस्ते {client_name} जी! 🙏
 
 {firm_name} की तरफ से आपका दिन शुभ हो! 🌟
 
@@ -108,8 +103,7 @@ Contact: {firm_phone}
 शुभकामनाएँ!
 {firm_owner}`,
 
-  whatsapp_sale:
-`नमस्ते {client_name} जी! 🙏
+  whatsapp_sale: `नमस्ते {client_name} जी! 🙏
 
 आपके {firm_name} से किए गए आर्डर/सेल ({sale_code}) का कुल बिल *₹{total_amount}* है।
 
@@ -122,8 +116,7 @@ Contact: {firm_phone}
 {firm_owner}
 {firm_name}`,
 
-  whatsapp_status_pending:
-`नमस्ते {client_name} जी 🙏!
+  whatsapp_status_pending: `नमस्ते {client_name} जी 🙏!
 
 आपका *{item}* (Job ID: #{job_id}) (Code: #{code}) repair के लिए प्राप्त हुआ है। 📝
 
@@ -137,8 +130,7 @@ Status: *Pending (Queue में है)*
 📞 {firm_phone}
 📍 {firm_address}`,
 
-  whatsapp_status_repairing:
-`नमस्ते {client_name} जी 🙏!
+  whatsapp_status_repairing: `नमस्ते {client_name} जी 🙏!
 
 आपके *{item}* (Job ID: #{job_id}) (Code: #{code}) पर काम शुरू कर दिया गया है। 🛠️
 
@@ -151,8 +143,7 @@ Status: *In-Progress / Repairing*
 {firm_name}
 📞 {firm_phone}`,
 
-  whatsapp_status_ready:
-`नमस्ते {client_name} जी 🙏!
+  whatsapp_status_ready: `नमस्ते {client_name} जी 🙏!
 
 आपका *{item}* repair complete हो गया है ✅
 
@@ -170,8 +161,7 @@ Status: *Ready for Delivery*
 📞 {firm_phone}
 📍 {firm_address}`,
 
-  whatsapp_status_delivered:
-`नमस्ते {client_name} जी 🙏!
+  whatsapp_status_delivered: `नमस्ते {client_name} जी 🙏!
 
 आपका *{item}* (Job ID: #{job_id}) (Code: #{code}) सफलतापूर्वक deliver कर दिया गया है। 🏁
 
@@ -185,8 +175,7 @@ Status: *Delivered / Paid*
 {firm_name}
 📞 {firm_phone}`,
 
-  whatsapp_status_cancelled:
-`नमस्ते {client_name} जी 🙏!
+  whatsapp_status_cancelled: `नमस्ते {client_name} जी 🙏!
 
 आपका Job ID: #{job_id} (Code: #{code}) (*{item}*) का आर्डर cancel कर दिया गया है। ❌
 

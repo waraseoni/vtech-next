@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# V-Tech PRO — Repair Shop Management SaaS
+
+V-Tech PRO is a white-label SaaS platform for repair shop management (stage lighting,
+industrial electronics, power supply repair). A "seller" deploys separate instances for
+each client; each instance is licensed independently.
+
+Built with **Next.js (App Router) + Supabase + React 19 + Tailwind CSS v4**, with PWA
+(Serwist), Android packaging (Capacitor), and AI assistance (Gemini + Groq).
+
+## Tech Stack
+
+| Area | Technology |
+| --- | --- |
+| Framework | Next.js 16 (App Router, React 19, Turbopack) |
+| Database & Auth | Supabase (Postgres + Auth + Storage) |
+| Styling | Tailwind CSS v4 |
+| PWA | Serwist (service worker + web push) |
+| Android | Capacitor |
+| AI | Google Gemini + Groq (tool calling) |
+| Charts | Recharts |
+| Testing | Vitest + Testing Library |
+| Linting / Formatting | ESLint + Prettier |
 
 ## Getting Started
 
-First, run the development server:
+Requirements: Node.js 20+.
 
 ```bash
-npm run dev
+npm install
+cp .env.example .env.local   # then fill in your Supabase + API keys
+npm run dev                  # LAN-accessible (mobile testing)
 # or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev:local            # localhost only
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+See [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) for a full production
+deployment walkthrough (Supabase setup, Vercel deploy, licensing, backup/restore).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+| Script | Description |
+| --- | --- |
+| `npm run dev` | Dev server on 0.0.0.0 (LAN/mobile accessible) |
+| `npm run dev:local` | Dev server on localhost only |
+| `npm run build` | Production build |
+| `npm run start` | Production server |
+| `npm run lint` | ESLint |
+| `npm run lint:fix` | ESLint with auto-fix |
+| `npm run typecheck` | TypeScript type check (`tsc --noEmit`) |
+| `npm test` | Run Vitest tests once |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run test:coverage` | Run tests with coverage report |
+| `npm run format` | Format code with Prettier |
+| `npm run format:check` | Verify formatting (CI) |
 
-To learn more about Next.js, take a look at the following resources:
+## Key Directories
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/app/        # App Router routes (dashboard, jobs, clients, inventory, reports...)
+src/components/ # Shared UI components
+src/lib/        # Services & utilities (supabase, auth, license, AI, push...)
+src/app/api/    # API routes (auth, print, images, license, sync...)
+supabase/       # Database migrations (SQL)
+docs/           # Deployment, migration, user & licensing guides
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Architecture Notes
 
-## Deploy on Vercel
+- **Data migration conventions** — the DB carries legacy PHP-era data. Follow
+  `docs/DATA_MIGRATION_NOTES.md` for dual-era rules (activity_logs modules, `meta_id`
+  keys, date display) before any data work.
+- **Licensing** — each instance is gated by a central licensing service
+  (`src/lib/license.ts` + `src/app/api/license/*`).
+- **Module system** — clients can toggle business modules via `src/lib/modules.ts`.
+- **Session policy** — unified 30-min idle / 8-hour absolute timeout in
+  `src/lib/session-policy.ts`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Testing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Tests use Vitest (`jsdom` environment). Pure-logic modules in `src/lib/` are the
+primary test targets (e.g. `dateUtils.test.ts`, `status-colors.test.ts`).
+
+```bash
+npm test
+```
+
+## Deployment
+
+Deploy to **Vercel**. Client instances are standalone Vercel projects wired to their
+own Supabase project and license. Full guide: `docs/DEPLOYMENT_GUIDE.md`.
+
+## License
+
+Proprietary. Licensed per-client through the central licensing service.

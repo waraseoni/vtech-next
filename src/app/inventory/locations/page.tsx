@@ -4,11 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
-import {
-  LocationParts,
-  locPath,
-  encodeLocationToken,
-} from "@/lib/locations";
+import { LocationParts, locPath, encodeLocationToken } from "@/lib/locations";
 import { logActivity } from "@/lib/activity";
 import Image from "next/image";
 import {
@@ -76,14 +72,24 @@ type FormState = {
 
 /* ─── helpers ───────────────────────────────────────────────────────────── */
 
-const toParts = (r: { zone: string | null; rack: string | null; bin: string | null; box: string | null }): Partial<LocationParts> => ({
+const toParts = (r: {
+  zone: string | null;
+  rack: string | null;
+  bin: string | null;
+  box: string | null;
+}): Partial<LocationParts> => ({
   zone: r.zone ?? undefined,
   rack: r.rack ?? undefined,
   bin: r.bin ?? undefined,
   box: r.box ?? undefined,
 });
 
-const genCode = (ids: { zone_id?: number | null; rack_id?: number | null; bin_id?: number | null; box_id?: number | null }) => {
+const genCode = (ids: {
+  zone_id?: number | null;
+  rack_id?: number | null;
+  bin_id?: number | null;
+  box_id?: number | null;
+}) => {
   const segs: string[] = [];
   if (ids.zone_id) segs.push(`Z${ids.zone_id}`);
   if (ids.rack_id) segs.push(`R${ids.rack_id}`);
@@ -92,7 +98,13 @@ const genCode = (ids: { zone_id?: number | null; rack_id?: number | null; bin_id
   return segs.join("-");
 };
 
-const defaultForm: FormState = { zone_id: null, rack_id: null, bin_id: null, box_id: null, label: "" };
+const defaultForm: FormState = {
+  zone_id: null,
+  rack_id: null,
+  bin_id: null,
+  box_id: null,
+  label: "",
+};
 
 /* ─── page ──────────────────────────────────────────────────────────────── */
 
@@ -100,7 +112,12 @@ export default function LocationsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<LocationWithCount[]>([]);
-  const [hierarchy, setHierarchy] = useState<HierarchyData>({ zones: [], racks: [], bins: [], boxes: [] });
+  const [hierarchy, setHierarchy] = useState<HierarchyData>({
+    zones: [],
+    racks: [],
+    bins: [],
+    boxes: [],
+  });
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<LocRow | null>(null);
@@ -152,7 +169,7 @@ export default function LocationsPage() {
     const countMap: Record<number, ProductRow[]> = {};
     plData.forEach((row: Record<string, unknown>) => {
       const lid = row.location_id as number;
-      const product = (row.product_list as ProductRow | null);
+      const product = row.product_list as ProductRow | null;
       if (!countMap[lid]) countMap[lid] = [];
       if (product) countMap[lid].push(product);
     });
@@ -168,7 +185,9 @@ export default function LocationsPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   /* ─── stats ─────────────────────────────────────────────────────────── */
 
@@ -287,7 +306,10 @@ export default function LocationsPage() {
   /* ─── delete ────────────────────────────────────────────────────────── */
 
   const handleDelete = async (loc: LocRow) => {
-    if (userRole !== "admin") { alert("Sirf Admin delete kar sakta hai!"); return; }
+    if (userRole !== "admin") {
+      alert("Sirf Admin delete kar sakta hai!");
+      return;
+    }
     const path = locPath(toParts(loc));
     if (!confirm(`"${path || "Untitled"}" ko delete karna hai?`)) return;
 
@@ -303,7 +325,10 @@ export default function LocationsPage() {
   /* ─── toggle status ─────────────────────────────────────────────────── */
 
   const toggleStatus = async (loc: LocRow) => {
-    if (userRole !== "admin") { alert("Sirf Admin status change kar sakta hai!"); return; }
+    if (userRole !== "admin") {
+      alert("Sirf Admin status change kar sakta hai!");
+      return;
+    }
     await fetch("/api/locations", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -346,21 +371,39 @@ export default function LocationsPage() {
   /* ─── render ────────────────────────────────────────────────────────── */
 
   return (
-    <AdminPage title="Location Master" subtitle="Manage inventory locations — zones, racks, bins & boxes">
+    <AdminPage
+      title="Location Master"
+      subtitle="Manage inventory locations — zones, racks, bins & boxes"
+    >
       {/* ─── Stats Cards ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         {[
           { label: "Total Locations", value: totalLocations, icon: MapPin, color: "text-blue-400" },
           { label: "Active Zones", value: activeZones, icon: Layers, color: "text-violet-400" },
-          { label: "Products Assigned", value: productsAssigned, icon: Package, color: "text-emerald-400" },
-          { label: "Locations with Products", value: locationsWithProducts, icon: Grid3X3, color: "text-amber-400" },
+          {
+            label: "Products Assigned",
+            value: productsAssigned,
+            icon: Package,
+            color: "text-emerald-400",
+          },
+          {
+            label: "Locations with Products",
+            value: locationsWithProducts,
+            icon: Grid3X3,
+            color: "text-amber-400",
+          },
         ].map((s) => (
-          <div key={s.label} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center gap-3">
+          <div
+            key={s.label}
+            className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center gap-3"
+          >
             <div className={`p-2.5 rounded-xl bg-[#0d1117] ${s.color}`}>
               <s.icon size={18} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">{s.label}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                {s.label}
+              </p>
               <p className="text-xl font-black text-white">{s.value}</p>
             </div>
           </div>
@@ -372,7 +415,10 @@ export default function LocationsPage() {
         <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+              />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -401,13 +447,17 @@ export default function LocationsPage() {
         </div>
 
         {err && (
-          <div className="px-5 py-3 bg-red-500/10 border-b border-red-500/20 text-red-400 text-xs">{err}</div>
+          <div className="px-5 py-3 bg-red-500/10 border-b border-red-500/20 text-red-400 text-xs">
+            {err}
+          </div>
         )}
 
         {loading ? (
           <div className="px-5 py-12 text-center">
             <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">Loading...</p>
+            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">
+              Loading...
+            </p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="px-5 py-12 text-center text-slate-600 text-sm">No locations found.</div>
@@ -453,9 +503,20 @@ export default function LocationsPage() {
           <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
               <h3 className="font-bold text-white flex items-center gap-2">
-                {editing ? <><Edit3 size={16} className="text-blue-400" /> Edit Location</> : <><Plus size={16} className="text-blue-400" /> Add Location</>}
+                {editing ? (
+                  <>
+                    <Edit3 size={16} className="text-blue-400" /> Edit Location
+                  </>
+                ) : (
+                  <>
+                    <Plus size={16} className="text-blue-400" /> Add Location
+                  </>
+                )}
               </h3>
-              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition">
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+              >
                 <X size={16} />
               </button>
             </div>
@@ -475,20 +536,32 @@ export default function LocationsPage() {
                   value={form.zone_id ?? ""}
                   onChange={(e) => {
                     const v = e.target.value ? Number(e.target.value) : null;
-                    setForm((f) => ({ ...f, zone_id: v, rack_id: null, bin_id: null, box_id: null }));
+                    setForm((f) => ({
+                      ...f,
+                      zone_id: v,
+                      rack_id: null,
+                      bin_id: null,
+                      box_id: null,
+                    }));
                   }}
                   className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
                 >
                   <option value="">Select Zone...</option>
-                  {hierarchy.zones.filter((z) => z.status === 1).map((z) => (
-                    <option key={z.id} value={z.id}>{z.name}</option>
-                  ))}
+                  {hierarchy.zones
+                    .filter((z) => z.status === 1)
+                    .map((z) => (
+                      <option key={z.id} value={z.id}>
+                        {z.name}
+                      </option>
+                    ))}
                 </select>
               </div>
 
               {/* Rack */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Rack</label>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  Rack
+                </label>
                 <select
                   value={form.rack_id ?? ""}
                   onChange={(e) => {
@@ -499,15 +572,21 @@ export default function LocationsPage() {
                   className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500 disabled:opacity-40"
                 >
                   <option value="">Select Rack...</option>
-                  {hierarchy.racks.filter((r) => r.status === 1).map((r) => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
+                  {hierarchy.racks
+                    .filter((r) => r.status === 1)
+                    .map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
                 </select>
               </div>
 
               {/* Bin */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Bin / Drawer</label>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  Bin / Drawer
+                </label>
                 <select
                   value={form.bin_id ?? ""}
                   onChange={(e) => {
@@ -518,34 +597,53 @@ export default function LocationsPage() {
                   className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500 disabled:opacity-40"
                 >
                   <option value="">Select Bin...</option>
-                  {hierarchy.bins.filter((b) => b.status === 1).map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
+                  {hierarchy.bins
+                    .filter((b) => b.status === 1)
+                    .map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
                 </select>
               </div>
 
               {/* Box */}
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                  Box <span className="text-slate-700 normal-case tracking-normal font-normal">(optional)</span>
+                  Box{" "}
+                  <span className="text-slate-700 normal-case tracking-normal font-normal">
+                    (optional)
+                  </span>
                 </label>
                 <select
                   value={form.box_id ?? ""}
-                  onChange={(e) => setForm((f) => ({ ...f, box_id: e.target.value ? Number(e.target.value) : null }))}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      box_id: e.target.value ? Number(e.target.value) : null,
+                    }))
+                  }
                   disabled={!form.bin_id}
                   className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500 disabled:opacity-40"
                 >
                   <option value="">Select Box...</option>
-                  {hierarchy.boxes.filter((b) => b.status === 1).map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
+                  {hierarchy.boxes
+                    .filter((b) => b.status === 1)
+                    .map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
                 </select>
               </div>
 
               {/* Label */}
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                  Label <span className="text-slate-700 normal-case tracking-normal font-normal">(optional)</span>
+                  Label{" "}
+                  <span className="text-slate-700 normal-case tracking-normal font-normal">
+                    (optional)
+                  </span>
                 </label>
                 <input
                   value={form.label}
@@ -558,18 +656,34 @@ export default function LocationsPage() {
               {/* Code Preview */}
               {previewCode && (
                 <div className="flex items-center gap-2 p-3 bg-blue-500/5 border border-blue-500/20 rounded-xl">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">Code:</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                    Code:
+                  </span>
                   <span className="text-sm font-mono font-bold text-blue-400">{previewCode}</span>
                 </div>
               )}
 
               <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={saving}
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2">
-                  {saving ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : <><Check size={14} /> {editing ? "Update" : "Save"}</>}
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check size={14} /> {editing ? "Update" : "Save"}
+                    </>
+                  )}
                 </button>
-                <button type="button" onClick={() => setShowModal(false)}
-                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
+                >
                   Cancel
                 </button>
               </div>
@@ -586,22 +700,40 @@ export default function LocationsPage() {
               <h3 className="font-bold text-white flex items-center gap-2">
                 <QrCode size={16} className="text-blue-400" /> Location QR Code
               </h3>
-              <button onClick={() => setQrModalLoc(null)} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition">
+              <button
+                onClick={() => setQrModalLoc(null)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+              >
                 <X size={16} />
               </button>
             </div>
             <div className="p-6 flex flex-col items-center gap-4">
-              <Image src={qrUrl(toParts(qrModalLoc))} alt="Location QR" width={200} height={200} className="rounded-xl bg-white p-2" unoptimized />
+              <Image
+                src={qrUrl(toParts(qrModalLoc))}
+                alt="Location QR"
+                width={200}
+                height={200}
+                className="rounded-xl bg-white p-2"
+                unoptimized
+              />
               <div className="text-center">
                 {qrModalLoc.code && (
-                  <p className="text-xs font-mono font-bold text-blue-400 mb-1">{qrModalLoc.code}</p>
+                  <p className="text-xs font-mono font-bold text-blue-400 mb-1">
+                    {qrModalLoc.code}
+                  </p>
                 )}
                 <p className="text-sm font-bold text-white">{locPath(toParts(qrModalLoc))}</p>
-                {qrModalLoc.label && <p className="text-xs text-slate-500 mt-0.5">{qrModalLoc.label}</p>}
-                <p className="text-[10px] text-slate-600 mt-1 font-mono break-all">{qrToken(toParts(qrModalLoc))}</p>
+                {qrModalLoc.label && (
+                  <p className="text-xs text-slate-500 mt-0.5">{qrModalLoc.label}</p>
+                )}
+                <p className="text-[10px] text-slate-600 mt-1 font-mono break-all">
+                  {qrToken(toParts(qrModalLoc))}
+                </p>
               </div>
-              <button onClick={printQR}
-                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all">
+              <button
+                onClick={printQR}
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all"
+              >
                 <Printer size={14} /> Print QR
               </button>
             </div>
@@ -640,25 +772,47 @@ function LocationRow({
       <tr className="hover:bg-white/[0.02] transition-colors">
         <td className="px-4 py-3.5">
           {loc.code ? (
-            <span className="font-mono text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-md px-2 py-0.5">{loc.code}</span>
+            <span className="font-mono text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-md px-2 py-0.5">
+              {loc.code}
+            </span>
           ) : (
             <span className="text-slate-700 text-xs">—</span>
           )}
         </td>
         <td className="px-4 py-3.5">
-          {loc.zone ? <span className="font-bold text-slate-200 text-xs">{loc.zone}</span> : <span className="text-slate-700 text-xs">—</span>}
+          {loc.zone ? (
+            <span className="font-bold text-slate-200 text-xs">{loc.zone}</span>
+          ) : (
+            <span className="text-slate-700 text-xs">—</span>
+          )}
         </td>
         <td className="px-4 py-3.5">
-          {loc.rack ? <span className="text-slate-300 text-xs">{loc.rack}</span> : <span className="text-slate-700 text-xs">—</span>}
+          {loc.rack ? (
+            <span className="text-slate-300 text-xs">{loc.rack}</span>
+          ) : (
+            <span className="text-slate-700 text-xs">—</span>
+          )}
         </td>
         <td className="px-4 py-3.5">
-          {loc.bin ? <span className="text-slate-300 text-xs">{loc.bin}</span> : <span className="text-slate-700 text-xs">—</span>}
+          {loc.bin ? (
+            <span className="text-slate-300 text-xs">{loc.bin}</span>
+          ) : (
+            <span className="text-slate-700 text-xs">—</span>
+          )}
         </td>
         <td className="px-4 py-3.5">
-          {loc.box ? <span className="text-slate-300 text-xs">{loc.box}</span> : <span className="text-slate-700 text-xs">—</span>}
+          {loc.box ? (
+            <span className="text-slate-300 text-xs">{loc.box}</span>
+          ) : (
+            <span className="text-slate-700 text-xs">—</span>
+          )}
         </td>
         <td className="px-4 py-3.5">
-          {loc.label ? <span className="text-slate-400 text-xs">{loc.label}</span> : <span className="text-slate-700 text-xs">—</span>}
+          {loc.label ? (
+            <span className="text-slate-400 text-xs">{loc.label}</span>
+          ) : (
+            <span className="text-slate-700 text-xs">—</span>
+          )}
         </td>
         <td className="px-4 py-3.5 text-center">
           <button
@@ -685,14 +839,23 @@ function LocationRow({
         </td>
         <td className="px-4 py-3.5">
           <div className="flex items-center justify-center gap-2">
-            <button onClick={() => openEdit(loc)} className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition">
+            <button
+              onClick={() => openEdit(loc)}
+              className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition"
+            >
               <Edit3 size={13} />
             </button>
-            <button onClick={() => setQrModalLoc(loc)} className="p-1.5 rounded-lg bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 transition">
+            <button
+              onClick={() => setQrModalLoc(loc)}
+              className="p-1.5 rounded-lg bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 transition"
+            >
               <QrCode size={13} />
             </button>
             {userRole === "admin" && (
-              <button onClick={() => handleDelete(loc)} className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition">
+              <button
+                onClick={() => handleDelete(loc)}
+                className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
+              >
                 <Trash2 size={13} />
               </button>
             )}
@@ -702,10 +865,15 @@ function LocationRow({
       {isExpanded && loc.products.length > 0 && (
         <tr>
           <td colSpan={9} className="px-6 py-3 bg-[#111520]">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-2">Products at this location</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-2">
+              Products at this location
+            </p>
             <div className="flex flex-wrap gap-2">
               {loc.products.map((p) => (
-                <span key={p.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#161b27] border border-[#21293d] text-xs text-slate-300">
+                <span
+                  key={p.id}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#161b27] border border-[#21293d] text-xs text-slate-300"
+                >
                   <Package size={11} className="text-violet-500" />
                   {p.name}
                 </span>

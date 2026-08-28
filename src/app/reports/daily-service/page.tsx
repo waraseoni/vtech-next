@@ -20,8 +20,21 @@ type Job = {
 };
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
-const fmtDate = (v: string) => formatIST(v.includes("T") ? v : v + "T00:00:00+05:30", { day: "2-digit", month: "short", year: "numeric" });
-const fmtDateTime = (v: string) => formatIST(v, { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
+const fmtDate = (v: string) =>
+  formatIST(v.includes("T") ? v : v + "T00:00:00+05:30", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+const fmtDateTime = (v: string) =>
+  formatIST(v, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
 
 const STATUS_MAP: Record<number, { label: string; color: string }> = Object.fromEntries(
   Object.entries(SERVICE_STATUS).map(([k, v]) => [Number(k), { label: v.label, color: v.cls }])
@@ -53,7 +66,9 @@ export default function DailyServiceReportPage() {
     setLoading(false);
   }, [date]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const totals = {
     count: jobs.length,
@@ -83,42 +98,70 @@ export default function DailyServiceReportPage() {
         @media print{body{padding:0}}
       </style></head><body>${printContent}</body></html>`);
     popup.document.close();
-    setTimeout(() => { popup.print(); setTimeout(() => popup.close(), 300); }, 300);
+    setTimeout(() => {
+      popup.print();
+      setTimeout(() => popup.close(), 300);
+    }, 300);
   };
 
   return (
     <AdminPage title="Daily Service" subtitle="Jobs created per day">
       <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
         <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
-<div className="flex items-center flex-wrap gap-2">
-              <button onClick={() => shiftDay(-1)} className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition">
+          <div className="flex items-center flex-wrap gap-2">
+            <button
+              onClick={() => shiftDay(-1)}
+              className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition"
+            >
               <ChevronLeft size={16} />
             </button>
             <div className="flex items-center gap-2 bg-[#0d1117] border border-[#21293d] rounded-xl px-4 py-2">
               <Calendar size={14} className="text-slate-600" />
-              <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                className="bg-transparent text-sm text-slate-200 outline-none" />
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="bg-transparent text-sm text-slate-200 outline-none"
+              />
             </div>
-            <button onClick={() => shiftDay(1)} className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition">
+            <button
+              onClick={() => shiftDay(1)}
+              className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition"
+            >
               <ChevronRight size={16} />
             </button>
-            <button onClick={() => setDate(todayIST())} className="px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:bg-[#1a2234] transition">
+            <button
+              onClick={() => setDate(todayIST())}
+              className="px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:bg-[#1a2234] transition"
+            >
               Today
             </button>
           </div>
-          <button onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:bg-[#1a2234] transition">
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-2 px-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:bg-[#1a2234] transition"
+          >
             <Printer size={14} /> Print
           </button>
         </div>
 
         <div className="px-5 py-3 border-b border-[#1a2234] bg-[#0d1117]/50 grid grid-cols-3 gap-4 text-[10px] font-black uppercase tracking-widest text-slate-600">
-          <div>Jobs: <span className="text-slate-300 font-bold ml-1">{totals.count}</span></div>
-          <div>Total: <span className="text-emerald-400 font-bold ml-1">{inr(totals.amount)}</span></div>
-          <div>Date: <span className="text-slate-300 font-bold ml-1">{fmtDate(date)}</span></div>
+          <div>
+            Jobs: <span className="text-slate-300 font-bold ml-1">{totals.count}</span>
+          </div>
+          <div>
+            Total: <span className="text-emerald-400 font-bold ml-1">{inr(totals.amount)}</span>
+          </div>
+          <div>
+            Date: <span className="text-slate-300 font-bold ml-1">{fmtDate(date)}</span>
+          </div>
         </div>
 
-        {err && <div className="px-5 py-3 bg-red-500/10 border-b border-red-500/20 text-red-400 text-xs">{err}</div>}
+        {err && (
+          <div className="px-5 py-3 bg-red-500/10 border-b border-red-500/20 text-red-400 text-xs">
+            {err}
+          </div>
+        )}
 
         <div id="print-area">
           <div className="hidden print:block mb-6">
@@ -129,10 +172,14 @@ export default function DailyServiceReportPage() {
           {loading ? (
             <div className="px-5 py-12 text-center">
               <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-              <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">Loading...</p>
+              <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">
+                Loading...
+              </p>
             </div>
           ) : jobs.length === 0 ? (
-            <div className="px-5 py-12 text-center text-slate-600 text-sm">No jobs found for this date.</div>
+            <div className="px-5 py-12 text-center text-slate-600 text-sm">
+              No jobs found for this date.
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -149,17 +196,28 @@ export default function DailyServiceReportPage() {
                 </thead>
                 <tbody className="divide-y divide-[#1a2234]">
                   {jobs.map((job, i) => {
-                    const st = STATUS_MAP[job.status] || { label: "Unknown", color: "bg-slate-500/10 text-slate-400 border-slate-500/20" };
+                    const st = STATUS_MAP[job.status] || {
+                      label: "Unknown",
+                      color: "bg-slate-500/10 text-slate-400 border-slate-500/20",
+                    };
                     return (
                       <tr key={job.id} className="hover:bg-white/[0.02]">
                         <td className="px-4 py-3.5 text-slate-600">{i + 1}</td>
                         <td className="px-4 py-3.5 font-black text-blue-400">{job.code}</td>
                         <td className="px-4 py-3.5 text-slate-300 font-bold">{job.client_name}</td>
-                        <td className="px-4 py-3.5 text-slate-400">{fmtDateTime(job.date_created)}</td>
-                        <td className="px-4 py-3.5 text-slate-400">{fmtDateTime(job.date_updated)}</td>
-                        <td className="px-4 py-3.5 text-right font-black text-emerald-400">{inr(job.amount)}</td>
+                        <td className="px-4 py-3.5 text-slate-400">
+                          {fmtDateTime(job.date_created)}
+                        </td>
+                        <td className="px-4 py-3.5 text-slate-400">
+                          {fmtDateTime(job.date_updated)}
+                        </td>
+                        <td className="px-4 py-3.5 text-right font-black text-emerald-400">
+                          {inr(job.amount)}
+                        </td>
                         <td className="px-4 py-3.5 text-center">
-                          <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border ${st.color}`}>
+                          <span
+                            className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border ${st.color}`}
+                          >
                             {st.label}
                           </span>
                         </td>
@@ -169,7 +227,9 @@ export default function DailyServiceReportPage() {
                 </tbody>
                 <tfoot className="bg-[#111520]">
                   <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                    <th className="px-4 py-3 text-right" colSpan={5}>Total</th>
+                    <th className="px-4 py-3 text-right" colSpan={5}>
+                      Total
+                    </th>
                     <th className="px-4 py-3 text-right text-emerald-400">{inr(totals.amount)}</th>
                     <th className="px-4 py-3 text-center">{totals.count} Jobs</th>
                   </tr>

@@ -24,7 +24,8 @@ async function upsertField(field: string, value: string) {
 export async function POST(request: NextRequest) {
   try {
     const user = await requireStaff();
-    if (!user) return NextResponse.json({ status: "unauthorized", msg: "Login required" }, { status: 401 });
+    if (!user)
+      return NextResponse.json({ status: "unauthorized", msg: "Login required" }, { status: 401 });
 
     const form = await request.formData();
     const file = form.get("file") as File | null;
@@ -54,7 +55,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "success", url: canvasData });
     }
 
-    return NextResponse.json({ status: "failed", msg: "No file or canvas data provided" }, { status: 400 });
+    return NextResponse.json(
+      { status: "failed", msg: "No file or canvas data provided" },
+      { status: 400 }
+    );
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ status: "failed", msg }, { status: 500 });

@@ -8,9 +8,16 @@ import { logger } from "@/lib/logger";
  * @param metaId - The unique ID of the record being acted upon
  * @param details - Extra JSON or text details about the change
  */
-export async function logActivity(action: string, module: string, metaId?: string | number, details?: string) {
+export async function logActivity(
+  action: string,
+  module: string,
+  metaId?: string | number,
+  details?: string
+) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
 
     // Get the numeric mechanic_id from profiles
@@ -25,16 +32,14 @@ export async function logActivity(action: string, module: string, metaId?: strin
     // fall back to 0 (Admin) only for accounts with no linked mechanic.
     const numericUserId = profile?.mechanic_id || 0;
 
-    const { error } = await supabase
-      .from("activity_logs")
-      .insert({
-        user_id: numericUserId,
-        action: action,
-        module: module,
-        meta_id: metaId?.toString(),
-        details: details || "",
-        date_created: new Date().toISOString(),
-      });
+    const { error } = await supabase.from("activity_logs").insert({
+      user_id: numericUserId,
+      action: action,
+      module: module,
+      meta_id: metaId?.toString(),
+      details: details || "",
+      date_created: new Date().toISOString(),
+    });
 
     if (error) {
       logger.warn("Activity log insert failed:", error.message);

@@ -11,16 +11,27 @@
 // BUG FIX 3: `window.location.reload()` in onUpdate was a full
 //   hard reload — replaced with a state-based refetch trigger.
 // ─────────────────────────────────────────────────────────────────
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import Image from 'next/image';
-import { ChevronLeft, ChevronRight, Calendar, RotateCcw } from 'lucide-react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import AttendanceModal from './AttendanceModal';
-import { currentMonthIST, parseISTDate, hoursBetweenIST, fmtTimeIST } from '@/lib/dateUtils';
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
+import Image from "next/image";
+import { ChevronLeft, ChevronRight, Calendar, RotateCcw } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
+import AttendanceModal from "./AttendanceModal";
+import { currentMonthIST, parseISTDate, hoursBetweenIST, fmtTimeIST } from "@/lib/dateUtils";
 
-interface Mechanic { id: number; name: string; image: string | null; }
-interface DayData   { day: number; status: 0 | 1 | 2 | 3; isSunday: boolean; timeIn: string; timeOut: string; hours: string; }
+interface Mechanic {
+  id: number;
+  name: string;
+  image: string | null;
+}
+interface DayData {
+  day: number;
+  status: 0 | 1 | 2 | 3;
+  isSunday: boolean;
+  timeIn: string;
+  timeOut: string;
+  hours: string;
+}
 interface MechanicMonthData {
   mechanic: Mechanic;
   days: DayData[];
@@ -31,27 +42,54 @@ interface MechanicMonthData {
 
 // Mechanic avatar — photo ho to photo, warna 2-letter initials.
 const mechInitials = (name: string) =>
-  name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || name.charAt(0);
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("") || name.charAt(0);
 
-const MechAvatar = ({ image, name, cls = "w-8 h-8 text-xs" }: { image?: string | null; name: string; cls?: string }) =>
+const MechAvatar = ({
+  image,
+  name,
+  cls = "w-8 h-8 text-xs",
+}: {
+  image?: string | null;
+  name: string;
+  cls?: string;
+}) =>
   image ? (
-    <Image src={image} alt={name} width={32} height={32} unoptimized
+    <Image
+      src={image}
+      alt={name}
+      width={32}
+      height={32}
+      unoptimized
       className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
-      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+      onError={(e) => {
+        (e.currentTarget as HTMLImageElement).style.display = "none";
+      }}
+    />
   ) : (
-    <div className={`${cls} bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 flex-shrink-0`}>
+    <div
+      className={`${cls} bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 flex-shrink-0`}
+    >
       {mechInitials(name)}
     </div>
   );
 
 export default function MonthlyReport({
-  userRole, mechanicId,
-}: { userRole: 'admin' | 'staff' | 'developer'; mechanicId: number | null }) {
+  userRole,
+  mechanicId,
+}: {
+  userRole: "admin" | "staff" | "developer";
+  mechanicId: number | null;
+}) {
   const searchParams = useSearchParams();
-  const router       = useRouter();
+  const router = useRouter();
 
-  const monthParam = searchParams.get('month');
-  const [month, setMonth]             = useState(monthParam || currentMonthIST());
+  const monthParam = searchParams.get("month");
+  const [month, setMonth] = useState(monthParam || currentMonthIST());
 
   useEffect(() => {
     if (monthParam && monthParam !== month) {
@@ -60,19 +98,29 @@ export default function MonthlyReport({
   }, [monthParam, month]);
 
   const [mechanicsData, setMechanicsData] = useState<MechanicMonthData[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [modalOpen, setModalOpen]     = useState(false);
-  const [selected, setSelected]       = useState<{ mechanicId: number; mechanicName: string; mechanicImage: string | null; date: string; timeIn?: string; timeOut?: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selected, setSelected] = useState<{
+    mechanicId: number;
+    mechanicName: string;
+    mechanicImage: string | null;
+    date: string;
+    timeIn?: string;
+    timeOut?: string;
+  } | null>(null);
   // BUG FIX 3: trigger refetch without hard reload
-  const [refreshKey, setRefreshKey]                 = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    let mechQuery = supabase.from('mechanic_list').select('id, firstname, lastname, image_path').eq('status', 1);
-    if (userRole === 'staff') {
-      mechQuery = mechanicId ? mechQuery.eq('id', mechanicId) : mechQuery.eq('id', 0);
+    let mechQuery = supabase
+      .from("mechanic_list")
+      .select("id, firstname, lastname, image_path")
+      .eq("status", 1);
+    if (userRole === "staff") {
+      mechQuery = mechanicId ? mechQuery.eq("id", mechanicId) : mechQuery.eq("id", 0);
     }
-    const { data: mechs, error: mechErr } = await mechQuery.order('firstname');
+    const { data: mechs, error: mechErr } = await mechQuery.order("firstname");
     if (mechErr || !mechs || mechs.length === 0) {
       setMechanicsData([]);
       setLoading(false);
@@ -84,23 +132,30 @@ export default function MonthlyReport({
     const m = d.getMonth() + 1;
     const daysInMonth = new Date(y, m, 0).getDate(); // BUG FIX 1: only compute here
     const startDate = `${month}-01`;
-    const endDate   = `${month}-${daysInMonth.toString().padStart(2, '0')}`;
+    const endDate = `${month}-${daysInMonth.toString().padStart(2, "0")}`;
 
     const { data: attData } = await supabase
-      .from('attendance_list')
-      .select('mechanic_id, curr_date, status, time_in, time_out')
-      .gte('curr_date', startDate)
-      .lte('curr_date', endDate);
+      .from("attendance_list")
+      .select("mechanic_id, curr_date, status, time_in, time_out")
+      .gte("curr_date", startDate)
+      .lte("curr_date", endDate);
 
     const now = new Date();
-    const todayIST = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+    const todayIST = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(now);
 
-    const result: MechanicMonthData[] = mechs.map(mech => {
+    const result: MechanicMonthData[] = mechs.map((mech) => {
       const days: DayData[] = [];
-      let fullDays = 0, halfDays = 0, absentDays = 0;
+      let fullDays = 0,
+        halfDays = 0,
+        absentDays = 0;
       for (let d = 1; d <= daysInMonth; d++) {
-        const dateStr = `${month}-${d.toString().padStart(2, '0')}`;
-        const att     = attData?.find(a => a.mechanic_id === mech.id && a.curr_date === dateStr);
+        const dateStr = `${month}-${d.toString().padStart(2, "0")}`;
+        const att = attData?.find((a) => a.mechanic_id === mech.id && a.curr_date === dateStr);
         const isFuture = dateStr >= todayIST;
         let status: 0 | 1 | 2 | 3;
         if (att) {
@@ -113,54 +168,83 @@ export default function MonthlyReport({
         if (status === 1) fullDays++;
         else if (status === 3) halfDays++;
         else if (status === 2) absentDays++;
-        const timeIn  = (att?.time_in as string)?.slice(0, 5) || '';
-        const timeOut = (att?.time_out as string)?.slice(0, 5) || '';
-        days.push({ day: d, status, isSunday: parseISTDate(dateStr).getDay() === 0, timeIn, timeOut, hours: hoursBetweenIST(timeIn || null, timeOut || null) });
+        const timeIn = (att?.time_in as string)?.slice(0, 5) || "";
+        const timeOut = (att?.time_out as string)?.slice(0, 5) || "";
+        days.push({
+          day: d,
+          status,
+          isSunday: parseISTDate(dateStr).getDay() === 0,
+          timeIn,
+          timeOut,
+          hours: hoursBetweenIST(timeIn || null, timeOut || null),
+        });
       }
       return {
-        mechanic: { id: mech.id, name: `${mech.firstname} ${mech.lastname}`.trim(), image: (mech.image_path as string) || null },
-        days, fullDays, halfDays, absentDays,
+        mechanic: {
+          id: mech.id,
+          name: `${mech.firstname} ${mech.lastname}`.trim(),
+          image: (mech.image_path as string) || null,
+        },
+        days,
+        fullDays,
+        halfDays,
+        absentDays,
       };
     });
     setMechanicsData(result);
     setLoading(false);
   }, [month, userRole, mechanicId]);
 
-  useEffect(() => { fetchData(); }, [fetchData, refreshKey]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData, refreshKey]);
 
   // BUG FIX 2: use router.push instead of window.history.pushState
   const changeMonth = (delta: -1 | 1) => {
     const d = parseISTDate(month + "-01");
     d.setMonth(d.getMonth() + delta);
-    const newMonth = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" }).format(d);
+    const newMonth = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+    }).format(d);
     setMonth(newMonth);
     router.push(`/attendance?view=report&month=${newMonth}`);
   };
 
   const handleDayClick = (mId: number, mName: string, dateStr: string) => {
-    if (userRole !== 'admin') return;
-    const md = mechanicsData.find(x => x.mechanic.id === mId);
-    const day = md?.days.find(d => `${month}-${d.day.toString().padStart(2, '0')}` === dateStr);
-    setSelected({ mechanicId: mId, mechanicName: mName, mechanicImage: md?.mechanic.image ?? null, date: dateStr, timeIn: day?.timeIn, timeOut: day?.timeOut });
+    if (userRole !== "admin") return;
+    const md = mechanicsData.find((x) => x.mechanic.id === mId);
+    const day = md?.days.find((d) => `${month}-${d.day.toString().padStart(2, "0")}` === dateStr);
+    setSelected({
+      mechanicId: mId,
+      mechanicName: mName,
+      mechanicImage: md?.mechanic.image ?? null,
+      date: dateStr,
+      timeIn: day?.timeIn,
+      timeOut: day?.timeOut,
+    });
     setModalOpen(true);
   };
 
   // 🔧 FIX: Immediate UI update when attendance changes
   // यह function AttendanceModal से call होगा
   const updateAttendanceInUI = (mechanicId: number, dateStr: string, newStatus: 0 | 1 | 2 | 3) => {
-    setMechanicsData(prev =>
-      prev.map(md => {
+    setMechanicsData((prev) =>
+      prev.map((md) => {
         if (md.mechanic.id !== mechanicId) return md;
 
-        const updatedDays = md.days.map(day => {
-          const dayDateStr = `${month}-${day.day.toString().padStart(2, '0')}`;
+        const updatedDays = md.days.map((day) => {
+          const dayDateStr = `${month}-${day.day.toString().padStart(2, "0")}`;
           if (dayDateStr !== dateStr) return day;
           return { ...day, status: newStatus };
         });
 
         // Recalculate summary counts
-        let fullDays = 0, halfDays = 0, absentDays = 0;
-        updatedDays.forEach(d => {
+        let fullDays = 0,
+          halfDays = 0,
+          absentDays = 0;
+        updatedDays.forEach((d) => {
           if (d.status === 1) fullDays++;
           else if (d.status === 3) halfDays++;
           else if (d.status === 2) absentDays++;
@@ -171,27 +255,29 @@ export default function MonthlyReport({
     );
   };
 
-  if (loading) return (
-    <div className="flex justify-center py-16 text-slate-500 text-sm">Loading...</div>
-  );
+  if (loading)
+    return <div className="flex justify-center py-16 text-slate-500 text-sm">Loading...</div>;
 
-  if (mechanicsData.length === 0) return (
-    <div className="text-center py-16 bg-[#161b27] border border-dashed border-[#21293d] rounded-2xl">
-      <p className="text-slate-600 font-bold uppercase tracking-wider text-sm">
-        {userRole === 'staff'
-          ? 'No mechanic profile linked to your account. Contact admin.'
-          : 'No active mechanics found.'}
-      </p>
-    </div>
-  );
+  if (mechanicsData.length === 0)
+    return (
+      <div className="text-center py-16 bg-[#161b27] border border-dashed border-[#21293d] rounded-2xl">
+        <p className="text-slate-600 font-bold uppercase tracking-wider text-sm">
+          {userRole === "staff"
+            ? "No mechanic profile linked to your account. Contact admin."
+            : "No active mechanics found."}
+        </p>
+      </div>
+    );
 
-  const firstDay    = parseISTDate(month + '-01').getDay(); // 0=Sun
+  const firstDay = parseISTDate(month + "-01").getDay(); // 0=Sun
 
-  const monthName   = parseISTDate(month + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  const monthName = parseISTDate(month + "-01").toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <div>
-
       {/* ── Month Navigation & Reset Filter ── */}
       <div className="flex items-center justify-between flex-wrap mb-6 gap-4">
         <button
@@ -207,7 +293,10 @@ export default function MonthlyReport({
           <input
             type="month"
             value={month}
-            onChange={e => { setMonth(e.target.value); router.push(`/attendance?view=report&month=${e.target.value}`); }}
+            onChange={(e) => {
+              setMonth(e.target.value);
+              router.push(`/attendance?view=report&month=${e.target.value}`);
+            }}
             className="bg-[#0d1117] border border-[#21293d] text-white rounded-xl px-3 py-2 font-bold text-sm focus:border-blue-500 outline-none transition-all"
           />
           <span className="hidden sm:inline text-slate-400 font-bold text-sm">{monthName}</span>
@@ -239,26 +328,41 @@ export default function MonthlyReport({
 
       {/* ── Mechanics Grid ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {mechanicsData.map(md => (
-          <div key={md.mechanic.id} className="bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl p-4">
-
+        {mechanicsData.map((md) => (
+          <div
+            key={md.mechanic.id}
+            className="bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl p-4"
+          >
             {/* Card Header */}
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-2">
                 <MechAvatar image={md.mechanic.image} name={md.mechanic.name} />
-                <h3 className="font-extrabold text-slate-800 dark:text-slate-100 text-sm">{md.mechanic.name}</h3>
+                <h3 className="font-extrabold text-slate-800 dark:text-slate-100 text-sm">
+                  {md.mechanic.name}
+                </h3>
               </div>
               <div className="flex gap-1.5 text-[10px]">
-                <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">P:{md.fullDays}</span>
-                <span className="bg-amber-500/15 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold">H:{md.halfDays}</span>
-                <span className="bg-red-500/15 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full font-bold">A:{md.absentDays}</span>
+                <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
+                  P:{md.fullDays}
+                </span>
+                <span className="bg-amber-500/15 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold">
+                  H:{md.halfDays}
+                </span>
+                <span className="bg-red-500/15 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full font-bold">
+                  A:{md.absentDays}
+                </span>
               </div>
             </div>
 
             {/* Day-of-week header */}
             <div className="grid grid-cols-7 gap-0.5 text-center mb-1">
-              {['Su','Mo','Tu','We','Th','Fr','Sa'].map((d, i) => (
-                <div key={i} className={`text-[9px] font-black py-1 ${i === 0 ? 'text-red-500' : 'text-slate-600'}`}>{d}</div>
+              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d, i) => (
+                <div
+                  key={i}
+                  className={`text-[9px] font-black py-1 ${i === 0 ? "text-red-500" : "text-slate-600"}`}
+                >
+                  {d}
+                </div>
               ))}
             </div>
 
@@ -269,22 +373,28 @@ export default function MonthlyReport({
                 <div key={`empty-${i}`} className="aspect-square" />
               ))}
 
-              {md.days.map(day => {
-                const dateStr = `${month}-${day.day.toString().padStart(2, '0')}`;
-                let cls = 'bg-red-500/70 text-white'; // default = absent
-                if (day.status === 0) cls = 'bg-[#1a2234] text-slate-600';       // future = empty
-                else if (day.status === 1) cls = 'bg-emerald-500 text-white';
-                else if (day.status === 3) cls = 'bg-amber-500 text-white';
-                else if (day.isSunday)     cls = 'bg-red-900/30 text-red-500';
+              {md.days.map((day) => {
+                const dateStr = `${month}-${day.day.toString().padStart(2, "0")}`;
+                let cls = "bg-red-500/70 text-white"; // default = absent
+                if (day.status === 0)
+                  cls = "bg-[#1a2234] text-slate-600"; // future = empty
+                else if (day.status === 1) cls = "bg-emerald-500 text-white";
+                else if (day.status === 3) cls = "bg-amber-500 text-white";
+                else if (day.isSunday) cls = "bg-red-900/30 text-red-500";
 
                 const statusLabel =
-                  day.status === 0 ? 'Upcoming'
-                  : day.status === 1 ? 'Present'
-                  : day.status === 3 ? 'Half Day'
-                  : 'Absent';
+                  day.status === 0
+                    ? "Upcoming"
+                    : day.status === 1
+                      ? "Present"
+                      : day.status === 3
+                        ? "Half Day"
+                        : "Absent";
                 const tooltip =
-                  `${new Date(dateStr + 'T00:00:00+05:30').toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' })} — ${statusLabel}` +
-                  (day.timeIn && day.timeOut ? ` — ${fmtTimeIST(day.timeIn)} to ${fmtTimeIST(day.timeOut)} (${day.hours})` : '');
+                  `${new Date(dateStr + "T00:00:00+05:30").toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short" })} — ${statusLabel}` +
+                  (day.timeIn && day.timeOut
+                    ? ` — ${fmtTimeIST(day.timeIn)} to ${fmtTimeIST(day.timeOut)} (${day.hours})`
+                    : "");
 
                 return (
                   <div
@@ -292,11 +402,13 @@ export default function MonthlyReport({
                     title={tooltip}
                     onClick={() => handleDayClick(md.mechanic.id, md.mechanic.name, dateStr)}
                     className={`aspect-square flex flex-col items-center justify-center rounded-md text-[10px] leading-none transition-all ${cls} ${
-                      userRole === 'admin' ? 'cursor-pointer hover:scale-110 hover:ring-1 hover:ring-blue-400/60' : ''
+                      userRole === "admin"
+                        ? "cursor-pointer hover:scale-110 hover:ring-1 hover:ring-blue-400/60"
+                        : ""
                     }`}
                   >
                     <span>{day.day}</span>
-                    {day.hours !== '—' && (
+                    {day.hours !== "—" && (
                       <span className="text-[6px] font-bold mt-0.5 opacity-90">{day.hours}</span>
                     )}
                   </div>
@@ -306,15 +418,22 @@ export default function MonthlyReport({
 
             {/* Effective days summary */}
             <div className="mt-3 pt-3 border-t border-[#21293d] flex justify-between text-[10px] font-bold text-slate-500">
-              <span>Effective: <span className="text-slate-300">{(md.fullDays + md.halfDays * 0.5).toFixed(1)} days</span></span>
-              <span>Absent: <span className="text-red-400">{md.absentDays}</span></span>
+              <span>
+                Effective:{" "}
+                <span className="text-slate-300">
+                  {(md.fullDays + md.halfDays * 0.5).toFixed(1)} days
+                </span>
+              </span>
+              <span>
+                Absent: <span className="text-red-400">{md.absentDays}</span>
+              </span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Admin edit modal */}
-      {modalOpen && selected && userRole === 'admin' && (
+      {modalOpen && selected && userRole === "admin" && (
         <AttendanceModal
           mechanicId={selected.mechanicId}
           mechanicName={selected.mechanicName}
@@ -332,7 +451,7 @@ export default function MonthlyReport({
             setModalOpen(false);
             setSelected(null);
             // Background refetch as safety net
-            setTimeout(() => setRefreshKey(k => k + 1), 100);
+            setTimeout(() => setRefreshKey((k) => k + 1), 100);
           }}
         />
       )}

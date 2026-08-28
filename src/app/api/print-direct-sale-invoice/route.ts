@@ -9,15 +9,19 @@ const supabase = getAdminSupabase();
 async function fetchShopInfo() {
   const { data } = await supabase.from("system_info").select("meta_field, meta_value");
   const info: Record<string, string> = {};
-  (data || []).forEach(r => { info[r.meta_field] = r.meta_value; });
+  (data || []).forEach((r) => {
+    info[r.meta_field] = r.meta_value;
+  });
   return {
-    name:    info.name        || "V-Technologies",
-    address: info.address     || "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
-    mobile:  info.contact     || "9179105875",
-    email:   info.email       || "",
-    gstin:   info.gst_no      || info.gstin || "",
-    upiId:   info.upi_id      || "",
-    logo:    info.logo        || "",
+    name: info.name || "V-Technologies",
+    address:
+      info.address ||
+      "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
+    mobile: info.contact || "9179105875",
+    email: info.email || "",
+    gstin: info.gst_no || info.gstin || "",
+    upiId: info.upi_id || "",
+    logo: info.logo || "",
   };
 }
 
@@ -27,7 +31,10 @@ const SGST_RATE = 9;
 function fmtIST(iso: string | null): string {
   if (!iso) return "—";
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(iso));
 }
 
@@ -36,28 +43,67 @@ function inr(n: number) {
 }
 
 function numberToWords(num: number): string {
-  const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
-  const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  const ones = [
+    "",
+    "One",
+    "Two",
+    "Three",
+    "Four",
+    "Five",
+    "Six",
+    "Seven",
+    "Eight",
+    "Nine",
+    "Ten",
+    "Eleven",
+    "Twelve",
+    "Thirteen",
+    "Fourteen",
+    "Fifteen",
+    "Sixteen",
+    "Seventeen",
+    "Eighteen",
+    "Nineteen",
+  ];
+  const tens = [
+    "",
+    "",
+    "Twenty",
+    "Thirty",
+    "Forty",
+    "Fifty",
+    "Sixty",
+    "Seventy",
+    "Eighty",
+    "Ninety",
+  ];
   const scales = ["", "Thousand", "Lakh", "Crore"];
-  
+
   if (num === 0) return "Zero";
-  
+
   let result = "";
   let scaleIndex = 0;
   let numStr = Math.floor(num).toString();
-  
+
   while (numStr.length > 0) {
     const chunk = parseInt(numStr.slice(-3));
     const numStrLen = numStr.length;
-    
+
     if (chunk < 20) {
-      result = ones[chunk] + (scaleIndex > 0 ? " " + scales[scaleIndex] : "") + (result ? " " + result : "");
+      result =
+        ones[chunk] +
+        (scaleIndex > 0 ? " " + scales[scaleIndex] : "") +
+        (result ? " " + result : "");
     } else {
       const ten = Math.floor(chunk / 10);
       const one = chunk % 10;
-      result = tens[ten] + (one > 0 ? " " + ones[one] : "") + (scaleIndex > 0 ? " " + scales[scaleIndex] : "") + (result ? " " + result : "");
+      result =
+        tens[ten] +
+        (one > 0 ? " " + ones[one] : "") +
+        (scaleIndex > 0 ? " " + scales[scaleIndex] : "") +
+        (result ? " " + result : "");
     }
-    
+
     if (numStrLen > 3) {
       scaleIndex++;
       numStr = numStr.slice(0, -3);
@@ -65,13 +111,14 @@ function numberToWords(num: number): string {
       break;
     }
   }
-  
+
   return result;
 }
 
 export async function GET(request: NextRequest) {
   const user = await requireStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const url = new URL(request.url);
   const saleId = url.searchParams.get("id");
   const billType = url.searchParams.get("bill_type") || "non_gst";
@@ -93,9 +140,24 @@ export async function GET(request: NextRequest) {
   }
 
   const [{ data: items }, { data: client }, { data: staff }] = await Promise.all([
-    supabase.from("direct_sale_items").select("product_id, product_name, qty, price").eq("sale_id", sale.id),
-    sale.client_id ? supabase.from("client_list").select("contact, address, firstname, middlename, lastname").eq("id", sale.client_id).single() : Promise.resolve({ data: null }),
-    sale.created_by ? supabase.from("mechanic_list").select("firstname, lastname").eq("id", sale.created_by).single() : Promise.resolve({ data: null }),
+    supabase
+      .from("direct_sale_items")
+      .select("product_id, product_name, qty, price")
+      .eq("sale_id", sale.id),
+    sale.client_id
+      ? supabase
+          .from("client_list")
+          .select("contact, address, firstname, middlename, lastname")
+          .eq("id", sale.client_id)
+          .single()
+      : Promise.resolve({ data: null }),
+    sale.created_by
+      ? supabase
+          .from("mechanic_list")
+          .select("firstname, lastname")
+          .eq("id", sale.created_by)
+          .single()
+      : Promise.resolve({ data: null }),
   ]);
 
   // ── Fetch HSN/SAC codes for sold products ──────────────────────────────────
@@ -103,9 +165,15 @@ export async function GET(request: NextRequest) {
   const { data: prodRows } = prodIds.length
     ? await supabase.from("product_list").select("id, hsn").in("id", prodIds)
     : { data: [] };
-  const hsnMap: Record<number, string> = Object.fromEntries((prodRows || []).map(p => [p.id, p.hsn]));
+  const hsnMap: Record<number, string> = Object.fromEntries(
+    (prodRows || []).map((p) => [p.id, p.hsn])
+  );
 
-  const clientName = client ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ") : (sale.client_id ? "Unknown" : "Walk-in Customer");
+  const clientName = client
+    ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
+    : sale.client_id
+      ? "Unknown"
+      : "Walk-in Customer";
   const clientContact = client?.contact || null;
   const clientAddress = client?.address || null;
   const staffName = staff ? `${staff.firstname} ${staff.lastname}`.trim() : "Unknown";
@@ -118,11 +186,11 @@ export async function GET(request: NextRequest) {
     total: it.qty * it.price,
   }));
 
-  const isGST     = billType === "gst";
+  const isGST = billType === "gst";
   const accentColor = isGST ? "#dc3545" : "#001f3f";
-  const subtotal  = saleItems.reduce((s, i) => s + i.total, 0);
-  const cgstAmt   = isGST ? Math.round(subtotal * (CGST_RATE / 100) * 100) / 100 : 0;
-  const sgstAmt   = isGST ? Math.round(subtotal * (SGST_RATE / 100) * 100) / 100 : 0;
+  const subtotal = saleItems.reduce((s, i) => s + i.total, 0);
+  const cgstAmt = isGST ? Math.round(subtotal * (CGST_RATE / 100) * 100) / 100 : 0;
+  const sgstAmt = isGST ? Math.round(subtotal * (SGST_RATE / 100) * 100) / 100 : 0;
   const grandTotal = isGST ? subtotal + cgstAmt + sgstAmt : sale.total_amount;
 
   // ── Fetch UPI ID from system_info ──────────────────────────────────────────
@@ -222,7 +290,9 @@ export async function GET(request: NextRequest) {
       </tr>
     </thead>
     <tbody>
-      ${saleItems.map((it, i) => `
+      ${saleItems
+        .map(
+          (it, i) => `
       <tr>
         <td>${i + 1}</td>
         <td>${it.product_name}</td>
@@ -230,16 +300,22 @@ export async function GET(request: NextRequest) {
         <td style="text-align:center">${it.qty}</td>
         <td style="text-align:right">${inr(it.price)}</td>
         <td style="text-align:right">${inr(it.total)}</td>
-      </tr>`).join("")}
+      </tr>`
+        )
+        .join("")}
     </tbody>
   </table>
   
   <div class="total-box">
     <div class="total-inner">
       <div class="total-row"><span>Subtotal</span><span>${inr(subtotal)}</span></div>
-      ${isGST ? `
+      ${
+        isGST
+          ? `
       <div class="total-row"><span>CGST @ ${CGST_RATE}%</span><span>${inr(cgstAmt)}</span></div>
-      <div class="total-row"><span>SGST @ ${SGST_RATE}%</span><span>${inr(sgstAmt)}</span></div>` : ""}
+      <div class="total-row"><span>SGST @ ${SGST_RATE}%</span><span>${inr(sgstAmt)}</span></div>`
+          : ""
+      }
       <div class="total-row grand"><span>Grand Total</span><span>${inr(grandTotal)}</span></div>
       <div class="words">${numberToWords(grandTotal)} Rupees Only</div>
     </div>

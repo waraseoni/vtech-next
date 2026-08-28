@@ -1,6 +1,6 @@
 "use client";
-import { useState } from 'react';
-import { X } from 'lucide-react';
+import { useState } from "react";
+import { X } from "lucide-react";
 
 interface UserRow {
   id: string;
@@ -16,10 +16,10 @@ interface UserEditModalProps {
 }
 
 export default function UserEditModal({ user, onClose, onSaved }: UserEditModalProps) {
-  const [email, setEmail] = useState(user.email || '');
-  const [fullName, setFullName] = useState(user.full_name || '');
-  const [role, setRole] = useState(user.role || 'staff');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(user.email || "");
+  const [fullName, setFullName] = useState(user.full_name || "");
+  const [role, setRole] = useState(user.role || "staff");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,9 +29,9 @@ export default function UserEditModal({ user, onClose, onSaved }: UserEditModalP
     try {
       // 1. Auth अपडेट (ईमेल, पासवर्ड, नाम)
       if (email !== user.email || password || fullName !== user.full_name) {
-        const res = await fetch('/api/admin/update-user', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/admin/update-user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userId: user.id,
             email: email !== user.email ? email : undefined,
@@ -39,25 +39,25 @@ export default function UserEditModal({ user, onClose, onSaved }: UserEditModalP
             full_name: fullName !== user.full_name ? fullName : undefined,
           }),
         });
-        if (!res.ok) throw new Error('Auth update failed');
+        if (!res.ok) throw new Error("Auth update failed");
       }
 
       // 2. Profile अपडेट (रोल, फुल_नेम) — service-role API se (trigger role guard bypass karta hai)
-      const res = await fetch('/api/admin/update-profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/update-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, full_name: fullName, role }),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Profile update failed');
+        throw new Error(errData.error || "Profile update failed");
       }
 
-      alert('User updated successfully!');
+      alert("User updated successfully!");
       onSaved(); // पैरेंट को रिफ्रेश करने के लिए कहें
       onClose();
     } catch (err) {
-      alert('Error: ' + (err instanceof Error ? err.message : String(err)));
+      alert("Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
@@ -122,7 +122,7 @@ export default function UserEditModal({ user, onClose, onSaved }: UserEditModalP
               disabled={loading}
               className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-black uppercase text-sm hover:bg-blue-700"
             >
-              {loading ? 'Saving...' : 'Save Changes'}
+              {loading ? "Saving..." : "Save Changes"}
             </button>
             <button
               type="button"

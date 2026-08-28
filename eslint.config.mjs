@@ -1,10 +1,12 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import prettier from "eslint-config-prettier";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  prettier,
   {
     // eslint-plugin-react-hooks v7 ke strict rules legacy codebase (fetch-in-effect
     // pattern) ke saath conflict karte hain — off kar diya hai. Isko gradually

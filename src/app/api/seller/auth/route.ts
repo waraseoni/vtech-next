@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
-import { clearPortalCookie, isPortalEnabled, requireSeller, setPortalCookie, verifyPortalPassword } from "@/lib/portal-auth";
+import {
+  clearPortalCookie,
+  isPortalEnabled,
+  requireSeller,
+  setPortalCookie,
+  verifyPortalPassword,
+} from "@/lib/portal-auth";
 
 // Password #2 for seller portal (password #1 = admin login).
 export async function POST(req: NextRequest) {
   if (!isPortalEnabled("seller")) {
-    return NextResponse.json({ error: "Seller portal enabled nahi hai (env vars missing)" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Seller portal enabled nahi hai (env vars missing)" },
+      { status: 404 }
+    );
   }
   const admin = await requireAdmin();
   if (!admin) {

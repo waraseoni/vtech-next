@@ -21,7 +21,9 @@ export async function GET() {
 
     const { data: locData, error: locErr } = await supabase
       .from("locations")
-      .select("*, location_zones(name), location_racks(name), location_bins(name), location_boxes(name)")
+      .select(
+        "*, location_zones(name), location_racks(name), location_bins(name), location_boxes(name)"
+      )
       .eq("delete_flag", 0)
       .order("code");
     if (locErr) throw locErr;
@@ -45,20 +47,27 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { zone, rack, bin, box, label, zone_id, rack_id, bin_id, box_id } = body;
 
-    const ids = { zone_id: zone_id || undefined, rack_id: rack_id || undefined, bin_id: bin_id || undefined, box_id: box_id || undefined };
+    const ids = {
+      zone_id: zone_id || undefined,
+      rack_id: rack_id || undefined,
+      bin_id: bin_id || undefined,
+      box_id: box_id || undefined,
+    };
     const code = genCode(ids);
 
     const row: Record<string, unknown> = {
-      zone: zone || null, rack: rack || null, bin: bin || null, box: box || null,
-      label: label || null, status: 1, delete_flag: 0, code,
+      zone: zone || null,
+      rack: rack || null,
+      bin: bin || null,
+      box: box || null,
+      label: label || null,
+      status: 1,
+      delete_flag: 0,
+      code,
       ...Object.fromEntries(Object.entries(ids).filter(([, v]) => v)),
     };
 
-    const { data, error } = await supabase
-      .from("locations")
-      .insert([row])
-      .select("id")
-      .single();
+    const { data, error } = await supabase.from("locations").insert([row]).select("id").single();
     if (error) throw error;
 
     return NextResponse.json({ id: data.id, code });
@@ -77,12 +86,21 @@ export async function PUT(request: NextRequest) {
     const { id, zone, rack, bin, box, label, zone_id, rack_id, bin_id, box_id } = body;
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-    const ids = { zone_id: zone_id || undefined, rack_id: rack_id || undefined, bin_id: bin_id || undefined, box_id: box_id || undefined };
+    const ids = {
+      zone_id: zone_id || undefined,
+      rack_id: rack_id || undefined,
+      bin_id: bin_id || undefined,
+      box_id: box_id || undefined,
+    };
     const code = genCode(ids);
 
     const update: Record<string, unknown> = {
-      zone: zone || null, rack: rack || null, bin: bin || null, box: box || null,
-      label: label || null, code,
+      zone: zone || null,
+      rack: rack || null,
+      bin: bin || null,
+      box: box || null,
+      label: label || null,
+      code,
       ...Object.fromEntries(Object.entries(ids).map(([k, v]) => [k, v || null])),
     };
 

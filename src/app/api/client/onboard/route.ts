@@ -80,22 +80,33 @@ export async function POST() {
   // client_list me ye email portal client hai → profile create karo (agar nahi
   // hai) YA zombie staff row ko client me convert karo (downgrade hai, escalation
   // nahi — client_list + login_allowed hi authoritative source hai).
-  const fullName = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ").trim();
+  const fullName = [client.firstname, client.middlename, client.lastname]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 
   const { error: upsertErr } = await supabaseAdmin
     .from("profiles")
     .upsert({ id: user.id, full_name: fullName, role: "client", client_id: client.id });
 
   if (upsertErr) {
-    return NextResponse.json({ error: "Profile save nahi hua: " + upsertErr.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Profile save nahi hua: " + upsertErr.message },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ success: true, client: toClientPayload(client) });
 }
 
 function toClientPayload(cl: {
-  id: number; firstname?: string | null; middlename?: string | null; lastname?: string | null;
-  contact?: string | null; email?: string | null; opening_balance?: number | null;
+  id: number;
+  firstname?: string | null;
+  middlename?: string | null;
+  lastname?: string | null;
+  contact?: string | null;
+  email?: string | null;
+  opening_balance?: number | null;
 }) {
   return {
     id: cl.id,

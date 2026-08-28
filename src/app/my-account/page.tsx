@@ -2,17 +2,40 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Wrench, Loader2, AlertCircle, Phone, Mail, Inbox, Clock, BookOpen, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  Wrench,
+  Loader2,
+  AlertCircle,
+  Phone,
+  Mail,
+  Inbox,
+  Clock,
+  BookOpen,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 import { JOB_STATUS } from "@/lib/status-colors";
 
 type ClientInfo = {
-  id: number; name: string; contact: string; email: string; opening_balance: number; due: number;
+  id: number;
+  name: string;
+  contact: string;
+  email: string;
+  opening_balance: number;
+  due: number;
 };
 
 type Job = {
-  id: number; job_id: string; code?: string | null; item?: string | null; fault?: string | null;
-  remark?: string | null; status: number; amount?: number | null;
-  date_created?: string | null; date_completed?: string | null;
+  id: number;
+  job_id: string;
+  code?: string | null;
+  item?: string | null;
+  fault?: string | null;
+  remark?: string | null;
+  status: number;
+  amount?: number | null;
+  date_created?: string | null;
+  date_completed?: string | null;
 };
 
 const STATUS: Record<number, { label: string; cls: string }> = Object.fromEntries(
@@ -21,7 +44,15 @@ const STATUS: Record<number, { label: string; cls: string }> = Object.fromEntrie
 
 const inr = (v: number) => "₹" + Math.abs(v).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 const fmtDate = (d: string | null | undefined) =>
-  d ? new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+  d
+    ? new Date(d).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
 
 export default function MyAccountPage() {
   const router = useRouter();
@@ -56,9 +87,9 @@ export default function MyAccountPage() {
     })();
   }, [router]);
 
-  const filtered = filter === "all" ? jobs : jobs.filter(j => j.status === filter);
+  const filtered = filter === "all" ? jobs : jobs.filter((j) => j.status === filter);
 
-  const countFor = useCallback((s: number) => jobs.filter(j => j.status === s).length, [jobs]);
+  const countFor = useCallback((s: number) => jobs.filter((j) => j.status === s).length, [jobs]);
 
   const FilterChip = ({ value, label }: { value: number | "all"; label: string }) => (
     <button
@@ -83,42 +114,62 @@ export default function MyAccountPage() {
         <div className="flex-1 min-w-0">
           <h1 className="text-xl font-black text-white">{client?.name || "Meri Repairs"}</h1>
           <p className="text-slate-500 text-xs mt-1 flex flex-wrap gap-x-4 gap-y-1">
-            <span className="flex items-center gap-1.5"><Phone size={12} />{client?.contact || "—"}</span>
-            <span className="flex items-center gap-1.5"><Mail size={12} />{client?.email || "—"}</span>
+            <span className="flex items-center gap-1.5">
+              <Phone size={12} />
+              {client?.contact || "—"}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Mail size={12} />
+              {client?.email || "—"}
+            </span>
             {client && client.opening_balance !== 0 && (
-              <span className="flex items-center gap-1.5 font-bold text-amber-400">Opening Balance: {inr(client.opening_balance)}</span>
+              <span className="flex items-center gap-1.5 font-bold text-amber-400">
+                Opening Balance: {inr(client.opening_balance)}
+              </span>
             )}
           </p>
         </div>
         <div className="text-right">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Total Repairs</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+            Total Repairs
+          </p>
           <p className="text-3xl font-black text-white">{jobs.length}</p>
         </div>
       </div>
 
       {/* Due / Advance summary + Ledger link */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className={`rounded-2xl p-5 border ${
-          !client || client.due === 0
-            ? "bg-[#161b27] border-[#21293d]"
-            : client.due > 0
-              ? "bg-red-500/10 border-red-500/30"
-              : "bg-emerald-500/10 border-emerald-500/30"
-        }`}>
+        <div
+          className={`rounded-2xl p-5 border ${
+            !client || client.due === 0
+              ? "bg-[#161b27] border-[#21293d]"
+              : client.due > 0
+                ? "bg-red-500/10 border-red-500/30"
+                : "bg-emerald-500/10 border-emerald-500/30"
+          }`}
+        >
           <div className="flex items-center justify-between">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-              {client && client.due > 0 ? "Due Amount" : client && client.due < 0 ? "Advance (Aapka Balance)" : "Due Amount"}
+              {client && client.due > 0
+                ? "Due Amount"
+                : client && client.due < 0
+                  ? "Advance (Aapka Balance)"
+                  : "Due Amount"}
             </p>
-            {client && client.due !== 0 && (
-              client.due > 0
-                ? <TrendingUp size={16} className="text-red-400" />
-                : <TrendingDown size={16} className="text-emerald-400" />
-            )}
+            {client &&
+              client.due !== 0 &&
+              (client.due > 0 ? (
+                <TrendingUp size={16} className="text-red-400" />
+              ) : (
+                <TrendingDown size={16} className="text-emerald-400" />
+              ))}
           </div>
           {loading ? (
             <p className="text-3xl font-black text-white mt-1">…</p>
           ) : (
-            <p className={`text-3xl font-black mt-1 ${client && client.due < 0 ? "text-emerald-400" : client && client.due > 0 ? "text-red-400" : "text-white"}`}>
+            <p
+              className={`text-3xl font-black mt-1 ${client && client.due < 0 ? "text-emerald-400" : client && client.due > 0 ? "text-red-400" : "text-white"}`}
+            >
               {inr(client?.due ?? 0)}
             </p>
           )}
@@ -135,10 +186,14 @@ export default function MyAccountPage() {
               </div>
               <div>
                 <p className="font-black text-white">Meri Ledger</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Apna pura hisaab-kitaab dekhein / print karein</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Apna pura hisaab-kitaab dekhein / print karein
+                </p>
               </div>
             </div>
-            <p className="text-xs font-bold text-blue-400 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">Kholen →</p>
+            <p className="text-xs font-bold text-blue-400 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              Kholen →
+            </p>
           </div>
         </Link>
       </div>
@@ -169,19 +224,25 @@ export default function MyAccountPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filtered.map(j => {
+          {filtered.map((j) => {
             const st = STATUS[j.status] || STATUS[0];
             return (
               <div key={j.id} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2.5">
                     <span className="text-lg font-black text-white">#{j.job_id}</span>
-                    {j.code && <span className="text-[11px] font-bold text-slate-500">Code: {j.code}</span>}
+                    {j.code && (
+                      <span className="text-[11px] font-bold text-slate-500">Code: {j.code}</span>
+                    )}
                   </div>
-                  <span className={`text-[10px] font-extrabold px-2 py-1 rounded border ${st.cls}`}>{st.label}</span>
+                  <span className={`text-[10px] font-extrabold px-2 py-1 rounded border ${st.cls}`}>
+                    {st.label}
+                  </span>
                 </div>
 
-                <p className="text-slate-200 font-bold text-sm mt-3">{j.item || "Item nahi likha"}</p>
+                <p className="text-slate-200 font-bold text-sm mt-3">
+                  {j.item || "Item nahi likha"}
+                </p>
                 {j.fault && <p className="text-slate-500 text-xs mt-1">{j.fault}</p>}
                 {j.remark && <p className="text-slate-600 text-xs mt-1 italic">{j.remark}</p>}
 

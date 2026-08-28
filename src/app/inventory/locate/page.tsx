@@ -4,14 +4,33 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { stockStatusStyle, alertThreshold, type StockStatusStyle } from "@/lib/inventory";
 import {
-  locPath, encodeLocationToken, decodeLocationToken,
-  EMPTY_LOCATION, type LocationParts,
+  locPath,
+  encodeLocationToken,
+  decodeLocationToken,
+  EMPTY_LOCATION,
+  type LocationParts,
 } from "@/lib/locations";
 import BarcodeCameraScanner from "@/app/components/BarcodeCameraScanner";
 import Image from "next/image";
 import {
-  MapPin, Search, QrCode, Printer, Copy, Check, Camera, Loader2, RefreshCw,
-  ChevronDown, ChevronRight, Package, AlertTriangle, Boxes, X, ScanLine, FileText, Link as LinkIcon,
+  MapPin,
+  Search,
+  QrCode,
+  Printer,
+  Copy,
+  Check,
+  Camera,
+  Loader2,
+  RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  Package,
+  AlertTriangle,
+  Boxes,
+  X,
+  ScanLine,
+  FileText,
+  Link as LinkIcon,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -53,8 +72,15 @@ type TreeNode = {
 // ─── Build location tree from product groups ─────────────────────────────────
 function buildTree(prods: ProductLoc[]): TreeNode {
   const root: TreeNode = {
-    key: "", level: -1, label: "", path: "", parts: { ...EMPTY_LOCATION },
-    count: 0, units: 0, products: [], children: new Map(),
+    key: "",
+    level: -1,
+    label: "",
+    path: "",
+    parts: { ...EMPTY_LOCATION },
+    count: 0,
+    units: 0,
+    products: [],
+    children: new Map(),
   };
   const segments = [
     ["zone"],
@@ -67,7 +93,9 @@ function buildTree(prods: ProductLoc[]): TreeNode {
     for (const g of p.groups) {
       for (const seg of segments) {
         const parts = { ...EMPTY_LOCATION };
-        seg.forEach(k => { parts[k] = (g.parts as LocationParts)[k]; });
+        seg.forEach((k) => {
+          parts[k] = (g.parts as LocationParts)[k];
+        });
         const path = locPath(parts);
         if (!path) continue;
         const key = seg.join("|") + ":" + path;
@@ -89,7 +117,7 @@ function buildTree(prods: ProductLoc[]): TreeNode {
         node.count++;
         node.units += g.qty;
         if (seg.length === 4) {
-          const existing = node.products.find(x => x.id === p.id);
+          const existing = node.products.find((x) => x.id === p.id);
           if (existing) existing.qty += g.qty;
           else node.products.push({ id: p.id, name: p.name, qty: g.qty });
         }
@@ -139,66 +167,113 @@ export default function LocatePage() {
         .select("id, name, description, image_path, barcode, alert_quantity")
         .eq("delete_flag", 0)
         .order("name");
-      if (!pl) { setProds([]); return; }
-      const ids = pl.map(p => p.id);
+      if (!pl) {
+        setProds([]);
+        return;
+      }
+      const ids = pl.map((p) => p.id);
 
       const { data: plLocs } = await supabase
         .from("product_locations")
         .select("product_id, locations!inner(id, zone, rack, bin, box)")
         .in("product_id", ids);
-      const prodLocMap = new Map<number, { zone: string; rack: string; bin: string; box: string }[]>();
-      (plLocs || []).forEach((row: { product_id: number; locations: { zone: string | null; rack: string | null; bin: string | null; box: string | null }[] }) => {
-        const loc = row.locations?.[0];
-        const arr = prodLocMap.get(row.product_id) || [];
-        arr.push({ zone: loc?.zone || "", rack: loc?.rack || "", bin: loc?.bin || "", box: loc?.box || "" });
-        prodLocMap.set(row.product_id, arr);
-      });
+      const prodLocMap = new Map<
+        number,
+        { zone: string; rack: string; bin: string; box: string }[]
+      >();
+      (plLocs || []).forEach(
+        (row: {
+          product_id: number;
+          locations: {
+            zone: string | null;
+            rack: string | null;
+            bin: string | null;
+            box: string | null;
+          }[];
+        }) => {
+          const loc = row.locations?.[0];
+          const arr = prodLocMap.get(row.product_id) || [];
+          arr.push({
+            zone: loc?.zone || "",
+            rack: loc?.rack || "",
+            bin: loc?.bin || "",
+            box: loc?.box || "",
+          });
+          prodLocMap.set(row.product_id, arr);
+        }
+      );
 
       const [stockRes, jobRes, saleRes] = await Promise.all([
-        supabase.from("inventory_list")
+        supabase
+          .from("inventory_list")
           .select("product_id, quantity, stock_date, purchase_order_id")
           .in("product_id", ids),
-        supabase.from("transaction_products").select("product_id, qty, transaction_id").in("product_id", ids),
+        supabase
+          .from("transaction_products")
+          .select("product_id, qty, transaction_id")
+          .in("product_id", ids),
         supabase.from("direct_sale_items").select("product_id, qty").in("product_id", ids),
       ]);
 
       // Fetch PO codes
-      const allPoIds = [...new Set((stockRes.data || []).map(r => r.purchase_order_id).filter(Boolean))];
+      const allPoIds = [
+        ...new Set((stockRes.data || []).map((r) => r.purchase_order_id).filter(Boolean)),
+      ];
       const poCodeMap = new Map<number, string>();
       if (allPoIds.length) {
-        const { data: poRows } = await supabase.from("purchase_orders").select("id, po_code").in("id", allPoIds);
-        (poRows || []).forEach(r => poCodeMap.set(r.id, r.po_code));
+        const { data: poRows } = await supabase
+          .from("purchase_orders")
+          .select("id, po_code")
+          .in("id", allPoIds);
+        (poRows || []).forEach((r) => poCodeMap.set(r.id, r.po_code));
       }
 
-      const txnIds = [...new Set((jobRes.data || []).map(i => i.transaction_id))];
+      const txnIds = [...new Set((jobRes.data || []).map((i) => i.transaction_id))];
       let valid = new Set<number>();
       if (txnIds.length) {
-        const { data: txns } = await supabase.from("transaction_list").select("id").in("id", txnIds).neq("status", 4);
-        valid = new Set((txns || []).map(t => t.id));
+        const { data: txns } = await supabase
+          .from("transaction_list")
+          .select("id")
+          .in("id", txnIds)
+          .neq("status", 4);
+        valid = new Set((txns || []).map((t) => t.id));
       }
       const soldJob = new Map<number, number>();
-      (jobRes.data || []).forEach(r => { if (valid.has(r.transaction_id)) soldJob.set(r.product_id, (soldJob.get(r.product_id) || 0) + (r.qty || 0)); });
+      (jobRes.data || []).forEach((r) => {
+        if (valid.has(r.transaction_id))
+          soldJob.set(r.product_id, (soldJob.get(r.product_id) || 0) + (r.qty || 0));
+      });
       const soldSale = new Map<number, number>();
-      (saleRes.data || []).forEach(r => soldSale.set(r.product_id, (soldSale.get(r.product_id) || 0) + (r.qty || 0)));
+      (saleRes.data || []).forEach((r) =>
+        soldSale.set(r.product_id, (soldSale.get(r.product_id) || 0) + (r.qty || 0))
+      );
 
       const byId = new Map<number, ProductLoc>();
       for (const p of pl) {
         const locs = prodLocMap.get(p.id) || [];
-        const groups: LocGroup[] = locs.map(loc => {
-          const parts = { zone: loc.zone, rack: loc.rack, bin: loc.bin, box: loc.box };
-          const path = locPath(parts);
-          return path ? { parts, path, qty: 0, rows: 0, lastDate: "", poCodes: [] } : null;
-        }).filter(Boolean) as LocGroup[];
+        const groups: LocGroup[] = locs
+          .map((loc) => {
+            const parts = { zone: loc.zone, rack: loc.rack, bin: loc.bin, box: loc.box };
+            const path = locPath(parts);
+            return path ? { parts, path, qty: 0, rows: 0, lastDate: "", poCodes: [] } : null;
+          })
+          .filter(Boolean) as LocGroup[];
         byId.set(p.id, {
-          id: p.id, name: p.name, description: p.description || "", barcode: p.barcode || null,
-          image_path: p.image_path || null, alert_quantity: p.alert_quantity || 5,
-          available: 0, total_in: 0,
+          id: p.id,
+          name: p.name,
+          description: p.description || "",
+          barcode: p.barcode || null,
+          image_path: p.image_path || null,
+          alert_quantity: p.alert_quantity || 5,
+          available: 0,
+          total_in: 0,
           groups,
-          unlocatedQty: 0, unlocatedPoCodes: [],
+          unlocatedQty: 0,
+          unlocatedPoCodes: [],
         });
       }
 
-      (stockRes.data || []).forEach(r => {
+      (stockRes.data || []).forEach((r) => {
         const prod = byId.get(r.product_id);
         if (!prod) return;
         const qty = r.quantity || 0;
@@ -220,7 +295,7 @@ export default function LocatePage() {
       for (const p of pl) {
         const prod = byId.get(p.id)!;
         prod.available = prod.total_in - (soldJob.get(p.id) || 0) - (soldSale.get(p.id) || 0);
-        prod.groups.sort((a, b) => (b.qty - a.qty) || a.path.localeCompare(b.path));
+        prod.groups.sort((a, b) => b.qty - a.qty || a.path.localeCompare(b.path));
         result.push(prod);
       }
       setProds(result);
@@ -232,55 +307,72 @@ export default function LocatePage() {
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
-  const stats = useMemo(() => ({
-    located: prods.filter(p => p.groups.length > 0).length,
-    unplaced: prods.filter(p => p.total_in > 0 && p.groups.length === 0).length,
-    locations: new Set(prods.flatMap(p => p.groups.map(g => g.path))).size,
-    noStock: prods.filter(p => p.available <= 0).length,
-  }), [prods]);
+  const stats = useMemo(
+    () => ({
+      located: prods.filter((p) => p.groups.length > 0).length,
+      unplaced: prods.filter((p) => p.total_in > 0 && p.groups.length === 0).length,
+      locations: new Set(prods.flatMap((p) => p.groups.map((g) => g.path))).size,
+      noStock: prods.filter((p) => p.available <= 0).length,
+    }),
+    [prods]
+  );
 
   const tree = useMemo(() => buildTree(prods), [prods]);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!term) return prods;
-    return prods.filter(p =>
-      p.name.toLowerCase().includes(term) ||
-      p.description.toLowerCase().includes(term) ||
-      (p.barcode || "").toLowerCase().includes(term) ||
-      p.groups.some(g => g.path.toLowerCase().includes(term))
+    return prods.filter(
+      (p) =>
+        p.name.toLowerCase().includes(term) ||
+        p.description.toLowerCase().includes(term) ||
+        (p.barcode || "").toLowerCase().includes(term) ||
+        p.groups.some((g) => g.path.toLowerCase().includes(term))
     );
   }, [prods, q]);
 
   const unplaced = useMemo(
-    () => prods.filter(p => p.total_in > 0 && p.groups.length === 0).sort((a, b) => b.unlocatedQty - a.unlocatedQty),
+    () =>
+      prods
+        .filter((p) => p.total_in > 0 && p.groups.length === 0)
+        .sort((a, b) => b.unlocatedQty - a.unlocatedQty),
     [prods]
   );
 
   // Auto-expand to a location path (QR scan / chip click)
-  const revealLocation = useCallback((path: string) => {
-    setActiveLoc(path);
-    setTab("tree");
-    setExpanded(prev => {
-      const next = new Set(prev);
-      // expand all ancestors
-      const segs = path.split(" ▸ ");
-      let acc = "";
-      for (const s of segs) {
-        acc = acc ? `${acc} ▸ ${s}` : s;
-        const keys = [["zone"], ["zone","rack"], ["zone","rack","bin"], ["zone","rack","bin","box"]]
-          .map(k => `${k.join("|")}:${acc}`)
-          .filter(k => tree.children.has(k));
-        keys.forEach(k => next.add(k));
-        // also add full-path node keys
-        next.add(acc);
-      }
-      return next;
-    });
-  }, [tree]);
+  const revealLocation = useCallback(
+    (path: string) => {
+      setActiveLoc(path);
+      setTab("tree");
+      setExpanded((prev) => {
+        const next = new Set(prev);
+        // expand all ancestors
+        const segs = path.split(" ▸ ");
+        let acc = "";
+        for (const s of segs) {
+          acc = acc ? `${acc} ▸ ${s}` : s;
+          const keys = [
+            ["zone"],
+            ["zone", "rack"],
+            ["zone", "rack", "bin"],
+            ["zone", "rack", "bin", "box"],
+          ]
+            .map((k) => `${k.join("|")}:${acc}`)
+            .filter((k) => tree.children.has(k));
+          keys.forEach((k) => next.add(k));
+          // also add full-path node keys
+          next.add(acc);
+        }
+        return next;
+      });
+    },
+    [tree]
+  );
 
   // Deep-link support: /inventory/locate?loc=<path> (from inventory place chips)
   const deepLinkDone = useRef(false);
@@ -310,13 +402,16 @@ export default function LocatePage() {
       return;
     }
     // barcode?
-    const p = prods.find(x => (x.barcode || "").toLowerCase() === s.toLowerCase());
+    const p = prods.find((x) => (x.barcode || "").toLowerCase() === s.toLowerCase());
     if (p) {
       setScanOpen(false);
       setTab("products");
       setQ(p.name);
       setFocusId(p.id);
-      setTimeout(() => resultRefs.current.get(p.id)?.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
+      setTimeout(
+        () => resultRefs.current.get(p.id)?.scrollIntoView({ behavior: "smooth", block: "center" }),
+        100
+      );
       setScanMsg(`Product: ${p.name}`);
       return;
     }
@@ -324,7 +419,7 @@ export default function LocatePage() {
     setScanOpen(false);
     setTab("products");
     setQ(s);
-    setScanMsg("Product/location search: \"" + s + "\"");
+    setScanMsg('Product/location search: "' + s + '"');
   };
 
   // ── QR modal ───────────────────────────────────────────────────────────────
@@ -345,10 +440,10 @@ export default function LocatePage() {
   // ── Print shelf labels ─────────────────────────────────────────────────────
   const printAllLabels = async () => {
     setPrintOpen(false);
-    const paths = [...new Set(prods.flatMap(p => p.groups.map(g => g.path)))].sort();
+    const paths = [...new Set(prods.flatMap((p) => p.groups.map((g) => g.path)))].sort();
     const qrs: { path: string; url: string }[] = [];
     for (const path of paths) {
-      const parts = prods.flatMap(p => p.groups).find(g => g.path === path)!.parts;
+      const parts = prods.flatMap((p) => p.groups).find((g) => g.path === path)!.parts;
       qrs.push({ path, url: await qrDataUrl(encodeLocationToken(parts), 220) });
     }
     const w = window.open("", "_blank");
@@ -366,7 +461,7 @@ export default function LocatePage() {
       <h1>V-Tech — Shelf Location Labels</h1>
       <p>Print karke har shelf/box par chipkayein. Scan karo → Spare Finder me us location khulegi.</p>
       <div class="grid">
-        ${qrs.map(x => `<div class="card"><img src="${x.url}" /><div class="path">${x.path}</div><div class="tag">Scan QR to open location</div></div>`).join("")}
+        ${qrs.map((x) => `<div class="card"><img src="${x.url}" /><div class="path">${x.path}</div><div class="tag">Scan QR to open location</div></div>`).join("")}
       </div>
     </body></html>`);
     w.document.close();
@@ -403,7 +498,9 @@ export default function LocatePage() {
           </div>
           <div className="absolute inset-0 rounded-2xl border border-emerald-500/40 animate-ping" />
         </div>
-        <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.3em]">Locating Spares...</p>
+        <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.3em]">
+          Locating Spares...
+        </p>
       </div>
     );
   }
@@ -412,7 +509,6 @@ export default function LocatePage() {
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
-
       {/* ── HEADER ── */}
       <div className="relative overflow-hidden bg-[#0d1117] border-b border-[#21293d]">
         <div className="absolute -top-20 -left-20 w-72 h-72 bg-emerald-600/10 rounded-full blur-3xl" />
@@ -425,28 +521,40 @@ export default function LocatePage() {
                 <MapPin size={26} className="text-white" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none">Spare Finder</h1>
+                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none">
+                  Spare Finder
+                </h1>
                 <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.2em] mt-1">
                   Shop me koi bhi spare kaha rakha hai — foran khojain
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => fetchData(true)} disabled={refreshing}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
+              <button
+                onClick={() => fetchData(true)}
+                disabled={refreshing}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+              >
                 <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
                 {refreshing ? "Refreshing..." : "Refresh"}
               </button>
-              <button onClick={() => setPrintOpen(true)} disabled={stats.locations === 0}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all disabled:opacity-40">
+              <button
+                onClick={() => setPrintOpen(true)}
+                disabled={stats.locations === 0}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all disabled:opacity-40"
+              >
                 <Printer size={13} /> Shelf Labels
               </button>
-              <Link href="/inventory"
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
+              <Link
+                href="/inventory"
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+              >
                 <Boxes size={13} /> Inventory
               </Link>
-              <Link href="/inventory/purchase-orders"
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
+              <Link
+                href="/inventory/purchase-orders"
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+              >
                 <FileText size={13} /> Purchase Orders
               </Link>
             </div>
@@ -455,16 +563,49 @@ export default function LocatePage() {
           {/* STATS */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
             {[
-              { label: "Located Products", value: stats.located, color: "text-emerald-400", border: "border-emerald-500/20", bg: "from-emerald-600/20 to-emerald-700/5", icon: MapPin },
-              { label: "Total Locations", value: stats.locations, color: "text-teal-400", border: "border-teal-500/20", bg: "from-teal-600/20 to-teal-700/5", icon: QrCode },
-              { label: "No Location Yet", value: stats.unplaced, color: "text-amber-400", border: "border-amber-500/20", bg: "from-amber-600/20 to-amber-700/5", icon: AlertTriangle },
-              { label: "Out of Stock", value: stats.noStock, color: "text-red-400", border: "border-red-500/20", bg: "from-red-600/20 to-red-700/5", icon: Package },
+              {
+                label: "Located Products",
+                value: stats.located,
+                color: "text-emerald-400",
+                border: "border-emerald-500/20",
+                bg: "from-emerald-600/20 to-emerald-700/5",
+                icon: MapPin,
+              },
+              {
+                label: "Total Locations",
+                value: stats.locations,
+                color: "text-teal-400",
+                border: "border-teal-500/20",
+                bg: "from-teal-600/20 to-teal-700/5",
+                icon: QrCode,
+              },
+              {
+                label: "No Location Yet",
+                value: stats.unplaced,
+                color: "text-amber-400",
+                border: "border-amber-500/20",
+                bg: "from-amber-600/20 to-amber-700/5",
+                icon: AlertTriangle,
+              },
+              {
+                label: "Out of Stock",
+                value: stats.noStock,
+                color: "text-red-400",
+                border: "border-red-500/20",
+                bg: "from-red-600/20 to-red-700/5",
+                icon: Package,
+              },
             ].map(({ label, value, color, border, bg, icon: Icon }) => (
-              <div key={label} className={`relative bg-gradient-to-br ${bg} border ${border} rounded-2xl px-4 py-3.5 overflow-hidden`}>
+              <div
+                key={label}
+                className={`relative bg-gradient-to-br ${bg} border ${border} rounded-2xl px-4 py-3.5 overflow-hidden`}
+              >
                 <div className="flex items-start justify-between">
                   <div>
                     <div className={`text-xl font-black ${color}`}>{value}</div>
-                    <div className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">{label}</div>
+                    <div className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">
+                      {label}
+                    </div>
                   </div>
                   <Icon size={16} className={`${color} opacity-50`} />
                 </div>
@@ -478,27 +619,39 @@ export default function LocatePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <div className="flex flex-col sm:flex-row gap-2.5">
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" size={15} />
+            <Search
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600"
+              size={15}
+            />
             <input
               type="text"
               value={scanInput}
-              onChange={e => setScanInput(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") handleScanInput(scanInput); }}
+              onChange={(e) => setScanInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleScanInput(scanInput);
+              }}
               placeholder="Product barcode scan karein, ya shelf QR — ya koi bhi name/naam likhein..."
               className="w-full pl-10 pr-4 py-3 bg-[#161b27] border border-[#21293d] text-slate-200 placeholder-slate-600 rounded-xl text-sm focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all"
             />
           </div>
           <div className="flex gap-2">
-            <button onClick={() => handleScanInput(scanInput)}
-              className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-extrabold text-sm transition-all active:scale-95 flex items-center gap-2">
+            <button
+              onClick={() => handleScanInput(scanInput)}
+              className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-extrabold text-sm transition-all active:scale-95 flex items-center gap-2"
+            >
               <Search size={14} /> Find
             </button>
-            <button onClick={() => { setScanOpen(v => !v); setScanMsg(null); }}
+            <button
+              onClick={() => {
+                setScanOpen((v) => !v);
+                setScanMsg(null);
+              }}
               className={`px-4 py-3 rounded-xl font-extrabold text-sm transition-all active:scale-95 flex items-center gap-2 border ${
                 scanOpen
                   ? "bg-red-600/15 border-red-500/30 text-red-400"
                   : "bg-blue-600/15 border-blue-500/30 text-blue-300 hover:bg-blue-600/25"
-              }`}>
+              }`}
+            >
               {scanOpen ? <Camera size={14} /> : <ScanLine size={14} />}
               {scanOpen ? "Stop" : "Scan"}
             </button>
@@ -519,22 +672,37 @@ export default function LocatePage() {
       {/* ── TABS ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex gap-1.5 mb-4">
-          {([
-            { key: "products", label: "Find Product", count: prods.length, color: "emerald" },
-            { key: "tree",     label: "By Location",  count: stats.locations, color: "teal" },
-            { key: "unplaced", label: "No Location",  count: stats.unplaced, color: "amber" },
-          ] as const).map(({ key, label, count, color }) => {
+          {(
+            [
+              { key: "products", label: "Find Product", count: prods.length, color: "emerald" },
+              { key: "tree", label: "By Location", count: stats.locations, color: "teal" },
+              { key: "unplaced", label: "No Location", count: stats.unplaced, color: "amber" },
+            ] as const
+          ).map(({ key, label, count, color }) => {
             const active = tab === key;
             const styles: Record<string, string> = {
-              emerald: active ? "bg-emerald-600 text-white border-emerald-600" : "bg-[#161b27] text-slate-500 border-[#21293d] hover:border-emerald-500/40",
-              teal:    active ? "bg-teal-600 text-white border-teal-600"       : "bg-[#161b27] text-slate-500 border-[#21293d] hover:border-teal-500/40",
-              amber:   active ? "bg-amber-500 text-white border-amber-500"     : "bg-[#161b27] text-slate-500 border-[#21293d] hover:border-amber-500/40",
+              emerald: active
+                ? "bg-emerald-600 text-white border-emerald-600"
+                : "bg-[#161b27] text-slate-500 border-[#21293d] hover:border-emerald-500/40",
+              teal: active
+                ? "bg-teal-600 text-white border-teal-600"
+                : "bg-[#161b27] text-slate-500 border-[#21293d] hover:border-teal-500/40",
+              amber: active
+                ? "bg-amber-500 text-white border-amber-500"
+                : "bg-[#161b27] text-slate-500 border-[#21293d] hover:border-amber-500/40",
             };
             return (
-              <button key={key} onClick={() => setTab(key)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold border transition-all ${styles[color]}`}>
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold border transition-all ${styles[color]}`}
+              >
                 {label}
-                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${active ? "bg-white/20" : "bg-white/5"}`}>{count}</span>
+                <span
+                  className={`text-[9px] px-1.5 py-0.5 rounded-full ${active ? "bg-white/20" : "bg-white/5"}`}
+                >
+                  {count}
+                </span>
               </button>
             );
           })}
@@ -546,11 +714,17 @@ export default function LocatePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-3">
           {/* local quick filter */}
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-700" size={14} />
+            <Search
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-700"
+              size={14}
+            />
             <input
               type="text"
               value={q}
-              onChange={e => { setQ(e.target.value); setFocusId(null); }}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setFocusId(null);
+              }}
               placeholder="Name, description, barcode, ya location — filter karein..."
               className="w-full pl-10 pr-4 py-2.5 bg-[#161b27] border border-[#21293d] text-slate-200 placeholder-slate-600 rounded-xl text-sm focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all"
             />
@@ -563,16 +737,21 @@ export default function LocatePage() {
             </div>
           )}
 
-          {filtered.map(p => {
+          {filtered.map((p) => {
             const s = st(p);
             const hasLoc = p.groups.length > 0;
             return (
               <div
                 key={p.id}
-                ref={el => { if (el) resultRefs.current.set(p.id, el); else resultRefs.current.delete(p.id); }}
+                ref={(el) => {
+                  if (el) resultRefs.current.set(p.id, el);
+                  else resultRefs.current.delete(p.id);
+                }}
                 className={`bg-[#161b27] border rounded-2xl overflow-hidden transition-all ${focusId === p.id ? "border-emerald-400 ring-1 ring-emerald-400/40" : "border-[#21293d]"}`}
               >
-                <div className={`h-0.5 w-full ${p.available <= 0 ? "bg-red-500" : p.available <= alertThreshold(p.alert_quantity) ? "bg-amber-400" : "bg-emerald-500"}`} />
+                <div
+                  className={`h-0.5 w-full ${p.available <= 0 ? "bg-red-500" : p.available <= alertThreshold(p.alert_quantity) ? "bg-amber-400" : "bg-emerald-500"}`}
+                />
                 <div className="p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-3 min-w-0">
@@ -580,18 +759,31 @@ export default function LocatePage() {
                         <Package size={18} className="text-slate-500" />
                       </div>
                       <div className="min-w-0">
-                        <Link href={`/inventory/${p.id}`} className="font-black text-white text-sm hover:text-emerald-400 transition-colors">
+                        <Link
+                          href={`/inventory/${p.id}`}
+                          className="font-black text-white text-sm hover:text-emerald-400 transition-colors"
+                        >
                           {p.name}
                         </Link>
-                        <div className="text-[11px] text-slate-600 truncate max-w-[320px]">{p.description}</div>
-                        {p.barcode && <div className="text-[9px] font-mono text-purple-500/70 mt-0.5 uppercase">{p.barcode}</div>}
+                        <div className="text-[11px] text-slate-600 truncate max-w-[320px]">
+                          {p.description}
+                        </div>
+                        {p.barcode && (
+                          <div className="text-[9px] font-mono text-purple-500/70 mt-0.5 uppercase">
+                            {p.barcode}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${s.bg} ${s.color}`}>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${s.bg} ${s.color}`}
+                      >
                         <span className={`w-1.5 h-1.5 rounded-full ${s.bar}`} /> {s.label}
                       </span>
-                      <span className="text-lg font-black text-white">{Math.max(0, p.available)}</span>
+                      <span className="text-lg font-black text-white">
+                        {Math.max(0, p.available)}
+                      </span>
                     </div>
                   </div>
 
@@ -599,16 +791,25 @@ export default function LocatePage() {
                   <div className="mt-3">
                     {hasLoc ? (
                       <div className="flex flex-wrap gap-1.5">
-                        {p.groups.map(g => (
-                          <button key={g.path} onClick={() => revealLocation(g.path)}
+                        {p.groups.map((g) => (
+                          <button
+                            key={g.path}
+                            onClick={() => revealLocation(g.path)}
                             className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-500/8 border border-emerald-500/25 rounded-lg text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/15 transition-all text-left group"
-                            title={`${g.rows} stock entry(ies) · last ${g.lastDate || "—"}${g.poCodes.length ? ` · PO: ${g.poCodes.join(", ")}` : ""}`}>
+                            title={`${g.rows} stock entry(ies) · last ${g.lastDate || "—"}${g.poCodes.length ? ` · PO: ${g.poCodes.join(", ")}` : ""}`}
+                          >
                             <MapPin size={11} className="text-emerald-500 flex-shrink-0" />
-                            <span className="truncate max-w-[240px] sm:max-w-[320px]">{g.path}</span>
+                            <span className="truncate max-w-[240px] sm:max-w-[320px]">
+                              {g.path}
+                            </span>
                             {g.poCodes.length > 0 && (
-                              <span className="text-[9px] text-blue-400 font-bold px-1 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">{g.poCodes[0]}</span>
+                              <span className="text-[9px] text-blue-400 font-bold px-1 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
+                                {g.poCodes[0]}
+                              </span>
                             )}
-                            <span className="text-[10px] text-emerald-400/70 font-black px-1.5 py-0.5 rounded-md bg-emerald-500/10">{g.qty}</span>
+                            <span className="text-[10px] text-emerald-400/70 font-black px-1.5 py-0.5 rounded-md bg-emerald-500/10">
+                              {g.qty}
+                            </span>
                           </button>
                         ))}
                         {p.unlocatedQty > 0 && (
@@ -620,7 +821,8 @@ export default function LocatePage() {
                     ) : p.total_in > 0 ? (
                       <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/8 border border-amber-500/25 rounded-lg text-[11px] font-bold text-amber-400">
                         <AlertTriangle size={12} />
-                        Stock hai ({p.total_in}) par location set nahi — add/edit stock me location bharo
+                        Stock hai ({p.total_in}) par location set nahi — add/edit stock me location
+                        bharo
                       </div>
                     ) : (
                       <span className="text-[11px] text-slate-700">No stock</span>
@@ -640,7 +842,9 @@ export default function LocatePage() {
             <div className="py-16 text-center bg-[#161b27] border border-dashed border-[#21293d] rounded-2xl">
               <QrCode size={36} className="mx-auto text-slate-800 mb-3" />
               <p className="text-slate-600 font-bold text-sm">Abhi koi location set nahi hai</p>
-              <p className="text-slate-700 text-xs mt-1">Stock add/edit karte waqt Zone ▸ Rack ▸ Bin ▸ Box bharein</p>
+              <p className="text-slate-700 text-xs mt-1">
+                Stock add/edit karte waqt Zone ▸ Rack ▸ Bin ▸ Box bharein
+              </p>
             </div>
           ) : (
             <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3 space-y-1">
@@ -663,30 +867,50 @@ export default function LocatePage() {
           {unplaced.length === 0 ? (
             <div className="py-16 text-center bg-[#161b27] border border-dashed border-[#21293d] rounded-2xl">
               <Check size={32} className="mx-auto text-emerald-500 mb-3" />
-              <p className="text-emerald-400 font-bold text-sm">Sab products ki location set hai!</p>
+              <p className="text-emerald-400 font-bold text-sm">
+                Sab products ki location set hai!
+              </p>
             </div>
           ) : (
             <>
               <p className="text-[11px] text-slate-600 font-bold px-1">
-                {unplaced.length} product{unplaced.length > 1 ? "s" : ""} me stock hai par location nahi — inhe location assign karo.
+                {unplaced.length} product{unplaced.length > 1 ? "s" : ""} me stock hai par location
+                nahi — inhe location assign karo.
               </p>
-              {unplaced.map(p => (
-                <div key={p.id} className="flex items-center justify-between gap-3 bg-[#161b27] border border-amber-500/20 rounded-xl px-4 py-3">
+              {unplaced.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between gap-3 bg-[#161b27] border border-amber-500/20 rounded-xl px-4 py-3"
+                >
                   <div className="min-w-0">
-                    <Link href={`/inventory/${p.id}`} className="text-sm font-black text-white hover:text-amber-400 transition-colors">{p.name}</Link>
+                    <Link
+                      href={`/inventory/${p.id}`}
+                      className="text-sm font-black text-white hover:text-amber-400 transition-colors"
+                    >
+                      {p.name}
+                    </Link>
                     <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-600">
                       <span className="font-bold text-amber-400">{p.unlocatedQty} unit stock</span>
                       {p.unlocatedPoCodes.length > 0 && (
                         <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-400 font-bold">
                           <FileText size={9} /> {p.unlocatedPoCodes.slice(0, 2).join(", ")}
-                          {p.unlocatedPoCodes.length > 2 && <span className="text-slate-600"> +{p.unlocatedPoCodes.length - 2}</span>}
+                          {p.unlocatedPoCodes.length > 2 && (
+                            <span className="text-slate-600">
+                              {" "}
+                              +{p.unlocatedPoCodes.length - 2}
+                            </span>
+                          )}
                         </span>
                       )}
-                      {p.barcode && <span className="font-mono text-[9px] text-purple-500/70">{p.barcode}</span>}
+                      {p.barcode && (
+                        <span className="font-mono text-[9px] text-purple-500/70">{p.barcode}</span>
+                      )}
                     </div>
                   </div>
-                  <Link href={`/inventory/${p.id}`}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-xl text-xs font-bold transition-all flex-shrink-0">
+                  <Link
+                    href={`/inventory/${p.id}`}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-xl text-xs font-bold transition-all flex-shrink-0"
+                  >
                     <MapPin size={12} /> Set Location
                   </Link>
                 </div>
@@ -699,30 +923,56 @@ export default function LocatePage() {
       {/* ── QR MODAL ── */}
       {qrOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setQrOpen(null)} />
-          <div className="relative bg-[#161b27] border border-[#21293d] rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl" style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}>
-            <button onClick={() => setQrOpen(null)}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setQrOpen(null)}
+          />
+          <div
+            className="relative bg-[#161b27] border border-[#21293d] rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl"
+            style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}
+          >
+            <button
+              onClick={() => setQrOpen(null)}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all"
+            >
               <X size={15} />
             </button>
             <div className="w-12 h-12 mx-auto rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center mb-3">
               <QrCode size={20} className="text-emerald-400" />
             </div>
             <h3 className="text-white font-black">Shelf Location QR</h3>
-            <p className="text-[11px] text-slate-500 font-bold mt-1 break-words">{locPath(qrOpen)}</p>
+            <p className="text-[11px] text-slate-500 font-bold mt-1 break-words">
+              {locPath(qrOpen)}
+            </p>
             <div className="mt-4 bg-white rounded-2xl p-3 inline-block mx-auto">
-              {qrUrl ? <Image src={qrUrl} alt="QR" width={176} height={176} className="w-44 h-44" unoptimized /> : <Loader2 size={40} className="animate-spin text-slate-500" />}
+              {qrUrl ? (
+                <Image
+                  src={qrUrl}
+                  alt="QR"
+                  width={176}
+                  height={176}
+                  className="w-44 h-44"
+                  unoptimized
+                />
+              ) : (
+                <Loader2 size={40} className="animate-spin text-slate-500" />
+              )}
             </div>
             <p className="text-[9px] text-slate-600 mt-3 font-bold uppercase tracking-widest">
               Label chipkao · Spare Finder me scan karo
             </p>
             <div className="grid grid-cols-2 gap-2 mt-4">
-              <button onClick={copyToken}
-                className="flex items-center justify-center gap-1.5 py-2.5 bg-[#111520] border border-[#21293d] text-slate-300 rounded-xl text-xs font-bold hover:border-emerald-500/40 transition-all">
-                {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />} {copied ? "Copied!" : "Copy Token"}
+              <button
+                onClick={copyToken}
+                className="flex items-center justify-center gap-1.5 py-2.5 bg-[#111520] border border-[#21293d] text-slate-300 rounded-xl text-xs font-bold hover:border-emerald-500/40 transition-all"
+              >
+                {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}{" "}
+                {copied ? "Copied!" : "Copy Token"}
               </button>
-              <button onClick={() => printOneLabel(qrOpen)}
-                className="flex items-center justify-center gap-1.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black transition-all">
+              <button
+                onClick={() => printOneLabel(qrOpen)}
+                className="flex items-center justify-center gap-1.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black transition-all"
+              >
                 <Printer size={13} /> Print Label
               </button>
             </div>
@@ -733,10 +983,18 @@ export default function LocatePage() {
       {/* ── SHELF LABELS MODAL ── */}
       {printOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setPrintOpen(false)} />
-          <div className="relative bg-[#161b27] border border-[#21293d] rounded-2xl p-6 w-full max-w-md shadow-2xl" style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}>
-            <button onClick={() => setPrintOpen(false)}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setPrintOpen(false)}
+          />
+          <div
+            className="relative bg-[#161b27] border border-[#21293d] rounded-2xl p-6 w-full max-w-md shadow-2xl"
+            style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}
+          >
+            <button
+              onClick={() => setPrintOpen(false)}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all"
+            >
               <X size={15} />
             </button>
             <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center mb-3">
@@ -744,15 +1002,20 @@ export default function LocatePage() {
             </div>
             <h3 className="text-white font-black">Shelf Location Labels</h3>
             <p className="text-[11px] text-slate-500 font-bold mt-1 leading-relaxed">
-              {stats.locations} locations. Har label par QR hota hai — print karke shelf/box par chipkayein. Scan karne par Spare Finder me wo location khulegi.
+              {stats.locations} locations. Har label par QR hota hai — print karke shelf/box par
+              chipkayein. Scan karne par Spare Finder me wo location khulegi.
             </p>
             <div className="flex gap-2 mt-5">
-              <button onClick={() => setPrintOpen(false)}
-                className="flex-1 py-3 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl text-sm font-bold hover:border-slate-500 transition-all">
+              <button
+                onClick={() => setPrintOpen(false)}
+                className="flex-1 py-3 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl text-sm font-bold hover:border-slate-500 transition-all"
+              >
                 Cancel
               </button>
-              <button onClick={printAllLabels}
-                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2">
+              <button
+                onClick={printAllLabels}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2"
+              >
                 <Printer size={14} /> Print All ({stats.locations})
               </button>
             </div>
@@ -772,7 +1035,12 @@ export default function LocatePage() {
 
 // ─── Recursive location tree ────────────────────────────────────────────────
 function RecursiveTree({
-  root, expanded, setExpanded, activeLoc, setActiveLoc, onQr,
+  root,
+  expanded,
+  setExpanded,
+  activeLoc,
+  setActiveLoc,
+  onQr,
 }: {
   root: TreeNode;
   expanded: Set<string>;
@@ -789,7 +1057,7 @@ function RecursiveTree({
 
   return (
     <>
-      {nodes.map(node => {
+      {nodes.map((node) => {
         const isOpen = expanded.has(node.key);
         const isLeaf = node.level === 3;
         const hasChildren = node.children.size > 0;
@@ -798,12 +1066,14 @@ function RecursiveTree({
           <div key={node.key}>
             <div
               className={`flex items-center gap-2 px-2.5 py-2 rounded-xl transition-all cursor-pointer border ${
-                isActive ? "bg-emerald-500/10 border-emerald-500/30" : "hover:bg-white/[0.03] border-transparent"
+                isActive
+                  ? "bg-emerald-500/10 border-emerald-500/30"
+                  : "hover:bg-white/[0.03] border-transparent"
               }`}
               style={{ marginLeft: node.level * 18 }}
               onClick={() => {
                 if (hasChildren || !isLeaf) {
-                  setExpanded(prev => {
+                  setExpanded((prev) => {
                     const next = new Set(prev);
                     if (next.has(node.key)) next.delete(node.key);
                     else next.add(node.key);
@@ -814,14 +1084,28 @@ function RecursiveTree({
               }}
             >
               <div className="flex-shrink-0 text-emerald-500/80">
-                {node.level === 0 ? <MapPin size={14} /> : node.level === 1 ? <Boxes size={13} /> : node.level === 2 ? <Package size={12} /> : <QrCode size={12} />}
+                {node.level === 0 ? (
+                  <MapPin size={14} />
+                ) : node.level === 1 ? (
+                  <Boxes size={13} />
+                ) : node.level === 2 ? (
+                  <Package size={12} />
+                ) : (
+                  <QrCode size={12} />
+                )}
               </div>
-              {(hasChildren || !isLeaf) ? (
-                isOpen ? <ChevronDown size={13} className="text-slate-600 flex-shrink-0" /> : <ChevronRight size={13} className="text-slate-600 flex-shrink-0" />
+              {hasChildren || !isLeaf ? (
+                isOpen ? (
+                  <ChevronDown size={13} className="text-slate-600 flex-shrink-0" />
+                ) : (
+                  <ChevronRight size={13} className="text-slate-600 flex-shrink-0" />
+                )
               ) : (
                 <span className="w-3.5 flex-shrink-0" />
               )}
-              <div className={`flex-1 min-w-0 font-bold text-sm ${isActive ? "text-emerald-300" : "text-slate-300"}`}>
+              <div
+                className={`flex-1 min-w-0 font-bold text-sm ${isActive ? "text-emerald-300" : "text-slate-300"}`}
+              >
                 {node.label}
               </div>
               <span className="text-[10px] text-slate-600 font-bold flex-shrink-0">
@@ -829,7 +1113,10 @@ function RecursiveTree({
               </span>
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); onQr(node.parts); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQr(node.parts);
+                }}
                 className="p-1.5 bg-[#111520] border border-[#21293d] hover:border-emerald-500/40 text-slate-500 hover:text-emerald-400 rounded-lg transition-all flex-shrink-0"
                 title="Shelf QR label"
               >
@@ -839,20 +1126,39 @@ function RecursiveTree({
 
             {isLeaf && isOpen && node.products.length > 0 && (
               <div className="space-y-1 py-1" style={{ marginLeft: node.level * 18 + 22 }}>
-                {node.products.sort((a, b) => a.name.localeCompare(b.name)).map(x => (
-                  <Link key={x.id} href={`/inventory/${x.id}`}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111520] border border-[#21293d] hover:border-emerald-500/30 transition-all group">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
-                    <span className="flex-1 min-w-0 text-xs font-bold text-slate-300 group-hover:text-emerald-300 truncate">{x.name}</span>
-                    <span className="text-[10px] font-black text-emerald-400 flex-shrink-0">{x.qty} unit</span>
-                    <LinkIcon size={10} className="text-slate-700 group-hover:text-emerald-400 flex-shrink-0" />
-                  </Link>
-                ))}
+                {node.products
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((x) => (
+                    <Link
+                      key={x.id}
+                      href={`/inventory/${x.id}`}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111520] border border-[#21293d] hover:border-emerald-500/30 transition-all group"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                      <span className="flex-1 min-w-0 text-xs font-bold text-slate-300 group-hover:text-emerald-300 truncate">
+                        {x.name}
+                      </span>
+                      <span className="text-[10px] font-black text-emerald-400 flex-shrink-0">
+                        {x.qty} unit
+                      </span>
+                      <LinkIcon
+                        size={10}
+                        className="text-slate-700 group-hover:text-emerald-400 flex-shrink-0"
+                      />
+                    </Link>
+                  ))}
               </div>
             )}
 
             {hasChildren && isOpen && (
-              <RecursiveTree root={node} expanded={expanded} setExpanded={setExpanded} activeLoc={activeLoc} setActiveLoc={setActiveLoc} onQr={onQr} />
+              <RecursiveTree
+                root={node}
+                expanded={expanded}
+                setExpanded={setExpanded}
+                activeLoc={activeLoc}
+                setActiveLoc={setActiveLoc}
+                onQr={onQr}
+              />
             )}
           </div>
         );

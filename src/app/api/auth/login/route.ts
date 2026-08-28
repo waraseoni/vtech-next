@@ -30,7 +30,9 @@ export async function POST(request: Request) {
 
 // ── Password login ───────────────────────────────────────────────
 async function handlePassword(request: Request, body: LoginBody, ip: string) {
-  const email = String(body?.email ?? "").trim().toLowerCase();
+  const email = String(body?.email ?? "")
+    .trim()
+    .toLowerCase();
   const password = String(body?.password ?? "");
   if (!email || !password) {
     return NextResponse.json({ error: "Email aur password zaroori hai" }, { status: 400 });
@@ -39,7 +41,9 @@ async function handlePassword(request: Request, body: LoginBody, ip: string) {
   const lock = await checkLockout(email, ip);
   if (lock.locked) {
     return NextResponse.json(
-      { error: `Bahut saare galat attempts. ${fmtMin(lock.remaining_seconds)} baad dobara try karein.` },
+      {
+        error: `Bahut saare galat attempts. ${fmtMin(lock.remaining_seconds)} baad dobara try karein.`,
+      },
       { status: 429 }
     );
   }
@@ -52,7 +56,7 @@ async function handlePassword(request: Request, body: LoginBody, ip: string) {
     const isInvalid = error?.message.toLowerCase().includes("invalid login");
     const message = isInvalid
       ? `Email ya password galat hai!${res.attempts_left > 0 ? ` ${res.attempts_left} attempts baaki.` : ""}`
-      : error?.message ?? "Login fail hua";
+      : (error?.message ?? "Login fail hua");
     return NextResponse.json(
       { error: message, attempts_left: res.attempts_left },
       { status: res.locked ? 429 : 401 }
@@ -62,20 +66,27 @@ async function handlePassword(request: Request, body: LoginBody, ip: string) {
   await reset(email);
   const res = NextResponse.json({ success: true });
   res.cookies.set("vtech_session_start", String(Date.now()), {
-    httpOnly: true, secure: true, sameSite: "lax", path: "/",
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
   });
   return res;
 }
 
 // ── Client OTP: send code ────────────────────────────────────────
 async function handleOtp(request: Request, body: LoginBody, ip: string) {
-  const email = String(body?.email ?? "").trim().toLowerCase();
+  const email = String(body?.email ?? "")
+    .trim()
+    .toLowerCase();
   if (!email) return NextResponse.json({ error: "Email zaroori hai" }, { status: 400 });
 
   const lock = await checkLockout(email, ip);
   if (lock.locked) {
     return NextResponse.json(
-      { error: `Bahut saare galat attempts. ${fmtMin(lock.remaining_seconds)} baad dobara try karein.` },
+      {
+        error: `Bahut saare galat attempts. ${fmtMin(lock.remaining_seconds)} baad dobara try karein.`,
+      },
       { status: 429 }
     );
   }
@@ -87,9 +98,10 @@ async function handleOtp(request: Request, body: LoginBody, ip: string) {
   });
 
   if (error) {
-    const msg = error.message.toLowerCase().includes("rate") || error.message.toLowerCase().includes("limit")
-      ? "Thodi der ruk kar dobara try karein (OTP limit)."
-      : error.message;
+    const msg =
+      error.message.toLowerCase().includes("rate") || error.message.toLowerCase().includes("limit")
+        ? "Thodi der ruk kar dobara try karein (OTP limit)."
+        : error.message;
     return NextResponse.json({ error: msg }, { status: 429 });
   }
 
@@ -98,14 +110,19 @@ async function handleOtp(request: Request, body: LoginBody, ip: string) {
 
 // ── Client OTP: verify ───────────────────────────────────────────
 async function handleVerifyOtp(request: Request, body: LoginBody, ip: string) {
-  const email = String(body?.email ?? "").trim().toLowerCase();
+  const email = String(body?.email ?? "")
+    .trim()
+    .toLowerCase();
   const token = String(body?.token ?? "").trim();
-  if (!email || !token) return NextResponse.json({ error: "Email aur OTP zaroori hai" }, { status: 400 });
+  if (!email || !token)
+    return NextResponse.json({ error: "Email aur OTP zaroori hai" }, { status: 400 });
 
   const lock = await checkLockout(email, ip);
   if (lock.locked) {
     return NextResponse.json(
-      { error: `Bahut saare galat attempts. ${fmtMin(lock.remaining_seconds)} baad dobara try karein.` },
+      {
+        error: `Bahut saare galat attempts. ${fmtMin(lock.remaining_seconds)} baad dobara try karein.`,
+      },
       { status: 429 }
     );
   }
@@ -124,7 +141,10 @@ async function handleVerifyOtp(request: Request, body: LoginBody, ip: string) {
   await reset(email);
   const res = NextResponse.json({ success: true });
   res.cookies.set("vtech_session_start", String(Date.now()), {
-    httpOnly: true, secure: true, sameSite: "lax", path: "/",
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
   });
   return res;
 }

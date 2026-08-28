@@ -2,7 +2,9 @@
 // Use these helpers to page through large result sets with `.range()`.
 // `.range()` overrides any earlier `.limit()`, so leftover `.limit(...)` calls are harmless.
 
-export async function fetchAll<T = unknown>(q: { range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }> }): Promise<T[]> {
+export async function fetchAll<T = unknown>(q: {
+  range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>;
+}): Promise<T[]> {
   const out: T[] = [];
   for (let page = 0; ; page++) {
     const { data, error } = await q.range(page * 1000, (page + 1) * 1000 - 1);
@@ -13,12 +15,16 @@ export async function fetchAll<T = unknown>(q: { range: (from: number, to: numbe
   return out;
 }
 
-export const pageAll = async <T = unknown>(q: { range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }> }) => ({ data: await fetchAll<T>(q) });
+export const pageAll = async <T = unknown>(q: {
+  range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>;
+}) => ({ data: await fetchAll<T>(q) });
 
 // Fetch with a filter on an id list: splits the ids into chunks (keeps the
 // request URL small) and paginates each chunk (handles the 1000-row cap).
 export async function fetchAllIn<T = unknown>(
-  makeQuery: (ids: number[]) => { range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }> },
+  makeQuery: (ids: number[]) => {
+    range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>;
+  },
   ids: number[]
 ): Promise<T[]> {
   const out: T[] = [];

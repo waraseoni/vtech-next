@@ -10,8 +10,7 @@ export const LICENSE_CONFIG = {
   anonKey: process.env.LICENSE_SERVICE_ANON_KEY || "",
 };
 
-export const isLicenseConfigured = () =>
-  !!LICENSE_CONFIG.url && !!LICENSE_CONFIG.anonKey;
+export const isLicenseConfigured = () => !!LICENSE_CONFIG.url && !!LICENSE_CONFIG.anonKey;
 
 export function makeLicenseClient() {
   return createClient(LICENSE_CONFIG.url, LICENSE_CONFIG.anonKey, {
@@ -21,10 +20,7 @@ export function makeLicenseClient() {
 
 // Har shop ke app instance ka stable unique id — host (domain/LAN IP) ka sha256.
 export function makeActivationId(host: string) {
-  return createHash("sha256")
-    .update(host.trim().toLowerCase())
-    .digest("hex")
-    .slice(0, 32);
+  return createHash("sha256").update(host.trim().toLowerCase()).digest("hex").slice(0, 32);
 }
 
 export const LICENSE_KEY_RE = /^VTC-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/i;
@@ -68,7 +64,15 @@ export async function activateRemoteLicense(opts: {
   activationId: string;
   shopUrl: string;
   shopName: string;
-}): Promise<{ ok: boolean; error?: string; plan?: string; shopName?: string; expiresAt?: string | null; alreadyActivated?: boolean; enabledModules?: string[] | null }> {
+}): Promise<{
+  ok: boolean;
+  error?: string;
+  plan?: string;
+  shopName?: string;
+  expiresAt?: string | null;
+  alreadyActivated?: boolean;
+  enabledModules?: string[] | null;
+}> {
   if (!isLicenseConfigured()) {
     return { ok: false, error: "LICENSE_SERVICE_NOT_CONFIGURED" };
   }
@@ -89,8 +93,9 @@ export async function activateRemoteLicense(opts: {
     plan: typeof raw.plan === "string" ? raw.plan : undefined,
     shopName: typeof raw.shop_name === "string" ? raw.shop_name : undefined,
     expiresAt: "expires_at" in raw ? (raw.expires_at as string | null) : undefined,
-    alreadyActivated: typeof raw.already_activated === "boolean" ? raw.already_activated : undefined,
-    enabledModules: Array.isArray(raw.enabled_modules) ? raw.enabled_modules as string[] : null,
+    alreadyActivated:
+      typeof raw.already_activated === "boolean" ? raw.already_activated : undefined,
+    enabledModules: Array.isArray(raw.enabled_modules) ? (raw.enabled_modules as string[]) : null,
   };
 }
 
@@ -123,6 +128,6 @@ export async function checkRemoteLicense(activationId: string): Promise<{
     plan: typeof raw.plan === "string" ? raw.plan : undefined,
     shopName: typeof raw.shop_name === "string" ? raw.shop_name : undefined,
     expiresAt: "expires_at" in raw ? (raw.expires_at as string | null) : undefined,
-    enabledModules: Array.isArray(raw.enabled_modules) ? raw.enabled_modules as string[] : null,
+    enabledModules: Array.isArray(raw.enabled_modules) ? (raw.enabled_modules as string[]) : null,
   };
 }

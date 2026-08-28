@@ -10,13 +10,15 @@ export default function EditSalePage() {
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
-
       {/* ── HERO HEADER ── */}
       <div className="relative overflow-hidden bg-[#0d1117] border-b border-[#21293d]">
         {/* Dot grid */}
         <div
           className="absolute inset-0 opacity-[0.025]"
-          style={{ backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize: "24px 24px" }}
+          style={{
+            backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
         />
         <div className="absolute -top-16 -right-10 w-72 h-72 bg-amber-600/8 rounded-full blur-3xl" />
 
@@ -27,7 +29,10 @@ export default function EditSalePage() {
               Direct Sales
             </Link>
             <span className="text-slate-800">›</span>
-            <Link href={`/direct-sales/${saleId}/view`} className="hover:text-slate-500 transition-colors">
+            <Link
+              href={`/direct-sales/${saleId}/view`}
+              className="hover:text-slate-500 transition-colors"
+            >
               #{saleId}
             </Link>
             <span className="text-slate-800">›</span>
@@ -93,12 +98,11 @@ export default function EditSalePage() {
         <div className="flex items-start gap-2.5 bg-amber-500/5 border border-amber-500/15 rounded-xl px-4 py-3 mt-4">
           <span className="text-amber-500/60 text-xs flex-shrink-0 mt-0.5">⚠</span>
           <p className="text-[11px] text-slate-700 leading-relaxed">
-            Changes will update the sale record permanently.
-            Stock quantities are automatically adjusted on save.
+            Changes will update the sale record permanently. Stock quantities are automatically
+            adjusted on save.
           </p>
         </div>
       </div>
-
     </div>
   );
 }

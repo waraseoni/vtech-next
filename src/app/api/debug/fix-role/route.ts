@@ -41,11 +41,16 @@ export async function POST() {
 
     if (!profile) {
       // Profile exist nahi karti — banao with role='admin'
-      const { error } = await adminClient
-        .from("profiles")
-        .insert({ id: user.id, full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Admin", role: "admin" });
+      const { error } = await adminClient.from("profiles").insert({
+        id: user.id,
+        full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Admin",
+        role: "admin",
+      });
       if (error) {
-        return NextResponse.json({ error: "Profile create nahi hua: " + error.message }, { status: 500 });
+        return NextResponse.json(
+          { error: "Profile create nahi hua: " + error.message },
+          { status: 500 }
+        );
       }
       action = "created_as_admin";
     } else if (profile.role !== "admin" && (!otherAdmins || otherAdmins.length === 0)) {
@@ -55,16 +60,22 @@ export async function POST() {
         .update({ role: "admin" })
         .eq("id", user.id);
       if (error) {
-        return NextResponse.json({ error: "Role update nahi hua: " + error.message }, { status: 500 });
+        return NextResponse.json(
+          { error: "Role update nahi hua: " + error.message },
+          { status: 500 }
+        );
       }
       action = "promoted_to_admin";
     } else if (profile.role === "admin") {
       action = "already_admin";
     } else {
-      return NextResponse.json({
-        error: "Dusre admin pehle se hain. Aapka role 'staff' hai — admin se baat karein.",
-        role: profile.role,
-      }, { status: 403 });
+      return NextResponse.json(
+        {
+          error: "Dusre admin pehle se hain. Aapka role 'staff' hai — admin se baat karein.",
+          role: profile.role,
+        },
+        { status: 403 }
+      );
     }
 
     // Fresh profile data bhejo

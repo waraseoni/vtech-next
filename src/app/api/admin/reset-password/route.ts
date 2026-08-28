@@ -15,13 +15,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "userId, newPassword required" }, { status: 400 });
     }
     if (newPassword.length < 6) {
-      return NextResponse.json({ error: "Password kam se kam 6 characters ka hona chahiye" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Password kam se kam 6 characters ka hona chahiye" },
+        { status: 400 }
+      );
     }
 
     // ── Verify requester is admin via session cookie ──────────────────────
     const admin = await requireAdmin();
     if (!admin) {
-      return NextResponse.json({ error: "Sirf Admin password reset kar sakta hai" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Sirf Admin password reset kar sakta hai" },
+        { status: 403 }
+      );
     }
 
     // ── Reset password using admin API ────────────────────────────────────
@@ -34,7 +40,6 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, message: "Password reset ho gaya!" });
-
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Server error" },

@@ -12,7 +12,10 @@ export async function GET(request: NextRequest) {
     const rows = await listLocked(search);
     return NextResponse.json({ rows });
   } catch (err) {
-    return NextResponse.json({ error: "Throttle list load nahi hua: " + (err as Error).message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Throttle list load nahi hua: " + (err as Error).message },
+      { status: 500 }
+    );
   }
 }
 
@@ -27,7 +30,9 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const email = String(body?.email ?? "").trim().toLowerCase();
+  const email = String(body?.email ?? "")
+    .trim()
+    .toLowerCase();
   if (!email) return NextResponse.json({ error: "Email zaroori hai" }, { status: 400 });
 
   await reset(email);

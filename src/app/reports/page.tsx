@@ -3,15 +3,40 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import {
-  FileText, TrendingUp, PieChart, BarChart2, DollarSign,
-  ShoppingCart, Wrench, Truck, Clock, Users, Database,
-  Activity, Briefcase, Store, Calculator, Scale, FileSearch,
-  Search, ChevronRight, Sparkles, Filter, Info, CheckCircle,
-  CalendarClock, PackageX
+  FileText,
+  TrendingUp,
+  PieChart,
+  BarChart2,
+  DollarSign,
+  ShoppingCart,
+  Wrench,
+  Truck,
+  Clock,
+  Users,
+  Database,
+  Activity,
+  Briefcase,
+  Store,
+  Calculator,
+  Scale,
+  FileSearch,
+  Search,
+  ChevronRight,
+  Sparkles,
+  Filter,
+  Info,
+  CheckCircle,
+  CalendarClock,
+  PackageX,
 } from "lucide-react";
 
 // --- Types ---
-type ReportCategory = "Job Reports" | "Finance & Accounts" | "Sales & Services" | "Staff & Performance" | "Other Reports";
+type ReportCategory =
+  | "Job Reports"
+  | "Finance & Accounts"
+  | "Sales & Services"
+  | "Staff & Performance"
+  | "Other Reports";
 
 interface ReportItem {
   title: string;
@@ -32,7 +57,7 @@ const REPORTS: ReportItem[] = [
     icon: <CheckCircle size={16} />,
     category: "Job Reports",
     color: "from-teal-500 to-emerald-600",
-    isNew: true
+    isNew: true,
   },
   {
     title: "Pending Jobs",
@@ -41,7 +66,7 @@ const REPORTS: ReportItem[] = [
     icon: <Clock size={16} />,
     category: "Job Reports",
     color: "from-amber-500 to-orange-600",
-    isNew: true
+    isNew: true,
   },
   {
     title: "Delivered Report",
@@ -49,7 +74,7 @@ const REPORTS: ReportItem[] = [
     href: "/reports/delivered",
     icon: <Truck size={16} />,
     category: "Job Reports",
-    color: "from-emerald-500 to-teal-600"
+    color: "from-emerald-500 to-teal-600",
   },
   {
     title: "Due Reminders",
@@ -58,7 +83,7 @@ const REPORTS: ReportItem[] = [
     icon: <CalendarClock size={16} />,
     category: "Job Reports",
     color: "from-red-500 to-orange-600",
-    isNew: true
+    isNew: true,
   },
   {
     title: "Requirement List",
@@ -67,7 +92,7 @@ const REPORTS: ReportItem[] = [
     icon: <PackageX size={16} />,
     category: "Job Reports",
     color: "from-amber-500 to-orange-600",
-    isNew: true
+    isNew: true,
   },
 
   // Finance & Accounts
@@ -78,7 +103,7 @@ const REPORTS: ReportItem[] = [
     icon: <Calculator size={16} />,
     category: "Finance & Accounts",
     color: "from-purple-500 to-indigo-600",
-    isNew: true
+    isNew: true,
   },
   {
     title: "Balance Sheet",
@@ -86,7 +111,7 @@ const REPORTS: ReportItem[] = [
     href: "/reports/balancesheet",
     icon: <Scale size={16} />,
     category: "Finance & Accounts",
-    color: "from-red-500 to-rose-600"
+    color: "from-red-500 to-rose-600",
   },
   {
     title: "Business Ledger",
@@ -94,7 +119,7 @@ const REPORTS: ReportItem[] = [
     href: "/reports/ledger",
     icon: <Database size={16} />,
     category: "Finance & Accounts",
-    color: "from-blue-500 to-cyan-600"
+    color: "from-blue-500 to-cyan-600",
   },
   {
     title: "Cash Flow",
@@ -102,7 +127,7 @@ const REPORTS: ReportItem[] = [
     href: "/reports/cash-flow",
     icon: <TrendingUp size={16} />,
     category: "Finance & Accounts",
-    color: "from-teal-500 to-emerald-600"
+    color: "from-teal-500 to-emerald-600",
   },
   {
     title: "Daily Income",
@@ -111,7 +136,7 @@ const REPORTS: ReportItem[] = [
     icon: <DollarSign size={16} />,
     category: "Finance & Accounts",
     color: "from-cyan-500 to-blue-600",
-    isNew: true
+    isNew: true,
   },
   {
     title: "Financial Report",
@@ -120,7 +145,7 @@ const REPORTS: ReportItem[] = [
     icon: <FileText size={16} />,
     category: "Finance & Accounts",
     color: "from-blue-600 to-indigo-700",
-    isNew: true
+    isNew: true,
   },
   {
     title: "Monthly Profit",
@@ -129,7 +154,7 @@ const REPORTS: ReportItem[] = [
     icon: <BarChart2 size={16} />,
     category: "Finance & Accounts",
     color: "from-emerald-600 to-teal-700",
-    isNew: true
+    isNew: true,
   },
 
   // Sales & Services
@@ -139,7 +164,7 @@ const REPORTS: ReportItem[] = [
     href: "/reports/daily-sales",
     icon: <ShoppingCart size={16} />,
     category: "Sales & Services",
-    color: "from-blue-500 to-blue-700"
+    color: "from-blue-500 to-blue-700",
   },
   {
     title: "Monthly Sales",
@@ -147,7 +172,7 @@ const REPORTS: ReportItem[] = [
     href: "/reports/monthly-sales",
     icon: <BarChart2 size={16} />,
     category: "Sales & Services",
-    color: "from-indigo-500 to-purple-700"
+    color: "from-indigo-500 to-purple-700",
   },
   {
     title: "Daily Service",
@@ -155,7 +180,7 @@ const REPORTS: ReportItem[] = [
     href: "/reports/daily-service",
     icon: <Wrench size={16} />,
     category: "Sales & Services",
-    color: "from-olive-500 to-green-700"
+    color: "from-olive-500 to-green-700",
   },
   {
     title: "Custom Sales",
@@ -163,7 +188,7 @@ const REPORTS: ReportItem[] = [
     href: "/reports/custom-sales",
     icon: <Filter size={16} />,
     category: "Sales & Services",
-    color: "from-orange-500 to-red-600"
+    color: "from-orange-500 to-red-600",
   },
   {
     title: "Custom Service",
@@ -171,7 +196,7 @@ const REPORTS: ReportItem[] = [
     href: "/reports/custom-service",
     icon: <FileSearch size={16} />,
     category: "Sales & Services",
-    color: "from-lime-500 to-green-600"
+    color: "from-lime-500 to-green-600",
   },
 
   // Staff & Performance
@@ -182,7 +207,7 @@ const REPORTS: ReportItem[] = [
     icon: <Users size={16} />,
     category: "Staff & Performance",
     color: "from-violet-500 to-purple-700",
-    isNew: true
+    isNew: true,
   },
 
   // Others
@@ -192,7 +217,7 @@ const REPORTS: ReportItem[] = [
     href: "/reports/loan",
     icon: <PieChart size={16} />,
     category: "Other Reports",
-    color: "from-slate-600 to-slate-800"
+    color: "from-slate-600 to-slate-800",
   },
   {
     title: "Business Summary",
@@ -201,7 +226,7 @@ const REPORTS: ReportItem[] = [
     icon: <Briefcase size={16} />,
     category: "Other Reports",
     color: "from-sky-500 to-blue-600",
-    isNew: true
+    isNew: true,
   },
   {
     title: "Vyapar Darpan",
@@ -210,7 +235,7 @@ const REPORTS: ReportItem[] = [
     icon: <Store size={16} />,
     category: "Other Reports",
     color: "from-indigo-600 to-blue-900",
-    isNew: true
+    isNew: true,
   },
   {
     title: "Activity Log",
@@ -218,7 +243,7 @@ const REPORTS: ReportItem[] = [
     href: "/activity-logs",
     icon: <Activity size={16} />,
     category: "Other Reports",
-    color: "from-rose-500 to-red-700"
+    color: "from-rose-500 to-red-700",
   },
   {
     title: "Top Customers",
@@ -226,8 +251,8 @@ const REPORTS: ReportItem[] = [
     href: "/reports/top-customers",
     icon: <Users size={16} />,
     category: "Other Reports",
-    color: "from-purple-500 to-pink-600"
-  }
+    color: "from-purple-500 to-pink-600",
+  },
 ];
 
 const CATEGORIES: { name: ReportCategory; icon: React.ReactNode }[] = [
@@ -241,9 +266,10 @@ const CATEGORIES: { name: ReportCategory; icon: React.ReactNode }[] = [
 export default function ReportsCenter() {
   const [search, setSearch] = useState("");
 
-  const filteredReports = REPORTS.filter(r => 
-    r.title.toLowerCase().includes(search.toLowerCase()) || 
-    r.description.toLowerCase().includes(search.toLowerCase())
+  const filteredReports = REPORTS.filter(
+    (r) =>
+      r.title.toLowerCase().includes(search.toLowerCase()) ||
+      r.description.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -258,12 +284,17 @@ export default function ReportsCenter() {
             <h1 className="text-xl font-black tracking-tight text-white leading-none">
               Reports <span className="text-blue-500">Center</span>
             </h1>
-            <p className="text-[10px] text-slate-500 font-bold uppercase mt-1 tracking-widest">Business Intelligence Dashboard</p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase mt-1 tracking-widest">
+              Business Intelligence Dashboard
+            </p>
           </div>
         </div>
 
         <div className="relative group w-full lg:w-96">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" size={16} />
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors"
+            size={16}
+          />
           <input
             type="text"
             placeholder="Search all reports..."
@@ -277,7 +308,7 @@ export default function ReportsCenter() {
       {/* Optimized Grid Content */}
       <div className="space-y-6">
         {CATEGORIES.map((cat) => {
-          const catReports = filteredReports.filter(r => r.category === cat.name);
+          const catReports = filteredReports.filter((r) => r.category === cat.name);
           if (catReports.length === 0) return null;
 
           return (
@@ -294,25 +325,29 @@ export default function ReportsCenter() {
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {catReports.map((report) => (
-                  <Link 
-                    key={report.title} 
+                  <Link
+                    key={report.title}
                     href={report.href}
                     className="group relative flex flex-col p-3.5 bg-[#111520]/60 border border-white/5 rounded-2xl hover:bg-white/[0.04] hover:border-blue-500/40 transition-all duration-300 hover:-translate-y-0.5 overflow-hidden shadow-lg shadow-black/20"
                   >
                     {/* Compact Accent */}
-                    <div className={`absolute -right-4 -top-4 w-12 h-12 bg-gradient-to-br ${report.color} opacity-[0.04] group-hover:opacity-[0.12] blur-xl transition-opacity rounded-full`} />
-                    
+                    <div
+                      className={`absolute -right-4 -top-4 w-12 h-12 bg-gradient-to-br ${report.color} opacity-[0.04] group-hover:opacity-[0.12] blur-xl transition-opacity rounded-full`}
+                    />
+
                     <div className="flex items-start justify-between mb-2.5">
-                      <div className={`p-2 rounded-xl bg-gradient-to-br ${report.color} shadow-lg shadow-black/40 group-hover:scale-105 transition-transform duration-300`}>
-                        <div className="text-white">
-                          {report.icon}
-                        </div>
+                      <div
+                        className={`p-2 rounded-xl bg-gradient-to-br ${report.color} shadow-lg shadow-black/40 group-hover:scale-105 transition-transform duration-300`}
+                      >
+                        <div className="text-white">{report.icon}</div>
                       </div>
-                      
+
                       {report.isNew && (
                         <div className="px-1.5 py-0.5 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center gap-1">
                           <Sparkles size={7} className="text-blue-400" />
-                          <span className="text-[7px] font-black uppercase tracking-tighter text-blue-400 italic">NEW</span>
+                          <span className="text-[7px] font-black uppercase tracking-tighter text-blue-400 italic">
+                            NEW
+                          </span>
                         </div>
                       )}
                     </div>
@@ -327,8 +362,13 @@ export default function ReportsCenter() {
                     </div>
 
                     <div className="mt-2.5 pt-2.5 border-t border-white/[0.03] flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-300">
-                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Analyze</span>
-                      <ChevronRight size={12} className="text-blue-500 translate-x-0 group-hover:translate-x-1 transition-transform" />
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">
+                        Analyze
+                      </span>
+                      <ChevronRight
+                        size={12}
+                        className="text-blue-500 translate-x-0 group-hover:translate-x-1 transition-transform"
+                      />
                     </div>
                   </Link>
                 ))}
@@ -346,7 +386,9 @@ export default function ReportsCenter() {
           </div>
           <div className="space-y-1">
             <h3 className="text-sm font-bold text-slate-400">No matching reports</h3>
-            <p className="text-[11px] text-slate-600 italic">Try a different keyword or category.</p>
+            <p className="text-[11px] text-slate-600 italic">
+              Try a different keyword or category.
+            </p>
           </div>
         </div>
       )}
@@ -357,9 +399,19 @@ export default function ReportsCenter() {
           V-TECH PRO · INTELLIGENCE v4.2
         </p>
         <div className="flex items-center gap-4">
-          <Link href="/help" className="text-[9px] font-bold text-slate-600 hover:text-blue-400 transition-colors uppercase">Help</Link>
+          <Link
+            href="/help"
+            className="text-[9px] font-bold text-slate-600 hover:text-blue-400 transition-colors uppercase"
+          >
+            Help
+          </Link>
           <div className="w-1 h-1 bg-slate-800 rounded-full" />
-          <Link href="/settings" className="text-[9px] font-bold text-slate-600 hover:text-blue-400 transition-colors uppercase">Layout</Link>
+          <Link
+            href="/settings"
+            className="text-[9px] font-bold text-slate-600 hover:text-blue-400 transition-colors uppercase"
+          >
+            Layout
+          </Link>
         </div>
       </div>
     </div>

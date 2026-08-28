@@ -10,16 +10,31 @@
 //   - both times, 6h+                 -> Present
 //   - no times                        -> keep manually chosen status
 // ─────────────────────────────────────────────────────────────────
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import Image from 'next/image';
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 import {
-  Calendar, Save, Check, Clock, X, AlertCircle, RotateCcw,
-  LogIn, LogOut, Fingerprint, ArrowRight,
-} from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import { todayIST, nowISTTime, hoursBetweenIST, fmtTimeIST, deriveStatusFromTimes } from '@/lib/dateUtils';
-import { verifyAttendanceLocation, geoErrorMessage } from '@/lib/geofence';
+  Calendar,
+  Save,
+  Check,
+  Clock,
+  X,
+  AlertCircle,
+  RotateCcw,
+  LogIn,
+  LogOut,
+  Fingerprint,
+  ArrowRight,
+} from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import {
+  todayIST,
+  nowISTTime,
+  hoursBetweenIST,
+  fmtTimeIST,
+  deriveStatusFromTimes,
+} from "@/lib/dateUtils";
+import { verifyAttendanceLocation, geoErrorMessage } from "@/lib/geofence";
 
 interface Mechanic {
   id: number;
@@ -31,85 +46,141 @@ interface Mechanic {
 // Mechanic avatar — photo ho to photo, warna 2-letter initials (system logo nahi,
 // kyunki har row me same logo dikh kar identification fail karta).
 const mechInitials = (name: string) =>
-  name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || name.charAt(0);
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("") || name.charAt(0);
 
-const MechAvatar = ({ image, name, cls = "w-10 h-10 text-sm" }: { image?: string | null; name: string; cls?: string }) =>
+const MechAvatar = ({
+  image,
+  name,
+  cls = "w-10 h-10 text-sm",
+}: {
+  image?: string | null;
+  name: string;
+  cls?: string;
+}) =>
   image ? (
-    <Image src={image} alt={name} width={40} height={40} unoptimized
+    <Image
+      src={image}
+      alt={name}
+      width={40}
+      height={40}
+      unoptimized
       className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
-      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+      onError={(e) => {
+        (e.currentTarget as HTMLImageElement).style.display = "none";
+      }}
+    />
   ) : (
-    <div className={`${cls} bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 flex-shrink-0`}>
+    <div
+      className={`${cls} bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 flex-shrink-0`}
+    >
       {mechInitials(name)}
     </div>
   );
 
 // 0 = not yet marked, 1 = present, 2 = absent, 3 = half day
-interface AttendanceStatus { [mechanicId: number]: 0 | 1 | 2 | 3; }
-interface DayTimes { timeIn: string; timeOut: string; }
-interface SelfAttn { status: number; time_in: string | null; time_out: string | null; }
+interface AttendanceStatus {
+  [mechanicId: number]: 0 | 1 | 2 | 3;
+}
+interface DayTimes {
+  timeIn: string;
+  timeOut: string;
+}
+interface SelfAttn {
+  status: number;
+  time_in: string | null;
+  time_out: string | null;
+}
 
 const STATUS_BTNS = [
-  { value: 1 as const, label: 'Present',  short: 'P', activeClass: 'bg-emerald-500 text-white border-emerald-500',  hoverClass: 'hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/40' },
-  { value: 3 as const, label: 'Half Day', short: 'H', activeClass: 'bg-amber-500 text-white border-amber-500',    hoverClass: 'hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/40' },
-  { value: 2 as const, label: 'Absent',   short: 'A', activeClass: 'bg-red-500 text-white border-red-500',        hoverClass: 'hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/40' },
+  {
+    value: 1 as const,
+    label: "Present",
+    short: "P",
+    activeClass: "bg-emerald-500 text-white border-emerald-500",
+    hoverClass: "hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/40",
+  },
+  {
+    value: 3 as const,
+    label: "Half Day",
+    short: "H",
+    activeClass: "bg-amber-500 text-white border-amber-500",
+    hoverClass: "hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/40",
+  },
+  {
+    value: 2 as const,
+    label: "Absent",
+    short: "A",
+    activeClass: "bg-red-500 text-white border-red-500",
+    hoverClass: "hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/40",
+  },
 ] as const;
 
 const STATUS_BADGE: Record<number, { label: string; cls: string }> = {
-  0: { label: 'Absent',     cls: 'bg-red-500/15 text-red-400 border border-red-500/30' },
-  1: { label: 'Present',    cls: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' },
-  2: { label: 'Absent',     cls: 'bg-red-500/15 text-red-400 border border-red-500/30' },
-  3: { label: 'Half Day',   cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
+  0: { label: "Absent", cls: "bg-red-500/15 text-red-400 border border-red-500/30" },
+  1: { label: "Present", cls: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30" },
+  2: { label: "Absent", cls: "bg-red-500/15 text-red-400 border border-red-500/30" },
+  3: { label: "Half Day", cls: "bg-amber-500/15 text-amber-400 border border-amber-500/30" },
 };
 
 export default function DailyAttendance({
-  userRole, mechanicId,
-}: { userRole: 'admin' | 'staff' | 'developer'; mechanicId: number | null }) {
+  userRole,
+  mechanicId,
+}: {
+  userRole: "admin" | "staff" | "developer";
+  mechanicId: number | null;
+}) {
   const searchParams = useSearchParams();
   const today = todayIST();
 
   const [selectedDate, setSelectedDate] = useState(
-    userRole === 'admin' ? (searchParams.get('date') || today) : today
+    userRole === "admin" ? searchParams.get("date") || today : today
   );
-  const [mechanics,  setMechanics]  = useState<Mechanic[]>([]);
+  const [mechanics, setMechanics] = useState<Mechanic[]>([]);
   const [attendance, setAttendance] = useState<AttendanceStatus>({});
-  const [times,      setTimes]      = useState<Record<number, DayTimes>>({});
-  const [loading,    setLoading]    = useState(true);
-  const [saving,     setSaving]     = useState(false);
-  const [isMobile,   setIsMobile]   = useState(false);
-  const [saveMsg,    setSaveMsg]    = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [times, setTimes] = useState<Record<number, DayTimes>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   // ── Self check-in / check-out ────────────────────────────────
   const [selfAttn, setSelfAttn] = useState<SelfAttn | null>(null);
-  const [selfBusy, setSelfBusy] = useState<'in' | 'out' | null>(null);
-  const [selfMsg,  setSelfMsg]  = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [selfBusy, setSelfBusy] = useState<"in" | "out" | null>(null);
+  const [selfMsg, setSelfMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
-  const selfName = mechanicId ? mechanics.find(m => m.id === mechanicId)?.name || '' : '';
-  const selfImage = mechanicId ? mechanics.find(m => m.id === mechanicId)?.image || null : null;
+  const selfName = mechanicId ? mechanics.find((m) => m.id === mechanicId)?.name || "" : "";
+  const selfImage = mechanicId ? mechanics.find((m) => m.id === mechanicId)?.image || null : null;
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   // ── Fetch mechanics ──────────────────────────────────────────
   useEffect(() => {
     const fetchMechanics = async () => {
       let query = supabase
-        .from('mechanic_list')
-        .select('id, firstname, lastname, designation, image_path')
-        .eq('status', 1);
-      if (userRole === 'staff' && mechanicId) query = query.eq('id', mechanicId);
-      const { data, error } = await query.order('firstname');
+        .from("mechanic_list")
+        .select("id, firstname, lastname, designation, image_path")
+        .eq("status", 1);
+      if (userRole === "staff" && mechanicId) query = query.eq("id", mechanicId);
+      const { data, error } = await query.order("firstname");
       if (!error && data) {
-        setMechanics(data.map(m => ({
-          id: m.id,
-          name: `${m.firstname} ${m.lastname}`.trim(),
-          designation: m.designation || '',
-          image: (m.image_path as string) || null,
-        })));
+        setMechanics(
+          data.map((m) => ({
+            id: m.id,
+            name: `${m.firstname} ${m.lastname}`.trim(),
+            designation: m.designation || "",
+            image: (m.image_path as string) || null,
+          }))
+        );
       }
     };
     fetchMechanics();
@@ -120,74 +191,92 @@ export default function DailyAttendance({
     if (!mechanics.length) return;
     setLoading(true);
     const { data, error } = await supabase
-      .from('attendance_list')
-      .select('mechanic_id, status, time_in, time_out')
-      .eq('curr_date', selectedDate);
+      .from("attendance_list")
+      .select("mechanic_id, status, time_in, time_out")
+      .eq("curr_date", selectedDate);
     const attMap: AttendanceStatus = {};
     const timesMap: Record<number, DayTimes> = {};
     if (!error && data) {
-      data.forEach(a => {
+      data.forEach((a) => {
         attMap[a.mechanic_id] = a.status as 1 | 2 | 3;
         timesMap[a.mechanic_id] = {
-          timeIn: (a.time_in as string)?.slice(0, 5) || '',
-          timeOut: (a.time_out as string)?.slice(0, 5) || '',
+          timeIn: (a.time_in as string)?.slice(0, 5) || "",
+          timeOut: (a.time_out as string)?.slice(0, 5) || "",
         };
       });
     }
-    mechanics.forEach(m => { if (attMap[m.id] == null) attMap[m.id] = 2; });
+    mechanics.forEach((m) => {
+      if (attMap[m.id] == null) attMap[m.id] = 2;
+    });
     setAttendance(attMap);
     setTimes(timesMap);
     setLoading(false);
   }, [mechanics, selectedDate]);
 
-  useEffect(() => { fetchAttendance(); }, [fetchAttendance]);
+  useEffect(() => {
+    fetchAttendance();
+  }, [fetchAttendance]);
 
   // ── Self record for today ────────────────────────────────────
   const fetchSelf = useCallback(async () => {
-    if (!mechanicId) { setSelfAttn(null); return; }
+    if (!mechanicId) {
+      setSelfAttn(null);
+      return;
+    }
     const { data } = await supabase
-      .from('attendance_list')
-      .select('status, time_in, time_out')
-      .eq('mechanic_id', mechanicId)
-      .eq('curr_date', today)
+      .from("attendance_list")
+      .select("status, time_in, time_out")
+      .eq("mechanic_id", mechanicId)
+      .eq("curr_date", today)
       .maybeSingle();
     setSelfAttn(data || { status: 0, time_in: null, time_out: null });
   }, [mechanicId, today]);
 
-  useEffect(() => { fetchSelf(); }, [fetchSelf]);
+  useEffect(() => {
+    fetchSelf();
+  }, [fetchSelf]);
 
   const handleStatusChange = (mId: number, status: 1 | 2 | 3) =>
-    setAttendance(prev => ({ ...prev, [mId]: status }));
+    setAttendance((prev) => ({ ...prev, [mId]: status }));
 
-  const handleTimeChange = (mId: number, field: 'timeIn' | 'timeOut', value: string) =>
-    setTimes(prev => ({ ...prev, [mId]: { timeIn: prev[mId]?.timeIn ?? '', timeOut: prev[mId]?.timeOut ?? '', [field]: value } }));
+  const handleTimeChange = (mId: number, field: "timeIn" | "timeOut", value: string) =>
+    setTimes((prev) => ({
+      ...prev,
+      [mId]: { timeIn: prev[mId]?.timeIn ?? "", timeOut: prev[mId]?.timeOut ?? "", [field]: value },
+    }));
 
   // ── Self check-in / check-out ────────────────────────────────
-  const handleSelfAction = async (action: 'in' | 'out') => {
+  const handleSelfAction = async (action: "in" | "out") => {
     if (!mechanicId) return;
     setSelfBusy(action);
     setSelfMsg(null);
     try {
       const now = nowISTTime();
       const { data: existing } = await supabase
-        .from('attendance_list')
-        .select('id, time_in, time_out')
-        .eq('mechanic_id', mechanicId)
-        .eq('curr_date', today)
+        .from("attendance_list")
+        .select("id, time_in, time_out")
+        .eq("mechanic_id", mechanicId)
+        .eq("curr_date", today)
         .maybeSingle();
 
-      if (action === 'in') {
+      if (action === "in") {
         if (existing?.time_in) {
-          setSelfMsg({ type: 'ok', text: `Already checked in at ${fmtTimeIST(existing.time_in)}.` });
+          setSelfMsg({
+            type: "ok",
+            text: `Already checked in at ${fmtTimeIST(existing.time_in)}.`,
+          });
           return;
         }
       } else {
         if (!existing?.time_in) {
-          setSelfMsg({ type: 'err', text: 'Pehle check-in karein, tabhi check-out hoga.' });
+          setSelfMsg({ type: "err", text: "Pehle check-in karein, tabhi check-out hoga." });
           return;
         }
         if (existing?.time_out) {
-          setSelfMsg({ type: 'ok', text: `Already checked out at ${fmtTimeIST(existing.time_out)}.` });
+          setSelfMsg({
+            type: "ok",
+            text: `Already checked out at ${fmtTimeIST(existing.time_out)}.`,
+          });
           return;
         }
       }
@@ -195,43 +284,55 @@ export default function DailyAttendance({
       // GPS geofence check — only enforced when actually writing a stamp.
       // Admin/developer geofence se exempt hain (office ke bahar se bhi stamp kar sakte hain).
       const geo =
-        userRole === 'admin' || userRole === 'developer'
-          ? { ok: true, reason: 'ok' as const, distanceM: null, coords: null }
+        userRole === "admin" || userRole === "developer"
+          ? { ok: true, reason: "ok" as const, distanceM: null, coords: null }
           : await verifyAttendanceLocation();
       if (!geo.ok) {
-        setSelfMsg({ type: 'err', text: geoErrorMessage(geo) });
+        setSelfMsg({ type: "err", text: geoErrorMessage(geo) });
         return;
       }
       const coords = geo.coords;
 
-      if (action === 'in') {
-        const { error } = await supabase
-          .from('attendance_list')
-          .upsert({
-            mechanic_id: mechanicId, curr_date: today, time_in: now, status: 1,
+      if (action === "in") {
+        const { error } = await supabase.from("attendance_list").upsert(
+          {
+            mechanic_id: mechanicId,
+            curr_date: today,
+            time_in: now,
+            status: 1,
             ...(coords ? { lat_in: coords.lat, lng_in: coords.lng } : {}),
-          }, { onConflict: 'mechanic_id,curr_date' });
+          },
+          { onConflict: "mechanic_id,curr_date" }
+        );
         if (error) throw error;
-        setSelfMsg({ type: 'ok', text: `Checked in at ${fmtTimeIST(now)}. Have a nice day!` });
+        setSelfMsg({ type: "ok", text: `Checked in at ${fmtTimeIST(now)}. Have a nice day!` });
       } else {
         const derived = deriveStatusFromTimes(existing?.time_in ?? null, now) ?? 1;
-        const { error } = await supabase
-          .from('attendance_list')
-          .upsert({
-            mechanic_id: mechanicId, curr_date: today, time_out: now, status: derived,
+        const { error } = await supabase.from("attendance_list").upsert(
+          {
+            mechanic_id: mechanicId,
+            curr_date: today,
+            time_out: now,
+            status: derived,
             ...(coords ? { lat_out: coords.lat, lng_out: coords.lng } : {}),
-          }, { onConflict: 'mechanic_id,curr_date' });
+          },
+          { onConflict: "mechanic_id,curr_date" }
+        );
         if (error) throw error;
         const hours = hoursBetweenIST(existing?.time_in ?? null, now);
         setSelfMsg({
-          type: 'ok',
-          text: `Checked out at ${fmtTimeIST(now)}. Working hours: ${hours}${derived === 3 ? ' (Half Day - under 6 hours)' : ''}`,
+          type: "ok",
+          text: `Checked out at ${fmtTimeIST(now)}. Working hours: ${hours}${derived === 3 ? " (Half Day - under 6 hours)" : ""}`,
         });
       }
       await fetchSelf();
       await fetchAttendance();
     } catch (err) {
-      setSelfMsg({ type: 'err', text: (err instanceof Error ? err.message : String(err)) || 'Error performing check-in/out.' });
+      setSelfMsg({
+        type: "err",
+        text:
+          (err instanceof Error ? err.message : String(err)) || "Error performing check-in/out.",
+      });
     } finally {
       setSelfBusy(null);
     }
@@ -243,75 +344,77 @@ export default function DailyAttendance({
     setSaveMsg(null);
 
     if (selectedDate > today) {
-      setSaveMsg({ type: 'err', text: 'Cannot save attendance for a future date.' });
+      setSaveMsg({ type: "err", text: "Cannot save attendance for a future date." });
       return;
     }
 
     setSaving(true);
     try {
-      await Promise.all(mechanics.map(async (mech) => {
-        // Default: absent (2). Staff check-in nahi kare to absent.
-        const s = attendance[mech.id] ?? 2;
-        let status: number = s === 1 || s === 2 || s === 3 ? s : 2;
-        const t = times[mech.id];
-        let timeIn: string | null = null;
-        let timeOut: string | null = null;
+      await Promise.all(
+        mechanics.map(async (mech) => {
+          // Default: absent (2). Staff check-in nahi kare to absent.
+          const s = attendance[mech.id] ?? 2;
+          let status: number = s === 1 || s === 2 || s === 3 ? s : 2;
+          const t = times[mech.id];
+          let timeIn: string | null = null;
+          let timeOut: string | null = null;
 
-        if (userRole === 'admin' && t) {
-          timeIn  = t.timeIn  || null;
-          timeOut = t.timeOut || null;
-          if (timeIn) status = deriveStatusFromTimes(timeIn, timeOut) ?? status;
-        }
+          if (userRole === "admin" && t) {
+            timeIn = t.timeIn || null;
+            timeOut = t.timeOut || null;
+            if (timeIn) status = deriveStatusFromTimes(timeIn, timeOut) ?? status;
+          }
 
-        const payload: Record<string, unknown> = {
-          mechanic_id: mech.id,
-          curr_date: selectedDate,
-          status,
-        };
-        if (userRole === 'admin') {
-          payload.time_in  = timeIn;
-          payload.time_out = timeOut;
-        }
+          const payload: Record<string, unknown> = {
+            mechanic_id: mech.id,
+            curr_date: selectedDate,
+            status,
+          };
+          if (userRole === "admin") {
+            payload.time_in = timeIn;
+            payload.time_out = timeOut;
+          }
 
-        const { data: existing, error: checkErr } = await supabase
-          .from('attendance_list')
-          .select('id')
-          .eq('mechanic_id', mech.id)
-          .eq('curr_date', selectedDate)
-          .maybeSingle();
-        if (checkErr) throw new Error(`Check failed for ${mech.name}: ${checkErr.message}`);
+          const { data: existing, error: checkErr } = await supabase
+            .from("attendance_list")
+            .select("id")
+            .eq("mechanic_id", mech.id)
+            .eq("curr_date", selectedDate)
+            .maybeSingle();
+          if (checkErr) throw new Error(`Check failed for ${mech.name}: ${checkErr.message}`);
 
-        if (existing) {
-          const { error: updErr } = await supabase
-            .from('attendance_list')
-            .update(payload)
-            .eq('id', existing.id);
-          if (updErr) throw new Error(`Update failed for ${mech.name}: ${updErr.message}`);
-        } else {
-          const { error: insErr } = await supabase
-            .from('attendance_list')
-            .insert(payload);
-          if (insErr) throw new Error(`Insert failed for ${mech.name}: ${insErr.message}`);
-        }
-      }));
-      setSaveMsg({ type: 'ok', text: 'Attendance saved successfully!' });
+          if (existing) {
+            const { error: updErr } = await supabase
+              .from("attendance_list")
+              .update(payload)
+              .eq("id", existing.id);
+            if (updErr) throw new Error(`Update failed for ${mech.name}: ${updErr.message}`);
+          } else {
+            const { error: insErr } = await supabase.from("attendance_list").insert(payload);
+            if (insErr) throw new Error(`Insert failed for ${mech.name}: ${insErr.message}`);
+          }
+        })
+      );
+      setSaveMsg({ type: "ok", text: "Attendance saved successfully!" });
       await fetchAttendance();
       await fetchSelf();
     } catch (err) {
-      setSaveMsg({ type: 'err', text: (err instanceof Error ? err.message : String(err)) || 'Error saving attendance.' });
+      setSaveMsg({
+        type: "err",
+        text: (err instanceof Error ? err.message : String(err)) || "Error saving attendance.",
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return (
-    <div className="flex justify-center py-16 text-slate-500 text-sm">Loading...</div>
-  );
+  if (loading)
+    return <div className="flex justify-center py-16 text-slate-500 text-sm">Loading...</div>;
 
-  const presentCount = Object.values(attendance).filter(s => s === 1).length;
-  const halfdayCount = Object.values(attendance).filter(s => s === 3).length;
-  const absentCount  = Object.values(attendance).filter(s => s === 2).length;
-  const totalStaff   = mechanics.length;
+  const presentCount = Object.values(attendance).filter((s) => s === 1).length;
+  const halfdayCount = Object.values(attendance).filter((s) => s === 3).length;
+  const absentCount = Object.values(attendance).filter((s) => s === 2).length;
+  const totalStaff = mechanics.length;
   const unmarkedCount = 0; // No longer relevant — unmarked defaults to Absent
 
   const selfStatus = selfAttn || { status: 0, time_in: null, time_out: null };
@@ -322,7 +425,6 @@ export default function DailyAttendance({
 
   return (
     <form onSubmit={handleSubmit}>
-
       {/* ── Self Check-In / Check-Out Card ── */}
       {selfName && (
         <div className="mb-6 rounded-2xl overflow-hidden bg-gradient-to-r from-[#001f3f] to-[#003d7a] border border-[#1a3a5f] shadow-lg">
@@ -335,9 +437,16 @@ export default function DailyAttendance({
                   <span className="truncate">{selfName}</span>
                 </h6>
                 <p className="text-white/60 text-[11px] mb-1">
-                  {new Date(`${today}T00:00:00+05:30`).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  {new Date(`${today}T00:00:00+05:30`).toLocaleDateString("en-IN", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
                 </p>
-                <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full ${selfBadge.cls}`}>
+                <span
+                  className={`inline-block text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full ${selfBadge.cls}`}
+                >
                   {selfBadge.label}
                 </span>
               </div>
@@ -346,56 +455,70 @@ export default function DailyAttendance({
             {/* In → Out → Hours: mobile pe 3 equal tiles, desktop pe compact chips */}
             <div className="grid grid-cols-3 gap-2 lg:flex lg:items-center">
               <div className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-center lg:min-w-[84px]">
-                <span className="block text-[9px] uppercase tracking-wider text-white/70 font-bold"><LogIn size={9} className="inline mr-0.5" /> In</span>
-                <span className="block text-white font-extrabold text-sm">{fmtTimeIST(selfStatus.time_in)}</span>
+                <span className="block text-[9px] uppercase tracking-wider text-white/70 font-bold">
+                  <LogIn size={9} className="inline mr-0.5" /> In
+                </span>
+                <span className="block text-white font-extrabold text-sm">
+                  {fmtTimeIST(selfStatus.time_in)}
+                </span>
               </div>
               <ArrowRight size={14} className="hidden lg:block text-white/40 place-self-center" />
               <div className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-center lg:min-w-[84px]">
-                <span className="block text-[9px] uppercase tracking-wider text-white/70 font-bold"><LogOut size={9} className="inline mr-0.5" /> Out</span>
-                <span className="block text-white font-extrabold text-sm">{fmtTimeIST(selfStatus.time_out)}</span>
+                <span className="block text-[9px] uppercase tracking-wider text-white/70 font-bold">
+                  <LogOut size={9} className="inline mr-0.5" /> Out
+                </span>
+                <span className="block text-white font-extrabold text-sm">
+                  {fmtTimeIST(selfStatus.time_out)}
+                </span>
               </div>
               <div className="bg-emerald-600 rounded-xl px-3 py-2 text-center lg:min-w-[78px]">
-                <span className="block text-white font-extrabold text-sm">{hoursBetweenIST(selfStatus.time_in, selfStatus.time_out)}</span>
-                <span className="block text-[9px] uppercase tracking-wider text-white/85 font-bold">Hours</span>
+                <span className="block text-white font-extrabold text-sm">
+                  {hoursBetweenIST(selfStatus.time_in, selfStatus.time_out)}
+                </span>
+                <span className="block text-[9px] uppercase tracking-wider text-white/85 font-bold">
+                  Hours
+                </span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2 lg:flex">
               <button
                 type="button"
-                onClick={() => handleSelfAction('in')}
+                onClick={() => handleSelfAction("in")}
                 disabled={!!selfStatus.time_in || selfBusy !== null}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-extrabold transition-all disabled:cursor-not-allowed ${
                   selfStatus.time_in
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 cursor-default'
-                    : 'bg-white text-[#001f3f] hover:bg-white/90'
-                } ${selfBusy ? 'opacity-60' : ''}`}
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 cursor-default"
+                    : "bg-white text-[#001f3f] hover:bg-white/90"
+                } ${selfBusy ? "opacity-60" : ""}`}
               >
                 {selfStatus.time_in ? <Check size={13} /> : <LogIn size={13} />}
-                {selfStatus.time_in ? 'Checked In' : 'Check In'}
+                {selfStatus.time_in ? "Checked In" : "Check In"}
               </button>
               <button
                 type="button"
-                onClick={() => handleSelfAction('out')}
+                onClick={() => handleSelfAction("out")}
                 disabled={!selfStatus.time_in || !!selfStatus.time_out || selfBusy !== null}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-extrabold transition-all disabled:cursor-not-allowed ${
                   !selfStatus.time_in || selfStatus.time_out
-                    ? 'bg-white/10 text-white/60 border border-white/20 cursor-default'
-                    : 'bg-[#f44336] hover:bg-[#ff5252] text-white'
-                } ${selfBusy ? 'opacity-60' : ''}`}
+                    ? "bg-white/10 text-white/60 border border-white/20 cursor-default"
+                    : "bg-[#f44336] hover:bg-[#ff5252] text-white"
+                } ${selfBusy ? "opacity-60" : ""}`}
               >
                 {selfStatus.time_out ? <Check size={13} /> : <LogOut size={13} />}
-                {selfStatus.time_out ? 'Checked Out' : 'Check Out'}
+                {selfStatus.time_out ? "Checked Out" : "Check Out"}
               </button>
             </div>
           </div>
 
           {selfMsg && (
-            <div className={`mx-5 mb-3 px-3 py-2 rounded-lg text-xs font-bold border ${
-              selfMsg.type === 'ok'
-                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
-                : 'bg-red-500/15 border-red-500/30 text-red-300'
-            }`}>
+            <div
+              className={`mx-5 mb-3 px-3 py-2 rounded-lg text-xs font-bold border ${
+                selfMsg.type === "ok"
+                  ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+                  : "bg-red-500/15 border-red-500/30 text-red-300"
+              }`}
+            >
               {selfMsg.text}
             </div>
           )}
@@ -410,15 +533,17 @@ export default function DailyAttendance({
       )}
 
       {/* ── Date picker (admin only) ── */}
-      {userRole === 'admin' && (
+      {userRole === "admin" && (
         <div className="mb-5 flex items-center justify-center gap-3 flex-wrap">
           <div className="relative w-full max-w-xs">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
               <Calendar size={16} className="text-slate-500" />
             </div>
             <input
-              type="date" value={selectedDate} max={today}
-              onChange={e => setSelectedDate(e.target.value)}
+              type="date"
+              value={selectedDate}
+              max={today}
+              onChange={(e) => setSelectedDate(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-[#0d1117] border border-[#21293d] text-white rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 outline-none font-bold text-sm transition-all"
             />
           </div>
@@ -437,44 +562,56 @@ export default function DailyAttendance({
           {/* ── Daily stats pills ── */}
           <div className="flex items-center gap-2 flex-wrap justify-center">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 text-xs font-extrabold">
-              <Check size={11} /> {presentCount} <span className="text-emerald-500/60 font-bold text-[10px] uppercase">Present</span>
+              <Check size={11} /> {presentCount}{" "}
+              <span className="text-emerald-500/60 font-bold text-[10px] uppercase">Present</span>
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/25 text-xs font-extrabold">
-              <Clock size={11} /> {halfdayCount} <span className="text-amber-500/60 font-bold text-[10px] uppercase">Half Day</span>
+              <Clock size={11} /> {halfdayCount}{" "}
+              <span className="text-amber-500/60 font-bold text-[10px] uppercase">Half Day</span>
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/25 text-xs font-extrabold">
-              <X size={11} /> {absentCount} <span className="text-red-500/60 font-bold text-[10px] uppercase">Absent</span>
+              <X size={11} /> {absentCount}{" "}
+              <span className="text-red-500/60 font-bold text-[10px] uppercase">Absent</span>
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/25 text-xs font-extrabold">
-              <Calendar size={11} /> {totalStaff} <span className="text-blue-500/60 font-bold text-[10px] uppercase">Total</span>
+              <Calendar size={11} /> {totalStaff}{" "}
+              <span className="text-blue-500/60 font-bold text-[10px] uppercase">Total</span>
             </span>
           </div>
         </div>
       )}
 
-      {userRole === 'staff' && (
+      {userRole === "staff" && (
         <div className="mb-5 text-center text-sm text-slate-400 font-bold">
-          {new Date(`${selectedDate}T00:00:00+05:30`).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          {new Date(`${selectedDate}T00:00:00+05:30`).toLocaleDateString("en-IN", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
         </div>
       )}
 
       {/* ── Save message ── */}
       {saveMsg && (
-        <div className={`mb-4 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border ${
-          saveMsg.type === 'ok'
-            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-            : 'bg-red-500/10 border-red-500/30 text-red-400'
-        }`}>
+        <div
+          className={`mb-4 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border ${
+            saveMsg.type === "ok"
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+              : "bg-red-500/10 border-red-500/30 text-red-400"
+          }`}
+        >
           <AlertCircle size={15} />
           {saveMsg.text}
         </div>
       )}
 
       {/* ── Unmarked warning (admin) ── */}
-      {userRole === 'admin' && unmarkedCount > 0 && (
+      {userRole === "admin" && unmarkedCount > 0 && (
         <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400">
           <AlertCircle size={13} />
-          {unmarkedCount} mechanic{unmarkedCount > 1 ? 's' : ''} not yet marked — <strong className="ml-1">will be skipped</strong> (no attendance saved).
+          {unmarkedCount} mechanic{unmarkedCount > 1 ? "s" : ""} not yet marked —{" "}
+          <strong className="ml-1">will be skipped</strong> (no attendance saved).
         </div>
       )}
 
@@ -484,31 +621,44 @@ export default function DailyAttendance({
           <table className="w-full">
             <thead>
               <tr className="bg-[#111520] border-b border-[#21293d]">
-                <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Staff Member</th>
-                <th className="px-4 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-                  {userRole === 'admin' ? 'Mark Status' : 'Attendance Status'}
+                <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                  Staff Member
                 </th>
-                <th className="px-4 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-500">In</th>
-                <th className="px-4 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Out</th>
-                <th className="px-4 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Hours</th>
+                <th className="px-4 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                  {userRole === "admin" ? "Mark Status" : "Attendance Status"}
+                </th>
+                <th className="px-4 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                  In
+                </th>
+                <th className="px-4 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                  Out
+                </th>
+                <th className="px-4 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                  Hours
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-[#21293d]">
-              {mechanics.map(mech => {
+              {mechanics.map((mech) => {
                 const st = attendance[mech.id];
                 const t = times[mech.id];
-                const tIn = t?.timeIn ?? '';
-                const tOut = t?.timeOut ?? '';
+                const tIn = t?.timeIn ?? "";
+                const tOut = t?.timeOut ?? "";
                 return (
-                  <tr key={mech.id} className="hover:bg-black/[0.03] dark:hover:bg-white/[0.02] transition-colors">
+                  <tr
+                    key={mech.id}
+                    className="hover:bg-black/[0.03] dark:hover:bg-white/[0.02] transition-colors"
+                  >
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
                         <MechAvatar image={mech.image} name={mech.name} />
                         <div>
-                          <div className="font-bold text-slate-800 dark:text-slate-100 text-sm">{mech.name}</div>
+                          <div className="font-bold text-slate-800 dark:text-slate-100 text-sm">
+                            {mech.name}
+                          </div>
                           <div className="text-xs text-slate-600">{mech.designation}</div>
                         </div>
-                        {userRole === 'admin' && st === 2 && !times[mech.id]?.timeIn && (
+                        {userRole === "admin" && st === 2 && !times[mech.id]?.timeIn && (
                           <span className="ml-2 text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/30">
                             No Check-in
                           </span>
@@ -516,9 +666,9 @@ export default function DailyAttendance({
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      {userRole === 'admin' ? (
+                      {userRole === "admin" ? (
                         <div className="flex justify-center gap-1.5">
-                          {STATUS_BTNS.map(btn => (
+                          {STATUS_BTNS.map((btn) => (
                             <button
                               key={btn.value}
                               type="button"
@@ -534,33 +684,39 @@ export default function DailyAttendance({
                           ))}
                         </div>
                       ) : (
-                        <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full ${STATUS_BADGE[st]?.cls ?? STATUS_BADGE[0].cls}`}>
-                          {STATUS_BADGE[st]?.label ?? 'Absent'}
+                        <span
+                          className={`inline-block text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full ${STATUS_BADGE[st]?.cls ?? STATUS_BADGE[0].cls}`}
+                        >
+                          {STATUS_BADGE[st]?.label ?? "Absent"}
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      {userRole === 'admin' ? (
+                      {userRole === "admin" ? (
                         <input
                           type="time"
                           value={tIn}
-                          onChange={e => handleTimeChange(mech.id, 'timeIn', e.target.value)}
+                          onChange={(e) => handleTimeChange(mech.id, "timeIn", e.target.value)}
                           className={timeInputCls}
                         />
                       ) : (
-                        <span className="inline-block text-[11px] font-black px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400">{fmtTimeIST(tIn) || '—'}</span>
+                        <span className="inline-block text-[11px] font-black px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400">
+                          {fmtTimeIST(tIn) || "—"}
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      {userRole === 'admin' ? (
+                      {userRole === "admin" ? (
                         <input
                           type="time"
                           value={tOut}
-                          onChange={e => handleTimeChange(mech.id, 'timeOut', e.target.value)}
+                          onChange={(e) => handleTimeChange(mech.id, "timeOut", e.target.value)}
                           className={timeInputCls}
                         />
                       ) : (
-                        <span className="inline-block text-[11px] font-black px-2.5 py-1 rounded-md bg-red-500/10 text-red-400">{fmtTimeIST(tOut) || '—'}</span>
+                        <span className="inline-block text-[11px] font-black px-2.5 py-1 rounded-md bg-red-500/10 text-red-400">
+                          {fmtTimeIST(tOut) || "—"}
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -579,53 +735,82 @@ export default function DailyAttendance({
       {/* ── Mobile Cards ── */}
       {isMobile && (
         <div className="space-y-3 pb-28">
-          {mechanics.map(mech => {
+          {mechanics.map((mech) => {
             const st = attendance[mech.id];
             const t = times[mech.id];
-            const tIn = t?.timeIn ?? '';
-            const tOut = t?.timeOut ?? '';
+            const tIn = t?.timeIn ?? "";
+            const tOut = t?.timeOut ?? "";
             return (
-              <div key={mech.id} className="bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] p-4 rounded-2xl">
+              <div
+                key={mech.id}
+                className="bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] p-4 rounded-2xl"
+              >
                 <div className="flex items-center gap-3 mb-3">
                   <MechAvatar image={mech.image} name={mech.name} />
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{mech.name}</div>
+                    <div className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">
+                      {mech.name}
+                    </div>
                     <div className="text-xs text-slate-600">{mech.designation}</div>
                   </div>
-                  {userRole === 'admin' && st === 2 && !times[mech.id]?.timeIn && (
+                  {userRole === "admin" && st === 2 && !times[mech.id]?.timeIn && (
                     <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/30 flex-shrink-0">
                       No Check-in
                     </span>
                   )}
                 </div>
 
-                {userRole === 'staff' && (
+                {userRole === "staff" && (
                   <div className="flex items-center justify-center gap-2 mb-3 text-xs font-black">
-                    <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full ${STATUS_BADGE[st]?.cls ?? STATUS_BADGE[0].cls}`}>
-                      {STATUS_BADGE[st]?.label ?? 'Absent'}
+                    <span
+                      className={`inline-block text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full ${STATUS_BADGE[st]?.cls ?? STATUS_BADGE[0].cls}`}
+                    >
+                      {STATUS_BADGE[st]?.label ?? "Absent"}
                     </span>
-                    <span className="text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md"><LogIn size={10} className="inline mr-0.5" />{fmtTimeIST(tIn) || '—'}</span>
-                    <span className="text-[11px] text-red-400 bg-red-500/10 px-2 py-1 rounded-md"><LogOut size={10} className="inline mr-0.5" />{fmtTimeIST(tOut) || '—'}</span>
-                    <span className="text-[11px] text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md">{hoursBetweenIST(tIn, tOut)}</span>
+                    <span className="text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md">
+                      <LogIn size={10} className="inline mr-0.5" />
+                      {fmtTimeIST(tIn) || "—"}
+                    </span>
+                    <span className="text-[11px] text-red-400 bg-red-500/10 px-2 py-1 rounded-md">
+                      <LogOut size={10} className="inline mr-0.5" />
+                      {fmtTimeIST(tOut) || "—"}
+                    </span>
+                    <span className="text-[11px] text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md">
+                      {hoursBetweenIST(tIn, tOut)}
+                    </span>
                   </div>
                 )}
 
-                {userRole === 'admin' && (
+                {userRole === "admin" && (
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <div>
-                      <label className="block text-[9px] uppercase tracking-wider text-slate-500 font-black mb-1">In</label>
-                      <input type="time" value={tIn} onChange={e => handleTimeChange(mech.id, 'timeIn', e.target.value)} className={timeInputCls} />
+                      <label className="block text-[9px] uppercase tracking-wider text-slate-500 font-black mb-1">
+                        In
+                      </label>
+                      <input
+                        type="time"
+                        value={tIn}
+                        onChange={(e) => handleTimeChange(mech.id, "timeIn", e.target.value)}
+                        className={timeInputCls}
+                      />
                     </div>
                     <div>
-                      <label className="block text-[9px] uppercase tracking-wider text-slate-500 font-black mb-1">Out</label>
-                      <input type="time" value={tOut} onChange={e => handleTimeChange(mech.id, 'timeOut', e.target.value)} className={timeInputCls} />
+                      <label className="block text-[9px] uppercase tracking-wider text-slate-500 font-black mb-1">
+                        Out
+                      </label>
+                      <input
+                        type="time"
+                        value={tOut}
+                        onChange={(e) => handleTimeChange(mech.id, "timeOut", e.target.value)}
+                        className={timeInputCls}
+                      />
                     </div>
                   </div>
                 )}
 
-                {userRole === 'admin' ? (
+                {userRole === "admin" ? (
                   <div className="grid grid-cols-3 gap-2">
-                    {STATUS_BTNS.map(btn => (
+                    {STATUS_BTNS.map((btn) => (
                       <button
                         key={btn.value}
                         type="button"
@@ -636,16 +821,17 @@ export default function DailyAttendance({
                             : `bg-transparent text-slate-500 border-[#21293d] ${btn.hoverClass}`
                         }`}
                       >
-                        {btn.short === 'P' && <Check size={12} className="inline mr-0.5" />}
-                        {btn.short === 'H' && <Clock size={12} className="inline mr-0.5" />}
-                        {btn.short === 'A' && <X size={12} className="inline mr-0.5" />}
+                        {btn.short === "P" && <Check size={12} className="inline mr-0.5" />}
+                        {btn.short === "H" && <Clock size={12} className="inline mr-0.5" />}
+                        {btn.short === "A" && <X size={12} className="inline mr-0.5" />}
                         {btn.label}
                       </button>
                     ))}
                   </div>
                 ) : (
                   <div className="text-center text-[11px] font-bold text-slate-500">
-                    Working Hours: <span className="text-blue-400">{hoursBetweenIST(tIn, tOut)}</span>
+                    Working Hours:{" "}
+                    <span className="text-blue-400">{hoursBetweenIST(tIn, tOut)}</span>
                   </div>
                 )}
               </div>
@@ -655,23 +841,29 @@ export default function DailyAttendance({
       )}
 
       {/* ── Submit buttons (admin only) ── */}
-      {userRole === 'admin' && !isMobile && (
+      {userRole === "admin" && !isMobile && (
         <div className="mt-6 text-center">
           <button
-            type="submit" disabled={saving}
+            type="submit"
+            disabled={saving}
             className="px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-full font-extrabold uppercase tracking-wider shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]"
           >
-            {saving ? 'Saving...' : 'Save Attendance'}
+            {saving ? "Saving..." : "Save Attendance"}
           </button>
         </div>
       )}
 
-      {userRole === 'admin' && isMobile && (
+      {userRole === "admin" && isMobile && (
         <button
-          type="submit" disabled={saving}
+          type="submit"
+          disabled={saving}
           className="fixed bottom-24 right-5 w-14 h-14 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-full shadow-2xl shadow-blue-500/30 flex items-center justify-center text-white border-2 border-[#0d1117] z-50 transition-all active:scale-95"
         >
-          {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={22} />}
+          {saving ? (
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <Save size={22} />
+          )}
         </button>
       )}
     </form>

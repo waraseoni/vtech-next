@@ -264,9 +264,7 @@ export default function SupplierDetailPage() {
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
                   Contact
                 </p>
-                <p className="text-sm font-bold text-slate-200">
-                  {supplier.contact || "—"}
-                </p>
+                <p className="text-sm font-bold text-slate-200">{supplier.contact || "—"}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -277,9 +275,7 @@ export default function SupplierDetailPage() {
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
                   Email
                 </p>
-                <p className="text-sm font-bold text-slate-200">
-                  {supplier.email || "—"}
-                </p>
+                <p className="text-sm font-bold text-slate-200">{supplier.email || "—"}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -290,9 +286,7 @@ export default function SupplierDetailPage() {
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
                   Address
                 </p>
-                <p className="text-sm font-bold text-slate-200">
-                  {supplier.address || "—"}
-                </p>
+                <p className="text-sm font-bold text-slate-200">{supplier.address || "—"}</p>
               </div>
             </div>
           </div>
@@ -363,9 +357,7 @@ export default function SupplierDetailPage() {
                       <React.Fragment key={po.id}>
                         <tr
                           className="hover:bg-white/[0.02] transition-colors cursor-pointer"
-                          onClick={() =>
-                            setExpandedPO(isExpanded ? null : po.id)
-                          }
+                          onClick={() => setExpandedPO(isExpanded ? null : po.id)}
                         >
                           <td className="px-4 py-3.5 w-8">
                             {isExpanded ? (
@@ -386,9 +378,7 @@ export default function SupplierDetailPage() {
                           <td className="px-4 py-3.5 text-slate-400 text-xs">
                             {fmtDate(po.date_created)}
                           </td>
-                          <td className="px-4 py-3.5 text-center text-slate-400">
-                            {items.length}
-                          </td>
+                          <td className="px-4 py-3.5 text-center text-slate-400">{items.length}</td>
                           <td className="px-4 py-3.5 text-right font-bold text-slate-200">
                             {fmtCurrency(po.total_amount || 0)}
                           </td>
@@ -445,7 +435,8 @@ export default function SupplierDetailPage() {
                                             onClick={(e) => e.stopPropagation()}
                                             className="text-blue-400 hover:underline"
                                           >
-                                            {item.product_list?.name || `Product #${item.product_id}`}
+                                            {item.product_list?.name ||
+                                              `Product #${item.product_id}`}
                                           </Link>
                                         </td>
                                         <td className="px-3 py-2 text-center text-slate-400">

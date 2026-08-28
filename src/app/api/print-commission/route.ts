@@ -15,7 +15,10 @@ const SHOP = {
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(iso));
 }
 
@@ -25,7 +28,8 @@ function inr(n: number) {
 
 export async function GET(request: NextRequest) {
   const user = await requireStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const url = new URL(request.url);
   const month = url.searchParams.get("month") || "";
   const mechanicId = url.searchParams.get("mechanic_id") || "all";
@@ -37,13 +41,17 @@ export async function GET(request: NextRequest) {
 
   const mechData = await fetchAll(
     supabase
-      .from("mechanic_list").select("id, firstname, middlename, lastname")
-      .eq("delete_flag", 0).order("firstname")
+      .from("mechanic_list")
+      .select("id, firstname, middlename, lastname")
+      .eq("delete_flag", 0)
+      .order("firstname")
   );
 
   let q = supabase
-    .from("transaction_list").select("id, job_id, code, date_created, mechanic_id, mechanic_commission_amount")
-    .gte("date_created", from).lte("date_created", to);
+    .from("transaction_list")
+    .select("id, job_id, code, date_created, mechanic_id, mechanic_commission_amount")
+    .gte("date_created", from)
+    .lte("date_created", to);
   if (mechanicId && mechanicId !== "all") q = q.eq("mechanic_id", parseInt(mechanicId));
   const txns = await fetchAll(q);
 
@@ -58,7 +66,12 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const mechMap = new Map(mechData?.map(m => [m.id, [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ")]) ?? []);
+  const mechMap = new Map(
+    mechData?.map((m) => [
+      m.id,
+      [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+    ]) ?? []
+  );
 
   const enriched = [];
   for (const t of txns) {
@@ -77,12 +90,16 @@ export async function GET(request: NextRequest) {
   enriched.sort((a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime());
 
   const totalComm = enriched.reduce((s, r) => s + (r.mechanic_commission_amount || 0), 0);
-  const monthLabel = month ? new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" }) : "All Records";
-  const staffLabel = mechanicId && mechanicId !== "all" ? mechMap.get(parseInt(mechanicId)) || "Staff" : "All Staff";
+  const monthLabel = month
+    ? new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" })
+    : "All Records";
+  const staffLabel =
+    mechanicId && mechanicId !== "all" ? mechMap.get(parseInt(mechanicId)) || "Staff" : "All Staff";
 
-  const rows = enriched.map((r, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const rows = enriched
+    .map((r, i) => {
+      const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+      return `<tr style="background:${rowBg}">
       <td style="padding:7px 8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:12px">${i + 1}</td>
       <td style="padding:7px 8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(r.date_created)}</td>
       <td style="padding:7px 8px;border:1px solid #dee2e6;font-weight:700;color:#1971c2;font-size:12px">#${r.job_id}</td>
@@ -91,7 +108,8 @@ export async function GET(request: NextRequest) {
       <td style="padding:7px 8px;border:1px solid #dee2e6;text-align:right;font-weight:700;font-size:12px">${inr(r.service_amount)}</td>
       <td style="padding:7px 8px;border:1px solid #dee2e6;text-align:right;font-weight:700;color:#2f9e44;font-size:12px">${inr(r.mechanic_commission_amount)}</td>
     </tr>`;
-  }).join("");
+    })
+    .join("");
 
   const html = `<!DOCTYPE html>
 <html lang="en">

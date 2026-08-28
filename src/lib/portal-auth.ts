@@ -13,12 +13,14 @@ export type PortalScope = "seller" | "dev";
 const COOKIES: Record<PortalScope, string> = { seller: "vtech_seller", dev: "vtech_dev" };
 
 export function isPortalEnabled(scope: PortalScope): boolean {
-  const pw = scope === "seller" ? process.env.SELLER_PORTAL_PASSWORD : process.env.DEV_PORTAL_PASSWORD;
+  const pw =
+    scope === "seller" ? process.env.SELLER_PORTAL_PASSWORD : process.env.DEV_PORTAL_PASSWORD;
   return !!process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY && !!pw;
 }
 
 export function verifyPortalPassword(scope: PortalScope, password: unknown): boolean {
-  const pw = scope === "seller" ? process.env.SELLER_PORTAL_PASSWORD : process.env.DEV_PORTAL_PASSWORD;
+  const pw =
+    scope === "seller" ? process.env.SELLER_PORTAL_PASSWORD : process.env.DEV_PORTAL_PASSWORD;
   if (!pw || typeof password !== "string") return false;
   const a = Buffer.from(pw);
   const b = Buffer.from(password);
@@ -28,7 +30,9 @@ export function verifyPortalPassword(scope: PortalScope, password: unknown): boo
 
 function sign(scope: PortalScope): string {
   const payload = `${scope}.${Date.now()}`;
-  const sig = createHmac("sha256", process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY!).update(payload).digest("hex");
+  const sig = createHmac("sha256", process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY!)
+    .update(payload)
+    .digest("hex");
   return `${payload}.${sig}`;
 }
 

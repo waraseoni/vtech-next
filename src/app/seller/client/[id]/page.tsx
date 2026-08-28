@@ -4,8 +4,23 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Copy, Check, Eye, EyeOff, Loader2, Save, Trash2,
-  Store, KeyRound, CalendarDays, Server, FolderGit2, Triangle, ExternalLink, RefreshCw, Download,
+  ArrowLeft,
+  Copy,
+  Check,
+  Eye,
+  EyeOff,
+  Loader2,
+  Save,
+  Trash2,
+  Store,
+  KeyRound,
+  CalendarDays,
+  Server,
+  FolderGit2,
+  Triangle,
+  ExternalLink,
+  RefreshCw,
+  Download,
 } from "lucide-react";
 import PortalGate from "@/components/PortalGate";
 import { ALL_MODULES } from "@/lib/modules";
@@ -25,7 +40,13 @@ type License = {
   created_at: string;
   activation_count?: number;
   last_seen_at?: string | null;
-  activations?: { activation_id: string; shop_url: string | null; shop_name: string | null; activated_at: string; last_seen_at: string }[];
+  activations?: {
+    activation_id: string;
+    shop_url: string | null;
+    shop_name: string | null;
+    activated_at: string;
+    last_seen_at: string;
+  }[];
 };
 
 type Creds = {
@@ -74,8 +95,16 @@ const statusBadge = (s: string) =>
       : "bg-red-500/15 text-red-400 border-red-500/25";
 
 // Secret field — masked by default, eye se reveal, copy button.
-function SecretField({ label, value, onChange, placeholder }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string;
+function SecretField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
 }) {
   const [show, setShow] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -85,7 +114,9 @@ function SecretField({ label, value, onChange, placeholder }: {
       await navigator.clipboard.writeText(value);
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   return (
@@ -104,11 +135,21 @@ function SecretField({ label, value, onChange, placeholder }: {
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
           {value && (
-            <button type="button" onClick={copy} title="Copy" className="p-1.5 text-slate-600 hover:text-emerald-400 transition-colors">
+            <button
+              type="button"
+              onClick={copy}
+              title="Copy"
+              className="p-1.5 text-slate-600 hover:text-emerald-400 transition-colors"
+            >
               {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
             </button>
           )}
-          <button type="button" onClick={() => setShow((s) => !s)} title={show ? "Hide" : "Show"} className="p-1.5 text-slate-600 hover:text-slate-300 transition-colors">
+          <button
+            type="button"
+            onClick={() => setShow((s) => !s)}
+            title={show ? "Hide" : "Show"}
+            className="p-1.5 text-slate-600 hover:text-slate-300 transition-colors"
+          >
             {show ? <EyeOff size={13} /> : <Eye size={13} />}
           </button>
         </div>
@@ -124,13 +165,31 @@ export default function ClientDetailPage() {
   const [license, setLicense] = useState<License | null>(null);
   const [open, setOpen] = useState(false);
   const [creds, setCreds] = useState<Creds>({
-    license_id: id, app_url: "", supabase_url: "", supabase_anon_key: "",
-    supabase_service_role_key: "", supabase_email: "", supabase_password: "",
-    github_repo: "", github_token: "", github_username: "", github_password: "",
-    vercel_project_url: "", vercel_project_id: "", vercel_token: "",
-    vercel_email: "", vercel_password: "", custom_domain: "", notes: "",
-    site_name: "", site_tagline: "", site_phone: "", site_email: "",
-    site_address: "", site_owner: "", site_services: "",
+    license_id: id,
+    app_url: "",
+    supabase_url: "",
+    supabase_anon_key: "",
+    supabase_service_role_key: "",
+    supabase_email: "",
+    supabase_password: "",
+    github_repo: "",
+    github_token: "",
+    github_username: "",
+    github_password: "",
+    vercel_project_url: "",
+    vercel_project_id: "",
+    vercel_token: "",
+    vercel_email: "",
+    vercel_password: "",
+    custom_domain: "",
+    notes: "",
+    site_name: "",
+    site_tagline: "",
+    site_phone: "",
+    site_email: "",
+    site_address: "",
+    site_owner: "",
+    site_services: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -139,7 +198,8 @@ export default function ClientDetailPage() {
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setLoading(true); setErr("");
+    setLoading(true);
+    setErr("");
     try {
       const [licRes, credsRes] = await Promise.all([
         fetch(`/api/seller/licenses/${id}`, { cache: "no-store" }),
@@ -147,7 +207,11 @@ export default function ClientDetailPage() {
       ]);
       const lic = await licRes.json().catch(() => ({}));
       const cr = await credsRes.json().catch(() => ({}));
-      if (!licRes.ok) { setErr(lic.error || "License load failed"); setLoading(false); return; }
+      if (!licRes.ok) {
+        setErr(lic.error || "License load failed");
+        setLoading(false);
+        return;
+      }
       setLicense(lic);
       setCreds({
         license_id: id,
@@ -186,14 +250,18 @@ export default function ClientDetailPage() {
   // Data tabhi load karo jab portal gate open ho (portal cookie set ho chuka ho).
   // Pehle ye effect mount par turant chalta tha → cookie nahi milne par 401 aata
   // tha aur refresh ke baad hi data dikhta tha.
-  useEffect(() => { if (open && id) load(); }, [open, id, load]);
+  useEffect(() => {
+    if (open && id) load();
+  }, [open, id, load]);
 
   const set = (k: keyof Creds) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setCreds((c) => ({ ...c, [k]: e.target.value }));
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErr(""); setSaving(true); setSavedAt(null);
+    setErr("");
+    setSaving(true);
+    setSavedAt(null);
     try {
       const res = await fetch(`/api/seller/creds/${id}`, {
         method: "PUT",
@@ -201,7 +269,10 @@ export default function ClientDetailPage() {
         body: JSON.stringify(creds),
       });
       const data = await res.json();
-      if (!res.ok) { setErr(data.error || "Save failed"); return; }
+      if (!res.ok) {
+        setErr(data.error || "Save failed");
+        return;
+      }
       setCreds({
         license_id: data.license_id ?? id,
         app_url: data.app_url ?? "",
@@ -240,8 +311,38 @@ export default function ClientDetailPage() {
   const clearAll = async () => {
     if (!confirm("Client ke saare credentials delete karein? (License delete nahi hoga)")) return;
     const res = await fetch(`/api/seller/creds/${id}`, { method: "DELETE" });
-    if (!res.ok) { const d = await res.json().catch(() => ({})); setErr(d.error || "Delete failed"); return; }
-    setCreds({ license_id: id, app_url: "", supabase_url: "", supabase_anon_key: "", supabase_service_role_key: "", supabase_email: "", supabase_password: "", github_repo: "", github_token: "", github_username: "", github_password: "", vercel_project_url: "", vercel_project_id: "", vercel_token: "", vercel_email: "", vercel_password: "", custom_domain: "", notes: "", site_name: "", site_tagline: "", site_phone: "", site_email: "", site_address: "", site_owner: "", site_services: "" });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setErr(d.error || "Delete failed");
+      return;
+    }
+    setCreds({
+      license_id: id,
+      app_url: "",
+      supabase_url: "",
+      supabase_anon_key: "",
+      supabase_service_role_key: "",
+      supabase_email: "",
+      supabase_password: "",
+      github_repo: "",
+      github_token: "",
+      github_username: "",
+      github_password: "",
+      vercel_project_url: "",
+      vercel_project_id: "",
+      vercel_token: "",
+      vercel_email: "",
+      vercel_password: "",
+      custom_domain: "",
+      notes: "",
+      site_name: "",
+      site_tagline: "",
+      site_phone: "",
+      site_email: "",
+      site_address: "",
+      site_owner: "",
+      site_services: "",
+    });
   };
 
   const supabaseDash = useMemo(() => {
@@ -282,11 +383,17 @@ export default function ClientDetailPage() {
       ``,
       `Notes: ${creds.notes || "—"}`,
     ].join("\n");
-    try { await navigator.clipboard.writeText(text); setSavedAt("Setup kit copied!"); } catch { /* ignore */ }
+    try {
+      await navigator.clipboard.writeText(text);
+      setSavedAt("Setup kit copied!");
+    } catch {
+      /* ignore */
+    }
   };
 
   const downloadKit = async () => {
-    setErr(""); setKitLoading(true);
+    setErr("");
+    setKitLoading(true);
     try {
       const res = await fetch(`/api/seller/setup-kit/${id}`, { cache: "no-store" });
       if (!res.ok) {
@@ -326,24 +433,38 @@ export default function ClientDetailPage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Link href="/seller" className="w-9 h-9 flex items-center justify-center bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all">
+            <Link
+              href="/seller"
+              className="w-9 h-9 flex items-center justify-center bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all"
+            >
               <ArrowLeft size={15} />
             </Link>
             <div>
               <h1 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
-                <Store size={17} className="text-blue-400" /> {license?.shop_name || "Client Details"}
+                <Store size={17} className="text-blue-400" />{" "}
+                {license?.shop_name || "Client Details"}
               </h1>
-              <p className="text-[11px] text-slate-500 font-semibold mt-0.5 font-mono">{license?.license_key || "…"}</p>
+              <p className="text-[11px] text-slate-500 font-semibold mt-0.5 font-mono">
+                {license?.license_key || "…"}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={load} className="w-9 h-9 flex items-center justify-center bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all" title="Refresh">
+            <button
+              onClick={load}
+              className="w-9 h-9 flex items-center justify-center bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all"
+              title="Refresh"
+            >
               <RefreshCw size={15} />
             </button>
           </div>
         </div>
 
-        {err && <p className="text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">{err}</p>}
+        {err && (
+          <p className="text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+            {err}
+          </p>
+        )}
 
         {loading ? (
           <div className="h-40 flex items-center justify-center text-slate-500 gap-2 text-xs font-bold uppercase tracking-widest">
@@ -354,24 +475,61 @@ export default function ClientDetailPage() {
             {/* ── License info ── */}
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
-                <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5"><KeyRound size={13} className="text-blue-400" /> License</h2>
+                <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5">
+                  <KeyRound size={13} className="text-blue-400" /> License
+                </h2>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm font-black text-emerald-300 tracking-wider">{license.license_key}</span>
-                  <span className={`inline-flex px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border ${statusBadge(license.status)}`}>{license.status}</span>
+                  <span className="font-mono text-sm font-black text-emerald-300 tracking-wider">
+                    {license.license_key}
+                  </span>
+                  <span
+                    className={`inline-flex px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border ${statusBadge(license.status)}`}
+                  >
+                    {license.status}
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
-                  <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Plan</p><p className="font-bold text-purple-400 mt-0.5">{license.plan}</p></div>
-                  <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Instances</p><p className="font-bold text-slate-200 mt-0.5">{license.activation_count ?? 0}/{license.max_activations}</p></div>
-                  <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Owner</p><p className="font-bold text-slate-200 mt-0.5">{license.owner_name || "—"}</p></div>
-                  <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Email</p><p className="font-bold text-slate-200 mt-0.5 break-all">{license.owner_email || "—"}</p></div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                      Plan
+                    </p>
+                    <p className="font-bold text-purple-400 mt-0.5">{license.plan}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                      Instances
+                    </p>
+                    <p className="font-bold text-slate-200 mt-0.5">
+                      {license.activation_count ?? 0}/{license.max_activations}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                      Owner
+                    </p>
+                    <p className="font-bold text-slate-200 mt-0.5">{license.owner_name || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                      Email
+                    </p>
+                    <p className="font-bold text-slate-200 mt-0.5 break-all">
+                      {license.owner_email || "—"}
+                    </p>
+                  </div>
                 </div>
                 <div className="mt-3 pt-3 border-t border-[#1a2234]">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1.5">Enabled Modules</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                    Enabled Modules
+                  </p>
                   <div className="flex flex-wrap gap-1">
-                    {(license.enabled_modules ?? ALL_MODULES.map(m => m.key)).map((m) => {
-                      const mod = ALL_MODULES.find(x => x.key === m);
+                    {(license.enabled_modules ?? ALL_MODULES.map((m) => m.key)).map((m) => {
+                      const mod = ALL_MODULES.find((x) => x.key === m);
                       return (
-                        <span key={m} className={`px-2 py-0.5 rounded text-[10px] font-bold ${mod?.always ? "bg-slate-500/15 text-slate-400 border border-slate-500/20" : "bg-blue-500/15 text-blue-400 border border-blue-500/20"}`}>
+                        <span
+                          key={m}
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${mod?.always ? "bg-slate-500/15 text-slate-400 border border-slate-500/20" : "bg-blue-500/15 text-blue-400 border border-blue-500/20"}`}
+                        >
                           {mod?.label ?? m}
                         </span>
                       );
@@ -380,20 +538,66 @@ export default function ClientDetailPage() {
                 </div>
               </div>
               <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
-                <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5"><CalendarDays size={13} className="text-blue-400" /> Expiry & Activity</h2>
+                <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5">
+                  <CalendarDays size={13} className="text-blue-400" /> Expiry & Activity
+                </h2>
                 {(() => {
                   const dl = daysLeft(license.expires_at);
                   const expired = license.status === "active" && dl !== null && dl < 0;
                   return (
                     <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Expiry</p>
-                        <p className={`font-bold mt-0.5 ${expired ? "text-red-400" : dl !== null && dl! <= 30 ? "text-amber-400" : license.expires_at ? "text-slate-200" : "text-emerald-400"}`}>
-                          {license.expires_at ? new Date(license.expires_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Lifetime"}
-                          {dl !== null && <span className="block text-[9px] text-slate-500">{expired ? "expired" : `${dl} days left`}</span>}
-                        </p></div>
-                      <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Created</p><p className="font-bold text-slate-200 mt-0.5">{new Date(license.created_at).toLocaleDateString("en-IN")}</p></div>
-                      <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Last seen</p><p className="font-bold text-slate-200 mt-0.5">{license.last_seen_at ? new Date(license.last_seen_at).toLocaleString("en-IN") : "—"}</p></div>
-                      <div><p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Notes</p><p className="font-bold text-slate-200 mt-0.5 break-words">{creds.notes || "—"}</p>{license.notes && <p className="text-[10px] text-slate-500 mt-1 break-words">License: {license.notes}</p>}</div>
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                          Expiry
+                        </p>
+                        <p
+                          className={`font-bold mt-0.5 ${expired ? "text-red-400" : dl !== null && dl! <= 30 ? "text-amber-400" : license.expires_at ? "text-slate-200" : "text-emerald-400"}`}
+                        >
+                          {license.expires_at
+                            ? new Date(license.expires_at).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })
+                            : "Lifetime"}
+                          {dl !== null && (
+                            <span className="block text-[9px] text-slate-500">
+                              {expired ? "expired" : `${dl} days left`}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                          Created
+                        </p>
+                        <p className="font-bold text-slate-200 mt-0.5">
+                          {new Date(license.created_at).toLocaleDateString("en-IN")}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                          Last seen
+                        </p>
+                        <p className="font-bold text-slate-200 mt-0.5">
+                          {license.last_seen_at
+                            ? new Date(license.last_seen_at).toLocaleString("en-IN")
+                            : "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                          Notes
+                        </p>
+                        <p className="font-bold text-slate-200 mt-0.5 break-words">
+                          {creds.notes || "—"}
+                        </p>
+                        {license.notes && (
+                          <p className="text-[10px] text-slate-500 mt-1 break-words">
+                            License: {license.notes}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   );
                 })()}
@@ -402,9 +606,14 @@ export default function ClientDetailPage() {
 
             {/* ── Activations ── */}
             <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
-              <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5"><Server size={13} className="text-blue-400" /> Activations ({license.activations?.length ?? 0})</h2>
+              <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5">
+                <Server size={13} className="text-blue-400" /> Activations (
+                {license.activations?.length ?? 0})
+              </h2>
               {!license.activations || license.activations.length === 0 ? (
-                <p className="text-xs text-slate-600 font-semibold">Koi activation nahi — client ne abhi tak app activate nahi kiya.</p>
+                <p className="text-xs text-slate-600 font-semibold">
+                  Koi activation nahi — client ne abhi tak app activate nahi kiya.
+                </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
@@ -419,10 +628,16 @@ export default function ClientDetailPage() {
                     <tbody className="divide-y divide-[#1a2234]">
                       {license.activations.map((a) => (
                         <tr key={a.activation_id}>
-                          <td className="py-2 pr-3 font-mono text-[10px] text-slate-400">{a.activation_id.slice(0, 16)}…</td>
+                          <td className="py-2 pr-3 font-mono text-[10px] text-slate-400">
+                            {a.activation_id.slice(0, 16)}…
+                          </td>
                           <td className="py-2 pr-3 text-xs text-slate-300">{a.shop_url || "—"}</td>
-                          <td className="py-2 pr-3 text-xs text-slate-300">{new Date(a.activated_at).toLocaleString("en-IN")}</td>
-                          <td className="py-2 text-xs text-slate-300">{new Date(a.last_seen_at).toLocaleString("en-IN")}</td>
+                          <td className="py-2 pr-3 text-xs text-slate-300">
+                            {new Date(a.activated_at).toLocaleString("en-IN")}
+                          </td>
+                          <td className="py-2 text-xs text-slate-300">
+                            {new Date(a.last_seen_at).toLocaleString("en-IN")}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -432,22 +647,41 @@ export default function ClientDetailPage() {
             </div>
 
             {/* ── Credentials ── */}
-            <form onSubmit={save} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5 space-y-4">
+            <form
+              onSubmit={save}
+              className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5 space-y-4"
+            >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
-                  <Server size={13} className="text-blue-400" /> Client Credentials (encrypted at rest)
+                  <Server size={13} className="text-blue-400" /> Client Credentials (encrypted at
+                  rest)
                 </h2>
-                  <div className="flex items-center flex-wrap gap-2">
-                      <button type="button" onClick={downloadKit} disabled={kitLoading}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 rounded-xl text-[10px] font-black text-blue-300 hover:text-blue-200 transition-all disabled:opacity-50">
-                    {kitLoading ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />} Download Setup Kit
+                <div className="flex items-center flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={downloadKit}
+                    disabled={kitLoading}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 rounded-xl text-[10px] font-black text-blue-300 hover:text-blue-200 transition-all disabled:opacity-50"
+                  >
+                    {kitLoading ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <Download size={12} />
+                    )}{" "}
+                    Download Setup Kit
                   </button>
-                  <button type="button" onClick={copyKit}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-[#1a2234] hover:bg-blue-500/15 rounded-xl text-[10px] font-black text-slate-300 hover:text-blue-400 transition-all">
+                  <button
+                    type="button"
+                    onClick={copyKit}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-[#1a2234] hover:bg-blue-500/15 rounded-xl text-[10px] font-black text-slate-300 hover:text-blue-400 transition-all"
+                  >
                     <Copy size={12} /> Copy Setup Kit
                   </button>
-                  <button type="button" onClick={clearAll}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-[#1a2234] hover:bg-red-500/15 rounded-xl text-[10px] font-black text-slate-400 hover:text-red-400 transition-all">
+                  <button
+                    type="button"
+                    onClick={clearAll}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-[#1a2234] hover:bg-red-500/15 rounded-xl text-[10px] font-black text-slate-400 hover:text-red-400 transition-all"
+                  >
                     <Trash2 size={12} /> Clear
                   </button>
                 </div>
@@ -455,122 +689,247 @@ export default function ClientDetailPage() {
 
               <div>
                 <label className={labelCls}>App URL (client ka hosted app)</label>
-                <input className={inputCls} value={creds.app_url ?? ""} onChange={set("app_url")} placeholder="https://client-shop.vercel.app" />
+                <input
+                  className={inputCls}
+                  value={creds.app_url ?? ""}
+                  onChange={set("app_url")}
+                  placeholder="https://client-shop.vercel.app"
+                />
               </div>
 
               {/* Supabase */}
               <div className="rounded-xl bg-[#1a2234]/50 border border-[#21293d] p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5"><Server size={12} /> Supabase (client ka data project)</h3>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                    <Server size={12} /> Supabase (client ka data project)
+                  </h3>
                   {supabaseDash && (
-                    <a href={supabaseDash} target="_blank" rel="noreferrer"
-                      className="flex items-center gap-1 text-[10px] font-black text-emerald-400 hover:text-emerald-300 transition-colors">
+                    <a
+                      href={supabaseDash}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1 text-[10px] font-black text-emerald-400 hover:text-emerald-300 transition-colors"
+                    >
                       <ExternalLink size={11} /> Open Dashboard
                     </a>
                   )}
                 </div>
                 <div>
                   <label className={labelCls}>Project URL</label>
-                  <input className={inputCls} value={creds.supabase_url ?? ""} onChange={set("supabase_url")} placeholder="https://xxxx.supabase.co" />
+                  <input
+                    className={inputCls}
+                    value={creds.supabase_url ?? ""}
+                    onChange={set("supabase_url")}
+                    placeholder="https://xxxx.supabase.co"
+                  />
                 </div>
                 <div className="grid md:grid-cols-2 gap-3">
                   <div>
                     <label className={labelCls}>Login Email</label>
-                    <input className={inputCls} value={creds.supabase_email ?? ""} onChange={set("supabase_email")} placeholder="client@shop.com" />
+                    <input
+                      className={inputCls}
+                      value={creds.supabase_email ?? ""}
+                      onChange={set("supabase_email")}
+                      placeholder="client@shop.com"
+                    />
                   </div>
-                  <SecretField label="Login Password" value={creds.supabase_password ?? ""} onChange={(v) => setCreds((c) => ({ ...c, supabase_password: v }))} />
+                  <SecretField
+                    label="Login Password"
+                    value={creds.supabase_password ?? ""}
+                    onChange={(v) => setCreds((c) => ({ ...c, supabase_password: v }))}
+                  />
                 </div>
                 <div className="grid md:grid-cols-2 gap-3">
-                  <SecretField label="Anon (public) Key" value={creds.supabase_anon_key ?? ""} onChange={(v) => setCreds((c) => ({ ...c, supabase_anon_key: v }))} />
-                  <SecretField label="Service Role Key ⚠️" value={creds.supabase_service_role_key ?? ""} onChange={(v) => setCreds((c) => ({ ...c, supabase_service_role_key: v }))} />
+                  <SecretField
+                    label="Anon (public) Key"
+                    value={creds.supabase_anon_key ?? ""}
+                    onChange={(v) => setCreds((c) => ({ ...c, supabase_anon_key: v }))}
+                  />
+                  <SecretField
+                    label="Service Role Key ⚠️"
+                    value={creds.supabase_service_role_key ?? ""}
+                    onChange={(v) => setCreds((c) => ({ ...c, supabase_service_role_key: v }))}
+                  />
                 </div>
               </div>
 
               {/* GitHub */}
               <div className="rounded-xl bg-[#1a2234]/50 border border-[#21293d] p-4 space-y-3">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5"><FolderGit2 size={12} /> GitHub</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                  <FolderGit2 size={12} /> GitHub
+                </h3>
                 <div className="grid md:grid-cols-2 gap-3">
                   <div>
                     <label className={labelCls}>Repo (owner/repo)</label>
-                    <input className={inputCls} value={creds.github_repo ?? ""} onChange={set("github_repo")} placeholder="vtech/vtech-frontend" />
+                    <input
+                      className={inputCls}
+                      value={creds.github_repo ?? ""}
+                      onChange={set("github_repo")}
+                      placeholder="vtech/vtech-frontend"
+                    />
                   </div>
                   <div>
                     <label className={labelCls}>Username</label>
-                    <input className={inputCls} value={creds.github_username ?? ""} onChange={set("github_username")} placeholder="github_username" />
+                    <input
+                      className={inputCls}
+                      value={creds.github_username ?? ""}
+                      onChange={set("github_username")}
+                      placeholder="github_username"
+                    />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-3">
-                  <SecretField label="Login Password" value={creds.github_password ?? ""} onChange={(v) => setCreds((c) => ({ ...c, github_password: v }))} />
-                  <SecretField label="Personal Access Token" value={creds.github_token ?? ""} onChange={(v) => setCreds((c) => ({ ...c, github_token: v }))} />
+                  <SecretField
+                    label="Login Password"
+                    value={creds.github_password ?? ""}
+                    onChange={(v) => setCreds((c) => ({ ...c, github_password: v }))}
+                  />
+                  <SecretField
+                    label="Personal Access Token"
+                    value={creds.github_token ?? ""}
+                    onChange={(v) => setCreds((c) => ({ ...c, github_token: v }))}
+                  />
                 </div>
               </div>
 
               {/* Vercel */}
               <div className="rounded-xl bg-[#1a2234]/50 border border-[#21293d] p-4 space-y-3">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5"><Triangle size={12} /> Vercel</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                  <Triangle size={12} /> Vercel
+                </h3>
                 <div className="grid md:grid-cols-2 gap-3">
                   <div>
                     <label className={labelCls}>Project URL</label>
-                    <input className={inputCls} value={creds.vercel_project_url ?? ""} onChange={set("vercel_project_url")} placeholder="https://client-shop.vercel.app" />
+                    <input
+                      className={inputCls}
+                      value={creds.vercel_project_url ?? ""}
+                      onChange={set("vercel_project_url")}
+                      placeholder="https://client-shop.vercel.app"
+                    />
                   </div>
                   <div>
                     <label className={labelCls}>Project ID</label>
-                    <input className={inputCls} value={creds.vercel_project_id ?? ""} onChange={set("vercel_project_id")} placeholder="prj_xxx" />
+                    <input
+                      className={inputCls}
+                      value={creds.vercel_project_id ?? ""}
+                      onChange={set("vercel_project_id")}
+                      placeholder="prj_xxx"
+                    />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-3">
                   <div>
                     <label className={labelCls}>Login Email</label>
-                    <input className={inputCls} value={creds.vercel_email ?? ""} onChange={set("vercel_email")} placeholder="client@shop.com" />
+                    <input
+                      className={inputCls}
+                      value={creds.vercel_email ?? ""}
+                      onChange={set("vercel_email")}
+                      placeholder="client@shop.com"
+                    />
                   </div>
-                  <SecretField label="Login Password" value={creds.vercel_password ?? ""} onChange={(v) => setCreds((c) => ({ ...c, vercel_password: v }))} />
+                  <SecretField
+                    label="Login Password"
+                    value={creds.vercel_password ?? ""}
+                    onChange={(v) => setCreds((c) => ({ ...c, vercel_password: v }))}
+                  />
                 </div>
-                <SecretField label="Access Token" value={creds.vercel_token ?? ""} onChange={(v) => setCreds((c) => ({ ...c, vercel_token: v }))} />
+                <SecretField
+                  label="Access Token"
+                  value={creds.vercel_token ?? ""}
+                  onChange={(v) => setCreds((c) => ({ ...c, vercel_token: v }))}
+                />
                 <div>
                   <label className={labelCls}>Custom Domain (optional)</label>
-                  <input className={inputCls} value={creds.custom_domain ?? ""} onChange={set("custom_domain")} placeholder="shop1.vtechshop.com" />
+                  <input
+                    className={inputCls}
+                    value={creds.custom_domain ?? ""}
+                    onChange={set("custom_domain")}
+                    placeholder="shop1.vtechshop.com"
+                  />
                 </div>
               </div>
 
               <div>
                 <label className={labelCls}>Notes</label>
-                <textarea className={`${inputCls} font-sans`} rows={3} value={creds.notes ?? ""} onChange={set("notes")} placeholder="Koi bhi extra detail — bil, renewal reminders, server creds, etc." />
+                <textarea
+                  className={`${inputCls} font-sans`}
+                  rows={3}
+                  value={creds.notes ?? ""}
+                  onChange={set("notes")}
+                  placeholder="Koi bhi extra detail — bil, renewal reminders, server creds, etc."
+                />
 
                 <div className="rounded-2xl border border-blue-500/25 bg-blue-500/5 p-4">
                   <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">
                     Public Site Branding (optional)
                   </p>
                   <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
-                    Client ki alag public site — ye details uske Vercel project par env vars ke roop mein set hoti hain. Khali chhoro to default (V-Technologies) branding dikhegi.
+                    Client ki alag public site — ye details uske Vercel project par env vars ke roop
+                    mein set hoti hain. Khali chhoro to default (V-Technologies) branding dikhegi.
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className={labelCls}>Site Name</label>
-                      <input className={inputCls} value={creds.site_name ?? ""} onChange={set("site_name")} placeholder="e.g. Kamal Light House" />
+                      <input
+                        className={inputCls}
+                        value={creds.site_name ?? ""}
+                        onChange={set("site_name")}
+                        placeholder="e.g. Kamal Light House"
+                      />
                     </div>
                     <div>
                       <label className={labelCls}>Tagline</label>
-                      <input className={inputCls} value={creds.site_tagline ?? ""} onChange={set("site_tagline")} placeholder="e.g. Stage Light Repair Experts" />
+                      <input
+                        className={inputCls}
+                        value={creds.site_tagline ?? ""}
+                        onChange={set("site_tagline")}
+                        placeholder="e.g. Stage Light Repair Experts"
+                      />
                     </div>
                     <div>
                       <label className={labelCls}>Phone</label>
-                      <input className={inputCls} value={creds.site_phone ?? ""} onChange={set("site_phone")} placeholder="+91 98765 43210" />
+                      <input
+                        className={inputCls}
+                        value={creds.site_phone ?? ""}
+                        onChange={set("site_phone")}
+                        placeholder="+91 98765 43210"
+                      />
                     </div>
                     <div>
                       <label className={labelCls}>Email</label>
-                      <input className={inputCls} value={creds.site_email ?? ""} onChange={set("site_email")} placeholder="info@kamalshop.com" />
+                      <input
+                        className={inputCls}
+                        value={creds.site_email ?? ""}
+                        onChange={set("site_email")}
+                        placeholder="info@kamalshop.com"
+                      />
                     </div>
                     <div>
                       <label className={labelCls}>Owner Name</label>
-                      <input className={inputCls} value={creds.site_owner ?? ""} onChange={set("site_owner")} placeholder="e.g. Kamal Verma" />
+                      <input
+                        className={inputCls}
+                        value={creds.site_owner ?? ""}
+                        onChange={set("site_owner")}
+                        placeholder="e.g. Kamal Verma"
+                      />
                     </div>
                     <div>
                       <label className={labelCls}>Services (comma-separated)</label>
-                      <input className={inputCls} value={creds.site_services ?? ""} onChange={set("site_services")} placeholder="stage-lighting,industrial" />
+                      <input
+                        className={inputCls}
+                        value={creds.site_services ?? ""}
+                        onChange={set("site_services")}
+                        placeholder="stage-lighting,industrial"
+                      />
                     </div>
                     <div className="col-span-2">
                       <label className={labelCls}>Address</label>
-                      <input className={inputCls} value={creds.site_address ?? ""} onChange={set("site_address")} placeholder="Shop no., Street, City, State, PIN" />
+                      <input
+                        className={inputCls}
+                        value={creds.site_address ?? ""}
+                        onChange={set("site_address")}
+                        placeholder="Shop no., Street, City, State, PIN"
+                      />
                     </div>
                   </div>
                 </div>
@@ -583,9 +942,20 @@ export default function ClientDetailPage() {
               )}
 
               <div className="flex items-center justify-end">
-                <button type="submit" disabled={saving}
-                  className="flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-sm font-black tracking-wide transition-all">
-                  {saving ? <><Loader2 size={15} className="animate-spin" /> Saving...</> : <><Save size={15} /> Save Credentials</>}
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-sm font-black tracking-wide transition-all"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 size={15} className="animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={15} /> Save Credentials
+                    </>
+                  )}
                 </button>
               </div>
             </form>

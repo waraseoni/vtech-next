@@ -1,7 +1,7 @@
 # Completed Tasks Log
 
 *Record of completed tasks — plan files se yahan move kiya jata hai taaki confusion na ho. Jo yahan hai wo DONE hai, dobara mat karna. Naya kaam start karte waqt yahan check karo.*
-*Updated: 11 Aug 2026*
+*Updated: 28 Aug 2026*
 
 ## P1 — Security & Migration (done)
 
@@ -67,3 +67,76 @@ Mechanics module ko legacy PHP (`admin/mechanics/*`, `admin/attendance/*`, `admi
 - ⚠️ Pending-jobs report intentionally uses `date_created` (correct semantics) — no change.
 
 ## P4 — Sync Project (pending)
+
+## P7 — Engineering & Tooling (FULLY DONE — 28 Aug 2026)
+
+Codebase quality setup — testing infra, CI/CD, error monitoring, formatting, security guard. Sab verify ke saath done (`lint` clean, `typecheck` clean, `build` success, tests pass).
+
+### Testing setup (Vitest) — DONE
+- ✅ `vitest.config.mts` + `vitest.setup.ts` (jsdom env, `@/` alias, Testing Library + jest-dom).
+- ✅ Scripts: `test`, `test:watch`, `test:coverage`.
+- ✅ **101 tests** across 6 pure-logic module files (`src/lib/*.test.ts`):
+  - `dateUtils.ts` (27) — IST date math, attendance time derivation, overnight shifts.
+  - `status-colors.ts` (11) — job/service/PO status labels + styling invariants.
+  - `client-due.ts` (23) — canonical due formula, service-vs-loan payment partitioning, due/advance/settled label.
+  - `inventory.ts` (18) — stock status classification, aggregation, oversold, stock value.
+  - `barcodePrint.ts` (11) — safeBarcode sanitization, A4 label sheet capacity.
+  - `geofence.ts` (11) — haversine distance, Hindi geo-error messages.
+- ✅ DB-touching modules test-friendly: `@/lib/supabase` mock pattern (`vi.mock`) for `geofence`.
+
+### CI/CD (GitHub Actions) — DONE
+- ✅ `.github/workflows/ci.yml` — two jobs:
+  - `quality`: lint, typecheck, test, format:check (no secrets needed).
+  - `build`: production build (needs 3 Supabase secrets).
+- ✅ Concurrency group with cancel-in-progress.
+- ✅ Setup doc: `docs/CI_SETUP.md` (kis secrets kaise daalo).
+
+### Error monitoring (Sentry) — DONE
+- ✅ `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts` — DSN conditional (kabhi bhi fail nahi karega bina DSN ke).
+- ✅ `next.config.ts` → `withSentryConfig` (Turbopack-compatible: `sourcemaps: { disable: true }`).
+- ✅ `src/app/error.tsx` — `Sentry.captureException` (existing Hindi fallback UI preserved).
+- ✅ `src/app/global-error.tsx` — NEW root-layout error boundary (Sentry + Hindi fallback; root layout errors ab catch hote hain).
+- ✅ `.env.example` → `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` documented.
+- 🔑 Activate: Sentry project banao → env vars set karo. Tab se errors remote track hona shuru.
+
+### README + Formatting — DONE
+- ✅ `README.md` — default boilerplate se customized (tech stack, scripts, dirs, architecture notes).
+- ✅ Prettier: `.prettierrc.json`, `.prettierignore`, `eslint-config-prettier` in eslint config.
+- ✅ `.editorconfig` (indent 2, utf-8, LF).
+- ✅ Poore codebase ko Prettier format kiya (style-only; logic unchanged).
+- ✅ Scripts: `format`, `format:check`, `lint:fix`.
+
+### Security guard + scripts — DONE
+- ✅ `typecheck`, `test`, `format`, `lint:fix` scripts added to package.json.
+- ✅ `src/proxy.ts` (Next 16 middleware) — pehle se exist tha (auth + 8h session-cap); restored + Prettier-formatted only (logic untouched; git checkout karke undo kar diya tha accidental overwrite).
+
+## Bhavishya ke Plans (ROADMAP — pending)
+
+### P-R1 — Tests expansion (high priority)
+- API route integration tests (auth guards: `requireUser`/`requireStaff`/`requireAdmin`).
+- React component tests (UI primitives: `SearchableSelect`, `PageHeader`, `PremiumCard`).
+- Edge cases: `client-due` `fetchClientDue` (mock supabase), `dateUtils` leap-year/month boundaries.
+
+### P-R2 — Sentry productionisation (medium)
+- Sentry DSN ko `vercel-push.ts` `VERIFY_ENV_KEYS` whitelist mein add karna (per-client auto push).
+- Performance tracing (`tracesSampleRate` tune) + release tracking (SENTRY_AUTH_TOKEN + sourcemap upload re-enable jab Turbopack-compatible ho).
+- Runtime detective: structured logger (logger.ts abhi dev-only) → production logs.
+
+### P-R3 — Code decomposition (medium)
+- `RootClient.tsx` (~2100 lines) — auth guard, theme, drawer, license gate alag components/hooks mein.
+- `dashboard/page.tsx` (~1170 lines) — widgets/components mein split.
+
+### P-R4 — API hardening (medium)
+- Rate limiting non-login API routes ke liye (abhi sirf login pe hai).
+- Stray files cleanup: `.env - Copy.local`, unused/archived migrations.
+
+### P-R5 — Performance / DX (nice-to-have)
+- `@next/bundle-analyzer` script.
+- `vercel.json` (explicit config).
+- Rename React Compiler/babel helpers docs.
+
+### ⚠️ Step-by-step CI activate checklist
+1. GitHub → Settings → Secrets → Actions: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+2. Push repo main → CI `quality` + `build` dono green hote dekho.
+3. Sentry DSN env vars dono `vercel` par (server + client) set karo.
+4. Inme se next P-R1 (tests) par agehi kaam shuru karo.

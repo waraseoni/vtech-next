@@ -13,10 +13,8 @@ function digitsOnly(s: string): string {
   return s.replace(/\D/g, "");
 }
 
-const SITE_NAME =
-  (process.env.NEXT_PUBLIC_SITE_NAME || "V-Technologies").trim();
-const SITE_PHONE =
-  (process.env.NEXT_PUBLIC_SITE_PHONE || "+91 91791 05875").trim();
+const SITE_NAME = (process.env.NEXT_PUBLIC_SITE_NAME || "V-Technologies").trim();
+const SITE_PHONE = (process.env.NEXT_PUBLIC_SITE_PHONE || "+91 91791 05875").trim();
 const SITE_PHONE_DIGITS = digitsOnly(SITE_PHONE);
 
 // Client-branded mode: NEXT_PUBLIC_SITE_NAME set hone par client ki APNI
@@ -31,9 +29,7 @@ export const SITE = {
     SITE_NAME.split(/\s+/)[0] ||
     SITE_NAME
   ).trim(),
-  tagline: (
-    process.env.NEXT_PUBLIC_SITE_TAGLINE || "Repair & Service Experts"
-  ).trim(),
+  tagline: (process.env.NEXT_PUBLIC_SITE_TAGLINE || "Repair & Service Experts").trim(),
   owner: (process.env.NEXT_PUBLIC_SITE_OWNER || "Vikram Jain").trim(),
   phone: SITE_PHONE,
   phoneHref: (
@@ -44,9 +40,7 @@ export const SITE = {
     process.env.NEXT_PUBLIC_SITE_WHATSAPP ||
     (SITE_PHONE_DIGITS ? `https://wa.me/${SITE_PHONE_DIGITS}` : "#")
   ).trim(),
-  email: (
-    process.env.NEXT_PUBLIC_SITE_EMAIL || "vtech.jbp@gmail.com"
-  ).trim(),
+  email: (process.env.NEXT_PUBLIC_SITE_EMAIL || "vtech.jbp@gmail.com").trim(),
   address: (
     process.env.NEXT_PUBLIC_SITE_ADDRESS ||
     "F4 Hotel Plaza (Madhushala), Besides Jayanti Complex, Marhatal, Jabalpur, MP 482002"
@@ -126,12 +120,10 @@ const KNOWN_SERVICES: Record<string, ServiceDef> = {
 
 // Comma-separated list: "stage-lighting,industrial". Khali ("") = koi service nahi.
 const SERVICES_ENV = (
-  process.env.NEXT_PUBLIC_SITE_SERVICES ||
-  "stage-lighting,industrial,power-supply"
+  process.env.NEXT_PUBLIC_SITE_SERVICES || "stage-lighting,industrial,power-supply"
 ).trim();
 
-export const SERVICES: ServiceDef[] = SERVICES_ENV
-  .split(",")
+export const SERVICES: ServiceDef[] = SERVICES_ENV.split(",")
   .map((s) => s.trim().toLowerCase())
   .filter(Boolean)
   .map((s) => KNOWN_SERVICES[s])

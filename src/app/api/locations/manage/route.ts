@@ -45,9 +45,21 @@ export async function GET(request: NextRequest) {
     if (tabParam === "full") {
       const [zones, racks, bins, boxes] = await Promise.all([
         sb.from("location_zones").select("*").eq("delete_flag", 0).order("name"),
-        sb.from("location_racks").select("*, location_zones(name)").eq("delete_flag", 0).order("name"),
-        sb.from("location_bins").select("*, location_racks(name, zone_id)").eq("delete_flag", 0).order("name"),
-        sb.from("location_boxes").select("*, location_bins(name, rack_id)").eq("delete_flag", 0).order("name"),
+        sb
+          .from("location_racks")
+          .select("*, location_zones(name)")
+          .eq("delete_flag", 0)
+          .order("name"),
+        sb
+          .from("location_bins")
+          .select("*, location_racks(name, zone_id)")
+          .eq("delete_flag", 0)
+          .order("name"),
+        sb
+          .from("location_boxes")
+          .select("*, location_bins(name, rack_id)")
+          .eq("delete_flag", 0)
+          .order("name"),
       ]);
       return NextResponse.json({
         zones: zones.data || [],
@@ -57,7 +69,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (!tabParam || !TABLE[tabParam as Entity]) return NextResponse.json({ error: "Invalid tab" }, { status: 400 });
+    if (!tabParam || !TABLE[tabParam as Entity])
+      return NextResponse.json({ error: "Invalid tab" }, { status: 400 });
 
     const tab = tabParam as Entity;
 
@@ -78,14 +91,21 @@ export async function GET(request: NextRequest) {
       const childFk = COUNT_CHILD[tab]!.fk;
       const ids = items.map((r: { id: number }) => r.id);
       if (ids.length > 0) {
-        const { data: childRows } = await sb.from(childTable).select(childFk).eq("delete_flag", 0).in(childFk, ids);
+        const { data: childRows } = await sb
+          .from(childTable)
+          .select(childFk)
+          .eq("delete_flag", 0)
+          .in(childFk, ids);
         const countMap: Record<number, number> = {};
         const rows = childRows as unknown as Array<Record<string, unknown>>;
         rows.forEach((r) => {
           const pid = r[childFk] as number;
           countMap[pid] = (countMap[pid] || 0) + 1;
         });
-        items = items.map((r: Record<string, unknown>) => ({ ...r, childCount: countMap[r.id as number] || 0 }));
+        items = items.map((r: Record<string, unknown>) => ({
+          ...r,
+          childCount: countMap[r.id as number] || 0,
+        }));
       }
     }
 
@@ -113,7 +133,8 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await sb.from(TABLE[tab]).insert(row).select("id").single();
     if (error) {
-      if (error.code === "23505") return NextResponse.json({ error: "Already exists" }, { status: 409 });
+      if (error.code === "23505")
+        return NextResponse.json({ error: "Already exists" }, { status: 409 });
       throw error;
     }
 
@@ -132,7 +153,8 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { tab, id, name } = body as { tab: Entity; id: number; name: string };
 
-    if (!tab || !TABLE[tab] || !id) return NextResponse.json({ error: "Invalid params" }, { status: 400 });
+    if (!tab || !TABLE[tab] || !id)
+      return NextResponse.json({ error: "Invalid params" }, { status: 400 });
 
     const { error } = await sb.from(TABLE[tab]).update({ name: name.trim() }).eq("id", id);
     if (error) throw error;
@@ -150,9 +172,15 @@ export async function PATCH(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const { tab, id, delete_flag, status } = body as { tab: Entity; id: number; delete_flag?: number; status?: number };
+    const { tab, id, delete_flag, status } = body as {
+      tab: Entity;
+      id: number;
+      delete_flag?: number;
+      status?: number;
+    };
 
-    if (!tab || !TABLE[tab] || !id) return NextResponse.json({ error: "Invalid params" }, { status: 400 });
+    if (!tab || !TABLE[tab] || !id)
+      return NextResponse.json({ error: "Invalid params" }, { status: 400 });
 
     const patch: Record<string, unknown> = {};
     if (delete_flag !== undefined) patch.delete_flag = delete_flag;

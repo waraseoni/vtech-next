@@ -7,30 +7,47 @@ import { fetchAll, fetchAllIn } from "@/lib/fetch-all";
 const supabase = getAdminSupabase();
 
 const STATUS_MAP: Record<number, string> = {
-  0: "Pending", 1: "On-Progress", 2: "Done",
-  3: "Paid", 4: "Cancelled", 5: "Delivered",
+  0: "Pending",
+  1: "On-Progress",
+  2: "Done",
+  3: "Paid",
+  4: "Cancelled",
+  5: "Delivered",
 };
 const STATUS_COLOR: Record<number, string> = {
-  0: "#868e96", 1: "#339af0", 2: "#20c997",
-  3: "#40c057", 4: "#fa5252", 5: "#7950f2",
+  0: "#868e96",
+  1: "#339af0",
+  2: "#20c997",
+  3: "#40c057",
+  4: "#fa5252",
+  5: "#7950f2",
 };
 const SHOP = {
   name: "V-Technologies",
   address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
-  mobile: "9179105875", email: "vtech.jbp@gmail.com",
+  mobile: "9179105875",
+  email: "vtech.jbp@gmail.com",
 };
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(iso));
 }
 function fmtDateTime(iso: string | null): string {
   if (!iso) return "—";
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
   }).format(new Date(iso));
 }
 function inr(n: number) {
@@ -39,10 +56,11 @@ function inr(n: number) {
 
 export async function GET(req: NextRequest) {
   const user = await requireStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
-  const url      = new URL(req.url);
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  const url = new URL(req.url);
   const dateFrom = url.searchParams.get("date_from") || "";
-  const dateTo   = url.searchParams.get("date_to")   || "";
+  const dateTo = url.searchParams.get("date_to") || "";
 
   // ── Fetch transactions ─────────────────────────────────────────────────────
   let q = supabase
@@ -52,7 +70,7 @@ export async function GET(req: NextRequest) {
     .order("date_created", { ascending: false });
 
   if (dateFrom) q = q.gte("date_created", `${dateFrom}T00:00:00+05:30`);
-  if (dateTo)   q = q.lte("date_created", `${dateTo}T23:59:59+05:30`);
+  if (dateTo) q = q.lte("date_created", `${dateTo}T23:59:59+05:30`);
 
   const txns = await fetchAll(q);
   if (!txns.length) {
@@ -67,50 +85,52 @@ export async function GET(req: NextRequest) {
   }
 
   // ── Fetch client names ─────────────────────────────────────────────────────
-  const clientIds = [...new Set(txns.map(t => Number(t.client_name)))];
+  const clientIds = [...new Set(txns.map((t) => Number(t.client_name)))];
   const clients = await fetchAllIn(
-    (ids) => supabase
-      .from("client_list")
-      .select("id, firstname, middlename, lastname, contact")
-      .in("id", ids),
+    (ids) =>
+      supabase
+        .from("client_list")
+        .select("id, firstname, middlename, lastname, contact")
+        .in("id", ids),
     clientIds
   );
-  const clientMap = new Map(clients?.map(c => [c.id, c]) ?? []);
+  const clientMap = new Map(clients?.map((c) => [c.id, c]) ?? []);
 
   // ── Fetch mechanic names ───────────────────────────────────────────────────
-  const mechIds = [...new Set(txns.map(t => t.mechanic_id).filter(Boolean))];
+  const mechIds = [...new Set(txns.map((t) => t.mechanic_id).filter(Boolean))];
   const mechMap = new Map<number, string>();
   if (mechIds.length > 0) {
     const mechs = await fetchAllIn(
-      (ids) => supabase
-        .from("mechanic_list")
-        .select("id, firstname, lastname")
-        .in("id", ids),
+      (ids) => supabase.from("mechanic_list").select("id, firstname, lastname").in("id", ids),
       mechIds
     );
-    mechs?.forEach(m => mechMap.set(m.id, `${m.firstname} ${m.lastname}`.trim()));
+    mechs?.forEach((m) => mechMap.set(m.id, `${m.firstname} ${m.lastname}`.trim()));
   }
 
   // ── Totals ─────────────────────────────────────────────────────────────────
-  const totalAmount    = txns.reduce((s, t) => s + (t.amount || 0), 0);
-  const deliveredCount = txns.filter(t => t.status === 5).length;
-  const pendingCount   = txns.filter(t => t.status === 0).length;
+  const totalAmount = txns.reduce((s, t) => s + (t.amount || 0), 0);
+  const deliveredCount = txns.filter((t) => t.status === 5).length;
+  const pendingCount = txns.filter((t) => t.status === 0).length;
 
-  const dateLabel = dateFrom && dateTo
-    ? (dateFrom === dateTo ? fmtDate(dateFrom + "T00:00") : `${fmtDate(dateFrom + "T00:00")} – ${fmtDate(dateTo + "T00:00")}`)
-    : "All Records";
+  const dateLabel =
+    dateFrom && dateTo
+      ? dateFrom === dateTo
+        ? fmtDate(dateFrom + "T00:00")
+        : `${fmtDate(dateFrom + "T00:00")} – ${fmtDate(dateTo + "T00:00")}`
+      : "All Records";
 
   // ── Table rows ─────────────────────────────────────────────────────────────
-  const rows = txns.map((t, i) => {
-    const cid    = Number(t.client_name);
-    const client = clientMap.get(cid);
-    const cName  = client
-      ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
-      : `Client #${cid}`;
-    const mName  = t.mechanic_id ? (mechMap.get(t.mechanic_id) || "—") : "—";
-    const sColor = STATUS_COLOR[t.status] || "#333";
-    const rowBg  = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const rows = txns
+    .map((t, i) => {
+      const cid = Number(t.client_name);
+      const client = clientMap.get(cid);
+      const cName = client
+        ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
+        : `Client #${cid}`;
+      const mName = t.mechanic_id ? mechMap.get(t.mechanic_id) || "—" : "—";
+      const sColor = STATUS_COLOR[t.status] || "#333";
+      const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+      return `<tr style="background:${rowBg}">
       <td style="padding:7px 8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:12px">${i + 1}</td>
       <td style="padding:7px 8px;border:1px solid #dee2e6;font-size:12px;white-space:nowrap">${fmtDateTime(t.date_created)}</td>
       <td style="padding:7px 8px;border:1px solid #dee2e6;font-weight:700;color:#1971c2;font-size:12px">#${t.job_id}</td>
@@ -127,7 +147,8 @@ export async function GET(req: NextRequest) {
         ${t.status === 5 && t.date_completed ? `<div style="font-size:9px;color:#666;margin-top:2px">${fmtDate(t.date_completed)}</div>` : ""}
       </td>
     </tr>`;
-  }).join("");
+    })
+    .join("");
 
   const html = `<!DOCTYPE html>
 <html lang="en">

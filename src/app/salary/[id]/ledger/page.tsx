@@ -6,7 +6,14 @@ import Link from "next/link";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
-import { Loader2, ArrowLeft, Printer, FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Loader2,
+  ArrowLeft,
+  Printer,
+  FileSpreadsheet,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 import { startOfMonthIST, endOfMonthIST, parseISTDate, toISTDatePart } from "@/lib/dateUtils";
 
@@ -84,7 +91,6 @@ export default function MechanicLedgerPage() {
   useEffect(() => {
     setFrom(from0);
     setTo(to0);
-     
   }, [from0, to0, mechId]);
 
   useEffect(() => {
@@ -100,55 +106,70 @@ export default function MechanicLedgerPage() {
         if (mechRes.error) throw mechRes.error;
         setMech(mechRes.data as Mechanic);
 
-        const [histRes, prevAttRes, prevCommRes, prevAdvRes, attRes, commRes, advRes] = await Promise.all([
-          pageAll(supabase
-            .from("mechanic_salary_history")
-            .select("id, salary, effective_date")
-            .eq("mechanic_id", mechId)
-            .lte("effective_date", to)
-            .order("effective_date", { ascending: false })
-            .order("id", { ascending: false })),
+        const [histRes, prevAttRes, prevCommRes, prevAdvRes, attRes, commRes, advRes] =
+          await Promise.all([
+            pageAll(
+              supabase
+                .from("mechanic_salary_history")
+                .select("id, salary, effective_date")
+                .eq("mechanic_id", mechId)
+                .lte("effective_date", to)
+                .order("effective_date", { ascending: false })
+                .order("id", { ascending: false })
+            ),
 
-          pageAll(supabase
-            .from("attendance_list")
-            .select("curr_date, status")
-            .eq("mechanic_id", mechId)
-            .in("status", [1, 3])
-            .lte("curr_date", prevDateLimit)),
+            pageAll(
+              supabase
+                .from("attendance_list")
+                .select("curr_date, status")
+                .eq("mechanic_id", mechId)
+                .in("status", [1, 3])
+                .lte("curr_date", prevDateLimit)
+            ),
 
-          pageAll(supabase
-            .from("transaction_list")
-            .select("mechanic_commission_amount, date_created")
-            .eq("mechanic_id", mechId)
-            .lte("date_created", `${prevDateLimit}T23:59:59`)),
+            pageAll(
+              supabase
+                .from("transaction_list")
+                .select("mechanic_commission_amount, date_created")
+                .eq("mechanic_id", mechId)
+                .lte("date_created", `${prevDateLimit}T23:59:59`)
+            ),
 
-          pageAll(supabase
-            .from("advance_payments")
-            .select("amount, date_paid")
-            .eq("mechanic_id", mechId)
-            .lte("date_paid", prevDateLimit)),
+            pageAll(
+              supabase
+                .from("advance_payments")
+                .select("amount, date_paid")
+                .eq("mechanic_id", mechId)
+                .lte("date_paid", prevDateLimit)
+            ),
 
-          pageAll(supabase
-            .from("attendance_list")
-            .select("curr_date, status")
-            .eq("mechanic_id", mechId)
-            .gte("curr_date", from)
-            .lte("curr_date", to)),
+            pageAll(
+              supabase
+                .from("attendance_list")
+                .select("curr_date, status")
+                .eq("mechanic_id", mechId)
+                .gte("curr_date", from)
+                .lte("curr_date", to)
+            ),
 
-          pageAll(supabase
-            .from("transaction_list")
-            .select("mechanic_commission_amount, date_created")
-            .eq("mechanic_id", mechId)
-            .gte("date_created", `${from}T00:00:00`)
-            .lte("date_created", `${to}T23:59:59`)),
+            pageAll(
+              supabase
+                .from("transaction_list")
+                .select("mechanic_commission_amount, date_created")
+                .eq("mechanic_id", mechId)
+                .gte("date_created", `${from}T00:00:00`)
+                .lte("date_created", `${to}T23:59:59`)
+            ),
 
-          pageAll(supabase
-            .from("advance_payments")
-            .select("amount, date_paid")
-            .eq("mechanic_id", mechId)
-            .gte("date_paid", from)
-            .lte("date_paid", to)),
-        ]);
+            pageAll(
+              supabase
+                .from("advance_payments")
+                .select("amount, date_paid")
+                .eq("mechanic_id", mechId)
+                .gte("date_paid", from)
+                .lte("date_paid", to)
+            ),
+          ]);
 
         setHist((histRes.data || []) as SalaryHist[]);
         setPrevAtt((prevAttRes.data || []) as Attendance[]);
@@ -172,7 +193,13 @@ export default function MechanicLedgerPage() {
 
   const histSorted = useMemo(() => {
     const arr = [...hist];
-    arr.sort((a, b) => (a.effective_date < b.effective_date ? 1 : a.effective_date > b.effective_date ? -1 : b.id - a.id));
+    arr.sort((a, b) =>
+      a.effective_date < b.effective_date
+        ? 1
+        : a.effective_date > b.effective_date
+          ? -1
+          : b.id - a.id
+    );
     return arr;
   }, [hist]);
 
@@ -186,7 +213,7 @@ export default function MechanicLedgerPage() {
     }
     const commSum = prevComm.reduce((s, r) => s + Number(r.mechanic_commission_amount || 0), 0);
     const advSum = prevAdv.reduce((s, r) => s + Number(r.amount || 0), 0);
-    return (earned + commSum) - advSum;
+    return earned + commSum - advSum;
   }, [mech, prevAtt, prevComm, prevAdv, histSorted]);
 
   const dailyRows = useMemo(() => {
@@ -194,7 +221,8 @@ export default function MechanicLedgerPage() {
     const base = pickBaseRate(mech);
     const attByDate = new Map(att.map((a) => [a.curr_date, a.status]));
     const advByDate = new Map<string, number>();
-    for (const a of adv) advByDate.set(a.date_paid, (advByDate.get(a.date_paid) || 0) + Number(a.amount || 0));
+    for (const a of adv)
+      advByDate.set(a.date_paid, (advByDate.get(a.date_paid) || 0) + Number(a.amount || 0));
     const commByDate = new Map<string, number>();
     for (const c of comm) {
       const d = String(c.date_created).slice(0, 10);
@@ -269,18 +297,22 @@ export default function MechanicLedgerPage() {
           <Link href="/salary" className={`${btnGhost} inline-flex items-center gap-2`}>
             <ArrowLeft size={14} /> Back
           </Link>
-                  <div className="flex items-center flex-wrap gap-2">
-                      <button className={btnGhost} onClick={() => goMonth(-1)} title="Prev Month">
+          <div className="flex items-center flex-wrap gap-2">
+            <button className={btnGhost} onClick={() => goMonth(-1)} title="Prev Month">
               <ChevronLeft size={16} />
             </button>
             <button className={btnGhost} onClick={() => goMonth(1)} title="Next Month">
               <ChevronRight size={16} />
             </button>
             <button className={btnGhost} onClick={printLedger}>
-              <span className="inline-flex items-center gap-2"><Printer size={14} /> Print</span>
+              <span className="inline-flex items-center gap-2">
+                <Printer size={14} /> Print
+              </span>
             </button>
             <button className={btnNavy} onClick={exportExcel}>
-              <span className="inline-flex items-center gap-2"><FileSpreadsheet size={14} /> Excel</span>
+              <span className="inline-flex items-center gap-2">
+                <FileSpreadsheet size={14} /> Excel
+              </span>
             </button>
           </div>
         </div>
@@ -290,11 +322,21 @@ export default function MechanicLedgerPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <div className={label}>From</div>
-                <input className={input} type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+                <input
+                  className={input}
+                  type="date"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                />
               </div>
               <div>
                 <div className={label}>To</div>
-                <input className={input} type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+                <input
+                  className={input}
+                  type="date"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                />
               </div>
               <div className="flex items-end">
                 <button
@@ -331,16 +373,26 @@ export default function MechanicLedgerPage() {
                     <td className="px-4 py-3 text-slate-500" colSpan={5}>
                       Opening Balance (Old Balance)
                     </td>
-                    <td className="px-4 py-3 text-right text-slate-200 font-black">{money(openingBalance)}</td>
+                    <td className="px-4 py-3 text-right text-slate-200 font-black">
+                      {money(openingBalance)}
+                    </td>
                   </tr>
                   {dailyRows.map((r) => (
                     <tr key={r.date} className="hover:bg-white/[0.03]">
                       <td className="px-4 py-3 text-slate-300">{r.date}</td>
                       <td className={`px-4 py-3 font-black ${r.statusTone}`}>{r.statusLabel}</td>
-                      <td className="px-4 py-3 text-right text-slate-200 font-bold">{money(r.earned)}</td>
-                      <td className="px-4 py-3 text-right text-blue-300 font-black">{money(r.commission)}</td>
-                      <td className="px-4 py-3 text-right text-red-300 font-black">{money(r.advance)}</td>
-                      <td className="px-4 py-3 text-right text-slate-200 font-black">{money(r.running)}</td>
+                      <td className="px-4 py-3 text-right text-slate-200 font-bold">
+                        {money(r.earned)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-blue-300 font-black">
+                        {money(r.commission)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-red-300 font-black">
+                        {money(r.advance)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-slate-200 font-black">
+                        {money(r.running)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -349,7 +401,9 @@ export default function MechanicLedgerPage() {
                     <td className="px-4 py-3 text-slate-500" colSpan={5}>
                       Closing Balance (Net Total)
                     </td>
-                    <td className="px-4 py-3 text-right text-emerald-300 font-black">{money(closingBalance)}</td>
+                    <td className="px-4 py-3 text-right text-emerald-300 font-black">
+                      {money(closingBalance)}
+                    </td>
                   </tr>
                 </tfoot>
               </table>
@@ -359,11 +413,16 @@ export default function MechanicLedgerPage() {
       </div>
       <style jsx global>{`
         @media print {
-          a, button, input { display: none !important; }
-          body { background: #fff !important; }
+          a,
+          button,
+          input {
+            display: none !important;
+          }
+          body {
+            background: #fff !important;
+          }
         }
       `}</style>
     </AdminPage>
   );
 }
-

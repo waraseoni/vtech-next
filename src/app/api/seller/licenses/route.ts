@@ -9,7 +9,10 @@ import {
 
 export async function GET() {
   if (!isLicenseAdminConfigured()) {
-    return NextResponse.json({ error: "License admin configured nahi hai (LICENSE_SERVICE_SERVICE_ROLE_KEY missing)" }, { status: 503 });
+    return NextResponse.json(
+      { error: "License admin configured nahi hai (LICENSE_SERVICE_SERVICE_ROLE_KEY missing)" },
+      { status: 503 }
+    );
   }
   const auth = await requireSeller();
   if (!auth) {
@@ -19,13 +22,25 @@ export async function GET() {
     const rows = await listLicenses();
     return NextResponse.json(rows);
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }
 
 const VALID_PLANS = ["standard", "premium", "lifetime"];
 const VALID_STATUS = ["active", "disabled", "revoked"];
-const VALID_MODULES = ["dashboard", "jobs", "sales", "clients", "inventory", "finance", "people", "reports"];
+const VALID_MODULES = [
+  "dashboard",
+  "jobs",
+  "sales",
+  "clients",
+  "inventory",
+  "finance",
+  "people",
+  "reports",
+];
 
 export async function POST(req: NextRequest) {
   if (!isLicenseAdminConfigured()) {
@@ -39,7 +54,10 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const plan = String(body.plan || "standard");
   if (!VALID_PLANS.includes(plan)) {
-    return NextResponse.json({ error: "Invalid plan — standard | premium | lifetime" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid plan — standard | premium | lifetime" },
+      { status: 400 }
+    );
   }
   const maxActivations = Number(body.max_activations ?? 1);
   if (!Number.isInteger(maxActivations) || maxActivations < 1) {
@@ -81,6 +99,9 @@ export async function POST(req: NextRequest) {
     const created = await createLicense(input);
     return NextResponse.json(created, { status: 201 });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }

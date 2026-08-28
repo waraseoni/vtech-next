@@ -17,12 +17,18 @@ export default function AdminPage({ title, subtitle, children }: Props) {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         router.push("/login");
         return;
       }
-      const { data: p } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
       if (p?.role !== "admin") {
         router.push("/");
         return;
@@ -56,4 +62,3 @@ export default function AdminPage({ title, subtitle, children }: Props) {
     </div>
   );
 }
-

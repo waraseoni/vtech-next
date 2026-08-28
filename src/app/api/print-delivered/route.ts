@@ -12,7 +12,8 @@ const SHOP = {
   mobile: "9179105875",
 };
 
-const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const inr = (n: number) =>
+  "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
 function formatIST(iso: string, opts?: Intl.DateTimeFormatOptions) {
   return Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", ...opts }).format(new Date(iso));
@@ -20,13 +21,17 @@ function formatIST(iso: string, opts?: Intl.DateTimeFormatOptions) {
 
 function fmtDate(iso: string): string {
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(iso));
 }
 
 export async function GET(request: NextRequest) {
   const user = await requireStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const from = searchParams.get("from") || new Date().toISOString().split("T")[0];
   const to = searchParams.get("to") || from;
@@ -36,16 +41,16 @@ export async function GET(request: NextRequest) {
   const endDate = `${to}T23:59:59+05:30`;
 
   let query = supabase
-    .from('transaction_list')
-    .select('id, job_id, date_completed, item, amount, client_name')
-    .eq('status', 5)
-    .eq('del_status', 0)
-    .gte('date_completed', startDate)
-    .lte('date_completed', endDate)
-    .order('date_completed', { ascending: false });
+    .from("transaction_list")
+    .select("id, job_id, date_completed, item, amount, client_name")
+    .eq("status", 5)
+    .eq("del_status", 0)
+    .gte("date_completed", startDate)
+    .lte("date_completed", endDate)
+    .order("date_completed", { ascending: false });
 
-  if (clientId !== 'all') {
-    query = query.eq('client_name', parseInt(clientId));
+  if (clientId !== "all") {
+    query = query.eq("client_name", parseInt(clientId));
   }
 
   const txData = await fetchAll(query);
@@ -61,18 +66,36 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const clientIds = [...new Set(txData.map(t => t.client_name).filter(id => id != null))];
+  const clientIds = [...new Set(txData.map((t) => t.client_name).filter((id) => id != null))];
 
   const [, { data: clientNamesData }] = await Promise.all([
-    clientIds.length > 0 ? fetchAllIn((ids: number[]) => supabase.from('client_list').select('id, firstname, middlename, lastname').in('id', ids), clientIds).then(rows => ({ data: rows })) : Promise.resolve({ data: [] }),
-    clientIds.length > 0 ? fetchAllIn((ids: number[]) => supabase.from('client_list').select('id, firstname, middlename, lastname, contact').in('id', ids), clientIds).then(rows => ({ data: rows })) : Promise.resolve({ data: [] })
+    clientIds.length > 0
+      ? fetchAllIn(
+          (ids: number[]) =>
+            supabase
+              .from("client_list")
+              .select("id, firstname, middlename, lastname")
+              .in("id", ids),
+          clientIds
+        ).then((rows) => ({ data: rows }))
+      : Promise.resolve({ data: [] }),
+    clientIds.length > 0
+      ? fetchAllIn(
+          (ids: number[]) =>
+            supabase
+              .from("client_list")
+              .select("id, firstname, middlename, lastname, contact")
+              .in("id", ids),
+          clientIds
+        ).then((rows) => ({ data: rows }))
+      : Promise.resolve({ data: [] }),
   ]);
 
   const clientMap: Record<number, { name: string; contact: string }> = {};
   (clientNamesData || []).forEach((c) => {
     clientMap[c.id] = {
-      name: `${c.firstname} ${c.middlename || ''} ${c.lastname || ''}`.replace(/\s+/g, ' ').trim(),
-      contact: c.contact || '',
+      name: `${c.firstname} ${c.middlename || ""} ${c.lastname || ""}`.replace(/\s+/g, " ").trim(),
+      contact: c.contact || "",
     };
   });
 
@@ -83,30 +106,33 @@ export async function GET(request: NextRequest) {
     item: t.item,
     amount: t.amount,
     client_id: t.client_name,
-    client_name: clientMap[t.client_name]?.name || 'Unknown',
-    client_contact: clientMap[t.client_name]?.contact || '',
+    client_name: clientMap[t.client_name]?.name || "Unknown",
+    client_contact: clientMap[t.client_name]?.contact || "",
   }));
 
   const count = transactions.length;
   const total = transactions.reduce((s, t) => s + t.amount, 0);
-  const unique = new Set(transactions.map(t => t.client_id)).size;
+  const unique = new Set(transactions.map((t) => t.client_id)).size;
   const avg = count > 0 ? total / count : 0;
 
-  const dateRangeLabel = from === to
-    ? fmtDate(from)
-    : `${formatIST(from, { day: '2-digit', month: 'short' })} - ${formatIST(to, { day: '2-digit', month: 'short', year: 'numeric' })}`;
+  const dateRangeLabel =
+    from === to
+      ? fmtDate(from)
+      : `${formatIST(from, { day: "2-digit", month: "short" })} - ${formatIST(to, { day: "2-digit", month: "short", year: "numeric" })}`;
 
-  const rows = transactions.map((t, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const rows = transactions
+    .map((t, i) => {
+      const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+      return `<tr style="background:${rowBg}">
       <td style="padding:8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:12px">${i + 1}</td>
-      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${formatIST(t.date_completed, { day: '2-digit', month: 'short' })}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${formatIST(t.date_completed, { day: "2-digit", month: "short" })}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${t.job_id}</td>
-      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${t.item || '-'}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${t.item || "-"}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${t.client_name}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-weight:700;color:#c0392b;font-size:12px">${inr(t.amount)}</td>
     </tr>`;
-  }).join("");
+    })
+    .join("");
 
   const html = `<!DOCTYPE html>
 <html lang="en">

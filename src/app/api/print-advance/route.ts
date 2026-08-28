@@ -14,7 +14,10 @@ const SHOP = {
 
 function fmtDate(iso: string): string {
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(iso));
 }
 
@@ -24,7 +27,8 @@ function inr(n: number) {
 
 export async function GET(req: NextRequest) {
   const user = await requireStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const url = new URL(req.url);
   const from = url.searchParams.get("from") || "";
   const to = url.searchParams.get("to") || "";
@@ -55,37 +59,44 @@ export async function GET(req: NextRequest) {
   }
 
   // Fetch mechanics
-  const mechIds = [...new Set(advances.map(a => a.mechanic_id))];
+  const mechIds = [...new Set(advances.map((a) => a.mechanic_id))];
   const mechanics = await fetchAllIn(
-    (ids) => supabase
-      .from("mechanic_list")
-      .select("id, firstname, middlename, lastname")
-      .in("id", ids),
+    (ids) =>
+      supabase.from("mechanic_list").select("id, firstname, middlename, lastname").in("id", ids),
     mechIds
   );
 
-  const mechMap = new Map(mechanics?.map(m => [m.id, [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ")]) ?? []);
+  const mechMap = new Map(
+    mechanics?.map((m) => [
+      m.id,
+      [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+    ]) ?? []
+  );
 
   const totalAdvance = advances.reduce((s, a) => s + (a.amount || 0), 0);
 
-  const dateLabel = from && to
-    ? (from === to ? fmtDate(from) : `${fmtDate(from)} – ${fmtDate(to)}`)
-    : "All Records";
+  const dateLabel =
+    from && to
+      ? from === to
+        ? fmtDate(from)
+        : `${fmtDate(from)} – ${fmtDate(to)}`
+      : "All Records";
 
-  const staffLabel = mechanicId && mechanicId !== "all" 
-    ? mechMap.get(parseInt(mechanicId)) || "Staff" 
-    : "All Staff";
+  const staffLabel =
+    mechanicId && mechanicId !== "all" ? mechMap.get(parseInt(mechanicId)) || "Staff" : "All Staff";
 
-  const rows = advances.map((a, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const rows = advances
+    .map((a, i) => {
+      const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+      return `<tr style="background:${rowBg}">
       <td style="padding:8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:12px">${i + 1}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(a.date_paid)}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-weight:600;font-size:12px">${mechMap.get(a.mechanic_id) || "Unknown"}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-weight:700;color:#c0392b;font-size:12px">${inr(a.amount)}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px;color:#666">${a.reason || "—"}</td>
     </tr>`;
-  }).join("");
+    })
+    .join("");
 
   const html = `<!DOCTYPE html>
 <html lang="en">

@@ -5,10 +5,21 @@ import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import SearchableSelect from "@/components/SearchableSelect";
 import {
-  Loader2, ChevronLeft, ChevronRight,
-  Printer, TrendingUp, Eye, FileText, Calendar,
-  Settings, History, Plus, Check, X, AlertCircle,
-  Edit3
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Printer,
+  TrendingUp,
+  Eye,
+  FileText,
+  Calendar,
+  Settings,
+  History,
+  Plus,
+  Check,
+  X,
+  AlertCircle,
+  Edit3,
 } from "lucide-react";
 
 const inr = (n: number) =>
@@ -18,15 +29,38 @@ import { logActivity } from "@/lib/activity";
 
 // Mechanic avatar — photo ho to photo, warna 2-letter initials.
 const mechInitials = (name: string) =>
-  name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("") || name.charAt(0);
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("") || name.charAt(0);
 
-const MechAvatar = ({ image, name, cls = "w-8 h-8 text-xs" }: { image?: string | null; name: string; cls?: string }) =>
+const MechAvatar = ({
+  image,
+  name,
+  cls = "w-8 h-8 text-xs",
+}: {
+  image?: string | null;
+  name: string;
+  cls?: string;
+}) =>
   image ? (
-    <Image src={image} alt={name} width={32} height={32} unoptimized
+    <Image
+      src={image}
+      alt={name}
+      width={32}
+      height={32}
+      unoptimized
       className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
-      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+      onError={(e) => {
+        (e.currentTarget as HTMLImageElement).style.display = "none";
+      }}
+    />
   ) : (
-    <div className={`${cls} bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 flex-shrink-0`}>
+    <div
+      className={`${cls} bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 flex-shrink-0`}
+    >
       {mechInitials(name)}
     </div>
   );
@@ -65,31 +99,33 @@ type RateHistory = {
 
 function CommissionContent() {
   const searchParams = useSearchParams();
-  const router       = useRouter();
+  const router = useRouter();
 
   const currentMonth = currentMonthIST();
-  const [activeTab,  setActiveTab]  = useState<"statement" | "master">( (searchParams.get("tab") as "statement" | "master") || "statement");
-  const [month,      setMonthState] = useState(searchParams.get("month")       || currentMonth);
-  const [mechanicId, setMechState]  = useState(searchParams.get("mechanic_id") || "all");
-  const [loading,    setLoading]    = useState(true);
-  
+  const [activeTab, setActiveTab] = useState<"statement" | "master">(
+    (searchParams.get("tab") as "statement" | "master") || "statement"
+  );
+  const [month, setMonthState] = useState(searchParams.get("month") || currentMonth);
+  const [mechanicId, setMechState] = useState(searchParams.get("mechanic_id") || "all");
+  const [loading, setLoading] = useState(true);
+
   // Statement State
-  const [rows,       setRows]       = useState<CommRow[]>([]);
-  const [mechanics,  setMechanics]  = useState<{ id: number; name: string }[]>([]);
+  const [rows, setRows] = useState<CommRow[]>([]);
+  const [mechanics, setMechanics] = useState<{ id: number; name: string }[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(25);
 
   // Master State
-  const [mechRates,     setMechRates]     = useState<MechanicRate[]>([]);
+  const [mechRates, setMechRates] = useState<MechanicRate[]>([]);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [selectedMech,   setSelectedMech]   = useState<MechanicRate | null>(null);
-  const [rateHistory,    setRateHistory]    = useState<RateHistory[]>([]);
+  const [selectedMech, setSelectedMech] = useState<MechanicRate | null>(null);
+  const [rateHistory, setRateHistory] = useState<RateHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  
+
   // Update Form
   const [newRate, setNewRate] = useState("");
-  const [effDate, setEffDate] = useState(new Date().toISOString().split('T')[0]);
+  const [effDate, setEffDate] = useState(new Date().toISOString().split("T")[0]);
   const [savingRate, setSavingRate] = useState(false);
   const [rateErr, setRateErr] = useState("");
 
@@ -129,16 +165,25 @@ function CommissionContent() {
         const to = `${month}-${String(lastDay).padStart(2, "0")}T23:59:59+05:30`;
 
         const [mechRes, txnRes] = await Promise.all([
-          supabase.from("mechanic_list").select("id, firstname, middlename, lastname, commission_percent, delete_flag, image_path").order("firstname"),
+          supabase
+            .from("mechanic_list")
+            .select(
+              "id, firstname, middlename, lastname, commission_percent, delete_flag, image_path"
+            )
+            .order("firstname"),
           (() => {
             // PHP commission_history: only DELIVERED jobs (status=5) by date_completed
-            let q = supabase.from("transaction_list")
-              .select("id, job_id, code, item, client_name, date_created, date_completed, mechanic_id, mechanic_commission_amount")
+            let q = supabase
+              .from("transaction_list")
+              .select(
+                "id, job_id, code, item, client_name, date_created, date_completed, mechanic_id, mechanic_commission_amount"
+              )
               .eq("status", 5)
-              .gte("date_completed", from).lte("date_completed", to);
+              .gte("date_completed", from)
+              .lte("date_completed", to);
             if (mechanicId !== "all") q = q.eq("mechanic_id", parseInt(mechanicId));
             return q;
-          })()
+          })(),
         ]);
 
         const mechData = mechRes.data || [];
@@ -146,42 +191,79 @@ function CommissionContent() {
 
         // Dropdown me sirf active mechanics (PHP dropdown: delete_flag = 0), par
         // name/rate mapping me sab (PHP INNER JOIN mechanic_list — deleted wale bhi)
-        setMechanics(mechData.filter((m) => m.delete_flag === 0).map((m) => ({ id: m.id, name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ") })));
+        setMechanics(
+          mechData
+            .filter((m) => m.delete_flag === 0)
+            .map((m) => ({
+              id: m.id,
+              name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+            }))
+        );
 
-        const mechMap = new Map(mechData.map((m) => [m.id, {
-          name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
-          image: m.image_path || null,
-          rate: m.commission_percent || 0,
-        }]));
+        const mechMap = new Map(
+          mechData.map((m) => [
+            m.id,
+            {
+              name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+              image: m.image_path || null,
+              rate: m.commission_percent || 0,
+            },
+          ])
+        );
 
-        const txnIds = txns.map(t => t.id);
+        const txnIds = txns.map((t) => t.id);
         const svcMap: Record<number, number> = {};
         if (txnIds.length > 0) {
-          const { data: svcs } = await supabase.from("transaction_services").select("transaction_id, price").in("transaction_id", txnIds);
-          svcs?.forEach(s => { svcMap[s.transaction_id] = (svcMap[s.transaction_id] || 0) + (s.price || 0); });
+          const { data: svcs } = await supabase
+            .from("transaction_services")
+            .select("transaction_id, price")
+            .in("transaction_id", txnIds);
+          svcs?.forEach((s) => {
+            svcMap[s.transaction_id] = (svcMap[s.transaction_id] || 0) + (s.price || 0);
+          });
         }
 
         // Client names (PHP: LEFT JOIN client_list on client_name)
-        const clientIds = [...new Set(txns.map(t => Number(t.client_name)).filter(Boolean))];
+        const clientIds = [...new Set(txns.map((t) => Number(t.client_name)).filter(Boolean))];
         const clientMap = new Map<number, string>();
         if (clientIds.length > 0) {
-          const { data: clRows } = await supabase.from("client_list").select("id, firstname, middlename, lastname").in("id", clientIds);
-          (clRows || []).forEach(c => clientMap.set(c.id, [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ")));
+          const { data: clRows } = await supabase
+            .from("client_list")
+            .select("id, firstname, middlename, lastname")
+            .in("id", clientIds);
+          (clRows || []).forEach((c) =>
+            clientMap.set(c.id, [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" "))
+          );
         }
 
         // Effective rate per job (PHP: latest history row with effective_date <= job's
         // date_created, order effective_date DESC, id DESC; fallback = mechanic_list rate)
-        const mechIds = [...new Set(txns.map(t => t.mechanic_id))];
-        const histByMech: Record<number, { effective_date: string; id: number; commission_percent: number }[]> = {};
+        const mechIds = [...new Set(txns.map((t) => t.mechanic_id))];
+        const histByMech: Record<
+          number,
+          { effective_date: string; id: number; commission_percent: number }[]
+        > = {};
         if (mechIds.length > 0) {
-          const { data: histRows } = await supabase.from("mechanic_commission_history")
-            .select("id, mechanic_id, commission_percent, effective_date").in("mechanic_id", mechIds);
-          (histRows || []).forEach(h => {
+          const { data: histRows } = await supabase
+            .from("mechanic_commission_history")
+            .select("id, mechanic_id, commission_percent, effective_date")
+            .in("mechanic_id", mechIds);
+          (histRows || []).forEach((h) => {
             if (!histByMech[h.mechanic_id]) histByMech[h.mechanic_id] = [];
-            histByMech[h.mechanic_id].push({ effective_date: h.effective_date, id: h.id, commission_percent: h.commission_percent });
+            histByMech[h.mechanic_id].push({
+              effective_date: h.effective_date,
+              id: h.id,
+              commission_percent: h.commission_percent,
+            });
           });
-          Object.values(histByMech).forEach(arr =>
-            arr.sort((a, b) => (a.effective_date < b.effective_date ? 1 : a.effective_date > b.effective_date ? -1 : b.id - a.id))
+          Object.values(histByMech).forEach((arr) =>
+            arr.sort((a, b) =>
+              a.effective_date < b.effective_date
+                ? 1
+                : a.effective_date > b.effective_date
+                  ? -1
+                  : b.id - a.id
+            )
           );
         }
         const effRateFor = (mechId: number, onDate: string, fallback: number): number => {
@@ -213,8 +295,10 @@ function CommissionContent() {
         });
 
         // PHP sorts by date_completed DESC
-        enriched.sort((a, b) =>
-          new Date(b.date_completed || b.date_created).getTime() - new Date(a.date_completed || a.date_created).getTime()
+        enriched.sort(
+          (a, b) =>
+            new Date(b.date_completed || b.date_created).getTime() -
+            new Date(a.date_completed || a.date_created).getTime()
         );
         setRows(enriched);
         setCurrentPage(1);
@@ -225,30 +309,39 @@ function CommissionContent() {
           .select("id, firstname, middlename, lastname, commission_percent, image_path")
           .eq("delete_flag", 0)
           .order("firstname");
-        
+
         const mechs = data || [];
         let lastUpd: Record<number, string> = {};
         if (mechs.length > 0) {
           const { data: hist } = await supabase
             .from("mechanic_commission_history")
             .select("id, mechanic_id, effective_date, date_created")
-            .in("mechanic_id", mechs.map(m => m.id));
+            .in(
+              "mechanic_id",
+              mechs.map((m) => m.id)
+            );
           const map = new Map<number, { eff: string; id: number; created: string }>();
-          (hist || []).forEach(h => {
+          (hist || []).forEach((h) => {
             const cur = map.get(h.mechanic_id);
-            if (!cur || h.effective_date > cur.eff || (h.effective_date === cur.eff && h.id > cur.id))
+            if (
+              !cur ||
+              h.effective_date > cur.eff ||
+              (h.effective_date === cur.eff && h.id > cur.id)
+            )
               map.set(h.mechanic_id, { eff: h.effective_date, id: h.id, created: h.date_created });
           });
           lastUpd = Object.fromEntries([...map.entries()].map(([k, v]) => [k, v.created]));
         }
 
-        setMechRates(mechs.map(m => ({
-          id: m.id,
-          name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
-          image: m.image_path || null,
-          current_rate: m.commission_percent || 0,
-          last_updated: lastUpd[m.id] || undefined,
-        })));
+        setMechRates(
+          mechs.map((m) => ({
+            id: m.id,
+            name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+            image: m.image_path || null,
+            current_rate: m.commission_percent || 0,
+            last_updated: lastUpd[m.id] || undefined,
+          }))
+        );
       }
     } catch (e) {
       console.error(e);
@@ -257,13 +350,15 @@ function CommissionContent() {
     }
   }, [month, mechanicId, activeTab]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // ── Rate Management ───────────────────────────────────────────────────
   const openUpdate = (m: MechanicRate) => {
     setSelectedMech(m);
     setNewRate(String(m.current_rate));
-    setEffDate(new Date().toISOString().split('T')[0]);
+    setEffDate(new Date().toISOString().split("T")[0]);
     setRateErr("");
     setShowUpdateModal(true);
   };
@@ -272,8 +367,14 @@ function CommissionContent() {
     e.preventDefault();
     if (!selectedMech) return;
     const rate = parseFloat(newRate);
-    if (isNaN(rate) || rate < 0) { setRateErr("Valid percentage daalo!"); return; }
-    if (!effDate) { setRateErr("Effective date zaroori hai!"); return; }
+    if (isNaN(rate) || rate < 0) {
+      setRateErr("Valid percentage daalo!");
+      return;
+    }
+    if (!effDate) {
+      setRateErr("Effective date zaroori hai!");
+      return;
+    }
 
     setSavingRate(true);
     try {
@@ -281,20 +382,28 @@ function CommissionContent() {
       const { error: histErr } = await supabase.from("mechanic_commission_history").insert({
         mechanic_id: selectedMech.id,
         commission_percent: rate,
-        effective_date: effDate
+        effective_date: effDate,
       });
       // Note: If table doesn't exist, this will fail. We handle it gracefully.
       if (histErr) console.warn("History table error (possibly missing):", histErr.message);
 
       // 2. Update mechanic_list
-      const { error: listErr } = await supabase.from("mechanic_list").update({
-        commission_percent: rate
-      }).eq("id", selectedMech.id);
+      const { error: listErr } = await supabase
+        .from("mechanic_list")
+        .update({
+          commission_percent: rate,
+        })
+        .eq("id", selectedMech.id);
 
       if (listErr) throw listErr;
 
-      await logActivity('Updated Commission Rate', 'Mechanics', selectedMech.id, `Staff: ${selectedMech.name} | Commission → ${rate}% | Effective: ${effDate}`);
-      
+      await logActivity(
+        "Updated Commission Rate",
+        "Mechanics",
+        selectedMech.id,
+        `Staff: ${selectedMech.name} | Commission → ${rate}% | Effective: ${effDate}`
+      );
+
       setShowUpdateModal(false);
       fetchData();
     } catch (e) {
@@ -327,25 +436,34 @@ function CommissionContent() {
   const navigate = (dir: "prev" | "next") => {
     const d = parseISTDate(month + "-01");
     d.setMonth(d.getMonth() + (dir === "prev" ? -1 : 1));
-    setMonth(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" }).format(d));
+    setMonth(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+      }).format(d)
+    );
   };
 
-  const totalComm  = rows.reduce((s, r) => s + r.mechanic_commission_amount, 0);
-  const monthLabel = parseISTDate(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const totalComm = rows.reduce((s, r) => s + r.mechanic_commission_amount, 0);
+  const monthLabel = parseISTDate(month + "-01").toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
 
   const byMechanic = rows.reduce<Record<number, { name: string; total: number; jobs: number }>>(
     (acc, r) => {
       if (!acc[r.mechanic_id]) acc[r.mechanic_id] = { name: r.m_name, total: 0, jobs: 0 };
       acc[r.mechanic_id].total += r.mechanic_commission_amount;
-      acc[r.mechanic_id].jobs  += 1;
+      acc[r.mechanic_id].jobs += 1;
       return acc;
-    }, {}
+    },
+    {}
   );
   const summary = Object.values(byMechanic).sort((a, b) => b.total - a.total);
 
   return (
     <div className="space-y-4">
-
       {/* Header */}
       <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -354,22 +472,32 @@ function CommissionContent() {
           </div>
           <div>
             <h1 className="text-lg font-black text-white">Commission Management</h1>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Staff commission and rates</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+              Staff commission and rates
+            </p>
           </div>
         </div>
-        
+
         {/* Tab Switcher */}
         <div className="flex bg-[#0d1117] border border-[#21293d] rounded-xl p-1">
-          <button onClick={() => setTab("statement")}
+          <button
+            onClick={() => setTab("statement")}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-              activeTab === "statement" ? "bg-blue-600 text-white" : "text-slate-500 hover:text-slate-300"
-            }`}>
+              activeTab === "statement"
+                ? "bg-blue-600 text-white"
+                : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
             <FileText size={14} /> Statement
           </button>
-          <button onClick={() => setTab("master")}
+          <button
+            onClick={() => setTab("master")}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-              activeTab === "master" ? "bg-blue-600 text-white" : "text-slate-500 hover:text-slate-300"
-            }`}>
+              activeTab === "master"
+                ? "bg-blue-600 text-white"
+                : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
             <Settings size={14} /> Rate Master
           </button>
         </div>
@@ -380,24 +508,36 @@ function CommissionContent() {
           {/* Filters */}
           <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Month:</span>
-              <button onClick={() => navigate("prev")}
-                className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 hover:text-white transition-all">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                Month:
+              </span>
+              <button
+                onClick={() => navigate("prev")}
+                className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 hover:text-white transition-all"
+              >
                 <ChevronLeft size={14} />
               </button>
               <div className="flex items-center gap-2 bg-[#0d1117] border border-[#21293d] rounded-xl px-4 py-2">
                 <Calendar size={14} className="text-slate-600" />
-                <input type="month" value={month} onChange={(e) => setMonth(e.target.value)}
-                  className="bg-transparent text-sm font-bold text-slate-200 outline-none" />
+                <input
+                  type="month"
+                  value={month}
+                  onChange={(e) => setMonth(e.target.value)}
+                  className="bg-transparent text-sm font-bold text-slate-200 outline-none"
+                />
               </div>
-              <button onClick={() => navigate("next")}
-                className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 hover:text-white transition-all">
+              <button
+                onClick={() => navigate("next")}
+                className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 hover:text-white transition-all"
+              >
                 <ChevronRight size={14} />
               </button>
 
               <div className="h-6 w-px bg-[#21293d] mx-1" />
 
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Staff:</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                Staff:
+              </span>
               <SearchableSelect
                 value={mechanicId === "all" ? null : mechanicId}
                 options={mechanics.map((m) => ({ id: m.id, label: m.name }))}
@@ -406,8 +546,15 @@ function CommissionContent() {
                 clearLabel="All Staff"
               />
 
-              <button onClick={() => window.open(`/api/print-mechanics-commission?month=${month}&mechanic_id=${mechanicId}`, "_blank")}
-                className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
+              <button
+                onClick={() =>
+                  window.open(
+                    `/api/print-mechanics-commission?month=${month}&mechanic_id=${mechanicId}`,
+                    "_blank"
+                  )
+                }
+                className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+              >
                 <Printer size={14} /> Print
               </button>
             </div>
@@ -417,8 +564,13 @@ function CommissionContent() {
           {!loading && mechanicId === "all" && summary.length > 1 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {summary.map((e) => (
-                <div key={e.name} className="bg-[#161b27] border border-[#21293d] rounded-xl px-4 py-3">
-                  <p className="text-[10px] text-slate-500 font-bold uppercase truncate">{e.name}</p>
+                <div
+                  key={e.name}
+                  className="bg-[#161b27] border border-[#21293d] rounded-xl px-4 py-3"
+                >
+                  <p className="text-[10px] text-slate-500 font-bold uppercase truncate">
+                    {e.name}
+                  </p>
                   <p className="text-base font-black text-emerald-400 mt-1">{inr(e.total)}</p>
                   <p className="text-[10px] text-slate-600 mt-0.5">{e.jobs} jobs</p>
                 </div>
@@ -429,7 +581,9 @@ function CommissionContent() {
           {/* Table */}
           <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
             <div className="px-5 py-3 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-2">
-              <h2 className="text-sm font-bold text-slate-300">Commission Statement — {monthLabel}</h2>
+              <h2 className="text-sm font-bold text-slate-300">
+                Commission Statement — {monthLabel}
+              </h2>
               <div className="text-right">
                 <p className="text-[10px] font-black uppercase text-slate-500">Total Commission</p>
                 <p className="text-lg font-black text-emerald-400">{inr(totalComm)}</p>
@@ -439,7 +593,9 @@ function CommissionContent() {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <Loader2 size={24} className="animate-spin text-blue-400" />
-                <p className="text-slate-600 text-xs font-black uppercase tracking-wider">Loading...</p>
+                <p className="text-slate-600 text-xs font-black uppercase tracking-wider">
+                  Loading...
+                </p>
               </div>
             ) : rows.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-600">
@@ -452,45 +608,83 @@ function CommissionContent() {
                   <table className="w-full">
                     <thead>
                       <tr className="bg-[#111520]">
-                        {["#", "Date", "Job ID", "Item", "Client", "Staff", "Rate", "Service Amt", "Commission", ""].map((h) => (
-                          <th key={h} className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left last:text-center">
+                        {[
+                          "#",
+                          "Date",
+                          "Job ID",
+                          "Item",
+                          "Client",
+                          "Staff",
+                          "Rate",
+                          "Service Amt",
+                          "Commission",
+                          "",
+                        ].map((h) => (
+                          <th
+                            key={h}
+                            className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left last:text-center"
+                          >
                             {h}
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((r, i) => (
-                        <tr key={r.id} className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors">
-                          <td className="px-3 py-2.5 text-xs text-slate-500">{(currentPage - 1) * rowsPerPage + i + 1}</td>
-                          <td className="px-3 py-2.5 text-xs text-slate-400 whitespace-nowrap">
-                            {new Date(r.date_completed || r.date_created).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <div className="text-xs font-bold text-blue-400">#{r.job_id}</div>
-                            {r.code && <div className="text-[10px] text-slate-600">{r.code}</div>}
-                          </td>
-                          <td className="px-3 py-2.5 text-xs text-slate-400">{r.item || "—"}</td>
-                          <td className="px-3 py-2.5 text-xs text-slate-400">{r.client_name || "—"}</td>
-                          <td className="px-3 py-2.5">
-                            <div className="flex items-center gap-2">
-                              <MechAvatar image={r.m_image} name={r.m_name} cls="w-7 h-7 text-[10px]" />
-                              <span className="text-xs font-bold text-slate-200">{r.m_name}</span>
-                            </div>
-                          </td>
-                          <td className="px-3 py-2.5 text-xs text-center">
-                            <span className="inline-flex px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold">{r.rate.toFixed(0)}%</span>
-                          </td>
-                          <td className="px-3 py-2.5 text-xs text-right text-slate-300">{inr(r.service_amount)}</td>
-                          <td className="px-3 py-2.5 text-xs text-right font-black text-emerald-400">{inr(r.mechanic_commission_amount)}</td>
-                          <td className="px-3 py-2.5 text-center">
-                            <a href={`/jobs/${r.id}/view`}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 rounded-lg text-xs font-bold transition-all">
-                              <Eye size={11} /> View
-                            </a>
-                          </td>
-                        </tr>
-                      ))}
+                      {rows
+                        .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+                        .map((r, i) => (
+                          <tr
+                            key={r.id}
+                            className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors"
+                          >
+                            <td className="px-3 py-2.5 text-xs text-slate-500">
+                              {(currentPage - 1) * rowsPerPage + i + 1}
+                            </td>
+                            <td className="px-3 py-2.5 text-xs text-slate-400 whitespace-nowrap">
+                              {new Date(r.date_completed || r.date_created).toLocaleDateString(
+                                "en-IN",
+                                { day: "2-digit", month: "short", year: "numeric" }
+                              )}
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <div className="text-xs font-bold text-blue-400">#{r.job_id}</div>
+                              {r.code && <div className="text-[10px] text-slate-600">{r.code}</div>}
+                            </td>
+                            <td className="px-3 py-2.5 text-xs text-slate-400">{r.item || "—"}</td>
+                            <td className="px-3 py-2.5 text-xs text-slate-400">
+                              {r.client_name || "—"}
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <div className="flex items-center gap-2">
+                                <MechAvatar
+                                  image={r.m_image}
+                                  name={r.m_name}
+                                  cls="w-7 h-7 text-[10px]"
+                                />
+                                <span className="text-xs font-bold text-slate-200">{r.m_name}</span>
+                              </div>
+                            </td>
+                            <td className="px-3 py-2.5 text-xs text-center">
+                              <span className="inline-flex px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold">
+                                {r.rate.toFixed(0)}%
+                              </span>
+                            </td>
+                            <td className="px-3 py-2.5 text-xs text-right text-slate-300">
+                              {inr(r.service_amount)}
+                            </td>
+                            <td className="px-3 py-2.5 text-xs text-right font-black text-emerald-400">
+                              {inr(r.mechanic_commission_amount)}
+                            </td>
+                            <td className="px-3 py-2.5 text-center">
+                              <a
+                                href={`/jobs/${r.id}/view`}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 rounded-lg text-xs font-bold transition-all"
+                              >
+                                <Eye size={11} /> View
+                              </a>
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
@@ -498,18 +692,29 @@ function CommissionContent() {
                 {rows.length > rowsPerPage && (
                   <div className="bg-[#111520] px-5 py-3 flex items-center justify-between border-t border-[#21293d] flex-wrap gap-3">
                     <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                      Showing {(currentPage - 1) * rowsPerPage + 1} to {Math.min(currentPage * rowsPerPage, rows.length)} of {rows.length} records
+                      Showing {(currentPage - 1) * rowsPerPage + 1} to{" "}
+                      {Math.min(currentPage * rowsPerPage, rows.length)} of {rows.length} records
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}
-                        className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                      >
                         <ChevronLeft size={16} />
                       </button>
                       <div className="text-xs font-black text-slate-400 uppercase tracking-widest px-3 border-x border-[#21293d] min-w-[120px] text-center">
                         Page {currentPage} of {Math.ceil(rows.length / rowsPerPage)}
                       </div>
-                      <button onClick={() => setCurrentPage(prev => Math.min(Math.ceil(rows.length / rowsPerPage), prev + 1))} disabled={currentPage === Math.ceil(rows.length / rowsPerPage)}
-                        className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                      <button
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(Math.ceil(rows.length / rowsPerPage), prev + 1)
+                          )
+                        }
+                        disabled={currentPage === Math.ceil(rows.length / rowsPerPage)}
+                        className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                      >
                         <ChevronRight size={16} />
                       </button>
                     </div>
@@ -525,24 +730,33 @@ function CommissionContent() {
           <div className="px-5 py-4 border-b border-[#21293d] flex items-center justify-between">
             <div>
               <h2 className="text-sm font-bold text-white">Commission Rate Master</h2>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Set percentage rates for each mechanic</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+                Set percentage rates for each mechanic
+              </p>
             </div>
           </div>
-          
+
           {loading ? (
-            <div className="py-20 text-center"><Loader2 size={24} className="animate-spin text-blue-500 mx-auto" /></div>
+            <div className="py-20 text-center">
+              <Loader2 size={24} className="animate-spin text-blue-500 mx-auto" />
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="bg-[#111520]">
-                    {["Mechanic Name", "Current Rate (%)", "Last Updated", "Actions"].map(h => (
-                      <th key={h} className="px-5 py-3 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left first:pl-6">{h}</th>
+                    {["Mechanic Name", "Current Rate (%)", "Last Updated", "Actions"].map((h) => (
+                      <th
+                        key={h}
+                        className="px-5 py-3 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left first:pl-6"
+                      >
+                        {h}
+                      </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#21293d]">
-                  {mechRates.map(m => (
+                  {mechRates.map((m) => (
                     <tr key={m.id} className="hover:bg-white/[0.02] transition-colors group">
                       <td className="px-5 py-4 first:pl-6">
                         <div className="flex items-center gap-3">
@@ -557,17 +771,26 @@ function CommissionContent() {
                       </td>
                       <td className="px-5 py-4 text-xs text-slate-500">
                         {m.last_updated
-                          ? new Date(m.last_updated).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                          ? new Date(m.last_updated).toLocaleDateString("en-IN", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })
                           : "—"}
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
-                          <button onClick={() => openUpdate(m)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-black uppercase transition-all shadow-lg shadow-blue-900/20">
+                          <button
+                            onClick={() => openUpdate(m)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-black uppercase transition-all shadow-lg shadow-blue-900/20"
+                          >
                             <Plus size={12} /> New Rate
                           </button>
-                          <button onClick={() => openHistory(m)}
-                            className="p-1.5 bg-[#1e2637] border border-[#2a3550] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg transition-all" title="View History">
+                          <button
+                            onClick={() => openHistory(m)}
+                            className="p-1.5 bg-[#1e2637] border border-[#2a3550] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg transition-all"
+                            title="View History"
+                          >
                             <History size={14} />
                           </button>
                         </div>
@@ -592,40 +815,79 @@ function CommissionContent() {
                 </div>
                 <div>
                   <h3 className="font-black text-white">Update Commission</h3>
-                  <p className="text-[10px] text-blue-400 uppercase font-bold tracking-widest">{selectedMech.name}</p>
+                  <p className="text-[10px] text-blue-400 uppercase font-bold tracking-widest">
+                    {selectedMech.name}
+                  </p>
                 </div>
               </div>
-              <button onClick={() => setShowUpdateModal(false)} className="text-slate-500 hover:text-white p-1.5 hover:bg-white/5 rounded-lg transition-all">
+              <button
+                onClick={() => setShowUpdateModal(false)}
+                className="text-slate-500 hover:text-white p-1.5 hover:bg-white/5 rounded-lg transition-all"
+              >
                 <X size={18} />
               </button>
             </div>
-            
+
             <form onSubmit={handleUpdateRate} className="p-5 space-y-4">
-              {rateErr && <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs flex items-center gap-2"><AlertCircle size={14}/> {rateErr}</div>}
-              
+              {rateErr && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs flex items-center gap-2">
+                  <AlertCircle size={14} /> {rateErr}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">New Rate (%)</label>
+                  <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">
+                    New Rate (%)
+                  </label>
                   <div className="relative">
-                    <input type="number" step="0.1" value={newRate} onChange={e => setNewRate(e.target.value)} autoFocus
-                      className="w-full pl-4 pr-10 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-white font-bold focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all" />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 font-bold">%</span>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={newRate}
+                      onChange={(e) => setNewRate(e.target.value)}
+                      autoFocus
+                      className="w-full pl-4 pr-10 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-white font-bold focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 font-bold">
+                      %
+                    </span>
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Effective Date</label>
-                  <input type="date" value={effDate} onChange={e => setEffDate(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-white font-bold focus:border-blue-500 outline-none transition-all [color-scheme:dark]" />
+                  <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">
+                    Effective Date
+                  </label>
+                  <input
+                    type="date"
+                    value={effDate}
+                    onChange={(e) => setEffDate(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-white font-bold focus:border-blue-500 outline-none transition-all [color-scheme:dark]"
+                  />
                 </div>
               </div>
 
               <div className="pt-2 flex gap-3">
-                <button type="submit" disabled={savingRate}
-                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20">
-                  {savingRate ? <><Loader2 size={16} className="animate-spin" /> Updating...</> : <><Check size={16} /> Save New Rate</>}
+                <button
+                  type="submit"
+                  disabled={savingRate}
+                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20"
+                >
+                  {savingRate ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" /> Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Check size={16} /> Save New Rate
+                    </>
+                  )}
                 </button>
-                <button type="button" onClick={() => setShowUpdateModal(false)}
-                  className="px-6 py-3 bg-[#111520] border border-[#21293d] text-slate-500 hover:text-white rounded-xl font-bold text-sm transition-all">
+                <button
+                  type="button"
+                  onClick={() => setShowUpdateModal(false)}
+                  className="px-6 py-3 bg-[#111520] border border-[#21293d] text-slate-500 hover:text-white rounded-xl font-bold text-sm transition-all"
+                >
                   Cancel
                 </button>
               </div>
@@ -645,17 +907,24 @@ function CommissionContent() {
                 </div>
                 <div>
                   <h3 className="font-black text-white">Rate History</h3>
-                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">{selectedMech.name}</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">
+                    {selectedMech.name}
+                  </p>
                 </div>
               </div>
-              <button onClick={() => setShowHistoryModal(false)} className="text-slate-500 hover:text-white p-1.5 hover:bg-white/5 rounded-lg transition-all">
+              <button
+                onClick={() => setShowHistoryModal(false)}
+                className="text-slate-500 hover:text-white p-1.5 hover:bg-white/5 rounded-lg transition-all"
+              >
                 <X size={18} />
               </button>
             </div>
-            
+
             <div className="max-h-[60vh] overflow-y-auto">
               {historyLoading ? (
-                <div className="py-20 text-center"><Loader2 size={24} className="animate-spin text-blue-500 mx-auto" /></div>
+                <div className="py-20 text-center">
+                  <Loader2 size={24} className="animate-spin text-blue-500 mx-auto" />
+                </div>
               ) : rateHistory.length === 0 ? (
                 <div className="py-20 text-center text-slate-600 space-y-2">
                   <AlertCircle size={32} className="mx-auto opacity-20" />
@@ -671,16 +940,25 @@ function CommissionContent() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#21293d]">
-                    {rateHistory.map(h => (
+                    {rateHistory.map((h) => (
                       <tr key={h.id} className="hover:bg-white/[0.01] transition-colors">
                         <td className="px-5 py-3.5 text-sm font-bold text-slate-300">
-                          {new Date(h.effective_date).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {new Date(h.effective_date).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
                         </td>
                         <td className="px-5 py-3.5 text-right">
-                          <span className="font-black text-emerald-400">{h.commission_percent.toFixed(1)}%</span>
+                          <span className="font-black text-emerald-400">
+                            {h.commission_percent.toFixed(1)}%
+                          </span>
                         </td>
                         <td className="px-5 py-3.5 text-right text-[10px] text-slate-600 uppercase">
-                          {new Date(h.date_created).toLocaleDateString("en-IN", { day: '2-digit', month: 'short' })}
+                          {new Date(h.date_created).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                          })}
                         </td>
                       </tr>
                     ))}
@@ -689,8 +967,10 @@ function CommissionContent() {
               )}
             </div>
             <div className="p-4 bg-[#111520] border-t border-[#21293d] text-center">
-              <button onClick={() => setShowHistoryModal(false)}
-                className="px-8 py-2 bg-[#1e2637] text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all border border-[#2a3550]">
+              <button
+                onClick={() => setShowHistoryModal(false)}
+                className="px-8 py-2 bg-[#1e2637] text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all border border-[#2a3550]"
+              >
                 Close
               </button>
             </div>
@@ -703,7 +983,13 @@ function CommissionContent() {
 
 export default function CommissionPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center py-24"><Loader2 size={24} className="animate-spin text-blue-400" /></div>}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-24">
+          <Loader2 size={24} className="animate-spin text-blue-400" />
+        </div>
+      }
+    >
       <CommissionContent />
     </Suspense>
   );

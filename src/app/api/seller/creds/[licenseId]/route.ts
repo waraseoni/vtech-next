@@ -34,7 +34,10 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
     // Row nahi mili → empty template return (204 nahi — client ko form khali chahiye).
     return NextResponse.json(row ?? { license_id: id });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -76,7 +79,10 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
     });
     return NextResponse.json(row);
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -90,6 +96,9 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
     await deleteClientCredentials(id);
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }

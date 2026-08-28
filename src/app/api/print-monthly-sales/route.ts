@@ -14,7 +14,10 @@ const SHOP = {
 
 function fmtDate(iso: string): string {
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(iso));
 }
 
@@ -24,7 +27,8 @@ function inr(n: number) {
 
 export async function GET(req: NextRequest) {
   const user = await requireStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const url = new URL(req.url);
   const month = url.searchParams.get("month") || "";
 
@@ -46,14 +50,22 @@ export async function GET(req: NextRequest) {
 
   const txns = await fetchAll(
     supabase
-      .from("transaction_list").select("id, code, client_name, status, date_updated")
-      .gte("date_updated", from).lte("date_updated", to).neq("status", 4)
+      .from("transaction_list")
+      .select("id, code, client_name, status, date_updated")
+      .gte("date_updated", from)
+      .lte("date_updated", to)
+      .neq("status", 4)
   );
 
   const txnIds = [...new Set(txns?.map((t) => t.id) || [])];
-  const tpData = txnIds.length ? await fetchAll(
-    supabase.from("transaction_products").select("transaction_id, product_id, product_name, price, qty").in("transaction_id", txnIds)
-  ) : [];
+  const tpData = txnIds.length
+    ? await fetchAll(
+        supabase
+          .from("transaction_products")
+          .select("transaction_id, product_id, product_name, price, qty")
+          .in("transaction_id", txnIds)
+      )
+    : [];
 
   const clients = await fetchAll(
     supabase.from("client_list").select("id, firstname, middlename, lastname").eq("delete_flag", 0)
@@ -63,7 +75,15 @@ export async function GET(req: NextRequest) {
     supabase.from("product_list").select("id, name").eq("delete_flag", 0)
   );
 
-  const saleRows: { date_updated: string; code: string | null; client_name: string; product_name: string; price: number; qty: number; total: number }[] = [];
+  const saleRows: {
+    date_updated: string;
+    code: string | null;
+    client_name: string;
+    product_name: string;
+    price: number;
+    qty: number;
+    total: number;
+  }[] = [];
   for (const tp of tpData || []) {
     const txn = (txns || []).find((t) => t.id === tp.transaction_id);
     if (!txn) continue;
@@ -72,7 +92,9 @@ export async function GET(req: NextRequest) {
     saleRows.push({
       date_updated: txn.date_updated,
       code: txn.code,
-      client_name: client ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ") : "Walk-in",
+      client_name: client
+        ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
+        : "Walk-in",
       product_name: product?.name || tp.product_name || "Unknown",
       price: tp.price || 0,
       qty: tp.qty || 1,
@@ -93,11 +115,15 @@ export async function GET(req: NextRequest) {
   }
 
   const total = saleRows.reduce((s, r) => s + r.total, 0);
-  const monthLabel = new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const monthLabel = new Date(month + "-01").toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
 
-  const rows = saleRows.map((r, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const rows = saleRows
+    .map((r, i) => {
+      const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+      return `<tr style="background:${rowBg}">
       <td style="padding:8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:11px">${i + 1}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:11px">${fmtDate(r.date_updated)}</td>
       <td style="padding:8px;border:1px solid #dee2e6">
@@ -109,7 +135,8 @@ export async function GET(req: NextRequest) {
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:11px">${r.qty}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-weight:700;color:#27ae60;font-size:11px">${inr(r.total)}</td>
     </tr>`;
-  }).join("");
+    })
+    .join("");
 
   const html = `<!DOCTYPE html>
 <html lang="en">

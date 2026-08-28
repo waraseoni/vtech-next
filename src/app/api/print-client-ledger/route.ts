@@ -12,18 +12,37 @@ const SHOP = {
   mobile: "9179105875",
 };
 
-const toNum = (v: unknown) => { const x = Number(v); return isNaN(x) ? 0 : x; };
-const inr = (v: number, sign = true) => `${sign && v < 0 ? "−" : ""}₹${Math.abs(v).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+const toNum = (v: unknown) => {
+  const x = Number(v);
+  return isNaN(x) ? 0 : x;
+};
+const inr = (v: number, sign = true) =>
+  `${sign && v < 0 ? "−" : ""}₹${Math.abs(v).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 
 function fmtDate(d: string | null) {
-  return d ? new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(new Date(d)) : "N/A";
+  return d
+    ? new Intl.DateTimeFormat("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(new Date(d))
+    : "N/A";
 }
 
-const STATUS_MAP: Record<number, string> = { 0: "Pending", 1: "On-Progress", 2: "Done", 3: "Paid", 4: "Cancelled", 5: "Delivered" };
+const STATUS_MAP: Record<number, string> = {
+  0: "Pending",
+  1: "On-Progress",
+  2: "Done",
+  3: "Paid",
+  4: "Cancelled",
+  5: "Delivered",
+};
 
 export async function GET(request: NextRequest) {
   const user = await requireStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const clientId = searchParams.get("id");
 
@@ -33,7 +52,9 @@ export async function GET(request: NextRequest) {
 
   const { data: client, error } = await supabase
     .from("client_list")
-    .select("id, firstname, middlename, lastname, contact, email, address, opening_balance, date_created")
+    .select(
+      "id, firstname, middlename, lastname, contact, email, address, opening_balance, date_created"
+    )
     .eq("id", parseInt(clientId))
     .single();
 
@@ -43,12 +64,41 @@ export async function GET(request: NextRequest) {
 
   const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
 
-  const [{ data: repairs }, { data: payments }, { data: loans }, { data: directSales }] = await Promise.all([
-    pageAll(supabase.from("transaction_list").select("id, job_id, code, item, fault, remark, amount, status, date_created").eq("client_name", parseInt(clientId)).order("date_created", { ascending: false })),
-    pageAll(supabase.from("client_payments").select("id, amount, discount, payment_date, payment_mode, remarks, job_id, loan_id, created_at").eq("client_id", parseInt(clientId)).order("payment_date", { ascending: false })),
-    pageAll(supabase.from("client_loans").select("id, principal_amount, interest_rate, loan_period, total_payable, emi_amount, loan_date, status, created_at").eq("client_id", parseInt(clientId)).order("loan_date", { ascending: false })),
-    pageAll(supabase.from("direct_sales").select("id, sale_code, total_amount, payment_mode, remarks, date_created").eq("client_id", parseInt(clientId)).order("date_created", { ascending: false })),
-  ]);
+  const [{ data: repairs }, { data: payments }, { data: loans }, { data: directSales }] =
+    await Promise.all([
+      pageAll(
+        supabase
+          .from("transaction_list")
+          .select("id, job_id, code, item, fault, remark, amount, status, date_created")
+          .eq("client_name", parseInt(clientId))
+          .order("date_created", { ascending: false })
+      ),
+      pageAll(
+        supabase
+          .from("client_payments")
+          .select(
+            "id, amount, discount, payment_date, payment_mode, remarks, job_id, loan_id, created_at"
+          )
+          .eq("client_id", parseInt(clientId))
+          .order("payment_date", { ascending: false })
+      ),
+      pageAll(
+        supabase
+          .from("client_loans")
+          .select(
+            "id, principal_amount, interest_rate, loan_period, total_payable, emi_amount, loan_date, status, created_at"
+          )
+          .eq("client_id", parseInt(clientId))
+          .order("loan_date", { ascending: false })
+      ),
+      pageAll(
+        supabase
+          .from("direct_sales")
+          .select("id, sale_code, total_amount, payment_mode, remarks, date_created")
+          .eq("client_id", parseInt(clientId))
+          .order("date_created", { ascending: false })
+      ),
+    ]);
 
   const repairsList = repairs || [];
   const paymentsList = payments || [];
@@ -60,43 +110,61 @@ export async function GET(request: NextRequest) {
   const directSalesTotal = directSalesList.reduce((s, d) => s + toNum(d.total_amount), 0);
   const netBalance = (client.opening_balance || 0) + totalBilled + directSalesTotal - totalPaid;
 
-  const repairRows = repairsList.length > 0 ? repairsList.map((r, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const repairRows =
+    repairsList.length > 0
+      ? repairsList
+          .map((r, i) => {
+            const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+            return `<tr style="background:${rowBg}">
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(r.date_created)}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${r.job_id}</td>
-      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${r.code || '-'}</td>
-      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${r.item || '-'}</td>
-      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${STATUS_MAP[r.status] || '-'}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${r.code || "-"}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${r.item || "-"}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${STATUS_MAP[r.status] || "-"}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px;color:#c0392b">${inr(toNum(r.amount))}</td>
     </tr>`;
-  }).join("") : '<tr><td colspan="6" style="padding:16px;text-align:center;color:#666">No repairs</td></tr>';
+          })
+          .join("")
+      : '<tr><td colspan="6" style="padding:16px;text-align:center;color:#666">No repairs</td></tr>';
 
-  const salesRows = directSalesList.length > 0 ? directSalesList.map((s, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const salesRows =
+    directSalesList.length > 0
+      ? directSalesList
+          .map((s, i) => {
+            const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+            return `<tr style="background:${rowBg}">
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(s.date_created)}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${s.sale_code}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px;color:#c0392b">${inr(toNum(s.total_amount))}</td>
-      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${s.payment_mode || '-'}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${s.payment_mode || "-"}</td>
     </tr>`;
-  }).join("") : '<tr><td colspan="4" style="padding:16px;text-align:center;color:#666">No direct sales</td></tr>';
+          })
+          .join("")
+      : '<tr><td colspan="4" style="padding:16px;text-align:center;color:#666">No direct sales</td></tr>';
 
-  const paymentRows = paymentsList.length > 0 ? paymentsList.map((p, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const paymentRows =
+    paymentsList.length > 0
+      ? paymentsList
+          .map((p, i) => {
+            const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+            return `<tr style="background:${rowBg}">
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(p.payment_date)}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${p.job_id || "Direct"}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px;color:#28a745">${inr(toNum(p.amount))}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${inr(toNum(p.discount))}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px;color:#28a745">${inr(toNum(p.amount) + toNum(p.discount))}</td>
-      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${p.payment_mode || '-'}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${p.payment_mode || "-"}</td>
     </tr>`;
-  }).join("") : '<tr><td colspan="6" style="padding:16px;text-align:center;color:#666">No payments</td></tr>';
+          })
+          .join("")
+      : '<tr><td colspan="6" style="padding:16px;text-align:center;color:#666">No payments</td></tr>';
 
-  const loanRows = loansList.length > 0 ? loansList.map((l, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const loanRows =
+    loansList.length > 0
+      ? loansList
+          .map((l, i) => {
+            const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+            return `<tr style="background:${rowBg}">
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(l.loan_date)}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${inr(toNum(l.principal_amount))}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${l.interest_rate}%</td>
@@ -104,7 +172,9 @@ export async function GET(request: NextRequest) {
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${inr(toNum(l.emi_amount))}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${l.status === 1 ? "Active" : "Closed"}</td>
     </tr>`;
-  }).join("") : '<tr><td colspan="6" style="padding:16px;text-align:center;color:#666">No loans</td></tr>';
+          })
+          .join("")
+      : '<tr><td colspan="6" style="padding:16px;text-align:center;color:#666">No loans</td></tr>';
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -155,7 +225,7 @@ export async function GET(request: NextRequest) {
     </div>
     <div class="client-info">
       <div class="client-name">${name}</div>
-      <div class="client-detail">Contact: ${client.contact || '-'} | Email: ${client.email || '-'} | Address: ${client.address || '-'}</div>
+      <div class="client-detail">Contact: ${client.contact || "-"} | Email: ${client.email || "-"} | Address: ${client.address || "-"}</div>
     </div>
     <div class="stats">
       <div class="stat">
@@ -175,13 +245,15 @@ export async function GET(request: NextRequest) {
         <div class="stat-label">Total Paid</div>
       </div>
       <div class="stat">
-        <div class="stat-num" style="color:${netBalance >= 0 ? '#c0392b' : '#28a745'}">${inr(netBalance)}</div>
+        <div class="stat-num" style="color:${netBalance >= 0 ? "#c0392b" : "#28a745"}">${inr(netBalance)}</div>
         <div class="stat-label">Net Balance</div>
       </div>
     </div>
   </div>
 
-  ${repairsList.length > 0 ? `
+  ${
+    repairsList.length > 0
+      ? `
   <div class="card">
     <h2>Repair History (${repairsList.length})</h2>
     <table>
@@ -197,9 +269,13 @@ export async function GET(request: NextRequest) {
       </thead>
       <tbody>${repairRows}</tbody>
     </table>
-  </div>` : ''}
+  </div>`
+      : ""
+  }
 
-  ${directSalesList.length > 0 ? `
+  ${
+    directSalesList.length > 0
+      ? `
   <div class="card">
     <h2>Direct Sales (${directSalesList.length})</h2>
     <table>
@@ -213,9 +289,13 @@ export async function GET(request: NextRequest) {
       </thead>
       <tbody>${salesRows}</tbody>
     </table>
-  </div>` : ''}
+  </div>`
+      : ""
+  }
 
-  ${paymentsList.length > 0 ? `
+  ${
+    paymentsList.length > 0
+      ? `
   <div class="card">
     <h2>Payments Received (${paymentsList.length})</h2>
     <table>
@@ -231,9 +311,13 @@ export async function GET(request: NextRequest) {
       </thead>
       <tbody>${paymentRows}</tbody>
     </table>
-  </div>` : ''}
+  </div>`
+      : ""
+  }
 
-  ${loansList.length > 0 ? `
+  ${
+    loansList.length > 0
+      ? `
   <div class="card">
     <h2>Loans (${loansList.length})</h2>
     <table>
@@ -249,7 +333,9 @@ export async function GET(request: NextRequest) {
       </thead>
       <tbody>${loanRows}</tbody>
     </table>
-  </div>` : ''}
+  </div>`
+      : ""
+  }
 
   <div class="card">
     <div class="actions">

@@ -14,7 +14,15 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const idsParam = url.searchParams.get("ids") || "";
-    const ids = [...new Set(idsParam.split(",").map(s => s.trim()).filter(s => /^\d+$/.test(s)).map(Number))];
+    const ids = [
+      ...new Set(
+        idsParam
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => /^\d+$/.test(s))
+          .map(Number)
+      ),
+    ];
     if (ids.length === 0) return NextResponse.json({ users: {}, mechanics: {} });
 
     const admin = getAdminSupabase();
@@ -24,7 +32,7 @@ export async function GET(request: Request) {
       .from("users")
       .select("id, firstname, lastname")
       .in("id", ids);
-    (uRows || []).forEach(u => {
+    (uRows || []).forEach((u) => {
       users[String(u.id)] = [u.firstname, u.lastname].filter(Boolean).join(" ") || `User ${u.id}`;
     });
 
@@ -33,18 +41,19 @@ export async function GET(request: Request) {
       .from("mechanic_list")
       .select("id, firstname, middlename, lastname")
       .in("id", ids);
-    (mRows || []).forEach(m => {
-      mechanics[String(m.id)] = [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ") || `User ${m.id}`;
+    (mRows || []).forEach((m) => {
+      mechanics[String(m.id)] =
+        [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ") || `User ${m.id}`;
     });
 
     // profiles table — transaction_list.user_id references profiles.mechanic_id
-    const unresolved = ids.filter(id => !users[String(id)] && !mechanics[String(id)]);
+    const unresolved = ids.filter((id) => !users[String(id)] && !mechanics[String(id)]);
     if (unresolved.length > 0) {
       const { data: pRows } = await admin
         .from("profiles")
         .select("full_name, mechanic_id")
         .in("mechanic_id", unresolved);
-      (pRows || []).forEach(p => {
+      (pRows || []).forEach((p) => {
         if (p.full_name && p.mechanic_id) {
           users[String(p.mechanic_id)] = p.full_name;
         }

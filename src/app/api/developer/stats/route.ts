@@ -8,12 +8,18 @@ export async function GET() {
   }
   const auth = await requireDev();
   if (!auth) {
-    return NextResponse.json({ error: "Unauthorized — developer password required" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthorized — developer password required" },
+      { status: 401 }
+    );
   }
   try {
     const stats = await getDevStats();
     return NextResponse.json(stats);
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }

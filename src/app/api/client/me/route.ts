@@ -18,9 +18,18 @@ export async function GET() {
       .select("id, firstname, middlename, lastname, contact, email, opening_balance")
       .eq("id", cid)
       .maybeSingle(),
-    supabaseAdmin.from("transaction_list").select("amount").eq("client_name", String(cid)).eq("del_status", 0).eq("status", 5),
+    supabaseAdmin
+      .from("transaction_list")
+      .select("amount")
+      .eq("client_name", String(cid))
+      .eq("del_status", 0)
+      .eq("status", 5),
     supabaseAdmin.from("direct_sales").select("total_amount").eq("client_id", cid),
-    supabaseAdmin.from("client_loans").select("id, total_payable").eq("client_id", cid).eq("status", 1),
+    supabaseAdmin
+      .from("client_loans")
+      .select("id, total_payable")
+      .eq("client_id", cid)
+      .eq("status", 1),
     supabaseAdmin.from("client_payments").select("amount, discount, loan_id").eq("client_id", cid),
   ]);
 
@@ -33,10 +42,10 @@ export async function GET() {
     (arr || []).reduce((s, r) => s + (Number(r[key]) || 0), 0);
 
   // Canonical PHP formula: delivered repairs + direct sales − service payments + active loans − loan repayments
-  const activeLoanIds = new Set((loansRes.data || []).map(l => Number(l.id)).filter(Boolean));
+  const activeLoanIds = new Set((loansRes.data || []).map((l) => Number(l.id)).filter(Boolean));
   let servicePaid = 0;
   let loanRepaid = 0;
-  (paysRes.data || []).forEach(p => {
+  (paysRes.data || []).forEach((p) => {
     const credit = (Number(p.amount) || 0) + (Number(p.discount) || 0);
     if (!p.loan_id || Number(p.loan_id) === 0) servicePaid += credit;
     else if (activeLoanIds.has(Number(p.loan_id))) loanRepaid += credit;

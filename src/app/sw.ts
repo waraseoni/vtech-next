@@ -40,8 +40,7 @@ const CUSTOM_CACHE: RuntimeCaching[] = [
       } catch {
         const url = new URL(request.url);
         const fallback =
-          (await serwist.matchPrecache(url.pathname)) ||
-          (await serwist.matchPrecache("/"));
+          (await serwist.matchPrecache(url.pathname)) || (await serwist.matchPrecache("/"));
         if (fallback) return fallback;
       }
       return fetch(request, { cache: "no-store" });
@@ -59,7 +58,9 @@ const CUSTOM_CACHE: RuntimeCaching[] = [
     matcher: /\/_next\/static.+\.js$/i,
     handler: new CacheFirst({
       cacheName: "next-static-js-assets",
-      plugins: [new ExpirationPlugin({ maxEntries: 64, maxAgeSeconds: 1440 * 60, maxAgeFrom: "last-used" })],
+      plugins: [
+        new ExpirationPlugin({ maxEntries: 64, maxAgeSeconds: 1440 * 60, maxAgeFrom: "last-used" }),
+      ],
     }),
   },
   // ✅ Images — hashed URLs, StaleWhileRevalidate safe
@@ -67,7 +68,13 @@ const CUSTOM_CACHE: RuntimeCaching[] = [
     matcher: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
     handler: new StaleWhileRevalidate({
       cacheName: "static-image-assets",
-      plugins: [new ExpirationPlugin({ maxEntries: 64, maxAgeSeconds: 720 * 60 * 60, maxAgeFrom: "last-used" })],
+      plugins: [
+        new ExpirationPlugin({
+          maxEntries: 64,
+          maxAgeSeconds: 720 * 60 * 60,
+          maxAgeFrom: "last-used",
+        }),
+      ],
     }),
   },
   // ✅ Fonts — hashed URLs, safe
@@ -75,7 +82,9 @@ const CUSTOM_CACHE: RuntimeCaching[] = [
     matcher: /\.(?:eot|otf|ttc|ttf|woff|woff2|font.css)$/i,
     handler: new StaleWhileRevalidate({
       cacheName: "static-font-assets",
-      plugins: [new ExpirationPlugin({ maxEntries: 4, maxAgeSeconds: 10080 * 60, maxAgeFrom: "last-used" })],
+      plugins: [
+        new ExpirationPlugin({ maxEntries: 4, maxAgeSeconds: 10080 * 60, maxAgeFrom: "last-used" }),
+      ],
     }),
   },
   // ✅ CSS — hashed URLs, safe
@@ -83,7 +92,9 @@ const CUSTOM_CACHE: RuntimeCaching[] = [
     matcher: /\.(?:css|less)$/i,
     handler: new StaleWhileRevalidate({
       cacheName: "static-style-assets",
-      plugins: [new ExpirationPlugin({ maxEntries: 32, maxAgeSeconds: 1440 * 60, maxAgeFrom: "last-used" })],
+      plugins: [
+        new ExpirationPlugin({ maxEntries: 32, maxAgeSeconds: 1440 * 60, maxAgeFrom: "last-used" }),
+      ],
     }),
   },
   // ⛔ API routes — dynamic/auth data, kabhi cache nahi
@@ -121,11 +132,12 @@ const serwist = new Serwist({
 if (self.location.hostname === "localhost" || self.location.hostname === "127.0.0.1") {
   self.addEventListener("install", () => {
     self.skipWaiting();
-    self.registration
-      .unregister()
-      .catch(() => {});
+    self.registration.unregister().catch(() => {});
     if (self.caches) {
-      self.caches.keys().then((keys) => Promise.all(keys.map((k) => self.caches.delete(k).catch(() => {})))).catch(() => {});
+      self.caches
+        .keys()
+        .then((keys) => Promise.all(keys.map((k) => self.caches.delete(k).catch(() => {}))))
+        .catch(() => {});
     }
   });
 } else {
@@ -135,7 +147,15 @@ if (self.location.hostname === "localhost" || self.location.hostname === "127.0.
   self.addEventListener("activate", (event) => {
     event.waitUntil(
       (async () => {
-        const stale = ["pages", "pages-rsc-prefetch", "pages-rsc", "next-data", "apis", "others", "cross-origin"];
+        const stale = [
+          "pages",
+          "pages-rsc-prefetch",
+          "pages-rsc",
+          "next-data",
+          "apis",
+          "others",
+          "cross-origin",
+        ];
         await Promise.all(stale.map((name) => caches.delete(name)));
       })()
     );
@@ -150,7 +170,15 @@ if (self.location.hostname === "localhost" || self.location.hostname === "127.0.
 self.addEventListener("push", (event) => {
   if (!event.data) return;
 
-  let payload: { title: string; body: string; icon?: string; badge?: string; tag?: string; url?: string; data?: Record<string, unknown> };
+  let payload: {
+    title: string;
+    body: string;
+    icon?: string;
+    badge?: string;
+    tag?: string;
+    url?: string;
+    data?: Record<string, unknown>;
+  };
   try {
     payload = event.data.json();
   } catch {

@@ -12,7 +12,8 @@ const BUCKET = "user-avatars";
 export async function POST(request: NextRequest) {
   try {
     const user = await requireStaff();
-    if (!user) return NextResponse.json({ status: "unauthorized", msg: "Login required" }, { status: 401 });
+    if (!user)
+      return NextResponse.json({ status: "unauthorized", msg: "Login required" }, { status: 401 });
 
     const form = await request.formData();
     const file = form.get("file") as File | null;
@@ -45,7 +46,10 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     if (buffer.byteLength > 200 * 1024) {
-      return NextResponse.json({ status: "failed", msg: "Image > 200KB — compress karke dobara try karein" }, { status: 400 });
+      return NextResponse.json(
+        { status: "failed", msg: "Image > 200KB — compress karke dobara try karein" },
+        { status: 400 }
+      );
     }
 
     // Delete old avatar first, then upload new (keep bucket clean)

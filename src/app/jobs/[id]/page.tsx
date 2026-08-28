@@ -9,13 +9,28 @@ import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import { JOB_STATUS } from "@/lib/status-colors";
 import {
-  ArrowLeft, Wrench, User, Clock,
-  Package, Settings2, AlertTriangle, CheckCircle2,
-  IndianRupee, Printer, Edit, Trash2,
-  Loader2, Box,
-  Banknote, Send,
-  Plus, X, CheckCircle, FileText,
-  RefreshCw, Image as ImageIcon,
+  ArrowLeft,
+  Wrench,
+  User,
+  Clock,
+  Package,
+  Settings2,
+  AlertTriangle,
+  CheckCircle2,
+  IndianRupee,
+  Printer,
+  Edit,
+  Trash2,
+  Loader2,
+  Box,
+  Banknote,
+  Send,
+  Plus,
+  X,
+  CheckCircle,
+  FileText,
+  RefreshCw,
+  Image as ImageIcon,
 } from "lucide-react";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/activity";
@@ -25,98 +40,191 @@ import { logger } from "@/lib/logger";
 function fmtDate(d: string | null) {
   if (!d) return "N/A";
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(d));
 }
 function fmtDateTime(d: string | null) {
   if (!d) return "N/A";
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
   }).format(new Date(d));
 }
 function nowIST(): string {
   const p = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
   }).formatToParts(new Date());
-  const g = (t: string) => p.find(x => x.type === t)?.value ?? "00";
+  const g = (t: string) => p.find((x) => x.type === t)?.value ?? "00";
   return `${g("year")}-${g("month")}-${g("day")}T${g("hour")}:${g("minute")}:${g("second")}+05:30`;
 }
 function todayISTStr(): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   }).formatToParts(new Date());
   const p: Record<string, string> = {};
-  parts.forEach(x => { p[x.type] = x.value; });
+  parts.forEach((x) => {
+    p[x.type] = x.value;
+  });
   return `${p.year}-${p.month}-${p.day}`;
 }
 // Convert ISO/DB date to YYYY-MM-DD for <input type="date">
 function toDateInput(d: string | null): string {
   if (!d) return todayISTStr();
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   }).formatToParts(new Date(d));
   const p: Record<string, string> = {};
-  parts.forEach(x => { p[x.type] = x.value; });
+  parts.forEach((x) => {
+    p[x.type] = x.value;
+  });
   return `${p.year}-${p.month}-${p.day}`;
 }
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 interface JobDetail {
-  id: number; job_id: string; code: string; client_name: string;
-  item: string; fault: string; remark: string; uniq_id: string;
-  amount: number; mechanic_amount: number; mechanic_commission_amount: number;
-  mechanic_id: number | null; user_id: number; del_status: number; status: number;
-  date_created: string; date_updated: string; date_completed: string | null;
+  id: number;
+  job_id: string;
+  code: string;
+  client_name: string;
+  item: string;
+  fault: string;
+  remark: string;
+  uniq_id: string;
+  amount: number;
+  mechanic_amount: number;
+  mechanic_commission_amount: number;
+  mechanic_id: number | null;
+  user_id: number;
+  del_status: number;
+  status: number;
+  date_created: string;
+  date_updated: string;
+  date_completed: string | null;
 }
 interface Client {
-  id: number; firstname: string; middlename: string;
-  lastname: string; contact: string; email: string; address: string;
+  id: number;
+  firstname: string;
+  middlename: string;
+  lastname: string;
+  contact: string;
+  email: string;
+  address: string;
 }
 interface Mechanic {
-  id: number; firstname: string; middlename: string;
-  lastname: string; designation: string; contact: string;
+  id: number;
+  firstname: string;
+  middlename: string;
+  lastname: string;
+  designation: string;
+  contact: string;
 }
 interface TransactionProduct {
-  transaction_id: number; product_id: number;
-  product_name: string | null; qty: number; price: number;
+  transaction_id: number;
+  product_id: number;
+  product_name: string | null;
+  qty: number;
+  price: number;
 }
 interface TransactionService {
-  transaction_id: number; service_id: number;
-  service_name: string | null; price: number;
+  transaction_id: number;
+  service_id: number;
+  service_name: string | null;
+  price: number;
 }
 interface TransactionImage {
-  id: number; transaction_id: number; image_path: string; date_created: string;
+  id: number;
+  transaction_id: number;
+  image_path: string;
+  date_created: string;
 }
 type Toast = { type: "success" | "error" | "info"; msg: string };
 
 // ─── STATUS CONFIG ────────────────────────────────────────────────────────────
-const STATUS_MAP: Record<number, {
-  label: string; explanation: string;
-  badgeColor: string; // Bootstrap-like color name for PHP-style badge
-  cls: string;
-}> = {
-  0: { label: "Pending",     explanation: "Kaam shuru nahi hua hai",             badgeColor: "secondary", cls: JOB_STATUS[0].cls },
-  1: { label: "On-Progress", explanation: "Kaam chal raha hai, jald ready hoga", badgeColor: "primary",   cls: JOB_STATUS[1].cls },
-  2: { label: "Done",        explanation: "Kaam pura ho gaya hai",               badgeColor: "info",      cls: JOB_STATUS[2].cls },
-  3: { label: "Paid",        explanation: "Bill chuka diya gaya hai",            badgeColor: "success",   cls: JOB_STATUS[3].cls },
-  4: { label: "Cancelled",   explanation: "Transaction radd kar diya gaya hai",  badgeColor: "danger",    cls: JOB_STATUS[4].cls },
-  5: { label: "Delivered",   explanation: "Aapko item mil chuka hai",            badgeColor: "warning",   cls: JOB_STATUS[5].cls },
+const STATUS_MAP: Record<
+  number,
+  {
+    label: string;
+    explanation: string;
+    badgeColor: string; // Bootstrap-like color name for PHP-style badge
+    cls: string;
+  }
+> = {
+  0: {
+    label: "Pending",
+    explanation: "Kaam shuru nahi hua hai",
+    badgeColor: "secondary",
+    cls: JOB_STATUS[0].cls,
+  },
+  1: {
+    label: "On-Progress",
+    explanation: "Kaam chal raha hai, jald ready hoga",
+    badgeColor: "primary",
+    cls: JOB_STATUS[1].cls,
+  },
+  2: {
+    label: "Done",
+    explanation: "Kaam pura ho gaya hai",
+    badgeColor: "info",
+    cls: JOB_STATUS[2].cls,
+  },
+  3: {
+    label: "Paid",
+    explanation: "Bill chuka diya gaya hai",
+    badgeColor: "success",
+    cls: JOB_STATUS[3].cls,
+  },
+  4: {
+    label: "Cancelled",
+    explanation: "Transaction radd kar diya gaya hai",
+    badgeColor: "danger",
+    cls: JOB_STATUS[4].cls,
+  },
+  5: {
+    label: "Delivered",
+    explanation: "Aapko item mil chuka hai",
+    badgeColor: "warning",
+    cls: JOB_STATUS[5].cls,
+  },
 };
 
 // PHP-style badge colors mapped to Tailwind
 const BADGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  secondary: { bg: "bg-slate-600",   text: "text-white", border: "border-slate-700"  },
-  primary:   { bg: "bg-blue-600",   text: "text-white", border: "border-blue-700"  },
-  info:      { bg: "bg-cyan-500",   text: "text-white", border: "border-cyan-600"  },
-  success:   { bg: "bg-green-600",  text: "text-white", border: "border-green-700" },
-  danger:    { bg: "bg-red-600",    text: "text-white", border: "border-red-700"   },
-  warning:   { bg: "bg-yellow-500", text: "text-gray-900", border: "border-yellow-600" },
+  secondary: { bg: "bg-slate-600", text: "text-white", border: "border-slate-700" },
+  primary: { bg: "bg-blue-600", text: "text-white", border: "border-blue-700" },
+  info: { bg: "bg-cyan-500", text: "text-white", border: "border-cyan-600" },
+  success: { bg: "bg-green-600", text: "text-white", border: "border-green-700" },
+  danger: { bg: "bg-red-600", text: "text-white", border: "border-red-700" },
+  warning: { bg: "bg-yellow-500", text: "text-gray-900", border: "border-yellow-600" },
 };
 
 const DEL_STATUS: Record<number, string> = { 0: "In Shop", 1: "Delivered" };
-const FIRM = { name: "V-Technologies", contact: "9179105875", address: "Jabalpur", owner: "Vikram Jain" };
+const FIRM = {
+  name: "V-Technologies",
+  contact: "9179105875",
+  address: "Jabalpur",
+  owner: "Vikram Jain",
+};
 
 // Job status → WhatsApp template key (PHP: pending=0, repairing=1, ready=2, delivered=3/5, cancelled=4)
 const STATUS_WA_KEY: Record<number, string> = {
@@ -129,19 +237,29 @@ const STATUS_WA_KEY: Record<number, string> = {
 };
 
 // ─── FIELDSET COMPONENT (PHP jaisi styling) ───────────────────────────────────
-function Fieldset({ title, icon: Icon, children, color = "primary" }: {
-  title: string; icon?: React.ElementType; children: React.ReactNode; color?: "primary" | "success" | "info" | "danger";
+function Fieldset({
+  title,
+  icon: Icon,
+  children,
+  color = "primary",
+}: {
+  title: string;
+  icon?: React.ElementType;
+  children: React.ReactNode;
+  color?: "primary" | "success" | "info" | "danger";
 }) {
   const colors = {
     primary: "text-blue-400 border-blue-500/30",
     success: "text-emerald-400 border-emerald-500/30",
-    info:    "text-cyan-400 border-cyan-500/30",
-    danger:  "text-red-400 border-red-500/30",
+    info: "text-cyan-400 border-cyan-500/30",
+    danger: "text-red-400 border-red-500/30",
   };
   return (
     <fieldset className={`border-2 ${colors[color].split(" ")[1]} rounded-lg bg-[#111520] mb-4`}>
-      <legend className={`px-3 py-1 text-sm font-bold ${colors[color].split(" ")[0]} ml-3 flex items-center gap-1.5`}>
-        {Icon && <Icon size={14}/>}
+      <legend
+        className={`px-3 py-1 text-sm font-bold ${colors[color].split(" ")[0]} ml-3 flex items-center gap-1.5`}
+      >
+        {Icon && <Icon size={14} />}
         {title}
       </legend>
       <div className="px-4 pb-4 pt-1">{children}</div>
@@ -161,36 +279,36 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function JobDetailsPage() {
-  const params  = useParams();
-  const router  = useRouter();
-  const jobId   = params.id as string;
+  const params = useParams();
+  const router = useRouter();
+  const jobId = params.id as string;
 
-  const [job,      setJob]      = useState<JobDetail | null>(null);
-  const [client,   setClient]   = useState<Client | null>(null);
+  const [job, setJob] = useState<JobDetail | null>(null);
+  const [client, setClient] = useState<Client | null>(null);
   const [mechanic, setMechanic] = useState<Mechanic | null>(null);
   const [products, setProducts] = useState<TransactionProduct[]>([]);
   const [services, setServices] = useState<TransactionService[]>([]);
-  const [images,   setImages]   = useState<TransactionImage[]>([]);
+  const [images, setImages] = useState<TransactionImage[]>([]);
   const [userRole, setUserRole] = useState<string>("staff");
-  const [loading,  setLoading]  = useState(true);
+  const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
-  const [toast,    setToast]    = useState<Toast | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
   const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
 
   // Status modal
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [newStatus,       setNewStatus]       = useState(0);
-  const [deliveryDate,    setDeliveryDate]    = useState("");  // for Delivered status
-  const [deliveryTime,    setDeliveryTime]    = useState("");  // HH:MM
-  const [updatingStatus,  setUpdatingStatus]  = useState(false);
+  const [newStatus, setNewStatus] = useState(0);
+  const [deliveryDate, setDeliveryDate] = useState(""); // for Delivered status
+  const [deliveryTime, setDeliveryTime] = useState(""); // HH:MM
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   // Payment modal
   const [showPayModal, setShowPayModal] = useState(false);
-  const [payAmount,    setPayAmount]    = useState("");
-  const [payDiscount,  setPayDiscount]  = useState("0");
-  const [payMode,      setPayMode]      = useState("Cash");
-  const [payRemarks,   setPayRemarks]   = useState("");
-  const [savingPay,    setSavingPay]    = useState(false);
+  const [payAmount, setPayAmount] = useState("");
+  const [payDiscount, setPayDiscount] = useState("0");
+  const [payMode, setPayMode] = useState("Cash");
+  const [payRemarks, setPayRemarks] = useState("");
+  const [savingPay, setSavingPay] = useState(false);
 
   useEffect(() => {
     if (!toast) return;
@@ -203,85 +321,142 @@ export default function JobDetailsPage() {
     setLoading(true);
     try {
       const numId = Number(jobId?.trim());
-      if (!jobId || isNaN(numId) || numId <= 0) { router.push("/jobs"); return; }
+      if (!jobId || isNaN(numId) || numId <= 0) {
+        router.push("/jobs");
+        return;
+      }
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
-        const { data: p } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+        const { data: p } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
         setUserRole(p?.role || "staff");
       }
 
       // Firm info + WhatsApp templates (system_info key-value)
       const { data: sys } = await supabase.from("system_info").select("meta_field, meta_value");
       const info: Record<string, string> = {};
-      (sys || []).forEach(r => { info[r.meta_field] = r.meta_value; });
+      (sys || []).forEach((r) => {
+        info[r.meta_field] = r.meta_value;
+      });
       setFirmInfo(info);
 
       const { data: jobData, error: jobErr } = await supabase
-        .from("transaction_list").select("*")
-        .eq("id", numId).eq("del_status", 0).single();
+        .from("transaction_list")
+        .select("*")
+        .eq("id", numId)
+        .eq("del_status", 0)
+        .single();
 
-      if (jobErr || !jobData) { router.push("/jobs"); return; }
+      if (jobErr || !jobData) {
+        router.push("/jobs");
+        return;
+      }
       setJob(jobData as JobDetail);
       setNewStatus(jobData.status);
       // Pre-fill delivery date
       setDeliveryDate(toDateInput(jobData.date_completed));
-      setDeliveryTime(jobData.date_completed
-        ? new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(jobData.date_completed))
-        : new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date()));
+      setDeliveryTime(
+        jobData.date_completed
+          ? new Intl.DateTimeFormat("en-GB", {
+              timeZone: "Asia/Kolkata",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }).format(new Date(jobData.date_completed))
+          : new Intl.DateTimeFormat("en-GB", {
+              timeZone: "Asia/Kolkata",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }).format(new Date())
+      );
 
       const clientId = Number(jobData.client_name);
       const [clientRes, mechRes, prodRes, svcRes, imgRes] = await Promise.all([
-        supabase.from("client_list")
+        supabase
+          .from("client_list")
           .select("id, firstname, middlename, lastname, contact, email, address")
-          .eq("id", clientId).single(),
+          .eq("id", clientId)
+          .single(),
         jobData.mechanic_id
-          ? supabase.from("mechanic_list")
+          ? supabase
+              .from("mechanic_list")
               .select("id, firstname, middlename, lastname, designation, contact")
-              .eq("id", jobData.mechanic_id).single()
+              .eq("id", jobData.mechanic_id)
+              .single()
           : Promise.resolve({ data: null }),
         supabase.from("transaction_products").select("*").eq("transaction_id", numId),
         supabase.from("transaction_services").select("*").eq("transaction_id", numId),
-        supabase.from("transaction_images").select("*").eq("transaction_id", numId)
+        supabase
+          .from("transaction_images")
+          .select("*")
+          .eq("transaction_id", numId)
           .order("date_created", { ascending: false }),
       ]);
 
       if (clientRes.data) setClient(clientRes.data as Client);
-      if (mechRes.data)   setMechanic(mechRes.data as Mechanic);
+      if (mechRes.data) setMechanic(mechRes.data as Mechanic);
       setImages((imgRes.data || []) as TransactionImage[]);
 
       const prods = (prodRes.data || []) as TransactionProduct[];
-      const missingPIds = prods.filter(p => !p.product_name).map(p => p.product_id);
+      const missingPIds = prods.filter((p) => !p.product_name).map((p) => p.product_id);
       if (missingPIds.length > 0) {
-        const { data: pn } = await supabase.from("product_list").select("id, name").in("id", missingPIds);
-        const pm = Object.fromEntries((pn || []).map(p => [p.id, p.name]));
-        setProducts(prods.map(p => ({ ...p, product_name: p.product_name || pm[p.product_id] || null })));
-      } else { setProducts(prods); }
+        const { data: pn } = await supabase
+          .from("product_list")
+          .select("id, name")
+          .in("id", missingPIds);
+        const pm = Object.fromEntries((pn || []).map((p) => [p.id, p.name]));
+        setProducts(
+          prods.map((p) => ({ ...p, product_name: p.product_name || pm[p.product_id] || null }))
+        );
+      } else {
+        setProducts(prods);
+      }
 
       const svcs = (svcRes.data || []) as TransactionService[];
-      const missingSIds = svcs.filter(s => !s.service_name).map(s => s.service_id);
+      const missingSIds = svcs.filter((s) => !s.service_name).map((s) => s.service_id);
       if (missingSIds.length > 0) {
-        const { data: sn } = await supabase.from("service_list").select("id, name").in("id", missingSIds);
-        const sm = Object.fromEntries((sn || []).map(s => [s.id, s.name]));
-        setServices(svcs.map(s => ({ ...s, service_name: s.service_name || sm[s.service_id] || null })));
-      } else { setServices(svcs); }
-
-    } catch (err) { logger.error("fetchData:", err); }
-    finally { setLoading(false); }
+        const { data: sn } = await supabase
+          .from("service_list")
+          .select("id, name")
+          .in("id", missingSIds);
+        const sm = Object.fromEntries((sn || []).map((s) => [s.id, s.name]));
+        setServices(
+          svcs.map((s) => ({ ...s, service_name: s.service_name || sm[s.service_id] || null }))
+        );
+      } else {
+        setServices(svcs);
+      }
+    } catch (err) {
+      logger.error("fetchData:", err);
+    } finally {
+      setLoading(false);
+    }
   }, [jobId, router]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // ── WHATSAPP ───────────────────────────────────────────────────────────────
   const sendWA = () => {
     if (!job || !client) return;
     const phone = client.contact?.replace(/\D/g, "");
-    if (!phone || phone.length < 10) { setToast({ type: "error", msg: "Valid mobile number nahi mila!" }); return; }
+    if (!phone || phone.length < 10) {
+      setToast({ type: "error", msg: "Valid mobile number nahi mila!" });
+      return;
+    }
     const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
-    const amt  = (job.amount || 0).toLocaleString("en-IN");
-    const key  = STATUS_WA_KEY[job.status] || "whatsapp_status_pending";
-    const tpl  = resolveTemplate(firmInfo, key);
-    const msg  = substituteTemplate(tpl, {
+    const amt = (job.amount || 0).toLocaleString("en-IN");
+    const key = STATUS_WA_KEY[job.status] || "whatsapp_status_pending";
+    const tpl = resolveTemplate(firmInfo, key);
+    const msg = substituteTemplate(tpl, {
       client_name: name,
       item: job.item,
       job_id: job.job_id,
@@ -312,8 +487,16 @@ export default function JobDetailsPage() {
       setToast({ type: "error", msg: "Status update failed: " + error.message });
     } else {
       setJob({ ...job, ...updates } as JobDetail);
-      await logActivity('Updated Job Status', 'Jobs', job.job_id, `Job #${job.job_id} | ${STATUS_MAP[job.status]?.label} → ${STATUS_MAP[newStatus]?.label} | ${job.item}`);
-      setToast({ type: "success", msg: `Status "${STATUS_MAP[newStatus]?.label}" update ho gaya!` });
+      await logActivity(
+        "Updated Job Status",
+        "Jobs",
+        job.job_id,
+        `Job #${job.job_id} | ${STATUS_MAP[job.status]?.label} → ${STATUS_MAP[newStatus]?.label} | ${job.item}`
+      );
+      setToast({
+        type: "success",
+        msg: `Status "${STATUS_MAP[newStatus]?.label}" update ho gaya!`,
+      });
       setShowStatusModal(false);
     }
     setUpdatingStatus(false);
@@ -322,22 +505,30 @@ export default function JobDetailsPage() {
   // ── ADD PAYMENT ────────────────────────────────────────────────────────────
   const handleAddPayment = async () => {
     if (!client || !job) return;
-    const amt  = parseFloat(payAmount);
+    const amt = parseFloat(payAmount);
     const disc = parseFloat(payDiscount) || 0;
-    if (isNaN(amt) || amt <= 0) { setToast({ type: "error", msg: "Valid amount enter karo!" }); return; }
+    if (isNaN(amt) || amt <= 0) {
+      setToast({ type: "error", msg: "Valid amount enter karo!" });
+      return;
+    }
     setSavingPay(true);
     const { error } = await supabase.from("client_payments").insert({
-      client_id: client.id, job_id: job.job_id,
-      amount: amt, discount: disc,
+      client_id: client.id,
+      job_id: job.job_id,
+      amount: amt,
+      discount: disc,
       payment_mode: payMode,
       remarks: payRemarks.trim() || null,
       payment_date: `${todayISTStr()}T00:00:00+05:30`,
     });
-    if (error) { setToast({ type: "error", msg: "Payment save nahi hua: " + error.message }); }
-    else {
+    if (error) {
+      setToast({ type: "error", msg: "Payment save nahi hua: " + error.message });
+    } else {
       setToast({ type: "success", msg: "Payment save ho gayi!" });
       setShowPayModal(false);
-      setPayAmount(""); setPayDiscount("0"); setPayRemarks("");
+      setPayAmount("");
+      setPayDiscount("0");
+      setPayRemarks("");
       fetchData();
     }
     setSavingPay(false);
@@ -345,24 +536,41 @@ export default function JobDetailsPage() {
 
   // ── DELETE ─────────────────────────────────────────────────────────────────
   const handleDelete = async () => {
-    if (userRole !== "admin") { setToast({ type: "error", msg: "Sirf Admin delete kar sakta hai!" }); return; }
+    if (userRole !== "admin") {
+      setToast({ type: "error", msg: "Sirf Admin delete kar sakta hai!" });
+      return;
+    }
     if (!confirm("Kya aap pakka is job ko delete karna chahte hain?")) return;
     setDeleting(true);
-    const { error } = await supabase.from("transaction_list").update({ del_status: 1 }).eq("id", jobId);
+    const { error } = await supabase
+      .from("transaction_list")
+      .update({ del_status: 1 })
+      .eq("id", jobId);
     if (!error) router.replace("/jobs");
-    else { setToast({ type: "error", msg: "Delete failed!" }); setDeleting(false); }
+    else {
+      setToast({ type: "error", msg: "Delete failed!" });
+      setDeleting(false);
+    }
   };
 
   // ── PRINT ──────────────────────────────────────────────────────────────────
   const handlePrint = () => {
     if (!job) return;
-    const svcHtml = services.length > 0
-      ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Service</th><th style="padding:6px;text-align:right">Price</th></tr></thead><tbody>${services.map(s => `<tr><td style="padding:5px">${s.service_name || s.service_id}</td><td style="padding:5px;text-align:right">Rs.${s.price.toFixed(2)}</td></tr>`).join("")}</tbody></table>` : "";
-    const prodHtml = products.length > 0
-      ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Product</th><th style="padding:6px;text-align:center">Qty</th><th style="padding:6px;text-align:right">Price</th><th style="padding:6px;text-align:right">Total</th></tr></thead><tbody>${products.map(p => `<tr><td style="padding:5px">${p.product_name || p.product_id}</td><td style="padding:5px;text-align:center">${p.qty}</td><td style="padding:5px;text-align:right">Rs.${p.price.toFixed(2)}</td><td style="padding:5px;text-align:right">Rs.${(p.qty*p.price).toFixed(2)}</td></tr>`).join("")}</tbody></table>` : "";
+    const svcHtml =
+      services.length > 0
+        ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Service</th><th style="padding:6px;text-align:right">Price</th></tr></thead><tbody>${services.map((s) => `<tr><td style="padding:5px">${s.service_name || s.service_id}</td><td style="padding:5px;text-align:right">Rs.${s.price.toFixed(2)}</td></tr>`).join("")}</tbody></table>`
+        : "";
+    const prodHtml =
+      products.length > 0
+        ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Product</th><th style="padding:6px;text-align:center">Qty</th><th style="padding:6px;text-align:right">Price</th><th style="padding:6px;text-align:right">Total</th></tr></thead><tbody>${products.map((p) => `<tr><td style="padding:5px">${p.product_name || p.product_id}</td><td style="padding:5px;text-align:center">${p.qty}</td><td style="padding:5px;text-align:right">Rs.${p.price.toFixed(2)}</td><td style="padding:5px;text-align:right">Rs.${(p.qty * p.price).toFixed(2)}</td></tr>`).join("")}</tbody></table>`
+        : "";
     const win = window.open("", `Bill_${job.job_id}`, "width=900,height=700");
-    if (!win) { alert("Popup blocked! Browser mein allow karo."); return; }
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Job Bill - ${job.job_id}</title>
+    if (!win) {
+      alert("Popup blocked! Browser mein allow karo.");
+      return;
+    }
+    win.document
+      .write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Job Bill - ${job.job_id}</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#333;padding:20px}
 h1{font-size:18px;font-weight:900;color:#001f3f;margin-bottom:2px}h2{font-size:12px;color:#555;margin-bottom:10px}
 hr{border:1px solid #001f3f;margin:8px 0}.total{font-size:16px;font-weight:900;margin-top:12px;color:#155724}
@@ -374,30 +582,39 @@ hr{border:1px solid #001f3f;margin:8px 0}.total{font-size:16px;font-weight:900;m
 <p><b>Mechanic:</b> ${mechanic ? [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ") : "N/A"}&nbsp;&nbsp;<b>Date:</b> ${fmtDate(job.date_created)}</p>
 ${job.date_completed ? `<p><b>Delivered:</b> ${fmtDateTime(job.date_completed)}</p>` : ""}
 ${svcHtml}${prodHtml}
-<p class="total">Total Bill Amount: Rs.${job.amount.toLocaleString("en-IN", { minimumFractionDigits:2 })}</p>
+<p class="total">Total Bill Amount: Rs.${job.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
 </body></html>`);
     win.document.close();
-    win.onload = () => { win.print(); win.onafterprint = () => win.close(); };
-    setTimeout(() => { if (win && !win.closed) { win.print(); win.onafterprint = () => win.close(); } }, 800);
+    win.onload = () => {
+      win.print();
+      win.onafterprint = () => win.close();
+    };
+    setTimeout(() => {
+      if (win && !win.closed) {
+        win.print();
+        win.onafterprint = () => win.close();
+      }
+    }, 800);
   };
 
   // ── LOADING ────────────────────────────────────────────────────────────────
-  if (loading) return (
-    <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-3">
-      <Loader2 className="animate-spin text-blue-700" size={40}/>
-      <p className="text-slate-500 font-medium uppercase tracking-widest text-sm animate-pulse">
-        Loading Transaction Details...
-      </p>
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-3">
+        <Loader2 className="animate-spin text-blue-700" size={40} />
+        <p className="text-slate-500 font-medium uppercase tracking-widest text-sm animate-pulse">
+          Loading Transaction Details...
+        </p>
+      </div>
+    );
   if (!job) return null;
 
-  const st         = STATUS_MAP[job.status] || STATUS_MAP[0];
-  const badge      = BADGE_COLORS[st.badgeColor];
+  const st = STATUS_MAP[job.status] || STATUS_MAP[0];
+  const badge = BADGE_COLORS[st.badgeColor];
   const clientName = client
     ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
     : `Client #${job.client_name}`;
-  const mechName   = mechanic
+  const mechName = mechanic
     ? [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ")
     : null;
   const productsTotal = products.reduce((s, p) => s + p.price * p.qty, 0);
@@ -406,15 +623,18 @@ ${svcHtml}${prodHtml}
   // ── RENDER ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans">
-
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-2xl border text-sm font-semibold ${
-          toast.type === "success" ? "bg-green-50 border-green-300 text-green-800"
-          : toast.type === "info"  ? "bg-blue-50 border-blue-300 text-blue-800"
-          : "bg-red-50 border-red-300 text-red-800"
-        }`}>
-          {toast.type === "success" ? <CheckCircle size={16}/> : <AlertTriangle size={16}/>}
+        <div
+          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-2xl border text-sm font-semibold ${
+            toast.type === "success"
+              ? "bg-green-50 border-green-300 text-green-800"
+              : toast.type === "info"
+                ? "bg-blue-50 border-blue-300 text-blue-800"
+                : "bg-red-50 border-red-300 text-red-800"
+          }`}
+        >
+          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
           {toast.msg}
         </div>
       )}
@@ -422,32 +642,39 @@ ${svcHtml}${prodHtml}
       {/* ── PAGE CONTENT ─────────────────────────────────────────────────────── */}
       <div className="py-4 px-3 md:px-6 text-slate-200">
         <div className="max-w-5xl mx-auto">
-
           {/* Card */}
           <div className="bg-[#161b27] rounded shadow-sm border border-[#21293d]">
-
             {/* Card Header — PHP style navy */}
             <div className="bg-[#0d1f35] text-white rounded-t px-4 py-3 flex items-center justify-between flex-wrap gap-2 border-b border-[#21293d]">
               <h5 className="font-bold text-base flex items-center gap-2 m-0">
-                <FileText size={16}/>
+                <FileText size={16} />
                 Transaction Details — {job.job_id} ({job.code})
               </h5>
               <div className="flex items-center gap-2 flex-wrap">
-                <Link href={`/clients/${job.client_name}/view`}
-                  className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
-                  <User size={12}/> View Client
+                <Link
+                  href={`/clients/${job.client_name}/view`}
+                  className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors"
+                >
+                  <User size={12} /> View Client
                 </Link>
-                <Link href={`/api/print-bill?job_id=${job.job_id}&bill_type=gst`} target="_blank"
-                  className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors">
-                  <FileText size={12}/> GST Bill
+                <Link
+                  href={`/api/print-bill?job_id=${job.job_id}&bill_type=gst`}
+                  target="_blank"
+                  className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-semibold no-underline transition-colors"
+                >
+                  <FileText size={12} /> GST Bill
                 </Link>
-                <button onClick={handlePrint}
-                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-                  <Printer size={12}/> Print Bill
+                <button
+                  onClick={handlePrint}
+                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors"
+                >
+                  <Printer size={12} /> Print Bill
                 </button>
-                <button onClick={() => safeBack(router, "/jobs")}
-                  className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-                  <ArrowLeft size={12}/> Back
+                <button
+                  onClick={() => safeBack(router, "/jobs")}
+                  className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors"
+                >
+                  <ArrowLeft size={12} /> Back
                 </button>
               </div>
             </div>
@@ -455,44 +682,76 @@ ${svcHtml}${prodHtml}
             {/* Card Body */}
             <div className="p-4 text-slate-200">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-
                 {/* ── LEFT COLUMN (7/12) ─────────────────────────────────── */}
                 <div className="lg:col-span-7 lg:border-r lg:border-[#21293d] lg:pr-4">
-
                   {/* Client + Job Info row */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-
                     {/* Client Info */}
                     <Fieldset title="Client Information" icon={User} color="primary">
-                      <InfoRow label="Name"
+                      <InfoRow
+                        label="Name"
                         value={
-                          <Link href={`/clients/${job.client_name}/view`}
-                            className="text-blue-400 font-semibold hover:underline">
+                          <Link
+                            href={`/clients/${job.client_name}/view`}
+                            className="text-blue-400 font-semibold hover:underline"
+                          >
                             {clientName}
                           </Link>
-                        }/>
+                        }
+                      />
                       {client?.contact && (
-                        <InfoRow label="Contact"
-                          value={<a href={`tel:${client.contact}`} className="text-blue-400">{client.contact}</a>}/>
+                        <InfoRow
+                          label="Contact"
+                          value={
+                            <a href={`tel:${client.contact}`} className="text-blue-400">
+                              {client.contact}
+                            </a>
+                          }
+                        />
                       )}
-                      {client?.address && <InfoRow label="Address" value={<span className="text-slate-400 text-xs">{client.address}</span>}/>}
-                      {client?.email && <InfoRow label="Email" value={<span className="text-slate-400 text-xs">{client.email}</span>}/>}
+                      {client?.address && (
+                        <InfoRow
+                          label="Address"
+                          value={<span className="text-slate-400 text-xs">{client.address}</span>}
+                        />
+                      )}
+                      {client?.email && (
+                        <InfoRow
+                          label="Email"
+                          value={<span className="text-slate-400 text-xs">{client.email}</span>}
+                        />
+                      )}
                     </Fieldset>
 
                     {/* Job Details */}
                     <Fieldset title="Job Details" icon={Wrench} color="info">
-                      <InfoRow label="Mechanic" value={mechName || <em className="text-slate-600">Not Assigned</em>}/>
-                      <InfoRow label="Received" value={fmtDateTime(job.date_created)}/>
-                      <InfoRow label="Job No." value={<span className="font-bold">{job.job_id}</span>}/>
-                      <InfoRow label="Code"    value={<span className="font-bold font-mono">{job.code}</span>}/>
-                      <InfoRow label="Locate"  value={job.uniq_id || <em className="text-slate-600">N/A</em>}/>
-                      <InfoRow label="Del. Status" value={DEL_STATUS[job.del_status]}/>
+                      <InfoRow
+                        label="Mechanic"
+                        value={mechName || <em className="text-slate-600">Not Assigned</em>}
+                      />
+                      <InfoRow label="Received" value={fmtDateTime(job.date_created)} />
+                      <InfoRow
+                        label="Job No."
+                        value={<span className="font-bold">{job.job_id}</span>}
+                      />
+                      <InfoRow
+                        label="Code"
+                        value={<span className="font-bold font-mono">{job.code}</span>}
+                      />
+                      <InfoRow
+                        label="Locate"
+                        value={job.uniq_id || <em className="text-slate-600">N/A</em>}
+                      />
+                      <InfoRow label="Del. Status" value={DEL_STATUS[job.del_status]} />
                     </Fieldset>
                   </div>
 
                   {/* Item Description */}
                   <Fieldset title="Item Description" icon={Box} color="primary">
-                    <InfoRow label="Item / Model" value={<span className="font-semibold">{job.item}</span>}/>
+                    <InfoRow
+                      label="Item / Model"
+                      value={<span className="font-semibold">{job.item}</span>}
+                    />
                     <div className="mb-1.5 text-sm">
                       <span className="font-semibold text-slate-500">Fault Reported:</span>
                       <p className="mt-0.5 text-slate-300 whitespace-pre-line">{job.fault}</p>
@@ -519,15 +778,23 @@ ${svcHtml}${prodHtml}
                           <tbody className="divide-y divide-[#21293d]">
                             {services.map((s, i) => (
                               <tr key={i} className={i % 2 === 0 ? "bg-[#111520]" : "bg-[#161b27]"}>
-                                <td className="px-3 py-2 text-slate-300">{s.service_name || `Service #${s.service_id}`}</td>
-                                <td className="px-3 py-2 text-right font-medium text-slate-200">Rs.{s.price.toFixed(2)}</td>
+                                <td className="px-3 py-2 text-slate-300">
+                                  {s.service_name || `Service #${s.service_id}`}
+                                </td>
+                                <td className="px-3 py-2 text-right font-medium text-slate-200">
+                                  Rs.{s.price.toFixed(2)}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
                           <tfoot className="bg-[#0d1117] font-bold border-t border-[#21293d]">
                             <tr>
-                              <td className="px-3 py-2 text-right text-sm text-slate-500">Services Total:</td>
-                              <td className="px-3 py-2 text-right text-emerald-400">Rs.{servicesTotal.toFixed(2)}</td>
+                              <td className="px-3 py-2 text-right text-sm text-slate-500">
+                                Services Total:
+                              </td>
+                              <td className="px-3 py-2 text-right text-emerald-400">
+                                Rs.{servicesTotal.toFixed(2)}
+                              </td>
                             </tr>
                           </tfoot>
                         </table>
@@ -551,17 +818,30 @@ ${svcHtml}${prodHtml}
                           <tbody className="divide-y divide-[#21293d]">
                             {products.map((p, i) => (
                               <tr key={i} className={i % 2 === 0 ? "bg-[#111520]" : "bg-[#161b27]"}>
-                                <td className="px-3 py-2 text-slate-300">{p.product_name || `Product #${p.product_id}`}</td>
+                                <td className="px-3 py-2 text-slate-300">
+                                  {p.product_name || `Product #${p.product_id}`}
+                                </td>
                                 <td className="px-3 py-2 text-center text-slate-400">{p.qty}</td>
-                                <td className="px-3 py-2 text-right text-slate-400">Rs.{p.price.toFixed(2)}</td>
-                                <td className="px-3 py-2 text-right font-medium text-slate-200">Rs.{(p.qty * p.price).toFixed(2)}</td>
+                                <td className="px-3 py-2 text-right text-slate-400">
+                                  Rs.{p.price.toFixed(2)}
+                                </td>
+                                <td className="px-3 py-2 text-right font-medium text-slate-200">
+                                  Rs.{(p.qty * p.price).toFixed(2)}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
                           <tfoot className="bg-[#0d1117] font-bold border-t border-[#21293d]">
                             <tr>
-                              <td colSpan={3} className="px-3 py-2 text-right text-sm text-slate-500">Products Total:</td>
-                              <td className="px-3 py-2 text-right text-emerald-400">Rs.{productsTotal.toFixed(2)}</td>
+                              <td
+                                colSpan={3}
+                                className="px-3 py-2 text-right text-sm text-slate-500"
+                              >
+                                Products Total:
+                              </td>
+                              <td className="px-3 py-2 text-right text-emerald-400">
+                                Rs.{productsTotal.toFixed(2)}
+                              </td>
                             </tr>
                           </tfoot>
                         </table>
@@ -572,19 +852,21 @@ ${svcHtml}${prodHtml}
 
                 {/* ── RIGHT COLUMN (5/12) ────────────────────────────────── */}
                 <div className="lg:col-span-5">
-
                   {/* Current Status — PHP style big badge */}
                   <div className="text-center mb-5">
                     <p className="text-slate-400 font-semibold text-sm mb-2">Current Job Status</p>
-                    <span className={`inline-block px-8 py-4 rounded-sm shadow-sm font-black text-2xl ${badge.bg} ${badge.text} border ${badge.border}`}
-                      style={{ minWidth: "90%" }}>
+                    <span
+                      className={`inline-block px-8 py-4 rounded-sm shadow-sm font-black text-2xl ${badge.bg} ${badge.text} border ${badge.border}`}
+                      style={{ minWidth: "90%" }}
+                    >
                       {st.label}
                     </span>
                     <p className="text-slate-500 text-sm mt-2 italic">{st.explanation}</p>
                     {job.status === 5 && job.date_completed && (
                       <div className="mt-3 text-emerald-400 border-t border-[#21293d] pt-3">
-                        <CheckCircle2 className="inline mr-1" size={16}/>
-                        <span className="font-semibold">Delivered On:</span><br/>
+                        <CheckCircle2 className="inline mr-1" size={16} />
+                        <span className="font-semibold">Delivered On:</span>
+                        <br />
                         <span className="text-lg font-bold">{fmtDateTime(job.date_completed)}</span>
                       </div>
                     )}
@@ -592,14 +874,26 @@ ${svcHtml}${prodHtml}
 
                   {/* Item Photos */}
                   {images.length > 0 && (
-                    <Fieldset title={`Item Photos (${images.length})`} icon={ImageIcon} color="primary">
+                    <Fieldset
+                      title={`Item Photos (${images.length})`}
+                      icon={ImageIcon}
+                      color="primary"
+                    >
                       <div className="grid grid-cols-3 gap-2">
                         {images.map((img) => (
-                          <Image key={img.id} src={img.image_path} alt="Item"
-                            width={640} height={80} unoptimized
+                          <Image
+                            key={img.id}
+                            src={img.image_path}
+                            alt="Item"
+                            width={640}
+                            height={80}
+                            unoptimized
                             className="w-full h-20 object-cover rounded border border-[#21293d] hover:opacity-80 transition-opacity cursor-zoom-in"
                             onDoubleClick={() => openImageLightbox(img.image_path, "Job Photo")}
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}/>
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
+                          />
                         ))}
                       </div>
                     </Fieldset>
@@ -622,27 +916,33 @@ ${svcHtml}${prodHtml}
                             <span>Rs.{productsTotal.toFixed(2)}</span>
                           </div>
                         )}
-                        <hr className="border-emerald-500/20"/>
+                        <hr className="border-emerald-500/20" />
                       </div>
                     )}
                     <div className="flex justify-between items-center border-b border-emerald-500/25 pb-2 mb-2">
                       <span className="font-medium text-sm text-slate-400">Total Amount:</span>
-                      <span className="text-2xl font-black text-white">Rs.{job.amount.toFixed(2)}</span>
+                      <span className="text-2xl font-black text-white">
+                        Rs.{job.amount.toFixed(2)}
+                      </span>
                     </div>
                     <div className="text-center">
-                      <p className="text-3xl font-black text-emerald-400">Rs.{job.amount.toFixed(2)}</p>
+                      <p className="text-3xl font-black text-emerald-400">
+                        Rs.{job.amount.toFixed(2)}
+                      </p>
                       <p className="text-slate-500 text-xs mt-1">Final Payable Amount</p>
                     </div>
                     {(job.mechanic_amount > 0 || job.mechanic_commission_amount > 0) && (
                       <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-1">
                         {job.mechanic_amount > 0 && (
                           <div className="flex justify-between text-xs text-slate-500">
-                            <span>Mechanic Amount:</span><span>Rs.{job.mechanic_amount.toFixed(0)}</span>
+                            <span>Mechanic Amount:</span>
+                            <span>Rs.{job.mechanic_amount.toFixed(0)}</span>
                           </div>
                         )}
                         {job.mechanic_commission_amount > 0 && (
                           <div className="flex justify-between text-xs text-slate-500">
-                            <span>Commission:</span><span>Rs.{job.mechanic_commission_amount.toFixed(0)}</span>
+                            <span>Commission:</span>
+                            <span>Rs.{job.mechanic_commission_amount.toFixed(0)}</span>
                           </div>
                         )}
                       </div>
@@ -650,9 +950,11 @@ ${svcHtml}${prodHtml}
                   </div>
 
                   {/* WhatsApp Button */}
-                  <button onClick={sendWA}
-                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 shadow-sm mb-4 transition-colors">
-                    <Send size={16}/> Send Status on WhatsApp
+                  <button
+                    onClick={sendWA}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded font-bold text-sm flex items-center justify-center gap-2 shadow-sm mb-4 transition-colors"
+                  >
+                    <Send size={16} /> Send Status on WhatsApp
                   </button>
 
                   {/* Activity Timeline */}
@@ -673,42 +975,77 @@ ${svcHtml}${prodHtml}
                       </div>
 
                       {/* Status based activities */}
-                      {[1, 2, 3, 4, 5].filter(s => s <= job.status).map((s, idx) => {
-                        const statusLabels: Record<number, { label: string; icon: React.ReactNode; color: string }> = {
-                          1: { label: "Marked On-Progress", icon: <Settings2 size={12} />, color: "blue" },
-                          2: { label: "Marked Done", icon: <CheckCircle size={12} />, color: "teal" },
-                          3: { label: "Marked Paid", icon: <Banknote size={12} />, color: "emerald" },
-                          4: { label: "Marked Cancelled", icon: <AlertTriangle size={12} />, color: "red" },
-                          5: { label: "Marked Delivered", icon: <CheckCircle2 size={12} />, color: "purple" },
-                        };
-                        const st = statusLabels[s];
-                        const colorClasses: Record<string, string> = {
-                          blue: "bg-blue-500/20 border-blue-500/50 text-blue-400",
-                          teal: "bg-teal-500/20 border-teal-500/50 text-teal-400",
-                          emerald: "bg-emerald-500/20 border-emerald-500/50 text-emerald-400",
-                          red: "bg-red-500/20 border-red-500/50 text-red-400",
-                          purple: "bg-purple-500/20 border-purple-500/50 text-purple-400",
-                        };
-                        return (
-                          <div key={s} className="flex gap-3">
-                            <div className="flex flex-col items-center">
-                              <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${colorClasses[st.color]}`}>
-                                {st.icon}
+                      {[1, 2, 3, 4, 5]
+                        .filter((s) => s <= job.status)
+                        .map((s, idx) => {
+                          const statusLabels: Record<
+                            number,
+                            { label: string; icon: React.ReactNode; color: string }
+                          > = {
+                            1: {
+                              label: "Marked On-Progress",
+                              icon: <Settings2 size={12} />,
+                              color: "blue",
+                            },
+                            2: {
+                              label: "Marked Done",
+                              icon: <CheckCircle size={12} />,
+                              color: "teal",
+                            },
+                            3: {
+                              label: "Marked Paid",
+                              icon: <Banknote size={12} />,
+                              color: "emerald",
+                            },
+                            4: {
+                              label: "Marked Cancelled",
+                              icon: <AlertTriangle size={12} />,
+                              color: "red",
+                            },
+                            5: {
+                              label: "Marked Delivered",
+                              icon: <CheckCircle2 size={12} />,
+                              color: "purple",
+                            },
+                          };
+                          const st = statusLabels[s];
+                          const colorClasses: Record<string, string> = {
+                            blue: "bg-blue-500/20 border-blue-500/50 text-blue-400",
+                            teal: "bg-teal-500/20 border-teal-500/50 text-teal-400",
+                            emerald: "bg-emerald-500/20 border-emerald-500/50 text-emerald-400",
+                            red: "bg-red-500/20 border-red-500/50 text-red-400",
+                            purple: "bg-purple-500/20 border-purple-500/50 text-purple-400",
+                          };
+                          return (
+                            <div key={s} className="flex gap-3">
+                              <div className="flex flex-col items-center">
+                                <div
+                                  className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${colorClasses[st.color]}`}
+                                >
+                                  {st.icon}
+                                </div>
+                                {idx < 4 && s < job.status && (
+                                  <div className="w-px flex-1 bg-[#21293d] mt-1" />
+                                )}
                               </div>
-                              {idx < 4 && s < job.status && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
+                              <div
+                                className={`flex-1 pb-4 ${s === job.status ? "" : "opacity-60"}`}
+                              >
+                                <p className="text-sm text-slate-300 font-medium">{st.label}</p>
+                                {s === 5 && job.date_completed && (
+                                  <p className="text-xs text-slate-500">
+                                    {fmtDateTime(job.date_completed)}
+                                  </p>
+                                )}
+                                {s !== 5 && (
+                                  <p className="text-xs text-slate-500">
+                                    {fmtDateTime(job.date_updated)}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                            <div className={`flex-1 pb-4 ${s === job.status ? "" : "opacity-60"}`}>
-                              <p className="text-sm text-slate-300 font-medium">{st.label}</p>
-                              {s === 5 && job.date_completed && (
-                                <p className="text-xs text-slate-500">{fmtDateTime(job.date_completed)}</p>
-                              )}
-                              {s !== 5 && (
-                                <p className="text-xs text-slate-500">{fmtDateTime(job.date_updated)}</p>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
 
                       {/* If delivered, show completion */}
                       {job.status === 5 && (
@@ -720,7 +1057,9 @@ ${svcHtml}${prodHtml}
                           </div>
                           <div className="flex-1">
                             <p className="text-sm text-slate-300 font-medium">Job Completed</p>
-                            <p className="text-xs text-slate-500">Delivered on {fmtDateTime(job.date_completed || job.date_updated)}</p>
+                            <p className="text-xs text-slate-500">
+                              Delivered on {fmtDateTime(job.date_completed || job.date_updated)}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -730,70 +1069,98 @@ ${svcHtml}${prodHtml}
               </div>
 
               {/* ── ACTION BUTTONS (bottom — PHP style) ───────────────────── */}
-              <hr className="my-4 border-[#21293d]"/>
+              <hr className="my-4 border-[#21293d]" />
               <div className="flex flex-wrap gap-2 justify-center">
-                <button onClick={() => { setNewStatus(job.status); setShowStatusModal(true); }}
-                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
-                  <RefreshCw size={15}/> Update Status
+                <button
+                  onClick={() => {
+                    setNewStatus(job.status);
+                    setShowStatusModal(true);
+                  }}
+                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors"
+                >
+                  <RefreshCw size={15} /> Update Status
                 </button>
-                <Link href={`/jobs/${job.id}/edit`}
-                  className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline">
-                  <Edit size={15}/> Edit Transaction
+                <Link
+                  href={`/jobs/${job.id}/edit`}
+                  className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline"
+                >
+                  <Edit size={15} /> Edit Transaction
                 </Link>
-                <button onClick={handlePrint}
-                  className="flex items-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
-                  <Printer size={15}/> Print Page
+                <button
+                  onClick={handlePrint}
+                  className="flex items-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors"
+                >
+                  <Printer size={15} /> Print Page
                 </button>
-                <button onClick={() => setShowPayModal(true)}
-                  className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors">
-                  <Plus size={15}/> Add Payment
+                <button
+                  onClick={() => setShowPayModal(true)}
+                  className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors"
+                >
+                  <Plus size={15} /> Add Payment
                 </button>
                 {userRole === "admin" && (
-                  <button onClick={handleDelete} disabled={deleting}
-                    className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors disabled:opacity-50">
-                    <Trash2 size={15}/> {deleting ? "Deleting..." : "Delete Transaction"}
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 size={15} /> {deleting ? "Deleting..." : "Delete Transaction"}
                   </button>
                 )}
               </div>
-
-            </div>{/* /card-body */}
-          </div>{/* /card */}
+            </div>
+            {/* /card-body */}
+          </div>
+          {/* /card */}
         </div>
       </div>
 
       {/* ══ UPDATE STATUS MODAL ══════════════════════════════════════════════ */}
       {showStatusModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowStatusModal(false); }}>
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowStatusModal(false);
+          }}
+        >
           <div className="bg-[#161b27] rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-[#21293d]">
-
             {/* Modal Header */}
             <div className="bg-[#001f3f] text-white px-5 py-3.5 flex items-center justify-between">
               <h3 className="font-bold text-base flex items-center gap-2">
-                <RefreshCw size={16}/> Update Transaction Status
+                <RefreshCw size={16} /> Update Transaction Status
               </h3>
-              <button onClick={() => setShowStatusModal(false)} className="text-white/70 hover:text-white">
-                <X size={18}/>
+              <button
+                onClick={() => setShowStatusModal(false)}
+                className="text-white/70 hover:text-white"
+              >
+                <X size={18} />
               </button>
             </div>
 
             {/* Modal Body */}
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-400 mb-1.5">New Status</label>
+                <label className="block text-sm font-semibold text-slate-400 mb-1.5">
+                  New Status
+                </label>
                 <select
                   value={newStatus}
                   onChange={(e) => setNewStatus(parseInt(e.target.value))}
-                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 bg-[#0d1117]">
+                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 bg-[#0d1117]"
+                >
                   {Object.entries(STATUS_MAP).map(([val, info]) => (
-                    <option key={val} value={val}>{info.label} — {info.explanation}</option>
+                    <option key={val} value={val}>
+                      {info.label} — {info.explanation}
+                    </option>
                   ))}
                 </select>
               </div>
 
               {/* Status preview badge */}
               <div className="text-center">
-                <span className={`inline-block px-5 py-2 rounded font-bold text-sm ${BADGE_COLORS[STATUS_MAP[newStatus]?.badgeColor]?.bg} ${BADGE_COLORS[STATUS_MAP[newStatus]?.badgeColor]?.text}`}>
+                <span
+                  className={`inline-block px-5 py-2 rounded font-bold text-sm ${BADGE_COLORS[STATUS_MAP[newStatus]?.badgeColor]?.bg} ${BADGE_COLORS[STATUS_MAP[newStatus]?.badgeColor]?.text}`}
+                >
                   {STATUS_MAP[newStatus]?.label}
                 </span>
                 <p className="text-slate-500 text-xs mt-1">{STATUS_MAP[newStatus]?.explanation}</p>
@@ -803,28 +1170,35 @@ ${svcHtml}${prodHtml}
               {newStatus === 5 && (
                 <div className="bg-emerald-500/5 border border-emerald-500/25 rounded-lg p-4 space-y-3">
                   <p className="text-emerald-400 font-semibold text-sm flex items-center gap-1.5">
-                    <CheckCircle2 size={15}/> Delivery Date & Time
+                    <CheckCircle2 size={15} /> Delivery Date & Time
                   </p>
                   <p className="text-slate-500 text-xs">
-                    Agar delivery pehle ho gayi thi aur ab entry kar rahe hain, to sahi date aur time enter karein.
+                    Agar delivery pehle ho gayi thi aur ab entry kar rahe hain, to sahi date aur
+                    time enter karein.
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1">Delivery Date</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">
+                        Delivery Date
+                      </label>
                       <input
                         type="date"
                         value={deliveryDate}
                         onChange={(e) => setDeliveryDate(e.target.value)}
                         max={todayISTStr()}
-                        className="w-full border border-[#2a3550] rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"/>
+                        className="w-full border border-[#2a3550] rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"
+                      />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1">Delivery Time</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">
+                        Delivery Time
+                      </label>
                       <input
                         type="time"
                         value={deliveryTime}
                         onChange={(e) => setDeliveryTime(e.target.value)}
-                        className="w-full border border-[#2a3550] rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"/>
+                        className="w-full border border-[#2a3550] rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"
+                      />
                     </div>
                   </div>
                   {deliveryDate && deliveryTime && (
@@ -838,13 +1212,28 @@ ${svcHtml}${prodHtml}
 
             {/* Modal Footer */}
             <div className="px-5 py-4 bg-[#111520] border-t border-[#21293d] flex gap-3 justify-end flex-wrap">
-              <button onClick={() => setShowStatusModal(false)}
-                className="px-5 py-2 bg-[#1e2637] border border-[#2a3550] text-slate-400 rounded font-medium text-sm hover:bg-[#252f45] transition-colors">
+              <button
+                onClick={() => setShowStatusModal(false)}
+                className="px-5 py-2 bg-[#1e2637] border border-[#2a3550] text-slate-400 rounded font-medium text-sm hover:bg-[#252f45] transition-colors"
+              >
                 Cancel
               </button>
-              <button onClick={handleStatusUpdate} disabled={updatingStatus}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm disabled:opacity-50 flex items-center gap-2 transition-colors">
-                {updatingStatus ? <><Loader2 size={14} className="animate-spin"/>Updating...</> : <><RefreshCw size={14}/>Update Status</>}
+              <button
+                onClick={handleStatusUpdate}
+                disabled={updatingStatus}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm disabled:opacity-50 flex items-center gap-2 transition-colors"
+              >
+                {updatingStatus ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw size={14} />
+                    Update Status
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -853,16 +1242,22 @@ ${svcHtml}${prodHtml}
 
       {/* ══ ADD PAYMENT MODAL ════════════════════════════════════════════════ */}
       {showPayModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowPayModal(false); }}>
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPayModal(false);
+          }}
+        >
           <div className="bg-[#161b27] rounded-t-2xl sm:rounded-lg shadow-2xl w-full sm:max-w-md overflow-hidden border border-[#21293d]">
-
             <div className="bg-[#001f3f] text-white px-5 py-3.5 flex items-center justify-between">
               <h3 className="font-bold text-base flex items-center gap-2">
-                <IndianRupee size={16}/> Record New Payment
+                <IndianRupee size={16} /> Record New Payment
               </h3>
-              <button onClick={() => setShowPayModal(false)} className="text-white/70 hover:text-white">
-                <X size={18}/>
+              <button
+                onClick={() => setShowPayModal(false)}
+                className="text-white/70 hover:text-white"
+              >
+                <X size={18} />
               </button>
             </div>
 
@@ -872,23 +1267,39 @@ ${svcHtml}${prodHtml}
                 <span className="text-slate-600 mx-2">·</span>
                 <span className="text-slate-400">Job #{job.job_id}</span>
                 <span className="text-slate-600 mx-2">·</span>
-                <span className="text-slate-400">Bill: <span className="font-bold text-white">Rs.{job.amount.toFixed(2)}</span></span>
+                <span className="text-slate-400">
+                  Bill: <span className="font-bold text-white">Rs.{job.amount.toFixed(2)}</span>
+                </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Amount (Rs.) *</label>
-                  <input type="number" step="0.01" min="0.01"
-                    value={payAmount} onChange={(e) => setPayAmount(e.target.value)}
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                    Amount (Rs.) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={payAmount}
+                    onChange={(e) => setPayAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
+                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Discount (Rs.)</label>
-                  <input type="number" step="0.01" min="0"
-                    value={payDiscount} onChange={(e) => setPayDiscount(e.target.value)}
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                    Discount (Rs.)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={payDiscount}
+                    onChange={(e) => setPayDiscount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
+                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                  />
                 </div>
               </div>
 
@@ -896,16 +1307,25 @@ ${svcHtml}${prodHtml}
                 <div className="bg-emerald-500/5 border border-emerald-500/20 rounded px-4 py-2.5 flex justify-between items-center">
                   <span className="text-xs text-slate-500 font-semibold">Net Settled</span>
                   <span className="text-emerald-400 font-black text-base">
-                    Rs.{((parseFloat(payAmount)||0) + (parseFloat(payDiscount)||0)).toLocaleString("en-IN", { minimumFractionDigits:2 })}
+                    Rs.
+                    {((parseFloat(payAmount) || 0) + (parseFloat(payDiscount) || 0)).toLocaleString(
+                      "en-IN",
+                      { minimumFractionDigits: 2 }
+                    )}
                   </span>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Payment Mode *</label>
-                <select value={payMode} onChange={(e) => setPayMode(e.target.value)}
-                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500">
-                  {["Cash","PhonePe/GPay","Bank Transfer","Credit Card"].map(m => (
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                  Payment Mode *
+                </label>
+                <select
+                  value={payMode}
+                  onChange={(e) => setPayMode(e.target.value)}
+                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                >
+                  {["Cash", "PhonePe/GPay", "Bank Transfer", "Credit Card"].map((m) => (
                     <option key={m}>{m}</option>
                   ))}
                 </select>
@@ -913,26 +1333,44 @@ ${svcHtml}${prodHtml}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1.5">Remarks</label>
-                <input type="text" value={payRemarks} onChange={(e) => setPayRemarks(e.target.value)}
+                <input
+                  type="text"
+                  value={payRemarks}
+                  onChange={(e) => setPayRemarks(e.target.value)}
                   placeholder="Koi notes..."
-                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"/>
+                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                />
               </div>
             </div>
 
             <div className="px-5 py-4 bg-[#111520] border-t border-[#21293d] flex gap-3 flex-wrap">
-              <button onClick={() => setShowPayModal(false)}
-                className="flex-1 py-2.5 bg-[#1e2637] border border-[#2a3550] text-slate-400 rounded font-medium text-sm hover:bg-[#252f45] transition-colors">
+              <button
+                onClick={() => setShowPayModal(false)}
+                className="flex-1 py-2.5 bg-[#1e2637] border border-[#2a3550] text-slate-400 rounded font-medium text-sm hover:bg-[#252f45] transition-colors"
+              >
                 Cancel
               </button>
-              <button onClick={handleAddPayment} disabled={savingPay}
-                className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
-                {savingPay ? <><Loader2 size={14} className="animate-spin"/>Saving...</> : <><Plus size={14}/>Save Payment</>}
+              <button
+                onClick={handleAddPayment}
+                disabled={savingPay}
+                className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+              >
+                {savingPay ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={14} />
+                    Save Payment
+                  </>
+                )}
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

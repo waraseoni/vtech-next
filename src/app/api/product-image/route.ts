@@ -12,7 +12,8 @@ const BUCKET = "product-images";
 export async function POST(request: NextRequest) {
   try {
     const user = await requireStaff();
-    if (!user) return NextResponse.json({ status: "unauthorized", msg: "Login required" }, { status: 401 });
+    if (!user)
+      return NextResponse.json({ status: "unauthorized", msg: "Login required" }, { status: 401 });
 
     const form = await request.formData();
     const file = form.get("file") as File | null;
@@ -45,7 +46,10 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     if (buffer.byteLength > 200 * 1024) {
-      return NextResponse.json({ status: "failed", msg: "Image > 200KB — compress karke dobara try karein" }, { status: 400 });
+      return NextResponse.json(
+        { status: "failed", msg: "Image > 200KB — compress karke dobara try karein" },
+        { status: 400 }
+      );
     }
 
     // Delete old image first, then upload new (keep bucket clean)
@@ -68,7 +72,10 @@ export async function POST(request: NextRequest) {
     if (uploadError) throw new Error(uploadError.message);
 
     const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(fileName);
-    await supabase.from("product_list").update({ image_path: urlData.publicUrl }).eq("id", productId);
+    await supabase
+      .from("product_list")
+      .update({ image_path: urlData.publicUrl })
+      .eq("id", productId);
 
     return NextResponse.json({ status: "success", url: urlData.publicUrl });
   } catch (err: unknown) {

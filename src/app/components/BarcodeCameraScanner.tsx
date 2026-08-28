@@ -1,7 +1,11 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { Loader2, AlertCircle } from "lucide-react";
-import { isCameraSupported, cameraUnsupportedReason, cameraErrorMessage } from "@/lib/cameraSupport";
+import {
+  isCameraSupported,
+  cameraUnsupportedReason,
+  cameraErrorMessage,
+} from "@/lib/cameraSupport";
 
 let scannerIdCounter = 0;
 
@@ -49,11 +53,17 @@ export default function BarcodeCameraScanner({ onScan }: { onScan: (text: string
           async (text) => {
             if (didScan.current) return;
             didScan.current = true;
-            try { await scanner.stop(); } catch { /* ignore */ }
+            try {
+              await scanner.stop();
+            } catch {
+              /* ignore */
+            }
             scanner.clear();
             onScan(text);
           },
-          () => { /* frame miss */ }
+          () => {
+            /* frame miss */
+          }
         );
       } catch (err) {
         if (cancelled) return;
@@ -66,8 +76,16 @@ export default function BarcodeCameraScanner({ onScan }: { onScan: (text: string
       cancelled = true;
       const s = scannerRef.current;
       if (s) {
-        try { void s.stop().catch(() => {}); } catch { /* ignore */ }
-        try { s.clear(); } catch { /* ignore */ }
+        try {
+          void s.stop().catch(() => {});
+        } catch {
+          /* ignore */
+        }
+        try {
+          s.clear();
+        } catch {
+          /* ignore */
+        }
       }
     };
   }, [elementId, onScan]);

@@ -9,12 +9,18 @@ const supabase = getAdminSupabase();
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 function formatDate(iso: string) {
-  return Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso));
+  return Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(iso));
 }
 
 export async function GET(request: NextRequest) {
   const user = await requireAdmin();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const month = searchParams.get("month") || new Date().toISOString().slice(0, 7);
   const lastDay = new Date(parseInt(month.slice(0, 4)), parseInt(month.slice(5, 7)), 0).getDate();
@@ -22,7 +28,10 @@ export async function GET(request: NextRequest) {
 
   const loans = await fetchAll(
     supabase
-      .from("client_loans").select("id, client_id, loan_date, principal_amount, interest_rate, total_payable, emi_amount, status")
+      .from("client_loans")
+      .select(
+        "id, client_id, loan_date, principal_amount, interest_rate, total_payable, emi_amount, status"
+      )
       .lte("loan_date", monthEnd)
       .gte("status", 0)
   );
@@ -33,19 +42,34 @@ export async function GET(request: NextRequest) {
 
   const payments = await fetchAll(
     supabase
-      .from("client_payments").select("loan_id, amount, discount, payment_date")
+      .from("client_payments")
+      .select("loan_id, amount, discount, payment_date")
       .not("loan_id", "is", null)
       .lte("payment_date", monthEnd)
   );
 
-  const loanRows: { id: number; client_name: string; principal_amount: number; interest_rate: number; total_payable: number; emi_amount: number; received: number; pending: number; status: number; }[] = [];
+  const loanRows: {
+    id: number;
+    client_name: string;
+    principal_amount: number;
+    interest_rate: number;
+    total_payable: number;
+    emi_amount: number;
+    received: number;
+    pending: number;
+    status: number;
+  }[] = [];
 
   for (const l of loans || []) {
     const client = (clients || []).find((c: { id: number }) => c.id === l.client_id);
     if (!client) continue;
     const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
     const loanPmts = payments?.filter((p: { loan_id: number }) => p.loan_id === l.id) || [];
-    const received = loanPmts.reduce((s: number, p: { amount: number; discount: number }) => s + (p.amount || 0) + (p.discount || 0), 0);
+    const received = loanPmts.reduce(
+      (s: number, p: { amount: number; discount: number }) =>
+        s + (p.amount || 0) + (p.discount || 0),
+      0
+    );
     const targetEmi = l.emi_amount || 0;
     const pending = Math.max(0, targetEmi - received);
 
@@ -68,7 +92,10 @@ export async function GET(request: NextRequest) {
   const tReceived = loanRows.reduce((s, r) => s + r.received, 0);
   const tPending = loanRows.reduce((s, r) => s + r.pending, 0);
 
-  const monthLabel = new Date(month + "-01").toLocaleString("en-IN", { month: "long", year: "numeric" });
+  const monthLabel = new Date(month + "-01").toLocaleString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
 
   const html = `<!DOCTYPE html>
 <html>
@@ -151,7 +178,9 @@ export async function GET(request: NextRequest) {
       </tr>
     </thead>
     <tbody>
-      ${loanRows.map((r, i) => `
+      ${loanRows
+        .map(
+          (r, i) => `
       <tr>
         <td style="text-align:center">${i + 1}</td>
         <td>${r.client_name}</td>
@@ -161,7 +190,9 @@ export async function GET(request: NextRequest) {
         <td class="num">${inr(r.emi_amount)}</td>
         <td class="num" style="color:#0d9488">${inr(r.received)}</td>
         <td class="num" style="color:#dc2626">${inr(r.pending)}</td>
-      </tr>`).join("")}
+      </tr>`
+        )
+        .join("")}
     </tbody>
     <tfoot>
       <tr>

@@ -43,12 +43,12 @@ export function computeClientDue(p: {
   activeLoanGiven?: unknown;
   loanRepaid?: unknown;
 }): ClientDueBreakdown {
-  const openingBalance     = toNum(p.openingBalance);
-  const repairBilled       = toNum(p.repairBilled);
-  const directSalesBilled  = toNum(p.directSalesBilled);
-  const servicePaid        = toNum(p.servicePaid);
-  const activeLoanGiven    = toNum(p.activeLoanGiven);
-  const loanRepaid         = toNum(p.loanRepaid);
+  const openingBalance = toNum(p.openingBalance);
+  const repairBilled = toNum(p.repairBilled);
+  const directSalesBilled = toNum(p.directSalesBilled);
+  const servicePaid = toNum(p.servicePaid);
+  const activeLoanGiven = toNum(p.activeLoanGiven);
+  const loanRepaid = toNum(p.loanRepaid);
   return {
     openingBalance,
     repairBilled,
@@ -83,7 +83,8 @@ export type DueRowSets = {
   /** direct_sales rows */
   directSales?: { client_id?: unknown; total_amount?: unknown }[] | null;
   /** ALL client_payments rows (service + loan-linked; we partition here) */
-  payments?: { client_id?: unknown; loan_id?: unknown; amount?: unknown; discount?: unknown }[] | null;
+  payments?:
+    { client_id?: unknown; loan_id?: unknown; amount?: unknown; discount?: unknown }[] | null;
   /** ACTIVE client_loans rows only (status = 1 filtered at query time); id required */
   loans?: { id?: unknown; client_id?: unknown; total_payable?: unknown }[] | null;
 };
@@ -180,10 +181,18 @@ export async function fetchClientDue(
   clientId: number
 ): Promise<ClientDueBreakdown> {
   const [txnsRes, salesRes, paysRes, loansRes, cdRes] = await Promise.all([
-    sb.from("transaction_list").select("amount").eq("client_name", String(clientId)).eq("status", JOB_STATUS_DELIVERED),
+    sb
+      .from("transaction_list")
+      .select("amount")
+      .eq("client_name", String(clientId))
+      .eq("status", JOB_STATUS_DELIVERED),
     sb.from("direct_sales").select("total_amount").eq("client_id", clientId),
     sb.from("client_payments").select("amount, discount, loan_id").eq("client_id", clientId),
-    sb.from("client_loans").select("id, total_payable").eq("client_id", clientId).eq("status", LOAN_STATUS_ACTIVE),
+    sb
+      .from("client_loans")
+      .select("id, total_payable")
+      .eq("client_id", clientId)
+      .eq("status", LOAN_STATUS_ACTIVE),
     sb.from("client_list").select("opening_balance").eq("id", clientId).single(),
   ]);
 
@@ -193,24 +202,39 @@ export async function fetchClientDue(
 
   let servicePaid = 0;
   let loanRepaid = 0;
-  ((paysRes.data || []) as { amount: number; discount: number; loan_id: number | null }[]).forEach((p) => {
-    const credit = paymentCredit(p);
-    if (isServicePayment(p.loan_id)) servicePaid += credit;
-    else if (activeLoanIds.has(toNum(p.loan_id))) loanRepaid += credit;
-  });
+  ((paysRes.data || []) as { amount: number; discount: number; loan_id: number | null }[]).forEach(
+    (p) => {
+      const credit = paymentCredit(p);
+      if (isServicePayment(p.loan_id)) servicePaid += credit;
+      else if (activeLoanIds.has(toNum(p.loan_id))) loanRepaid += credit;
+    }
+  );
 
   return computeClientDue({
     openingBalance: (cdRes.data as { opening_balance: number } | null)?.opening_balance,
-    repairBilled: ((txnsRes.data || []) as { amount: number }[]).reduce((s, r) => s + toNum(r.amount), 0),
-    directSalesBilled: ((salesRes.data || []) as { total_amount: number }[]).reduce((s, r) => s + toNum(r.total_amount), 0),
+    repairBilled: ((txnsRes.data || []) as { amount: number }[]).reduce(
+      (s, r) => s + toNum(r.amount),
+      0
+    ),
+    directSalesBilled: ((salesRes.data || []) as { total_amount: number }[]).reduce(
+      (s, r) => s + toNum(r.total_amount),
+      0
+    ),
     servicePaid,
-    activeLoanGiven: ((loansRes.data || []) as { total_payable: number }[]).reduce((s, l) => s + toNum(l.total_payable), 0),
+    activeLoanGiven: ((loansRes.data || []) as { total_payable: number }[]).reduce(
+      (s, l) => s + toNum(l.total_payable),
+      0
+    ),
     loanRepaid,
   });
 }
 
 /** Label/type helper matching PHP resp (due / advance / settled with ±0.005 tolerance). */
-export function dueLabel(bal: number): { amount: number; label: "Due" | "Advance" | "Settled"; type: "due" | "advance" | "settled" } {
+export function dueLabel(bal: number): {
+  amount: number;
+  label: "Due" | "Advance" | "Settled";
+  type: "due" | "advance" | "settled";
+} {
   if (bal > 0.005) return { amount: bal, label: "Due", type: "due" };
   if (bal < -0.005) return { amount: Math.abs(bal), label: "Advance", type: "advance" };
   return { amount: 0, label: "Settled", type: "settled" };

@@ -266,20 +266,36 @@ export default function ClientPaymentReportPage() {
           {err && <div className="px-8 py-4 text-red-400">{err}</div>}
 
           {loading ? (
-            <div className="py-20 text-center text-slate-600 font-black tracking-widest">LOADING...</div>
+            <div className="py-20 text-center text-slate-600 font-black tracking-widest">
+              LOADING...
+            </div>
           ) : rows.length === 0 ? (
-            <div className="py-20 text-center text-slate-500">No payments found for selected filters.</div>
+            <div className="py-20 text-center text-slate-500">
+              No payments found for selected filters.
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-[#0c101a] sticky top-0 z-10">
                   <tr className="border-b border-[#21293d]">
-                    <th className="text-left px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">Date</th>
-                    <th className="text-left px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">Client ID</th>
-                    <th className="text-left px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">Mode</th>
-                    <th className="text-right px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">Amount</th>
-                    <th className="text-right px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">Discount</th>
-                    <th className="text-right px-8 py-5 text-xs font-black uppercase tracking-widest text-emerald-400">Net Received</th>
+                    <th className="text-left px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">
+                      Date
+                    </th>
+                    <th className="text-left px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">
+                      Client ID
+                    </th>
+                    <th className="text-left px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">
+                      Mode
+                    </th>
+                    <th className="text-right px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">
+                      Amount
+                    </th>
+                    <th className="text-right px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">
+                      Discount
+                    </th>
+                    <th className="text-right px-8 py-5 text-xs font-black uppercase tracking-widest text-emerald-400">
+                      Net Received
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1a2234]">
@@ -288,7 +304,11 @@ export default function ClientPaymentReportPage() {
                     return (
                       <tr key={r.id} className="hover:bg-white/[0.025] transition-colors">
                         <td className="px-8 py-5 text-slate-300">
-                          {formatIST(r.payment_date, { day: "2-digit", month: "short", year: "numeric" })}
+                          {formatIST(r.payment_date, {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
                         </td>
                         <td className="px-8 py-5 font-mono text-slate-400">#{r.client_id}</td>
                         <td className="px-8 py-5 text-slate-400 capitalize">{r.payment_mode}</td>

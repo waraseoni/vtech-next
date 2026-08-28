@@ -98,9 +98,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {/* Body colors hardcoded NAHI — globals.css ka body{background:var(--background)}
           rule attribute ke hisaab se turant sahi color deta hai (pehle yahan
           bg-[#0d1117] text-slate-200 hardcoded tha jo light theme se ladta tha). */}
-      <body className={`h-full m-0 font-sans antialiased overflow-x-hidden ${outfit.variable} ${inter.variable}`}>
-        <Script id="vtech-theme-boot" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
-        <Script id="vtech-boot-guard" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: BOOT_GUARD }} />
+      <body
+        className={`h-full m-0 font-sans antialiased overflow-x-hidden ${outfit.variable} ${inter.variable}`}
+      >
+        <Script
+          id="vtech-theme-boot"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: THEME_BOOT }}
+        />
+        <Script
+          id="vtech-boot-guard"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: BOOT_GUARD }}
+        />
         <RootClient>{children}</RootClient>
       </body>
     </html>

@@ -8,9 +8,9 @@ import { createClient } from "@supabase/supabase-js";
 //   VAPID_PRIVATE_KEY = sirf server par (yahan use hota hai)
 //   VAPID_EMAIL       = mailto:admin@yourdomain.com (optional but recommended)
 
-const VAPID_PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
-const VAPID_EMAIL       = process.env.VAPID_EMAIL || "mailto:admin@vtech.com";
+const VAPID_EMAIL = process.env.VAPID_EMAIL || "mailto:admin@vtech.com";
 
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   webPush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
@@ -25,18 +25,15 @@ export type PushPayload = {
   body: string;
   icon?: string;
   badge?: string;
-  url?: string;       // notification click par navigate
-  tag?: string;       // same tag = browser ek hi notification dikhata hai
+  url?: string; // notification click par navigate
+  tag?: string; // same tag = browser ek hi notification dikhata hai
   data?: Record<string, unknown>;
 };
 
 type SendResult = { sent: number; failed: number; errors: string[] };
 
 /** Ek user ko push bhejo (saare uske devices par). */
-export async function sendPushToUser(
-  userId: string,
-  payload: PushPayload,
-): Promise<SendResult> {
+export async function sendPushToUser(userId: string, payload: PushPayload): Promise<SendResult> {
   if (!isPushConfigured()) {
     return { sent: 0, failed: 0, errors: ["VAPID keys configured nahi hain"] };
   }
@@ -80,18 +77,20 @@ export async function sendPushToUser(
             endpoint: sub.endpoint,
             keys: { p256dh: sub.p256dh, auth: sub.auth },
           },
-          notificationPayload,
+          notificationPayload
         );
         sent++;
       } catch (err: unknown) {
         failed++;
         const msg = err instanceof Error ? err.message : String(err);
         // 404/410 = subscription expired → delete karo
-        if (msg.includes("404") || msg.includes("410") || msg.includes("Not Found") || msg.includes("Gone")) {
-          await sb
-            .from("push_subscriptions")
-            .delete()
-            .eq("endpoint", sub.endpoint);
+        if (
+          msg.includes("404") ||
+          msg.includes("410") ||
+          msg.includes("Not Found") ||
+          msg.includes("Gone")
+        ) {
+          await sb.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
         }
         errors.push(msg.slice(0, 200));
       }
@@ -102,9 +101,7 @@ export async function sendPushToUser(
 }
 
 /** Saare enabled users ko push bhejo (broadcast). */
-export async function sendPushToAll(
-  payload: PushPayload,
-): Promise<SendResult> {
+export async function sendPushToAll(payload: PushPayload): Promise<SendResult> {
   if (!isPushConfigured()) {
     return { sent: 0, failed: 0, errors: ["VAPID keys configured nahi hain"] };
   }
@@ -146,7 +143,7 @@ export async function sendPushToAll(
             endpoint: sub.endpoint,
             keys: { p256dh: sub.p256dh, auth: sub.auth },
           },
-          notificationPayload,
+          notificationPayload
         );
         sent++;
       } catch (err: unknown) {
@@ -166,7 +163,7 @@ export async function sendPushToAll(
 /** Specific users ko bhejo (user IDs array). */
 export async function sendPushToUsers(
   userIds: string[],
-  payload: PushPayload,
+  payload: PushPayload
 ): Promise<SendResult> {
   if (!isPushConfigured()) {
     return { sent: 0, failed: 0, errors: ["VAPID keys configured nahi hain"] };
@@ -210,7 +207,7 @@ export async function sendPushToUsers(
             endpoint: sub.endpoint,
             keys: { p256dh: sub.p256dh, auth: sub.auth },
           },
-          notificationPayload,
+          notificationPayload
         );
         sent++;
       } catch (err: unknown) {

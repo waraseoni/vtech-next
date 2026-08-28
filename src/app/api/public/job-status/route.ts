@@ -49,8 +49,14 @@ export async function GET(request: NextRequest) {
   const serviceIds = (svcData || []).map((s) => s.service_id).filter(Boolean);
   const serviceNames: Record<number, string> = {};
   if (serviceIds.length > 0) {
-    const { data: services } = await supabase.from("service_list").select("id, name").in("id", serviceIds);
-    if (services) services.forEach((s) => { serviceNames[s.id] = s.name; });
+    const { data: services } = await supabase
+      .from("service_list")
+      .select("id, name")
+      .in("id", serviceIds);
+    if (services)
+      services.forEach((s) => {
+        serviceNames[s.id] = s.name;
+      });
   }
 
   const services = (svcData || []).map((s) => ({
@@ -66,8 +72,14 @@ export async function GET(request: NextRequest) {
   const productIds = (prodData || []).map((p) => p.product_id).filter(Boolean);
   const productNames: Record<number, string> = {};
   if (productIds.length > 0) {
-    const { data: products } = await supabase.from("product_list").select("id, name").in("id", productIds);
-    if (products) products.forEach((p) => { productNames[p.id] = p.name; });
+    const { data: products } = await supabase
+      .from("product_list")
+      .select("id, name")
+      .in("id", productIds);
+    if (products)
+      products.forEach((p) => {
+        productNames[p.id] = p.name;
+      });
   }
 
   const products = (prodData || []).map((p) => ({

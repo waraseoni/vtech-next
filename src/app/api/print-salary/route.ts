@@ -15,7 +15,10 @@ const SHOP = {
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(iso));
 }
 
@@ -23,14 +26,22 @@ function inr(n: number) {
   return "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: 2 });
 }
 
-function getEffectiveRate(mechanicId: number, dateStr: string, defaultRate: number, history: { mechanic_id: number; salary: number; effective_date: string }[]) {
-  const applicableRate = history.find(h => h.mechanic_id === mechanicId && h.effective_date <= dateStr);
+function getEffectiveRate(
+  mechanicId: number,
+  dateStr: string,
+  defaultRate: number,
+  history: { mechanic_id: number; salary: number; effective_date: string }[]
+) {
+  const applicableRate = history.find(
+    (h) => h.mechanic_id === mechanicId && h.effective_date <= dateStr
+  );
   return applicableRate ? applicableRate.salary : defaultRate;
 }
 
 export async function GET(request: NextRequest) {
   const user = await requireAdmin();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const url = new URL(request.url);
   const month = url.searchParams.get("month") || "";
 
@@ -49,7 +60,7 @@ export async function GET(request: NextRequest) {
   );
 
   const typedMechs = (mechData || []).map((m) => ({ ...m, designation: m.designation || null }));
-  const mechIds = typedMechs.map(m => m.id);
+  const mechIds = typedMechs.map((m) => m.id);
 
   if (mechIds.length === 0) {
     return new NextResponse(
@@ -62,12 +73,39 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const [{ data: allAtt }, { data: allComm }, { data: allAdv }, { data: allHist }] = await Promise.all([
-    pageAll(supabase.from("attendance_list").select("mechanic_id, curr_date, status").in("mechanic_id", mechIds).in("status", [1, 3]).lt("curr_date", nextMonthStart)),
-    pageAll(supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount, date_created").in("mechanic_id", mechIds).lt("date_created", `${nextMonthStart}T00:00:00+05:30`)),
-    pageAll(supabase.from("advance_payments").select("mechanic_id, amount, date_paid").in("mechanic_id", mechIds).lt("date_paid", nextMonthStart)),
-    pageAll(supabase.from("mechanic_salary_history").select("*").in("mechanic_id", mechIds).order("effective_date", { ascending: false }).order("id", { ascending: false }))
-  ]);
+  const [{ data: allAtt }, { data: allComm }, { data: allAdv }, { data: allHist }] =
+    await Promise.all([
+      pageAll(
+        supabase
+          .from("attendance_list")
+          .select("mechanic_id, curr_date, status")
+          .in("mechanic_id", mechIds)
+          .in("status", [1, 3])
+          .lt("curr_date", nextMonthStart)
+      ),
+      pageAll(
+        supabase
+          .from("transaction_list")
+          .select("mechanic_id, mechanic_commission_amount, date_created")
+          .in("mechanic_id", mechIds)
+          .lt("date_created", `${nextMonthStart}T00:00:00+05:30`)
+      ),
+      pageAll(
+        supabase
+          .from("advance_payments")
+          .select("mechanic_id, amount, date_paid")
+          .in("mechanic_id", mechIds)
+          .lt("date_paid", nextMonthStart)
+      ),
+      pageAll(
+        supabase
+          .from("mechanic_salary_history")
+          .select("*")
+          .in("mechanic_id", mechIds)
+          .order("effective_date", { ascending: false })
+          .order("id", { ascending: false })
+      ),
+    ]);
 
   const attList = allAtt || [];
   const commList = allComm || [];
@@ -79,51 +117,97 @@ export async function GET(request: NextRequest) {
     const defaultSal = m.daily_salary || 0;
 
     let earnedPrev = 0;
-    attList.filter((a) => a.mechanic_id === m.id && a.curr_date < monthStart).forEach((a) => {
-      const rate = getEffectiveRate(m.id, a.curr_date, defaultSal, histList);
-      earnedPrev += (a.status === 3 ? rate / 2 : rate);
-    });
+    attList
+      .filter((a) => a.mechanic_id === m.id && a.curr_date < monthStart)
+      .forEach((a) => {
+        const rate = getEffectiveRate(m.id, a.curr_date, defaultSal, histList);
+        earnedPrev += a.status === 3 ? rate / 2 : rate;
+      });
 
-    const commPrevSum = commList.filter((c) => c.mechanic_id === m.id && c.date_created < `${monthStart}T00:00:00+05:30`).reduce((s: number, c) => s + (c.mechanic_commission_amount || 0), 0);
-    const advPrevSum = advList.filter((a) => a.mechanic_id === m.id && a.date_paid < monthStart).reduce((s: number, a) => s + (a.amount || 0), 0);
+    const commPrevSum = commList
+      .filter((c) => c.mechanic_id === m.id && c.date_created < `${monthStart}T00:00:00+05:30`)
+      .reduce((s: number, c) => s + (c.mechanic_commission_amount || 0), 0);
+    const advPrevSum = advList
+      .filter((a) => a.mechanic_id === m.id && a.date_paid < monthStart)
+      .reduce((s: number, a) => s + (a.amount || 0), 0);
     const oldBalance = earnedPrev + commPrevSum - advPrevSum;
 
-    let currentFix = 0, presentCount = 0, halfDayCount = 0;
-    attList.filter((a) => a.mechanic_id === m.id && a.curr_date >= monthStart && a.curr_date < nextMonthStart).forEach((a) => {
-      const rate = getEffectiveRate(m.id, a.curr_date, defaultSal, histList);
-      if (a.status === 3) { halfDayCount++; currentFix += (rate / 2); }
-      else { presentCount++; currentFix += rate; }
-    });
+    let currentFix = 0,
+      presentCount = 0,
+      halfDayCount = 0;
+    attList
+      .filter(
+        (a) => a.mechanic_id === m.id && a.curr_date >= monthStart && a.curr_date < nextMonthStart
+      )
+      .forEach((a) => {
+        const rate = getEffectiveRate(m.id, a.curr_date, defaultSal, histList);
+        if (a.status === 3) {
+          halfDayCount++;
+          currentFix += rate / 2;
+        } else {
+          presentCount++;
+          currentFix += rate;
+        }
+      });
 
-    const currentComm = commList.filter((c) => c.mechanic_id === m.id && c.date_created >= `${monthStart}T00:00:00+05:30` && c.date_created < `${nextMonthStart}T00:00:00+05:30`).reduce((s: number, c) => s + (c.mechanic_commission_amount || 0), 0);
-    const currentAdv = advList.filter((a) => a.mechanic_id === m.id && a.date_paid >= monthStart && a.date_paid < nextMonthStart).reduce((s: number, a) => s + (a.amount || 0), 0);
+    const currentComm = commList
+      .filter(
+        (c) =>
+          c.mechanic_id === m.id &&
+          c.date_created >= `${monthStart}T00:00:00+05:30` &&
+          c.date_created < `${nextMonthStart}T00:00:00+05:30`
+      )
+      .reduce((s: number, c) => s + (c.mechanic_commission_amount || 0), 0);
+    const currentAdv = advList
+      .filter(
+        (a) => a.mechanic_id === m.id && a.date_paid >= monthStart && a.date_paid < nextMonthStart
+      )
+      .reduce((s: number, a) => s + (a.amount || 0), 0);
     const netFinal = oldBalance + currentFix + currentComm - currentAdv;
 
-    return { id: m.id, name, daily_salary: defaultSal, present_count: presentCount, half_day_count: halfDayCount, current_fix: currentFix, current_comm: currentComm, old_balance: oldBalance, current_adv: currentAdv, net_final: netFinal };
+    return {
+      id: m.id,
+      name,
+      daily_salary: defaultSal,
+      present_count: presentCount,
+      half_day_count: halfDayCount,
+      current_fix: currentFix,
+      current_comm: currentComm,
+      old_balance: oldBalance,
+      current_adv: currentAdv,
+      net_final: netFinal,
+    };
   });
 
-  const summaryTotals = salaryRows.reduce((acc, row) => ({
-    payout: acc.payout + (row.net_final > 0 ? row.net_final : 0),
-    advances: acc.advances + row.current_adv,
-    commissions: acc.commissions + row.current_comm
-  }), { payout: 0, advances: 0, commissions: 0 });
+  const summaryTotals = salaryRows.reduce(
+    (acc, row) => ({
+      payout: acc.payout + (row.net_final > 0 ? row.net_final : 0),
+      advances: acc.advances + row.current_adv,
+      commissions: acc.commissions + row.current_comm,
+    }),
+    { payout: 0, advances: 0, commissions: 0 }
+  );
 
-  const monthLabel = month ? new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" }) : "All Records";
+  const monthLabel = month
+    ? new Date(month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" })
+    : "All Records";
 
-  const rowsHtml = salaryRows.map((r, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const rowsHtml = salaryRows
+    .map((r, i) => {
+      const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+      return `<tr style="background:${rowBg}">
       <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:11px">${i + 1}</td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;font-weight:600;font-size:11px">${r.name}</td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:center;font-size:11px">${r.present_count}</td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:center;font-size:11px">${r.half_day_count}</td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px">${inr(r.current_fix)}</td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px">${inr(r.current_comm)}</td>
-      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:${r.old_balance >= 0 ? '#28a745' : '#dc3545'}">${inr(r.old_balance)}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:${r.old_balance >= 0 ? "#28a745" : "#dc3545"}">${inr(r.old_balance)}</td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:#dc3545">${inr(r.current_adv)}</td>
-      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-weight:700;font-size:11px;color:${r.net_final >= 0 ? '#28a745' : '#dc3545'}">${inr(r.net_final)}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-weight:700;font-size:11px;color:${r.net_final >= 0 ? "#28a745" : "#dc3545"}">${inr(r.net_final)}</td>
     </tr>`;
-  }).join("");
+    })
+    .join("");
 
   const html = `<!DOCTYPE html>
 <html lang="en">

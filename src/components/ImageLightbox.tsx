@@ -11,7 +11,7 @@ const listeners = new Set<(s: LightboxState) => void>();
 /** Image ko bada kar ke dikhane ke liye (double-click handler me use karo). */
 export function openImageLightbox(src: string | null | undefined, alt?: string) {
   if (!src) return;
-  listeners.forEach(l => l({ src, alt: alt || "Image" }));
+  listeners.forEach((l) => l({ src, alt: alt || "Image" }));
 }
 
 /** Root layout me ek baar mount karo — poori app me zoom available ho jata hai. */
@@ -21,13 +21,17 @@ export function ImageLightbox() {
   useEffect(() => {
     const h = (s: LightboxState) => setState(s);
     listeners.add(h);
-    return () => { listeners.delete(h); };
+    return () => {
+      listeners.delete(h);
+    };
   }, []);
 
   // Esc se close
   useEffect(() => {
     if (!state) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setState(null); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setState(null);
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [state]);
@@ -44,9 +48,12 @@ export function ImageLightbox() {
         className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 text-slate-800 dark:bg-white/10 dark:hover:bg-white/25 dark:text-white flex items-center justify-center z-20 transition"
         title="Close (Esc)"
       >
-        <X size={20}/>
+        <X size={20} />
       </button>
-      <div className="absolute top-4 right-16 flex items-center gap-2 z-20" onClick={e => e.stopPropagation()}>
+      <div
+        className="absolute top-4 right-16 flex items-center gap-2 z-20"
+        onClick={(e) => e.stopPropagation()}
+      >
         <a
           href={state.src}
           target="_blank"
@@ -54,7 +61,7 @@ export function ImageLightbox() {
           className="w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 text-slate-800 dark:bg-white/10 dark:hover:bg-white/25 dark:text-white flex items-center justify-center transition"
           title="Original open karein"
         >
-          <ExternalLink size={18}/>
+          <ExternalLink size={18} />
         </a>
         <a
           href={state.src}
@@ -62,12 +69,12 @@ export function ImageLightbox() {
           className="w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 text-slate-800 dark:bg-white/10 dark:hover:bg-white/25 dark:text-white flex items-center justify-center transition"
           title="Download"
         >
-          <Download size={18}/>
+          <Download size={18} />
         </a>
       </div>
       <div
         className="max-w-[92vw] max-h-[88vh] flex items-center justify-center"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         <Image
           src={state.src}

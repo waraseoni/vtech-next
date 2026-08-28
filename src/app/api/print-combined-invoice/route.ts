@@ -10,17 +10,19 @@ const supabase = getAdminSupabase();
 async function fetchShopInfo() {
   const { data } = await supabase.from("system_info").select("meta_field, meta_value");
   const info: Record<string, string> = {};
-  (data || []).forEach(r => { info[r.meta_field] = r.meta_value; });
+  (data || []).forEach((r) => {
+    info[r.meta_field] = r.meta_value;
+  });
   return {
-    name:    info.name        || "V-Technologies",
+    name: info.name || "V-Technologies",
     tagline: "Power Supply & Stage Light Repair Solutions",
-    address: info.address     || "F4, Hotel Plaza, Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
-    mobile:  info.contact     || "9179105875",
-    email:   info.email       || "vtech.jbp@gmail.com",
-    gstin:   info.gst_no      || info.gstin || "",
-    upiId:   info.upi_id      || "",
+    address: info.address || "F4, Hotel Plaza, Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
+    mobile: info.contact || "9179105875",
+    email: info.email || "vtech.jbp@gmail.com",
+    gstin: info.gst_no || info.gstin || "",
+    upiId: info.upi_id || "",
     signature: info.signature || "",
-    logo:    info.logo        || "",
+    logo: info.logo || "",
   };
 }
 
@@ -31,7 +33,10 @@ const SGST_RATE = 9;
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(iso));
 }
 
@@ -39,8 +44,12 @@ function fmtDateTime(iso: string | null): string {
   if (!iso) return "—";
   return new Intl.DateTimeFormat("en-IN", {
     timeZone: "Asia/Kolkata",
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
   }).format(new Date(iso));
 }
 
@@ -58,20 +67,54 @@ function esc(s: string): string {
 
 // ─── Number to Words (Indian system) ─────────────────────────────────────────
 function numberToWords(num: number): string {
-  const ones = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine",
-    "Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
-  const tens = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+  const ones = [
+    "",
+    "One",
+    "Two",
+    "Three",
+    "Four",
+    "Five",
+    "Six",
+    "Seven",
+    "Eight",
+    "Nine",
+    "Ten",
+    "Eleven",
+    "Twelve",
+    "Thirteen",
+    "Fourteen",
+    "Fifteen",
+    "Sixteen",
+    "Seventeen",
+    "Eighteen",
+    "Nineteen",
+  ];
+  const tens = [
+    "",
+    "",
+    "Twenty",
+    "Thirty",
+    "Forty",
+    "Fifty",
+    "Sixty",
+    "Seventy",
+    "Eighty",
+    "Ninety",
+  ];
   function helper(n: number): string {
     if (n === 0) return "";
     if (n < 20) return ones[n] + " ";
-    if (n < 100) return tens[Math.floor(n/10)] + (n%10 ? " " + ones[n%10] : "") + " ";
-    return ones[Math.floor(n/100)] + " Hundred " + helper(n%100);
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "") + " ";
+    return ones[Math.floor(n / 100)] + " Hundred " + helper(n % 100);
   }
   if (num === 0) return "Zero Rupees Only";
   let w = "";
-  const cr = Math.floor(num / 10000000); num %= 10000000;
-  const lk = Math.floor(num / 100000);   num %= 100000;
-  const th = Math.floor(num / 1000);     num %= 1000;
+  const cr = Math.floor(num / 10000000);
+  num %= 10000000;
+  const lk = Math.floor(num / 100000);
+  num %= 100000;
+  const th = Math.floor(num / 1000);
+  num %= 1000;
   if (cr) w += helper(cr) + "Crore ";
   if (lk) w += helper(lk) + "Lakh ";
   if (th) w += helper(th) + "Thousand ";
@@ -80,23 +123,37 @@ function numberToWords(num: number): string {
 }
 
 const STATUS: Record<number, string> = {
-  0: "Pending", 1: "In Progress", 2: "Done", 3: "Paid", 4: "Cancelled", 5: "Delivered",
+  0: "Pending",
+  1: "In Progress",
+  2: "Done",
+  3: "Paid",
+  4: "Cancelled",
+  5: "Delivered",
 };
 
 const STATUS_COLOR: Record<number, string> = {
-  0: "#94a3b8", 1: "#f59e0b", 2: "#06b6d4", 3: "#10b981", 4: "#ef4444", 5: "#3b82f6",
+  0: "#94a3b8",
+  1: "#f59e0b",
+  2: "#06b6d4",
+  3: "#10b981",
+  4: "#ef4444",
+  5: "#3b82f6",
 };
 
 // ─── ROUTE HANDLER ────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const user = await requireStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
-  const url      = new URL(req.url);
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  const url = new URL(req.url);
   const idsParam = url.searchParams.get("ids") || "";
   const billType = url.searchParams.get("bill_type") || "non_gst";
 
   // Validate IDs
-  const jobIds = idsParam.split(",").map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+  const jobIds = idsParam
+    .split(",")
+    .map((s) => parseInt(s.trim()))
+    .filter((n) => !isNaN(n) && n > 0);
   if (jobIds.length === 0) {
     return new NextResponse("Koi valid job IDs nahi diye gaye", { status: 400 });
   }
@@ -137,32 +194,42 @@ export async function GET(req: NextRequest) {
   ]);
 
   // ── Fetch HSN/SAC codes ────────────────────────────────────────────────────
-  const prodIds = [...new Set((allProducts || []).map(p => p.product_id).filter(Boolean))];
-  const svcIds  = [...new Set((allServices || []).map(s => s.service_id).filter(Boolean))];
+  const prodIds = [...new Set((allProducts || []).map((p) => p.product_id).filter(Boolean))];
+  const svcIds = [...new Set((allServices || []).map((s) => s.service_id).filter(Boolean))];
   const [{ data: prodRows }, { data: svcRows }] = await Promise.all([
-    prodIds.length ? supabase.from("product_list").select("id, hsn").in("id", prodIds) : Promise.resolve({ data: [] }),
-    svcIds.length  ? supabase.from("service_list").select("id, hsn").in("id", svcIds)  : Promise.resolve({ data: [] }),
+    prodIds.length
+      ? supabase.from("product_list").select("id, hsn").in("id", prodIds)
+      : Promise.resolve({ data: [] }),
+    svcIds.length
+      ? supabase.from("service_list").select("id, hsn").in("id", svcIds)
+      : Promise.resolve({ data: [] }),
   ]);
-  const hsnMap = { ...Object.fromEntries((prodRows || []).map(p => [p.id, p.hsn])), ...Object.fromEntries((svcRows || []).map(s => [s.id, s.hsn])) };
+  const hsnMap = {
+    ...Object.fromEntries((prodRows || []).map((p) => [p.id, p.hsn])),
+    ...Object.fromEntries((svcRows || []).map((s) => [s.id, s.hsn])),
+  };
 
   // Map products/services by transaction_id
-  const prodMap = new Map<number, { product_id: number; product_name: string; qty: number; price: number }[]>();
-  const svcMap  = new Map<number, { service_id: number; service_name: string; price: number }[]>();
-  (allProducts || []).forEach(p => {
+  const prodMap = new Map<
+    number,
+    { product_id: number; product_name: string; qty: number; price: number }[]
+  >();
+  const svcMap = new Map<number, { service_id: number; service_name: string; price: number }[]>();
+  (allProducts || []).forEach((p) => {
     const tid = p.transaction_id;
     if (!prodMap.has(tid)) prodMap.set(tid, []);
     prodMap.get(tid)!.push(p);
   });
-  (allServices || []).forEach(s => {
+  (allServices || []).forEach((s) => {
     const tid = s.transaction_id;
     if (!svcMap.has(tid)) svcMap.set(tid, []);
     svcMap.get(tid)!.push(s);
   });
 
   // ── Build invoice data ─────────────────────────────────────────────────────
-  const isGST       = billType === "gst";
+  const isGST = billType === "gst";
   const accentColor = isGST ? "#dc3545" : "#007bff";
-  const badgeColor  = isGST ? "#dc3545" : "#17a2b8";
+  const badgeColor = isGST ? "#dc3545" : "#17a2b8";
   const billTypeText = isGST ? "GST Invoice" : "Retail Invoice";
   const invoiceTitle = isGST ? "COMBINED TAX INVOICE" : "COMBINED INVOICE";
 
@@ -181,12 +248,28 @@ export async function GET(req: NextRequest) {
     subtotal: number;
     lineItems: { desc: string; hsn: string; qty: number; rate: number; total: number }[];
   }
-  const jobRows: JobRow[] = txns.map(txn => {
+  const jobRows: JobRow[] = txns.map((txn) => {
     const prods = prodMap.get(txn.id) || [];
-    const svcs  = svcMap.get(txn.id) || [];
+    const svcs = svcMap.get(txn.id) || [];
     const lineItems: { desc: string; hsn: string; qty: number; rate: number; total: number }[] = [];
-    prods.forEach(p => lineItems.push({ desc: `${p.product_name || "Part"} (Part)`, hsn: hsnMap[p.product_id] || "—", qty: p.qty ?? 1, rate: p.price ?? 0, total: (p.qty ?? 1) * (p.price ?? 0) }));
-    svcs.forEach(s  => lineItems.push({ desc: `${s.service_name || "Repair Service"} (Service)`, hsn: hsnMap[s.service_id] || "—", qty: 1, rate: s.price ?? 0, total: s.price ?? 0 }));
+    prods.forEach((p) =>
+      lineItems.push({
+        desc: `${p.product_name || "Part"} (Part)`,
+        hsn: hsnMap[p.product_id] || "—",
+        qty: p.qty ?? 1,
+        rate: p.price ?? 0,
+        total: (p.qty ?? 1) * (p.price ?? 0),
+      })
+    );
+    svcs.forEach((s) =>
+      lineItems.push({
+        desc: `${s.service_name || "Repair Service"} (Service)`,
+        hsn: hsnMap[s.service_id] || "—",
+        qty: 1,
+        rate: s.price ?? 0,
+        total: s.price ?? 0,
+      })
+    );
     const subtotal = lineItems.reduce((s, r) => s + r.total, 0) || txn.amount || 0;
     return {
       job_id: txn.job_id,
@@ -202,17 +285,21 @@ export async function GET(req: NextRequest) {
 
   // Grand totals
   const grandSubtotal = jobRows.reduce((s, r) => s + r.subtotal, 0);
-  const cgstAmt  = isGST ? Math.round(grandSubtotal * (CGST_RATE / 100) * 100) / 100 : 0;
-  const sgstAmt  = isGST ? Math.round(grandSubtotal * (SGST_RATE / 100) * 100) / 100 : 0;
+  const cgstAmt = isGST ? Math.round(grandSubtotal * (CGST_RATE / 100) * 100) / 100 : 0;
+  const sgstAmt = isGST ? Math.round(grandSubtotal * (SGST_RATE / 100) * 100) / 100 : 0;
   const grandTotal = grandSubtotal + cgstAmt + sgstAmt;
 
   // ── Build HTML sections for each job ──────────────────────────────────────
-  const jobSections = jobRows.map((job) => {
-    const sc = STATUS_COLOR[job.status] || "#94a3b8";
-    const statusLabel = STATUS[job.status] || "—";
+  const jobSections = jobRows
+    .map((job) => {
+      const sc = STATUS_COLOR[job.status] || "#94a3b8";
+      const statusLabel = STATUS[job.status] || "—";
 
-    const itemRowsHtml = job.lineItems.length > 0
-      ? job.lineItems.map((r, i) => `
+      const itemRowsHtml =
+        job.lineItems.length > 0
+          ? job.lineItems
+              .map(
+                (r, i) => `
           <tr>
             <td class="tc">${i + 1}</td>
             <td>${esc(r.desc)}</td>
@@ -220,10 +307,12 @@ export async function GET(req: NextRequest) {
             <td class="tc">${r.qty}</td>
             <td class="tr">${inr(r.rate)}</td>
             <td class="tr">${inr(r.total)}</td>
-          </tr>`).join("")
-      : `<tr><td colspan="6" class="tc" style="color:#999;font-style:italic;padding:10px">Repair service — no individual items listed</td></tr>`;
+          </tr>`
+              )
+              .join("")
+          : `<tr><td colspan="6" class="tc" style="color:#999;font-style:italic;padding:10px">Repair service — no individual items listed</td></tr>`;
 
-    return `
+      return `
       <div class="job-section" style="margin-bottom:24px;page-break-inside:avoid">
         <!-- Job Header -->
         <div style="display:flex;align-items:center;gap:10px;background:#001f3f;color:#fff;padding:10px 14px;border-radius:6px 6px 0 0;">
@@ -255,10 +344,12 @@ export async function GET(req: NextRequest) {
           Job #${esc(job.job_id)} Subtotal: ${inr(job.subtotal)}
         </div>
       </div>`;
-  }).join(`<div style="border-top:2px dashed #e2e8f0;margin:20px 0"></div>`);
+    })
+    .join(`<div style="border-top:2px dashed #e2e8f0;margin:20px 0"></div>`);
 
   // ── GST rows ─────────────────────────────────────────────────────────────
-  const gstRows = isGST ? `
+  const gstRows = isGST
+    ? `
     <tr style="background:#e7f1ff">
       <td style="text-align:right;font-weight:600;padding:8px 12px">CGST @ ${CGST_RATE}%:</td>
       <td style="text-align:right;font-weight:600;padding:8px 12px">${inr(cgstAmt)}</td>
@@ -270,15 +361,20 @@ export async function GET(req: NextRequest) {
     <tr style="background:#e7f1ff;font-weight:700">
       <td style="text-align:right;padding:8px 12px">Total GST (${CGST_RATE + SGST_RATE}%):</td>
       <td style="text-align:right;padding:8px 12px">${inr(cgstAmt + sgstAmt)}</td>
-    </tr>` : "";
+    </tr>`
+    : "";
 
   // ── Job summary table ────────────────────────────────────────────────────
-  const jobSummaryRows = jobRows.map((job, i) => `
+  const jobSummaryRows = jobRows
+    .map(
+      (job, i) => `
     <tr style="${i % 2 === 0 ? "background:#f8f9fa" : ""}">
       <td style="padding:6px 10px;border:1px solid #dee2e6;font-weight:700;color:#0056b3">#${esc(job.job_id)}</td>
       <td style="padding:6px 10px;border:1px solid #dee2e6">${esc(job.item)}</td>
       <td style="padding:6px 10px;border:1px solid #dee2e6;text-align:right;font-weight:700">${inr(job.subtotal)}</td>
-    </tr>`).join("");
+    </tr>`
+    )
+    .join("");
 
   // ── Fetch UPI ID from system_info ──────────────────────────────────────────
   const { data: upiRow } = await supabase
@@ -376,10 +472,12 @@ export async function GET(req: NextRequest) {
   <!-- Header -->
   <div class="hdr">
     <div>
-      ${SHOP.logo
-        ? `<img src="${SHOP.logo}" alt="Logo" style="max-height:70px;max-width:180px;object-fit:contain;" />`
-        : `<div style="font-size:30px;font-weight:900;color:${accentColor}">V•TECH</div>
-           <div style="font-size:10px;font-weight:700;color:#999;letter-spacing:2px">REPAIR SHOP</div>`}
+      ${
+        SHOP.logo
+          ? `<img src="${SHOP.logo}" alt="Logo" style="max-height:70px;max-width:180px;object-fit:contain;" />`
+          : `<div style="font-size:30px;font-weight:900;color:${accentColor}">V•TECH</div>
+           <div style="font-size:10px;font-weight:700;color:#999;letter-spacing:2px">REPAIR SHOP</div>`
+      }
     </div>
     <div style="text-align:center;flex:1;padding:0 20px">
       <div class="shop-name">${esc(SHOP.name)}</div>
@@ -495,9 +593,10 @@ export async function GET(req: NextRequest) {
     <div style="font-size:15px;font-weight:700;color:#28a745;margin-bottom:6px">❤ Thank You for Your Business!</div>
     <div style="color:#666;font-size:12px">📞 ${SHOP.mobile} &nbsp;|&nbsp; ✉ ${SHOP.email}</div>
     <div class="sig">
-      ${SHOP.signature
-        ? `<img src="${SHOP.signature}" alt="Signature" style="max-height:50px;max-width:200px;object-fit:contain;"><br>`
-        : `<div style="border-top:1px solid #333;width:220px;display:inline-block;padding-top:8px">`
+      ${
+        SHOP.signature
+          ? `<img src="${SHOP.signature}" alt="Signature" style="max-height:50px;max-width:200px;object-fit:contain;"><br>`
+          : `<div style="border-top:1px solid #333;width:220px;display:inline-block;padding-top:8px">`
       }
         For ${esc(SHOP.name)}<br><strong>Authorized Signature</strong>
       ${SHOP.signature ? "" : "</div>"}

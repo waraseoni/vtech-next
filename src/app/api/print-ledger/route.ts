@@ -8,21 +8,28 @@ const supabase = getAdminSupabase();
 
 const SHOP = {
   name: "V-Technologies",
-  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur â€“ 482002",
+  address:
+    "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur â€“ 482002",
   mobile: "9179105875",
 };
 
-const rupee = (n: number, decimals = 0) => "â‚¹" + n.toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+const rupee = (n: number, decimals = 0) =>
+  "â‚¹" +
+  n.toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 
 function fmtDate(iso: string): string {
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(iso));
 }
 
 export async function GET(request: NextRequest) {
   const user = await requireStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const from = searchParams.get("from") || new Date().toISOString().split("T")[0];
   const to = searchParams.get("to") || from;
@@ -42,30 +49,91 @@ export async function GET(request: NextRequest) {
     expensesRaw,
     loanPaymentsRaw,
   ] = await Promise.all([
-    pageAll(supabase.from('client_list').select('id, firstname, middlename, lastname')),
-    pageAll(supabase.from('mechanic_list').select('id, firstname, lastname, daily_salary')),
-    pageAll(supabase.from('mechanic_salary_history').select('mechanic_id, effective_date, salary')),
-    pageAll(supabase.from('transaction_list').select('id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id').eq('status', 5).gte('date_completed', start).lte('date_completed', end)),
-    pageAll(supabase.from('direct_sales').select('id, sale_code, total_amount, date_created, client_id').or('client_id.is.null,client_id.eq.0').gte('date_created', start).lte('date_created', end)),
-    pageAll(supabase.from('direct_sales').select('id, sale_code, total_amount, date_created, client_id').not('client_id', 'eq', 0).not('client_id', 'is', null).gte('date_created', start).lte('date_created', end)),
-    pageAll(supabase.from('client_payments').select('id, client_id, amount, discount, payment_date').gte('payment_date', from).lte('payment_date', to)),
-    pageAll(supabase.from('attendance_list').select('mechanic_id, curr_date, status').in('status', [1, 3]).gte('curr_date', from).lte('curr_date', to)),
-    pageAll(supabase.from('expense_list').select('category, amount, date_created').gte('date_created', start).lte('date_created', end)),
-    pageAll(supabase.from('loan_payments').select('lender_id, amount_paid, payment_date').gte('payment_date', from).lte('payment_date', to)),
+    pageAll(supabase.from("client_list").select("id, firstname, middlename, lastname")),
+    pageAll(supabase.from("mechanic_list").select("id, firstname, lastname, daily_salary")),
+    pageAll(supabase.from("mechanic_salary_history").select("mechanic_id, effective_date, salary")),
+    pageAll(
+      supabase
+        .from("transaction_list")
+        .select(
+          "id, job_id, date_completed, item, amount, mechanic_commission_amount, client_name, mechanic_id"
+        )
+        .eq("status", 5)
+        .gte("date_completed", start)
+        .lte("date_completed", end)
+    ),
+    pageAll(
+      supabase
+        .from("direct_sales")
+        .select("id, sale_code, total_amount, date_created, client_id")
+        .or("client_id.is.null,client_id.eq.0")
+        .gte("date_created", start)
+        .lte("date_created", end)
+    ),
+    pageAll(
+      supabase
+        .from("direct_sales")
+        .select("id, sale_code, total_amount, date_created, client_id")
+        .not("client_id", "eq", 0)
+        .not("client_id", "is", null)
+        .gte("date_created", start)
+        .lte("date_created", end)
+    ),
+    pageAll(
+      supabase
+        .from("client_payments")
+        .select("id, client_id, amount, discount, payment_date")
+        .gte("payment_date", from)
+        .lte("payment_date", to)
+    ),
+    pageAll(
+      supabase
+        .from("attendance_list")
+        .select("mechanic_id, curr_date, status")
+        .in("status", [1, 3])
+        .gte("curr_date", from)
+        .lte("curr_date", to)
+    ),
+    pageAll(
+      supabase
+        .from("expense_list")
+        .select("category, amount, date_created")
+        .gte("date_created", start)
+        .lte("date_created", end)
+    ),
+    pageAll(
+      supabase
+        .from("loan_payments")
+        .select("lender_id, amount_paid, payment_date")
+        .gte("payment_date", from)
+        .lte("payment_date", to)
+    ),
   ]);
 
   const clientMap: Record<number, string> = {};
-  (allClients || []).forEach((c) => { clientMap[c.id] = `${c.firstname} ${c.middlename || ''} ${c.lastname || ''}`.trim(); });
+  (allClients || []).forEach((c) => {
+    clientMap[c.id] = `${c.firstname} ${c.middlename || ""} ${c.lastname || ""}`.trim();
+  });
 
   const mechMap: Record<number, { name: string; daily: number }> = {};
-  (allMechanics || []).forEach((m) => { mechMap[m.id] = { name: `${m.firstname} ${m.lastname}`.trim(), daily: Number(m.daily_salary) || 0 }; });
+  (allMechanics || []).forEach((m) => {
+    mechMap[m.id] = {
+      name: `${m.firstname} ${m.lastname}`.trim(),
+      daily: Number(m.daily_salary) || 0,
+    };
+  });
 
   const salaryHistoryMap: Record<number, { effective_date: string; salary: number }[]> = {};
   (salaryHistory || []).forEach((h) => {
     if (!salaryHistoryMap[h.mechanic_id]) salaryHistoryMap[h.mechanic_id] = [];
-    salaryHistoryMap[h.mechanic_id].push({ effective_date: h.effective_date, salary: Number(h.salary) || 0 });
+    salaryHistoryMap[h.mechanic_id].push({
+      effective_date: h.effective_date,
+      salary: Number(h.salary) || 0,
+    });
   });
-  Object.values(salaryHistoryMap).forEach(arr => arr.sort((a, b) => new Date(a.effective_date).getTime() - new Date(b.effective_date).getTime()));
+  Object.values(salaryHistoryMap).forEach((arr) =>
+    arr.sort((a, b) => new Date(a.effective_date).getTime() - new Date(b.effective_date).getTime())
+  );
   const historyRateFor = (mechId: number, onDate: string): number | null => {
     const hist = salaryHistoryMap[mechId];
     if (!hist || !onDate) return null;
@@ -79,13 +147,32 @@ export async function GET(request: NextRequest) {
   };
 
   const repairJobs = (repairJobsRaw.data || []).map((t) => ({
-    job_id: t.job_id, date: t.date_completed, item: t.item, amount: t.amount, comm: t.mechanic_commission_amount,
-    client: clientMap[t.client_name] || 'Unknown', mechanic: mechMap[t.mechanic_id]?.name || 'Unknown'
+    job_id: t.job_id,
+    date: t.date_completed,
+    item: t.item,
+    amount: t.amount,
+    comm: t.mechanic_commission_amount,
+    client: clientMap[t.client_name] || "Unknown",
+    mechanic: mechMap[t.mechanic_id]?.name || "Unknown",
   }));
 
-  const walkinSales = (walkinRaw.data || []).map((s) => ({ code: s.sale_code, date: s.date_created, amount: s.total_amount }));
-  const clientSales = (clientSalesRaw.data || []).map((s) => ({ code: s.sale_code, date: s.date_created, amount: s.total_amount, client: clientMap[s.client_id] || 'Unknown' }));
-  const payments = (clientPaymentsRaw.data || []).map((p) => ({ date: p.payment_date, client: clientMap[p.client_id] || 'Unknown', amount: p.amount, discount: p.discount }));
+  const walkinSales = (walkinRaw.data || []).map((s) => ({
+    code: s.sale_code,
+    date: s.date_created,
+    amount: s.total_amount,
+  }));
+  const clientSales = (clientSalesRaw.data || []).map((s) => ({
+    code: s.sale_code,
+    date: s.date_created,
+    amount: s.total_amount,
+    client: clientMap[s.client_id] || "Unknown",
+  }));
+  const payments = (clientPaymentsRaw.data || []).map((p) => ({
+    date: p.payment_date,
+    client: clientMap[p.client_id] || "Unknown",
+    amount: p.amount,
+    discount: p.discount,
+  }));
 
   const totalRepair = repairJobs.reduce((s: number, t) => s + Number(t.amount || 0), 0);
   const totalWalkin = walkinSales.reduce((s: number, s_) => s + Number(s_.amount || 0), 0);
@@ -97,8 +184,14 @@ export async function GET(request: NextRequest) {
     const rate = historyRateFor(a.mechanic_id, a.curr_date) ?? (mechMap[a.mechanic_id]?.daily || 0);
     return s + (a.status === 3 ? rate / 2 : rate);
   }, 0);
-  const totalExpenses = (expensesRaw.data || []).reduce((s: number, e) => s + Number(e.amount || 0), 0);
-  const totalEmi = (loanPaymentsRaw.data || []).reduce((s: number, p) => s + Number(p.amount_paid || 0), 0);
+  const totalExpenses = (expensesRaw.data || []).reduce(
+    (s: number, e) => s + Number(e.amount || 0),
+    0
+  );
+  const totalEmi = (loanPaymentsRaw.data || []).reduce(
+    (s: number, p) => s + Number(p.amount_paid || 0),
+    0
+  );
   const totalDiscount = payments.reduce((s: number, p) => s + Number(p.discount || 0), 0);
 
   const totalIncome = totalRepair + totalWalkin + totalClientSales;
@@ -107,30 +200,48 @@ export async function GET(request: NextRequest) {
 
   const monthLabel = `${fmtDate(from)} - ${fmtDate(to)}`;
 
-  const repairRows = repairJobs.length > 0 ? repairJobs.slice(0, 20).map((t, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const repairRows =
+    repairJobs.length > 0
+      ? repairJobs
+          .slice(0, 20)
+          .map((t, i) => {
+            const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+            return `<tr style="background:${rowBg}">
       <td style="padding:8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:12px">${i + 1}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(t.date)}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${t.job_id}</td>
-      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${t.item || '-'}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${t.item || "-"}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${t.client}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${t.mechanic}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${rupee(Number(t.amount))}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${rupee(Number(t.comm))}</td>
     </tr>`;
-  }).join("") + (repairJobs.length > 20 ? `<tr><td colspan="8" style="padding:8px;border:1px solid #dee2e6;text-align:center;font-size:12px;color:#666">... and ${repairJobs.length - 20} more</td></tr>` : '') : '<tr><td colspan="8" style="padding:16px;text-align:center;color:#666">No repair jobs</td></tr>';
+          })
+          .join("") +
+        (repairJobs.length > 20
+          ? `<tr><td colspan="8" style="padding:8px;border:1px solid #dee2e6;text-align:center;font-size:12px;color:#666">... and ${repairJobs.length - 20} more</td></tr>`
+          : "")
+      : '<tr><td colspan="8" style="padding:16px;text-align:center;color:#666">No repair jobs</td></tr>';
 
-  const paymentRows = payments.length > 0 ? payments.slice(0, 20).map((p, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const paymentRows =
+    payments.length > 0
+      ? payments
+          .slice(0, 20)
+          .map((p, i) => {
+            const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+            return `<tr style="background:${rowBg}">
       <td style="padding:8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:12px">${i + 1}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(p.date)}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${p.client}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${rupee(Number(p.amount))}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px">${rupee(Number(p.discount))}</td>
     </tr>`;
-  }).join("") + (payments.length > 20 ? `<tr><td colspan="5" style="padding:8px;border:1px solid #dee2e6;text-align:center;font-size:12px;color:#666">... and ${payments.length - 20} more</td></tr>` : '') : '<tr><td colspan="5" style="padding:16px;text-align:center;color:#666">No payments</td></tr>';
+          })
+          .join("") +
+        (payments.length > 20
+          ? `<tr><td colspan="5" style="padding:8px;border:1px solid #dee2e6;text-align:center;font-size:12px;color:#666">... and ${payments.length - 20} more</td></tr>`
+          : "")
+      : '<tr><td colspan="5" style="padding:16px;text-align:center;color:#666">No payments</td></tr>';
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -190,13 +301,15 @@ export async function GET(request: NextRequest) {
         <div class="stat-label">Cash Received</div>
       </div>
       <div class="stat">
-        <div class="stat-num" style="color:${netProfit >= 0 ? '#28a745' : '#c0392b'}">${rupee(netProfit)}</div>
-        <div class="stat-label">${netProfit >= 0 ? 'Net Profit' : 'Net Loss'}</div>
+        <div class="stat-num" style="color:${netProfit >= 0 ? "#28a745" : "#c0392b"}">${rupee(netProfit)}</div>
+        <div class="stat-label">${netProfit >= 0 ? "Net Profit" : "Net Loss"}</div>
       </div>
     </div>
   </div>
 
-  ${repairJobs.length > 0 ? `
+  ${
+    repairJobs.length > 0
+      ? `
   <div class="card">
     <h2>Repair Jobs (${repairJobs.length})</h2>
     <table>
@@ -205,9 +318,13 @@ export async function GET(request: NextRequest) {
       </thead>
       <tbody>${repairRows}</tbody>
     </table>
-  </div>` : ''}
+  </div>`
+      : ""
+  }
 
-  ${payments.length > 0 ? `
+  ${
+    payments.length > 0
+      ? `
   <div class="card">
     <h2>Client Payments (${payments.length})</h2>
     <table>
@@ -216,7 +333,9 @@ export async function GET(request: NextRequest) {
       </thead>
       <tbody>${paymentRows}</tbody>
     </table>
-  </div>` : ''}
+  </div>`
+      : ""
+  }
 
   <div class="card">
     <div class="actions">

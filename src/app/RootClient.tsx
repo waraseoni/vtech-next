@@ -9,16 +9,62 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import {
-  IDLE_MS, WARN_BEFORE_MS, REVOKED_CHECK_MS, REVOKED_401_TOLERANCE,
+  IDLE_MS,
+  WARN_BEFORE_MS,
+  REVOKED_CHECK_MS,
+  REVOKED_401_TOLERANCE,
   LAST_ACTIVE_KEY,
 } from "@/lib/session-policy";
 import {
-  LayoutDashboard, Users, Package, Settings, Wrench, Search,
-  User, LogOut, Sparkles, Loader2, ShieldCheck, CalendarCheck,
-  HelpCircle, ShoppingCart, ClipboardList, PieChart, TrendingUp,
-  DollarSign, Truck, CreditCard, Clock, Coins, Receipt,
-  Toolbox, FolderOpen, UsersRound, Database, Settings2, MessageSquare,
-  ChevronDown, ChevronRight, X, Menu, BarChart2, RefreshCw, Sun, Moon, History, Activity, BookOpen, CalendarClock, ShieldAlert, KeyRound, Code2, Images, FileText, Layers, MapPin, Terminal,
+  LayoutDashboard,
+  Users,
+  Package,
+  Settings,
+  Wrench,
+  Search,
+  User,
+  LogOut,
+  Sparkles,
+  Loader2,
+  ShieldCheck,
+  CalendarCheck,
+  HelpCircle,
+  ShoppingCart,
+  ClipboardList,
+  PieChart,
+  TrendingUp,
+  DollarSign,
+  Truck,
+  CreditCard,
+  Clock,
+  Coins,
+  Receipt,
+  Toolbox,
+  FolderOpen,
+  UsersRound,
+  Database,
+  Settings2,
+  MessageSquare,
+  ChevronDown,
+  ChevronRight,
+  X,
+  Menu,
+  BarChart2,
+  RefreshCw,
+  Sun,
+  Moon,
+  History,
+  Activity,
+  BookOpen,
+  CalendarClock,
+  ShieldAlert,
+  KeyRound,
+  Code2,
+  Images,
+  FileText,
+  Layers,
+  MapPin,
+  Terminal,
 } from "lucide-react";
 import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
 import { Toaster } from "sonner";
@@ -36,19 +82,18 @@ type SearchResult = {
 };
 
 function NavbarSearch() {
-  const router                = useRouter();
-  const [query,  setQuery]    = useState("");
+  const router = useRouter();
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [open,    setOpen]    = useState(false);
-  const wrapRef               = useRef<HTMLDivElement>(null);
-  const timerRef              = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Close dropdown on outside click
   useEffect(() => {
     const h = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node))
-        setOpen(false);
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
@@ -59,7 +104,7 @@ function NavbarSearch() {
     const h = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
-        const input = document.querySelector('[data-search-input]') as HTMLInputElement;
+        const input = document.querySelector("[data-search-input]") as HTMLInputElement;
         if (input) input.focus();
         setOpen(true);
       }
@@ -73,90 +118,141 @@ function NavbarSearch() {
   }, []);
 
   const runSearch = useCallback(async (q: string) => {
-    if (!q.trim()) { setResults([]); setOpen(false); return; }
+    if (!q.trim()) {
+      setResults([]);
+      setOpen(false);
+      return;
+    }
     setLoading(true);
     setOpen(true);
     const like = `%${q}%`;
-    const num  = parseInt(q);
+    const num = parseInt(q);
 
     try {
       const [clientRes, jobRes, prodRes, mechRes, saleRes] = await Promise.all([
         // Clients — name, contact, address
-        supabase.from("client_list")
+        supabase
+          .from("client_list")
           .select("id, firstname, middlename, lastname, contact, address")
           .eq("delete_flag", 0)
-          .or(`firstname.ilike.${like},middlename.ilike.${like},lastname.ilike.${like},contact.ilike.${like},address.ilike.${like}`)
+          .or(
+            `firstname.ilike.${like},middlename.ilike.${like},lastname.ilike.${like},contact.ilike.${like},address.ilike.${like}`
+          )
           .limit(5),
 
         // Jobs — item, fault, job_id, code, uniq_id
-        supabase.from("transaction_list")
+        supabase
+          .from("transaction_list")
           .select("id, job_id, item, fault, status, date_created")
           .eq("del_status", 0)
-          .or(`item.ilike.${like},fault.ilike.${like},job_id.ilike.${like},code.ilike.${like},uniq_id.ilike.${like}${!isNaN(num) ? `,job_id.eq.${q}` : ""}`)
+          .or(
+            `item.ilike.${like},fault.ilike.${like},job_id.ilike.${like},code.ilike.${like},uniq_id.ilike.${like}${!isNaN(num) ? `,job_id.eq.${q}` : ""}`
+          )
           .limit(5),
 
         // Products
-        supabase.from("product_list")
+        supabase
+          .from("product_list")
           .select("id, name, price")
           .eq("delete_flag", 0)
           .ilike("name", like)
           .limit(4),
 
         // Mechanics
-        supabase.from("mechanic_list")
+        supabase
+          .from("mechanic_list")
           .select("id, firstname, lastname, designation, contact")
           .eq("status", 1)
           .or(`firstname.ilike.${like},lastname.ilike.${like},contact.ilike.${like}`)
           .limit(3),
 
         // Direct Sales — sale_code, remarks
-        supabase.from("direct_sales")
+        supabase
+          .from("direct_sales")
           .select("id, sale_code, total_amount, remarks, date_created")
           .or(`sale_code.ilike.${like},remarks.ilike.${like}`)
           .limit(3),
       ]);
 
       const STATUS_LABELS: Record<number, string> = {
-        0:"Pending", 1:"In Progress", 2:"Done", 3:"Paid", 4:"Cancelled", 5:"Delivered",
+        0: "Pending",
+        1: "In Progress",
+        2: "Done",
+        3: "Paid",
+        4: "Cancelled",
+        5: "Delivered",
       };
       const STATUS_COLORS: Record<number, string> = {
-        0:"bg-slate-500/20 text-slate-400", 1:"bg-blue-500/20 text-blue-400",
-        2:"bg-teal-500/20 text-teal-400",   3:"bg-emerald-500/20 text-emerald-400",
-        4:"bg-red-500/20 text-red-400",     5:"bg-purple-500/20 text-purple-400",
+        0: "bg-slate-500/20 text-slate-400",
+        1: "bg-blue-500/20 text-blue-400",
+        2: "bg-teal-500/20 text-teal-400",
+        3: "bg-emerald-500/20 text-emerald-400",
+        4: "bg-red-500/20 text-red-400",
+        5: "bg-purple-500/20 text-purple-400",
       };
 
       const out: SearchResult[] = [];
 
-      (clientRes.data || []).forEach(r => {
+      (clientRes.data || []).forEach((r) => {
         const name = [r.firstname, r.middlename, r.lastname].filter(Boolean).join(" ");
-        out.push({ id: r.id, title: name, subtitle: r.contact || r.address || "—",
-          tag: "Client", tagColor: "bg-blue-500/20 text-blue-400",
-          href: `/clients/${r.id}/view`, icon: "client" });
+        out.push({
+          id: r.id,
+          title: name,
+          subtitle: r.contact || r.address || "—",
+          tag: "Client",
+          tagColor: "bg-blue-500/20 text-blue-400",
+          href: `/clients/${r.id}/view`,
+          icon: "client",
+        });
       });
 
-      (jobRes.data || []).forEach(r => {
-        out.push({ id: r.id, title: `Job #${r.job_id} — ${r.item}`, subtitle: r.fault || "—",
-          tag: STATUS_LABELS[r.status] || "Job", tagColor: STATUS_COLORS[r.status] || "bg-slate-500/20 text-slate-400",
-          href: `/jobs/${r.id}/view`, icon: "job" });
+      (jobRes.data || []).forEach((r) => {
+        out.push({
+          id: r.id,
+          title: `Job #${r.job_id} — ${r.item}`,
+          subtitle: r.fault || "—",
+          tag: STATUS_LABELS[r.status] || "Job",
+          tagColor: STATUS_COLORS[r.status] || "bg-slate-500/20 text-slate-400",
+          href: `/jobs/${r.id}/view`,
+          icon: "job",
+        });
       });
 
-      (prodRes.data || []).forEach(r => {
-        out.push({ id: r.id, title: r.name, subtitle: `Rs.${r.price?.toFixed(2) || "0.00"}`,
-          tag: "Product", tagColor: "bg-amber-500/20 text-amber-400",
-          href: `/inventory`, icon: "product" });
+      (prodRes.data || []).forEach((r) => {
+        out.push({
+          id: r.id,
+          title: r.name,
+          subtitle: `Rs.${r.price?.toFixed(2) || "0.00"}`,
+          tag: "Product",
+          tagColor: "bg-amber-500/20 text-amber-400",
+          href: `/inventory`,
+          icon: "product",
+        });
       });
 
-      (mechRes.data || []).forEach(r => {
+      (mechRes.data || []).forEach((r) => {
         const name = [r.firstname, r.lastname].filter(Boolean).join(" ");
-        out.push({ id: r.id, title: name, subtitle: `${r.designation || ""} ${r.contact ? "· " + r.contact : ""}`.trim(),
-          tag: "Mechanic", tagColor: "bg-purple-500/20 text-purple-400",
-          href: `/mechanics`, icon: "mechanic" });
+        out.push({
+          id: r.id,
+          title: name,
+          subtitle: `${r.designation || ""} ${r.contact ? "· " + r.contact : ""}`.trim(),
+          tag: "Mechanic",
+          tagColor: "bg-purple-500/20 text-purple-400",
+          href: `/mechanics`,
+          icon: "mechanic",
+        });
       });
 
-      (saleRes.data || []).forEach(r => {
-        out.push({ id: r.id, title: `Sale ${r.sale_code}`, subtitle: r.remarks || `Rs.${r.total_amount?.toFixed(2)}`,
-          tag: "Direct Sale", tagColor: "bg-pink-500/20 text-pink-400",
-          href: `/direct-sales/${r.id}/view`, icon: "sale" });
+      (saleRes.data || []).forEach((r) => {
+        out.push({
+          id: r.id,
+          title: `Sale ${r.sale_code}`,
+          subtitle: r.remarks || `Rs.${r.total_amount?.toFixed(2)}`,
+          tag: "Direct Sale",
+          tagColor: "bg-pink-500/20 text-pink-400",
+          href: `/direct-sales/${r.id}/view`,
+          icon: "sale",
+        });
       });
 
       setResults(out);
@@ -171,36 +267,52 @@ function NavbarSearch() {
     const val = e.target.value;
     setQuery(val);
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (!val.trim()) { setResults([]); setOpen(false); return; }
+    if (!val.trim()) {
+      setResults([]);
+      setOpen(false);
+      return;
+    }
     timerRef.current = setTimeout(() => runSearch(val), 300);
   };
 
   const handleSelect = (href: string) => {
-    setQuery(""); setResults([]); setOpen(false);
+    setQuery("");
+    setResults([]);
+    setOpen(false);
     router.push(href);
   };
 
   const ICON_MAP = {
-    client:   <Users size={13} className="text-blue-400 flex-shrink-0"/>,
-    job:      <Wrench size={13} className="text-slate-400 flex-shrink-0"/>,
-    product:  <Package size={13} className="text-amber-400 flex-shrink-0"/>,
-    mechanic: <User size={13} className="text-purple-400 flex-shrink-0"/>,
-    sale:     <ShoppingCart size={13} className="text-pink-400 flex-shrink-0"/>,
+    client: <Users size={13} className="text-blue-400 flex-shrink-0" />,
+    job: <Wrench size={13} className="text-slate-400 flex-shrink-0" />,
+    product: <Package size={13} className="text-amber-400 flex-shrink-0" />,
+    mechanic: <User size={13} className="text-purple-400 flex-shrink-0" />,
+    sale: <ShoppingCart size={13} className="text-pink-400 flex-shrink-0" />,
   };
 
   return (
     <div ref={wrapRef} className="relative w-full group">
       {/* Input */}
-      <Search size={14}
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-blue-400 transition-colors pointer-events-none z-10"/>
+      <Search
+        size={14}
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-blue-400 transition-colors pointer-events-none z-10"
+      />
       {loading && (
-        <Loader2 size={13}
-          className="absolute right-12 top-1/2 -translate-y-1/2 text-blue-400 animate-spin pointer-events-none z-10"/>
+        <Loader2
+          size={13}
+          className="absolute right-12 top-1/2 -translate-y-1/2 text-blue-400 animate-spin pointer-events-none z-10"
+        />
       )}
       {query && !loading && (
-        <button onClick={() => { setQuery(""); setResults([]); setOpen(false); }}
-          className="absolute right-12 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors z-10">
-          <X size={13}/>
+        <button
+          onClick={() => {
+            setQuery("");
+            setResults([]);
+            setOpen(false);
+          }}
+          className="absolute right-12 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors z-10"
+        >
+          <X size={13} />
         </button>
       )}
       <input
@@ -213,8 +325,12 @@ function NavbarSearch() {
         className="w-full pl-9 pr-24 py-2.5 sm:py-2 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-slate-300 placeholder:text-slate-600 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium"
       />
       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
-        <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#1a2234] border border-[#21293d] text-[10px] font-medium text-slate-500">Ctrl</kbd>
-        <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-[#1a2234] border border-[#21293d] text-[10px] font-medium text-slate-500">K</kbd>
+        <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#1a2234] border border-[#21293d] text-[10px] font-medium text-slate-500">
+          Ctrl
+        </kbd>
+        <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-[#1a2234] border border-[#21293d] text-[10px] font-medium text-slate-500">
+          K
+        </kbd>
       </div>
 
       {/* Dropdown Results */}
@@ -230,27 +346,34 @@ function NavbarSearch() {
                 <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">
                   {results.length} result{results.length !== 1 ? "s" : ""}
                 </span>
-                <span className="text-[9px] text-slate-700">Clients · Jobs · Products · Mechanics · Sales</span>
+                <span className="text-[9px] text-slate-700">
+                  Clients · Jobs · Products · Mechanics · Sales
+                </span>
               </div>
               <ul className="max-h-[400px] overflow-y-auto divide-y divide-[#1a2234]">
                 {results.map((r, i) => (
                   <li key={i}>
                     <button
                       onClick={() => handleSelect(r.href)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors text-left">
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors text-left"
+                    >
                       <div className="w-7 h-7 rounded-lg bg-[#1a2234] flex items-center justify-center flex-shrink-0">
                         {ICON_MAP[r.icon]}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-slate-200 truncate">{r.title}</span>
-                          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wide ${r.tagColor}`}>
+                          <span className="text-sm font-semibold text-slate-200 truncate">
+                            {r.title}
+                          </span>
+                          <span
+                            className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wide ${r.tagColor}`}
+                          >
                             {r.tag}
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-600 truncate mt-0.5">{r.subtitle}</p>
                       </div>
-                      <ChevronRight size={12} className="text-slate-700 flex-shrink-0"/>
+                      <ChevronRight size={12} className="text-slate-700 flex-shrink-0" />
                     </button>
                   </li>
                 ))}
@@ -268,25 +391,38 @@ function NavbarSearch() {
 
 // ─── Accordion sub-menu ───────────────────────────────────────────────────────
 function SubMenu({
-  title, icon, children, basePath, matchPaths,
+  title,
+  icon,
+  children,
+  basePath,
+  matchPaths,
 }: {
-  title: string; icon: React.ReactNode; children: React.ReactNode; basePath?: string; matchPaths?: string[];
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  basePath?: string;
+  matchPaths?: string[];
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(() => {
     if (basePath && pathname.startsWith(basePath)) return true;
-    return (matchPaths || []).some(p => pathname === p || pathname.startsWith(p + "/"));
+    return (matchPaths || []).some((p) => pathname === p || pathname.startsWith(p + "/"));
   });
   return (
     <li>
       <button
-        onClick={() => setOpen(p => !p)}
+        onClick={() => setOpen((p) => !p)}
         className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-white/[0.04] hover:text-slate-300 transition-all"
       >
-        <div className="flex items-center gap-3"><span>{icon}</span><span>{title}</span></div>
-        {open
-          ? <ChevronDown size={13} className="text-slate-600" />
-          : <ChevronRight size={13} className="text-slate-600" />}
+        <div className="flex items-center gap-3">
+          <span>{icon}</span>
+          <span>{title}</span>
+        </div>
+        {open ? (
+          <ChevronDown size={13} className="text-slate-600" />
+        ) : (
+          <ChevronRight size={13} className="text-slate-600" />
+        )}
       </button>
       {open && <ul className="pl-3 mt-0.5 space-y-0.5">{children}</ul>}
     </li>
@@ -303,15 +439,28 @@ const navLinkCls = (active: boolean) =>
 
 const subLinkCls = (active: boolean) =>
   `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-bold transition-all duration-150 ${
-    active ? "text-blue-400 bg-blue-500/10" : "text-slate-600 hover:text-slate-200 hover:bg-white/[0.04]"
+    active
+      ? "text-blue-400 bg-blue-500/10"
+      : "text-slate-600 hover:text-slate-200 hover:bg-white/[0.04]"
   }`;
 
 // ─── Sidebar nav (shared by desktop + mobile drawer) ─────────────────────────
 function SidebarNav({
-  pathname, isAdmin, isClient, onNavClick, sellerEnabled, devEnabled, enabledModules,
+  pathname,
+  isAdmin,
+  isClient,
+  onNavClick,
+  sellerEnabled,
+  devEnabled,
+  enabledModules,
 }: {
-  pathname: string; isAdmin: boolean; isClient?: boolean; onNavClick?: () => void;
-  sellerEnabled?: boolean; devEnabled?: boolean; enabledModules?: string[] | null;
+  pathname: string;
+  isAdmin: boolean;
+  isClient?: boolean;
+  onNavClick?: () => void;
+  sellerEnabled?: boolean;
+  devEnabled?: boolean;
+  enabledModules?: string[] | null;
 }) {
   const lk = (href: string, exact = false) =>
     exact ? pathname === href : pathname.startsWith(href);
@@ -321,18 +470,33 @@ function SidebarNav({
       <nav className="flex-1 overflow-y-auto py-3 px-2">
         <ul className="space-y-0.5">
           <li>
-            <Link href="/my-account" className={navLinkCls(lk("/my-account", true))} onClick={onNavClick}>
-              <Wrench size={16} /><span>Meri Repairs</span>
+            <Link
+              href="/my-account"
+              className={navLinkCls(lk("/my-account", true))}
+              onClick={onNavClick}
+            >
+              <Wrench size={16} />
+              <span>Meri Repairs</span>
             </Link>
           </li>
           <li>
-            <Link href="/my-account/payments" className={navLinkCls(pathname === "/my-account/payments")} onClick={onNavClick}>
-              <Receipt size={16} /><span>Meri Payments</span>
+            <Link
+              href="/my-account/payments"
+              className={navLinkCls(pathname === "/my-account/payments")}
+              onClick={onNavClick}
+            >
+              <Receipt size={16} />
+              <span>Meri Payments</span>
             </Link>
           </li>
           <li>
-            <Link href="/my-account/ledger" className={navLinkCls(pathname === "/my-account/ledger")} onClick={onNavClick}>
-              <BookOpen size={16} /><span>Meri Ledger</span>
+            <Link
+              href="/my-account/ledger"
+              className={navLinkCls(pathname === "/my-account/ledger")}
+              onClick={onNavClick}
+            >
+              <BookOpen size={16} />
+              <span>Meri Ledger</span>
             </Link>
           </li>
         </ul>
@@ -344,39 +508,61 @@ function SidebarNav({
     <nav className="flex-1 overflow-y-auto py-3 px-2">
       <ul className="space-y-0.5">
         <li>
-          <Link href="/dashboard" className={navLinkCls(pathname === "/dashboard")} onClick={onNavClick}>
-            <LayoutDashboard size={16} /><span>Dashboard</span>
+          <Link
+            href="/dashboard"
+            className={navLinkCls(pathname === "/dashboard")}
+            onClick={onNavClick}
+          >
+            <LayoutDashboard size={16} />
+            <span>Dashboard</span>
           </Link>
         </li>
         <li>
-          <Link href="/attendance" className={navLinkCls(lk("/attendance", true))} onClick={onNavClick}>
-            <CalendarCheck size={16} /><span>Attendance</span>
+          <Link
+            href="/attendance"
+            className={navLinkCls(lk("/attendance", true))}
+            onClick={onNavClick}
+          >
+            <CalendarCheck size={16} />
+            <span>Attendance</span>
           </Link>
         </li>
         {isModuleEnabled(enabledModules, "jobs") && (
           <li>
             <Link href="/jobs" className={navLinkCls(lk("/jobs"))} onClick={onNavClick}>
-              <ClipboardList size={16} /><span>Jobs</span>
+              <ClipboardList size={16} />
+              <span>Jobs</span>
             </Link>
           </li>
         )}
         {isModuleEnabled(enabledModules, "sales") && (
           <li>
-            <Link href="/direct-sales" className={navLinkCls(lk("/direct-sales"))} onClick={onNavClick}>
-              <ShoppingCart size={16} /><span>Sales</span>
+            <Link
+              href="/direct-sales"
+              className={navLinkCls(lk("/direct-sales"))}
+              onClick={onNavClick}
+            >
+              <ShoppingCart size={16} />
+              <span>Sales</span>
             </Link>
           </li>
         )}
         {isModuleEnabled(enabledModules, "clients") && (
           <li>
             <Link href="/clients" className={navLinkCls(lk("/clients"))} onClick={onNavClick}>
-              <Users size={16} /><span>Clients</span>
+              <Users size={16} />
+              <span>Clients</span>
             </Link>
           </li>
         )}
         <li>
-          <Link href="/inquiries" className={navLinkCls(lk("/inquiries", true))} onClick={onNavClick}>
-            <HelpCircle size={16} /><span>Enquiries</span>
+          <Link
+            href="/inquiries"
+            className={navLinkCls(lk("/inquiries", true))}
+            onClick={onNavClick}
+          >
+            <HelpCircle size={16} />
+            <span>Enquiries</span>
           </Link>
         </li>
 
@@ -388,43 +574,88 @@ function SidebarNav({
                 <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
                   Inventory
                 </li>
-                <SubMenu title="Inventory" icon={<Package size={15} />} basePath="/inventory" matchPaths={["/products", "/suppliers"]}>
-              <li>
-                <Link href="/inventory" className={subLinkCls(pathname === "/inventory" || (pathname.startsWith("/inventory/") && !pathname.startsWith("/inventory/purchase-orders") && !pathname.startsWith("/inventory/locate")))} onClick={onNavClick}>
-                  <Package size={12} className="text-emerald-400" />Stock Overview
-                </Link>
-              </li>
-              <li>
-                <Link href="/products" className={subLinkCls(pathname === "/products")} onClick={onNavClick}>
-                  <Layers size={12} className="text-orange-400" />Products
-                </Link>
-              </li>
-              <li>
-                <Link href="/suppliers" className={subLinkCls(pathname === "/suppliers")} onClick={onNavClick}>
-                  <Truck size={12} className="text-sky-400" />Suppliers
-                </Link>
-              </li>
-              <li>
-                <Link href="/inventory/purchase-orders" className={subLinkCls(pathname === "/inventory/purchase-orders")} onClick={onNavClick}>
-                  <FileText size={12} className="text-teal-400" />Purchase Orders
-                </Link>
-              </li>
-              <li>
-                <Link href="/inventory/locations" className={subLinkCls(pathname === "/inventory/locations")} onClick={onNavClick}>
-                  <MapPin size={12} className="text-rose-400" />Locations
-                </Link>
-              </li>
-              <li>
-                <Link href="/inventory/locations/manage" className={subLinkCls(pathname === "/inventory/locations/manage")} onClick={onNavClick}>
-                  <Settings2 size={12} className="text-slate-400" />Location Hierarchy
-                </Link>
-              </li>
-              <li>
-                <Link href="/inventory/locate" className={subLinkCls(pathname === "/inventory/locate")} onClick={onNavClick}>
-                  <MapPin size={12} className="text-amber-400" />Spare Finder
-                </Link>
-              </li>
-              </SubMenu>
+                <SubMenu
+                  title="Inventory"
+                  icon={<Package size={15} />}
+                  basePath="/inventory"
+                  matchPaths={["/products", "/suppliers"]}
+                >
+                  <li>
+                    <Link
+                      href="/inventory"
+                      className={subLinkCls(
+                        pathname === "/inventory" ||
+                          (pathname.startsWith("/inventory/") &&
+                            !pathname.startsWith("/inventory/purchase-orders") &&
+                            !pathname.startsWith("/inventory/locate"))
+                      )}
+                      onClick={onNavClick}
+                    >
+                      <Package size={12} className="text-emerald-400" />
+                      Stock Overview
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/products"
+                      className={subLinkCls(pathname === "/products")}
+                      onClick={onNavClick}
+                    >
+                      <Layers size={12} className="text-orange-400" />
+                      Products
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/suppliers"
+                      className={subLinkCls(pathname === "/suppliers")}
+                      onClick={onNavClick}
+                    >
+                      <Truck size={12} className="text-sky-400" />
+                      Suppliers
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/inventory/purchase-orders"
+                      className={subLinkCls(pathname === "/inventory/purchase-orders")}
+                      onClick={onNavClick}
+                    >
+                      <FileText size={12} className="text-teal-400" />
+                      Purchase Orders
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/inventory/locations"
+                      className={subLinkCls(pathname === "/inventory/locations")}
+                      onClick={onNavClick}
+                    >
+                      <MapPin size={12} className="text-rose-400" />
+                      Locations
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/inventory/locations/manage"
+                      className={subLinkCls(pathname === "/inventory/locations/manage")}
+                      onClick={onNavClick}
+                    >
+                      <Settings2 size={12} className="text-slate-400" />
+                      Location Hierarchy
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/inventory/locate"
+                      className={subLinkCls(pathname === "/inventory/locate")}
+                      onClick={onNavClick}
+                    >
+                      <MapPin size={12} className="text-amber-400" />
+                      Spare Finder
+                    </Link>
+                  </li>
+                </SubMenu>
               </>
             )}
 
@@ -434,16 +665,101 @@ function SidebarNav({
                 <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
                   Finance
                 </li>
-                <SubMenu title="Finance" icon={<DollarSign size={15} />} matchPaths={["/back-office", "/payments", "/expenses", "/advance", "/clients-admin", "/client-loans", "/lenders", "/mechanics/salary"]}>
-              <li><Link href="/back-office"   className={subLinkCls(pathname === "/back-office")}   onClick={onNavClick}><Sparkles size={12} className="text-purple-400" />Overview</Link></li>
-              <li><Link href="/payments"      className={subLinkCls(pathname === "/payments")}      onClick={onNavClick}><Receipt size={12} />Payments</Link></li>
-              <li><Link href="/expenses"      className={subLinkCls(pathname === "/expenses")}      onClick={onNavClick}><DollarSign size={12} />Expenses</Link></li>
-              <li><Link href="/mechanics/salary" className={subLinkCls(pathname === "/mechanics/salary")} onClick={onNavClick}><Coins size={12} />Salary</Link></li>
-              <li><Link href="/advance"       className={subLinkCls(pathname === "/advance")}       onClick={onNavClick}><DollarSign size={12} />Advance</Link></li>
-              <li><Link href="/clients-admin" className={subLinkCls(pathname === "/clients-admin")} onClick={onNavClick}><FolderOpen size={12} />Client Ledger</Link></li>
-              <li><Link href="/client-loans" className={subLinkCls(pathname === "/client-loans")} onClick={onNavClick}><CreditCard size={12} />Client Loans</Link></li>
-              <li><Link href="/lenders"        className={subLinkCls(pathname === "/lenders")}        onClick={onNavClick}><History size={12} />Lenders</Link></li>
-            </SubMenu>
+                <SubMenu
+                  title="Finance"
+                  icon={<DollarSign size={15} />}
+                  matchPaths={[
+                    "/back-office",
+                    "/payments",
+                    "/expenses",
+                    "/advance",
+                    "/clients-admin",
+                    "/client-loans",
+                    "/lenders",
+                    "/mechanics/salary",
+                  ]}
+                >
+                  <li>
+                    <Link
+                      href="/back-office"
+                      className={subLinkCls(pathname === "/back-office")}
+                      onClick={onNavClick}
+                    >
+                      <Sparkles size={12} className="text-purple-400" />
+                      Overview
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/payments"
+                      className={subLinkCls(pathname === "/payments")}
+                      onClick={onNavClick}
+                    >
+                      <Receipt size={12} />
+                      Payments
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/expenses"
+                      className={subLinkCls(pathname === "/expenses")}
+                      onClick={onNavClick}
+                    >
+                      <DollarSign size={12} />
+                      Expenses
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/mechanics/salary"
+                      className={subLinkCls(pathname === "/mechanics/salary")}
+                      onClick={onNavClick}
+                    >
+                      <Coins size={12} />
+                      Salary
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/advance"
+                      className={subLinkCls(pathname === "/advance")}
+                      onClick={onNavClick}
+                    >
+                      <DollarSign size={12} />
+                      Advance
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/clients-admin"
+                      className={subLinkCls(pathname === "/clients-admin")}
+                      onClick={onNavClick}
+                    >
+                      <FolderOpen size={12} />
+                      Client Ledger
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/client-loans"
+                      className={subLinkCls(pathname === "/client-loans")}
+                      onClick={onNavClick}
+                    >
+                      <CreditCard size={12} />
+                      Client Loans
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/lenders"
+                      className={subLinkCls(pathname === "/lenders")}
+                      onClick={onNavClick}
+                    >
+                      <History size={12} />
+                      Lenders
+                    </Link>
+                  </li>
+                </SubMenu>
               </>
             )}
 
@@ -454,10 +770,41 @@ function SidebarNav({
                   People
                 </li>
                 <SubMenu title="People" icon={<UsersRound size={15} />} matchPaths={["/services"]}>
-              <li><Link href="/mechanics"     className={subLinkCls(pathname.startsWith("/mechanics") && pathname !== "/mechanics/salary" && pathname !== "/mechanics/commission")}     onClick={onNavClick}><UsersRound size={12} />Staff</Link></li>
-              <li><Link href="/mechanics/commission" className={subLinkCls(pathname === "/mechanics/commission")} onClick={onNavClick}><BarChart2 size={12} />Commission</Link></li>
-              <li><Link href="/services"      className={subLinkCls(pathname === "/services")}      onClick={onNavClick}><Toolbox size={12} />Service Catalog</Link></li>
-            </SubMenu>
+                  <li>
+                    <Link
+                      href="/mechanics"
+                      className={subLinkCls(
+                        pathname.startsWith("/mechanics") &&
+                          pathname !== "/mechanics/salary" &&
+                          pathname !== "/mechanics/commission"
+                      )}
+                      onClick={onNavClick}
+                    >
+                      <UsersRound size={12} />
+                      Staff
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/mechanics/commission"
+                      className={subLinkCls(pathname === "/mechanics/commission")}
+                      onClick={onNavClick}
+                    >
+                      <BarChart2 size={12} />
+                      Commission
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/services"
+                      className={subLinkCls(pathname === "/services")}
+                      onClick={onNavClick}
+                    >
+                      <Toolbox size={12} />
+                      Service Catalog
+                    </Link>
+                  </li>
+                </SubMenu>
               </>
             )}
 
@@ -467,35 +814,212 @@ function SidebarNav({
                 <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
                   Reports
                 </li>
-                <SubMenu title="Reports" icon={<PieChart size={15} />} basePath="/reports" matchPaths={["/activity-logs"]}>
-              <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-2 pb-0.5 select-none">Overview</li>
-              <li><Link href="/reports"                 className={subLinkCls(pathname === "/reports")}                onClick={onNavClick}><Sparkles size={12} className="text-blue-400" />All Reports</Link></li>
-              <li><Link href="/reports/vyapar-darpan"   className={subLinkCls(pathname === "/reports/vyapar-darpan")}   onClick={onNavClick}><PieChart size={12} className="text-amber-400" />Vyapar Darpan</Link></li>
+                <SubMenu
+                  title="Reports"
+                  icon={<PieChart size={15} />}
+                  basePath="/reports"
+                  matchPaths={["/activity-logs"]}
+                >
+                  <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-2 pb-0.5 select-none">
+                    Overview
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports"
+                      className={subLinkCls(pathname === "/reports")}
+                      onClick={onNavClick}
+                    >
+                      <Sparkles size={12} className="text-blue-400" />
+                      All Reports
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/vyapar-darpan"
+                      className={subLinkCls(pathname === "/reports/vyapar-darpan")}
+                      onClick={onNavClick}
+                    >
+                      <PieChart size={12} className="text-amber-400" />
+                      Vyapar Darpan
+                    </Link>
+                  </li>
 
-              <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">Financial</li>
-              <li><Link href="/reports/balancesheet"    className={subLinkCls(pathname === "/reports/balancesheet")}    onClick={onNavClick}><BarChart2 size={12} />Balance Sheet</Link></li>
-              <li><Link href="/reports/cash-flow"      className={subLinkCls(pathname === "/reports/cash-flow")}      onClick={onNavClick}><TrendingUp size={12} />Cash Flow</Link></li>
-              <li><Link href="/reports/ledger"         className={subLinkCls(pathname === "/reports/ledger")}         onClick={onNavClick}><DollarSign size={12} />Business Ledger</Link></li>
-              <li><Link href="/reports/monthly-profit" className={subLinkCls(pathname === "/reports/monthly-profit")} onClick={onNavClick}><BarChart2 size={12} className="text-emerald-400" />Monthly Profit</Link></li>
-              <li><Link href="/reports/yearly"         className={subLinkCls(pathname === "/reports/yearly")}         onClick={onNavClick}><Clock size={12} />Yearly Report</Link></li>
-              <li><Link href="/reports/loan"           className={subLinkCls(pathname === "/reports/loan")}           onClick={onNavClick}><CreditCard size={12} />Loan Report</Link></li>
+                  <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">
+                    Financial
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/balancesheet"
+                      className={subLinkCls(pathname === "/reports/balancesheet")}
+                      onClick={onNavClick}
+                    >
+                      <BarChart2 size={12} />
+                      Balance Sheet
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/cash-flow"
+                      className={subLinkCls(pathname === "/reports/cash-flow")}
+                      onClick={onNavClick}
+                    >
+                      <TrendingUp size={12} />
+                      Cash Flow
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/ledger"
+                      className={subLinkCls(pathname === "/reports/ledger")}
+                      onClick={onNavClick}
+                    >
+                      <DollarSign size={12} />
+                      Business Ledger
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/monthly-profit"
+                      className={subLinkCls(pathname === "/reports/monthly-profit")}
+                      onClick={onNavClick}
+                    >
+                      <BarChart2 size={12} className="text-emerald-400" />
+                      Monthly Profit
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/yearly"
+                      className={subLinkCls(pathname === "/reports/yearly")}
+                      onClick={onNavClick}
+                    >
+                      <Clock size={12} />
+                      Yearly Report
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/loan"
+                      className={subLinkCls(pathname === "/reports/loan")}
+                      onClick={onNavClick}
+                    >
+                      <CreditCard size={12} />
+                      Loan Report
+                    </Link>
+                  </li>
 
-              <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">Sales &amp; Service</li>
-              <li><Link href="/reports/daily-sales"    className={subLinkCls(pathname === "/reports/daily-sales")}    onClick={onNavClick}><ShoppingCart size={12} />Daily Sales</Link></li>
-              <li><Link href="/reports/daily-service"  className={subLinkCls(pathname === "/reports/daily-service")}  onClick={onNavClick}><Wrench size={12} />Daily Service</Link></li>
-              <li><Link href="/reports/monthly-sales"   className={subLinkCls(pathname === "/reports/monthly-sales")}   onClick={onNavClick}><ShoppingCart size={12} />Monthly Sales</Link></li>
-              <li><Link href="/reports/custom-sales"    className={subLinkCls(pathname === "/reports/custom-sales")}    onClick={onNavClick}><ShoppingCart size={12} />Custom Sales</Link></li>
-              <li><Link href="/reports/custom-service"  className={subLinkCls(pathname === "/reports/custom-service")}  onClick={onNavClick}><Wrench size={12} />Custom Service</Link></li>
+                  <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">
+                    Sales &amp; Service
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/daily-sales"
+                      className={subLinkCls(pathname === "/reports/daily-sales")}
+                      onClick={onNavClick}
+                    >
+                      <ShoppingCart size={12} />
+                      Daily Sales
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/daily-service"
+                      className={subLinkCls(pathname === "/reports/daily-service")}
+                      onClick={onNavClick}
+                    >
+                      <Wrench size={12} />
+                      Daily Service
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/monthly-sales"
+                      className={subLinkCls(pathname === "/reports/monthly-sales")}
+                      onClick={onNavClick}
+                    >
+                      <ShoppingCart size={12} />
+                      Monthly Sales
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/custom-sales"
+                      className={subLinkCls(pathname === "/reports/custom-sales")}
+                      onClick={onNavClick}
+                    >
+                      <ShoppingCart size={12} />
+                      Custom Sales
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/custom-service"
+                      className={subLinkCls(pathname === "/reports/custom-service")}
+                      onClick={onNavClick}
+                    >
+                      <Wrench size={12} />
+                      Custom Service
+                    </Link>
+                  </li>
 
-              <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">Customers</li>
-              <li><Link href="/reports/top-customers"  className={subLinkCls(pathname === "/reports/top-customers")}  onClick={onNavClick}><Users size={12} />Top Customers</Link></li>
-              <li><Link href="/reports/delivered"      className={subLinkCls(pathname === "/reports/delivered")}      onClick={onNavClick}><Truck size={12} />Delivered Report</Link></li>
-              <li><Link href="/reports/due-reminders"  className={subLinkCls(pathname === "/reports/due-reminders")}  onClick={onNavClick}><CalendarClock size={12} className="text-red-400" />Due Reminders</Link></li>
-              <li><Link href="/reports/pending-jobs"   className={subLinkCls(pathname === "/reports/pending-jobs")}   onClick={onNavClick}><Clock size={12} className="text-amber-400" />Pending Jobs</Link></li>
+                  <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">
+                    Customers
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/top-customers"
+                      className={subLinkCls(pathname === "/reports/top-customers")}
+                      onClick={onNavClick}
+                    >
+                      <Users size={12} />
+                      Top Customers
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/delivered"
+                      className={subLinkCls(pathname === "/reports/delivered")}
+                      onClick={onNavClick}
+                    >
+                      <Truck size={12} />
+                      Delivered Report
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/due-reminders"
+                      className={subLinkCls(pathname === "/reports/due-reminders")}
+                      onClick={onNavClick}
+                    >
+                      <CalendarClock size={12} className="text-red-400" />
+                      Due Reminders
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/pending-jobs"
+                      className={subLinkCls(pathname === "/reports/pending-jobs")}
+                      onClick={onNavClick}
+                    >
+                      <Clock size={12} className="text-amber-400" />
+                      Pending Jobs
+                    </Link>
+                  </li>
 
-              <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">Audit</li>
-              <li><Link href="/activity-logs"          className={subLinkCls(pathname === "/activity-logs")}          onClick={onNavClick}><Activity size={12} />Activity Log</Link></li>
-            </SubMenu>
+                  <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">
+                    Audit
+                  </li>
+                  <li>
+                    <Link
+                      href="/activity-logs"
+                      className={subLinkCls(pathname === "/activity-logs")}
+                      onClick={onNavClick}
+                    >
+                      <Activity size={12} />
+                      Activity Log
+                    </Link>
+                  </li>
+                </SubMenu>
               </>
             )}
 
@@ -503,44 +1027,122 @@ function SidebarNav({
             <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
               System
             </li>
-            <SubMenu title="System" icon={<Settings2 size={15} />} matchPaths={["/users", "/settings", "/backup", "/back-office/db-tools"]}>
-              <li><Link href="/users"         className={subLinkCls(pathname === "/users")}         onClick={onNavClick}><ShieldCheck size={12} />Users</Link></li>
-              <li><Link href="/settings"      className={subLinkCls(pathname === "/settings")}      onClick={onNavClick}><Settings2 size={12} />Settings</Link></li>
-              <li><Link href="/settings/throttle" className={subLinkCls(pathname === "/settings/throttle")} onClick={onNavClick}><ShieldAlert size={12} className="text-red-400" />Login Throttle</Link></li>
-              <li><Link href="/settings/whatsapp-templates" className={subLinkCls(pathname === "/settings/whatsapp-templates")} onClick={onNavClick}><MessageSquare size={12} className="text-green-400" />WA Templates</Link></li>
-              <li><Link href="/backup"        className={subLinkCls(pathname === "/backup")}        onClick={onNavClick}><Database size={12} />Backup</Link></li>
+            <SubMenu
+              title="System"
+              icon={<Settings2 size={15} />}
+              matchPaths={["/users", "/settings", "/backup", "/back-office/db-tools"]}
+            >
+              <li>
+                <Link
+                  href="/users"
+                  className={subLinkCls(pathname === "/users")}
+                  onClick={onNavClick}
+                >
+                  <ShieldCheck size={12} />
+                  Users
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/settings"
+                  className={subLinkCls(pathname === "/settings")}
+                  onClick={onNavClick}
+                >
+                  <Settings2 size={12} />
+                  Settings
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/settings/throttle"
+                  className={subLinkCls(pathname === "/settings/throttle")}
+                  onClick={onNavClick}
+                >
+                  <ShieldAlert size={12} className="text-red-400" />
+                  Login Throttle
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/settings/whatsapp-templates"
+                  className={subLinkCls(pathname === "/settings/whatsapp-templates")}
+                  onClick={onNavClick}
+                >
+                  <MessageSquare size={12} className="text-green-400" />
+                  WA Templates
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/backup"
+                  className={subLinkCls(pathname === "/backup")}
+                  onClick={onNavClick}
+                >
+                  <Database size={12} />
+                  Backup
+                </Link>
+              </li>
             </SubMenu>
 
             {/* ══ DEVELOPER ════════════════════════════════════════════════ */}
             {(sellerEnabled || devEnabled) && (
-              <SubMenu title="Developer" icon={<Code2 size={15} />} matchPaths={["/developer", "/sync", "/images", "/seller", "/back-office/db-tools"]}>
+              <SubMenu
+                title="Developer"
+                icon={<Code2 size={15} />}
+                matchPaths={["/developer", "/sync", "/images", "/seller", "/back-office/db-tools"]}
+              >
                 {sellerEnabled && (
                   <li>
-                    <Link href="/seller" className={subLinkCls(pathname === "/seller")} onClick={onNavClick}>
-                      <KeyRound size={12} className="text-amber-400" />Seller Portal
+                    <Link
+                      href="/seller"
+                      className={subLinkCls(pathname === "/seller")}
+                      onClick={onNavClick}
+                    >
+                      <KeyRound size={12} className="text-amber-400" />
+                      Seller Portal
                     </Link>
                   </li>
                 )}
                 {devEnabled && (
                   <>
                     <li>
-                      <Link href="/developer" className={subLinkCls(pathname === "/developer")} onClick={onNavClick}>
-                        <Code2 size={12} className="text-indigo-400" />Developer
+                      <Link
+                        href="/developer"
+                        className={subLinkCls(pathname === "/developer")}
+                        onClick={onNavClick}
+                      >
+                        <Code2 size={12} className="text-indigo-400" />
+                        Developer
                       </Link>
                     </li>
                     <li>
-                      <Link href="/sync" className={subLinkCls(pathname === "/sync")} onClick={onNavClick}>
-                        <RefreshCw size={12} className="text-emerald-400" />MariaDB Sync
+                      <Link
+                        href="/sync"
+                        className={subLinkCls(pathname === "/sync")}
+                        onClick={onNavClick}
+                      >
+                        <RefreshCw size={12} className="text-emerald-400" />
+                        MariaDB Sync
                       </Link>
                     </li>
                     <li>
-                      <Link href="/images" className={subLinkCls(pathname === "/images")} onClick={onNavClick}>
-                        <Images size={12} className="text-amber-400" />Images
+                      <Link
+                        href="/images"
+                        className={subLinkCls(pathname === "/images")}
+                        onClick={onNavClick}
+                      >
+                        <Images size={12} className="text-amber-400" />
+                        Images
                       </Link>
                     </li>
                     <li>
-                      <Link href="/back-office/db-tools" className={subLinkCls(pathname === "/back-office/db-tools")} onClick={onNavClick}>
-                        <Terminal size={12} className="text-orange-400" />DB Tools
+                      <Link
+                        href="/back-office/db-tools"
+                        className={subLinkCls(pathname === "/back-office/db-tools")}
+                        onClick={onNavClick}
+                      >
+                        <Terminal size={12} className="text-orange-400" />
+                        DB Tools
                       </Link>
                     </li>
                   </>
@@ -559,27 +1161,31 @@ function SidebarNav({
 // ════════════════════════════════════════════════════════════════════════════
 export default function RootClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router   = useRouter();
+  const router = useRouter();
 
   // BUG FIX 1: null prevents SSR↔client hydration mismatch.
   // Server always renders null-state → no sidebar flicker.
-  const [isMobile,     setIsMobile]     = useState<boolean | null>(null);
-  const [loading,      setLoading]      = useState(true);
-  const [profile,      setProfile]      = useState<{ full_name: string; role: string; avatar_url?: string | null } | null>(null);
-  const [userEmail,    setUserEmail]    = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<{
+    full_name: string;
+    role: string;
+    avatar_url?: string | null;
+  } | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [drawerOpen,   setDrawerOpen]   = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   // Default "dark" — DOM ka pre-paint attribute bhi dark hai (layout script),
   // isliye React state ko pehle render se hi match rakhta hai.
-  const [theme,        setTheme]        = useState<"dark" | "light">("dark");
-  const [license,      setLicense]      = useState<LicenseStatus | null>(null);
-  const [brandLogo,    setBrandLogo]    = useState<string | null>(null);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [license, setLicense] = useState<LicenseStatus | null>(null);
+  const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const [showIdleWarning, setShowIdleWarning] = useState(false);
 
   // Refs for staff idle timeout (stable across re-renders, no stale closures)
-  const lastActiveRef       = useRef(Date.now());
-  const showIdleWarningRef  = useRef(false);
+  const lastActiveRef = useRef(Date.now());
+  const showIdleWarningRef = useRef(false);
   const initialLicenseFetch = useRef(true);
 
   // License status fetch — login ke baad har non-public page par.
@@ -588,7 +1194,10 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     try {
       const url = force ? "/api/license/status?force=true" : "/api/license/status";
       const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) { setLicense(null); return; }
+      if (!res.ok) {
+        setLicense(null);
+        return;
+      }
       setLicense(await res.json());
     } catch {
       setLicense(null);
@@ -609,8 +1218,20 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     (async () => {
       try {
         // Public routes — redirect mat karo
-        const PUBLIC_PAGES = ["/", "/about", "/contact", "/job-status", "/login", "/setup", "/stage-lighting", "/industrial", "/power-supply"];
-        const isPublicPage = PUBLIC_PAGES.some(p => pathname === p || pathname.startsWith(p + "/"));
+        const PUBLIC_PAGES = [
+          "/",
+          "/about",
+          "/contact",
+          "/job-status",
+          "/login",
+          "/setup",
+          "/stage-lighting",
+          "/industrial",
+          "/power-supply",
+        ];
+        const isPublicPage = PUBLIC_PAGES.some(
+          (p) => pathname === p || pathname.startsWith(p + "/")
+        );
 
         // BUG FIX: getUser() kabhi-kabhi network par hang ho jata hai → "V-TECH
         // Secure Boot" loader hamesha ke liye atak jata tha. 6s timeout + EK
@@ -618,12 +1239,13 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         // bhi "not logged in" samajh kar /login par chala jata tha.
         const AUTH_TIMEOUT_MS = 6000;
         const TIMED_OUT = Symbol("auth-timeout");
-        const getUserWithTimeout = () => Promise.race([
-          supabase.auth.getUser(),
-          new Promise<typeof TIMED_OUT>(resolve =>
-            setTimeout(() => resolve(TIMED_OUT), AUTH_TIMEOUT_MS)
-          ),
-        ]);
+        const getUserWithTimeout = () =>
+          Promise.race([
+            supabase.auth.getUser(),
+            new Promise<typeof TIMED_OUT>((resolve) =>
+              setTimeout(() => resolve(TIMED_OUT), AUTH_TIMEOUT_MS)
+            ),
+          ]);
         let authResult = await getUserWithTimeout();
         if (authResult === TIMED_OUT) authResult = await getUserWithTimeout(); // ek retry — false logout se bachne ke liye
         const user = authResult === TIMED_OUT ? null : authResult.data.user;
@@ -635,26 +1257,37 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         }
         setUserEmail(user.email ?? null);
         const { data: pd } = await supabase
-          .from("profiles").select("full_name, role, avatar_url").eq("id", user.id).maybeSingle();
+          .from("profiles")
+          .select("full_name, role, avatar_url")
+          .eq("id", user.id)
+          .maybeSingle();
         if (cancelled) return;
         setProfile({
-          full_name: pd?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
-          role:      pd?.role || "staff",
+          full_name:
+            pd?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+          role: pd?.role || "staff",
           avatar_url: pd?.avatar_url || null,
         });
 
         // Auto-subscribe push notifications (fire-and-forget).
         // Agar permission pehle se granted hai to silently subscribe.
         // Agar "default" hai to browser ek baar prompt dikhayega (only once).
-        if (typeof window !== "undefined" && "Notification" in window && "serviceWorker" in navigator) {
+        if (
+          typeof window !== "undefined" &&
+          "Notification" in window &&
+          "serviceWorker" in navigator
+        ) {
           const perm = Notification.permission;
           if (perm === "granted") {
-            import("@/lib/push").then(m => m.subscribeToPush()).catch(() => {});
+            import("@/lib/push").then((m) => m.subscribeToPush()).catch(() => {});
           } else if (perm === "default" && !localStorage.getItem("vtech_push_prompted")) {
             localStorage.setItem("vtech_push_prompted", "1");
-            Notification.requestPermission().then(p => {
-              if (p === "granted") import("@/lib/push").then(m => m.subscribeToPush()).catch(() => {});
-            }).catch(() => {});
+            Notification.requestPermission()
+              .then((p) => {
+                if (p === "granted")
+                  import("@/lib/push").then((m) => m.subscribeToPush()).catch(() => {});
+              })
+              .catch(() => {});
           }
         }
       } catch (e) {
@@ -663,7 +1296,9 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // ← empty deps: intentional, auth only on mount
 
@@ -679,16 +1314,24 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
           .eq("meta_field", "logo")
           .maybeSingle();
         if (!cancelled && data?.meta_value) setBrandLogo(String(data.meta_value));
-      } catch { /* ignore — default logo use hoga */ }
+      } catch {
+        /* ignore — default logo use hoga */
+      }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // BUG FIX: Boot-guard inline script ko signal — React mount/hydrate ho gaya,
   // loader isliye atka nahi hai. (8s watchdog tabhi reload karta hai jab ye
   // set NAHIN hota — matlab hydration hi fail ho gaya tha.)
   useEffect(() => {
-    try { (window as unknown as { __VTECH_BOOTED__: boolean }).__VTECH_BOOTED__ = true; } catch { /* ignore */ }
+    try {
+      (window as unknown as { __VTECH_BOOTED__: boolean }).__VTECH_BOOTED__ = true;
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   // BUG FIX: loader (V-TECH Secure Boot) atak jata hai jab stale SW cache purana
@@ -705,7 +1348,9 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         const last = Number(sessionStorage.getItem(k) || "0");
         if (Date.now() - last < 30000) return; // 30s cooldown — loop guard
         sessionStorage.setItem(k, String(Date.now()));
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       window.location.reload();
     }, 6000);
     return () => clearTimeout(t);
@@ -720,14 +1365,20 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         const last = Number(sessionStorage.getItem(k) || "0");
         if (Date.now() - last < 30000) return; // 30s cooldown — loop guard
         sessionStorage.setItem(k, String(Date.now()));
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       window.location.reload();
     };
 
     const onErr = (e: ErrorEvent) => {
       // 1) Dynamic import / module script failures (ErrorEvent with a message)
       const m = e.message || "";
-      if (/Failed to fetch dynamically imported module|ChunkLoadError|loading chunk|Importing a module script failed/i.test(m)) {
+      if (
+        /Failed to fetch dynamically imported module|ChunkLoadError|loading chunk|Importing a module script failed/i.test(
+          m
+        )
+      ) {
         reloadWithCooldown();
         return;
       }
@@ -762,9 +1413,17 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // (plan, expiry, revoke) jaldi reflect hote hain. Baad me normal cache interval.
   useEffect(() => {
     if (!profile) return;
-    const pub = pathname === "/" ||
-      ["/login", "/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"]
-        .some(p => pathname === p || pathname.startsWith(p + "/"));
+    const pub =
+      pathname === "/" ||
+      [
+        "/login",
+        "/about",
+        "/contact",
+        "/job-status",
+        "/stage-lighting",
+        "/industrial",
+        "/power-supply",
+      ].some((p) => pathname === p || pathname.startsWith(p + "/"));
     if (pub) return;
     const isFirst = initialLicenseFetch.current;
     if (isFirst) initialLicenseFetch.current = false;
@@ -776,7 +1435,11 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // TOLERANCE: ek akela 401 network/token-refresh hiccup ho sakta hai —
   // CONSECUTIVE 2 hi real revoke mane (pehle 1 par turant logout hota tha).
   const forceClientLogout = useCallback(async (reason: "revoked" | "idle") => {
-    try { await supabase.auth.signOut(); } catch { /* ignore */ }
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      /* ignore */
+    }
     // Intentional full reload: client session state clean karna zaroori hai
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = "/login?reason=" + reason;
@@ -795,11 +1458,16 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         } else {
           strikes = 0;
         }
-      } catch { /* network glitch ≠ revoke */ }
+      } catch {
+        /* network glitch ≠ revoke */
+      }
     };
     check();
     const interval = setInterval(check, REVOKED_CHECK_MS);
-    return () => { cancelled = true; clearInterval(interval); };
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [profile?.role, forceClientLogout]);
 
   // ── UNIFIED IDLE TIMEOUT — sab roles ke liye EK hi mechanism ────────────
@@ -820,9 +1488,14 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         setShowIdleWarning(false);
       }
       const now = Date.now();
-      if (now - lastWrite > 5000) { // har mousemove par localStorage write na karein
+      if (now - lastWrite > 5000) {
+        // har mousemove par localStorage write na karein
         lastWrite = now;
-        try { localStorage.setItem(LAST_ACTIVE_KEY, String(now)); } catch { /* ignore */ }
+        try {
+          localStorage.setItem(LAST_ACTIVE_KEY, String(now));
+        } catch {
+          /* ignore */
+        }
       }
     };
 
@@ -845,10 +1518,18 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     };
 
     // Sleep/wake ya tab-switch par turant evaluate (interval ka wait nahi)
-    const onVisible = () => { if (!document.hidden) evaluate(); };
+    const onVisible = () => {
+      if (!document.hidden) evaluate();
+    };
 
-    const events: (keyof WindowEventMap)[] = ["mousemove", "keydown", "touchstart", "click", "scroll"];
-    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }));
+    const events: (keyof WindowEventMap)[] = [
+      "mousemove",
+      "keydown",
+      "touchstart",
+      "click",
+      "scroll",
+    ];
+    events.forEach((e) => window.addEventListener(e, resetTimer, { passive: true }));
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("storage", onStorage);
     resetTimer();
@@ -856,7 +1537,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     const interval = setInterval(evaluate, 10_000);
 
     return () => {
-      events.forEach(e => window.removeEventListener(e, resetTimer));
+      events.forEach((e) => window.removeEventListener(e, resetTimer));
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("storage", onStorage);
       clearInterval(interval);
@@ -877,7 +1558,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     try {
       const saved = localStorage.getItem("vtech_theme") as "dark" | "light" | null;
       const initial = saved || "dark"; // DEFAULT DARK — attribute hamesha SET rahe
-      setTheme(initial);               // (pehle null par attribute REMOVE hota tha,
+      setTheme(initial); // (pehle null par attribute REMOVE hota tha,
       document.documentElement.setAttribute("data-theme", initial); // jisse vars light
       document.body.style.backgroundColor = initial === "dark" ? "#0d1117" : "#f8f9fc"; // + body dark = mix)
       document.body.style.color = initial === "dark" ? "#e2e8f0" : "#0f172a";
@@ -893,9 +1574,18 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // hardcoded DARK tha = wahi mix bug. Ab explicit "dark" set karte hain:
   // saved-light bhi leak nahi hota aur poora DOM coherent dark rehta hai.
   useEffect(() => {
-    const pub = pathname === "/" ||
-      ["/login", "/setup", "/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"]
-        .some(p => pathname === p || pathname.startsWith(p + "/"));
+    const pub =
+      pathname === "/" ||
+      [
+        "/login",
+        "/setup",
+        "/about",
+        "/contact",
+        "/job-status",
+        "/stage-lighting",
+        "/industrial",
+        "/power-supply",
+      ].some((p) => pathname === p || pathname.startsWith(p + "/"));
     try {
       if (pub) {
         document.documentElement.setAttribute("data-theme", "dark");
@@ -932,12 +1622,23 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   }, []);
 
   // Auto-close drawer on route change
-  useEffect(() => { setDrawerOpen(false); }, [pathname]);
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
 
   // Public pages — no sidebar, no dashboard chrome. Marketing pages (/, /about,
   // /contact, /job-status, services) logged-in user bhi dekh sakta hai — sidebar
   // ke "V-TECH PRO" brand se yahan aata hai, navbar ke "Dashboard" button se wapas.
-  const PUBLIC_PAGES = ["/login", "/setup", "/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"];
+  const PUBLIC_PAGES = [
+    "/login",
+    "/setup",
+    "/about",
+    "/contact",
+    "/job-status",
+    "/stage-lighting",
+    "/industrial",
+    "/power-supply",
+  ];
   const isPublicPage = PUBLIC_PAGES.includes(pathname) || pathname === "/";
 
   // Logged-in user /login aur /setup par nahi reh sakta (already authenticated).
@@ -963,13 +1664,15 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             </div>
             <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-[#0d1117] animate-ping" />
           </div>
-          <p className="text-[10px] font-black uppercase tracking-[0.35em] text-slate-600">V-TECH Secure Boot</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.35em] text-slate-600">
+            V-TECH Secure Boot
+          </p>
         </div>
       </div>
     );
   }
 
-  const isAdmin  = profile?.role === "admin" || profile?.role === "developer";
+  const isAdmin = profile?.role === "admin" || profile?.role === "developer";
   const isClient = profile?.role === "client";
 
   // ── LICENSE GATE ──
@@ -998,10 +1701,14 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
           </div>
           <h1 className="text-lg font-black text-white mb-2">Module Not Available</h1>
           <p className="text-sm text-slate-400 mb-6">
-            Ye module aapke plan mein included nahi hai. Seller se contact karein ya <span className="font-bold text-slate-300">Settings &rarr; License</span> mein plan upgrade karein.
+            Ye module aapke plan mein included nahi hai. Seller se contact karein ya{" "}
+            <span className="font-bold text-slate-300">Settings &rarr; License</span> mein plan
+            upgrade karein.
           </p>
-          <button onClick={() => router.push("/dashboard")}
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black transition-all">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black transition-all"
+          >
             Dashboard par jao
           </button>
         </div>
@@ -1009,9 +1716,9 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     );
   }
 
-  const isAiPage    = pathname === "/ai";
+  const isAiPage = pathname === "/ai";
   const displayName = profile?.full_name ?? "User";
-  const initials    = displayName.slice(0, 2).toUpperCase();
+  const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
     <>
@@ -1020,118 +1727,186 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       <Toaster theme="dark" position="top-right" richColors closeButton />
 
       {/* ══════════════════════ DESKTOP SIDEBAR ══════════════════════ */}
-        {isMobile === false && !isAiPage && (
-          <aside className="fixed top-0 left-0 h-full w-[260px] glass border-r flex flex-col z-50">
-            {/* Brand — click karo → public website (logged-in user bhi) */}
-            <div className="relative overflow-hidden px-5 py-4 border-b border-[#1a2234]">
+      {isMobile === false && !isAiPage && (
+        <aside className="fixed top-0 left-0 h-full w-[260px] glass border-r flex flex-col z-50">
+          {/* Brand — click karo → public website (logged-in user bhi) */}
+          <div className="relative overflow-hidden px-5 py-4 border-b border-[#1a2234]">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-700/15 to-transparent pointer-events-none" />
+            <Link
+              href="/"
+              title="Public Website"
+              className="relative flex items-center gap-3 group"
+            >
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-900/50 transition-all group-hover:scale-105 ${brandLogo ? "bg-white" : "bg-gradient-to-br from-blue-500 to-blue-700 group-hover:from-blue-500 group-hover:to-cyan-600"}`}
+              >
+                {brandLogo ? (
+                  <Image
+                    src={brandLogo}
+                    alt="Logo"
+                    width={40}
+                    height={40}
+                    unoptimized
+                    className="w-full h-full object-contain rounded-xl"
+                  />
+                ) : (
+                  <Sparkles size={20} className="text-white" />
+                )}
+              </div>
+              <div>
+                <div className="text-lg font-black tracking-tight leading-none">
+                  <span className="vtech-brand">V-TECH</span>{" "}
+                  <span className="vtech-pro font-light">PRO</span>
+                </div>
+                <div className="text-[8px] text-slate-500 dark:text-slate-300 font-black uppercase tracking-widest mt-0.5">
+                  Management System · Click → Website
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          <SidebarNav
+            pathname={pathname}
+            isAdmin={isAdmin}
+            isClient={isClient}
+            sellerEnabled={license?.sellerEnabled}
+            devEnabled={license?.devEnabled}
+            enabledModules={license?.enabledModules}
+          />
+
+          <div className="px-4 py-3 border-t border-[#1a2234] flex items-center justify-between">
+            <span className="text-[9px] text-slate-500 dark:text-slate-300 font-black tracking-widest uppercase">
+              V-TECH PRO v4.2
+            </span>
+            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+          </div>
+        </aside>
+      )}
+
+      {/* ══════════════════════ MOBILE DRAWER ══════════════════════ */}
+      {isMobile === true && !isAiPage && (
+        <>
+          {/* Backdrop */}
+          <div
+            className={`fixed inset-0 bg-black/75 backdrop-blur-sm z-50 transition-opacity duration-300 ${
+              drawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
+            onClick={() => setDrawerOpen(false)}
+          />
+          {/* Full sidebar drawer — same content as desktop */}
+          <aside
+            className={`fixed top-0 left-0 h-full w-[280px] glass border-r flex flex-col z-50 transition-transform duration-300 ease-out ${
+              drawerOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
+            {/* Drawer header — brand click → public website */}
+            <div className="relative overflow-hidden px-4 py-4 border-b border-[#1a2234] flex items-center justify-between">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-700/15 to-transparent pointer-events-none" />
-              <Link href="/" title="Public Website" className="relative flex items-center gap-3 group">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-900/50 transition-all group-hover:scale-105 ${brandLogo ? "bg-white" : "bg-gradient-to-br from-blue-500 to-blue-700 group-hover:from-blue-500 group-hover:to-cyan-600"}`}>
+              <Link
+                href="/"
+                onClick={() => setDrawerOpen(false)}
+                className="relative flex items-center gap-3 group"
+              >
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 transition-all group-hover:scale-105 ${brandLogo ? "bg-white" : "bg-gradient-to-br from-blue-500 to-blue-700 group-hover:from-blue-500 group-hover:to-cyan-600"}`}
+                >
                   {brandLogo ? (
-                    <Image src={brandLogo} alt="Logo" width={40} height={40} unoptimized className="w-full h-full object-contain rounded-xl" />
+                    <Image
+                      src={brandLogo}
+                      alt="Logo"
+                      width={36}
+                      height={36}
+                      unoptimized
+                      className="w-full h-full object-contain rounded-xl"
+                    />
                   ) : (
-                    <Sparkles size={20} className="text-white" />
+                    <Sparkles size={18} className="text-white" />
                   )}
                 </div>
                 <div>
-                  <div className="text-lg font-black tracking-tight leading-none">
-  <span className="vtech-brand">V-TECH</span>{' '}
-  <span className="vtech-pro font-light">PRO</span>
-</div>
-                  <div className="text-[8px] text-slate-500 dark:text-slate-300 font-black uppercase tracking-widest mt-0.5">Management System · Click → Website</div>
+                  <div className="text-base font-black tracking-tight text-white leading-none">
+                    V-TECH <span className="text-blue-400 font-light">PRO</span>
+                  </div>
+                  <div className="text-[8px] text-slate-600 font-black uppercase tracking-widest mt-0.5">
+                    Management System · Website
+                  </div>
                 </div>
               </Link>
+              <button
+                onClick={() => setDrawerOpen(false)}
+                className="relative w-8 h-8 flex items-center justify-center glass border rounded-lg text-slate-500 hover:text-white transition-all"
+              >
+                <X size={15} />
+              </button>
             </div>
 
-            <SidebarNav pathname={pathname} isAdmin={isAdmin} isClient={isClient} sellerEnabled={license?.sellerEnabled} devEnabled={license?.devEnabled} enabledModules={license?.enabledModules} />
-
-            <div className="px-4 py-3 border-t border-[#1a2234] flex items-center justify-between">
-              <span className="text-[9px] text-slate-500 dark:text-slate-300 font-black tracking-widest uppercase">V-TECH PRO v4.2</span>
-              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-            </div>
-          </aside>
-        )}
-
-        {/* ══════════════════════ MOBILE DRAWER ══════════════════════ */}
-        {isMobile === true && !isAiPage && (
-          <>
-            {/* Backdrop */}
-            <div
-              className={`fixed inset-0 bg-black/75 backdrop-blur-sm z-50 transition-opacity duration-300 ${
-                drawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-              }`}
-              onClick={() => setDrawerOpen(false)}
+            {/* Same full nav as desktop */}
+            <SidebarNav
+              pathname={pathname}
+              isAdmin={isAdmin}
+              isClient={isClient}
+              onNavClick={() => setDrawerOpen(false)}
+              sellerEnabled={license?.sellerEnabled}
+              devEnabled={license?.devEnabled}
+              enabledModules={license?.enabledModules}
             />
-            {/* Full sidebar drawer — same content as desktop */}
-            <aside
-              className={`fixed top-0 left-0 h-full w-[280px] glass border-r flex flex-col z-50 transition-transform duration-300 ease-out ${
-                drawerOpen ? "translate-x-0" : "-translate-x-full"
-              }`}
-            >
-              {/* Drawer header — brand click → public website */}
-              <div className="relative overflow-hidden px-4 py-4 border-b border-[#1a2234] flex items-center justify-between">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-700/15 to-transparent pointer-events-none" />
-                <Link href="/" onClick={() => setDrawerOpen(false)} className="relative flex items-center gap-3 group">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 transition-all group-hover:scale-105 ${brandLogo ? "bg-white" : "bg-gradient-to-br from-blue-500 to-blue-700 group-hover:from-blue-500 group-hover:to-cyan-600"}`}>
-                    {brandLogo ? (
-                      <Image src={brandLogo} alt="Logo" width={36} height={36} unoptimized className="w-full h-full object-contain rounded-xl" />
-                    ) : (
-                      <Sparkles size={18} className="text-white" />
-                    )}
+
+            {/* User info at drawer bottom */}
+            <div className="px-3 py-3 border-t border-[#1a2234]">
+              <div className="flex items-center gap-3 px-3 py-2.5 glass rounded-xl">
+                {profile?.avatar_url ? (
+                  <Image
+                    src={profile.avatar_url}
+                    alt={displayName}
+                    width={32}
+                    height={32}
+                    unoptimized
+                    className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-white/10 cursor-zoom-in"
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      openImageLightbox(profile.avatar_url, displayName);
+                    }}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center text-white font-black text-xs flex-shrink-0">
+                    {initials}
                   </div>
-                  <div>
-                    <div className="text-base font-black tracking-tight text-white leading-none">
-                      V-TECH <span className="text-blue-400 font-light">PRO</span>
-                    </div>
-                    <div className="text-[8px] text-slate-600 font-black uppercase tracking-widest mt-0.5">Management System · Website</div>
-                  </div>
-                </Link>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-black text-white truncate">{displayName}</p>
+                  <p className="text-[9px] text-blue-400 font-bold uppercase tracking-wider">
+                    {profile?.role}
+                  </p>
+                </div>
                 <button
-                  onClick={() => setDrawerOpen(false)}
-                  className="relative w-8 h-8 flex items-center justify-center glass border rounded-lg text-slate-500 hover:text-white transition-all"
+                  onClick={toggleTheme}
+                  className="p-1.5 text-slate-600 hover:text-amber-400 transition-colors"
+                  title="Toggle Theme"
                 >
-                  <X size={15} />
+                  {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="p-1.5 text-slate-600 hover:text-red-400 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut size={14} />
                 </button>
               </div>
+            </div>
+          </aside>
+        </>
+      )}
 
-              {/* Same full nav as desktop */}
-              <SidebarNav pathname={pathname} isAdmin={isAdmin} isClient={isClient} onNavClick={() => setDrawerOpen(false)} sellerEnabled={license?.sellerEnabled} devEnabled={license?.devEnabled} enabledModules={license?.enabledModules} />
-
-              {/* User info at drawer bottom */}
-              <div className="px-3 py-3 border-t border-[#1a2234]">
-                <div className="flex items-center gap-3 px-3 py-2.5 glass rounded-xl">
-                  {profile?.avatar_url ? (
-                    <Image src={profile.avatar_url} alt={displayName}
-                      width={32} height={32} unoptimized
-                      className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-white/10 cursor-zoom-in"
-                      onDoubleClick={(e) => { e.stopPropagation(); openImageLightbox(profile.avatar_url, displayName); }}
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                  ) : (
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center text-white font-black text-xs flex-shrink-0">
-                      {initials}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-black text-white truncate">{displayName}</p>
-                    <p className="text-[9px] text-blue-400 font-bold uppercase tracking-wider">{profile?.role}</p>
-                  </div>
-                  <button onClick={toggleTheme} className="p-1.5 text-slate-600 hover:text-amber-400 transition-colors" title="Toggle Theme">
-                    {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-                  </button>
-                  <button onClick={handleLogout} className="p-1.5 text-slate-600 hover:text-red-400 transition-colors" title="Logout">
-                    <LogOut size={14} />
-                  </button>
-                </div>
-              </div>
-            </aside>
-          </>
-        )}
-
-        {/* ══════════════════════ MAIN CONTENT ══════════════════════ */}
-        <div className={`${isMobile === false && !isAiPage ? "lg:ml-[260px]" : "ml-0"} flex-1 min-h-screen flex flex-col`}>
-
-          {/* ── TOPBAR ── */}
-          {!isAiPage && (
+      {/* ══════════════════════ MAIN CONTENT ══════════════════════ */}
+      <div
+        className={`${isMobile === false && !isAiPage ? "lg:ml-[260px]" : "ml-0"} flex-1 min-h-screen flex flex-col`}
+      >
+        {/* ── TOPBAR ── */}
+        {!isAiPage && (
           <header className="sticky top-0 z-40 h-14 glass border-b flex items-center justify-between px-4 gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               {/* Mobile: hamburger menu */}
@@ -1193,19 +1968,31 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             {/* User dropdown */}
             <div className="relative flex-shrink-0">
               <button
-                onClick={() => setDropdownOpen(p => !p)}
+                onClick={() => setDropdownOpen((p) => !p)}
                 className="flex items-center gap-2.5 hover:bg-white/[0.04] px-2 py-1.5 rounded-xl transition-all"
               >
                 <div className="hidden sm:block text-right leading-none">
                   <p className="text-[11px] font-black uppercase text-slate-200">{displayName}</p>
-                  <p className="text-[9px] font-bold text-blue-400 uppercase mt-0.5">{profile?.role}</p>
+                  <p className="text-[9px] font-bold text-blue-400 uppercase mt-0.5">
+                    {profile?.role}
+                  </p>
                 </div>
                 {profile?.avatar_url ? (
-                  <Image src={profile.avatar_url} alt={displayName}
-                    width={36} height={36} unoptimized
+                  <Image
+                    src={profile.avatar_url}
+                    alt={displayName}
+                    width={36}
+                    height={36}
+                    unoptimized
                     className="w-9 h-9 rounded-xl object-cover shadow-md flex-shrink-0 border border-white/10 cursor-zoom-in"
-                    onDoubleClick={(e) => { e.stopPropagation(); openImageLightbox(profile.avatar_url, displayName); }}
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      openImageLightbox(profile.avatar_url, displayName);
+                    }}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                    }}
+                  />
                 ) : (
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center font-black shadow-md text-xs">
                     {initials}
@@ -1218,22 +2005,34 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                   <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
                   <div className="absolute right-0 mt-2 w-52 glass border rounded-2xl shadow-2xl shadow-black/60 p-1.5 z-50">
                     <div className="px-3 py-2.5 border-b border-[#1a2234] mb-1">
-                      <p className="text-[9px] font-black text-slate-700 uppercase tracking-wider">Logged in as</p>
-                      <p className="text-xs font-bold text-slate-400 truncate mt-0.5">{userEmail}</p>
+                      <p className="text-[9px] font-black text-slate-700 uppercase tracking-wider">
+                        Logged in as
+                      </p>
+                      <p className="text-xs font-bold text-slate-400 truncate mt-0.5">
+                        {userEmail}
+                      </p>
                     </div>
-                    <Link href="/profile" onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-400 hover:bg-white/[0.05] hover:text-white rounded-xl transition-all">
+                    <Link
+                      href="/profile"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-400 hover:bg-white/[0.05] hover:text-white rounded-xl transition-all"
+                    >
                       <User size={13} /> My Profile
                     </Link>
                     {isAdmin && (
-                      <Link href="/settings" onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-400 hover:bg-white/[0.05] hover:text-white rounded-xl transition-all">
+                      <Link
+                        href="/settings"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-400 hover:bg-white/[0.05] hover:text-white rounded-xl transition-all"
+                      >
                         <Settings size={13} /> Settings
                       </Link>
                     )}
                     <div className="border-t border-[#1a2234] mt-1 pt-1">
-                      <button onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-400 hover:bg-red-500/10 rounded-xl transition-all">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                      >
                         <LogOut size={13} /> Logout
                       </button>
                     </div>
@@ -1242,77 +2041,75 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               )}
             </div>
           </header>
+        )}
+
+        {/* ── PAGE CONTENT ── */}
+        <main className={`flex-1 ${isAiPage ? "p-0" : "p-3 sm:p-5 theme-body"}`}>
+          {isClient && !pathname.startsWith("/my-account") ? (
+            <div className="h-[60vh] flex flex-col items-center justify-center gap-3 text-slate-600">
+              <Loader2 size={22} className="animate-spin" />
+              <p className="text-xs font-bold uppercase tracking-widest">Redirecting...</p>
+            </div>
+          ) : (
+            children
+          )}
+        </main>
+      </div>
+
+      {/* ── AI ASSISTANT RIGHT DRAWER ── */}
+      {!isClient && (
+        <>
+          {/* Floating Button Group - Bottom Right (hidden while AI window is open) */}
+          {!aiDrawerOpen && !isAiPage && (
+            <div className="fixed bottom-20 right-4 z-40 flex flex-col gap-3">
+              {/* AI Assistant Button - positioned above Jobs FAB */}
+              <button
+                onClick={() => setAiDrawerOpen(true)}
+                className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg shadow-purple-500/30 flex items-center justify-center text-white hover:scale-110 transition-transform"
+                title="AI Assistant"
+              >
+                <Sparkles size={20} />
+              </button>
+            </div>
           )}
 
-          {/* ── PAGE CONTENT ── */}
-          <main className={`flex-1 ${isAiPage ? "p-0" : "p-3 sm:p-5 theme-body"}`}>
-            {isClient && !pathname.startsWith("/my-account")
-              ? (
-                <div className="h-[60vh] flex flex-col items-center justify-center gap-3 text-slate-600">
-                  <Loader2 size={22} className="animate-spin" />
-                  <p className="text-xs font-bold uppercase tracking-widest">Redirecting...</p>
+          {/* Right Drawer */}
+          <div
+            className={`fixed top-0 right-0 h-full w-full sm:w-[420px] glass border-l z-[100] transition-transform duration-300 ease-out ${aiDrawerOpen ? "translate-x-0" : "translate-x-full"}`}
+          >
+            <div className="flex flex-col h-full">
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b glass">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                    <Sparkles size={16} className="text-white" />
+                  </div>
+                  <span className="text-sm font-bold text-white">AI Assistant</span>
                 </div>
-              )
-              : children}
-          </main>
-        </div>
-
-        {/* ── AI ASSISTANT RIGHT DRAWER ── */}
-        {!isClient && (
-          <>
-            {/* Floating Button Group - Bottom Right (hidden while AI window is open) */}
-            {!aiDrawerOpen && !isAiPage && (
-              <div className="fixed bottom-20 right-4 z-40 flex flex-col gap-3">
-                {/* AI Assistant Button - positioned above Jobs FAB */}
                 <button
-                  onClick={() => setAiDrawerOpen(true)}
-                  className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg shadow-purple-500/30 flex items-center justify-center text-white hover:scale-110 transition-transform"
-                  title="AI Assistant"
+                  onClick={() => setAiDrawerOpen(false)}
+                  className="w-8 h-8 flex items-center justify-center glass border rounded-lg text-slate-500 hover:text-white hover:border-red-500/40 transition-all"
                 >
-                  <Sparkles size={20} />
+                  <X size={16} />
                 </button>
               </div>
-            )}
 
-            {/* Right Drawer */}
-            <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] glass border-l z-[100] transition-transform duration-300 ease-out ${aiDrawerOpen ? "translate-x-0" : "translate-x-full"}`}>
-              <div className="flex flex-col h-full">
-                {/* Drawer Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b glass">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-                      <Sparkles size={16} className="text-white" />
-                    </div>
-                    <span className="text-sm font-bold text-white">AI Assistant</span>
-                  </div>
-                  <button
-                    onClick={() => setAiDrawerOpen(false)}
-                    className="w-8 h-8 flex items-center justify-center glass border rounded-lg text-slate-500 hover:text-white hover:border-red-500/40 transition-all"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-
-                {/* Iframe for AI Page */}
-                <div className="flex-1">
-                  <iframe
-                    src="/ai"
-                    className="w-full h-full border-0"
-                    title="AI Assistant"
-                  />
-                </div>
+              {/* Iframe for AI Page */}
+              <div className="flex-1">
+                <iframe src="/ai" className="w-full h-full border-0" title="AI Assistant" />
               </div>
             </div>
+          </div>
 
-            {/* Backdrop */}
-            {aiDrawerOpen && (
-              <div 
-                className="fixed inset-0 bg-black/50 z-[90]"
-                onClick={() => setAiDrawerOpen(false)}
-              />
-            )}
-          </>
-        )}
+          {/* Backdrop */}
+          {aiDrawerOpen && (
+            <div
+              className="fixed inset-0 bg-black/50 z-[90]"
+              onClick={() => setAiDrawerOpen(false)}
+            />
+          )}
+        </>
+      )}
 
       {/* ── Idle timeout warning (staff/admin/developer) ─────────────── */}
       {showIdleWarning && (
@@ -1322,9 +2119,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               <Clock size={24} className="text-amber-400" />
             </div>
             <h3 className="text-white font-bold text-base mb-2">Session expiring soon</h3>
-            <p className="text-slate-400 text-sm mb-1">
-              Aap 30 minute se kuch nahi kar rahe.
-            </p>
+            <p className="text-slate-400 text-sm mb-1">Aap 30 minute se kuch nahi kar rahe.</p>
             <p className="text-slate-500 text-xs mb-5">
               Agar 2 minute mein kuch nahi kiya to aap automatically logout ho jayenge.
             </p>

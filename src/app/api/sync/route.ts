@@ -30,7 +30,10 @@ async function fetchHistory(limit = 50): Promise<HistoryRow[]> {
       timeout: 30000,
       windowsHide: true,
     });
-    const lines = stdout.split("\n").map((l) => l.trim()).filter(Boolean);
+    const lines = stdout
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
     for (const line of lines) {
       if (line.startsWith("[") || line.startsWith("{")) {
         const data = JSON.parse(line);

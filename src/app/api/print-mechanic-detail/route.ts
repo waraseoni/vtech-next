@@ -18,13 +18,17 @@ const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFra
 
 function fmtDate(iso: string): string {
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(iso));
 }
 
 export async function GET(request: NextRequest) {
   const user = await requireStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   const from = searchParams.get("from");
@@ -36,7 +40,9 @@ export async function GET(request: NextRequest) {
 
   const { data: mechanic } = await supabase
     .from("mechanic_list")
-    .select("id, firstname, middlename, lastname, contact, designation, daily_salary, commission_percent, status")
+    .select(
+      "id, firstname, middlename, lastname, contact, designation, daily_salary, commission_percent, status"
+    )
     .eq("id", parseInt(id))
     .single();
 
@@ -44,7 +50,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Mechanic not found" }, { status: 404 });
   }
 
-  const name = [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ");
+  const name = [mechanic.firstname, mechanic.middlename, mechanic.lastname]
+    .filter(Boolean)
+    .join(" ");
 
   let jobs: DbRow[] = [];
   let advances: DbRow[] = [];
@@ -55,24 +63,33 @@ export async function GET(request: NextRequest) {
     const end = `${to}T23:59:59`;
 
     const [jobsRes, advRes, attRes] = await Promise.all([
-      fetchAll(supabase.from("transaction_list")
-        .select("id, job_id, item, mechanic_commission_amount, date_updated, status")
-        .eq("mechanic_id", parseInt(id))
-        .gte("date_updated", start)
-        .lte("date_updated", end)
-        .order("date_updated", { ascending: false })),
-      fetchAll(supabase.from("advance_payments")
-        .select("id, reason, amount, date_paid")
-        .eq("mechanic_id", parseInt(id))
-        .gte("date_paid", from)
-        .lte("date_paid", to)
-        .order("date_paid", { ascending: false })),
-      fetchAll(supabase.from("attendance_list")
-        .select("id, curr_date, status")
-        .eq("mechanic_id", parseInt(id))
-        .gte("curr_date", from)
-        .lte("curr_date", to)
-        .order("curr_date", { ascending: false })),
+      fetchAll(
+        supabase
+          .from("transaction_list")
+          .select("id, job_id, item, mechanic_commission_amount, date_updated, status")
+          .eq("mechanic_id", parseInt(id))
+          .gte("date_updated", start)
+          .lte("date_updated", end)
+          .order("date_updated", { ascending: false })
+      ),
+      fetchAll(
+        supabase
+          .from("advance_payments")
+          .select("id, reason, amount, date_paid")
+          .eq("mechanic_id", parseInt(id))
+          .gte("date_paid", from)
+          .lte("date_paid", to)
+          .order("date_paid", { ascending: false })
+      ),
+      fetchAll(
+        supabase
+          .from("attendance_list")
+          .select("id, curr_date, status")
+          .eq("mechanic_id", parseInt(id))
+          .gte("curr_date", from)
+          .lte("curr_date", to)
+          .order("curr_date", { ascending: false })
+      ),
     ]);
 
     jobs = jobsRes;
@@ -82,24 +99,29 @@ export async function GET(request: NextRequest) {
 
   const totalComm = jobs.reduce((s, j) => s + (j.mechanic_commission_amount || 0), 0);
   const totalAdv = advances.reduce((s, a) => s + (a.amount || 0), 0);
-  const presentDays = attendance.filter(a => a.status === 1).length;
-  const halfDays = attendance.filter(a => a.status === 3).length;
+  const presentDays = attendance.filter((a) => a.status === 1).length;
+  const halfDays = attendance.filter((a) => a.status === 3).length;
 
   const periodLabel = from && to ? `${fmtDate(from)} - ${fmtDate(to)}` : "All Time";
-  const statusLabel = mechanic.status === 1 ? 'Active' : 'Inactive';
-  const statusLabels = ['', 'In Progress', 'Done', 'Paid', 'Cancelled', 'Delivered'];
+  const statusLabel = mechanic.status === 1 ? "Active" : "Inactive";
+  const statusLabels = ["", "In Progress", "Done", "Paid", "Cancelled", "Delivered"];
 
-  const jobRows = jobs.length > 0 ? jobs.map((j, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const jobRows =
+    jobs.length > 0
+      ? jobs
+          .map((j, i) => {
+            const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+            return `<tr style="background:${rowBg}">
       <td style="padding:8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:12px">${i + 1}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(j.date_updated)}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${j.job_id}</td>
-      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${j.item || '-'}</td>
-      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${statusLabels[j.status] || '-'}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${j.item || "-"}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${statusLabels[j.status] || "-"}</td>
       <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px;color:#c0392b">${inr(j.mechanic_commission_amount)}</td>
     </tr>`;
-  }).join("") : '<tr><td colspan="6" style="padding:16px;text-align:center;color:#666">No jobs in this period</td></tr>';
+          })
+          .join("")
+      : '<tr><td colspan="6" style="padding:16px;text-align:center;color:#666">No jobs in this period</td></tr>';
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -149,7 +171,7 @@ export async function GET(request: NextRequest) {
     </div>
     <div class="mechanic-info">
       <div class="mechanic-name">${name}</div>
-      <div class="mechanic-detail">${mechanic.designation || 'Mechanic'} | ${mechanic.contact || '-'} | Salary: ${inr(mechanic.daily_salary)}/day | Status: ${statusLabel}</div>
+      <div class="mechanic-detail">${mechanic.designation || "Mechanic"} | ${mechanic.contact || "-"} | Salary: ${inr(mechanic.daily_salary)}/day | Status: ${statusLabel}</div>
     </div>
     <div class="stats">
       <div class="stat">

@@ -2,8 +2,19 @@
 
 import { useState, useEffect } from "react";
 import {
-  Loader2, Search, Printer, RotateCcw, Wrench, Package, AlertTriangle,
-  CheckCircle2, Clock, Banknote, XCircle, PackageCheck, FileSearch,
+  Loader2,
+  Search,
+  Printer,
+  RotateCcw,
+  Wrench,
+  Package,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Banknote,
+  XCircle,
+  PackageCheck,
+  FileSearch,
 } from "lucide-react";
 import { WHATSAPP_LINK } from "../site";
 import { JOB_STATUS_INLINE } from "@/lib/status-colors";
@@ -20,7 +31,14 @@ type JobData = {
   date_created: string;
 };
 
-type RecentJob = { id: number; job_id: string; code: string; item: string; status: number; date_created: string };
+type RecentJob = {
+  id: number;
+  job_id: string;
+  code: string;
+  item: string;
+  status: number;
+  date_created: string;
+};
 
 type Service = { service_name: string; price: number };
 type Product = { product_name: string; qty: number; price: number; total: number };
@@ -30,12 +48,18 @@ const STATUS_CONFIG = Object.fromEntries(
     Number(k),
     {
       ...v,
-      desc: Number(k) === 0 ? "Aapka repair pending hai" :
-            Number(k) === 1 ? "Hamari team kaam kar rahi hai" :
-            Number(k) === 2 ? "Repair ho gaya hai, pickup ke liye ready" :
-            Number(k) === 3 ? "Payment ho chuki hai" :
-            Number(k) === 4 ? "Repair cancel ho gaya hai" :
-            "Product deliver ho gaya hai",
+      desc:
+        Number(k) === 0
+          ? "Aapka repair pending hai"
+          : Number(k) === 1
+            ? "Hamari team kaam kar rahi hai"
+            : Number(k) === 2
+              ? "Repair ho gaya hai, pickup ke liye ready"
+              : Number(k) === 3
+                ? "Payment ho chuki hai"
+                : Number(k) === 4
+                  ? "Repair cancel ho gaya hai"
+                  : "Product deliver ho gaya hai",
     },
   ])
 );
@@ -63,7 +87,7 @@ export default function JobStatusPage() {
 
   useEffect(() => {
     fetch("/api/public/job-status?recent=1")
-      .then(r => r.json())
+      .then((r) => r.json())
       .then((d) => {
         setRecentJobs(d.recent || []);
         setRecentLoading(false);
@@ -73,7 +97,10 @@ export default function JobStatusPage() {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!search.trim()) { setError("Job ID ya Code daalo!"); return; }
+    if (!search.trim()) {
+      setError("Job ID ya Code daalo!");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -114,7 +141,6 @@ export default function JobStatusPage() {
 
       setServices(data.services || []);
       setProducts(data.products || []);
-
     } catch (e) {
       setError((e instanceof Error && e.message ? e.message : "") || "Search mein error aayi!");
     } finally {
@@ -122,7 +148,14 @@ export default function JobStatusPage() {
     }
   };
 
-  const statusInfo = job ? STATUS_CONFIG[job.status] || { label: "Unknown", color: "#6b7280", bg: "rgba(107,114,128,0.2)", desc: "Status unknown" } : null;
+  const statusInfo = job
+    ? STATUS_CONFIG[job.status] || {
+        label: "Unknown",
+        color: "#6b7280",
+        bg: "rgba(107,114,128,0.2)",
+        desc: "Status unknown",
+      }
+    : null;
   const totalServices = services.reduce((s, sv) => s + sv.price, 0);
   const totalProducts = products.reduce((s, p) => s + p.total, 0);
 
@@ -136,7 +169,10 @@ export default function JobStatusPage() {
             <FileSearch size={13} /> Track Repair
           </span>
           <h1 className="font-display text-3xl sm:text-5xl font-black tracking-tight leading-[1.1] max-w-3xl">
-            Apne repair ka status — <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">bina login ke dekhein</span>
+            Apne repair ka status —{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+              bina login ke dekhein
+            </span>
           </h1>
           <p className="mt-4 text-[14px] sm:text-base text-slate-400 max-w-2xl">
             Apna Job ID ya Repair Code daalkar turant status, amount aur timeline check karein.
@@ -151,13 +187,20 @@ export default function JobStatusPage() {
             <div className="rounded-3xl p-6 sm:p-8 bg-white/[0.03] border border-white/[0.08]">
               {/* Search Type Toggle */}
               <div className="grid grid-cols-2 gap-2 mb-5">
-                {(["job_id", "code"] as const).map(t => (
-                  <button key={t} type="button" onClick={() => { setSearchType(t); setError(""); }}
+                {(["job_id", "code"] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => {
+                      setSearchType(t);
+                      setError("");
+                    }}
                     className={`py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
                       searchType === t
                         ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
                         : "bg-white/[0.04] text-slate-500 hover:text-slate-300"
-                    }`}>
+                    }`}
+                  >
                     {t === "job_id" ? "Job ID" : "Repair Code"}
                   </button>
                 ))}
@@ -173,20 +216,45 @@ export default function JobStatusPage() {
                 <input
                   type="text"
                   value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder={searchType === "job_id" ? "Enter Job ID (e.g. 27950)" : "Enter Repair Code (e.g. 2026032001)"}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={
+                    searchType === "job_id"
+                      ? "Enter Job ID (e.g. 27950)"
+                      : "Enter Repair Code (e.g. 2026032001)"
+                  }
                   className="flex-1 min-w-0 px-4 py-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-sm text-white font-medium placeholder:text-slate-600 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                 />
-                <button type="submit" disabled={loading}
-                  className="shrink-0 flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-sm font-black shadow-lg shadow-blue-600/25 disabled:opacity-60 active:scale-95 transition-all">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="shrink-0 flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-sm font-black shadow-lg shadow-blue-600/25 disabled:opacity-60 active:scale-95 transition-all"
+                >
                   {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
                   <span className="hidden sm:inline">Search</span>
                 </button>
               </form>
 
               <p className="text-[11px] text-slate-600 mt-4">
-                E.g. Job ID <button onClick={() => { setSearch("27950"); setSearchType("job_id"); }} className="text-blue-400 hover:underline">27950</button> ya Code{" "}
-                <button onClick={() => { setSearch("2026032001"); setSearchType("code"); }} className="text-blue-400 hover:underline">2026032001</button>
+                E.g. Job ID{" "}
+                <button
+                  onClick={() => {
+                    setSearch("27950");
+                    setSearchType("job_id");
+                  }}
+                  className="text-blue-400 hover:underline"
+                >
+                  27950
+                </button>{" "}
+                ya Code{" "}
+                <button
+                  onClick={() => {
+                    setSearch("2026032001");
+                    setSearchType("code");
+                  }}
+                  className="text-blue-400 hover:underline"
+                >
+                  2026032001
+                </button>
               </p>
 
               {/* WhatsApp Info Message */}
@@ -196,15 +264,26 @@ export default function JobStatusPage() {
                     <span className="text-xl">📱</span>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-emerald-300 text-sm mb-2">WhatsApp Message se Job Status Check Karein</h3>
+                    <h3 className="font-bold text-emerald-300 text-sm mb-2">
+                      WhatsApp Message se Job Status Check Karein
+                    </h3>
                     <p className="text-[13px] text-slate-400 leading-relaxed">
-                      Aapke WhatsApp par job status ke message me aapko apna <span className="text-white font-semibold">Job ID</span> aur <span className="text-white font-semibold">Code</span> dono diya gaya hai. Dono me se kisi bhi ek use karke apne job ki details search kar sakte hain.
+                      Aapke WhatsApp par job status ke message me aapko apna{" "}
+                      <span className="text-white font-semibold">Job ID</span> aur{" "}
+                      <span className="text-white font-semibold">Code</span> dono diya gaya hai.
+                      Dono me se kisi bhi ek use karke apne job ki details search kar sakte hain.
                     </p>
                     <div className="mt-3 p-3 rounded-xl bg-black/30 border border-white/5">
-                      <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mb-2">WhatsApp Message Example:</p>
+                      <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mb-2">
+                        WhatsApp Message Example:
+                      </p>
                       <div className="text-[12px] text-slate-300 font-mono leading-relaxed">
-                        <p>Job ID: <span className="text-emerald-400">#27950</span></p>
-                        <p>Code: <span className="text-cyan-400">#2026032001</span></p>
+                        <p>
+                          Job ID: <span className="text-emerald-400">#27950</span>
+                        </p>
+                        <p>
+                          Code: <span className="text-cyan-400">#2026032001</span>
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -215,17 +294,31 @@ export default function JobStatusPage() {
             {/* Recent Jobs for reference */}
             {!recentLoading && recentJobs.length > 0 && (
               <div className="mt-8">
-                <h3 className="text-sm font-bold mb-3 text-slate-400">Recent Jobs (for reference)</h3>
+                <h3 className="text-sm font-bold mb-3 text-slate-400">
+                  Recent Jobs (for reference)
+                </h3>
                 <div className="rounded-3xl overflow-hidden bg-white/[0.03] border border-white/[0.08]">
-                  {recentJobs.map(j => (
-                    <button key={j.id} onClick={() => { setSearch(j.job_id); setSearchType("job_id"); setError(""); }}
-                      className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-white/5 transition text-left border-b border-white/[0.05] last:border-b-0">
+                  {recentJobs.map((j) => (
+                    <button
+                      key={j.id}
+                      onClick={() => {
+                        setSearch(j.job_id);
+                        setSearchType("job_id");
+                        setError("");
+                      }}
+                      className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-white/5 transition text-left border-b border-white/[0.05] last:border-b-0"
+                    >
                       <div className="min-w-0">
                         <span className="font-bold text-blue-400">#{j.job_id}</span>
                         <span className="text-xs ml-2 text-slate-500 truncate">{j.item}</span>
                       </div>
-                      <span className="text-xs px-2.5 py-1 rounded-full font-bold shrink-0"
-                        style={{ background: STATUS_CONFIG[j.status]?.bg || "rgba(255,255,255,0.1)", color: STATUS_CONFIG[j.status]?.color || "#94a3b8" }}>
+                      <span
+                        className="text-xs px-2.5 py-1 rounded-full font-bold shrink-0"
+                        style={{
+                          background: STATUS_CONFIG[j.status]?.bg || "rgba(255,255,255,0.1)",
+                          color: STATUS_CONFIG[j.status]?.color || "#94a3b8",
+                        }}
+                      >
                         {STATUS_CONFIG[j.status]?.label || "Unknown"}
                       </span>
                     </button>
@@ -241,19 +334,31 @@ export default function JobStatusPage() {
           <div className="max-w-4xl mx-auto">
             {/* Back + Actions */}
             <div className="flex items-center justify-between mb-5 gap-3">
-              <button onClick={() => { setJob(null); setSearch(""); setError(""); setServices([]); setProducts([]); }}
-                className="flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-xl text-blue-400 bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 active:scale-95 transition-all">
+              <button
+                onClick={() => {
+                  setJob(null);
+                  setSearch("");
+                  setError("");
+                  setServices([]);
+                  setProducts([]);
+                }}
+                className="flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-xl text-blue-400 bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 active:scale-95 transition-all"
+              >
                 <RotateCcw size={15} /> Search Again
               </button>
-              <button onClick={() => window.open(`/api/print-job-status?job_id=${job.job_id}`, "_blank")}
-                className="flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 hover:bg-white/10 active:scale-95 transition-all">
+              <button
+                onClick={() => window.open(`/api/print-job-status?job_id=${job.job_id}`, "_blank")}
+                className="flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 hover:bg-white/10 active:scale-95 transition-all"
+              >
                 <Printer size={14} /> Print
               </button>
             </div>
 
             {/* Status Overview Card */}
-            <div className="rounded-3xl overflow-hidden bg-white/[0.03] border border-white/[0.08] mb-8"
-              style={{ borderTop: `4px solid ${statusInfo.color}` }}>
+            <div
+              className="rounded-3xl overflow-hidden bg-white/[0.03] border border-white/[0.08] mb-8"
+              style={{ borderTop: `4px solid ${statusInfo.color}` }}
+            >
               <div className="flex items-center justify-between p-5 sm:p-6 bg-gradient-to-br from-blue-600/10 to-cyan-600/5">
                 <div>
                   <h2 className="font-display text-lg sm:text-xl font-black">Job Status Tracker</h2>
@@ -261,8 +366,14 @@ export default function JobStatusPage() {
                     Job #{job.job_id} | Code: {job.code} | {job.date_created}
                   </p>
                 </div>
-                <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm sm:text-base font-black whitespace-nowrap"
-                  style={{ background: statusInfo.bg, border: `2px solid ${statusInfo.color}`, color: statusInfo.color }}>
+                <div
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm sm:text-base font-black whitespace-nowrap"
+                  style={{
+                    background: statusInfo.bg,
+                    border: `2px solid ${statusInfo.color}`,
+                    color: statusInfo.color,
+                  }}
+                >
                   {STATUS_ICON[job.status]}
                   {statusInfo.label}
                 </div>
@@ -270,11 +381,16 @@ export default function JobStatusPage() {
 
               {/* View Tabs */}
               <div className="grid grid-cols-3 gap-1 p-3 border-b border-white/[0.08]">
-                {(["detailed", "compact", "timeline"] as const).map(tab => (
-                  <button key={tab} onClick={() => setView(tab)}
+                {(["detailed", "compact", "timeline"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setView(tab)}
                     className={`py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-                      view === tab ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40" : "bg-white/[0.03] text-slate-500 hover:text-slate-300"
-                    }`}>
+                      view === tab
+                        ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
+                        : "bg-white/[0.03] text-slate-500 hover:text-slate-300"
+                    }`}
+                  >
                     {tab === "detailed" ? "Detailed" : tab === "compact" ? "Compact" : "Timeline"}
                   </button>
                 ))}
@@ -291,9 +407,14 @@ export default function JobStatusPage() {
                         { label: "Repair Code", value: job.code },
                         { label: "Item", value: job.item },
                         { label: "Fault", value: job.fault },
-                      ].map(info => (
-                        <div key={info.label} className="rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06]">
-                          <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">{info.label}</p>
+                      ].map((info) => (
+                        <div
+                          key={info.label}
+                          className="rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06]"
+                        >
+                          <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">
+                            {info.label}
+                          </p>
                           <p className="font-bold text-sm break-words">{info.value}</p>
                         </div>
                       ))}
@@ -307,14 +428,21 @@ export default function JobStatusPage() {
                         </h3>
                         <div className="rounded-2xl overflow-hidden bg-white/[0.03] border border-white/[0.06]">
                           {services.map((sv, i) => (
-                            <div key={i} className="flex justify-between items-center px-4 py-3 border-b border-white/[0.05] last:border-b-0">
+                            <div
+                              key={i}
+                              className="flex justify-between items-center px-4 py-3 border-b border-white/[0.05] last:border-b-0"
+                            >
                               <span className="text-sm">{sv.service_name}</span>
-                              <span className="font-bold text-blue-400">₹{sv.price.toLocaleString("en-IN")}</span>
+                              <span className="font-bold text-blue-400">
+                                ₹{sv.price.toLocaleString("en-IN")}
+                              </span>
                             </div>
                           ))}
                           <div className="flex justify-between items-center px-4 py-3 font-black bg-blue-500/5 border-t border-white/[0.08]">
                             <span className="text-sm">Total Services</span>
-                            <span className="text-blue-400">₹{totalServices.toLocaleString("en-IN")}</span>
+                            <span className="text-blue-400">
+                              ₹{totalServices.toLocaleString("en-IN")}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -328,20 +456,29 @@ export default function JobStatusPage() {
                         </h3>
                         <div className="rounded-2xl overflow-hidden bg-white/[0.03] border border-white/[0.06]">
                           {products.map((p, i) => (
-                            <div key={i} className="flex justify-between items-center px-4 py-3 border-b border-white/[0.05] last:border-b-0">
+                            <div
+                              key={i}
+                              className="flex justify-between items-center px-4 py-3 border-b border-white/[0.05] last:border-b-0"
+                            >
                               <div>
                                 <span className="text-sm font-bold">{p.product_name}</span>
                                 <span className="text-xs ml-2 text-slate-500">Qty: {p.qty}</span>
                               </div>
                               <div className="text-right shrink-0">
-                                <span className="font-bold text-emerald-400">₹{p.total.toLocaleString("en-IN")}</span>
-                                <span className="text-xs block text-slate-500">₹{p.price.toLocaleString("en-IN")} each</span>
+                                <span className="font-bold text-emerald-400">
+                                  ₹{p.total.toLocaleString("en-IN")}
+                                </span>
+                                <span className="text-xs block text-slate-500">
+                                  ₹{p.price.toLocaleString("en-IN")} each
+                                </span>
                               </div>
                             </div>
                           ))}
                           <div className="flex justify-between items-center px-4 py-3 font-black bg-emerald-500/5 border-t border-white/[0.08]">
                             <span className="text-sm">Total Products</span>
-                            <span className="text-emerald-400">₹{totalProducts.toLocaleString("en-IN")}</span>
+                            <span className="text-emerald-400">
+                              ₹{totalProducts.toLocaleString("en-IN")}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -349,17 +486,23 @@ export default function JobStatusPage() {
 
                     {/* Amount */}
                     <div className="text-center p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-2 border-emerald-500/40">
-                      <p className="text-xs font-black uppercase tracking-wider text-slate-400 mb-2">Total Payable Amount</p>
+                      <p className="text-xs font-black uppercase tracking-wider text-slate-400 mb-2">
+                        Total Payable Amount
+                      </p>
                       <p className="font-display text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
                         ₹{job.amount.toLocaleString("en-IN")}
                       </p>
-                      <p className="text-xs mt-2 text-slate-500">Includes all services and products</p>
+                      <p className="text-xs mt-2 text-slate-500">
+                        Includes all services and products
+                      </p>
                     </div>
 
                     {/* Remarks */}
                     {job.remark && (
                       <div className="rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06]">
-                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Additional Remarks</p>
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
+                          Additional Remarks
+                        </p>
                         <p className="text-sm text-slate-300 whitespace-pre-wrap">{job.remark}</p>
                       </div>
                     )}
@@ -376,9 +519,14 @@ export default function JobStatusPage() {
                           { label: "Repair Code", value: job.code },
                           { label: "Item", value: job.item },
                           { label: "Fault", value: job.fault },
-                        ].map(info => (
-                          <div key={info.label} className="rounded-xl p-3.5 bg-white/[0.03] border border-white/[0.06]">
-                            <p className="text-[10px] font-black uppercase text-slate-500">{info.label}</p>
+                        ].map((info) => (
+                          <div
+                            key={info.label}
+                            className="rounded-xl p-3.5 bg-white/[0.03] border border-white/[0.06]"
+                          >
+                            <p className="text-[10px] font-black uppercase text-slate-500">
+                              {info.label}
+                            </p>
                             <p className="font-bold text-sm mt-0.5 break-words">{info.value}</p>
                           </div>
                         ))}
@@ -386,21 +534,40 @@ export default function JobStatusPage() {
                       {services.length > 0 && (
                         <div className="rounded-xl overflow-hidden bg-white/[0.03] border border-white/[0.06]">
                           {services.map((sv, i) => (
-                            <div key={i} className="flex justify-between px-4 py-2.5 border-b border-white/[0.05] last:border-b-0">
+                            <div
+                              key={i}
+                              className="flex justify-between px-4 py-2.5 border-b border-white/[0.05] last:border-b-0"
+                            >
                               <span className="text-sm">{sv.service_name}</span>
-                              <span className="text-sm font-bold text-blue-400">₹{sv.price.toLocaleString("en-IN")}</span>
+                              <span className="text-sm font-bold text-blue-400">
+                                ₹{sv.price.toLocaleString("en-IN")}
+                              </span>
                             </div>
                           ))}
                         </div>
                       )}
                     </div>
-                    <div className="text-center p-5 rounded-2xl" style={{ background: statusInfo.bg, border: `1px solid ${statusInfo.color}` }}>
-                      <p className="text-[10px] font-black uppercase" style={{ color: statusInfo.color }}>Current Status</p>
-                      <p className="text-xl font-black mt-1" style={{ color: statusInfo.color }}>{statusInfo.label}</p>
-                      <p className="text-xs mt-1 opacity-90" style={{ color: statusInfo.color }}>{statusInfo.desc}</p>
+                    <div
+                      className="text-center p-5 rounded-2xl"
+                      style={{ background: statusInfo.bg, border: `1px solid ${statusInfo.color}` }}
+                    >
+                      <p
+                        className="text-[10px] font-black uppercase"
+                        style={{ color: statusInfo.color }}
+                      >
+                        Current Status
+                      </p>
+                      <p className="text-xl font-black mt-1" style={{ color: statusInfo.color }}>
+                        {statusInfo.label}
+                      </p>
+                      <p className="text-xs mt-1 opacity-90" style={{ color: statusInfo.color }}>
+                        {statusInfo.desc}
+                      </p>
                       <div className="mt-4 pt-4 border-t border-white/10">
                         <p className="text-xs text-slate-400">Total Amount</p>
-                        <p className="text-xl font-black text-emerald-400 mt-0.5">₹{job.amount.toLocaleString("en-IN")}</p>
+                        <p className="text-xl font-black text-emerald-400 mt-0.5">
+                          ₹{job.amount.toLocaleString("en-IN")}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -408,23 +575,52 @@ export default function JobStatusPage() {
 
                 {/* TIMELINE VIEW */}
                 {view === "timeline" && (
-                  <div className="relative pl-7" style={{ borderLeft: "2px solid rgba(59,130,246,0.3)" }}>
-                    {[0, 1, 2, 3, 5].map(step => {
+                  <div
+                    className="relative pl-7"
+                    style={{ borderLeft: "2px solid rgba(59,130,246,0.3)" }}
+                  >
+                    {[0, 1, 2, 3, 5].map((step) => {
                       const info = STATUS_CONFIG[step] || STATUS_CONFIG[0];
                       const isCompleted = step < job.status;
                       const isCurrent = step === job.status;
                       return (
                         <div key={step} className="relative mb-6">
-                          <div className="absolute -left-[33px] top-1 w-3.5 h-3.5 rounded-full"
+                          <div
+                            className="absolute -left-[33px] top-1 w-3.5 h-3.5 rounded-full"
                             style={{
-                              background: isCompleted ? "#10b981" : isCurrent ? statusInfo.color : "#374151",
-                              boxShadow: isCurrent ? `0 0 0 4px ${statusInfo.bg}` : isCompleted ? "0 0 0 4px rgba(16,185,129,0.2)" : "none",
-                            }} />
+                              background: isCompleted
+                                ? "#10b981"
+                                : isCurrent
+                                  ? statusInfo.color
+                                  : "#374151",
+                              boxShadow: isCurrent
+                                ? `0 0 0 4px ${statusInfo.bg}`
+                                : isCompleted
+                                  ? "0 0 0 4px rgba(16,185,129,0.2)"
+                                  : "none",
+                            }}
+                          />
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-bold" style={{ color: isCompleted ? "#10b981" : isCurrent ? statusInfo.color : "#94a3b8" }}>
+                            <span
+                              className="text-sm font-bold"
+                              style={{
+                                color: isCompleted
+                                  ? "#10b981"
+                                  : isCurrent
+                                    ? statusInfo.color
+                                    : "#94a3b8",
+                              }}
+                            >
                               {info.label}
                             </span>
-                            {isCurrent && <span className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: statusInfo.bg, color: statusInfo.color }}>Current</span>}
+                            {isCurrent && (
+                              <span
+                                className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                                style={{ background: statusInfo.bg, color: statusInfo.color }}
+                              >
+                                Current
+                              </span>
+                            )}
                           </div>
                           <p className="text-xs text-slate-500">{info.desc}</p>
                         </div>
@@ -436,8 +632,12 @@ export default function JobStatusPage() {
             </div>
 
             {/* WhatsApp help */}
-            <a href={WHATSAPP_LINK("Hello, meri job ka status dekhna hai. Job ID: " + job.job_id)} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/25 text-[#4ade80] text-sm font-black active:scale-[0.99] transition-transform mb-4">
+            <a
+              href={WHATSAPP_LINK("Hello, meri job ka status dekhna hai. Job ID: " + job.job_id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/25 text-[#4ade80] text-sm font-black active:scale-[0.99] transition-transform mb-4"
+            >
               Job ke baare mein koi sawaal? WhatsApp par poochhein
             </a>
           </div>

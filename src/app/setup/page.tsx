@@ -3,7 +3,15 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  UserRound, Mail, Lock, ShieldCheck, Loader2, ArrowRight, KeyRound, CheckCircle2, AlertCircle,
+  UserRound,
+  Mail,
+  Lock,
+  ShieldCheck,
+  Loader2,
+  ArrowRight,
+  KeyRound,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 
 // One-time first-run setup page (client package ka hissa).
@@ -40,10 +48,17 @@ function SetupPageInner() {
       try {
         const res = await fetch("/api/setup/status", { cache: "no-store" });
         const data = await res.json();
-        if (!res.ok) { setError(data.error || "Status check fail"); setLoading(false); return; }
+        if (!res.ok) {
+          setError(data.error || "Status check fail");
+          setLoading(false);
+          return;
+        }
         setNeedsSetup(data.needsSetup);
         setTokenRequired(data.tokenRequired);
-        if (data.loggedIn) { router.replace("/dashboard"); return; }
+        if (data.loggedIn) {
+          router.replace("/dashboard");
+          return;
+        }
       } catch {
         setError("Server se connect nahi ho paya.");
       } finally {
@@ -55,8 +70,14 @@ function SetupPageInner() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password !== confirm) { setError("Dono password match nahi kar rahe"); return; }
-    if (password.length < 6) { setError("Password kam se kam 6 characters ka hona chahiye"); return; }
+    if (password !== confirm) {
+      setError("Dono password match nahi kar rahe");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password kam se kam 6 characters ka hona chahiye");
+      return;
+    }
     setBusy(true);
     try {
       const res = await fetch("/api/setup", {
@@ -65,7 +86,10 @@ function SetupPageInner() {
         body: JSON.stringify({ email, fullName, password, token: token || undefined }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Setup fail hua"); return; }
+      if (!res.ok) {
+        setError(data.error || "Setup fail hua");
+        return;
+      }
       setDone(true);
       setTimeout(() => router.replace("/login"), 1800);
     } catch {
@@ -107,15 +131,21 @@ function SetupPageInner() {
             <div className="text-center py-6">
               <CheckCircle2 size={40} className="text-emerald-400 mx-auto mb-3" />
               <p className="text-sm font-black text-white">Setup complete!</p>
-              <p className="text-xs text-slate-500 mt-1 font-semibold">Login page par le ja rahe hain...</p>
+              <p className="text-xs text-slate-500 mt-1 font-semibold">
+                Login page par le ja rahe hain...
+              </p>
             </div>
           ) : !needsSetup ? (
             <div className="text-center py-6">
               <AlertCircle size={40} className="text-amber-400 mx-auto mb-3" />
               <p className="text-sm font-black text-white">Setup already complete</p>
-              <p className="text-xs text-slate-500 mt-1 font-semibold">Is system ka admin pehle se bana hua hai.</p>
-              <button onClick={() => router.replace("/login")}
-                className="mt-5 w-full px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2">
+              <p className="text-xs text-slate-500 mt-1 font-semibold">
+                Is system ka admin pehle se bana hua hai.
+              </p>
+              <button
+                onClick={() => router.replace("/login")}
+                className="mt-5 w-full px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2"
+              >
                 Login karein <ArrowRight size={15} />
               </button>
             </div>
@@ -123,7 +153,9 @@ function SetupPageInner() {
             <form onSubmit={submit} className="space-y-4">
               <div className="text-center mb-1">
                 <h2 className="text-lg font-black text-white">Admin Account Banao</h2>
-                <p className="text-slate-600 text-sm mt-0.5">Pehla user is system ka admin banega.</p>
+                <p className="text-slate-600 text-sm mt-0.5">
+                  Pehla user is system ka admin banega.
+                </p>
               </div>
 
               {error && (
@@ -133,50 +165,119 @@ function SetupPageInner() {
               )}
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Full Name</label>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  Full Name
+                </label>
                 <div className="relative">
-                  <UserRound size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
-                  <input className={inputCls} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Shop owner ka naam" required />
+                  <UserRound
+                    size={15}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                  />
+                  <input
+                    className={inputCls}
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Shop owner ka naam"
+                    required
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Email</label>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  Email
+                </label>
                 <div className="relative">
-                  <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
-                  <input type="email" className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@shop.com" required />
+                  <Mail
+                    size={15}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                  />
+                  <input
+                    type="email"
+                    className={inputCls}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="admin@shop.com"
+                    required
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Password</label>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  Password
+                </label>
                 <div className="relative">
-                  <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
-                  <input type="password" className={inputCls} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Kam se kam 6 characters" required />
+                  <Lock
+                    size={15}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                  />
+                  <input
+                    type="password"
+                    className={inputCls}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Kam se kam 6 characters"
+                    required
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Confirm Password</label>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  Confirm Password
+                </label>
                 <div className="relative">
-                  <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
-                  <input type="password" className={inputCls} value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Dobara password" required />
+                  <Lock
+                    size={15}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                  />
+                  <input
+                    type="password"
+                    className={inputCls}
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    placeholder="Dobara password"
+                    required
+                  />
                 </div>
               </div>
 
               {tokenRequired && (
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Setup Token</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                    Setup Token
+                  </label>
                   <div className="relative">
-                    <KeyRound size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
-                    <input className={inputCls} value={token} onChange={(e) => setToken(e.target.value)} placeholder="Seller se mila setup token" required />
+                    <KeyRound
+                      size={15}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                    />
+                    <input
+                      className={inputCls}
+                      value={token}
+                      onChange={(e) => setToken(e.target.value)}
+                      placeholder="Seller se mila setup token"
+                      required
+                    />
                   </div>
                 </div>
               )}
 
-              <button type="submit" disabled={busy}
-                className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-900/30 mt-2">
-                {busy ? <><Loader2 size={17} className="animate-spin" /> Setting up...</> : <><ShieldCheck size={17} /> Create Admin & Continue</>}
+              <button
+                type="submit"
+                disabled={busy}
+                className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-900/30 mt-2"
+              >
+                {busy ? (
+                  <>
+                    <Loader2 size={17} className="animate-spin" /> Setting up...
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck size={17} /> Create Admin & Continue
+                  </>
+                )}
               </button>
             </form>
           )}

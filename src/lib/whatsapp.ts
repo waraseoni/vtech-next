@@ -41,10 +41,10 @@ export async function loadTemplate(field: string, fallback: string): Promise<str
 /** Build the standard firm info vars used by every template. */
 export function firmVars(info: Record<string, string>): TemplateVars {
   return {
-    firm_name:    info.name    || "V-Technologies",
-    firm_phone:   info.contact || "9179105875",
+    firm_name: info.name || "V-Technologies",
+    firm_phone: info.contact || "9179105875",
     firm_address: info.address || "Jabalpur",
-    firm_owner:   info.owner   || "Vikram Jain",
+    firm_owner: info.owner || "Vikram Jain",
   };
 }
 

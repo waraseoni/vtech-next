@@ -115,9 +115,22 @@ export default function ClientAmtPage() {
       const ids = clientList.map((client) => client.id);
       const [repairRes, saleRes, paymentRes, loanRes] = await Promise.all([
         pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
-        pageAll(supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids)),
-        pageAll(supabase.from("client_payments").select("client_id, amount, discount, loan_id").in("client_id", ids)),
-        pageAll(supabase.from("client_loans").select("id, client_id, total_payable").eq("status", 1).in("client_id", ids)),
+        pageAll(
+          supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids)
+        ),
+        pageAll(
+          supabase
+            .from("client_payments")
+            .select("client_id, amount, discount, loan_id")
+            .in("client_id", ids)
+        ),
+        pageAll(
+          supabase
+            .from("client_loans")
+            .select("id, client_id, total_payable")
+            .eq("status", 1)
+            .in("client_id", ids)
+        ),
       ]);
 
       const m = buildDueMaps({
@@ -209,7 +222,12 @@ export default function ClientAmtPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.firstname.trim() || !form.lastname.trim() || !form.contact.trim() || !form.address.trim()) {
+    if (
+      !form.firstname.trim() ||
+      !form.lastname.trim() ||
+      !form.contact.trim() ||
+      !form.address.trim()
+    ) {
       setToast({ type: "error", msg: "First name, last name, contact aur address required hain." });
       return;
     }
@@ -300,10 +318,30 @@ export default function ClientAmtPage() {
       )}
 
       <div className="grid gap-3 mb-5 md:grid-cols-4">
-        <StatCard label="Total Clients" value={String(totals.clients)} tone="blue" icon={<Users size={16} />} />
-        <StatCard label="Opening Balance" value={money(totals.opening)} tone="amber" icon={<RotateCcw size={16} />} />
-        <StatCard label="Outstanding Due" value={money(totals.outstanding)} tone="red" icon={<AlertCircle size={16} />} />
-        <StatCard label="Collections" value={money(totals.collections)} tone="emerald" icon={<CheckCircle2 size={16} />} />
+        <StatCard
+          label="Total Clients"
+          value={String(totals.clients)}
+          tone="blue"
+          icon={<Users size={16} />}
+        />
+        <StatCard
+          label="Opening Balance"
+          value={money(totals.opening)}
+          tone="amber"
+          icon={<RotateCcw size={16} />}
+        />
+        <StatCard
+          label="Outstanding Due"
+          value={money(totals.outstanding)}
+          tone="red"
+          icon={<AlertCircle size={16} />}
+        />
+        <StatCard
+          label="Collections"
+          value={money(totals.collections)}
+          tone="emerald"
+          icon={<CheckCircle2 size={16} />}
+        />
       </div>
 
       <div className={`${card} overflow-hidden`}>
@@ -311,7 +349,10 @@ export default function ClientAmtPage() {
           <div className="flex-1 max-w-md">
             <label className={label}>Search Client</label>
             <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+              />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -338,7 +379,9 @@ export default function ClientAmtPage() {
             <Loader2 className="animate-spin text-blue-400" size={26} />
           </div>
         ) : filteredClients.length === 0 ? (
-          <div className="px-5 py-12 text-sm text-center text-slate-500">Koi client record nahi mila.</div>
+          <div className="px-5 py-12 text-sm text-center text-slate-500">
+            Koi client record nahi mila.
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1080px] text-sm">
@@ -357,10 +400,17 @@ export default function ClientAmtPage() {
               <tbody className="divide-y divide-[#1a2234]">
                 {filteredClients.map((client) => {
                   const balanceTone =
-                    client.balance > 0 ? "text-red-400" : client.balance < 0 ? "text-emerald-400" : "text-slate-300";
+                    client.balance > 0
+                      ? "text-red-400"
+                      : client.balance < 0
+                        ? "text-emerald-400"
+                        : "text-slate-300";
                   const isRisk = client.balance > 10000;
                   return (
-                    <tr key={client.id} className={isRisk ? "bg-red-500/5" : "hover:bg-white/[0.03]"}>
+                    <tr
+                      key={client.id}
+                      className={isRisk ? "bg-red-500/5" : "hover:bg-white/[0.03]"}
+                    >
                       <td className="px-4 py-4 align-top">
                         <div className="font-black text-white">{fullName(client)}</div>
                         <div className="mt-1 text-[11px] text-slate-600">ID #{client.id}</div>
@@ -368,13 +418,25 @@ export default function ClientAmtPage() {
                       </td>
                       <td className="px-4 py-4 align-top">
                         <div className="text-slate-300">{client.contact}</div>
-                        <div className="mt-1 text-xs text-slate-600">{client.email || "No email"}</div>
+                        <div className="mt-1 text-xs text-slate-600">
+                          {client.email || "No email"}
+                        </div>
                       </td>
-                      <td className="px-4 py-4 text-right font-bold text-slate-300">{money(Number(client.opening_balance || 0))}</td>
-                      <td className="px-4 py-4 text-right text-slate-300">{money(client.repair_billed)}</td>
-                      <td className="px-4 py-4 text-right text-slate-300">{money(client.direct_sale_billed)}</td>
-                      <td className="px-4 py-4 text-right text-emerald-300">{money(client.total_paid)}</td>
-                      <td className={`px-4 py-4 text-right font-black ${balanceTone}`}>{money(client.balance)}</td>
+                      <td className="px-4 py-4 text-right font-bold text-slate-300">
+                        {money(Number(client.opening_balance || 0))}
+                      </td>
+                      <td className="px-4 py-4 text-right text-slate-300">
+                        {money(client.repair_billed)}
+                      </td>
+                      <td className="px-4 py-4 text-right text-slate-300">
+                        {money(client.direct_sale_billed)}
+                      </td>
+                      <td className="px-4 py-4 text-right text-emerald-300">
+                        {money(client.total_paid)}
+                      </td>
+                      <td className={`px-4 py-4 text-right font-black ${balanceTone}`}>
+                        {money(client.balance)}
+                      </td>
                       <td className="px-4 py-4">
                         <div className="flex justify-end gap-2">
                           <Link href={`/clients/${client.id}/view`} className={btnGhost}>
@@ -411,9 +473,14 @@ export default function ClientAmtPage() {
                 <h3 className="text-base font-black text-white">
                   {form.id ? "Update Client Amount" : "Add New Client"}
                 </h3>
-                <p className="text-xs text-slate-600">PHP client amount manager ki tarah opening balance bhi yahin manage hoga.</p>
+                <p className="text-xs text-slate-600">
+                  PHP client amount manager ki tarah opening balance bhi yahin manage hoga.
+                </p>
               </div>
-              <button onClick={closeModal} className="p-2 rounded-xl text-slate-500 hover:bg-white/[0.05] hover:text-white">
+              <button
+                onClick={closeModal}
+                className="p-2 rounded-xl text-slate-500 hover:bg-white/[0.05] hover:text-white"
+              >
                 <X size={16} />
               </button>
             </div>
@@ -465,7 +532,9 @@ export default function ClientAmtPage() {
                     type="number"
                     step="0.01"
                     value={form.opening_balance}
-                    onChange={(e) => setForm((prev) => ({ ...prev, opening_balance: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, opening_balance: e.target.value }))
+                    }
                     className={input}
                     placeholder="Positive due, negative advance"
                   />
@@ -487,7 +556,11 @@ export default function ClientAmtPage() {
                   Cancel
                 </button>
                 <button type="submit" disabled={saving} className={btnPrimary}>
-                  {saving ? <Loader2 size={13} className="inline-block mr-1 animate-spin" /> : <Save size={13} className="inline-block mr-1" />}
+                  {saving ? (
+                    <Loader2 size={13} className="inline-block mr-1 animate-spin" />
+                  ) : (
+                    <Save size={13} className="inline-block mr-1" />
+                  )}
                   {form.id ? "Update" : "Save"}
                 </button>
               </div>

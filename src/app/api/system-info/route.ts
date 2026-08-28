@@ -24,9 +24,7 @@ function fmtPhone(contact: string | undefined): string {
 }
 
 export async function GET() {
-  const { data, error } = await supabase
-    .from("system_info")
-    .select("meta_field, meta_value");
+  const { data, error } = await supabase.from("system_info").select("meta_field, meta_value");
 
   if (error || !data) {
     return NextResponse.json({ error: "system_info unavailable" }, { status: 500 });
@@ -39,9 +37,8 @@ export async function GET() {
 
   const open = fmt12h(meta.biz_open || "10:00");
   const close = fmt12h(meta.biz_close || "20:00");
-  const hours = meta.biz_open || meta.biz_close
-    ? `${meta.biz_days || "Mon-Sat"} · ${open} – ${close}`
-    : "";
+  const hours =
+    meta.biz_open || meta.biz_close ? `${meta.biz_days || "Mon-Sat"} · ${open} – ${close}` : "";
 
   const year = meta.established_year ? Number(meta.established_year) : null;
 

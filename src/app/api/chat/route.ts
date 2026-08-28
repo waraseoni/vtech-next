@@ -18,10 +18,7 @@ export async function POST(request: NextRequest) {
     const { message, messages, type, context, provider, apiKey: bodyKey, model: bodyModel } = body;
 
     if (!message && (!messages || messages.length === 0)) {
-      return NextResponse.json(
-        { error: "Message is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
     const aiSettings = await getAiSettings();
@@ -46,9 +43,14 @@ export async function POST(request: NextRequest) {
         },
       ];
       if (activeProvider === "groq") {
-         responseText = await getGroqChatResponse(enrichedMessages, apiKey, modelName, role);
+        responseText = await getGroqChatResponse(enrichedMessages, apiKey, modelName, role);
       } else {
-         responseText = await getChatResponse(enrichedMessages as ChatMessage[], apiKey, modelName, role);
+        responseText = await getChatResponse(
+          enrichedMessages as ChatMessage[],
+          apiKey,
+          modelName,
+          role
+        );
       }
     } else if (type === "whatsapp") {
       responseText = await generateWhatsAppReply(
@@ -60,19 +62,24 @@ export async function POST(request: NextRequest) {
         role
       );
     } else {
-      const prompt = (message || (messages && messages[messages.length - 1]?.content) || "")
-        + `\n\n[${liveContext}]`;
-      responseText = await getChatResponse([{ role: "user", content: prompt }], apiKey, modelName, role);
+      const prompt =
+        (message || (messages && messages[messages.length - 1]?.content) || "") +
+        `\n\n[${liveContext}]`;
+      responseText = await getChatResponse(
+        [{ role: "user", content: prompt }],
+        apiKey,
+        modelName,
+        role
+      );
     }
 
     return NextResponse.json({ response: responseText });
-
   } catch (error) {
     logger.error("Chat API Error:", error);
     return NextResponse.json(
-      { 
-        error: "Failed to get response", 
-        details: error instanceof Error ? error.message : String(error) 
+      {
+        error: "Failed to get response",
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );

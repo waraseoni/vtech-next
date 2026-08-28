@@ -12,17 +12,25 @@ export async function POST() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return cookieStore.getAll(); },
-        setAll(cookiesToSet) { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); },
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+        },
       },
     }
   );
 
   const adminSession = await requireAdmin();
-  if (!adminSession) return NextResponse.json({ status: "failed", msg: "Admin only" }, { status: 403 });
+  if (!adminSession)
+    return NextResponse.json({ status: "failed", msg: "Admin only" }, { status: 403 });
 
   const { data: info } = await supabase
-    .from("system_info").select("meta_value").eq("meta_field", "log_retention").maybeSingle();
+    .from("system_info")
+    .select("meta_value")
+    .eq("meta_field", "log_retention")
+    .maybeSingle();
   const days = Math.max(1, parseInt(info?.meta_value || "90") || 90);
 
   const cutoff = new Date();

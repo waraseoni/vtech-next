@@ -5,7 +5,18 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        disallow: ["/dashboard", "/jobs", "/clients", "/inventory", "/reports", "/settings", "/sync", "/api/", "/login", "/my-account"],
+        disallow: [
+          "/dashboard",
+          "/jobs",
+          "/clients",
+          "/inventory",
+          "/reports",
+          "/settings",
+          "/sync",
+          "/api/",
+          "/login",
+          "/my-account",
+        ],
       },
     ],
     sitemap: `${process.env.NEXT_PUBLIC_SITE_URL || "https://vtech-next.vercel.app"}/sitemap.xml`,

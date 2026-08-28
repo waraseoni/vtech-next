@@ -33,16 +33,26 @@ function CustomSalesContent() {
       const toTs = `${to}T23:59:59+05:30`;
 
       const { data: tpData } = await supabase
-        .from("transaction_products").select("product_id, price, qty, date_updated, transaction_id")
-        .gte("date_updated", fromTs).lte("date_updated", toTs);
+        .from("transaction_products")
+        .select("product_id, price, qty, date_updated, transaction_id")
+        .gte("date_updated", fromTs)
+        .lte("date_updated", toTs);
 
       const txnIds = [...new Set(tpData?.map((t) => t.transaction_id) || [])];
       const { data: txns } = await supabase
-        .from("transaction_list").select("id, code, client_name, status, date_updated")
-        .in("id", txnIds).in("status", [1, 2, 3, 5]);
+        .from("transaction_list")
+        .select("id, code, client_name, status, date_updated")
+        .in("id", txnIds)
+        .in("status", [1, 2, 3, 5]);
 
-      const { data: clients } = await supabase.from("client_list").select("id, firstname, middlename, lastname").eq("delete_flag", 0);
-      const { data: products } = await supabase.from("product_list").select("id, name").eq("delete_flag", 0);
+      const { data: clients } = await supabase
+        .from("client_list")
+        .select("id, firstname, middlename, lastname")
+        .eq("delete_flag", 0);
+      const { data: products } = await supabase
+        .from("product_list")
+        .select("id, name")
+        .eq("delete_flag", 0);
 
       const saleRows: SaleRow[] = [];
       for (const tp of tpData || []) {
@@ -53,18 +63,29 @@ function CustomSalesContent() {
         saleRows.push({
           date_updated: tp.date_updated || txn.date_updated,
           code: txn.code,
-          client_name: client ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ") : "Walk-in",
+          client_name: client
+            ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
+            : "Walk-in",
           product_name: product?.name || "Unknown",
-          price: tp.price || 0, qty: tp.qty || 1, total: (tp.price || 0) * (tp.qty || 1),
+          price: tp.price || 0,
+          qty: tp.qty || 1,
+          total: (tp.price || 0) * (tp.qty || 1),
         });
       }
-      saleRows.sort((a, b) => new Date(a.date_updated).getTime() - new Date(b.date_updated).getTime());
+      saleRows.sort(
+        (a, b) => new Date(a.date_updated).getTime() - new Date(b.date_updated).getTime()
+      );
       setRows(saleRows);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   }, [from, to]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const total = rows.reduce((s, r) => s + r.total, 0);
 
@@ -77,8 +98,10 @@ function CustomSalesContent() {
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">Sales by date range</p>
         </div>
-        <button onClick={() => window.open(`/api/print-custom-sales?from=${from}&to=${to}`, "_blank")}
-          className="flex items-center gap-2 px-4 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all">
+        <button
+          onClick={() => window.open(`/api/print-custom-sales?from=${from}&to=${to}`, "_blank")}
+          className="flex items-center gap-2 px-4 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all"
+        >
           <Printer size={13} /> Print
         </button>
       </div>
@@ -86,17 +109,30 @@ function CustomSalesContent() {
       <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">From</label>
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
-              className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50" />
+            <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+              From
+            </label>
+            <input
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+            />
           </div>
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">To</label>
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
-              className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50" />
+            <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+              To
+            </label>
+            <input
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+            />
           </div>
           <div className="text-sm font-black text-white">
-            {formatIST(from, { day: "2-digit", month: "short", year: "numeric" })} — {formatIST(to, { day: "2-digit", month: "short", year: "numeric" })}
+            {formatIST(from, { day: "2-digit", month: "short", year: "numeric" })} —{" "}
+            {formatIST(to, { day: "2-digit", month: "short", year: "numeric" })}
           </div>
         </div>
       </div>
@@ -107,32 +143,71 @@ function CustomSalesContent() {
             <thead>
               <tr className="bg-[#111520]">
                 {["#", "Date", "Code / Client", "Product", "Price", "Qty", "Total"].map((h) => (
-                  <th key={h} className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left">{h}</th>
+                  <th
+                    key={h}
+                    className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left"
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="text-center py-12"><Loader2 size={20} className="animate-spin text-blue-400 mx-auto" /></td></tr>
-              ) : rows.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-12 text-slate-600 text-xs font-bold">No sales found</td></tr>
-              ) : rows.map((r, i) => (
-                <tr key={i} className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors">
-                  <td className="px-3 py-2.5 text-xs text-slate-500 text-center">{i + 1}</td>
-                  <td className="px-3 py-2.5 text-xs text-slate-400">{new Date(r.date_updated).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
-                  <td className="px-3 py-2.5"><div className="text-xs font-bold text-blue-400">{r.code || "—"}</div><div className="text-[10px] text-slate-500">{r.client_name}</div></td>
-                  <td className="px-3 py-2.5 text-xs font-bold text-slate-200">{r.product_name}</td>
-                  <td className="px-3 py-2.5 text-xs text-right text-slate-300">{inr(r.price)}</td>
-                  <td className="px-3 py-2.5 text-xs text-right text-slate-300">{r.qty}</td>
-                  <td className="px-3 py-2.5 text-xs text-right font-bold text-emerald-400">{inr(r.total)}</td>
+                <tr>
+                  <td colSpan={7} className="text-center py-12">
+                    <Loader2 size={20} className="animate-spin text-blue-400 mx-auto" />
+                  </td>
                 </tr>
-              ))}
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-slate-600 text-xs font-bold">
+                    No sales found
+                  </td>
+                </tr>
+              ) : (
+                rows.map((r, i) => (
+                  <tr
+                    key={i}
+                    className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors"
+                  >
+                    <td className="px-3 py-2.5 text-xs text-slate-500 text-center">{i + 1}</td>
+                    <td className="px-3 py-2.5 text-xs text-slate-400">
+                      {new Date(r.date_updated).toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="text-xs font-bold text-blue-400">{r.code || "—"}</div>
+                      <div className="text-[10px] text-slate-500">{r.client_name}</div>
+                    </td>
+                    <td className="px-3 py-2.5 text-xs font-bold text-slate-200">
+                      {r.product_name}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-right text-slate-300">
+                      {inr(r.price)}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-right text-slate-300">{r.qty}</td>
+                    <td className="px-3 py-2.5 text-xs text-right font-bold text-emerald-400">
+                      {inr(r.total)}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-emerald-500/30 bg-emerald-500/5">
-                <td colSpan={5} className="px-3 py-3 text-xs font-black text-slate-400 text-right">Total ({new Date(from).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} — {new Date(to).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}):</td>
+                <td colSpan={5} className="px-3 py-3 text-xs font-black text-slate-400 text-right">
+                  Total (
+                  {new Date(from).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} —{" "}
+                  {new Date(to).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}):
+                </td>
                 <td className="px-3 py-3" />
-                <td className="px-3 py-3 text-sm text-right font-black text-emerald-400">{inr(total)}</td>
+                <td className="px-3 py-3 text-sm text-right font-black text-emerald-400">
+                  {inr(total)}
+                </td>
               </tr>
             </tfoot>
           </table>
@@ -144,7 +219,13 @@ function CustomSalesContent() {
 
 export default function CustomSalesPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center py-24"><Loader2 size={24} className="animate-spin text-blue-400" /></div>}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-24">
+          <Loader2 size={24} className="animate-spin text-blue-400" />
+        </div>
+      }
+    >
       <CustomSalesContent />
     </Suspense>
   );

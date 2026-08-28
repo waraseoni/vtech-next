@@ -10,8 +10,16 @@ import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
-  Users, Search, CheckSquare, Square, Printer, ArrowLeft,
-  Loader2, FileText, ChevronRight, X,
+  Users,
+  Search,
+  CheckSquare,
+  Square,
+  Printer,
+  ArrowLeft,
+  Loader2,
+  FileText,
+  ChevronRight,
+  X,
 } from "lucide-react";
 import { JOB_STATUS_INLINE } from "@/lib/status-colors";
 
@@ -42,7 +50,9 @@ const STATUS_MAP: Record<number, { label: string; color: string; bg: string }> =
 function fmtDate(iso: string) {
   return new Intl.DateTimeFormat("en-IN", {
     timeZone: "Asia/Kolkata",
-    day: "2-digit", month: "short", year: "numeric",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(iso));
 }
 
@@ -54,7 +64,6 @@ function inr(n: number) {
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════
 export default function CombinedInvoicePage() {
-
   // ── Step 1: Client selection ─────────────────────────────────────
   const [step, setStep] = useState<1 | 2>(1);
   const [clientSearch, setClientSearch] = useState("");
@@ -71,14 +80,19 @@ export default function CombinedInvoicePage() {
 
   // ── Search clients ───────────────────────────────────────────────
   const searchClients = useCallback(async (q: string) => {
-    if (!q.trim()) { setClients([]); return; }
+    if (!q.trim()) {
+      setClients([]);
+      return;
+    }
     setClientLoading(true);
     const like = `%${q}%`;
     const { data } = await supabase
       .from("client_list")
       .select("id, firstname, middlename, lastname, contact, address")
       .eq("delete_flag", 0)
-      .or(`firstname.ilike.${like},middlename.ilike.${like},lastname.ilike.${like},contact.ilike.${like}`)
+      .or(
+        `firstname.ilike.${like},middlename.ilike.${like},lastname.ilike.${like},contact.ilike.${like}`
+      )
       .order("firstname")
       .limit(20);
     setClients((data as Client[]) || []);
@@ -106,22 +120,25 @@ export default function CombinedInvoicePage() {
   }, []);
 
   // ── Load jobs for selected client ────────────────────────────────
-  const loadJobs = useCallback(async (clientId: number) => {
-    setJobLoading(true);
-    let q = supabase
-      .from("transaction_list")
-      .select("id, job_id, code, item, fault, amount, status, date_created")
-      .eq("client_name", String(clientId))
-      .neq("status", 4) // exclude cancelled
-      .eq("del_status", 0)
-      .order("date_created", { ascending: false });
+  const loadJobs = useCallback(
+    async (clientId: number) => {
+      setJobLoading(true);
+      let q = supabase
+        .from("transaction_list")
+        .select("id, job_id, code, item, fault, amount, status, date_created")
+        .eq("client_name", String(clientId))
+        .neq("status", 4) // exclude cancelled
+        .eq("del_status", 0)
+        .order("date_created", { ascending: false });
 
-    if (statusFilter !== "") q = q.eq("status", statusFilter);
+      if (statusFilter !== "") q = q.eq("status", statusFilter);
 
-    const { data } = await q;
-    setJobs((data as Transaction[]) || []);
-    setJobLoading(false);
-  }, [statusFilter]);
+      const { data } = await q;
+      setJobs((data as Transaction[]) || []);
+      setJobLoading(false);
+    },
+    [statusFilter]
+  );
 
   useEffect(() => {
     // client select hone par jobs fetch; loading init sync legit
@@ -137,7 +154,7 @@ export default function CombinedInvoicePage() {
 
   // ── Job checkbox toggle ──────────────────────────────────────────
   const toggleJob = (id: number) => {
-    setSelectedIds(prev => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -150,14 +167,12 @@ export default function CombinedInvoicePage() {
     if (selectedIds.size === filtered.length && filtered.length > 0) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filtered.map(j => j.id)));
+      setSelectedIds(new Set(filtered.map((j) => j.id)));
     }
   };
 
   // ── Filter jobs by status ────────────────────────────────────────
-  const filteredJobs = statusFilter !== ""
-    ? jobs.filter(j => j.status === statusFilter)
-    : jobs;
+  const filteredJobs = statusFilter !== "" ? jobs.filter((j) => j.status === statusFilter) : jobs;
 
   // ── Print combined invoice ───────────────────────────────────────
   const printCombinedInvoice = () => {
@@ -175,7 +190,7 @@ export default function CombinedInvoicePage() {
     [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ").trim();
 
   const selectedTotal = [...selectedIds].reduce((sum, id) => {
-    const job = jobs.find(j => j.id === id);
+    const job = jobs.find((j) => j.id === id);
     return sum + (job?.amount || 0);
   }, 0);
 
@@ -185,10 +200,12 @@ export default function CombinedInvoicePage() {
   return (
     <div className="min-h-screen bg-[#0d1117] text-white p-4 font-sans">
       <div className="max-w-4xl mx-auto space-y-4">
-
         {/* ── Header ── */}
         <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-4 flex items-center gap-4">
-          <Link href="/jobs" className="p-2 bg-[#21293d] hover:bg-[#2a3550] rounded-lg transition-all">
+          <Link
+            href="/jobs"
+            className="p-2 bg-[#21293d] hover:bg-[#2a3550] rounded-lg transition-all"
+          >
             <ArrowLeft size={18} className="text-slate-400" />
           </Link>
           <div className="flex items-center gap-3 flex-1">
@@ -197,17 +214,23 @@ export default function CombinedInvoicePage() {
             </div>
             <div>
               <h1 className="text-base font-bold text-white">Combined Invoice</h1>
-              <p className="text-xs text-slate-500">Ek client ke multiple jobs ka combined bill print karo</p>
+              <p className="text-xs text-slate-500">
+                Ek client ke multiple jobs ka combined bill print karo
+              </p>
             </div>
           </div>
 
           {/* Step indicator */}
           <div className="flex items-center gap-2 text-xs font-bold">
-            <span className={`px-3 py-1.5 rounded-lg border ${step === 1 ? "bg-violet-600 border-violet-500 text-white" : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"}`}>
+            <span
+              className={`px-3 py-1.5 rounded-lg border ${step === 1 ? "bg-violet-600 border-violet-500 text-white" : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"}`}
+            >
               1. Client
             </span>
             <ChevronRight size={14} className="text-slate-600" />
-            <span className={`px-3 py-1.5 rounded-lg border ${step === 2 ? "bg-violet-600 border-violet-500 text-white" : "bg-[#21293d] border-[#21293d] text-slate-600"}`}>
+            <span
+              className={`px-3 py-1.5 rounded-lg border ${step === 2 ? "bg-violet-600 border-violet-500 text-white" : "bg-[#21293d] border-[#21293d] text-slate-600"}`}
+            >
               2. Jobs
             </span>
           </div>
@@ -221,17 +244,23 @@ export default function CombinedInvoicePage() {
             {/* Search bar */}
             <div className="p-4 border-b border-[#21293d]">
               <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+                <Search
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600"
+                  size={16}
+                />
                 <input
                   type="text"
                   placeholder="Client ka naam ya phone number search karo..."
                   value={clientSearch}
-                  onChange={e => setClientSearch(e.target.value)}
+                  onChange={(e) => setClientSearch(e.target.value)}
                   className="w-full pl-10 pr-10 py-2.5 bg-[#0d1117] border border-[#21293d] text-white placeholder-slate-600 rounded-xl text-sm focus:border-violet-500 focus:ring-1 focus:ring-violet-500/20 outline-none transition-all"
                   autoFocus
                 />
                 {clientSearch && (
-                  <button onClick={() => setClientSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400">
+                  <button
+                    onClick={() => setClientSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400"
+                  >
                     <X size={15} />
                   </button>
                 )}
@@ -251,7 +280,7 @@ export default function CombinedInvoicePage() {
                   <p className="text-xs mt-1">Naam ya phone number se search karo</p>
                 </div>
               ) : (
-                clients.map(client => (
+                clients.map((client) => (
                   <button
                     key={client.id}
                     onClick={() => handleSelectClient(client)}
@@ -269,10 +298,15 @@ export default function CombinedInvoicePage() {
                       </div>
                       <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-3">
                         {client.contact && <span>📞 {client.contact}</span>}
-                        {client.address && <span className="truncate max-w-[200px]">📍 {client.address}</span>}
+                        {client.address && (
+                          <span className="truncate max-w-[200px]">📍 {client.address}</span>
+                        )}
                       </div>
                     </div>
-                    <ChevronRight size={16} className="text-slate-600 group-hover:text-violet-400 transition-colors flex-shrink-0" />
+                    <ChevronRight
+                      size={16}
+                      className="text-slate-600 group-hover:text-violet-400 transition-colors flex-shrink-0"
+                    />
                   </button>
                 ))
               )}
@@ -299,7 +333,12 @@ export default function CombinedInvoicePage() {
                 </div>
               </div>
               <button
-                onClick={() => { setStep(1); setSelectedClient(null); setJobs([]); setSelectedIds(new Set()); }}
+                onClick={() => {
+                  setStep(1);
+                  setSelectedClient(null);
+                  setJobs([]);
+                  setSelectedIds(new Set());
+                }}
                 className="px-4 py-2 bg-[#21293d] hover:bg-[#2a3550] text-slate-400 hover:text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
               >
                 <X size={13} /> Change Client
@@ -313,26 +352,35 @@ export default function CombinedInvoicePage() {
                 onClick={toggleAll}
                 className="flex items-center gap-2 text-sm font-bold text-slate-300 hover:text-white transition-colors"
               >
+                {selectedIds.size === filteredJobs.length && filteredJobs.length > 0 ? (
+                  <CheckSquare size={18} className="text-violet-400" />
+                ) : (
+                  <Square size={18} className="text-slate-600" />
+                )}
                 {selectedIds.size === filteredJobs.length && filteredJobs.length > 0
-                  ? <CheckSquare size={18} className="text-violet-400" />
-                  : <Square size={18} className="text-slate-600" />
-                }
-                {selectedIds.size === filteredJobs.length && filteredJobs.length > 0 ? "Deselect All" : "Select All"}
+                  ? "Deselect All"
+                  : "Select All"}
               </button>
 
               <div className="h-6 w-px bg-[#21293d]" />
 
               {/* Status filter */}
               <div className="flex items-center gap-2">
-                <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Filter:</label>
+                <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                  Filter:
+                </label>
                 <select
                   value={statusFilter}
-                  onChange={e => setStatusFilter(e.target.value === "" ? "" : parseInt(e.target.value))}
+                  onChange={(e) =>
+                    setStatusFilter(e.target.value === "" ? "" : parseInt(e.target.value))
+                  }
                   className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:border-violet-500 outline-none"
                 >
                   <option value="">All Status</option>
                   {Object.entries(STATUS_MAP).map(([k, v]) => (
-                    <option key={k} value={k}>{v.label}</option>
+                    <option key={k} value={k}>
+                      {v.label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -341,7 +389,9 @@ export default function CombinedInvoicePage() {
 
               {/* Bill type */}
               <div className="flex items-center gap-2">
-                <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Bill:</label>
+                <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                  Bill:
+                </label>
                 <div className="flex rounded-lg overflow-hidden border border-[#21293d]">
                   <button
                     onClick={() => setBillType("non_gst")}
@@ -365,7 +415,9 @@ export default function CombinedInvoicePage() {
               {selectedIds.size > 0 && (
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <div className="text-xs text-slate-500 font-bold">{selectedIds.size} job{selectedIds.size > 1 ? "s" : ""} selected</div>
+                    <div className="text-xs text-slate-500 font-bold">
+                      {selectedIds.size} job{selectedIds.size > 1 ? "s" : ""} selected
+                    </div>
                     <div className="text-sm font-black text-emerald-400">{inr(selectedTotal)}</div>
                   </div>
                   <button
@@ -393,7 +445,7 @@ export default function CombinedInvoicePage() {
                 </div>
               ) : (
                 <div className="divide-y divide-[#21293d]">
-                  {filteredJobs.map(job => {
+                  {filteredJobs.map((job) => {
                     const isSelected = selectedIds.has(job.id);
                     const sc = STATUS_MAP[job.status] || STATUS_MAP[0];
                     return (
@@ -404,19 +456,18 @@ export default function CombinedInvoicePage() {
                       >
                         {/* Checkbox */}
                         <div className="flex-shrink-0">
-                          {isSelected
-                            ? <CheckSquare size={20} className="text-violet-400" />
-                            : <Square size={20} className="text-slate-700" />
-                          }
+                          {isSelected ? (
+                            <CheckSquare size={20} className="text-violet-400" />
+                          ) : (
+                            <Square size={20} className="text-slate-700" />
+                          )}
                         </div>
 
                         {/* Job info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-black text-blue-400 text-sm">#{job.job_id}</span>
-                            {job.code && (
-                              <span className="text-slate-600 text-xs">{job.code}</span>
-                            )}
+                            {job.code && <span className="text-slate-600 text-xs">{job.code}</span>}
                             <span
                               className="px-2 py-0.5 rounded-full text-[10px] font-bold"
                               style={{ backgroundColor: sc.bg, color: sc.color }}
@@ -424,14 +475,20 @@ export default function CombinedInvoicePage() {
                               {sc.label}
                             </span>
                           </div>
-                          <div className="text-sm text-slate-300 font-semibold mt-0.5 truncate">{job.item}</div>
+                          <div className="text-sm text-slate-300 font-semibold mt-0.5 truncate">
+                            {job.item}
+                          </div>
                           <div className="text-xs text-red-400 mt-0.5 truncate">{job.fault}</div>
                         </div>
 
                         {/* Amount + Date */}
                         <div className="text-right flex-shrink-0">
-                          <div className="font-black text-white text-base">{inr(job.amount || 0)}</div>
-                          <div className="text-[10px] text-slate-600 mt-0.5">{fmtDate(job.date_created)}</div>
+                          <div className="font-black text-white text-base">
+                            {inr(job.amount || 0)}
+                          </div>
+                          <div className="text-[10px] text-slate-600 mt-0.5">
+                            {fmtDate(job.date_created)}
+                          </div>
                         </div>
                       </div>
                     );
@@ -445,15 +502,21 @@ export default function CombinedInvoicePage() {
               <div className="sticky bottom-4 bg-[#0d1117]/90 backdrop-blur-xl border border-violet-500/40 rounded-2xl p-4 flex items-center gap-4 shadow-2xl shadow-violet-900/30">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
-                    {[...selectedIds].map(id => {
-                      const j = jobs.find(x => x.id === id);
+                    {[...selectedIds].map((id) => {
+                      const j = jobs.find((x) => x.id === id);
                       if (!j) return null;
                       return (
-                        <div key={id} className="flex items-center gap-1.5 bg-[#161b27] border border-[#21293d] rounded-lg px-2.5 py-1.5">
+                        <div
+                          key={id}
+                          className="flex items-center gap-1.5 bg-[#161b27] border border-[#21293d] rounded-lg px-2.5 py-1.5"
+                        >
                           <span className="text-blue-400 font-black text-xs">#{j.job_id}</span>
                           <span className="text-white font-bold text-xs">{inr(j.amount)}</span>
                           <button
-                            onClick={e => { e.stopPropagation(); toggleJob(id); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleJob(id);
+                            }}
                             className="text-slate-600 hover:text-red-400 transition-colors ml-0.5"
                           >
                             <X size={12} />
@@ -464,7 +527,9 @@ export default function CombinedInvoicePage() {
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Selected</div>
+                  <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                    Total Selected
+                  </div>
                   <div className="text-2xl font-black text-emerald-400">{inr(selectedTotal)}</div>
                 </div>
                 <button
@@ -478,7 +543,6 @@ export default function CombinedInvoicePage() {
             )}
           </>
         )}
-
       </div>
     </div>
   );

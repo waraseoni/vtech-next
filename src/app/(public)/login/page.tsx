@@ -2,12 +2,38 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { LogIn, Mail, Lock, Loader2, ShieldCheck, Eye, EyeOff, AlertCircle, Globe, Smartphone, KeyRound, ArrowLeft, UserRound } from "lucide-react";
+import {
+  LogIn,
+  Mail,
+  Lock,
+  Loader2,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Globe,
+  Smartphone,
+  KeyRound,
+  ArrowLeft,
+  UserRound,
+} from "lucide-react";
 import { SITE } from "../site";
 
 type Tab = "staff" | "client";
 
-function TabButton({ t, icon, label, active, onSelect }: { t: Tab; icon: React.ReactNode; label: string; active: boolean; onSelect: (t: Tab) => void }) {
+function TabButton({
+  t,
+  icon,
+  label,
+  active,
+  onSelect,
+}: {
+  t: Tab;
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  onSelect: (t: Tab) => void;
+}) {
   return (
     <button
       type="button"
@@ -26,23 +52,23 @@ function TabButton({ t, icon, label, active, onSelect }: { t: Tab; icon: React.R
 
 export default function LoginPage() {
   useRouter();
-  const [tab,          setTab]          = useState<Tab>("staff");
-  const [email,        setEmail]        = useState("");
-  const [password,     setPassword]     = useState("");
-  const [rememberMe,   setRememberMe]   = useState(false);
-  const [showPass,     setShowPass]     = useState(false);
-  const [loading,      setLoading]      = useState(false);
-  const [error,        setError]        = useState("");
+  const [tab, setTab] = useState<Tab>("staff");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // Client OTP state
-  const [clientEmail,  setClientEmail]  = useState("");
-  const [otpStep,      setOtpStep]      = useState<"request" | "verify">("request");
-  const [otp,          setOtp]          = useState("");
-  const [info,         setInfo]         = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [otpStep, setOtpStep] = useState<"request" | "verify">("request");
+  const [otp, setOtp] = useState("");
+  const [info, setInfo] = useState("");
 
   // ── Load saved email ───────────────────────────────────────────────────
   useEffect(() => {
-    const savedEmail    = localStorage.getItem("vtech_email");
+    const savedEmail = localStorage.getItem("vtech_email");
     const savedRemember = localStorage.getItem("vtech_remember") === "true";
     if (savedRemember && savedEmail) {
       // localStorage SSR me exist nahi karta; mount-time init hi sahi hai
@@ -58,11 +84,15 @@ export default function LoginPage() {
     if (reason === "revoked") {
       // URL params sirf browser me hote hain; render me read nahi kar sakte
       setTab("client");
-      setError("Aapki portal access band kar di gayi hai. Dobara access ke liye shop se sampark karein.");
+      setError(
+        "Aapki portal access band kar di gayi hai. Dobara access ke liye shop se sampark karein."
+      );
     } else if (reason === "idle") {
       // Staff ya client — dono ke liye same message. Tab switch nahi karte
       // (staff tab pe default dikh jayega, client tab pe bhi same error dikhega).
-      setError("Kuchh der inactivity ki wajah se aap automatically logout ho gaye hain. Dobara login karein.");
+      setError(
+        "Kuchh der inactivity ki wajah se aap automatically logout ho gaye hain. Dobara login karein."
+      );
     }
   }, []);
 
@@ -86,7 +116,7 @@ export default function LoginPage() {
     }
 
     if (rememberMe) {
-      localStorage.setItem("vtech_email",    email);
+      localStorage.setItem("vtech_email", email);
       localStorage.setItem("vtech_remember", "true");
     } else {
       localStorage.removeItem("vtech_email");
@@ -118,7 +148,9 @@ export default function LoginPage() {
       return;
     }
 
-    setInfo("OTP aapke email par bheja gaya hai. Jald hi aa jayega (spam folder bhi check karein).");
+    setInfo(
+      "OTP aapke email par bheja gaya hai. Jald hi aa jayega (spam folder bhi check karein)."
+    );
     setOtpStep("verify");
     setLoading(false);
   };
@@ -133,7 +165,11 @@ export default function LoginPage() {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: "verify-otp", email: clientEmail.trim().toLowerCase(), token: otp.trim() }),
+      body: JSON.stringify({
+        mode: "verify-otp",
+        email: clientEmail.trim().toLowerCase(),
+        token: otp.trim(),
+      }),
     });
     const data = await res.json();
 
@@ -176,7 +212,6 @@ export default function LoginPage() {
       </div>
 
       <div className="relative w-full max-w-sm">
-
         {/* Logo / Brand */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-900/50">
@@ -194,8 +229,20 @@ export default function LoginPage() {
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-7 shadow-2xl">
           {/* Tabs */}
           <div className="flex gap-2 mb-6">
-            <TabButton t="staff"  icon={<UserRound size={13} />} label="Staff" active={tab === "staff"} onSelect={switchTab} />
-            <TabButton t="client" icon={<Smartphone size={13} />} label="Client" active={tab === "client"} onSelect={switchTab} />
+            <TabButton
+              t="staff"
+              icon={<UserRound size={13} />}
+              label="Staff"
+              active={tab === "staff"}
+              onSelect={switchTab}
+            />
+            <TabButton
+              t="client"
+              icon={<Smartphone size={13} />}
+              label="Client"
+              active={tab === "client"}
+              onSelect={switchTab}
+            />
           </div>
 
           <div className="mb-5">
@@ -203,9 +250,7 @@ export default function LoginPage() {
               {tab === "staff" ? "Staff Login" : "Client Login"}
             </h2>
             <p className="text-slate-600 text-sm mt-0.5">
-              {tab === "staff"
-                ? "Login to manage your shop"
-                : "Email OTP se apne repairs dekhein"}
+              {tab === "staff" ? "Login to manage your shop" : "Email OTP se apne repairs dekhein"}
             </p>
           </div>
 
@@ -232,12 +277,15 @@ export default function LoginPage() {
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+                  <Mail
+                    size={15}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                  />
                   <input
                     type="email"
                     placeholder="staff@vtech.com"
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                     className="w-full pl-10 pr-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                   />
@@ -249,18 +297,21 @@ export default function LoginPage() {
                   Password
                 </label>
                 <div className="relative">
-                  <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+                  <Lock
+                    size={15}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                  />
                   <input
                     type={showPass ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
                     className="w-full pl-10 pr-11 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPass(v => !v)}
+                    onClick={() => setShowPass((v) => !v)}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors"
                   >
                     {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -271,17 +322,19 @@ export default function LoginPage() {
               <div className="flex items-center gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setRememberMe(v => !v)}
+                  onClick={() => setRememberMe((v) => !v)}
                   className={`w-9 h-5 rounded-full transition-all duration-200 flex-shrink-0 relative ${
                     rememberMe ? "bg-blue-600" : "bg-[#21293d]"
                   }`}
                 >
-                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
-                    rememberMe ? "left-[18px]" : "left-0.5"
-                  }`} />
+                  <span
+                    className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
+                      rememberMe ? "left-[18px]" : "left-0.5"
+                    }`}
+                  />
                 </button>
                 <label
-                  onClick={() => setRememberMe(v => !v)}
+                  onClick={() => setRememberMe((v) => !v)}
                   className="text-xs font-bold text-slate-500 cursor-pointer select-none hover:text-slate-400 transition-colors"
                 >
                   Remember My Email
@@ -293,9 +346,15 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-900/30 mt-2"
               >
-                {loading
-                  ? <><Loader2 size={17} className="animate-spin" /> Logging in...</>
-                  : <><LogIn size={17} /> Login to Dashboard</>}
+                {loading ? (
+                  <>
+                    <Loader2 size={17} className="animate-spin" /> Logging in...
+                  </>
+                ) : (
+                  <>
+                    <LogIn size={17} /> Login to Dashboard
+                  </>
+                )}
               </button>
             </form>
           )}
@@ -309,18 +368,22 @@ export default function LoginPage() {
                       Apna Register Email
                     </label>
                     <div className="relative">
-                      <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+                      <Mail
+                        size={15}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                      />
                       <input
                         type="email"
                         placeholder="aapka@email.com"
                         value={clientEmail}
-                        onChange={e => setClientEmail(e.target.value)}
+                        onChange={(e) => setClientEmail(e.target.value)}
                         required
                         className="w-full pl-10 pr-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                       />
                     </div>
                     <p className="text-[11px] text-slate-600 mt-2">
-                      OTP usi email par jayega jo dukaan me register hai. Pehle shop se apna email confirm karwayein.
+                      OTP usi email par jayega jo dukaan me register hai. Pehle shop se apna email
+                      confirm karwayein.
                     </p>
                   </div>
 
@@ -329,9 +392,15 @@ export default function LoginPage() {
                     disabled={loading}
                     className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-900/30"
                   >
-                    {loading
-                      ? <><Loader2 size={17} className="animate-spin" /> Sending OTP...</>
-                      : <><KeyRound size={17} /> Send OTP</>}
+                    {loading ? (
+                      <>
+                        <Loader2 size={17} className="animate-spin" /> Sending OTP...
+                      </>
+                    ) : (
+                      <>
+                        <KeyRound size={17} /> Send OTP
+                      </>
+                    )}
                   </button>
                 </form>
               ) : (
@@ -349,14 +418,17 @@ export default function LoginPage() {
                       OTP Code
                     </label>
                     <div className="relative">
-                      <KeyRound size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+                      <KeyRound
+                        size={15}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                      />
                       <input
                         type="text"
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         placeholder="OTP code"
                         value={otp}
-                        onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
                         required
                         className="w-full pl-10 pr-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                       />
@@ -368,9 +440,15 @@ export default function LoginPage() {
                     disabled={loading}
                     className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-900/30"
                   >
-                    {loading
-                      ? <><Loader2 size={17} className="animate-spin" /> Verifying...</>
-                      : <><LogIn size={17} /> Verify & Login</>}
+                    {loading ? (
+                      <>
+                        <Loader2 size={17} className="animate-spin" /> Verifying...
+                      </>
+                    ) : (
+                      <>
+                        <LogIn size={17} /> Verify & Login
+                      </>
+                    )}
                   </button>
 
                   <button

@@ -17,11 +17,7 @@ export type SyncMode = "auto" | "manual" | "off";
 
 export const SYNC_MODES: SyncMode[] = ["auto", "manual", "off"];
 export const SYNC_TASK_NAME = "\\VTech Supabase MariaDB Sync";
-export const SYNC_SETTINGS_FILE = path.join(
-  process.cwd(),
-  "scripts",
-  "sync-settings.json"
-);
+export const SYNC_SETTINGS_FILE = path.join(process.cwd(), "scripts", "sync-settings.json");
 
 export function readSyncMode(): SyncMode {
   try {
@@ -41,18 +37,12 @@ export function writeSyncMode(mode: SyncMode): void {
 // Windows Task Scheduler state (best-effort — task missing/permission issue par null).
 export async function getSyncTaskEnabled(): Promise<boolean | null> {
   try {
-    const { stdout } = await exec(
-      "schtasks",
-      ["/query", "/tn", SYNC_TASK_NAME, "/fo", "LIST"],
-      { timeout: 10000, windowsHide: true }
-    );
-    const status =
-      /Status:\s*(.+)/i.exec(stdout)?.[1]?.trim().toLowerCase() || "";
-    return status === "ready" || status === "running"
-      ? true
-      : status === "disabled"
-        ? false
-        : null;
+    const { stdout } = await exec("schtasks", ["/query", "/tn", SYNC_TASK_NAME, "/fo", "LIST"], {
+      timeout: 10000,
+      windowsHide: true,
+    });
+    const status = /Status:\s*(.+)/i.exec(stdout)?.[1]?.trim().toLowerCase() || "";
+    return status === "ready" || status === "running" ? true : status === "disabled" ? false : null;
   } catch {
     return null;
   }
@@ -62,11 +52,10 @@ export async function getSyncTaskEnabled(): Promise<boolean | null> {
 // Fail hone par bhi koi dikkat nahi — sync script khud mode file check karta hai.
 export async function setSyncTaskEnabled(enabled: boolean): Promise<boolean> {
   try {
-    await exec(
-      "schtasks",
-      ["/Change", "/tn", SYNC_TASK_NAME, enabled ? "/ENABLE" : "/DISABLE"],
-      { timeout: 10000, windowsHide: true }
-    );
+    await exec("schtasks", ["/Change", "/tn", SYNC_TASK_NAME, enabled ? "/ENABLE" : "/DISABLE"], {
+      timeout: 10000,
+      windowsHide: true,
+    });
     return true;
   } catch {
     return false;

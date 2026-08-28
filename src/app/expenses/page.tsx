@@ -140,7 +140,10 @@ function fmtDate(value: string) {
 
 function mechanicName(mechanic?: Mechanic | null) {
   if (!mechanic) return "-";
-  return [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ").trim();
+  return [mechanic.firstname, mechanic.middlename, mechanic.lastname]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 }
 
 function ExpensesPageInner() {
@@ -249,7 +252,6 @@ function ExpensesPageInner() {
     }
   }, [router, currentQuery, tab, search, fromDate, toDate]);
 
-
   const mechanicById = useMemo(() => {
     const map = new Map<number, Mechanic>();
     mechanics.forEach((mechanic) => map.set(mechanic.id, mechanic));
@@ -284,7 +286,9 @@ function ExpensesPageInner() {
       if (toDate && dateKey > toDate) return false;
       if (catFilter && (expense.category || "").trim().toLowerCase() !== catFilter) return false;
       if (!term) return true;
-      const hay = [expense.category, expense.remarks || "", expense.date_created].join(" ").toLowerCase();
+      const hay = [expense.category, expense.remarks || "", expense.date_created]
+        .join(" ")
+        .toLowerCase();
       return hay.includes(term);
     });
   }, [shopExpenses, search, fromDate, toDate, categoryFilter]);
@@ -399,7 +403,10 @@ function ExpensesPageInner() {
       };
 
       if (staffForm.id) {
-        const { error } = await supabase.from("advance_payments").update(payload).eq("id", staffForm.id);
+        const { error } = await supabase
+          .from("advance_payments")
+          .update(payload)
+          .eq("id", staffForm.id);
         if (error) throw error;
         setToast({ type: "success", msg: "Staff payment update ho gaya." });
       } else {
@@ -436,7 +443,10 @@ function ExpensesPageInner() {
       };
 
       if (expenseForm.id) {
-        const { error } = await supabase.from("expense_list").update(payload).eq("id", expenseForm.id);
+        const { error } = await supabase
+          .from("expense_list")
+          .update(payload)
+          .eq("id", expenseForm.id);
         if (error) throw error;
         setToast({ type: "success", msg: "Shop expense update ho gaya." });
       } else {
@@ -501,7 +511,10 @@ function ExpensesPageInner() {
 
       <div className="grid gap-4">
         <div className="flex items-center gap-2">
-          <button className={tab === "staff" ? btnPrimary : btnGhost} onClick={() => setTab("staff")}>
+          <button
+            className={tab === "staff" ? btnPrimary : btnGhost}
+            onClick={() => setTab("staff")}
+          >
             <UserRound size={13} className="inline-block mr-1" />
             Staff Payment
           </button>
@@ -514,18 +527,27 @@ function ExpensesPageInner() {
         <div className={`${card} p-4`}>
           <div
             className={`grid gap-4 lg:items-end ${
-              tab === "shop" ? "lg:grid-cols-[1fr_1fr_180px_180px_auto]" : "lg:grid-cols-[1fr_180px_180px_auto]"
+              tab === "shop"
+                ? "lg:grid-cols-[1fr_1fr_180px_180px_auto]"
+                : "lg:grid-cols-[1fr_180px_180px_auto]"
             }`}
           >
             <div>
               <label className={label}>Search</label>
               <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+                <Search
+                  size={14}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className={`${input} pl-9`}
-                  placeholder={tab === "staff" ? "Staff name ya note search karo" : "Category ya remarks search karo"}
+                  placeholder={
+                    tab === "staff"
+                      ? "Staff name ya note search karo"
+                      : "Category ya remarks search karo"
+                  }
                 />
               </div>
             </div>
@@ -545,14 +567,27 @@ function ExpensesPageInner() {
             )}
             <div>
               <label className={label}>From Date</label>
-              <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className={input} />
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className={input}
+              />
             </div>
             <div>
               <label className={label}>To Date</label>
-              <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className={input} />
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className={input}
+              />
             </div>
             <div className="flex flex-wrap gap-2">
-              <button className={btnPrimary} onClick={tab === "staff" ? openCreateStaff : openCreateExpense}>
+              <button
+                className={btnPrimary}
+                onClick={tab === "staff" ? openCreateStaff : openCreateExpense}
+              >
                 <Plus size={13} className="inline-block mr-1" />
                 Add
               </button>
@@ -563,9 +598,15 @@ function ExpensesPageInner() {
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <button className={btnGhost} onClick={applyToday}>Today</button>
-            <button className={btnGhost} onClick={applyCurrentMonth}>This Month</button>
-            <button className={btnGhost} onClick={applyLastSevenDays}>Last 7 Days</button>
+            <button className={btnGhost} onClick={applyToday}>
+              Today
+            </button>
+            <button className={btnGhost} onClick={applyCurrentMonth}>
+              This Month
+            </button>
+            <button className={btnGhost} onClick={applyLastSevenDays}>
+              Last 7 Days
+            </button>
             <button className={btnGhost} onClick={() => shiftMonth(-1)}>
               <ChevronLeft size={13} className="inline-block mr-1" />
               Last Month
@@ -583,7 +624,9 @@ function ExpensesPageInner() {
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <SummaryCard
             title={tab === "staff" ? "Staff Entries" : "Expense Entries"}
-            value={String(tab === "staff" ? filteredStaffPayments.length : filteredShopExpenses.length)}
+            value={String(
+              tab === "staff" ? filteredStaffPayments.length : filteredShopExpenses.length
+            )}
             tone="blue"
           />
           <SummaryCard
@@ -591,11 +634,7 @@ function ExpensesPageInner() {
             value={money(tab === "staff" ? staffTotal : expenseTotal)}
             tone="red"
           />
-          <SummaryCard
-            title="Selected Range"
-            value={`${fromDate} to ${toDate}`}
-            tone="slate"
-          />
+          <SummaryCard title="Selected Range" value={`${fromDate} to ${toDate}`} tone="slate" />
         </div>
 
         {err && <div className={`${card} p-4 text-sm text-red-400`}>{err}</div>}
@@ -607,7 +646,9 @@ function ExpensesPageInner() {
             </div>
           ) : tab === "staff" ? (
             filteredStaffPayments.length === 0 ? (
-              <div className="px-5 py-12 text-center text-sm text-slate-500">Koi staff payment record nahi mila.</div>
+              <div className="px-5 py-12 text-center text-sm text-slate-500">
+                Koi staff payment record nahi mila.
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[920px] text-sm">
@@ -627,18 +668,27 @@ function ExpensesPageInner() {
                         <tr key={payment.id} className="hover:bg-white/[0.03]">
                           <td className="px-4 py-3 text-slate-300">{fmtDate(payment.date_paid)}</td>
                           <td className="px-4 py-3">
-                            <div className="font-black text-slate-100">{mechanicName(mechanic)}</div>
-                            <div className="mt-1 text-xs text-slate-600">{mechanic?.designation || "Staff"}</div>
+                            <div className="font-black text-slate-100">
+                              {mechanicName(mechanic)}
+                            </div>
+                            <div className="mt-1 text-xs text-slate-600">
+                              {mechanic?.designation || "Staff"}
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-slate-500">{payment.reason || "-"}</td>
-                          <td className="px-4 py-3 text-right font-black text-amber-300">{money(payment.amount)}</td>
+                          <td className="px-4 py-3 text-right font-black text-amber-300">
+                            {money(payment.amount)}
+                          </td>
                           <td className="px-4 py-3 text-right">
                             <div className="inline-flex items-center gap-2">
                               <button className={btnGhost} onClick={() => openEditStaff(payment)}>
                                 <Pencil size={13} className="inline-block mr-1" />
                                 Edit
                               </button>
-                              <button className={btnDanger} onClick={() => deleteStaffPayment(payment.id)}>
+                              <button
+                                className={btnDanger}
+                                onClick={() => deleteStaffPayment(payment.id)}
+                              >
                                 <Trash2 size={13} className="inline-block mr-1" />
                                 Delete
                               </button>
@@ -656,7 +706,9 @@ function ExpensesPageInner() {
                       >
                         Total Staff Payout
                       </td>
-                      <td className="px-4 py-3 text-right font-black text-amber-300">{money(staffTotal)}</td>
+                      <td className="px-4 py-3 text-right font-black text-amber-300">
+                        {money(staffTotal)}
+                      </td>
                       <td />
                     </tr>
                   </tfoot>
@@ -664,7 +716,9 @@ function ExpensesPageInner() {
               </div>
             )
           ) : filteredShopExpenses.length === 0 ? (
-            <div className="px-5 py-12 text-center text-sm text-slate-500">Koi shop expense record nahi mila.</div>
+            <div className="px-5 py-12 text-center text-sm text-slate-500">
+              Koi shop expense record nahi mila.
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[920px] text-sm">
@@ -680,10 +734,14 @@ function ExpensesPageInner() {
                 <tbody className="divide-y divide-[#1a2234]">
                   {filteredShopExpenses.map((expense) => (
                     <tr key={expense.id} className="hover:bg-white/[0.03]">
-                      <td className="px-4 py-3 text-slate-300">{fmtDateTime(expense.date_created)}</td>
+                      <td className="px-4 py-3 text-slate-300">
+                        {fmtDateTime(expense.date_created)}
+                      </td>
                       <td className="px-4 py-3 font-black text-slate-100">{expense.category}</td>
                       <td className="px-4 py-3 text-slate-500">{expense.remarks || "-"}</td>
-                      <td className="px-4 py-3 text-right font-black text-red-300">{money(expense.amount)}</td>
+                      <td className="px-4 py-3 text-right font-black text-red-300">
+                        {money(expense.amount)}
+                      </td>
                       <td className="px-4 py-3 text-right">
                         <div className="inline-flex items-center gap-2">
                           <button className={btnGhost} onClick={() => openEditExpense(expense)}>
@@ -707,7 +765,9 @@ function ExpensesPageInner() {
                     >
                       Total Shop Expense
                     </td>
-                    <td className="px-4 py-3 text-right font-black text-red-300">{money(expenseTotal)}</td>
+                    <td className="px-4 py-3 text-right font-black text-red-300">
+                      {money(expenseTotal)}
+                    </td>
                     <td />
                   </tr>
                 </tfoot>
@@ -725,7 +785,9 @@ function ExpensesPageInner() {
                 <h3 className="text-base font-black text-white">
                   {staffForm.id ? "Edit Staff Payment" : "Add Staff Payment"}
                 </h3>
-                <p className="text-xs text-slate-600">Staff ko diye advance ya salary payment yahin save honge.</p>
+                <p className="text-xs text-slate-600">
+                  Staff ko diye advance ya salary payment yahin save honge.
+                </p>
               </div>
               <button
                 onClick={closeModals}
@@ -762,7 +824,9 @@ function ExpensesPageInner() {
                   <input
                     type="date"
                     value={staffForm.date_paid}
-                    onChange={(e) => setStaffForm((prev) => ({ ...prev, date_paid: e.target.value }))}
+                    onChange={(e) =>
+                      setStaffForm((prev) => ({ ...prev, date_paid: e.target.value }))
+                    }
                     className={input}
                   />
                 </Field>
@@ -802,7 +866,9 @@ function ExpensesPageInner() {
                 <h3 className="text-base font-black text-white">
                   {expenseForm.id ? "Edit Shop Expense" : "Add Shop Expense"}
                 </h3>
-                <p className="text-xs text-slate-600">Anya shop kharch yahan category ke saath maintain honge.</p>
+                <p className="text-xs text-slate-600">
+                  Anya shop kharch yahan category ke saath maintain honge.
+                </p>
               </div>
               <button
                 onClick={closeModals}
@@ -816,12 +882,15 @@ function ExpensesPageInner() {
                 <input
                   list="expense-categories"
                   value={expenseForm.category}
-                  onChange={(e) => setExpenseForm((prev) => ({ ...prev, category: e.target.value }))}
+                  onChange={(e) =>
+                    setExpenseForm((prev) => ({ ...prev, category: e.target.value }))
+                  }
                   className={input}
                   placeholder="Rent, travel, office, material..."
                 />
                 <datalist id="expense-categories">
-                  {(expenseForm.category.trim() && !categoryOptions.includes(expenseForm.category.trim())
+                  {(expenseForm.category.trim() &&
+                  !categoryOptions.includes(expenseForm.category.trim())
                     ? [...categoryOptions, expenseForm.category.trim()]
                     : categoryOptions
                   ).map((cat) => (
@@ -835,7 +904,9 @@ function ExpensesPageInner() {
                     type="number"
                     step="0.01"
                     value={expenseForm.amount}
-                    onChange={(e) => setExpenseForm((prev) => ({ ...prev, amount: e.target.value }))}
+                    onChange={(e) =>
+                      setExpenseForm((prev) => ({ ...prev, amount: e.target.value }))
+                    }
                     className={input}
                     placeholder="0.00"
                   />
@@ -922,6 +993,3 @@ function SummaryCard({
     </div>
   );
 }
-
-
-

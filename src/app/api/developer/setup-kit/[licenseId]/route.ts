@@ -39,7 +39,10 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
       setupToken: deriveSetupToken(id),
     });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -62,7 +65,10 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   const vercelProjectUrl = str(body.vercelProjectUrl);
   const vercelProjectId = str(body.vercelProjectId);
   const vercelToken = str(body.vercelToken);
-  const customDomain = str(body.customDomain).toLowerCase().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  const customDomain = str(body.customDomain)
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/+$/, "");
   // Public site branding (optional)
   const siteName = str(body.siteName);
   const siteTagline = str(body.siteTagline);
@@ -134,6 +140,9 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       },
     });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }

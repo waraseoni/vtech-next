@@ -20,10 +20,15 @@ export async function POST(req: NextRequest) {
 
     // ── Last-admin protection ─────────────────────────────────────────────
     const { data: targetProfile } = await supabaseAdmin
-      .from("profiles").select("role").eq("id", userId).maybeSingle();
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
     if (targetProfile?.role === "admin") {
       const { count } = await supabaseAdmin
-        .from("profiles").select("id", { count: "exact", head: true }).eq("role", "admin");
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "admin");
       if ((count ?? 0) <= 1) {
         return NextResponse.json({ error: "Last admin ko delete nahi kar sakte" }, { status: 400 });
       }

@@ -7,8 +7,14 @@
 
 /* Bulk action bar entrance (PHP parity: bounce slide-up) */
 @keyframes bulkBarPop {
-  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 :root {
@@ -146,7 +152,13 @@ html[data-theme="light"] {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
 }
 
 .page-header {
@@ -161,8 +173,8 @@ body {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, monospace;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
 }
 
 /* ============================================
@@ -170,54 +182,117 @@ body {
    ============================================ */
 html[data-theme="dark"] {
   /* Core backgrounds */
-  .bg-\[\#0d1117\] { background-color: var(--app-bg) !important; }
-  .bg-\[\#161b27\] { background-color: var(--app-panel) !important; }
-  .bg-\[\#111520\] { background-color: var(--app-panel-2) !important; }
-  .bg-\[\#080d14\] { background-color: var(--app-sidebar) !important; }
-  .bg-\[\#080d14\]\/90 { background-color: var(--app-topbar) !important; }
-  .bg-\[\#0d1117\]\/90 { background-color: var(--app-topbar) !important; }
-  .bg-\[\#0d1f35\] { background-color: #0d1f35 !important; }
-  .bg-\[\#0a1628\] { background-color: #0a1628 !important; }
-  
+  .bg-\[\#0d1117\] {
+    background-color: var(--app-bg) !important;
+  }
+  .bg-\[\#161b27\] {
+    background-color: var(--app-panel) !important;
+  }
+  .bg-\[\#111520\] {
+    background-color: var(--app-panel-2) !important;
+  }
+  .bg-\[\#080d14\] {
+    background-color: var(--app-sidebar) !important;
+  }
+  .bg-\[\#080d14\]\/90 {
+    background-color: var(--app-topbar) !important;
+  }
+  .bg-\[\#0d1117\]\/90 {
+    background-color: var(--app-topbar) !important;
+  }
+  .bg-\[\#0d1f35\] {
+    background-color: #0d1f35 !important;
+  }
+  .bg-\[\#0a1628\] {
+    background-color: #0a1628 !important;
+  }
+
   /* Card/Panel backgrounds */
-  .bg-\[\#1a2234\] { background-color: var(--app-border-2) !important; }
-  .bg-\[\#21293d\] { background-color: var(--app-border) !important; }
-  
+  .bg-\[\#1a2234\] {
+    background-color: var(--app-border-2) !important;
+  }
+  .bg-\[\#21293d\] {
+    background-color: var(--app-border) !important;
+  }
+
   /* Borders */
-  .border-\[\#21293d\] { border-color: var(--app-border) !important; }
-  .border-\[\#1a2234\] { border-color: var(--app-border-2) !important; }
-  .border-r.border-\[\#1a2234\] { border-right-color: var(--app-border-2) !important; }
-  .border-b.border-\[\#1a2234\] { border-bottom-color: var(--app-border-2) !important; }
-  .border-\[\#2a3550\] { border-color: #2a3550 !important; }
-  .border-\[\#334155\] { border-color: #334155 !important; }
-  
+  .border-\[\#21293d\] {
+    border-color: var(--app-border) !important;
+  }
+  .border-\[\#1a2234\] {
+    border-color: var(--app-border-2) !important;
+  }
+  .border-r.border-\[\#1a2234\] {
+    border-right-color: var(--app-border-2) !important;
+  }
+  .border-b.border-\[\#1a2234\] {
+    border-bottom-color: var(--app-border-2) !important;
+  }
+  .border-\[\#2a3550\] {
+    border-color: #2a3550 !important;
+  }
+  .border-\[\#334155\] {
+    border-color: #334155 !important;
+  }
+
   /* Text colors */
-  .text-white { color: #f1f5f9 !important; }
-  .text-slate-100 { color: #f1f5f9 !important; }
-  .text-slate-200 { color: #e2e8f0 !important; }
-  .text-slate-300 { color: #cbd5e1 !important; }
-  .text-slate-400 { color: #94a3b8 !important; }
-  .text-slate-500 { color: #64748b !important; }
-  .text-slate-600 { color: #475569 !important; }
-  .text-slate-700 { color: #334155 !important; }
-  .text-slate-800 { color: #1e293b !important; }
-  .text-slate-900 { color: #0f172a !important; }
-  
+  .text-white {
+    color: #f1f5f9 !important;
+  }
+  .text-slate-100 {
+    color: #f1f5f9 !important;
+  }
+  .text-slate-200 {
+    color: #e2e8f0 !important;
+  }
+  .text-slate-300 {
+    color: #cbd5e1 !important;
+  }
+  .text-slate-400 {
+    color: #94a3b8 !important;
+  }
+  .text-slate-500 {
+    color: #64748b !important;
+  }
+  .text-slate-600 {
+    color: #475569 !important;
+  }
+  .text-slate-700 {
+    color: #334155 !important;
+  }
+  .text-slate-800 {
+    color: #1e293b !important;
+  }
+  .text-slate-900 {
+    color: #0f172a !important;
+  }
+
   /* Input backgrounds */
-  input, select, textarea {
+  input,
+  select,
+  textarea {
     background-color: var(--app-input-bg) !important;
     color: var(--app-text) !important;
     border-color: var(--app-border) !important;
   }
-  input::placeholder, textarea::placeholder {
+  input::placeholder,
+  textarea::placeholder {
     color: var(--app-muted-2) !important;
   }
-  
+
   /* Hover states */
-  .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(255,255,255,0.06) !important; }
-  .hover\:bg-white\/\[0\.05\]:hover { background-color: rgba(255,255,255,0.08) !important; }
-  .hover\:bg-white\/\[0\.07\]:hover { background-color: rgba(255,255,255,0.1) !important; }
-  .hover\:bg-white\/\[0\.10\]:hover { background-color: rgba(255,255,255,0.12) !important; }
+  .hover\:bg-white\/\[0\.04\]:hover {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+  }
+  .hover\:bg-white\/\[0\.05\]:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+  }
+  .hover\:bg-white\/\[0\.07\]:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  .hover\:bg-white\/\[0\.10\]:hover {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+  }
 }
 
 /* ============================================
@@ -225,47 +300,105 @@ html[data-theme="dark"] {
    ============================================ */
 html[data-theme="light"] {
   /* Core backgrounds - exact colors for light theme */
-  .bg-\[\#0d1117\] { background-color: #f8f9fc !important; }
-  .bg-\[\#161b27\] { background-color: #ffffff !important; }
-  .bg-\[\#111520\] { background-color: #f1f5f9 !important; }
-  .bg-\[\#080d14\] { background-color: #ffffff !important; }
-  .bg-\[\#080d14\]\/90 { background-color: var(--app-topbar) !important; }
-  .bg-\[\#0d1117\]\/90 { background-color: var(--app-topbar) !important; }
-  .bg-\[\#0d1f35\] { background-color: #e0e7ef !important; }
-  .bg-\[\#0a1628\] { background-color: #e8eef5 !important; }
-  
+  .bg-\[\#0d1117\] {
+    background-color: #f8f9fc !important;
+  }
+  .bg-\[\#161b27\] {
+    background-color: #ffffff !important;
+  }
+  .bg-\[\#111520\] {
+    background-color: #f1f5f9 !important;
+  }
+  .bg-\[\#080d14\] {
+    background-color: #ffffff !important;
+  }
+  .bg-\[\#080d14\]\/90 {
+    background-color: var(--app-topbar) !important;
+  }
+  .bg-\[\#0d1117\]\/90 {
+    background-color: var(--app-topbar) !important;
+  }
+  .bg-\[\#0d1f35\] {
+    background-color: #e0e7ef !important;
+  }
+  .bg-\[\#0a1628\] {
+    background-color: #e8eef5 !important;
+  }
+
   /* Card/Panel backgrounds */
-  .bg-\[\#1a2234\] { background-color: var(--app-panel-2) !important; }
-  .bg-\[\#21293d\] { background-color: var(--app-panel-2) !important; }
-  .bg-\[\#1e2637\] { background-color: #e9edf4 !important; }
-  .bg-\[\#253048\] { background-color: #e3e8f0 !important; }
-  .bg-\[\#252f45\] { background-color: #e3e8f0 !important; }
-  .bg-\[\#1e2030\] { background-color: #e9edf4 !important; }
-  .bg-\[\#0f1a2e\] { background-color: #f1f5f9 !important; }
+  .bg-\[\#1a2234\] {
+    background-color: var(--app-panel-2) !important;
+  }
+  .bg-\[\#21293d\] {
+    background-color: var(--app-panel-2) !important;
+  }
+  .bg-\[\#1e2637\] {
+    background-color: #e9edf4 !important;
+  }
+  .bg-\[\#253048\] {
+    background-color: #e3e8f0 !important;
+  }
+  .bg-\[\#252f45\] {
+    background-color: #e3e8f0 !important;
+  }
+  .bg-\[\#1e2030\] {
+    background-color: #e9edf4 !important;
+  }
+  .bg-\[\#0f1a2e\] {
+    background-color: #f1f5f9 !important;
+  }
 
   /* AI Copilot / chat surfaces */
-  .bg-\[\#090b10\] { background-color: #f8f9fc !important; }
-  .bg-\[\#090b10\]\/80 { background-color: rgba(255, 255, 255, 0.85) !important; }
-  .bg-\[\#0d1117\]\/80 { background-color: rgba(241, 245, 249, 0.9) !important; }
-  .bg-\[\#10141d\] { background-color: #eef2f7 !important; }
-  .bg-\[\#1c2231\] { background-color: #e2e8f0 !important; }
-  
+  .bg-\[\#090b10\] {
+    background-color: #f8f9fc !important;
+  }
+  .bg-\[\#090b10\]\/80 {
+    background-color: rgba(255, 255, 255, 0.85) !important;
+  }
+  .bg-\[\#0d1117\]\/80 {
+    background-color: rgba(241, 245, 249, 0.9) !important;
+  }
+  .bg-\[\#10141d\] {
+    background-color: #eef2f7 !important;
+  }
+  .bg-\[\#1c2231\] {
+    background-color: #e2e8f0 !important;
+  }
+
   /* Visibility fix for stats: Ensure text is dark and background is vibrant or high-contrast in light mode */
   .bg-\[\#111520\].rounded-2xl.p-4 {
     background-color: #ffffff !important;
     border-color: #e2e8f0 !important;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.05),
+      0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
     border-left: 4px solid transparent !important;
   }
   /* Color Accents for Stat Cards in Light Mode */
-  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-blue-400) { border-left-color: #007bff !important; }
-  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-cyan-400) { border-left-color: #17a2b8 !important; }
-  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-emerald-400) { border-left-color: #28a745 !important; }
-  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-amber-400) { border-left-color: #fd7e14 !important; }
-  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-red-400) { border-left-color: #dc3545 !important; }
-  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-violet-400) { border-left-color: #6f42c1 !important; }
-  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-pink-400) { border-left-color: #e83e8c !important; }
-  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-slate-400) { border-left-color: #64748b !important; }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-blue-400) {
+    border-left-color: #007bff !important;
+  }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-cyan-400) {
+    border-left-color: #17a2b8 !important;
+  }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-emerald-400) {
+    border-left-color: #28a745 !important;
+  }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-amber-400) {
+    border-left-color: #fd7e14 !important;
+  }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-red-400) {
+    border-left-color: #dc3545 !important;
+  }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-violet-400) {
+    border-left-color: #6f42c1 !important;
+  }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-pink-400) {
+    border-left-color: #e83e8c !important;
+  }
+  .bg-\[\#111520\].rounded-2xl.p-4:has(.text-slate-400) {
+    border-left-color: #64748b !important;
+  }
 
   .bg-\[\#111520\].rounded-2xl.p-4 .text-white {
     color: #0f172a !important;
@@ -273,50 +406,107 @@ html[data-theme="light"] {
   .bg-\[\#111520\].rounded-2xl.p-4 .text-white\/70 {
     color: #64748b !important;
   }
-  
+
   /* Borders */
-  .border-\[\#21293d\] { border-color: var(--app-border) !important; }
-  .border-\[\#1a2234\] { border-color: var(--app-border-2) !important; }
-  .border-r.border-\[\#1a2234\] { border-right-color: var(--app-border-2) !important; }
-  .border-b.border-\[\#1a2234\] { border-bottom-color: var(--app-border-2) !important; }
-  .border-\[\#2a3550\] { border-color: #cbd5e1 !important; }
-  .border-\[\#334155\] { border-color: #94a3b8 !important; }
-  .border-\[\#2d3748\] { border-color: #cbd5e1 !important; }
-  .border-\[\#21293d\]\/50 { border-color: rgba(203, 213, 225, 0.5) !important; }
-  
+  .border-\[\#21293d\] {
+    border-color: var(--app-border) !important;
+  }
+  .border-\[\#1a2234\] {
+    border-color: var(--app-border-2) !important;
+  }
+  .border-r.border-\[\#1a2234\] {
+    border-right-color: var(--app-border-2) !important;
+  }
+  .border-b.border-\[\#1a2234\] {
+    border-bottom-color: var(--app-border-2) !important;
+  }
+  .border-\[\#2a3550\] {
+    border-color: #cbd5e1 !important;
+  }
+  .border-\[\#334155\] {
+    border-color: #94a3b8 !important;
+  }
+  .border-\[\#2d3748\] {
+    border-color: #cbd5e1 !important;
+  }
+  .border-\[\#21293d\]\/50 {
+    border-color: rgba(203, 213, 225, 0.5) !important;
+  }
+
   /* Text colors - ensure good contrast in light mode */
-  .text-slate-100, .text-slate-200, .text-slate-300 { color: #0f172a !important; }
-  .text-slate-400 { color: #1e293b !important; }
-  .text-slate-500 { color: #1e293b !important; }
-  .text-slate-600 { color: #0f172a !important; }
-  .text-slate-700 { color: #0f172a !important; }
-  .text-slate-800 { color: #0f172a !important; }
-  .text-slate-900 { color: #0f172a !important; }
-  .text-red-400 { color: #dc3545 !important; }
-  .text-red-500 { color: #dc3545 !important; }
-  .text-emerald-400 { color: #0d7a3f !important; }
-  .text-emerald-500 { color: #0d7a3f !important; }
-  
+  .text-slate-100,
+  .text-slate-200,
+  .text-slate-300 {
+    color: #0f172a !important;
+  }
+  .text-slate-400 {
+    color: #1e293b !important;
+  }
+  .text-slate-500 {
+    color: #1e293b !important;
+  }
+  .text-slate-600 {
+    color: #0f172a !important;
+  }
+  .text-slate-700 {
+    color: #0f172a !important;
+  }
+  .text-slate-800 {
+    color: #0f172a !important;
+  }
+  .text-slate-900 {
+    color: #0f172a !important;
+  }
+  .text-red-400 {
+    color: #dc3545 !important;
+  }
+  .text-red-500 {
+    color: #dc3545 !important;
+  }
+  .text-emerald-400 {
+    color: #0d7a3f !important;
+  }
+  .text-emerald-500 {
+    color: #0d7a3f !important;
+  }
+
   /* Input backgrounds - light mode inputs */
-  input, select, textarea {
+  input,
+  select,
+  textarea {
     background-color: var(--app-input-bg) !important;
     color: var(--app-text) !important;
     border-color: var(--app-border) !important;
   }
-  input::placeholder, textarea::placeholder {
+  input::placeholder,
+  textarea::placeholder {
     color: var(--app-muted-2) !important;
   }
-  
+
   /* Hover states */
-  .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(0,0,0,0.04) !important; }
-  .hover\:bg-white\/\[0\.05\]:hover { background-color: rgba(0,0,0,0.06) !important; }
-  .hover\:bg-white\/\[0\.07\]:hover { background-color: rgba(0,0,0,0.08) !important; }
-  .hover\:bg-white\/\[0\.10\]:hover { background-color: rgba(0,0,0,0.1) !important; }
-  .hover\:bg-white\/\[0\.12\]:hover { background-color: rgba(0,0,0,0.12) !important; }
-  .hover\:bg-white\/\[0\.15\]:hover { background-color: rgba(0,0,0,0.15) !important; }
-  
+  .hover\:bg-white\/\[0\.04\]:hover {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+  }
+  .hover\:bg-white\/\[0\.05\]:hover {
+    background-color: rgba(0, 0, 0, 0.06) !important;
+  }
+  .hover\:bg-white\/\[0\.07\]:hover {
+    background-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  .hover\:bg-white\/\[0\.10\]:hover {
+    background-color: rgba(0, 0, 0, 0.1) !important;
+  }
+  .hover\:bg-white\/\[0\.12\]:hover {
+    background-color: rgba(0, 0, 0, 0.12) !important;
+  }
+  .hover\:bg-white\/\[0\.15\]:hover {
+    background-color: rgba(0, 0, 0, 0.15) !important;
+  }
+
   /* Loading screen */
-  .bg-\[\#0d1117\] { background-color: var(--app-bg) !important; }
+  .bg-\[\#0d1117\] {
+    background-color: var(--app-bg) !important;
+  }
 }
 
 /* ============================================
@@ -332,12 +522,24 @@ html[data-theme="light"] {
   }
 
   /* Gradient Utilities */
-  .bg-grad-cyan { background: var(--grad-cyan, #17a2b8); }
-  .bg-grad-blue { background: var(--grad-blue, #007bff); }
-  .bg-grad-purple { background: var(--grad-purple, #6f42c1); }
-  .bg-grad-orange { background: var(--grad-orange, #fd7e14); }
-  .bg-grad-red { background: var(--grad-red, #dc3545); }
-  .bg-grad-green { background: var(--grad-green, #28a745); }
+  .bg-grad-cyan {
+    background: var(--grad-cyan, #17a2b8);
+  }
+  .bg-grad-blue {
+    background: var(--grad-blue, #007bff);
+  }
+  .bg-grad-purple {
+    background: var(--grad-purple, #6f42c1);
+  }
+  .bg-grad-orange {
+    background: var(--grad-orange, #fd7e14);
+  }
+  .bg-grad-red {
+    background: var(--grad-red, #dc3545);
+  }
+  .bg-grad-green {
+    background: var(--grad-green, #28a745);
+  }
 
   /* Glass Morphism Utilities */
   .glass {
@@ -362,7 +564,9 @@ html[data-theme="light"] {
     box-shadow: var(--glass-shadow-lg) !important;
   }
   .glass-glow {
-    box-shadow: var(--glass-shadow), 0 0 40px var(--glass-glow) !important;
+    box-shadow:
+      var(--glass-shadow),
+      0 0 40px var(--glass-glow) !important;
   }
 }
 
@@ -373,8 +577,12 @@ html[data-theme="light"] {
    toggle par light. Isse browser ka native dropdown popup
    (options list) bhi sahi colors me render hota hai.
    ============================================ */
-html { color-scheme: dark; }
-html[data-theme="light"] { color-scheme: light; }
+html {
+  color-scheme: dark;
+}
+html[data-theme="light"] {
+  color-scheme: light;
+}
 
 select option,
 select optgroup {
@@ -504,7 +712,7 @@ html[data-theme="light"] {
     color: var(--app-text) !important;
     border: 1px solid var(--app-border) !important;
   }
-  
+
   /* Select dropdown arrow */
   select {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
@@ -516,60 +724,127 @@ html[data-theme="light"] {
     -moz-appearance: none;
     appearance: none;
   }
-  
+
   /* Button & Badge Text Contrast Fix for Light Mode */
   /* This ensures that any element with a dark background color always has white text */
-  .bg-blue-600, .bg-blue-500, .bg-blue-700,
-  .bg-emerald-600, .bg-emerald-500, .bg-emerald-700,
-  .bg-red-600, .bg-red-500, .bg-red-700,
-  .bg-amber-500, .bg-amber-600,
-  .bg-purple-600, .bg-purple-500, .bg-purple-700,
-  .bg-blue-600 *, .bg-blue-500 *, .bg-emerald-600 *, .bg-emerald-500 *, .bg-red-600 *, .bg-red-500 *,
-  button.bg-blue-600, button.bg-emerald-600, button.bg-red-600, button.bg-amber-500, button.bg-purple-600,
-  a.bg-blue-600, a.bg-emerald-600, a.bg-red-600, a.bg-amber-500, a.bg-purple-600,
-  [class*="bg-grad-"], [class*="bg-grad-"] * {
+  .bg-blue-600,
+  .bg-blue-500,
+  .bg-blue-700,
+  .bg-emerald-600,
+  .bg-emerald-500,
+  .bg-emerald-700,
+  .bg-red-600,
+  .bg-red-500,
+  .bg-red-700,
+  .bg-amber-500,
+  .bg-amber-600,
+  .bg-purple-600,
+  .bg-purple-500,
+  .bg-purple-700,
+  .bg-blue-600 *,
+  .bg-blue-500 *,
+  .bg-emerald-600 *,
+  .bg-emerald-500 *,
+  .bg-red-600 *,
+  .bg-red-500 *,
+  button.bg-blue-600,
+  button.bg-emerald-600,
+  button.bg-red-600,
+  button.bg-amber-500,
+  button.bg-purple-600,
+  a.bg-blue-600,
+  a.bg-emerald-600,
+  a.bg-red-600,
+  a.bg-amber-500,
+  a.bg-purple-600,
+  [class*="bg-grad-"],
+  [class*="bg-grad-"] * {
     color: #ffffff !important;
   }
 
   /* Specific fix for Link buttons that might have inherited blue text */
-  a.bg-blue-600, a.bg-emerald-600, a.bg-blue-500, a.bg-red-600, a.bg-amber-500, a.bg-purple-600, a[class*="bg-grad-"],
-  button.bg-blue-600, button.bg-emerald-600, button.bg-red-600, button.bg-blue-500, button.bg-amber-500, button.bg-purple-600 {
+  a.bg-blue-600,
+  a.bg-emerald-600,
+  a.bg-blue-500,
+  a.bg-red-600,
+  a.bg-amber-500,
+  a.bg-purple-600,
+  a[class*="bg-grad-"],
+  button.bg-blue-600,
+  button.bg-emerald-600,
+  button.bg-red-600,
+  button.bg-blue-500,
+  button.bg-amber-500,
+  button.bg-purple-600 {
     color: #ffffff !important;
   }
 
   /* Improved visibility for Action Buttons (View, Edit, Delete) */
-  .p-1\.5.bg-\[\#21293d\], .p-1\.5.bg-emerald-500\/10, .p-1\.5.bg-blue-500\/10, .p-1\.5.bg-red-500\/10 {
+  .p-1\.5.bg-\[\#21293d\],
+  .p-1\.5.bg-emerald-500\/10,
+  .p-1\.5.bg-blue-500\/10,
+  .p-1\.5.bg-red-500\/10 {
     background-color: #e2e8f0 !important; /* Slightly darker for better visibility */
     border-color: #cbd5e1 !important;
   }
-  .p-1\.5.bg-\[\#21293d\] svg, .p-1\.5.bg-emerald-500\/10 svg, .p-1\.5.bg-blue-500\/10 svg, .p-1\.5.bg-red-500\/10 svg {
+  .p-1\.5.bg-\[\#21293d\] svg,
+  .p-1\.5.bg-emerald-500\/10 svg,
+  .p-1\.5.bg-blue-500\/10 svg,
+  .p-1\.5.bg-red-500\/10 svg {
     color: #0f172a !important; /* Fully dark icons for visibility */
   }
 
   /* Table cells */
-  table td, table th {
+  table td,
+  table th {
     color: var(--app-text) !important;
     border-color: var(--app-border) !important;
   }
-  
+
   /* Tab/badges */
-  .bg-blue-500\/10 { background-color: rgba(37, 99, 235, 0.1) !important; }
-  .bg-emerald-500\/10 { background-color: rgba(5, 150, 105, 0.1) !important; }
-  .bg-amber-500\/10 { background-color: rgba(217, 119, 6, 0.1) !important; }
-  .bg-red-500\/10 { background-color: rgba(220, 38, 38, 0.1) !important; }
-  .bg-purple-500\/10 { background-color: rgba(147, 51, 234, 0.1) !important; }
-  .bg-pink-500\/10 { background-color: rgba(236, 72, 153, 0.1) !important; }
-  .bg-teal-500\/10 { background-color: rgba(20, 184, 166, 0.1) !important; }
-  
+  .bg-blue-500\/10 {
+    background-color: rgba(37, 99, 235, 0.1) !important;
+  }
+  .bg-emerald-500\/10 {
+    background-color: rgba(5, 150, 105, 0.1) !important;
+  }
+  .bg-amber-500\/10 {
+    background-color: rgba(217, 119, 6, 0.1) !important;
+  }
+  .bg-red-500\/10 {
+    background-color: rgba(220, 38, 38, 0.1) !important;
+  }
+  .bg-purple-500\/10 {
+    background-color: rgba(147, 51, 234, 0.1) !important;
+  }
+  .bg-pink-500\/10 {
+    background-color: rgba(236, 72, 153, 0.1) !important;
+  }
+  .bg-teal-500\/10 {
+    background-color: rgba(20, 184, 166, 0.1) !important;
+  }
+
   /* Backdrop overlay fix */
-  .bg-black\/75 { background-color: rgba(0, 0, 0, 0.5) !important; }
-  .backdrop-blur-sm { backdrop-filter: blur(4px); }
-  
+  .bg-black\/75 {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+  }
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+  }
+
   /* Shadow overrides */
-  .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
-  .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-  .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-  .shadow-blue-900\/50 { box-shadow: 0 10px 15px -3px rgba(30, 64, 175, 0.3); }
+  .shadow-2xl {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+  .shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+  .shadow-xl {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+  .shadow-blue-900\/50 {
+    box-shadow: 0 10px 15px -3px rgba(30, 64, 175, 0.3);
+  }
 }
 
 /* ============================================
@@ -721,7 +996,7 @@ html[data-theme="light"] .theme-card {
   color: #0f172a !important;
 }
 
-  html[data-theme="light"] .theme-body h1,
+html[data-theme="light"] .theme-body h1,
 html[data-theme="light"] .theme-panel h1,
 html[data-theme="light"] .theme-card h1,
 html[data-theme="light"] .theme-body h2,
@@ -751,40 +1026,52 @@ html[data-theme="dark"] .vtech-pro {
     background: white !important;
     color: black !important;
   }
-  
+
   /* Hide everything except the table container */
-  nav, header, footer, .no-print, .print\:hidden {
+  nav,
+  header,
+  footer,
+  .no-print,
+  .print\:hidden {
     display: none !important;
   }
-  
+
   /* Show only the main content area */
-  main, [class*="space-y-"], [class*="bg-"], [class*="border-"] {
+  main,
+  [class*="space-y-"],
+  [class*="bg-"],
+  [class*="border-"] {
     display: block !important;
     background: white !important;
     border: none !important;
     box-shadow: none !important;
   }
-  
+
   /* Make table look good for print */
   table {
     border-collapse: collapse !important;
     width: 100% !important;
   }
-  
-  th, td {
+
+  th,
+  td {
     border: 1px solid #ddd !important;
     color: black !important;
     background: white !important;
     font-size: 12px !important;
   }
-  
+
   th {
     background: #f3f3f3 !important;
     font-weight: bold !important;
   }
-  
+
   /* Hide action buttons */
-  button, a[href], .action-column, td:last-child, th:last-child {
+  button,
+  a[href],
+  .action-column,
+  td:last-child,
+  th:last-child {
     display: none !important;
   }
 }
@@ -796,144 +1083,1589 @@ html[data-theme="dark"] .vtech-pro {
    ============================================ */
 html[data-theme="light"] {
   /* ---- text-white on light surfaces -> dark ---- */
-  .text-white    { color: #0f172a !important; }
-  .text-white\/40 { color: #1e293b !important; }
-  .text-white\/50 { color: #1e293b !important; }
-  .text-white\/60 { color: #1e293b !important; }
-  .text-white\/70 { color: #334155 !important; }
-  .text-white\/80 { color: #0f172a !important; }
-  .text-white\/90 { color: #0f172a !important; }
+  .text-white {
+    color: #0f172a !important;
+  }
+  .text-white\/40 {
+    color: #1e293b !important;
+  }
+  .text-white\/50 {
+    color: #1e293b !important;
+  }
+  .text-white\/60 {
+    color: #1e293b !important;
+  }
+  .text-white\/70 {
+    color: #334155 !important;
+  }
+  .text-white\/80 {
+    color: #0f172a !important;
+  }
+  .text-white\/90 {
+    color: #0f172a !important;
+  }
 
   /* ---- 300/400/500 color text -> readable darker shades ---- */
-  .text-blue-300    { color: #1d4ed8 !important; }
-  .text-sky-300     { color: #0369a1 !important; }
-  .text-cyan-300    { color: #0e7490 !important; }
-  .text-teal-300    { color: #0f766e !important; }
-  .text-emerald-300 { color: #047857 !important; }
-  .text-green-300   { color: #15803d !important; }
-  .text-lime-300    { color: #4d7c0f !important; }
-  .text-amber-300   { color: #b45309 !important; }
-  .text-orange-300  { color: #c2410c !important; }
-  .text-red-300     { color: #b91c1c !important; }
-  .text-rose-300    { color: #be123c !important; }
-  .text-pink-300    { color: #be185d !important; }
-  .text-fuchsia-300 { color: #a21caf !important; }
-  .text-purple-300  { color: #7e22ce !important; }
-  .text-violet-300  { color: #6d28d9 !important; }
-  .text-indigo-300  { color: #4338ca !important; }
-  .text-yellow-300  { color: #a16207 !important; }
+  .text-blue-300 {
+    color: #1d4ed8 !important;
+  }
+  .text-sky-300 {
+    color: #0369a1 !important;
+  }
+  .text-cyan-300 {
+    color: #0e7490 !important;
+  }
+  .text-teal-300 {
+    color: #0f766e !important;
+  }
+  .text-emerald-300 {
+    color: #047857 !important;
+  }
+  .text-green-300 {
+    color: #15803d !important;
+  }
+  .text-lime-300 {
+    color: #4d7c0f !important;
+  }
+  .text-amber-300 {
+    color: #b45309 !important;
+  }
+  .text-orange-300 {
+    color: #c2410c !important;
+  }
+  .text-red-300 {
+    color: #b91c1c !important;
+  }
+  .text-rose-300 {
+    color: #be123c !important;
+  }
+  .text-pink-300 {
+    color: #be185d !important;
+  }
+  .text-fuchsia-300 {
+    color: #a21caf !important;
+  }
+  .text-purple-300 {
+    color: #7e22ce !important;
+  }
+  .text-violet-300 {
+    color: #6d28d9 !important;
+  }
+  .text-indigo-300 {
+    color: #4338ca !important;
+  }
+  .text-yellow-300 {
+    color: #a16207 !important;
+  }
 
-  .text-blue-400    { color: #2563eb !important; }
-  .text-sky-400     { color: #0284c7 !important; }
-  .text-cyan-400    { color: #0891b2 !important; }
-  .text-teal-400    { color: #0d9488 !important; }
-  .text-green-400   { color: #16a34a !important; }
-  .text-lime-400    { color: #65a30d !important; }
-  .text-amber-400   { color: #d97706 !important; }
-  .text-orange-400  { color: #ea580c !important; }
-  .text-rose-400    { color: #e11d48 !important; }
-  .text-pink-400    { color: #db2777 !important; }
-  .text-fuchsia-400 { color: #c026d3 !important; }
-  .text-purple-400  { color: #9333ea !important; }
-  .text-violet-400  { color: #7c3aed !important; }
-  .text-indigo-400  { color: #4f46e5 !important; }
-  .text-yellow-400  { color: #ca8a04 !important; }
+  .text-blue-400 {
+    color: #2563eb !important;
+  }
+  .text-sky-400 {
+    color: #0284c7 !important;
+  }
+  .text-cyan-400 {
+    color: #0891b2 !important;
+  }
+  .text-teal-400 {
+    color: #0d9488 !important;
+  }
+  .text-green-400 {
+    color: #16a34a !important;
+  }
+  .text-lime-400 {
+    color: #65a30d !important;
+  }
+  .text-amber-400 {
+    color: #d97706 !important;
+  }
+  .text-orange-400 {
+    color: #ea580c !important;
+  }
+  .text-rose-400 {
+    color: #e11d48 !important;
+  }
+  .text-pink-400 {
+    color: #db2777 !important;
+  }
+  .text-fuchsia-400 {
+    color: #c026d3 !important;
+  }
+  .text-purple-400 {
+    color: #9333ea !important;
+  }
+  .text-violet-400 {
+    color: #7c3aed !important;
+  }
+  .text-indigo-400 {
+    color: #4f46e5 !important;
+  }
+  .text-yellow-400 {
+    color: #ca8a04 !important;
+  }
 
-  .text-blue-500    { color: #2563eb !important; }
-  .text-sky-500     { color: #0284c7 !important; }
-  .text-cyan-500    { color: #0891b2 !important; }
-  .text-teal-500    { color: #0d9488 !important; }
-  .text-green-500   { color: #16a34a !important; }
-  .text-lime-500    { color: #65a30d !important; }
-  .text-amber-500   { color: #d97706 !important; }
-  .text-orange-500  { color: #ea580c !important; }
-  .text-rose-500    { color: #e11d48 !important; }
-  .text-pink-500    { color: #db2777 !important; }
-  .text-fuchsia-500 { color: #c026d3 !important; }
-  .text-purple-500  { color: #9333ea !important; }
-  .text-violet-500  { color: #7c3aed !important; }
-  .text-indigo-500  { color: #4f46e5 !important; }
-  .text-yellow-500  { color: #ca8a04 !important; }
+  .text-blue-500 {
+    color: #2563eb !important;
+  }
+  .text-sky-500 {
+    color: #0284c7 !important;
+  }
+  .text-cyan-500 {
+    color: #0891b2 !important;
+  }
+  .text-teal-500 {
+    color: #0d9488 !important;
+  }
+  .text-green-500 {
+    color: #16a34a !important;
+  }
+  .text-lime-500 {
+    color: #65a30d !important;
+  }
+  .text-amber-500 {
+    color: #d97706 !important;
+  }
+  .text-orange-500 {
+    color: #ea580c !important;
+  }
+  .text-rose-500 {
+    color: #e11d48 !important;
+  }
+  .text-pink-500 {
+    color: #db2777 !important;
+  }
+  .text-fuchsia-500 {
+    color: #c026d3 !important;
+  }
+  .text-purple-500 {
+    color: #9333ea !important;
+  }
+  .text-violet-500 {
+    color: #7c3aed !important;
+  }
+  .text-indigo-500 {
+    color: #4f46e5 !important;
+  }
+  .text-yellow-500 {
+    color: #ca8a04 !important;
+  }
 
   /* ---- white-tint surfaces -> dark tints (light theme) ---- */
-  .bg-white\/5    { background-color: rgba(15,23,42,0.05) !important; }
-  .bg-white\/10   { background-color: rgba(15,23,42,0.08) !important; }
-  .bg-white\/15   { background-color: rgba(15,23,42,0.1) !important; }
-  .bg-white\/20   { background-color: rgba(15,23,42,0.12) !important; }
-  .bg-white\/25   { background-color: rgba(15,23,42,0.15) !important; }
-  .bg-white\/\[0\.02\] { background-color: rgba(15,23,42,0.02) !important; }
-  .bg-white\/\[0\.03\] { background-color: rgba(15,23,42,0.03) !important; }
-  .bg-white\/\[0\.04\] { background-color: rgba(15,23,42,0.04) !important; }
-  .bg-white\/\[0\.05\] { background-color: rgba(15,23,42,0.05) !important; }
-  .bg-white\/\[0\.06\] { background-color: rgba(15,23,42,0.06) !important; }
-  .bg-white\/\[0\.07\] { background-color: rgba(15,23,42,0.07) !important; }
-  .bg-white\/\[0\.08\] { background-color: rgba(15,23,42,0.08) !important; }
-  .bg-white\/\[0\.1\]  { background-color: rgba(15,23,42,0.1) !important; }
-  .bg-white\/\[0\.12\] { background-color: rgba(15,23,42,0.12) !important; }
-  .bg-white\/\[0\.15\] { background-color: rgba(15,23,42,0.15) !important; }
-  .bg-white\/\[0\.2\]  { background-color: rgba(15,23,42,0.2) !important; }
-  .bg-white\/\[0\.25\] { background-color: rgba(15,23,42,0.25) !important; }
+  .bg-white\/5 {
+    background-color: rgba(15, 23, 42, 0.05) !important;
+  }
+  .bg-white\/10 {
+    background-color: rgba(15, 23, 42, 0.08) !important;
+  }
+  .bg-white\/15 {
+    background-color: rgba(15, 23, 42, 0.1) !important;
+  }
+  .bg-white\/20 {
+    background-color: rgba(15, 23, 42, 0.12) !important;
+  }
+  .bg-white\/25 {
+    background-color: rgba(15, 23, 42, 0.15) !important;
+  }
+  .bg-white\/\[0\.02\] {
+    background-color: rgba(15, 23, 42, 0.02) !important;
+  }
+  .bg-white\/\[0\.03\] {
+    background-color: rgba(15, 23, 42, 0.03) !important;
+  }
+  .bg-white\/\[0\.04\] {
+    background-color: rgba(15, 23, 42, 0.04) !important;
+  }
+  .bg-white\/\[0\.05\] {
+    background-color: rgba(15, 23, 42, 0.05) !important;
+  }
+  .bg-white\/\[0\.06\] {
+    background-color: rgba(15, 23, 42, 0.06) !important;
+  }
+  .bg-white\/\[0\.07\] {
+    background-color: rgba(15, 23, 42, 0.07) !important;
+  }
+  .bg-white\/\[0\.08\] {
+    background-color: rgba(15, 23, 42, 0.08) !important;
+  }
+  .bg-white\/\[0\.1\] {
+    background-color: rgba(15, 23, 42, 0.1) !important;
+  }
+  .bg-white\/\[0\.12\] {
+    background-color: rgba(15, 23, 42, 0.12) !important;
+  }
+  .bg-white\/\[0\.15\] {
+    background-color: rgba(15, 23, 42, 0.15) !important;
+  }
+  .bg-white\/\[0\.2\] {
+    background-color: rgba(15, 23, 42, 0.2) !important;
+  }
+  .bg-white\/\[0\.25\] {
+    background-color: rgba(15, 23, 42, 0.25) !important;
+  }
 
   /* ---- hover white-tint -> dark tint ---- */
-  .hover\:bg-white\/5:hover          { background-color: rgba(15,23,42,0.05) !important; }
-  .hover\:bg-white\/10:hover         { background-color: rgba(15,23,42,0.08) !important; }
-  .hover\:bg-white\/\[0\.02\]:hover  { background-color: rgba(15,23,42,0.04) !important; }
-  .hover\:text-white:hover           { color: #0f172a !important; }
+  .hover\:bg-white\/5:hover {
+    background-color: rgba(15, 23, 42, 0.05) !important;
+  }
+  .hover\:bg-white\/10:hover {
+    background-color: rgba(15, 23, 42, 0.08) !important;
+  }
+  .hover\:bg-white\/\[0\.02\]:hover {
+    background-color: rgba(15, 23, 42, 0.04) !important;
+  }
+  .hover\:text-white:hover {
+    color: #0f172a !important;
+  }
 
   /* ---- white borders -> light borders ---- */
-  .border-white\/5    { border-color: #e2e8f0 !important; }
-  .border-white\/10   { border-color: #e2e8f0 !important; }
-  .border-white\/15   { border-color: #cbd5e1 !important; }
-  .border-white\/20   { border-color: #cbd5e1 !important; }
-  .border-white\/\[0\.05\] { border-color: #e2e8f0 !important; }
-  .border-white\/\[0\.1\]  { border-color: #e2e8f0 !important; }
-  .border-white\/\[0\.15\] { border-color: #cbd5e1 !important; }
-  .border-white\/\[0\.2\]  { border-color: #cbd5e1 !important; }
+  .border-white\/5 {
+    border-color: #e2e8f0 !important;
+  }
+  .border-white\/10 {
+    border-color: #e2e8f0 !important;
+  }
+  .border-white\/15 {
+    border-color: #cbd5e1 !important;
+  }
+  .border-white\/20 {
+    border-color: #cbd5e1 !important;
+  }
+  .border-white\/\[0\.05\] {
+    border-color: #e2e8f0 !important;
+  }
+  .border-white\/\[0\.1\] {
+    border-color: #e2e8f0 !important;
+  }
+  .border-white\/\[0\.15\] {
+    border-color: #cbd5e1 !important;
+  }
+  .border-white\/\[0\.2\] {
+    border-color: #cbd5e1 !important;
+  }
 
   /* ---- keep white text on solid color / gradient / dark surfaces ---- */
-  :is([class~="bg-blue-500"],[class~="bg-blue-600"],[class~="bg-blue-700"],[class~="bg-sky-500"],[class~="bg-sky-600"],[class~="bg-sky-700"],[class~="bg-cyan-500"],[class~="bg-cyan-600"],[class~="bg-cyan-700"],[class~="bg-teal-500"],[class~="bg-teal-600"],[class~="bg-teal-700"],[class~="bg-emerald-500"],[class~="bg-emerald-600"],[class~="bg-emerald-700"],[class~="bg-green-500"],[class~="bg-green-600"],[class~="bg-green-700"],[class~="bg-lime-500"],[class~="bg-lime-600"],[class~="bg-lime-700"],[class~="bg-amber-500"],[class~="bg-amber-600"],[class~="bg-amber-700"],[class~="bg-orange-500"],[class~="bg-orange-600"],[class~="bg-orange-700"],[class~="bg-red-500"],[class~="bg-red-600"],[class~="bg-red-700"],[class~="bg-rose-500"],[class~="bg-rose-600"],[class~="bg-rose-700"],[class~="bg-pink-500"],[class~="bg-pink-600"],[class~="bg-pink-700"],[class~="bg-fuchsia-500"],[class~="bg-fuchsia-600"],[class~="bg-fuchsia-700"],[class~="bg-purple-500"],[class~="bg-purple-600"],[class~="bg-purple-700"],[class~="bg-violet-500"],[class~="bg-violet-600"],[class~="bg-violet-700"],[class~="bg-indigo-500"],[class~="bg-indigo-600"],[class~="bg-indigo-700"],[class~="bg-yellow-500"],[class~="bg-yellow-600"],[class~="bg-yellow-700"],[class~="bg-slate-500"],[class~="bg-slate-600"],[class~="bg-slate-700"],[class~="bg-gray-500"],[class~="bg-gray-600"],[class~="bg-gray-700"],[class~="bg-zinc-500"],[class~="bg-zinc-600"],[class~="bg-zinc-700"],[class~="bg-neutral-500"],[class~="bg-neutral-600"],[class~="bg-neutral-700"],[class~="bg-stone-500"],[class~="bg-stone-600"],[class~="bg-stone-700"],[class~="bg-slate-800"],[class~="bg-slate-900"],[class~="bg-slate-950"],[class~="bg-gray-800"],[class~="bg-gray-900"],[class~="bg-gray-950"],[class~="bg-zinc-800"],[class~="bg-zinc-900"],[class~="bg-zinc-950"],[class~="bg-neutral-800"],[class~="bg-neutral-900"],[class~="bg-neutral-950"],[class~="bg-stone-800"],[class~="bg-stone-900"],[class~="bg-stone-950"],[class~="bg-black"],[class~="from-blue-500"],[class~="to-blue-500"],[class~="from-blue-600"],[class~="to-blue-600"],[class~="from-blue-700"],[class~="to-blue-700"],[class~="from-blue-800"],[class~="to-blue-800"],[class~="from-blue-900"],[class~="to-blue-900"],[class~="from-sky-500"],[class~="to-sky-500"],[class~="from-sky-600"],[class~="to-sky-600"],[class~="from-sky-700"],[class~="to-sky-700"],[class~="from-sky-800"],[class~="to-sky-800"],[class~="from-sky-900"],[class~="to-sky-900"],[class~="from-cyan-500"],[class~="to-cyan-500"],[class~="from-cyan-600"],[class~="to-cyan-600"],[class~="from-cyan-700"],[class~="to-cyan-700"],[class~="from-cyan-800"],[class~="to-cyan-800"],[class~="from-cyan-900"],[class~="to-cyan-900"],[class~="from-teal-500"],[class~="to-teal-500"],[class~="from-teal-600"],[class~="to-teal-600"],[class~="from-teal-700"],[class~="to-teal-700"],[class~="from-teal-800"],[class~="to-teal-800"],[class~="from-teal-900"],[class~="to-teal-900"],[class~="from-emerald-500"],[class~="to-emerald-500"],[class~="from-emerald-600"],[class~="to-emerald-600"],[class~="from-emerald-700"],[class~="to-emerald-700"],[class~="from-emerald-800"],[class~="to-emerald-800"],[class~="from-emerald-900"],[class~="to-emerald-900"],[class~="from-green-500"],[class~="to-green-500"],[class~="from-green-600"],[class~="to-green-600"],[class~="from-green-700"],[class~="to-green-700"],[class~="from-green-800"],[class~="to-green-800"],[class~="from-green-900"],[class~="to-green-900"],[class~="from-lime-500"],[class~="to-lime-500"],[class~="from-lime-600"],[class~="to-lime-600"],[class~="from-lime-700"],[class~="to-lime-700"],[class~="from-lime-800"],[class~="to-lime-800"],[class~="from-lime-900"],[class~="to-lime-900"],[class~="from-amber-500"],[class~="to-amber-500"],[class~="from-amber-600"],[class~="to-amber-600"],[class~="from-amber-700"],[class~="to-amber-700"],[class~="from-amber-800"],[class~="to-amber-800"],[class~="from-amber-900"],[class~="to-amber-900"],[class~="from-orange-500"],[class~="to-orange-500"],[class~="from-orange-600"],[class~="to-orange-600"],[class~="from-orange-700"],[class~="to-orange-700"],[class~="from-orange-800"],[class~="to-orange-800"],[class~="from-orange-900"],[class~="to-orange-900"],[class~="from-red-500"],[class~="to-red-500"],[class~="from-red-600"],[class~="to-red-600"],[class~="from-red-700"],[class~="to-red-700"],[class~="from-red-800"],[class~="to-red-800"],[class~="from-red-900"],[class~="to-red-900"],[class~="from-rose-500"],[class~="to-rose-500"],[class~="from-rose-600"],[class~="to-rose-600"],[class~="from-rose-700"],[class~="to-rose-700"],[class~="from-rose-800"],[class~="to-rose-800"],[class~="from-rose-900"],[class~="to-rose-900"],[class~="from-pink-500"],[class~="to-pink-500"],[class~="from-pink-600"],[class~="to-pink-600"],[class~="from-pink-700"],[class~="to-pink-700"],[class~="from-pink-800"],[class~="to-pink-800"],[class~="from-pink-900"],[class~="to-pink-900"],[class~="from-fuchsia-500"],[class~="to-fuchsia-500"],[class~="from-fuchsia-600"],[class~="to-fuchsia-600"],[class~="from-fuchsia-700"],[class~="to-fuchsia-700"],[class~="from-fuchsia-800"],[class~="to-fuchsia-800"],[class~="from-fuchsia-900"],[class~="to-fuchsia-900"],[class~="from-purple-500"],[class~="to-purple-500"],[class~="from-purple-600"],[class~="to-purple-600"],[class~="from-purple-700"],[class~="to-purple-700"],[class~="from-purple-800"],[class~="to-purple-800"],[class~="from-purple-900"],[class~="to-purple-900"],[class~="from-violet-500"],[class~="to-violet-500"],[class~="from-violet-600"],[class~="to-violet-600"],[class~="from-violet-700"],[class~="to-violet-700"],[class~="from-violet-800"],[class~="to-violet-800"],[class~="from-violet-900"],[class~="to-violet-900"],[class~="from-indigo-500"],[class~="to-indigo-500"],[class~="from-indigo-600"],[class~="to-indigo-600"],[class~="from-indigo-700"],[class~="to-indigo-700"],[class~="from-indigo-800"],[class~="to-indigo-800"],[class~="from-indigo-900"],[class~="to-indigo-900"],[class~="from-yellow-500"],[class~="to-yellow-500"],[class~="from-yellow-600"],[class~="to-yellow-600"],[class~="from-yellow-700"],[class~="to-yellow-700"],[class~="from-yellow-800"],[class~="to-yellow-800"],[class~="from-yellow-900"],[class~="to-yellow-900"],[class~="from-slate-500"],[class~="to-slate-500"],[class~="from-slate-600"],[class~="to-slate-600"],[class~="from-slate-700"],[class~="to-slate-700"],[class~="from-slate-800"],[class~="to-slate-800"],[class~="from-slate-900"],[class~="to-slate-900"],[class~="from-gray-500"],[class~="to-gray-500"],[class~="from-gray-600"],[class~="to-gray-600"],[class~="from-gray-700"],[class~="to-gray-700"],[class~="from-gray-800"],[class~="to-gray-800"],[class~="from-gray-900"],[class~="to-gray-900"],[class~="from-zinc-500"],[class~="to-zinc-500"],[class~="from-zinc-600"],[class~="to-zinc-600"],[class~="from-zinc-700"],[class~="to-zinc-700"],[class~="from-zinc-800"],[class~="to-zinc-800"],[class~="from-zinc-900"],[class~="to-zinc-900"],[class~="from-neutral-500"],[class~="to-neutral-500"],[class~="from-neutral-600"],[class~="to-neutral-600"],[class~="from-neutral-700"],[class~="to-neutral-700"],[class~="from-neutral-800"],[class~="to-neutral-800"],[class~="from-neutral-900"],[class~="to-neutral-900"],[class~="from-stone-500"],[class~="to-stone-500"],[class~="from-stone-600"],[class~="to-stone-600"],[class~="from-stone-700"],[class~="to-stone-700"],[class~="from-stone-800"],[class~="to-stone-800"],[class~="from-stone-900"],[class~="to-stone-900"]) { color: #ffffff !important; }
-  :is([class~="bg-blue-500"],[class~="bg-blue-600"],[class~="bg-blue-700"],[class~="bg-sky-500"],[class~="bg-sky-600"],[class~="bg-sky-700"],[class~="bg-cyan-500"],[class~="bg-cyan-600"],[class~="bg-cyan-700"],[class~="bg-teal-500"],[class~="bg-teal-600"],[class~="bg-teal-700"],[class~="bg-emerald-500"],[class~="bg-emerald-600"],[class~="bg-emerald-700"],[class~="bg-green-500"],[class~="bg-green-600"],[class~="bg-green-700"],[class~="bg-lime-500"],[class~="bg-lime-600"],[class~="bg-lime-700"],[class~="bg-amber-500"],[class~="bg-amber-600"],[class~="bg-amber-700"],[class~="bg-orange-500"],[class~="bg-orange-600"],[class~="bg-orange-700"],[class~="bg-red-500"],[class~="bg-red-600"],[class~="bg-red-700"],[class~="bg-rose-500"],[class~="bg-rose-600"],[class~="bg-rose-700"],[class~="bg-pink-500"],[class~="bg-pink-600"],[class~="bg-pink-700"],[class~="bg-fuchsia-500"],[class~="bg-fuchsia-600"],[class~="bg-fuchsia-700"],[class~="bg-purple-500"],[class~="bg-purple-600"],[class~="bg-purple-700"],[class~="bg-violet-500"],[class~="bg-violet-600"],[class~="bg-violet-700"],[class~="bg-indigo-500"],[class~="bg-indigo-600"],[class~="bg-indigo-700"],[class~="bg-yellow-500"],[class~="bg-yellow-600"],[class~="bg-yellow-700"],[class~="bg-slate-500"],[class~="bg-slate-600"],[class~="bg-slate-700"],[class~="bg-gray-500"],[class~="bg-gray-600"],[class~="bg-gray-700"],[class~="bg-zinc-500"],[class~="bg-zinc-600"],[class~="bg-zinc-700"],[class~="bg-neutral-500"],[class~="bg-neutral-600"],[class~="bg-neutral-700"],[class~="bg-stone-500"],[class~="bg-stone-600"],[class~="bg-stone-700"],[class~="bg-slate-800"],[class~="bg-slate-900"],[class~="bg-slate-950"],[class~="bg-gray-800"],[class~="bg-gray-900"],[class~="bg-gray-950"],[class~="bg-zinc-800"],[class~="bg-zinc-900"],[class~="bg-zinc-950"],[class~="bg-neutral-800"],[class~="bg-neutral-900"],[class~="bg-neutral-950"],[class~="bg-stone-800"],[class~="bg-stone-900"],[class~="bg-stone-950"],[class~="bg-black"],[class~="from-blue-500"],[class~="to-blue-500"],[class~="from-blue-600"],[class~="to-blue-600"],[class~="from-blue-700"],[class~="to-blue-700"],[class~="from-blue-800"],[class~="to-blue-800"],[class~="from-blue-900"],[class~="to-blue-900"],[class~="from-sky-500"],[class~="to-sky-500"],[class~="from-sky-600"],[class~="to-sky-600"],[class~="from-sky-700"],[class~="to-sky-700"],[class~="from-sky-800"],[class~="to-sky-800"],[class~="from-sky-900"],[class~="to-sky-900"],[class~="from-cyan-500"],[class~="to-cyan-500"],[class~="from-cyan-600"],[class~="to-cyan-600"],[class~="from-cyan-700"],[class~="to-cyan-700"],[class~="from-cyan-800"],[class~="to-cyan-800"],[class~="from-cyan-900"],[class~="to-cyan-900"],[class~="from-teal-500"],[class~="to-teal-500"],[class~="from-teal-600"],[class~="to-teal-600"],[class~="from-teal-700"],[class~="to-teal-700"],[class~="from-teal-800"],[class~="to-teal-800"],[class~="from-teal-900"],[class~="to-teal-900"],[class~="from-emerald-500"],[class~="to-emerald-500"],[class~="from-emerald-600"],[class~="to-emerald-600"],[class~="from-emerald-700"],[class~="to-emerald-700"],[class~="from-emerald-800"],[class~="to-emerald-800"],[class~="from-emerald-900"],[class~="to-emerald-900"],[class~="from-green-500"],[class~="to-green-500"],[class~="from-green-600"],[class~="to-green-600"],[class~="from-green-700"],[class~="to-green-700"],[class~="from-green-800"],[class~="to-green-800"],[class~="from-green-900"],[class~="to-green-900"],[class~="from-lime-500"],[class~="to-lime-500"],[class~="from-lime-600"],[class~="to-lime-600"],[class~="from-lime-700"],[class~="to-lime-700"],[class~="from-lime-800"],[class~="to-lime-800"],[class~="from-lime-900"],[class~="to-lime-900"],[class~="from-amber-500"],[class~="to-amber-500"],[class~="from-amber-600"],[class~="to-amber-600"],[class~="from-amber-700"],[class~="to-amber-700"],[class~="from-amber-800"],[class~="to-amber-800"],[class~="from-amber-900"],[class~="to-amber-900"],[class~="from-orange-500"],[class~="to-orange-500"],[class~="from-orange-600"],[class~="to-orange-600"],[class~="from-orange-700"],[class~="to-orange-700"],[class~="from-orange-800"],[class~="to-orange-800"],[class~="from-orange-900"],[class~="to-orange-900"],[class~="from-red-500"],[class~="to-red-500"],[class~="from-red-600"],[class~="to-red-600"],[class~="from-red-700"],[class~="to-red-700"],[class~="from-red-800"],[class~="to-red-800"],[class~="from-red-900"],[class~="to-red-900"],[class~="from-rose-500"],[class~="to-rose-500"],[class~="from-rose-600"],[class~="to-rose-600"],[class~="from-rose-700"],[class~="to-rose-700"],[class~="from-rose-800"],[class~="to-rose-800"],[class~="from-rose-900"],[class~="to-rose-900"],[class~="from-pink-500"],[class~="to-pink-500"],[class~="from-pink-600"],[class~="to-pink-600"],[class~="from-pink-700"],[class~="to-pink-700"],[class~="from-pink-800"],[class~="to-pink-800"],[class~="from-pink-900"],[class~="to-pink-900"],[class~="from-fuchsia-500"],[class~="to-fuchsia-500"],[class~="from-fuchsia-600"],[class~="to-fuchsia-600"],[class~="from-fuchsia-700"],[class~="to-fuchsia-700"],[class~="from-fuchsia-800"],[class~="to-fuchsia-800"],[class~="from-fuchsia-900"],[class~="to-fuchsia-900"],[class~="from-purple-500"],[class~="to-purple-500"],[class~="from-purple-600"],[class~="to-purple-600"],[class~="from-purple-700"],[class~="to-purple-700"],[class~="from-purple-800"],[class~="to-purple-800"],[class~="from-purple-900"],[class~="to-purple-900"],[class~="from-violet-500"],[class~="to-violet-500"],[class~="from-violet-600"],[class~="to-violet-600"],[class~="from-violet-700"],[class~="to-violet-700"],[class~="from-violet-800"],[class~="to-violet-800"],[class~="from-violet-900"],[class~="to-violet-900"],[class~="from-indigo-500"],[class~="to-indigo-500"],[class~="from-indigo-600"],[class~="to-indigo-600"],[class~="from-indigo-700"],[class~="to-indigo-700"],[class~="from-indigo-800"],[class~="to-indigo-800"],[class~="from-indigo-900"],[class~="to-indigo-900"],[class~="from-yellow-500"],[class~="to-yellow-500"],[class~="from-yellow-600"],[class~="to-yellow-600"],[class~="from-yellow-700"],[class~="to-yellow-700"],[class~="from-yellow-800"],[class~="to-yellow-800"],[class~="from-yellow-900"],[class~="to-yellow-900"],[class~="from-slate-500"],[class~="to-slate-500"],[class~="from-slate-600"],[class~="to-slate-600"],[class~="from-slate-700"],[class~="to-slate-700"],[class~="from-slate-800"],[class~="to-slate-800"],[class~="from-slate-900"],[class~="to-slate-900"],[class~="from-gray-500"],[class~="to-gray-500"],[class~="from-gray-600"],[class~="to-gray-600"],[class~="from-gray-700"],[class~="to-gray-700"],[class~="from-gray-800"],[class~="to-gray-800"],[class~="from-gray-900"],[class~="to-gray-900"],[class~="from-zinc-500"],[class~="to-zinc-500"],[class~="from-zinc-600"],[class~="to-zinc-600"],[class~="from-zinc-700"],[class~="to-zinc-700"],[class~="from-zinc-800"],[class~="to-zinc-800"],[class~="from-zinc-900"],[class~="to-zinc-900"],[class~="from-neutral-500"],[class~="to-neutral-500"],[class~="from-neutral-600"],[class~="to-neutral-600"],[class~="from-neutral-700"],[class~="to-neutral-700"],[class~="from-neutral-800"],[class~="to-neutral-800"],[class~="from-neutral-900"],[class~="to-neutral-900"],[class~="from-stone-500"],[class~="to-stone-500"],[class~="from-stone-600"],[class~="to-stone-600"],[class~="from-stone-700"],[class~="to-stone-700"],[class~="from-stone-800"],[class~="to-stone-800"],[class~="from-stone-900"],[class~="to-stone-900"]) * { color: #ffffff !important; }
+  :is(
+    [class~="bg-blue-500"],
+    [class~="bg-blue-600"],
+    [class~="bg-blue-700"],
+    [class~="bg-sky-500"],
+    [class~="bg-sky-600"],
+    [class~="bg-sky-700"],
+    [class~="bg-cyan-500"],
+    [class~="bg-cyan-600"],
+    [class~="bg-cyan-700"],
+    [class~="bg-teal-500"],
+    [class~="bg-teal-600"],
+    [class~="bg-teal-700"],
+    [class~="bg-emerald-500"],
+    [class~="bg-emerald-600"],
+    [class~="bg-emerald-700"],
+    [class~="bg-green-500"],
+    [class~="bg-green-600"],
+    [class~="bg-green-700"],
+    [class~="bg-lime-500"],
+    [class~="bg-lime-600"],
+    [class~="bg-lime-700"],
+    [class~="bg-amber-500"],
+    [class~="bg-amber-600"],
+    [class~="bg-amber-700"],
+    [class~="bg-orange-500"],
+    [class~="bg-orange-600"],
+    [class~="bg-orange-700"],
+    [class~="bg-red-500"],
+    [class~="bg-red-600"],
+    [class~="bg-red-700"],
+    [class~="bg-rose-500"],
+    [class~="bg-rose-600"],
+    [class~="bg-rose-700"],
+    [class~="bg-pink-500"],
+    [class~="bg-pink-600"],
+    [class~="bg-pink-700"],
+    [class~="bg-fuchsia-500"],
+    [class~="bg-fuchsia-600"],
+    [class~="bg-fuchsia-700"],
+    [class~="bg-purple-500"],
+    [class~="bg-purple-600"],
+    [class~="bg-purple-700"],
+    [class~="bg-violet-500"],
+    [class~="bg-violet-600"],
+    [class~="bg-violet-700"],
+    [class~="bg-indigo-500"],
+    [class~="bg-indigo-600"],
+    [class~="bg-indigo-700"],
+    [class~="bg-yellow-500"],
+    [class~="bg-yellow-600"],
+    [class~="bg-yellow-700"],
+    [class~="bg-slate-500"],
+    [class~="bg-slate-600"],
+    [class~="bg-slate-700"],
+    [class~="bg-gray-500"],
+    [class~="bg-gray-600"],
+    [class~="bg-gray-700"],
+    [class~="bg-zinc-500"],
+    [class~="bg-zinc-600"],
+    [class~="bg-zinc-700"],
+    [class~="bg-neutral-500"],
+    [class~="bg-neutral-600"],
+    [class~="bg-neutral-700"],
+    [class~="bg-stone-500"],
+    [class~="bg-stone-600"],
+    [class~="bg-stone-700"],
+    [class~="bg-slate-800"],
+    [class~="bg-slate-900"],
+    [class~="bg-slate-950"],
+    [class~="bg-gray-800"],
+    [class~="bg-gray-900"],
+    [class~="bg-gray-950"],
+    [class~="bg-zinc-800"],
+    [class~="bg-zinc-900"],
+    [class~="bg-zinc-950"],
+    [class~="bg-neutral-800"],
+    [class~="bg-neutral-900"],
+    [class~="bg-neutral-950"],
+    [class~="bg-stone-800"],
+    [class~="bg-stone-900"],
+    [class~="bg-stone-950"],
+    [class~="bg-black"],
+    [class~="from-blue-500"],
+    [class~="to-blue-500"],
+    [class~="from-blue-600"],
+    [class~="to-blue-600"],
+    [class~="from-blue-700"],
+    [class~="to-blue-700"],
+    [class~="from-blue-800"],
+    [class~="to-blue-800"],
+    [class~="from-blue-900"],
+    [class~="to-blue-900"],
+    [class~="from-sky-500"],
+    [class~="to-sky-500"],
+    [class~="from-sky-600"],
+    [class~="to-sky-600"],
+    [class~="from-sky-700"],
+    [class~="to-sky-700"],
+    [class~="from-sky-800"],
+    [class~="to-sky-800"],
+    [class~="from-sky-900"],
+    [class~="to-sky-900"],
+    [class~="from-cyan-500"],
+    [class~="to-cyan-500"],
+    [class~="from-cyan-600"],
+    [class~="to-cyan-600"],
+    [class~="from-cyan-700"],
+    [class~="to-cyan-700"],
+    [class~="from-cyan-800"],
+    [class~="to-cyan-800"],
+    [class~="from-cyan-900"],
+    [class~="to-cyan-900"],
+    [class~="from-teal-500"],
+    [class~="to-teal-500"],
+    [class~="from-teal-600"],
+    [class~="to-teal-600"],
+    [class~="from-teal-700"],
+    [class~="to-teal-700"],
+    [class~="from-teal-800"],
+    [class~="to-teal-800"],
+    [class~="from-teal-900"],
+    [class~="to-teal-900"],
+    [class~="from-emerald-500"],
+    [class~="to-emerald-500"],
+    [class~="from-emerald-600"],
+    [class~="to-emerald-600"],
+    [class~="from-emerald-700"],
+    [class~="to-emerald-700"],
+    [class~="from-emerald-800"],
+    [class~="to-emerald-800"],
+    [class~="from-emerald-900"],
+    [class~="to-emerald-900"],
+    [class~="from-green-500"],
+    [class~="to-green-500"],
+    [class~="from-green-600"],
+    [class~="to-green-600"],
+    [class~="from-green-700"],
+    [class~="to-green-700"],
+    [class~="from-green-800"],
+    [class~="to-green-800"],
+    [class~="from-green-900"],
+    [class~="to-green-900"],
+    [class~="from-lime-500"],
+    [class~="to-lime-500"],
+    [class~="from-lime-600"],
+    [class~="to-lime-600"],
+    [class~="from-lime-700"],
+    [class~="to-lime-700"],
+    [class~="from-lime-800"],
+    [class~="to-lime-800"],
+    [class~="from-lime-900"],
+    [class~="to-lime-900"],
+    [class~="from-amber-500"],
+    [class~="to-amber-500"],
+    [class~="from-amber-600"],
+    [class~="to-amber-600"],
+    [class~="from-amber-700"],
+    [class~="to-amber-700"],
+    [class~="from-amber-800"],
+    [class~="to-amber-800"],
+    [class~="from-amber-900"],
+    [class~="to-amber-900"],
+    [class~="from-orange-500"],
+    [class~="to-orange-500"],
+    [class~="from-orange-600"],
+    [class~="to-orange-600"],
+    [class~="from-orange-700"],
+    [class~="to-orange-700"],
+    [class~="from-orange-800"],
+    [class~="to-orange-800"],
+    [class~="from-orange-900"],
+    [class~="to-orange-900"],
+    [class~="from-red-500"],
+    [class~="to-red-500"],
+    [class~="from-red-600"],
+    [class~="to-red-600"],
+    [class~="from-red-700"],
+    [class~="to-red-700"],
+    [class~="from-red-800"],
+    [class~="to-red-800"],
+    [class~="from-red-900"],
+    [class~="to-red-900"],
+    [class~="from-rose-500"],
+    [class~="to-rose-500"],
+    [class~="from-rose-600"],
+    [class~="to-rose-600"],
+    [class~="from-rose-700"],
+    [class~="to-rose-700"],
+    [class~="from-rose-800"],
+    [class~="to-rose-800"],
+    [class~="from-rose-900"],
+    [class~="to-rose-900"],
+    [class~="from-pink-500"],
+    [class~="to-pink-500"],
+    [class~="from-pink-600"],
+    [class~="to-pink-600"],
+    [class~="from-pink-700"],
+    [class~="to-pink-700"],
+    [class~="from-pink-800"],
+    [class~="to-pink-800"],
+    [class~="from-pink-900"],
+    [class~="to-pink-900"],
+    [class~="from-fuchsia-500"],
+    [class~="to-fuchsia-500"],
+    [class~="from-fuchsia-600"],
+    [class~="to-fuchsia-600"],
+    [class~="from-fuchsia-700"],
+    [class~="to-fuchsia-700"],
+    [class~="from-fuchsia-800"],
+    [class~="to-fuchsia-800"],
+    [class~="from-fuchsia-900"],
+    [class~="to-fuchsia-900"],
+    [class~="from-purple-500"],
+    [class~="to-purple-500"],
+    [class~="from-purple-600"],
+    [class~="to-purple-600"],
+    [class~="from-purple-700"],
+    [class~="to-purple-700"],
+    [class~="from-purple-800"],
+    [class~="to-purple-800"],
+    [class~="from-purple-900"],
+    [class~="to-purple-900"],
+    [class~="from-violet-500"],
+    [class~="to-violet-500"],
+    [class~="from-violet-600"],
+    [class~="to-violet-600"],
+    [class~="from-violet-700"],
+    [class~="to-violet-700"],
+    [class~="from-violet-800"],
+    [class~="to-violet-800"],
+    [class~="from-violet-900"],
+    [class~="to-violet-900"],
+    [class~="from-indigo-500"],
+    [class~="to-indigo-500"],
+    [class~="from-indigo-600"],
+    [class~="to-indigo-600"],
+    [class~="from-indigo-700"],
+    [class~="to-indigo-700"],
+    [class~="from-indigo-800"],
+    [class~="to-indigo-800"],
+    [class~="from-indigo-900"],
+    [class~="to-indigo-900"],
+    [class~="from-yellow-500"],
+    [class~="to-yellow-500"],
+    [class~="from-yellow-600"],
+    [class~="to-yellow-600"],
+    [class~="from-yellow-700"],
+    [class~="to-yellow-700"],
+    [class~="from-yellow-800"],
+    [class~="to-yellow-800"],
+    [class~="from-yellow-900"],
+    [class~="to-yellow-900"],
+    [class~="from-slate-500"],
+    [class~="to-slate-500"],
+    [class~="from-slate-600"],
+    [class~="to-slate-600"],
+    [class~="from-slate-700"],
+    [class~="to-slate-700"],
+    [class~="from-slate-800"],
+    [class~="to-slate-800"],
+    [class~="from-slate-900"],
+    [class~="to-slate-900"],
+    [class~="from-gray-500"],
+    [class~="to-gray-500"],
+    [class~="from-gray-600"],
+    [class~="to-gray-600"],
+    [class~="from-gray-700"],
+    [class~="to-gray-700"],
+    [class~="from-gray-800"],
+    [class~="to-gray-800"],
+    [class~="from-gray-900"],
+    [class~="to-gray-900"],
+    [class~="from-zinc-500"],
+    [class~="to-zinc-500"],
+    [class~="from-zinc-600"],
+    [class~="to-zinc-600"],
+    [class~="from-zinc-700"],
+    [class~="to-zinc-700"],
+    [class~="from-zinc-800"],
+    [class~="to-zinc-800"],
+    [class~="from-zinc-900"],
+    [class~="to-zinc-900"],
+    [class~="from-neutral-500"],
+    [class~="to-neutral-500"],
+    [class~="from-neutral-600"],
+    [class~="to-neutral-600"],
+    [class~="from-neutral-700"],
+    [class~="to-neutral-700"],
+    [class~="from-neutral-800"],
+    [class~="to-neutral-800"],
+    [class~="from-neutral-900"],
+    [class~="to-neutral-900"],
+    [class~="from-stone-500"],
+    [class~="to-stone-500"],
+    [class~="from-stone-600"],
+    [class~="to-stone-600"],
+    [class~="from-stone-700"],
+    [class~="to-stone-700"],
+    [class~="from-stone-800"],
+    [class~="to-stone-800"],
+    [class~="from-stone-900"],
+    [class~="to-stone-900"]
+  ) {
+    color: #ffffff !important;
+  }
+  :is(
+      [class~="bg-blue-500"],
+      [class~="bg-blue-600"],
+      [class~="bg-blue-700"],
+      [class~="bg-sky-500"],
+      [class~="bg-sky-600"],
+      [class~="bg-sky-700"],
+      [class~="bg-cyan-500"],
+      [class~="bg-cyan-600"],
+      [class~="bg-cyan-700"],
+      [class~="bg-teal-500"],
+      [class~="bg-teal-600"],
+      [class~="bg-teal-700"],
+      [class~="bg-emerald-500"],
+      [class~="bg-emerald-600"],
+      [class~="bg-emerald-700"],
+      [class~="bg-green-500"],
+      [class~="bg-green-600"],
+      [class~="bg-green-700"],
+      [class~="bg-lime-500"],
+      [class~="bg-lime-600"],
+      [class~="bg-lime-700"],
+      [class~="bg-amber-500"],
+      [class~="bg-amber-600"],
+      [class~="bg-amber-700"],
+      [class~="bg-orange-500"],
+      [class~="bg-orange-600"],
+      [class~="bg-orange-700"],
+      [class~="bg-red-500"],
+      [class~="bg-red-600"],
+      [class~="bg-red-700"],
+      [class~="bg-rose-500"],
+      [class~="bg-rose-600"],
+      [class~="bg-rose-700"],
+      [class~="bg-pink-500"],
+      [class~="bg-pink-600"],
+      [class~="bg-pink-700"],
+      [class~="bg-fuchsia-500"],
+      [class~="bg-fuchsia-600"],
+      [class~="bg-fuchsia-700"],
+      [class~="bg-purple-500"],
+      [class~="bg-purple-600"],
+      [class~="bg-purple-700"],
+      [class~="bg-violet-500"],
+      [class~="bg-violet-600"],
+      [class~="bg-violet-700"],
+      [class~="bg-indigo-500"],
+      [class~="bg-indigo-600"],
+      [class~="bg-indigo-700"],
+      [class~="bg-yellow-500"],
+      [class~="bg-yellow-600"],
+      [class~="bg-yellow-700"],
+      [class~="bg-slate-500"],
+      [class~="bg-slate-600"],
+      [class~="bg-slate-700"],
+      [class~="bg-gray-500"],
+      [class~="bg-gray-600"],
+      [class~="bg-gray-700"],
+      [class~="bg-zinc-500"],
+      [class~="bg-zinc-600"],
+      [class~="bg-zinc-700"],
+      [class~="bg-neutral-500"],
+      [class~="bg-neutral-600"],
+      [class~="bg-neutral-700"],
+      [class~="bg-stone-500"],
+      [class~="bg-stone-600"],
+      [class~="bg-stone-700"],
+      [class~="bg-slate-800"],
+      [class~="bg-slate-900"],
+      [class~="bg-slate-950"],
+      [class~="bg-gray-800"],
+      [class~="bg-gray-900"],
+      [class~="bg-gray-950"],
+      [class~="bg-zinc-800"],
+      [class~="bg-zinc-900"],
+      [class~="bg-zinc-950"],
+      [class~="bg-neutral-800"],
+      [class~="bg-neutral-900"],
+      [class~="bg-neutral-950"],
+      [class~="bg-stone-800"],
+      [class~="bg-stone-900"],
+      [class~="bg-stone-950"],
+      [class~="bg-black"],
+      [class~="from-blue-500"],
+      [class~="to-blue-500"],
+      [class~="from-blue-600"],
+      [class~="to-blue-600"],
+      [class~="from-blue-700"],
+      [class~="to-blue-700"],
+      [class~="from-blue-800"],
+      [class~="to-blue-800"],
+      [class~="from-blue-900"],
+      [class~="to-blue-900"],
+      [class~="from-sky-500"],
+      [class~="to-sky-500"],
+      [class~="from-sky-600"],
+      [class~="to-sky-600"],
+      [class~="from-sky-700"],
+      [class~="to-sky-700"],
+      [class~="from-sky-800"],
+      [class~="to-sky-800"],
+      [class~="from-sky-900"],
+      [class~="to-sky-900"],
+      [class~="from-cyan-500"],
+      [class~="to-cyan-500"],
+      [class~="from-cyan-600"],
+      [class~="to-cyan-600"],
+      [class~="from-cyan-700"],
+      [class~="to-cyan-700"],
+      [class~="from-cyan-800"],
+      [class~="to-cyan-800"],
+      [class~="from-cyan-900"],
+      [class~="to-cyan-900"],
+      [class~="from-teal-500"],
+      [class~="to-teal-500"],
+      [class~="from-teal-600"],
+      [class~="to-teal-600"],
+      [class~="from-teal-700"],
+      [class~="to-teal-700"],
+      [class~="from-teal-800"],
+      [class~="to-teal-800"],
+      [class~="from-teal-900"],
+      [class~="to-teal-900"],
+      [class~="from-emerald-500"],
+      [class~="to-emerald-500"],
+      [class~="from-emerald-600"],
+      [class~="to-emerald-600"],
+      [class~="from-emerald-700"],
+      [class~="to-emerald-700"],
+      [class~="from-emerald-800"],
+      [class~="to-emerald-800"],
+      [class~="from-emerald-900"],
+      [class~="to-emerald-900"],
+      [class~="from-green-500"],
+      [class~="to-green-500"],
+      [class~="from-green-600"],
+      [class~="to-green-600"],
+      [class~="from-green-700"],
+      [class~="to-green-700"],
+      [class~="from-green-800"],
+      [class~="to-green-800"],
+      [class~="from-green-900"],
+      [class~="to-green-900"],
+      [class~="from-lime-500"],
+      [class~="to-lime-500"],
+      [class~="from-lime-600"],
+      [class~="to-lime-600"],
+      [class~="from-lime-700"],
+      [class~="to-lime-700"],
+      [class~="from-lime-800"],
+      [class~="to-lime-800"],
+      [class~="from-lime-900"],
+      [class~="to-lime-900"],
+      [class~="from-amber-500"],
+      [class~="to-amber-500"],
+      [class~="from-amber-600"],
+      [class~="to-amber-600"],
+      [class~="from-amber-700"],
+      [class~="to-amber-700"],
+      [class~="from-amber-800"],
+      [class~="to-amber-800"],
+      [class~="from-amber-900"],
+      [class~="to-amber-900"],
+      [class~="from-orange-500"],
+      [class~="to-orange-500"],
+      [class~="from-orange-600"],
+      [class~="to-orange-600"],
+      [class~="from-orange-700"],
+      [class~="to-orange-700"],
+      [class~="from-orange-800"],
+      [class~="to-orange-800"],
+      [class~="from-orange-900"],
+      [class~="to-orange-900"],
+      [class~="from-red-500"],
+      [class~="to-red-500"],
+      [class~="from-red-600"],
+      [class~="to-red-600"],
+      [class~="from-red-700"],
+      [class~="to-red-700"],
+      [class~="from-red-800"],
+      [class~="to-red-800"],
+      [class~="from-red-900"],
+      [class~="to-red-900"],
+      [class~="from-rose-500"],
+      [class~="to-rose-500"],
+      [class~="from-rose-600"],
+      [class~="to-rose-600"],
+      [class~="from-rose-700"],
+      [class~="to-rose-700"],
+      [class~="from-rose-800"],
+      [class~="to-rose-800"],
+      [class~="from-rose-900"],
+      [class~="to-rose-900"],
+      [class~="from-pink-500"],
+      [class~="to-pink-500"],
+      [class~="from-pink-600"],
+      [class~="to-pink-600"],
+      [class~="from-pink-700"],
+      [class~="to-pink-700"],
+      [class~="from-pink-800"],
+      [class~="to-pink-800"],
+      [class~="from-pink-900"],
+      [class~="to-pink-900"],
+      [class~="from-fuchsia-500"],
+      [class~="to-fuchsia-500"],
+      [class~="from-fuchsia-600"],
+      [class~="to-fuchsia-600"],
+      [class~="from-fuchsia-700"],
+      [class~="to-fuchsia-700"],
+      [class~="from-fuchsia-800"],
+      [class~="to-fuchsia-800"],
+      [class~="from-fuchsia-900"],
+      [class~="to-fuchsia-900"],
+      [class~="from-purple-500"],
+      [class~="to-purple-500"],
+      [class~="from-purple-600"],
+      [class~="to-purple-600"],
+      [class~="from-purple-700"],
+      [class~="to-purple-700"],
+      [class~="from-purple-800"],
+      [class~="to-purple-800"],
+      [class~="from-purple-900"],
+      [class~="to-purple-900"],
+      [class~="from-violet-500"],
+      [class~="to-violet-500"],
+      [class~="from-violet-600"],
+      [class~="to-violet-600"],
+      [class~="from-violet-700"],
+      [class~="to-violet-700"],
+      [class~="from-violet-800"],
+      [class~="to-violet-800"],
+      [class~="from-violet-900"],
+      [class~="to-violet-900"],
+      [class~="from-indigo-500"],
+      [class~="to-indigo-500"],
+      [class~="from-indigo-600"],
+      [class~="to-indigo-600"],
+      [class~="from-indigo-700"],
+      [class~="to-indigo-700"],
+      [class~="from-indigo-800"],
+      [class~="to-indigo-800"],
+      [class~="from-indigo-900"],
+      [class~="to-indigo-900"],
+      [class~="from-yellow-500"],
+      [class~="to-yellow-500"],
+      [class~="from-yellow-600"],
+      [class~="to-yellow-600"],
+      [class~="from-yellow-700"],
+      [class~="to-yellow-700"],
+      [class~="from-yellow-800"],
+      [class~="to-yellow-800"],
+      [class~="from-yellow-900"],
+      [class~="to-yellow-900"],
+      [class~="from-slate-500"],
+      [class~="to-slate-500"],
+      [class~="from-slate-600"],
+      [class~="to-slate-600"],
+      [class~="from-slate-700"],
+      [class~="to-slate-700"],
+      [class~="from-slate-800"],
+      [class~="to-slate-800"],
+      [class~="from-slate-900"],
+      [class~="to-slate-900"],
+      [class~="from-gray-500"],
+      [class~="to-gray-500"],
+      [class~="from-gray-600"],
+      [class~="to-gray-600"],
+      [class~="from-gray-700"],
+      [class~="to-gray-700"],
+      [class~="from-gray-800"],
+      [class~="to-gray-800"],
+      [class~="from-gray-900"],
+      [class~="to-gray-900"],
+      [class~="from-zinc-500"],
+      [class~="to-zinc-500"],
+      [class~="from-zinc-600"],
+      [class~="to-zinc-600"],
+      [class~="from-zinc-700"],
+      [class~="to-zinc-700"],
+      [class~="from-zinc-800"],
+      [class~="to-zinc-800"],
+      [class~="from-zinc-900"],
+      [class~="to-zinc-900"],
+      [class~="from-neutral-500"],
+      [class~="to-neutral-500"],
+      [class~="from-neutral-600"],
+      [class~="to-neutral-600"],
+      [class~="from-neutral-700"],
+      [class~="to-neutral-700"],
+      [class~="from-neutral-800"],
+      [class~="to-neutral-800"],
+      [class~="from-neutral-900"],
+      [class~="to-neutral-900"],
+      [class~="from-stone-500"],
+      [class~="to-stone-500"],
+      [class~="from-stone-600"],
+      [class~="to-stone-600"],
+      [class~="from-stone-700"],
+      [class~="to-stone-700"],
+      [class~="from-stone-800"],
+      [class~="to-stone-800"],
+      [class~="from-stone-900"],
+      [class~="to-stone-900"]
+    )
+    * {
+    color: #ffffff !important;
+  }
 
   /* ---- keep white chips/borders inside solid colored surfaces ---- */
-  :is([class~="bg-blue-500"],[class~="bg-blue-600"],[class~="bg-blue-700"],[class~="bg-sky-500"],[class~="bg-sky-600"],[class~="bg-sky-700"],[class~="bg-cyan-500"],[class~="bg-cyan-600"],[class~="bg-cyan-700"],[class~="bg-teal-500"],[class~="bg-teal-600"],[class~="bg-teal-700"],[class~="bg-emerald-500"],[class~="bg-emerald-600"],[class~="bg-emerald-700"],[class~="bg-green-500"],[class~="bg-green-600"],[class~="bg-green-700"],[class~="bg-lime-500"],[class~="bg-lime-600"],[class~="bg-lime-700"],[class~="bg-amber-500"],[class~="bg-amber-600"],[class~="bg-amber-700"],[class~="bg-orange-500"],[class~="bg-orange-600"],[class~="bg-orange-700"],[class~="bg-red-500"],[class~="bg-red-600"],[class~="bg-red-700"],[class~="bg-rose-500"],[class~="bg-rose-600"],[class~="bg-rose-700"],[class~="bg-pink-500"],[class~="bg-pink-600"],[class~="bg-pink-700"],[class~="bg-fuchsia-500"],[class~="bg-fuchsia-600"],[class~="bg-fuchsia-700"],[class~="bg-purple-500"],[class~="bg-purple-600"],[class~="bg-purple-700"],[class~="bg-violet-500"],[class~="bg-violet-600"],[class~="bg-violet-700"],[class~="bg-indigo-500"],[class~="bg-indigo-600"],[class~="bg-indigo-700"],[class~="bg-yellow-500"],[class~="bg-yellow-600"],[class~="bg-yellow-700"],[class~="bg-slate-500"],[class~="bg-slate-600"],[class~="bg-slate-700"],[class~="bg-gray-500"],[class~="bg-gray-600"],[class~="bg-gray-700"],[class~="bg-zinc-500"],[class~="bg-zinc-600"],[class~="bg-zinc-700"],[class~="bg-neutral-500"],[class~="bg-neutral-600"],[class~="bg-neutral-700"],[class~="bg-stone-500"],[class~="bg-stone-600"],[class~="bg-stone-700"],[class~="bg-slate-800"],[class~="bg-slate-900"],[class~="bg-slate-950"],[class~="bg-gray-800"],[class~="bg-gray-900"],[class~="bg-gray-950"],[class~="bg-zinc-800"],[class~="bg-zinc-900"],[class~="bg-zinc-950"],[class~="bg-neutral-800"],[class~="bg-neutral-900"],[class~="bg-neutral-950"],[class~="bg-stone-800"],[class~="bg-stone-900"],[class~="bg-stone-950"],[class~="bg-black"],[class~="from-blue-500"],[class~="to-blue-500"],[class~="from-blue-600"],[class~="to-blue-600"],[class~="from-blue-700"],[class~="to-blue-700"],[class~="from-blue-800"],[class~="to-blue-800"],[class~="from-blue-900"],[class~="to-blue-900"],[class~="from-sky-500"],[class~="to-sky-500"],[class~="from-sky-600"],[class~="to-sky-600"],[class~="from-sky-700"],[class~="to-sky-700"],[class~="from-sky-800"],[class~="to-sky-800"],[class~="from-sky-900"],[class~="to-sky-900"],[class~="from-cyan-500"],[class~="to-cyan-500"],[class~="from-cyan-600"],[class~="to-cyan-600"],[class~="from-cyan-700"],[class~="to-cyan-700"],[class~="from-cyan-800"],[class~="to-cyan-800"],[class~="from-cyan-900"],[class~="to-cyan-900"],[class~="from-teal-500"],[class~="to-teal-500"],[class~="from-teal-600"],[class~="to-teal-600"],[class~="from-teal-700"],[class~="to-teal-700"],[class~="from-teal-800"],[class~="to-teal-800"],[class~="from-teal-900"],[class~="to-teal-900"],[class~="from-emerald-500"],[class~="to-emerald-500"],[class~="from-emerald-600"],[class~="to-emerald-600"],[class~="from-emerald-700"],[class~="to-emerald-700"],[class~="from-emerald-800"],[class~="to-emerald-800"],[class~="from-emerald-900"],[class~="to-emerald-900"],[class~="from-green-500"],[class~="to-green-500"],[class~="from-green-600"],[class~="to-green-600"],[class~="from-green-700"],[class~="to-green-700"],[class~="from-green-800"],[class~="to-green-800"],[class~="from-green-900"],[class~="to-green-900"],[class~="from-lime-500"],[class~="to-lime-500"],[class~="from-lime-600"],[class~="to-lime-600"],[class~="from-lime-700"],[class~="to-lime-700"],[class~="from-lime-800"],[class~="to-lime-800"],[class~="from-lime-900"],[class~="to-lime-900"],[class~="from-amber-500"],[class~="to-amber-500"],[class~="from-amber-600"],[class~="to-amber-600"],[class~="from-amber-700"],[class~="to-amber-700"],[class~="from-amber-800"],[class~="to-amber-800"],[class~="from-amber-900"],[class~="to-amber-900"],[class~="from-orange-500"],[class~="to-orange-500"],[class~="from-orange-600"],[class~="to-orange-600"],[class~="from-orange-700"],[class~="to-orange-700"],[class~="from-orange-800"],[class~="to-orange-800"],[class~="from-orange-900"],[class~="to-orange-900"],[class~="from-red-500"],[class~="to-red-500"],[class~="from-red-600"],[class~="to-red-600"],[class~="from-red-700"],[class~="to-red-700"],[class~="from-red-800"],[class~="to-red-800"],[class~="from-red-900"],[class~="to-red-900"],[class~="from-rose-500"],[class~="to-rose-500"],[class~="from-rose-600"],[class~="to-rose-600"],[class~="from-rose-700"],[class~="to-rose-700"],[class~="from-rose-800"],[class~="to-rose-800"],[class~="from-rose-900"],[class~="to-rose-900"],[class~="from-pink-500"],[class~="to-pink-500"],[class~="from-pink-600"],[class~="to-pink-600"],[class~="from-pink-700"],[class~="to-pink-700"],[class~="from-pink-800"],[class~="to-pink-800"],[class~="from-pink-900"],[class~="to-pink-900"],[class~="from-fuchsia-500"],[class~="to-fuchsia-500"],[class~="from-fuchsia-600"],[class~="to-fuchsia-600"],[class~="from-fuchsia-700"],[class~="to-fuchsia-700"],[class~="from-fuchsia-800"],[class~="to-fuchsia-800"],[class~="from-fuchsia-900"],[class~="to-fuchsia-900"],[class~="from-purple-500"],[class~="to-purple-500"],[class~="from-purple-600"],[class~="to-purple-600"],[class~="from-purple-700"],[class~="to-purple-700"],[class~="from-purple-800"],[class~="to-purple-800"],[class~="from-purple-900"],[class~="to-purple-900"],[class~="from-violet-500"],[class~="to-violet-500"],[class~="from-violet-600"],[class~="to-violet-600"],[class~="from-violet-700"],[class~="to-violet-700"],[class~="from-violet-800"],[class~="to-violet-800"],[class~="from-violet-900"],[class~="to-violet-900"],[class~="from-indigo-500"],[class~="to-indigo-500"],[class~="from-indigo-600"],[class~="to-indigo-600"],[class~="from-indigo-700"],[class~="to-indigo-700"],[class~="from-indigo-800"],[class~="to-indigo-800"],[class~="from-indigo-900"],[class~="to-indigo-900"],[class~="from-yellow-500"],[class~="to-yellow-500"],[class~="from-yellow-600"],[class~="to-yellow-600"],[class~="from-yellow-700"],[class~="to-yellow-700"],[class~="from-yellow-800"],[class~="to-yellow-800"],[class~="from-yellow-900"],[class~="to-yellow-900"],[class~="from-slate-500"],[class~="to-slate-500"],[class~="from-slate-600"],[class~="to-slate-600"],[class~="from-slate-700"],[class~="to-slate-700"],[class~="from-slate-800"],[class~="to-slate-800"],[class~="from-slate-900"],[class~="to-slate-900"],[class~="from-gray-500"],[class~="to-gray-500"],[class~="from-gray-600"],[class~="to-gray-600"],[class~="from-gray-700"],[class~="to-gray-700"],[class~="from-gray-800"],[class~="to-gray-800"],[class~="from-gray-900"],[class~="to-gray-900"],[class~="from-zinc-500"],[class~="to-zinc-500"],[class~="from-zinc-600"],[class~="to-zinc-600"],[class~="from-zinc-700"],[class~="to-zinc-700"],[class~="from-zinc-800"],[class~="to-zinc-800"],[class~="from-zinc-900"],[class~="to-zinc-900"],[class~="from-neutral-500"],[class~="to-neutral-500"],[class~="from-neutral-600"],[class~="to-neutral-600"],[class~="from-neutral-700"],[class~="to-neutral-700"],[class~="from-neutral-800"],[class~="to-neutral-800"],[class~="from-neutral-900"],[class~="to-neutral-900"],[class~="from-stone-500"],[class~="to-stone-500"],[class~="from-stone-600"],[class~="to-stone-600"],[class~="from-stone-700"],[class~="to-stone-700"],[class~="from-stone-800"],[class~="to-stone-800"],[class~="from-stone-900"],[class~="to-stone-900"]) :is(.bg-white\/5,.bg-white\/10,.bg-white\/15,.bg-white\/20,.bg-white\/25,.bg-white\/\[0\.1\],.bg-white\/\[0\.12\],.bg-white\/\[0\.15\],.bg-white\/\[0\.2\]) {
-    background-color: rgba(255,255,255,0.2) !important;
+  :is(
+      [class~="bg-blue-500"],
+      [class~="bg-blue-600"],
+      [class~="bg-blue-700"],
+      [class~="bg-sky-500"],
+      [class~="bg-sky-600"],
+      [class~="bg-sky-700"],
+      [class~="bg-cyan-500"],
+      [class~="bg-cyan-600"],
+      [class~="bg-cyan-700"],
+      [class~="bg-teal-500"],
+      [class~="bg-teal-600"],
+      [class~="bg-teal-700"],
+      [class~="bg-emerald-500"],
+      [class~="bg-emerald-600"],
+      [class~="bg-emerald-700"],
+      [class~="bg-green-500"],
+      [class~="bg-green-600"],
+      [class~="bg-green-700"],
+      [class~="bg-lime-500"],
+      [class~="bg-lime-600"],
+      [class~="bg-lime-700"],
+      [class~="bg-amber-500"],
+      [class~="bg-amber-600"],
+      [class~="bg-amber-700"],
+      [class~="bg-orange-500"],
+      [class~="bg-orange-600"],
+      [class~="bg-orange-700"],
+      [class~="bg-red-500"],
+      [class~="bg-red-600"],
+      [class~="bg-red-700"],
+      [class~="bg-rose-500"],
+      [class~="bg-rose-600"],
+      [class~="bg-rose-700"],
+      [class~="bg-pink-500"],
+      [class~="bg-pink-600"],
+      [class~="bg-pink-700"],
+      [class~="bg-fuchsia-500"],
+      [class~="bg-fuchsia-600"],
+      [class~="bg-fuchsia-700"],
+      [class~="bg-purple-500"],
+      [class~="bg-purple-600"],
+      [class~="bg-purple-700"],
+      [class~="bg-violet-500"],
+      [class~="bg-violet-600"],
+      [class~="bg-violet-700"],
+      [class~="bg-indigo-500"],
+      [class~="bg-indigo-600"],
+      [class~="bg-indigo-700"],
+      [class~="bg-yellow-500"],
+      [class~="bg-yellow-600"],
+      [class~="bg-yellow-700"],
+      [class~="bg-slate-500"],
+      [class~="bg-slate-600"],
+      [class~="bg-slate-700"],
+      [class~="bg-gray-500"],
+      [class~="bg-gray-600"],
+      [class~="bg-gray-700"],
+      [class~="bg-zinc-500"],
+      [class~="bg-zinc-600"],
+      [class~="bg-zinc-700"],
+      [class~="bg-neutral-500"],
+      [class~="bg-neutral-600"],
+      [class~="bg-neutral-700"],
+      [class~="bg-stone-500"],
+      [class~="bg-stone-600"],
+      [class~="bg-stone-700"],
+      [class~="bg-slate-800"],
+      [class~="bg-slate-900"],
+      [class~="bg-slate-950"],
+      [class~="bg-gray-800"],
+      [class~="bg-gray-900"],
+      [class~="bg-gray-950"],
+      [class~="bg-zinc-800"],
+      [class~="bg-zinc-900"],
+      [class~="bg-zinc-950"],
+      [class~="bg-neutral-800"],
+      [class~="bg-neutral-900"],
+      [class~="bg-neutral-950"],
+      [class~="bg-stone-800"],
+      [class~="bg-stone-900"],
+      [class~="bg-stone-950"],
+      [class~="bg-black"],
+      [class~="from-blue-500"],
+      [class~="to-blue-500"],
+      [class~="from-blue-600"],
+      [class~="to-blue-600"],
+      [class~="from-blue-700"],
+      [class~="to-blue-700"],
+      [class~="from-blue-800"],
+      [class~="to-blue-800"],
+      [class~="from-blue-900"],
+      [class~="to-blue-900"],
+      [class~="from-sky-500"],
+      [class~="to-sky-500"],
+      [class~="from-sky-600"],
+      [class~="to-sky-600"],
+      [class~="from-sky-700"],
+      [class~="to-sky-700"],
+      [class~="from-sky-800"],
+      [class~="to-sky-800"],
+      [class~="from-sky-900"],
+      [class~="to-sky-900"],
+      [class~="from-cyan-500"],
+      [class~="to-cyan-500"],
+      [class~="from-cyan-600"],
+      [class~="to-cyan-600"],
+      [class~="from-cyan-700"],
+      [class~="to-cyan-700"],
+      [class~="from-cyan-800"],
+      [class~="to-cyan-800"],
+      [class~="from-cyan-900"],
+      [class~="to-cyan-900"],
+      [class~="from-teal-500"],
+      [class~="to-teal-500"],
+      [class~="from-teal-600"],
+      [class~="to-teal-600"],
+      [class~="from-teal-700"],
+      [class~="to-teal-700"],
+      [class~="from-teal-800"],
+      [class~="to-teal-800"],
+      [class~="from-teal-900"],
+      [class~="to-teal-900"],
+      [class~="from-emerald-500"],
+      [class~="to-emerald-500"],
+      [class~="from-emerald-600"],
+      [class~="to-emerald-600"],
+      [class~="from-emerald-700"],
+      [class~="to-emerald-700"],
+      [class~="from-emerald-800"],
+      [class~="to-emerald-800"],
+      [class~="from-emerald-900"],
+      [class~="to-emerald-900"],
+      [class~="from-green-500"],
+      [class~="to-green-500"],
+      [class~="from-green-600"],
+      [class~="to-green-600"],
+      [class~="from-green-700"],
+      [class~="to-green-700"],
+      [class~="from-green-800"],
+      [class~="to-green-800"],
+      [class~="from-green-900"],
+      [class~="to-green-900"],
+      [class~="from-lime-500"],
+      [class~="to-lime-500"],
+      [class~="from-lime-600"],
+      [class~="to-lime-600"],
+      [class~="from-lime-700"],
+      [class~="to-lime-700"],
+      [class~="from-lime-800"],
+      [class~="to-lime-800"],
+      [class~="from-lime-900"],
+      [class~="to-lime-900"],
+      [class~="from-amber-500"],
+      [class~="to-amber-500"],
+      [class~="from-amber-600"],
+      [class~="to-amber-600"],
+      [class~="from-amber-700"],
+      [class~="to-amber-700"],
+      [class~="from-amber-800"],
+      [class~="to-amber-800"],
+      [class~="from-amber-900"],
+      [class~="to-amber-900"],
+      [class~="from-orange-500"],
+      [class~="to-orange-500"],
+      [class~="from-orange-600"],
+      [class~="to-orange-600"],
+      [class~="from-orange-700"],
+      [class~="to-orange-700"],
+      [class~="from-orange-800"],
+      [class~="to-orange-800"],
+      [class~="from-orange-900"],
+      [class~="to-orange-900"],
+      [class~="from-red-500"],
+      [class~="to-red-500"],
+      [class~="from-red-600"],
+      [class~="to-red-600"],
+      [class~="from-red-700"],
+      [class~="to-red-700"],
+      [class~="from-red-800"],
+      [class~="to-red-800"],
+      [class~="from-red-900"],
+      [class~="to-red-900"],
+      [class~="from-rose-500"],
+      [class~="to-rose-500"],
+      [class~="from-rose-600"],
+      [class~="to-rose-600"],
+      [class~="from-rose-700"],
+      [class~="to-rose-700"],
+      [class~="from-rose-800"],
+      [class~="to-rose-800"],
+      [class~="from-rose-900"],
+      [class~="to-rose-900"],
+      [class~="from-pink-500"],
+      [class~="to-pink-500"],
+      [class~="from-pink-600"],
+      [class~="to-pink-600"],
+      [class~="from-pink-700"],
+      [class~="to-pink-700"],
+      [class~="from-pink-800"],
+      [class~="to-pink-800"],
+      [class~="from-pink-900"],
+      [class~="to-pink-900"],
+      [class~="from-fuchsia-500"],
+      [class~="to-fuchsia-500"],
+      [class~="from-fuchsia-600"],
+      [class~="to-fuchsia-600"],
+      [class~="from-fuchsia-700"],
+      [class~="to-fuchsia-700"],
+      [class~="from-fuchsia-800"],
+      [class~="to-fuchsia-800"],
+      [class~="from-fuchsia-900"],
+      [class~="to-fuchsia-900"],
+      [class~="from-purple-500"],
+      [class~="to-purple-500"],
+      [class~="from-purple-600"],
+      [class~="to-purple-600"],
+      [class~="from-purple-700"],
+      [class~="to-purple-700"],
+      [class~="from-purple-800"],
+      [class~="to-purple-800"],
+      [class~="from-purple-900"],
+      [class~="to-purple-900"],
+      [class~="from-violet-500"],
+      [class~="to-violet-500"],
+      [class~="from-violet-600"],
+      [class~="to-violet-600"],
+      [class~="from-violet-700"],
+      [class~="to-violet-700"],
+      [class~="from-violet-800"],
+      [class~="to-violet-800"],
+      [class~="from-violet-900"],
+      [class~="to-violet-900"],
+      [class~="from-indigo-500"],
+      [class~="to-indigo-500"],
+      [class~="from-indigo-600"],
+      [class~="to-indigo-600"],
+      [class~="from-indigo-700"],
+      [class~="to-indigo-700"],
+      [class~="from-indigo-800"],
+      [class~="to-indigo-800"],
+      [class~="from-indigo-900"],
+      [class~="to-indigo-900"],
+      [class~="from-yellow-500"],
+      [class~="to-yellow-500"],
+      [class~="from-yellow-600"],
+      [class~="to-yellow-600"],
+      [class~="from-yellow-700"],
+      [class~="to-yellow-700"],
+      [class~="from-yellow-800"],
+      [class~="to-yellow-800"],
+      [class~="from-yellow-900"],
+      [class~="to-yellow-900"],
+      [class~="from-slate-500"],
+      [class~="to-slate-500"],
+      [class~="from-slate-600"],
+      [class~="to-slate-600"],
+      [class~="from-slate-700"],
+      [class~="to-slate-700"],
+      [class~="from-slate-800"],
+      [class~="to-slate-800"],
+      [class~="from-slate-900"],
+      [class~="to-slate-900"],
+      [class~="from-gray-500"],
+      [class~="to-gray-500"],
+      [class~="from-gray-600"],
+      [class~="to-gray-600"],
+      [class~="from-gray-700"],
+      [class~="to-gray-700"],
+      [class~="from-gray-800"],
+      [class~="to-gray-800"],
+      [class~="from-gray-900"],
+      [class~="to-gray-900"],
+      [class~="from-zinc-500"],
+      [class~="to-zinc-500"],
+      [class~="from-zinc-600"],
+      [class~="to-zinc-600"],
+      [class~="from-zinc-700"],
+      [class~="to-zinc-700"],
+      [class~="from-zinc-800"],
+      [class~="to-zinc-800"],
+      [class~="from-zinc-900"],
+      [class~="to-zinc-900"],
+      [class~="from-neutral-500"],
+      [class~="to-neutral-500"],
+      [class~="from-neutral-600"],
+      [class~="to-neutral-600"],
+      [class~="from-neutral-700"],
+      [class~="to-neutral-700"],
+      [class~="from-neutral-800"],
+      [class~="to-neutral-800"],
+      [class~="from-neutral-900"],
+      [class~="to-neutral-900"],
+      [class~="from-stone-500"],
+      [class~="to-stone-500"],
+      [class~="from-stone-600"],
+      [class~="to-stone-600"],
+      [class~="from-stone-700"],
+      [class~="to-stone-700"],
+      [class~="from-stone-800"],
+      [class~="to-stone-800"],
+      [class~="from-stone-900"],
+      [class~="to-stone-900"]
+    )
+    :is(
+      .bg-white\/5,
+      .bg-white\/10,
+      .bg-white\/15,
+      .bg-white\/20,
+      .bg-white\/25,
+      .bg-white\/\[0\.1\],
+      .bg-white\/\[0\.12\],
+      .bg-white\/\[0\.15\],
+      .bg-white\/\[0\.2\]
+    ) {
+    background-color: rgba(255, 255, 255, 0.2) !important;
   }
-  :is([class~="bg-blue-500"],[class~="bg-blue-600"],[class~="bg-blue-700"],[class~="bg-sky-500"],[class~="bg-sky-600"],[class~="bg-sky-700"],[class~="bg-cyan-500"],[class~="bg-cyan-600"],[class~="bg-cyan-700"],[class~="bg-teal-500"],[class~="bg-teal-600"],[class~="bg-teal-700"],[class~="bg-emerald-500"],[class~="bg-emerald-600"],[class~="bg-emerald-700"],[class~="bg-green-500"],[class~="bg-green-600"],[class~="bg-green-700"],[class~="bg-lime-500"],[class~="bg-lime-600"],[class~="bg-lime-700"],[class~="bg-amber-500"],[class~="bg-amber-600"],[class~="bg-amber-700"],[class~="bg-orange-500"],[class~="bg-orange-600"],[class~="bg-orange-700"],[class~="bg-red-500"],[class~="bg-red-600"],[class~="bg-red-700"],[class~="bg-rose-500"],[class~="bg-rose-600"],[class~="bg-rose-700"],[class~="bg-pink-500"],[class~="bg-pink-600"],[class~="bg-pink-700"],[class~="bg-fuchsia-500"],[class~="bg-fuchsia-600"],[class~="bg-fuchsia-700"],[class~="bg-purple-500"],[class~="bg-purple-600"],[class~="bg-purple-700"],[class~="bg-violet-500"],[class~="bg-violet-600"],[class~="bg-violet-700"],[class~="bg-indigo-500"],[class~="bg-indigo-600"],[class~="bg-indigo-700"],[class~="bg-yellow-500"],[class~="bg-yellow-600"],[class~="bg-yellow-700"],[class~="bg-slate-500"],[class~="bg-slate-600"],[class~="bg-slate-700"],[class~="bg-gray-500"],[class~="bg-gray-600"],[class~="bg-gray-700"],[class~="bg-zinc-500"],[class~="bg-zinc-600"],[class~="bg-zinc-700"],[class~="bg-neutral-500"],[class~="bg-neutral-600"],[class~="bg-neutral-700"],[class~="bg-stone-500"],[class~="bg-stone-600"],[class~="bg-stone-700"],[class~="bg-slate-800"],[class~="bg-slate-900"],[class~="bg-slate-950"],[class~="bg-gray-800"],[class~="bg-gray-900"],[class~="bg-gray-950"],[class~="bg-zinc-800"],[class~="bg-zinc-900"],[class~="bg-zinc-950"],[class~="bg-neutral-800"],[class~="bg-neutral-900"],[class~="bg-neutral-950"],[class~="bg-stone-800"],[class~="bg-stone-900"],[class~="bg-stone-950"],[class~="bg-black"],[class~="from-blue-500"],[class~="to-blue-500"],[class~="from-blue-600"],[class~="to-blue-600"],[class~="from-blue-700"],[class~="to-blue-700"],[class~="from-blue-800"],[class~="to-blue-800"],[class~="from-blue-900"],[class~="to-blue-900"],[class~="from-sky-500"],[class~="to-sky-500"],[class~="from-sky-600"],[class~="to-sky-600"],[class~="from-sky-700"],[class~="to-sky-700"],[class~="from-sky-800"],[class~="to-sky-800"],[class~="from-sky-900"],[class~="to-sky-900"],[class~="from-cyan-500"],[class~="to-cyan-500"],[class~="from-cyan-600"],[class~="to-cyan-600"],[class~="from-cyan-700"],[class~="to-cyan-700"],[class~="from-cyan-800"],[class~="to-cyan-800"],[class~="from-cyan-900"],[class~="to-cyan-900"],[class~="from-teal-500"],[class~="to-teal-500"],[class~="from-teal-600"],[class~="to-teal-600"],[class~="from-teal-700"],[class~="to-teal-700"],[class~="from-teal-800"],[class~="to-teal-800"],[class~="from-teal-900"],[class~="to-teal-900"],[class~="from-emerald-500"],[class~="to-emerald-500"],[class~="from-emerald-600"],[class~="to-emerald-600"],[class~="from-emerald-700"],[class~="to-emerald-700"],[class~="from-emerald-800"],[class~="to-emerald-800"],[class~="from-emerald-900"],[class~="to-emerald-900"],[class~="from-green-500"],[class~="to-green-500"],[class~="from-green-600"],[class~="to-green-600"],[class~="from-green-700"],[class~="to-green-700"],[class~="from-green-800"],[class~="to-green-800"],[class~="from-green-900"],[class~="to-green-900"],[class~="from-lime-500"],[class~="to-lime-500"],[class~="from-lime-600"],[class~="to-lime-600"],[class~="from-lime-700"],[class~="to-lime-700"],[class~="from-lime-800"],[class~="to-lime-800"],[class~="from-lime-900"],[class~="to-lime-900"],[class~="from-amber-500"],[class~="to-amber-500"],[class~="from-amber-600"],[class~="to-amber-600"],[class~="from-amber-700"],[class~="to-amber-700"],[class~="from-amber-800"],[class~="to-amber-800"],[class~="from-amber-900"],[class~="to-amber-900"],[class~="from-orange-500"],[class~="to-orange-500"],[class~="from-orange-600"],[class~="to-orange-600"],[class~="from-orange-700"],[class~="to-orange-700"],[class~="from-orange-800"],[class~="to-orange-800"],[class~="from-orange-900"],[class~="to-orange-900"],[class~="from-red-500"],[class~="to-red-500"],[class~="from-red-600"],[class~="to-red-600"],[class~="from-red-700"],[class~="to-red-700"],[class~="from-red-800"],[class~="to-red-800"],[class~="from-red-900"],[class~="to-red-900"],[class~="from-rose-500"],[class~="to-rose-500"],[class~="from-rose-600"],[class~="to-rose-600"],[class~="from-rose-700"],[class~="to-rose-700"],[class~="from-rose-800"],[class~="to-rose-800"],[class~="from-rose-900"],[class~="to-rose-900"],[class~="from-pink-500"],[class~="to-pink-500"],[class~="from-pink-600"],[class~="to-pink-600"],[class~="from-pink-700"],[class~="to-pink-700"],[class~="from-pink-800"],[class~="to-pink-800"],[class~="from-pink-900"],[class~="to-pink-900"],[class~="from-fuchsia-500"],[class~="to-fuchsia-500"],[class~="from-fuchsia-600"],[class~="to-fuchsia-600"],[class~="from-fuchsia-700"],[class~="to-fuchsia-700"],[class~="from-fuchsia-800"],[class~="to-fuchsia-800"],[class~="from-fuchsia-900"],[class~="to-fuchsia-900"],[class~="from-purple-500"],[class~="to-purple-500"],[class~="from-purple-600"],[class~="to-purple-600"],[class~="from-purple-700"],[class~="to-purple-700"],[class~="from-purple-800"],[class~="to-purple-800"],[class~="from-purple-900"],[class~="to-purple-900"],[class~="from-violet-500"],[class~="to-violet-500"],[class~="from-violet-600"],[class~="to-violet-600"],[class~="from-violet-700"],[class~="to-violet-700"],[class~="from-violet-800"],[class~="to-violet-800"],[class~="from-violet-900"],[class~="to-violet-900"],[class~="from-indigo-500"],[class~="to-indigo-500"],[class~="from-indigo-600"],[class~="to-indigo-600"],[class~="from-indigo-700"],[class~="to-indigo-700"],[class~="from-indigo-800"],[class~="to-indigo-800"],[class~="from-indigo-900"],[class~="to-indigo-900"],[class~="from-yellow-500"],[class~="to-yellow-500"],[class~="from-yellow-600"],[class~="to-yellow-600"],[class~="from-yellow-700"],[class~="to-yellow-700"],[class~="from-yellow-800"],[class~="to-yellow-800"],[class~="from-yellow-900"],[class~="to-yellow-900"],[class~="from-slate-500"],[class~="to-slate-500"],[class~="from-slate-600"],[class~="to-slate-600"],[class~="from-slate-700"],[class~="to-slate-700"],[class~="from-slate-800"],[class~="to-slate-800"],[class~="from-slate-900"],[class~="to-slate-900"],[class~="from-gray-500"],[class~="to-gray-500"],[class~="from-gray-600"],[class~="to-gray-600"],[class~="from-gray-700"],[class~="to-gray-700"],[class~="from-gray-800"],[class~="to-gray-800"],[class~="from-gray-900"],[class~="to-gray-900"],[class~="from-zinc-500"],[class~="to-zinc-500"],[class~="from-zinc-600"],[class~="to-zinc-600"],[class~="from-zinc-700"],[class~="to-zinc-700"],[class~="from-zinc-800"],[class~="to-zinc-800"],[class~="from-zinc-900"],[class~="to-zinc-900"],[class~="from-neutral-500"],[class~="to-neutral-500"],[class~="from-neutral-600"],[class~="to-neutral-600"],[class~="from-neutral-700"],[class~="to-neutral-700"],[class~="from-neutral-800"],[class~="to-neutral-800"],[class~="from-neutral-900"],[class~="to-neutral-900"],[class~="from-stone-500"],[class~="to-stone-500"],[class~="from-stone-600"],[class~="to-stone-600"],[class~="from-stone-700"],[class~="to-stone-700"],[class~="from-stone-800"],[class~="to-stone-800"],[class~="from-stone-900"],[class~="to-stone-900"]) :is(.border-white\/5,.border-white\/10,.border-white\/15,.border-white\/20) {
-    border-color: rgba(255,255,255,0.25) !important;
+  :is(
+      [class~="bg-blue-500"],
+      [class~="bg-blue-600"],
+      [class~="bg-blue-700"],
+      [class~="bg-sky-500"],
+      [class~="bg-sky-600"],
+      [class~="bg-sky-700"],
+      [class~="bg-cyan-500"],
+      [class~="bg-cyan-600"],
+      [class~="bg-cyan-700"],
+      [class~="bg-teal-500"],
+      [class~="bg-teal-600"],
+      [class~="bg-teal-700"],
+      [class~="bg-emerald-500"],
+      [class~="bg-emerald-600"],
+      [class~="bg-emerald-700"],
+      [class~="bg-green-500"],
+      [class~="bg-green-600"],
+      [class~="bg-green-700"],
+      [class~="bg-lime-500"],
+      [class~="bg-lime-600"],
+      [class~="bg-lime-700"],
+      [class~="bg-amber-500"],
+      [class~="bg-amber-600"],
+      [class~="bg-amber-700"],
+      [class~="bg-orange-500"],
+      [class~="bg-orange-600"],
+      [class~="bg-orange-700"],
+      [class~="bg-red-500"],
+      [class~="bg-red-600"],
+      [class~="bg-red-700"],
+      [class~="bg-rose-500"],
+      [class~="bg-rose-600"],
+      [class~="bg-rose-700"],
+      [class~="bg-pink-500"],
+      [class~="bg-pink-600"],
+      [class~="bg-pink-700"],
+      [class~="bg-fuchsia-500"],
+      [class~="bg-fuchsia-600"],
+      [class~="bg-fuchsia-700"],
+      [class~="bg-purple-500"],
+      [class~="bg-purple-600"],
+      [class~="bg-purple-700"],
+      [class~="bg-violet-500"],
+      [class~="bg-violet-600"],
+      [class~="bg-violet-700"],
+      [class~="bg-indigo-500"],
+      [class~="bg-indigo-600"],
+      [class~="bg-indigo-700"],
+      [class~="bg-yellow-500"],
+      [class~="bg-yellow-600"],
+      [class~="bg-yellow-700"],
+      [class~="bg-slate-500"],
+      [class~="bg-slate-600"],
+      [class~="bg-slate-700"],
+      [class~="bg-gray-500"],
+      [class~="bg-gray-600"],
+      [class~="bg-gray-700"],
+      [class~="bg-zinc-500"],
+      [class~="bg-zinc-600"],
+      [class~="bg-zinc-700"],
+      [class~="bg-neutral-500"],
+      [class~="bg-neutral-600"],
+      [class~="bg-neutral-700"],
+      [class~="bg-stone-500"],
+      [class~="bg-stone-600"],
+      [class~="bg-stone-700"],
+      [class~="bg-slate-800"],
+      [class~="bg-slate-900"],
+      [class~="bg-slate-950"],
+      [class~="bg-gray-800"],
+      [class~="bg-gray-900"],
+      [class~="bg-gray-950"],
+      [class~="bg-zinc-800"],
+      [class~="bg-zinc-900"],
+      [class~="bg-zinc-950"],
+      [class~="bg-neutral-800"],
+      [class~="bg-neutral-900"],
+      [class~="bg-neutral-950"],
+      [class~="bg-stone-800"],
+      [class~="bg-stone-900"],
+      [class~="bg-stone-950"],
+      [class~="bg-black"],
+      [class~="from-blue-500"],
+      [class~="to-blue-500"],
+      [class~="from-blue-600"],
+      [class~="to-blue-600"],
+      [class~="from-blue-700"],
+      [class~="to-blue-700"],
+      [class~="from-blue-800"],
+      [class~="to-blue-800"],
+      [class~="from-blue-900"],
+      [class~="to-blue-900"],
+      [class~="from-sky-500"],
+      [class~="to-sky-500"],
+      [class~="from-sky-600"],
+      [class~="to-sky-600"],
+      [class~="from-sky-700"],
+      [class~="to-sky-700"],
+      [class~="from-sky-800"],
+      [class~="to-sky-800"],
+      [class~="from-sky-900"],
+      [class~="to-sky-900"],
+      [class~="from-cyan-500"],
+      [class~="to-cyan-500"],
+      [class~="from-cyan-600"],
+      [class~="to-cyan-600"],
+      [class~="from-cyan-700"],
+      [class~="to-cyan-700"],
+      [class~="from-cyan-800"],
+      [class~="to-cyan-800"],
+      [class~="from-cyan-900"],
+      [class~="to-cyan-900"],
+      [class~="from-teal-500"],
+      [class~="to-teal-500"],
+      [class~="from-teal-600"],
+      [class~="to-teal-600"],
+      [class~="from-teal-700"],
+      [class~="to-teal-700"],
+      [class~="from-teal-800"],
+      [class~="to-teal-800"],
+      [class~="from-teal-900"],
+      [class~="to-teal-900"],
+      [class~="from-emerald-500"],
+      [class~="to-emerald-500"],
+      [class~="from-emerald-600"],
+      [class~="to-emerald-600"],
+      [class~="from-emerald-700"],
+      [class~="to-emerald-700"],
+      [class~="from-emerald-800"],
+      [class~="to-emerald-800"],
+      [class~="from-emerald-900"],
+      [class~="to-emerald-900"],
+      [class~="from-green-500"],
+      [class~="to-green-500"],
+      [class~="from-green-600"],
+      [class~="to-green-600"],
+      [class~="from-green-700"],
+      [class~="to-green-700"],
+      [class~="from-green-800"],
+      [class~="to-green-800"],
+      [class~="from-green-900"],
+      [class~="to-green-900"],
+      [class~="from-lime-500"],
+      [class~="to-lime-500"],
+      [class~="from-lime-600"],
+      [class~="to-lime-600"],
+      [class~="from-lime-700"],
+      [class~="to-lime-700"],
+      [class~="from-lime-800"],
+      [class~="to-lime-800"],
+      [class~="from-lime-900"],
+      [class~="to-lime-900"],
+      [class~="from-amber-500"],
+      [class~="to-amber-500"],
+      [class~="from-amber-600"],
+      [class~="to-amber-600"],
+      [class~="from-amber-700"],
+      [class~="to-amber-700"],
+      [class~="from-amber-800"],
+      [class~="to-amber-800"],
+      [class~="from-amber-900"],
+      [class~="to-amber-900"],
+      [class~="from-orange-500"],
+      [class~="to-orange-500"],
+      [class~="from-orange-600"],
+      [class~="to-orange-600"],
+      [class~="from-orange-700"],
+      [class~="to-orange-700"],
+      [class~="from-orange-800"],
+      [class~="to-orange-800"],
+      [class~="from-orange-900"],
+      [class~="to-orange-900"],
+      [class~="from-red-500"],
+      [class~="to-red-500"],
+      [class~="from-red-600"],
+      [class~="to-red-600"],
+      [class~="from-red-700"],
+      [class~="to-red-700"],
+      [class~="from-red-800"],
+      [class~="to-red-800"],
+      [class~="from-red-900"],
+      [class~="to-red-900"],
+      [class~="from-rose-500"],
+      [class~="to-rose-500"],
+      [class~="from-rose-600"],
+      [class~="to-rose-600"],
+      [class~="from-rose-700"],
+      [class~="to-rose-700"],
+      [class~="from-rose-800"],
+      [class~="to-rose-800"],
+      [class~="from-rose-900"],
+      [class~="to-rose-900"],
+      [class~="from-pink-500"],
+      [class~="to-pink-500"],
+      [class~="from-pink-600"],
+      [class~="to-pink-600"],
+      [class~="from-pink-700"],
+      [class~="to-pink-700"],
+      [class~="from-pink-800"],
+      [class~="to-pink-800"],
+      [class~="from-pink-900"],
+      [class~="to-pink-900"],
+      [class~="from-fuchsia-500"],
+      [class~="to-fuchsia-500"],
+      [class~="from-fuchsia-600"],
+      [class~="to-fuchsia-600"],
+      [class~="from-fuchsia-700"],
+      [class~="to-fuchsia-700"],
+      [class~="from-fuchsia-800"],
+      [class~="to-fuchsia-800"],
+      [class~="from-fuchsia-900"],
+      [class~="to-fuchsia-900"],
+      [class~="from-purple-500"],
+      [class~="to-purple-500"],
+      [class~="from-purple-600"],
+      [class~="to-purple-600"],
+      [class~="from-purple-700"],
+      [class~="to-purple-700"],
+      [class~="from-purple-800"],
+      [class~="to-purple-800"],
+      [class~="from-purple-900"],
+      [class~="to-purple-900"],
+      [class~="from-violet-500"],
+      [class~="to-violet-500"],
+      [class~="from-violet-600"],
+      [class~="to-violet-600"],
+      [class~="from-violet-700"],
+      [class~="to-violet-700"],
+      [class~="from-violet-800"],
+      [class~="to-violet-800"],
+      [class~="from-violet-900"],
+      [class~="to-violet-900"],
+      [class~="from-indigo-500"],
+      [class~="to-indigo-500"],
+      [class~="from-indigo-600"],
+      [class~="to-indigo-600"],
+      [class~="from-indigo-700"],
+      [class~="to-indigo-700"],
+      [class~="from-indigo-800"],
+      [class~="to-indigo-800"],
+      [class~="from-indigo-900"],
+      [class~="to-indigo-900"],
+      [class~="from-yellow-500"],
+      [class~="to-yellow-500"],
+      [class~="from-yellow-600"],
+      [class~="to-yellow-600"],
+      [class~="from-yellow-700"],
+      [class~="to-yellow-700"],
+      [class~="from-yellow-800"],
+      [class~="to-yellow-800"],
+      [class~="from-yellow-900"],
+      [class~="to-yellow-900"],
+      [class~="from-slate-500"],
+      [class~="to-slate-500"],
+      [class~="from-slate-600"],
+      [class~="to-slate-600"],
+      [class~="from-slate-700"],
+      [class~="to-slate-700"],
+      [class~="from-slate-800"],
+      [class~="to-slate-800"],
+      [class~="from-slate-900"],
+      [class~="to-slate-900"],
+      [class~="from-gray-500"],
+      [class~="to-gray-500"],
+      [class~="from-gray-600"],
+      [class~="to-gray-600"],
+      [class~="from-gray-700"],
+      [class~="to-gray-700"],
+      [class~="from-gray-800"],
+      [class~="to-gray-800"],
+      [class~="from-gray-900"],
+      [class~="to-gray-900"],
+      [class~="from-zinc-500"],
+      [class~="to-zinc-500"],
+      [class~="from-zinc-600"],
+      [class~="to-zinc-600"],
+      [class~="from-zinc-700"],
+      [class~="to-zinc-700"],
+      [class~="from-zinc-800"],
+      [class~="to-zinc-800"],
+      [class~="from-zinc-900"],
+      [class~="to-zinc-900"],
+      [class~="from-neutral-500"],
+      [class~="to-neutral-500"],
+      [class~="from-neutral-600"],
+      [class~="to-neutral-600"],
+      [class~="from-neutral-700"],
+      [class~="to-neutral-700"],
+      [class~="from-neutral-800"],
+      [class~="to-neutral-800"],
+      [class~="from-neutral-900"],
+      [class~="to-neutral-900"],
+      [class~="from-stone-500"],
+      [class~="to-stone-500"],
+      [class~="from-stone-600"],
+      [class~="to-stone-600"],
+      [class~="from-stone-700"],
+      [class~="to-stone-700"],
+      [class~="from-stone-800"],
+      [class~="to-stone-800"],
+      [class~="from-stone-900"],
+      [class~="to-stone-900"]
+    )
+    :is(.border-white\/5, .border-white\/10, .border-white\/15, .border-white\/20) {
+    border-color: rgba(255, 255, 255, 0.25) !important;
   }
 
   /* ---- hover to solid colored bg keeps white text ---- */
   [class*="hover:bg-"][class*="text-white"]:hover,
-  [class*="hover:bg-"][class*="text-white"]:hover * { color: #ffffff !important; }
+  [class*="hover:bg-"][class*="text-white"]:hover * {
+    color: #ffffff !important;
+  }
 
   /* ---- ATTENDANCE PAGE — always-dark design, keep its text light
          in light mode (globals remaps text-white/slate to dark) ----
          Inputs are excluded: they are theme-aware (light bg + dark text). */
-  .attendance-page { color: #e2e8f0 !important; }
-  .attendance-page.text-white { color: #ffffff !important; }
-  .attendance-page .text-white:not(input):not(textarea):not(select) { color: #ffffff !important; }
-  .attendance-page .text-white\/40:not(input):not(textarea):not(select) { color: rgba(255,255,255,0.4) !important; }
-  .attendance-page .text-white\/60:not(input):not(textarea):not(select) { color: rgba(255,255,255,0.6) !important; }
-  .attendance-page .text-white\/70:not(input):not(textarea):not(select) { color: rgba(255,255,255,0.7) !important; }
-  .attendance-page .text-white\/85:not(input):not(textarea):not(select) { color: rgba(255,255,255,0.85) !important; }
-  .attendance-page .text-slate-100  { color: #f1f5f9 !important; }
-  .attendance-page .text-slate-200  { color: #e2e8f0 !important; }
-  .attendance-page .text-slate-300  { color: #cbd5e1 !important; }
-  .attendance-page .text-slate-400  { color: #94a3b8 !important; }
-  .attendance-page .text-slate-500  { color: #64748b !important; }
-  .attendance-page .text-slate-600  { color: #475569 !important; }
-  .attendance-page .text-blue-400   { color: #60a5fa !important; }
-  .attendance-page .text-emerald-300 { color: #6ee7b7 !important; }
-  .attendance-page .text-emerald-400 { color: #34d399 !important; }
-  .attendance-page .text-red-300    { color: #fca5a5 !important; }
-  .attendance-page .text-red-400    { color: #f87171 !important; }
-  .attendance-page .text-red-500    { color: #f87171 !important; }
-  .attendance-page .text-amber-400  { color: #fbbf24 !important; }
-  .attendance-page .hover\:text-white:hover     { color: #ffffff !important; }
-  .attendance-page .hover\:text-slate-300:hover { color: #cbd5e1 !important; }
+  .attendance-page {
+    color: #e2e8f0 !important;
+  }
+  .attendance-page.text-white {
+    color: #ffffff !important;
+  }
+  .attendance-page .text-white:not(input):not(textarea):not(select) {
+    color: #ffffff !important;
+  }
+  .attendance-page .text-white\/40:not(input):not(textarea):not(select) {
+    color: rgba(255, 255, 255, 0.4) !important;
+  }
+  .attendance-page .text-white\/60:not(input):not(textarea):not(select) {
+    color: rgba(255, 255, 255, 0.6) !important;
+  }
+  .attendance-page .text-white\/70:not(input):not(textarea):not(select) {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+  .attendance-page .text-white\/85:not(input):not(textarea):not(select) {
+    color: rgba(255, 255, 255, 0.85) !important;
+  }
+  .attendance-page .text-slate-100 {
+    color: #f1f5f9 !important;
+  }
+  .attendance-page .text-slate-200 {
+    color: #e2e8f0 !important;
+  }
+  .attendance-page .text-slate-300 {
+    color: #cbd5e1 !important;
+  }
+  .attendance-page .text-slate-400 {
+    color: #94a3b8 !important;
+  }
+  .attendance-page .text-slate-500 {
+    color: #64748b !important;
+  }
+  .attendance-page .text-slate-600 {
+    color: #475569 !important;
+  }
+  .attendance-page .text-blue-400 {
+    color: #60a5fa !important;
+  }
+  .attendance-page .text-emerald-300 {
+    color: #6ee7b7 !important;
+  }
+  .attendance-page .text-emerald-400 {
+    color: #34d399 !important;
+  }
+  .attendance-page .text-red-300 {
+    color: #fca5a5 !important;
+  }
+  .attendance-page .text-red-400 {
+    color: #f87171 !important;
+  }
+  .attendance-page .text-red-500 {
+    color: #f87171 !important;
+  }
+  .attendance-page .text-amber-400 {
+    color: #fbbf24 !important;
+  }
+  .attendance-page .hover\:text-white:hover {
+    color: #ffffff !important;
+  }
+  .attendance-page .hover\:text-slate-300:hover {
+    color: #cbd5e1 !important;
+  }
   /* Check In button (white bg) keeps its dark navy text */
-  .attendance-page .bg-white   { color: #001f3f !important; }
-  .attendance-page .bg-white * { color: #001f3f !important; }
+  .attendance-page .bg-white {
+    color: #001f3f !important;
+  }
+  .attendance-page .bg-white * {
+    color: #001f3f !important;
+  }
 }
 
 /* ============================================
@@ -942,58 +2674,136 @@ html[data-theme="light"] {
    when wired to the app theme toggle)
    ============================================ */
 html[data-theme="dark"] {
-  .dark\:text-white       { color: #ffffff !important; }
-  .dark\:text-slate-100   { color: #f1f5f9 !important; }
-  .dark\:text-slate-300   { color: #cbd5e1 !important; }
-  .dark\:text-slate-400   { color: #94a3b8 !important; }
-  .dark\:text-slate-500   { color: #64748b !important; }
-  .dark\:text-blue-300    { color: #93c5fd !important; }
-  .dark\:text-blue-400    { color: #60a5fa !important; }
-  .dark\:text-emerald-300 { color: #6ee7b7 !important; }
-  .dark\:text-emerald-400 { color: #34d399 !important; }
-  .dark\:text-red-300     { color: #fca5a5 !important; }
-  .dark\:text-purple-300  { color: #d8b4fe !important; }
-  .dark\:text-teal-300    { color: #5eead4 !important; }
-  .dark\:border-white\/10      { border-color: rgba(255,255,255,0.1) !important; }
-  .dark\:border-white\/\[0\.05\] { border-color: rgba(255,255,255,0.05) !important; }
-  .dark\:border-\[\#21293d\]     { border-color: #21293d !important; }
-  .dark\:border-\[\#2e3a55\]     { border-color: #2e3a55 !important; }
-  .dark\:border-slate-600       { border-color: #475569 !important; }
-  .dark\:bg-white\/\[0\.02\]    { background-color: rgba(255,255,255,0.02) !important; }
-  .dark\:bg-slate-700\/60       { background-color: rgba(51,65,85,0.6) !important; }
-  .dark\:bg-\[\#111114\]        { background-color: #111114 !important; }
-  .dark\:bg-\[\#161b27\]        { background-color: #161b27 !important; }
-  .dark\:bg-\[\#1a2035\]        { background-color: #1a2035 !important; }
+  .dark\:text-white {
+    color: #ffffff !important;
+  }
+  .dark\:text-slate-100 {
+    color: #f1f5f9 !important;
+  }
+  .dark\:text-slate-300 {
+    color: #cbd5e1 !important;
+  }
+  .dark\:text-slate-400 {
+    color: #94a3b8 !important;
+  }
+  .dark\:text-slate-500 {
+    color: #64748b !important;
+  }
+  .dark\:text-blue-300 {
+    color: #93c5fd !important;
+  }
+  .dark\:text-blue-400 {
+    color: #60a5fa !important;
+  }
+  .dark\:text-emerald-300 {
+    color: #6ee7b7 !important;
+  }
+  .dark\:text-emerald-400 {
+    color: #34d399 !important;
+  }
+  .dark\:text-red-300 {
+    color: #fca5a5 !important;
+  }
+  .dark\:text-purple-300 {
+    color: #d8b4fe !important;
+  }
+  .dark\:text-teal-300 {
+    color: #5eead4 !important;
+  }
+  .dark\:border-white\/10 {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  .dark\:border-white\/\[0\.05\] {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+  }
+  .dark\:border-\[\#21293d\] {
+    border-color: #21293d !important;
+  }
+  .dark\:border-\[\#2e3a55\] {
+    border-color: #2e3a55 !important;
+  }
+  .dark\:border-slate-600 {
+    border-color: #475569 !important;
+  }
+  .dark\:bg-white\/\[0\.02\] {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+  }
+  .dark\:bg-slate-700\/60 {
+    background-color: rgba(51, 65, 85, 0.6) !important;
+  }
+  .dark\:bg-\[\#111114\] {
+    background-color: #111114 !important;
+  }
+  .dark\:bg-\[\#161b27\] {
+    background-color: #161b27 !important;
+  }
+  .dark\:bg-\[\#1a2035\] {
+    background-color: #1a2035 !important;
+  }
 }
 
 /* ============================================
    PUBLIC SITE — premium display font (Outfit)
    ============================================ */
-.font-display { font-family: var(--font-outfit), system-ui, sans-serif; }
+.font-display {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+}
 
 /* Mobile-first public site helpers */
-.tap-target { min-height: 44px; min-width: 44px; }
+.tap-target {
+  min-height: 44px;
+  min-width: 44px;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .anim-float { animation: none !important; }
-  .anim-fade { animation: none !important; }
-  * { scroll-behavior: auto !important; }
+  .anim-float {
+    animation: none !important;
+  }
+  .anim-fade {
+    animation: none !important;
+  }
+  * {
+    scroll-behavior: auto !important;
+  }
 }
 
 @keyframes floatY {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-14px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
 }
-.anim-float { animation: floatY 7s ease-in-out infinite; }
+.anim-float {
+  animation: floatY 7s ease-in-out infinite;
+}
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.anim-fade { animation: fadeUp 0.6s ease-out both; }
+.anim-fade {
+  animation: fadeUp 0.6s ease-out both;
+}
 
 @keyframes popIn {
-  from { opacity: 0; transform: translateY(10px) scale(0.96); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
-.anim-scale { animation: popIn 0.25s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+.anim-scale {
+  animation: popIn 0.25s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}

@@ -17,7 +17,10 @@ export async function GET() {
   } catch (error) {
     logger.error("Alerts API Error:", error);
     return NextResponse.json(
-      { error: "Failed to load alerts", details: error instanceof Error ? error.message : String(error) },
+      {
+        error: "Failed to load alerts",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

@@ -18,13 +18,17 @@ const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFra
 
 function fmtDate(iso: string): string {
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(iso));
 }
 
 export async function GET(request: NextRequest) {
   const user = await requireStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   const from = searchParams.get("from");
@@ -47,7 +51,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Mechanic not found" }, { status: 404 });
   }
 
-  const name = [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ");
+  const name = [mechanic.firstname, mechanic.middlename, mechanic.lastname]
+    .filter(Boolean)
+    .join(" ");
 
   if (!from || !to) {
     return new NextResponse(
@@ -69,7 +75,7 @@ export async function GET(request: NextRequest) {
   );
 
   const getDailyRate = (dateStr: string) => {
-    const hist = (salaryHist || []).find(h => h.effective_date <= dateStr);
+    const hist = (salaryHist || []).find((h) => h.effective_date <= dateStr);
     return hist ? parseFloat(hist.salary) : mechanic.daily_salary;
   };
 
@@ -78,33 +84,89 @@ export async function GET(request: NextRequest) {
   const prevLimitStr = prevLimit.toISOString().split("T")[0];
 
   const attrKey = mode === "created" ? "date_created" : "date_completed";
-  const periodJobs = mode === "created"
-    ? pageAll(supabase.from("transaction_list").select("id, job_id, item, mechanic_commission_amount, status, date_created").eq("mechanic_id", id).gte("date_created", from + " 00:00:00").lte("date_created", to + " 23:59:59"))
-    : pageAll(supabase.from("transaction_list").select("id, job_id, item, mechanic_commission_amount, status, date_completed").eq("mechanic_id", id).eq("status", 5).gte("date_completed", from + " 00:00:00").lte("date_completed", to + " 23:59:59"));
+  const periodJobs =
+    mode === "created"
+      ? pageAll(
+          supabase
+            .from("transaction_list")
+            .select("id, job_id, item, mechanic_commission_amount, status, date_created")
+            .eq("mechanic_id", id)
+            .gte("date_created", from + " 00:00:00")
+            .lte("date_created", to + " 23:59:59")
+        )
+      : pageAll(
+          supabase
+            .from("transaction_list")
+            .select("id, job_id, item, mechanic_commission_amount, status, date_completed")
+            .eq("mechanic_id", id)
+            .eq("status", 5)
+            .gte("date_completed", from + " 00:00:00")
+            .lte("date_completed", to + " 23:59:59")
+        );
 
   // 2. Fetch Data for Opening Balance & Period
   const [prevAtt, prevComm, prevAdv, allAtt, allComm, allAdv] = await Promise.all([
-    pageAll(supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", id).in("status", [1, 3]).lte("curr_date", prevLimitStr)),
-    pageAll(supabase.from("transaction_list").select("mechanic_commission_amount").eq("mechanic_id", id).eq("status", 5).lte("date_completed", prevLimitStr + " 23:59:59")),
-    pageAll(supabase.from("advance_payments").select("amount").eq("mechanic_id", id).lte("date_paid", prevLimitStr)),
-    pageAll(supabase.from("attendance_list").select("curr_date, status").eq("mechanic_id", id).gte("curr_date", from).lte("curr_date", to)),
+    pageAll(
+      supabase
+        .from("attendance_list")
+        .select("curr_date, status")
+        .eq("mechanic_id", id)
+        .in("status", [1, 3])
+        .lte("curr_date", prevLimitStr)
+    ),
+    pageAll(
+      supabase
+        .from("transaction_list")
+        .select("mechanic_commission_amount")
+        .eq("mechanic_id", id)
+        .eq("status", 5)
+        .lte("date_completed", prevLimitStr + " 23:59:59")
+    ),
+    pageAll(
+      supabase
+        .from("advance_payments")
+        .select("amount")
+        .eq("mechanic_id", id)
+        .lte("date_paid", prevLimitStr)
+    ),
+    pageAll(
+      supabase
+        .from("attendance_list")
+        .select("curr_date, status")
+        .eq("mechanic_id", id)
+        .gte("curr_date", from)
+        .lte("curr_date", to)
+    ),
     periodJobs,
-    pageAll(supabase.from("advance_payments").select("amount, date_paid").eq("mechanic_id", id).gte("date_paid", from).lte("date_paid", to))
+    pageAll(
+      supabase
+        .from("advance_payments")
+        .select("amount, date_paid")
+        .eq("mechanic_id", id)
+        .gte("date_paid", from)
+        .lte("date_paid", to)
+    ),
   ]);
 
   // 3. Calculate Opening Balance
   let opening = 0;
-  (prevAtt.data || []).forEach(att => {
+  (prevAtt.data || []).forEach((att) => {
     const rate = getDailyRate(att.curr_date);
     opening += att.status === 1 ? rate : rate / 2;
   });
-  opening += (prevComm.data || []).reduce((s, c) => s + (parseFloat(c.mechanic_commission_amount) || 0), 0);
+  opening += (prevComm.data || []).reduce(
+    (s, c) => s + (parseFloat(c.mechanic_commission_amount) || 0),
+    0
+  );
   opening -= (prevAdv.data || []).reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
 
   // 4. Build Ledger Grid
   const entries: DbRow[] = [];
   let running = opening;
-  let totalEarned = 0, totalComm = 0, totalGen = 0, totalAdv = 0;
+  let totalEarned = 0,
+    totalComm = 0,
+    totalGen = 0,
+    totalAdv = 0;
 
   const startDate = new Date(from);
   const endDate = new Date(to);
@@ -114,66 +176,79 @@ export async function GET(request: NextRequest) {
   while (currentDate <= endDate) {
     const dStr = currentDate.toISOString().split("T")[0];
     const dayName = dayNames[currentDate.getDay()];
-    
+
     // Attendance
-    const att = (allAtt.data || []).find(a => a.curr_date === dStr);
-    let statusLabel = "Absent", wage = 0;
+    const att = (allAtt.data || []).find((a) => a.curr_date === dStr);
+    let statusLabel = "Absent",
+      wage = 0;
     if (att) {
       const rate = getDailyRate(dStr);
-      if (att.status === 1) { statusLabel = "Present"; wage = rate; }
-      else if (att.status === 3) { statusLabel = "Half Day"; wage = rate / 2; }
+      if (att.status === 1) {
+        statusLabel = "Present";
+        wage = rate;
+      } else if (att.status === 3) {
+        statusLabel = "Half Day";
+        wage = rate / 2;
+      }
     }
 
     // Jobs: completed mode counts commission on delivery date (status=5 only);
     // created mode attributes jobs by creation date and counts only delivered toward balance
-    const dayJobs = (allComm.data || []).filter(j => ((j as Record<string, string | null>)[attrKey] || "").startsWith(dStr));
+    const dayJobs = (allComm.data || []).filter((j) =>
+      ((j as Record<string, string | null>)[attrKey] || "").startsWith(dStr)
+    );
     let commPay = 0;
     let commGen = 0;
-    dayJobs.forEach(j => {
+    dayJobs.forEach((j) => {
       const val = parseFloat(j.mechanic_commission_amount) || 0;
       commGen += val;
       if (mode === "completed" || j.status === 5) commPay += val;
     });
 
     // Advance
-    const dayAdv = (allAdv.data || []).filter(a => a.date_paid === dStr).reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
+    const dayAdv = (allAdv.data || [])
+      .filter((a) => a.date_paid === dStr)
+      .reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
 
-    running += (wage + commPay - dayAdv);
+    running += wage + commPay - dayAdv;
     totalEarned += wage;
     totalComm += commPay;
     totalGen += commGen;
     totalAdv += dayAdv;
 
-    entries.push({ 
-      date: dStr, 
-      status: statusLabel, 
-      earned: wage, 
-      commission: commPay, 
-      generated: commGen, 
-      advance: dayAdv, 
-      running, 
+    entries.push({
+      date: dStr,
+      status: statusLabel,
+      earned: wage,
+      commission: commPay,
+      generated: commGen,
+      advance: dayAdv,
+      running,
       dayName,
-      jobs: dayJobs 
+      jobs: dayJobs,
     });
-    
+
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
   const periodLabel = `${fmtDate(from)} - ${fmtDate(to)}`;
 
-  const ledgerRows = entries.map((e, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    const jobDetails = (e.jobs || []).map((j: DbRow) => {
-      const isDelivered = j.status === 5;
-      return `
+  const ledgerRows = entries
+    .map((e, i) => {
+      const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+      const jobDetails = (e.jobs || [])
+        .map((j: DbRow) => {
+          const isDelivered = j.status === 5;
+          return `
       <div style="font-size:9px;color:#666;border-bottom:1px solid #eee;padding:2px 0">
         <span style="color:#007bff;font-weight:bold">#${j.job_id}</span> ${j.item} 
-        <span style="font-size:8px;font-weight:bold;color:${isDelivered ? '#28a745' : '#adb5bd'}">${isDelivered ? 'DELIVERED' : 'PENDING'}</span>
+        <span style="font-size:8px;font-weight:bold;color:${isDelivered ? "#28a745" : "#adb5bd"}">${isDelivered ? "DELIVERED" : "PENDING"}</span>
         <span style="float:right;font-weight:bold">₹${(parseFloat(j.mechanic_commission_amount) || 0).toFixed(0)}</span>
       </div>`;
-    }).join("");
+        })
+        .join("");
 
-    return `<tr style="background:${rowBg}">
+      return `<tr style="background:${rowBg}">
       <td style="padding:6px 8px;border:1px solid #dee2e6;font-size:11px">${fmtDate(e.date)}</td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;font-size:11px">${e.dayName}</td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;font-size:11px">${e.status}</td>
@@ -186,9 +261,10 @@ export async function GET(request: NextRequest) {
         ${mode === "created" && e.generated > e.commission ? `<div style="font-size:8px;color:#adb5bd">Gen: ${inr(e.generated)}</div>` : ""}
       </td>
       <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:#c0392b">${inr(e.advance)}</td>
-      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:${e.running >= 0 ? '#001f3f' : '#c0392b'}">${inr(e.running)}</td>
+      <td style="padding:6px 8px;border:1px solid #dee2e6;text-align:right;font-size:11px;color:${e.running >= 0 ? "#001f3f" : "#c0392b"}">${inr(e.running)}</td>
     </tr>`;
-  }).join("");
+    })
+    .join("");
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -238,7 +314,7 @@ export async function GET(request: NextRequest) {
     <div class="mechanic-info">${name} | Daily Rate: ${inr(mechanic.daily_salary)}</div>
     <div class="stats">
       <div class="stat">
-        <div class="stat-num" style="color:${opening >= 0 ? '#001f3f' : '#c0392b'}">${inr(opening)}</div>
+        <div class="stat-num" style="color:${opening >= 0 ? "#001f3f" : "#c0392b"}">${inr(opening)}</div>
         <div class="stat-label">Opening</div>
       </div>
       <div class="stat">
@@ -249,10 +325,14 @@ export async function GET(request: NextRequest) {
         <div class="stat-num" style="color:#28a745">${inr(totalComm)}</div>
         <div class="stat-label">Comm ${mode === "created" ? "Payable" : ""}</div>
       </div>
-      ${mode === "created" ? `<div class="stat">
+      ${
+        mode === "created"
+          ? `<div class="stat">
         <div class="stat-num" style="color:#adb5bd">${inr(totalGen)}</div>
         <div class="stat-label">Comm Generated</div>
-      </div>` : ""}
+      </div>`
+          : ""
+      }
       <div class="stat">
         <div class="stat-num" style="color:#c0392b">${inr(totalAdv)}</div>
         <div class="stat-label">Advances</div>

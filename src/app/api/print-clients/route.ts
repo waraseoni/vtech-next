@@ -17,13 +17,17 @@ const inr = (v: number) => "₹" + Math.abs(v).toLocaleString("en-IN", { minimum
 
 function fmtDate(iso: string): string {
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(iso));
 }
 
 export async function GET(request: NextRequest) {
   const user = await requireStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const tabFilter = searchParams.get("tab") || "all";
   const minBal = searchParams.get("minBal") || "";
@@ -34,7 +38,9 @@ export async function GET(request: NextRequest) {
   const cls = await fetchAll(
     supabase
       .from("client_list")
-      .select("id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance")
+      .select(
+        "id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance"
+      )
       .eq("delete_flag", 0)
   );
 
@@ -51,14 +57,35 @@ export async function GET(request: NextRequest) {
 
   const ids = cls.map((c) => c.id);
 
-  const [{ data: repairs }, { data: dirSales }, { data: payments }, { data: loans }] = await Promise.all([
-    pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
-    fetchAllIn((ids: number[]) => supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids), ids).then(rows => ({ data: rows })),
-    fetchAllIn((ids: number[]) => supabase.from("client_payments").select("client_id, amount, discount, loan_id").in("client_id", ids), ids).then(rows => ({ data: rows })),
-    fetchAllIn((ids: number[]) => supabase.from("client_loans").select("id, client_id, total_payable").in("client_id", ids).eq("status", 1), ids).then(rows => ({ data: rows })),
-  ]);
+  const [{ data: repairs }, { data: dirSales }, { data: payments }, { data: loans }] =
+    await Promise.all([
+      pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
+      fetchAllIn(
+        (ids: number[]) =>
+          supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids),
+        ids
+      ).then((rows) => ({ data: rows })),
+      fetchAllIn(
+        (ids: number[]) =>
+          supabase
+            .from("client_payments")
+            .select("client_id, amount, discount, loan_id")
+            .in("client_id", ids),
+        ids
+      ).then((rows) => ({ data: rows })),
+      fetchAllIn(
+        (ids: number[]) =>
+          supabase
+            .from("client_loans")
+            .select("id, client_id, total_payable")
+            .in("client_id", ids)
+            .eq("status", 1),
+        ids
+      ).then((rows) => ({ data: rows })),
+    ]);
 
-  const daysSince = (d: string | null) => d ? Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000) : 999;
+  const daysSince = (d: string | null) =>
+    d ? Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000) : 999;
 
   const m = buildDueMaps({ repairs, directSales: dirSales, payments, loans });
 
@@ -70,10 +97,18 @@ export async function GET(request: NextRequest) {
     const loanGiven = m.activeLoanGiven[c.id] || 0;
     const balance = balanceFromMaps(m, c.id, c.opening_balance || 0);
     return {
-      id: c.id, name, contact: c.contact || "", email: c.email || "", address: c.address || "",
-      date_created: c.date_created, opening_balance: c.opening_balance || 0,
-      repair_billed: repairBilled, direct_sales_billed: directSales,
-      total_loan_given: loanGiven, total_paid: paid, balance,
+      id: c.id,
+      name,
+      contact: c.contact || "",
+      email: c.email || "",
+      address: c.address || "",
+      date_created: c.date_created,
+      opening_balance: c.opening_balance || 0,
+      repair_billed: repairBilled,
+      direct_sales_billed: directSales,
+      total_loan_given: loanGiven,
+      total_paid: paid,
+      balance,
       last_txn_date: null as string | null,
     };
   });
@@ -83,7 +118,16 @@ export async function GET(request: NextRequest) {
 
   const filtered = clients.filter((c) => {
     const mb = c.balance >= lo && c.balance <= hi;
-    const mt = tabFilter === "all" ? true : tabFilter === "due" ? c.balance > 0 : tabFilter === "high" ? c.balance > 20_000 : tabFilter === "clear" ? c.balance <= 0 && daysSince(c.last_txn_date) <= 30 : c.balance <= 0 && daysSince(c.last_txn_date) > 30;
+    const mt =
+      tabFilter === "all"
+        ? true
+        : tabFilter === "due"
+          ? c.balance > 0
+          : tabFilter === "high"
+            ? c.balance > 20_000
+            : tabFilter === "clear"
+              ? c.balance <= 0 && daysSince(c.last_txn_date) <= 30
+              : c.balance <= 0 && daysSince(c.last_txn_date) > 30;
     return mb && mt;
   });
 
@@ -91,26 +135,38 @@ export async function GET(request: NextRequest) {
     let cmp = 0;
     if (sortField === "name") cmp = a.name.localeCompare(b.name);
     else if (sortField === "balance") cmp = a.balance - b.balance;
-    else if (sortField === "date_created") cmp = (a.date_created || "").localeCompare(b.date_created || "");
+    else if (sortField === "date_created")
+      cmp = (a.date_created || "").localeCompare(b.date_created || "");
     else if (sortField === "total_paid") cmp = a.total_paid - b.total_paid;
     return sortDir === "asc" ? cmp : -cmp;
   });
 
   const totalOutstanding = clients.reduce((s, c) => s + (c.balance > 0 ? c.balance : 0), 0);
 
-  const tabLabel = tabFilter === "all" ? "All Clients" : tabFilter === "due" ? "Due" : tabFilter === "high" ? "High Risk" : tabFilter === "clear" ? "Clear" : "Follow-up";
+  const tabLabel =
+    tabFilter === "all"
+      ? "All Clients"
+      : tabFilter === "due"
+        ? "Due"
+        : tabFilter === "high"
+          ? "High Risk"
+          : tabFilter === "clear"
+            ? "Clear"
+            : "Follow-up";
 
-  const clientRows = filtered.map((c, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const clientRows = filtered
+    .map((c, i) => {
+      const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+      return `<tr style="background:${rowBg}">
       <td style="padding:8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:12px">${i + 1}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px;font-weight:600">${c.name}</td>
       <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${c.contact}</td>
-      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${c.email || '-'}</td>
-      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${c.address || '-'}</td>
-      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px;font-weight:700;color:${c.balance > 0 ? '#c0392b' : '#28a745'}">${inr(c.balance)}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${c.email || "-"}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;font-size:12px">${c.address || "-"}</td>
+      <td style="padding:8px;border:1px solid #dee2e6;text-align:right;font-size:12px;font-weight:700;color:${c.balance > 0 ? "#c0392b" : "#28a745"}">${inr(c.balance)}</td>
     </tr>`;
-  }).join("");
+    })
+    .join("");
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -161,7 +217,7 @@ export async function GET(request: NextRequest) {
         <div class="stat-label">Total Clients</div>
       </div>
       <div class="stat">
-        <div class="stat-num" style="color:#c0392b">${clients.filter(c => c.balance > 0).length}</div>
+        <div class="stat-num" style="color:#c0392b">${clients.filter((c) => c.balance > 0).length}</div>
         <div class="stat-label">With Due</div>
       </div>
       <div class="stat">

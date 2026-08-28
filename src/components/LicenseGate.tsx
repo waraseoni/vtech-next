@@ -1,7 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { KeyRound, LogOut, RefreshCw, ShieldAlert, ShieldCheck, Loader2, Phone, MessageCircle, MapPin, User, Mail } from "lucide-react";
+import {
+  KeyRound,
+  LogOut,
+  RefreshCw,
+  ShieldAlert,
+  ShieldCheck,
+  Loader2,
+  Phone,
+  MessageCircle,
+  MapPin,
+  User,
+  Mail,
+} from "lucide-react";
 import type { LicenseStatus } from "@/lib/license";
 import { SELLER_INFO } from "@/lib/seller-info";
 
@@ -81,11 +93,13 @@ export default function LicenseGate({
         setFixMsg(data.error || "Fix nahi ho paya");
         return;
       }
-      setFixMsg(data.action === "promoted_to_admin"
-        ? "Role fixed! Admin banaya gaya hai. Page refresh ho raha hai..."
-        : data.action === "created_as_admin"
-        ? "Profile banayi gayi hai (admin). Page refresh ho raha hai..."
-        : "Aap pehle se admin hain.");
+      setFixMsg(
+        data.action === "promoted_to_admin"
+          ? "Role fixed! Admin banaya gaya hai. Page refresh ho raha hai..."
+          : data.action === "created_as_admin"
+            ? "Profile banayi gayi hai (admin). Page refresh ho raha hai..."
+            : "Aap pehle se admin hain."
+      );
       if (data.action !== "already_admin") {
         setTimeout(() => window.location.reload(), 1200);
       }
@@ -100,7 +114,6 @@ export default function LicenseGate({
     <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <div className="bg-[#111520] border border-[#21293d] rounded-3xl p-8 shadow-2xl shadow-black/50 anim-fade">
-
           {/* ── Header: icon + title + badge + message — sab compact ── */}
           <div className="flex items-start gap-3.5">
             <div
@@ -113,13 +126,19 @@ export default function LicenseGate({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-lg font-black text-white tracking-tight">
-                  {expired ? "License Expired" : status.activated ? "License Invalid" : "Trial Mode"}
+                  {expired
+                    ? "License Expired"
+                    : status.activated
+                      ? "License Invalid"
+                      : "Trial Mode"}
                 </h1>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${
-                  expired
-                    ? "text-red-400 border-red-500/25 bg-red-500/10"
-                    : "text-amber-400 border-amber-500/25 bg-amber-500/10"
-                }`}>
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${
+                    expired
+                      ? "text-red-400 border-red-500/25 bg-red-500/10"
+                      : "text-amber-400 border-amber-500/25 bg-amber-500/10"
+                  }`}
+                >
                   {expired ? "Expired" : status.activated ? "Invalid" : "Trial"}
                 </span>
               </div>
@@ -128,12 +147,17 @@ export default function LicenseGate({
                   <>
                     Aapka license{" "}
                     <span className="text-red-400 font-bold">
-                      {new Date(status.expiresAt!).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                      {new Date(status.expiresAt!).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
                     </span>{" "}
                     ko khatam ho gaya hai.
                   </>
                 ) : status.activated ? (
-                  reasonText || "License abhi active nahi hai. System ko chalaane ke liye naya key chahiye."
+                  reasonText ||
+                  "License abhi active nahi hai. System ko chalaane ke liye naya key chahiye."
                 ) : (
                   "System unlock karne ke liye license key daalein."
                 )}
@@ -144,7 +168,9 @@ export default function LicenseGate({
           {/* ── Shop name ── */}
           {status.shopName && (
             <div className="mt-3.5 flex items-center justify-between bg-[#1a2234] rounded-xl px-4 py-2.5">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Shop</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                Shop
+              </span>
               <span className="text-xs font-bold text-slate-200">{status.shopName}</span>
             </div>
           )}
@@ -164,7 +190,12 @@ export default function LicenseGate({
             </div>
             <div className="flex items-center gap-2.5">
               <Phone size={12} className="text-slate-500 shrink-0" />
-              <a href={`tel:${SELLER_INFO.phone}`} className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors">{SELLER_INFO.phone}</a>
+              <a
+                href={`tel:${SELLER_INFO.phone}`}
+                className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                {SELLER_INFO.phone}
+              </a>
             </div>
             <div className="flex items-center gap-2.5">
               <MessageCircle size={12} className="text-emerald-500 shrink-0" />
@@ -179,7 +210,12 @@ export default function LicenseGate({
             </div>
             <div className="flex items-center gap-2.5">
               <Mail size={12} className="text-slate-500 shrink-0" />
-              <a href={`mailto:${SELLER_INFO.email}`} className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors">{SELLER_INFO.email}</a>
+              <a
+                href={`mailto:${SELLER_INFO.email}`}
+                className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                {SELLER_INFO.email}
+              </a>
             </div>
           </div>
 
@@ -225,7 +261,10 @@ export default function LicenseGate({
               </button>
               <button
                 type="button"
-                onClick={() => { setError(""); onActivated(); }}
+                onClick={() => {
+                  setError("");
+                  onActivated();
+                }}
                 className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-[#21293d] text-xs font-bold text-slate-500 hover:text-slate-300 hover:border-slate-500/50 transition-colors"
               >
                 <RefreshCw size={12} /> Refresh
@@ -246,13 +285,19 @@ export default function LicenseGate({
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 text-amber-300 text-xs font-black tracking-wide transition-all disabled:opacity-50"
               >
                 {fixing ? (
-                  <><Loader2 size={14} className="animate-spin" /> Fixing...</>
+                  <>
+                    <Loader2 size={14} className="animate-spin" /> Fixing...
+                  </>
                 ) : (
-                  <><ShieldCheck size={14} /> Fix Admin Role (Auto)</>
+                  <>
+                    <ShieldCheck size={14} /> Fix Admin Role (Auto)
+                  </>
                 )}
               </button>
               {fixMsg && (
-                <p className={`text-[11px] font-semibold text-center ${fixMsg.includes("nahi") || fixMsg.includes("galat") ? "text-red-400" : "text-emerald-400"}`}>
+                <p
+                  className={`text-[11px] font-semibold text-center ${fixMsg.includes("nahi") || fixMsg.includes("galat") ? "text-red-400" : "text-emerald-400"}`}
+                >
                   {fixMsg}
                 </p>
               )}

@@ -23,9 +23,13 @@ export async function POST(req: NextRequest) {
     if (email === null || typeof email === "string") updates.email = email;
     if (role === "admin" || role === "staff" || role === "developer") {
       // Developer role sirf dev PC (env vars wale deployment) par set ho sakta hai
-      const devEnabled = !!process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY && !!process.env.DEV_PORTAL_PASSWORD;
+      const devEnabled =
+        !!process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY && !!process.env.DEV_PORTAL_PASSWORD;
       if (role === "developer" && !devEnabled) {
-        return NextResponse.json({ error: "Developer role sirf dev PC par set ho sakta hai" }, { status: 403 });
+        return NextResponse.json(
+          { error: "Developer role sirf dev PC par set ho sakta hai" },
+          { status: 403 }
+        );
       }
       updates.role = role;
     }
@@ -56,7 +60,6 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, profile: data });
-
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Server error" },

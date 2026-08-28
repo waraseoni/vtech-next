@@ -12,7 +12,8 @@ const BUCKET = "job-images";
 export async function POST(request: NextRequest) {
   try {
     const user = await requireStaff();
-    if (!user) return NextResponse.json({ status: "unauthorized", msg: "Login required" }, { status: 401 });
+    if (!user)
+      return NextResponse.json({ status: "unauthorized", msg: "Login required" }, { status: 401 });
 
     const form = await request.formData();
     const action = form.get("action") as string | null; // "upload" | "delete"
@@ -26,7 +27,10 @@ export async function POST(request: NextRequest) {
       const imageId = form.get("imageId") as string | null;
       const imagePath = form.get("imagePath") as string | null;
       if (!imageId || !imagePath) {
-        return NextResponse.json({ status: "failed", msg: "imageId/imagePath missing" }, { status: 400 });
+        return NextResponse.json(
+          { status: "failed", msg: "imageId/imagePath missing" },
+          { status: 400 }
+        );
       }
       if (imagePath.includes(`/${BUCKET}/`)) {
         const name = imagePath.split(`/${BUCKET}/`).pop() as string;
@@ -42,11 +46,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "failed", msg: "No files provided" }, { status: 400 });
     }
 
-    const uploaded: { id: number; transaction_id: number; image_path: string; date_created: string }[] = [];
+    const uploaded: {
+      id: number;
+      transaction_id: number;
+      image_path: string;
+      date_created: string;
+    }[] = [];
     for (const file of files) {
       const buffer = Buffer.from(await file.arrayBuffer());
       if (buffer.byteLength > 200 * 1024) {
-        return NextResponse.json({ status: "failed", msg: `${file.name} > 200KB — compress karke dobara try karein` }, { status: 400 });
+        return NextResponse.json(
+          { status: "failed", msg: `${file.name} > 200KB — compress karke dobara try karein` },
+          { status: 400 }
+        );
       }
       const fileName = `${transactionId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${file.name.split(".").pop() || "jpg"}`;
       const { error: upErr } = await supabase.storage
@@ -61,7 +73,9 @@ export async function POST(request: NextRequest) {
         .select("id, transaction_id, image_path, date_created")
         .single();
       if (insErr) throw new Error(insErr.message);
-      uploaded.push(inserted as { id: number; transaction_id: number; image_path: string; date_created: string });
+      uploaded.push(
+        inserted as { id: number; transaction_id: number; image_path: string; date_created: string }
+      );
     }
 
     return NextResponse.json({ status: "success", uploaded });

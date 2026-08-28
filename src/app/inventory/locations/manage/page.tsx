@@ -41,10 +41,10 @@ type AllData = {
 };
 
 const TABS: { key: Tab; label: string; icon: typeof Layers; parent: Tab | null }[] = [
-  { key: "zones",  label: "Zones",  icon: Layers,    parent: null },
-  { key: "racks",  label: "Racks",  icon: Grid3X3,   parent: "zones" },
-  { key: "bins",   label: "Bins",   icon: Box,       parent: "racks" },
-  { key: "boxes",  label: "Boxes",  icon: Package,   parent: "bins" },
+  { key: "zones", label: "Zones", icon: Layers, parent: null },
+  { key: "racks", label: "Racks", icon: Grid3X3, parent: "zones" },
+  { key: "bins", label: "Bins", icon: Box, parent: "racks" },
+  { key: "boxes", label: "Boxes", icon: Package, parent: "bins" },
 ];
 
 export default function ManageLocationsPage() {
@@ -67,7 +67,9 @@ export default function ManageLocationsPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const getFiltered = () => {
     const tab = TABS.find((t) => t.key === activeTab)!;
@@ -75,7 +77,12 @@ export default function ManageLocationsPage() {
 
     if (tab.parent && parentId) {
       items = items.filter((r: Record<string, unknown>) => {
-        const parentTable = tab.parent === "zones" ? "location_zones" : tab.parent === "racks" ? "location_racks" : "location_bins";
+        const parentTable =
+          tab.parent === "zones"
+            ? "location_zones"
+            : tab.parent === "racks"
+              ? "location_racks"
+              : "location_bins";
         const parentData = r[parentTable] as { name: string } | null | undefined;
         const allParentItems = allData[tab.parent!];
         const parentRow = allParentItems?.find((p) => p.name === parentData?.name);
@@ -112,7 +119,10 @@ export default function ManageLocationsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formName.trim()) { setFormErr("Name zaroori hai!"); return; }
+    if (!formName.trim()) {
+      setFormErr("Name zaroori hai!");
+      return;
+    }
     setSaving(true);
     try {
       if (editing) {
@@ -127,7 +137,8 @@ export default function ManageLocationsPage() {
         const body: Record<string, unknown> = { tab: activeTab, name: formName };
         if (parentId) {
           const parentTab = TABS.find((t) => t.key === activeTab)!.parent;
-          const parentFk = parentTab === "zones" ? "zone_id" : parentTab === "racks" ? "rack_id" : "bin_id";
+          const parentFk =
+            parentTab === "zones" ? "zone_id" : parentTab === "racks" ? "rack_id" : "bin_id";
           body.parent_id = parentId;
           body[parentFk] = parentId;
         }
@@ -172,20 +183,33 @@ export default function ManageLocationsPage() {
   const parentOptions = getParentOptions();
 
   return (
-    <AdminPage title="Location Hierarchy" subtitle="Manage zones, racks, bins & boxes — the building blocks of your inventory locations">
+    <AdminPage
+      title="Location Hierarchy"
+      subtitle="Manage zones, racks, bins & boxes — the building blocks of your inventory locations"
+    >
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         {TABS.map((t) => {
           const count = (allData[t.key] || []).length;
           const active = (allData[t.key] || []).filter((r) => r.status === 1).length;
           return (
-            <div key={t.key} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center gap-3">
-              <div className={`p-2.5 rounded-xl bg-[#0d1117] ${activeTab === t.key ? "text-blue-400" : "text-slate-600"}`}>
+            <div
+              key={t.key}
+              className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center gap-3"
+            >
+              <div
+                className={`p-2.5 rounded-xl bg-[#0d1117] ${activeTab === t.key ? "text-blue-400" : "text-slate-600"}`}
+              >
                 <t.icon size={18} />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">{t.label}</p>
-                <p className="text-xl font-black text-white">{count}<span className="text-xs text-slate-600 ml-1">({active} active)</span></p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                  {t.label}
+                </p>
+                <p className="text-xl font-black text-white">
+                  {count}
+                  <span className="text-xs text-slate-600 ml-1">({active} active)</span>
+                </p>
               </div>
             </div>
           );
@@ -198,7 +222,11 @@ export default function ManageLocationsPage() {
           {TABS.map((t) => (
             <button
               key={t.key}
-              onClick={() => { setActiveTab(t.key); setParentId(null); setSearch(""); }}
+              onClick={() => {
+                setActiveTab(t.key);
+                setParentId(null);
+                setSearch("");
+              }}
               className={`flex items-center gap-2 px-5 py-3.5 text-xs font-bold border-b-2 transition whitespace-nowrap ${
                 activeTab === t.key
                   ? "border-blue-500 text-blue-400 bg-blue-500/5"
@@ -218,7 +246,10 @@ export default function ManageLocationsPage() {
         <div className="px-5 py-3 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+              />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -234,7 +265,9 @@ export default function ManageLocationsPage() {
               >
                 <option value="">All {tabInfo.parent}</option>
                 {parentOptions.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
                 ))}
               </select>
             )}
@@ -254,18 +287,26 @@ export default function ManageLocationsPage() {
         {loading ? (
           <div className="px-5 py-12 text-center">
             <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">Loading...</p>
+            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">
+              Loading...
+            </p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="px-5 py-12 text-center text-slate-600 text-sm">
-            {search ? "No results found." : `No ${tabInfo.label.toLowerCase()} yet. Add one to get started.`}
+            {search
+              ? "No results found."
+              : `No ${tabInfo.label.toLowerCase()} yet. Add one to get started.`}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-[#111520]">
                 <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                  {tabInfo.parent && <th className="text-left px-4 py-3">{tabInfo.parent.charAt(0).toUpperCase() + tabInfo.parent.slice(1)}</th>}
+                  {tabInfo.parent && (
+                    <th className="text-left px-4 py-3">
+                      {tabInfo.parent.charAt(0).toUpperCase() + tabInfo.parent.slice(1)}
+                    </th>
+                  )}
                   <th className="text-left px-4 py-3">Name</th>
                   {tabInfo.key !== "boxes" && <th className="text-center px-4 py-3">Children</th>}
                   <th className="text-center px-4 py-3">Status</th>
@@ -321,10 +362,16 @@ export default function ManageLocationsPage() {
                       </td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => openEdit(row)} className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition">
+                          <button
+                            onClick={() => openEdit(row)}
+                            className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition"
+                          >
                             <Edit3 size={13} />
                           </button>
-                          <button onClick={() => handleDelete(row)} className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition">
+                          <button
+                            onClick={() => handleDelete(row)}
+                            className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
+                          >
                             <Trash2 size={13} />
                           </button>
                         </div>
@@ -344,10 +391,22 @@ export default function ManageLocationsPage() {
           <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl flex flex-col">
             <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
               <h3 className="font-bold text-white flex items-center gap-2">
-                {editing ? <><Edit3 size={16} className="text-blue-400" /> Edit {tabInfo.label.replace(/s$/, "")}</>
-                  : <><Plus size={16} className="text-blue-400" /> Add {tabInfo.label.replace(/s$/, "")}</>}
+                {editing ? (
+                  <>
+                    <Edit3 size={16} className="text-blue-400" /> Edit{" "}
+                    {tabInfo.label.replace(/s$/, "")}
+                  </>
+                ) : (
+                  <>
+                    <Plus size={16} className="text-blue-400" /> Add{" "}
+                    {tabInfo.label.replace(/s$/, "")}
+                  </>
+                )}
               </h3>
-              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition">
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+              >
                 <X size={16} />
               </button>
             </div>
@@ -370,12 +429,26 @@ export default function ManageLocationsPage() {
                 />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={saving}
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2">
-                  {saving ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : <><Check size={14} /> {editing ? "Update" : "Save"}</>}
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check size={14} /> {editing ? "Update" : "Save"}
+                    </>
+                  )}
                 </button>
-                <button type="button" onClick={() => setShowModal(false)}
-                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
+                >
                   Cancel
                 </button>
               </div>

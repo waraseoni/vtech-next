@@ -9,20 +9,20 @@ interface ThemeChartProps {
   margin?: { top: number; right: number; left: number; bottom: number };
 }
 
-export const ThemeChart: React.FC<ThemeChartProps> = ({ 
-  children, 
-  height = 350
-}) => {
+export const ThemeChart: React.FC<ThemeChartProps> = ({ children, height = 350 }) => {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   useEffect(() => {
     const checkTheme = () => {
-      const t = document.documentElement.getAttribute("data-theme") as "dark" | "light" || "dark";
+      const t = (document.documentElement.getAttribute("data-theme") as "dark" | "light") || "dark";
       setTheme(t);
     };
     checkTheme();
     const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
     return () => observer.disconnect();
   }, []);
 
@@ -38,18 +38,22 @@ export const ThemeChart: React.FC<ThemeChartProps> = ({
     if (!React.isValidElement(child)) return child;
 
     const el = child as React.ReactElement<Record<string, unknown>>;
-    const childType = (el.type as { displayName?: string; name?: string }).displayName || (el.type as { displayName?: string; name?: string }).name;
+    const childType =
+      (el.type as { displayName?: string; name?: string }).displayName ||
+      (el.type as { displayName?: string; name?: string }).name;
 
     if (childType === "CartesianGrid") {
       return React.cloneElement(el, { stroke: chartColors.grid });
     }
 
     if (childType === "XAxis" || childType === "YAxis") {
-      return React.cloneElement(el, { 
+      return React.cloneElement(el, {
         tick: { fill: chartColors.text, fontSize: 10, fontWeight: 900 },
         axisLine: false,
         tickLine: false,
-        ...(childType === "XAxis" ? { minTickGap: 30 } : { tickFormatter: (v: number) => `₹${Number(v)/1000}k` })
+        ...(childType === "XAxis"
+          ? { minTickGap: 30 }
+          : { tickFormatter: (v: number) => `₹${Number(v) / 1000}k` }),
       });
     }
 
@@ -63,9 +67,9 @@ export const ThemeChart: React.FC<ThemeChartProps> = ({
           boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
           fontSize: "12px",
           fontWeight: "black",
-          padding: "12px"
+          padding: "12px",
         },
-        ...el.props
+        ...el.props,
       });
     }
 

@@ -2,8 +2,18 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
-  Bell, ChevronDown, ChevronRight, RefreshCw, Loader2,
-  AlertTriangle, PackageX, CalendarClock, UserCheck, Wallet, Sparkles, X,
+  Bell,
+  ChevronDown,
+  ChevronRight,
+  RefreshCw,
+  Loader2,
+  AlertTriangle,
+  PackageX,
+  CalendarClock,
+  UserCheck,
+  Wallet,
+  Sparkles,
+  X,
 } from "lucide-react";
 
 type NotificationItem = {
@@ -71,12 +81,20 @@ export default function AIAlertsWidget() {
   }, [dismissed, load]);
 
   const hide = () => {
-    try { localStorage.setItem(STORAGE_KEY, "1"); } catch { /* storage unavailable */ }
+    try {
+      localStorage.setItem(STORAGE_KEY, "1");
+    } catch {
+      /* storage unavailable */
+    }
     setDismissed(true);
   };
 
   const show = () => {
-    try { localStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* storage unavailable */
+    }
     setDismissed(false);
     setOpen(true);
     load();
@@ -85,8 +103,10 @@ export default function AIAlertsWidget() {
   // Hidden — slim pill se wapas dikhaya ja sakta hai
   if (dismissed) {
     return (
-      <button onClick={show}
-        className="flex items-center gap-2 self-start bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] hover:border-blue-500/40 text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 px-3 py-2 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all">
+      <button
+        onClick={show}
+        className="flex items-center gap-2 self-start bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] hover:border-blue-500/40 text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 px-3 py-2 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all"
+      >
         <Bell size={14} /> AI Alerts <ChevronRight size={12} />
       </button>
     );
@@ -100,10 +120,15 @@ export default function AIAlertsWidget() {
   const hasWarn = data.alerts.some((a) => a.severity === "warning");
 
   return (
-    <section className={`rounded-3xl border overflow-hidden ${hasWarn ? "border-amber-500/25 bg-amber-500/[0.03]" : "border-sky-500/25 bg-sky-500/[0.03]"}`}>
+    <section
+      className={`rounded-3xl border overflow-hidden ${hasWarn ? "border-amber-500/25 bg-amber-500/[0.03]" : "border-sky-500/25 bg-sky-500/[0.03]"}`}
+    >
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-3.5">
-        <button onClick={() => setOpen(v => !v)} className="flex-1 flex items-center gap-3 text-left">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="flex-1 flex items-center gap-3 text-left"
+        >
           <div className="relative">
             <div className="w-9 h-9 rounded-xl border flex items-center justify-center bg-slate-50 dark:bg-[#161b27] border-slate-200 dark:border-[#21293d]">
               <Bell size={16} className={hasWarn ? "text-amber-400" : "text-sky-400"} />
@@ -117,20 +142,34 @@ export default function AIAlertsWidget() {
               AI Alerts
               <Sparkles size={12} className="text-blue-400" />
             </p>
-            <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">{data.count} groups · fresh</p>
+            <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">
+              {data.count} groups · fresh
+            </p>
           </div>
-          <ChevronDown size={16} className={`ml-auto text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
+          <ChevronDown
+            size={16}
+            className={`ml-auto text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
+          />
         </button>
-        <button onClick={load} title="Refresh"
-          className="w-8 h-8 bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] hover:border-slate-400 dark:hover:border-slate-600 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all">
+        <button
+          onClick={load}
+          title="Refresh"
+          className="w-8 h-8 bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] hover:border-slate-400 dark:hover:border-slate-600 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all"
+        >
           <RefreshCw size={13} />
         </button>
-        <Link href="/ai" title="AI Sahayak"
-          className="w-8 h-8 bg-blue-600/15 border border-blue-500/25 hover:bg-blue-600/25 rounded-xl flex items-center justify-center text-blue-400 transition-all">
+        <Link
+          href="/ai"
+          title="AI Sahayak"
+          className="w-8 h-8 bg-blue-600/15 border border-blue-500/25 hover:bg-blue-600/25 rounded-xl flex items-center justify-center text-blue-400 transition-all"
+        >
           <Sparkles size={13} />
         </Link>
-        <button onClick={hide} title="Hide"
-          className="w-8 h-8 bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] hover:border-red-500/40 rounded-xl flex items-center justify-center text-slate-500 hover:text-red-400 transition-all">
+        <button
+          onClick={hide}
+          title="Hide"
+          className="w-8 h-8 bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] hover:border-red-500/40 rounded-xl flex items-center justify-center text-slate-500 hover:text-red-400 transition-all"
+        >
           <X size={13} />
         </button>
       </div>
@@ -143,28 +182,59 @@ export default function AIAlertsWidget() {
             const Icon = meta.icon;
             const isWarn = group.severity === "warning";
             return (
-              <div key={gi} className="rounded-2xl bg-slate-100 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] p-3.5">
+              <div
+                key={gi}
+                className="rounded-2xl bg-slate-100 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] p-3.5"
+              >
                 <div className="flex items-center gap-2 mb-2">
                   <Icon size={14} className={meta.color} />
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{group.title}</span>
-                  <span className={`ml-auto text-[10px] font-black px-2 py-0.5 rounded-full border ${
-                    isWarn ? "text-amber-400 border-amber-500/20 bg-amber-500/10" : "text-sky-400 border-sky-500/20 bg-sky-500/10"
-                  }`}>{group.items.length}</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    {group.title}
+                  </span>
+                  <span
+                    className={`ml-auto text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                      isWarn
+                        ? "text-amber-400 border-amber-500/20 bg-amber-500/10"
+                        : "text-sky-400 border-sky-500/20 bg-sky-500/10"
+                    }`}
+                  >
+                    {group.items.length}
+                  </span>
                 </div>
                 <div className="space-y-1">
                   {group.items.slice(0, 5).map((it, ii) => {
-                    const label = it.name || `${it.firstname || ""} ${it.lastname || ""}`.trim() || it.job_id || it.item || `#${it.product_id || it.mechanic_id || it.client_id || it.loan_id || ""}`;
-                    const sub = it.quantity !== undefined
-                      ? `Qty ${it.quantity} (alert ${it.alert_quantity})`
-                      : it.days_pending !== undefined ? `${it.days_pending}d`
-                      : it.outstanding !== undefined ? `₹${Number(it.outstanding).toLocaleString("en-IN")}`
-                      : it.due_date || it.contact
-                      || (it.opening_balance !== undefined ? `₹${Number(it.opening_balance).toLocaleString("en-IN")}` : "")
-                      || (it.total_payable !== undefined ? `₹${Number(it.total_payable).toLocaleString("en-IN")}` : "");
+                    const label =
+                      it.name ||
+                      `${it.firstname || ""} ${it.lastname || ""}`.trim() ||
+                      it.job_id ||
+                      it.item ||
+                      `#${it.product_id || it.mechanic_id || it.client_id || it.loan_id || ""}`;
+                    const sub =
+                      it.quantity !== undefined
+                        ? `Qty ${it.quantity} (alert ${it.alert_quantity})`
+                        : it.days_pending !== undefined
+                          ? `${it.days_pending}d`
+                          : it.outstanding !== undefined
+                            ? `₹${Number(it.outstanding).toLocaleString("en-IN")}`
+                            : it.due_date ||
+                              it.contact ||
+                              (it.opening_balance !== undefined
+                                ? `₹${Number(it.opening_balance).toLocaleString("en-IN")}`
+                                : "") ||
+                              (it.total_payable !== undefined
+                                ? `₹${Number(it.total_payable).toLocaleString("en-IN")}`
+                                : "");
                     return (
-                      <div key={ii} className="flex items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400">
+                      <div
+                        key={ii}
+                        className="flex items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400"
+                      >
                         <span className="truncate">{label}</span>
-                        {sub && <span className="shrink-0 font-bold text-slate-500 dark:text-slate-500">{sub}</span>}
+                        {sub && (
+                          <span className="shrink-0 font-bold text-slate-500 dark:text-slate-500">
+                            {sub}
+                          </span>
+                        )}
                       </div>
                     );
                   })}
@@ -177,7 +247,10 @@ export default function AIAlertsWidget() {
             <p className="lg:col-span-2 text-[10px] text-slate-600 font-bold italic">{data.note}</p>
           )}
 
-          <Link href="/ai" className="lg:col-span-2 flex items-center justify-center gap-2 bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] hover:border-blue-500/30 text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 rounded-xl py-2.5 text-[11px] font-extrabold uppercase tracking-wider transition-all no-underline">
+          <Link
+            href="/ai"
+            className="lg:col-span-2 flex items-center justify-center gap-2 bg-slate-50 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] hover:border-blue-500/30 text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 rounded-xl py-2.5 text-[11px] font-extrabold uppercase tracking-wider transition-all no-underline"
+          >
             AI Sahayak me baat karein <ChevronRight size={12} />
           </Link>
         </div>

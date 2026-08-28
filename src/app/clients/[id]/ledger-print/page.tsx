@@ -2,11 +2,7 @@
 import React, { useEffect, useState, use, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSearchParams, useRouter } from "next/navigation";
-import {
-  Printer, X, Filter, ChevronDown, ChevronUp,
-  Calendar,
-  AlertTriangle,
-} from "lucide-react";
+import { Printer, X, Filter, ChevronDown, ChevronUp, Calendar, AlertTriangle } from "lucide-react";
 import { JOB_STATUS_INLINE } from "@/lib/status-colors";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -16,18 +12,28 @@ function fmtDate(iso: string): string {
   if (!iso) return "—";
   try {
     return new Intl.DateTimeFormat("en-IN", {
-      timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
     }).format(new Date(iso));
-  } catch { return iso; }
+  } catch {
+    return iso;
+  }
 }
 
 function fmtDateShort(iso: string): string {
   if (!iso) return "—";
   try {
     return new Intl.DateTimeFormat("en-IN", {
-      timeZone: "Asia/Kolkata", day: "2-digit", month: "2-digit", year: "numeric",
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     }).format(new Date(iso));
-  } catch { return iso; }
+  } catch {
+    return iso;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -41,10 +47,10 @@ const inr = (n: number, abs = true) =>
 // ─────────────────────────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<string | number, { label: string; color: string; bg: string }> = {
   ...JOB_STATUS_INLINE,
-  payment:     { label: "Payment",          color: "#fff", bg: "#17a2b8" },
-  direct_sale: { label: "Direct Sale",      color: "#fff", bg: "#ff6b6b" },
-  loan:        { label: "Loan",             color: "#fff", bg: "#9b59b6" },
-  brought_fwd: { label: "Brought Forward",  color: "#fff", bg: "#6c757d" },
+  payment: { label: "Payment", color: "#fff", bg: "#17a2b8" },
+  direct_sale: { label: "Direct Sale", color: "#fff", bg: "#ff6b6b" },
+  loan: { label: "Loan", color: "#fff", bg: "#9b59b6" },
+  brought_fwd: { label: "Brought Forward", color: "#fff", bg: "#6c757d" },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -53,28 +59,36 @@ const STATUS_CONFIG: Record<string | number, { label: string; color: string; bg:
 type StatusKey = keyof typeof STATUS_CONFIG;
 
 type LedgerRow = {
-  date:          string;
-  desc:          string;
-  ref:           string;
-  statusKey:     StatusKey | null;
-  remark:        string;
-  debit:         number;
-  credit:        number;
-  discount:      number;
-  effectiveCr:   number;  // credit + discount
-  balance:       number;  // running
+  date: string;
+  desc: string;
+  ref: string;
+  statusKey: StatusKey | null;
+  remark: string;
+  debit: number;
+  credit: number;
+  discount: number;
+  effectiveCr: number; // credit + discount
+  balance: number; // running
   deliveredDate?: string;
-  isBroughtFwd:  boolean;
+  isBroughtFwd: boolean;
 };
 
-type FirmInfo  = { name: string; address: string; contact: string; email: string };
+type FirmInfo = { name: string; address: string; contact: string; email: string };
 type ClientInfo = {
-  firstname: string; middlename: string; lastname: string;
-  contact: string; address: string; email: string; opening_balance: number;
+  firstname: string;
+  middlename: string;
+  lastname: string;
+  contact: string;
+  address: string;
+  email: string;
+  opening_balance: number;
 };
 type Totals = {
-  repairs: number; sales: number; loans: number;
-  payments: number; discount: number;
+  repairs: number;
+  sales: number;
+  loans: number;
+  payments: number;
+  discount: number;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -87,46 +101,54 @@ const FILTER_OPTIONS: { key: string | number; label: string }[] = [
   { key: 3, label: "Paid" },
   { key: 4, label: "Cancelled" },
   { key: 5, label: "Delivered" },
-  { key: "payment",     label: "Payments" },
+  { key: "payment", label: "Payments" },
   { key: "direct_sale", label: "Direct Sale" },
-  { key: "loan",        label: "Loan Disbursement" },
+  { key: "loan", label: "Loan Disbursement" },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-export default function LedgerPrintPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function LedgerPrintPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const searchParams   = useSearchParams();
-  const router         = useRouter();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const clientId = parseInt(resolvedParams.id);
   const fromDate = searchParams.get("from") || "";
-  const toDate   = searchParams.get("to")   || "";
+  const toDate = searchParams.get("to") || "";
   const rawStatusParam = searchParams.get("status") || "";
   const activeStatuses: (string | number)[] = useMemo(
-    () => rawStatusParam
-      ? rawStatusParam.split(",").map(s => (isNaN(Number(s)) ? s : Number(s)))
-      : [],
+    () =>
+      rawStatusParam
+        ? rawStatusParam.split(",").map((s) => (isNaN(Number(s)) ? s : Number(s)))
+        : [],
     [rawStatusParam]
   );
 
   // ── STATE ─────────────────────────────────────────────────────────────
-  const [client,   setClient]   = useState<ClientInfo | null>(null);
-  const [firmInfo, setFirmInfo] = useState<FirmInfo>({ name: "V-Technologies", address: "Jabalpur, MP", contact: "", email: "" });
-  const [rows,     setRows]     = useState<LedgerRow[]>([]);
-  const [totals,   setTotals]   = useState<Totals>({ repairs: 0, sales: 0, loans: 0, payments: 0, discount: 0 });
-  const [loading,  setLoading]  = useState(true);
+  const [client, setClient] = useState<ClientInfo | null>(null);
+  const [firmInfo, setFirmInfo] = useState<FirmInfo>({
+    name: "V-Technologies",
+    address: "Jabalpur, MP",
+    contact: "",
+    email: "",
+  });
+  const [rows, setRows] = useState<LedgerRow[]>([]);
+  const [totals, setTotals] = useState<Totals>({
+    repairs: 0,
+    sales: 0,
+    loans: 0,
+    payments: 0,
+    discount: 0,
+  });
+  const [loading, setLoading] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
 
   // Local filter state (before applying)
-  const [localFrom,   setLocalFrom]   = useState(fromDate);
-  const [localTo,     setLocalTo]     = useState(toDate);
-  const [localStatus, setLocalStatus] = useState<(string|number)[]>(activeStatuses);
+  const [localFrom, setLocalFrom] = useState(fromDate);
+  const [localTo, setLocalTo] = useState(toDate);
+  const [localStatus, setLocalStatus] = useState<(string | number)[]>(activeStatuses);
 
   // ── FETCH ─────────────────────────────────────────────────────────────
   const fetchLedger = useCallback(async () => {
@@ -136,38 +158,45 @@ export default function LedgerPrintPage({
       const { data: cd } = await supabase
         .from("client_list")
         .select("firstname, middlename, lastname, contact, address, email, opening_balance")
-        .eq("id", clientId).eq("delete_flag", 0).single();
+        .eq("id", clientId)
+        .eq("delete_flag", 0)
+        .single();
       if (cd) setClient(cd);
 
       // ── Firm info ─────────────────────────────────────────────────────
       const { data: sys } = await supabase
-        .from("system_info").select("meta_field, meta_value")
+        .from("system_info")
+        .select("meta_field, meta_value")
         .in("meta_field", ["name", "address", "contact", "email"]);
       if (sys) {
         const m: Record<string, string> = {};
-        sys.forEach(r => { m[r.meta_field] = r.meta_value; });
+        sys.forEach((r) => {
+          m[r.meta_field] = r.meta_value;
+        });
         setFirmInfo({
-          name: m.name || "V-Technologies", address: m.address || "Jabalpur, MP",
-          contact: m.contact || "", email: m.email || "",
+          name: m.name || "V-Technologies",
+          address: m.address || "Jabalpur, MP",
+          contact: m.contact || "",
+          email: m.email || "",
         });
       }
 
       // ── IST date filters ─────────────────────────────────────────────
       const from = fromDate ? `${fromDate}T00:00:00+05:30` : null;
-      const to   = toDate   ? `${toDate}T23:59:59+05:30`   : null;
+      const to = toDate ? `${toDate}T23:59:59+05:30` : null;
 
       // Determine what to show (matching PHP logic)
       const repairStatuses: number[] = [];
       let showPayments = activeStatuses.length === 0;
-      let showSales    = activeStatuses.length === 0;
-      let showLoans    = activeStatuses.length === 0;
+      let showSales = activeStatuses.length === 0;
+      let showLoans = activeStatuses.length === 0;
       let showAllRepairs = activeStatuses.length === 0;
 
       if (activeStatuses.length > 0) {
-        activeStatuses.forEach(s => {
-          if (s === "payment")     showPayments = true;
+        activeStatuses.forEach((s) => {
+          if (s === "payment") showPayments = true;
           else if (s === "direct_sale") showSales = true;
-          else if (s === "loan")   showLoans = true;
+          else if (s === "loan") showLoans = true;
           else if (typeof s === "number") repairStatuses.push(s);
         });
         if (repairStatuses.length > 0) showAllRepairs = false;
@@ -175,43 +204,59 @@ export default function LedgerPrintPage({
       }
 
       // ── ALL-TIME totals (for current outstanding — never filtered) ───
-      const [
-        { data: allJobs },
-        { data: allSales },
-        { data: allLoans },
-        { data: allPays },
-      ] = await Promise.all([
-        supabase.from("transaction_list").select("amount").eq("client_name", String(clientId)),
-        supabase.from("direct_sales").select("total_amount").eq("client_id", clientId),
-        supabase.from("client_loans").select("total_payable").eq("client_id", clientId),
-        supabase.from("client_payments").select("amount, discount").eq("client_id", clientId),
-      ]);
+      const [{ data: allJobs }, { data: allSales }, { data: allLoans }, { data: allPays }] =
+        await Promise.all([
+          supabase.from("transaction_list").select("amount").eq("client_name", String(clientId)),
+          supabase.from("direct_sales").select("total_amount").eq("client_id", clientId),
+          supabase.from("client_loans").select("total_payable").eq("client_id", clientId),
+          supabase.from("client_payments").select("amount, discount").eq("client_id", clientId),
+        ]);
 
-      const totalRepairs  = (allJobs  || []).reduce((s, r) => s + (r.amount || 0), 0);
-      const totalSales    = (allSales || []).reduce((s, r) => s + (r.total_amount || 0), 0);
-      const totalLoans    = (allLoans || []).reduce((s, r) => s + (r.total_payable || 0), 0);
+      const totalRepairs = (allJobs || []).reduce((s, r) => s + (r.amount || 0), 0);
+      const totalSales = (allSales || []).reduce((s, r) => s + (r.total_amount || 0), 0);
+      const totalLoans = (allLoans || []).reduce((s, r) => s + (r.total_payable || 0), 0);
       // CORRECT: settled = cash received + discount given (both clear the balance)
       // e.g. bill=1500, paid=1300, discount=200 → settled=1500 → balance=0
-      const totalPaid     = (allPays  || []).reduce((s, p) => s + (p.amount || 0), 0);
-      const totalDisc     = (allPays  || []).reduce((s, p) => s + (p.discount || 0), 0);
-      const totalSettled  = totalPaid + totalDisc;  // total that clears the balance
-      setTotals({ repairs: totalRepairs, sales: totalSales, loans: totalLoans, payments: totalSettled, discount: totalDisc });
+      const totalPaid = (allPays || []).reduce((s, p) => s + (p.amount || 0), 0);
+      const totalDisc = (allPays || []).reduce((s, p) => s + (p.discount || 0), 0);
+      const totalSettled = totalPaid + totalDisc; // total that clears the balance
+      setTotals({
+        repairs: totalRepairs,
+        sales: totalSales,
+        loans: totalLoans,
+        payments: totalSettled,
+        discount: totalDisc,
+      });
 
       // ── Brought-forward (before date range) ──────────────────────────
-      let broughtFwd = (cd?.opening_balance || 0);
+      let broughtFwd = cd?.opening_balance || 0;
       if (from) {
-        const [
-          { data: preJ }, { data: preS }, { data: preL }, { data: preP }
-        ] = await Promise.all([
-          supabase.from("transaction_list").select("amount").eq("client_name", String(clientId)).lt("date_created", from),
-          supabase.from("direct_sales").select("total_amount").eq("client_id", clientId).lt("date_created", from),
-          supabase.from("client_loans").select("total_payable").eq("client_id", clientId).lt("loan_date", from),
-          supabase.from("client_payments").select("amount, discount").eq("client_id", clientId).lt("payment_date", from),
+        const [{ data: preJ }, { data: preS }, { data: preL }, { data: preP }] = await Promise.all([
+          supabase
+            .from("transaction_list")
+            .select("amount")
+            .eq("client_name", String(clientId))
+            .lt("date_created", from),
+          supabase
+            .from("direct_sales")
+            .select("total_amount")
+            .eq("client_id", clientId)
+            .lt("date_created", from),
+          supabase
+            .from("client_loans")
+            .select("total_payable")
+            .eq("client_id", clientId)
+            .lt("loan_date", from),
+          supabase
+            .from("client_payments")
+            .select("amount, discount")
+            .eq("client_id", clientId)
+            .lt("payment_date", from),
         ]);
         const preRepairs = (preJ || []).reduce((s, r) => s + (r.amount || 0), 0);
-        const preSales   = (preS || []).reduce((s, r) => s + (r.total_amount || 0), 0);
-        const preLoans   = (preL || []).reduce((s, r) => s + (r.total_payable || 0), 0);
-        const prePay     = (preP || []).reduce((s, p) => s + (p.amount || 0) + (p.discount || 0), 0);
+        const preSales = (preS || []).reduce((s, r) => s + (r.total_amount || 0), 0);
+        const preLoans = (preL || []).reduce((s, r) => s + (r.total_payable || 0), 0);
+        const prePay = (preP || []).reduce((s, p) => s + (p.amount || 0) + (p.discount || 0), 0);
         broughtFwd = (cd?.opening_balance || 0) + preRepairs + preSales + preLoans - prePay;
       }
 
@@ -221,12 +266,17 @@ export default function LedgerPrintPage({
       // Brought forward row
       if (from) {
         ledger.push({
-          date: fromDate, desc: "Balance Brought Forward", ref: "—",
-          statusKey: "brought_fwd", remark: "Previous balance",
+          date: fromDate,
+          desc: "Balance Brought Forward",
+          ref: "—",
+          statusKey: "brought_fwd",
+          remark: "Previous balance",
           debit: broughtFwd > 0 ? broughtFwd : 0,
           credit: broughtFwd < 0 ? Math.abs(broughtFwd) : 0,
-          discount: 0, effectiveCr: broughtFwd < 0 ? Math.abs(broughtFwd) : 0,
-          balance: 0, isBroughtFwd: true,
+          discount: 0,
+          effectiveCr: broughtFwd < 0 ? Math.abs(broughtFwd) : 0,
+          balance: 0,
+          isBroughtFwd: true,
         });
       }
 
@@ -238,71 +288,107 @@ export default function LedgerPrintPage({
           .eq("client_name", String(clientId));
         if (!showAllRepairs && repairStatuses.length > 0) q = q.in("status", repairStatuses);
         if (from) q = q.gte("date_created", from);
-        if (to)   q = q.lte("date_created", to);
+        if (to) q = q.lte("date_created", to);
         const { data: jobs } = await q;
-        (jobs || []).forEach(j => ledger.push({
-          date: j.date_created, desc: `Job: ${j.item || "—"}`,
-          ref: j.job_id || `JOB-${j.id}`, statusKey: j.status,
-          remark: j.remark || "", debit: j.amount || 0,
-          credit: 0, discount: 0, effectiveCr: 0, balance: 0,
-          deliveredDate: j.status === 5 ? j.date_completed : undefined,
-          isBroughtFwd: false,
-        }));
+        (jobs || []).forEach((j) =>
+          ledger.push({
+            date: j.date_created,
+            desc: `Job: ${j.item || "—"}`,
+            ref: j.job_id || `JOB-${j.id}`,
+            statusKey: j.status,
+            remark: j.remark || "",
+            debit: j.amount || 0,
+            credit: 0,
+            discount: 0,
+            effectiveCr: 0,
+            balance: 0,
+            deliveredDate: j.status === 5 ? j.date_completed : undefined,
+            isBroughtFwd: false,
+          })
+        );
       }
 
       // Direct sales
       if (showSales) {
-        let q = supabase.from("direct_sales")
+        let q = supabase
+          .from("direct_sales")
           .select("id, sale_code, total_amount, remarks, date_created")
           .eq("client_id", clientId);
         if (from) q = q.gte("date_created", from);
-        if (to)   q = q.lte("date_created", to);
+        if (to) q = q.lte("date_created", to);
         const { data: sales } = await q;
-        (sales || []).forEach(s => ledger.push({
-          date: s.date_created, desc: "Direct Sale", ref: s.sale_code,
-          statusKey: "direct_sale", remark: s.remarks || "",
-          debit: s.total_amount || 0, credit: 0, discount: 0, effectiveCr: 0,
-          balance: 0, isBroughtFwd: false,
-        }));
+        (sales || []).forEach((s) =>
+          ledger.push({
+            date: s.date_created,
+            desc: "Direct Sale",
+            ref: s.sale_code,
+            statusKey: "direct_sale",
+            remark: s.remarks || "",
+            debit: s.total_amount || 0,
+            credit: 0,
+            discount: 0,
+            effectiveCr: 0,
+            balance: 0,
+            isBroughtFwd: false,
+          })
+        );
       }
 
       // Loans
       if (showLoans) {
-        let q = supabase.from("client_loans")
+        let q = supabase
+          .from("client_loans")
           .select("id, total_payable, remarks, loan_date")
           .eq("client_id", clientId);
         if (from) q = q.gte("loan_date", from);
-        if (to)   q = q.lte("loan_date", to);
+        if (to) q = q.lte("loan_date", to);
         const { data: loans } = await q;
-        (loans || []).forEach(l => ledger.push({
-          date: l.loan_date, desc: "Loan Disbursement",
-          ref: `LN-${String(l.id).padStart(5, "0")}`, statusKey: "loan",
-          remark: l.remarks || "", debit: l.total_payable || 0,
-          credit: 0, discount: 0, effectiveCr: 0, balance: 0, isBroughtFwd: false,
-        }));
+        (loans || []).forEach((l) =>
+          ledger.push({
+            date: l.loan_date,
+            desc: "Loan Disbursement",
+            ref: `LN-${String(l.id).padStart(5, "0")}`,
+            statusKey: "loan",
+            remark: l.remarks || "",
+            debit: l.total_payable || 0,
+            credit: 0,
+            discount: 0,
+            effectiveCr: 0,
+            balance: 0,
+            isBroughtFwd: false,
+          })
+        );
       }
 
       // Payments
       if (showPayments) {
-        let q = supabase.from("client_payments")
+        let q = supabase
+          .from("client_payments")
           .select("id, amount, discount, net_amount, payment_date, payment_mode, bill_no, remarks")
-          .eq("client_id", clientId).is("loan_id", null);
+          .eq("client_id", clientId)
+          .is("loan_id", null);
         if (from) q = q.gte("payment_date", from);
-        if (to)   q = q.lte("payment_date", to);
+        if (to) q = q.lte("payment_date", to);
         const { data: pays } = await q;
-        (pays || []).forEach(p => {
-          const disc  = p.discount  || 0;
-          const amt   = p.amount    || 0;
+        (pays || []).forEach((p) => {
+          const disc = p.discount || 0;
+          const amt = p.amount || 0;
           // CORRECT: effectiveCr = cash paid + discount given
           // DB net_amount = amount - discount — DO NOT use it (wrong formula)
           // e.g. paid=1300, discount=200 → effectiveCr=1500 → clears bill of 1500
           const effCr = amt + disc;
           ledger.push({
-            date: p.payment_date, desc: "Payment Received",
+            date: p.payment_date,
+            desc: "Payment Received",
             ref: p.bill_no ? `BILL-${p.bill_no}` : `PAY-${p.id}`,
-            statusKey: "payment", remark: p.remarks || p.payment_mode || "",
-            debit: 0, credit: amt, discount: disc, effectiveCr: effCr,
-            balance: 0, isBroughtFwd: false,
+            statusKey: "payment",
+            remark: p.remarks || p.payment_mode || "",
+            debit: 0,
+            credit: amt,
+            discount: disc,
+            effectiveCr: effCr,
+            balance: 0,
+            isBroughtFwd: false,
           });
         });
       }
@@ -315,8 +401,8 @@ export default function LedgerPrintPage({
       });
 
       // Running balance
-      let running = from ? broughtFwd : (cd?.opening_balance || 0);
-      ledger.forEach(r => {
+      let running = from ? broughtFwd : cd?.opening_balance || 0;
+      ledger.forEach((r) => {
         if (!r.isBroughtFwd) {
           running += r.debit - r.effectiveCr;
           r.balance = running;
@@ -333,7 +419,9 @@ export default function LedgerPrintPage({
     }
   }, [clientId, fromDate, toDate, activeStatuses]);
 
-  useEffect(() => { fetchLedger(); }, [fetchLedger]);
+  useEffect(() => {
+    fetchLedger();
+  }, [fetchLedger]);
 
   // Auto-print removed — only manual Print button triggers print
   // (auto-print + button = double print bug)
@@ -347,14 +435,16 @@ export default function LedgerPrintPage({
     const statusStr = localStatus.join(",");
     const parts: string[] = [`id=${resolvedParams.id}`];
     if (localFrom) parts.push(`from=${localFrom}`);
-    if (localTo)   parts.push(`to=${localTo}`);
+    if (localTo) parts.push(`to=${localTo}`);
     if (statusStr) parts.push(`status=${statusStr}`);
     router.push(`/clients/${resolvedParams.id}/ledger-print?${parts.join("&")}`);
     setFilterOpen(false);
   };
 
   const clearFilter = () => {
-    setLocalFrom(""); setLocalTo(""); setLocalStatus([]);
+    setLocalFrom("");
+    setLocalTo("");
+    setLocalStatus([]);
     router.push(`/clients/${resolvedParams.id}/ledger-print`);
     setFilterOpen(false);
   };
@@ -362,23 +452,35 @@ export default function LedgerPrintPage({
   const quickDate = (type: "7d" | "30d" | "thisMonth" | "lastMonth") => {
     const today = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
-    const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    let f = "", t = fmt(today);
-    if (type === "7d")  { const d = new Date(); d.setDate(d.getDate()-7); f = fmt(d); }
-    if (type === "30d") { const d = new Date(); d.setDate(d.getDate()-30); f = fmt(d); }
-    if (type === "thisMonth") { f = `${today.getFullYear()}-${pad(today.getMonth()+1)}-01`; t = fmt(new Date(today.getFullYear(), today.getMonth()+1, 0)); }
-    if (type === "lastMonth") {
-      const fm = new Date(today.getFullYear(), today.getMonth()-1, 1);
-      const lm = new Date(today.getFullYear(), today.getMonth(), 0);
-      f = fmt(fm); t = fmt(lm);
+    const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    let f = "",
+      t = fmt(today);
+    if (type === "7d") {
+      const d = new Date();
+      d.setDate(d.getDate() - 7);
+      f = fmt(d);
     }
-    setLocalFrom(f); setLocalTo(t);
+    if (type === "30d") {
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      f = fmt(d);
+    }
+    if (type === "thisMonth") {
+      f = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-01`;
+      t = fmt(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+    }
+    if (type === "lastMonth") {
+      const fm = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lm = new Date(today.getFullYear(), today.getMonth(), 0);
+      f = fmt(fm);
+      t = fmt(lm);
+    }
+    setLocalFrom(f);
+    setLocalTo(t);
   };
 
   const toggleStatus = (k: string | number) => {
-    setLocalStatus(prev =>
-      prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k]
-    );
+    setLocalStatus((prev) => (prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]));
   };
 
   // ── COMPUTED ──────────────────────────────────────────────────────────
@@ -386,22 +488,19 @@ export default function LedgerPrintPage({
     ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
     : `Client #${clientId}`;
 
-  const openingBal  = client?.opening_balance || 0;
+  const openingBal = client?.opening_balance || 0;
   // totals.payments = totalSettled = SUM(cash + discount) — correct
-  const currentOutstanding = openingBal + totals.repairs + totals.sales + totals.loans - totals.payments;
+  const currentOutstanding =
+    openingBal + totals.repairs + totals.sales + totals.loans - totals.payments;
 
   const balanceType =
-    currentOutstanding > 0.005 ? "debit"
-    : currentOutstanding < -0.005 ? "credit"
-    : "zero";
+    currentOutstanding > 0.005 ? "debit" : currentOutstanding < -0.005 ? "credit" : "zero";
 
-  const finalBalance = rows.length > 0
-    ? rows[rows.length - 1].balance
-    : openingBal;
+  const finalBalance = rows.length > 0 ? rows[rows.length - 1].balance : openingBal;
 
-  const periodDebit    = rows.filter(r => !r.isBroughtFwd).reduce((s, r) => s + r.debit, 0);
-  const periodCredit   = rows.filter(r => !r.isBroughtFwd).reduce((s, r) => s + r.credit, 0);
-  const periodDiscount = rows.filter(r => !r.isBroughtFwd).reduce((s, r) => s + r.discount, 0);
+  const periodDebit = rows.filter((r) => !r.isBroughtFwd).reduce((s, r) => s + r.debit, 0);
+  const periodCredit = rows.filter((r) => !r.isBroughtFwd).reduce((s, r) => s + r.credit, 0);
+  const periodDiscount = rows.filter((r) => !r.isBroughtFwd).reduce((s, r) => s + r.discount, 0);
 
   const isFiltered = !!(fromDate || toDate || activeStatuses.length > 0);
 
@@ -413,10 +512,11 @@ export default function LedgerPrintPage({
     if (!el) return;
 
     const cleanName = clientName.replace(/[^a-zA-Z0-9]/g, "_");
-    const win = window.open("", `Statement_${cleanName}`,
-      "width=900,height=700,scrollbars=yes"
-    );
-    if (!win) { alert("Popup blocked! Browser settings mein popup allow karo."); return; }
+    const win = window.open("", `Statement_${cleanName}`, "width=900,height=700,scrollbars=yes");
+    if (!win) {
+      alert("Popup blocked! Browser settings mein popup allow karo.");
+      return;
+    }
 
     win.document.write(`<!DOCTYPE html>
 <html>
@@ -463,52 +563,112 @@ ${el.innerHTML}
   // ─────────────────────────────────────────────────────────────────────────
   // LOADING
   // ─────────────────────────────────────────────────────────────────────────
-  if (loading) return (
-    <div className="min-h-screen theme-body flex items-center justify-center" style={{ fontFamily:"Arial,sans-serif" }}>
-      <div style={{ textAlign:"center" }}>
-        <div style={{ width:40, height:40, border:"3px solid #001f3f", borderTop:"3px solid transparent", borderRadius:"50%", animation:"spin 0.8s linear infinite", margin:"0 auto 12px" }} />
-        <p className="text-slate-500" style={{ fontSize:13 }}>Loading ledger…</p>
+  if (loading)
+    return (
+      <div
+        className="min-h-screen theme-body flex items-center justify-center"
+        style={{ fontFamily: "Arial,sans-serif" }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              border: "3px solid #001f3f",
+              borderTop: "3px solid transparent",
+              borderRadius: "50%",
+              animation: "spin 0.8s linear infinite",
+              margin: "0 auto 12px",
+            }}
+          />
+          <p className="text-slate-500" style={{ fontSize: 13 }}>
+            Loading ledger…
+          </p>
+        </div>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  );
+    );
 
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="ledger-outer-wrap theme-body" style={{ minHeight:"100vh", fontFamily:"Arial,sans-serif", fontSize:13 }}>
-
+    <div
+      className="ledger-outer-wrap theme-body"
+      style={{ minHeight: "100vh", fontFamily: "Arial,sans-serif", fontSize: 13 }}
+    >
       {/* ── FILTER PANEL (screen only) ────────────────────────────────── */}
-      <div className="no-print glass border-b border-white/10" style={{ padding:"12px 20px" }}>
-        <div style={{ maxWidth:1100, margin:"0 auto" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+      <div className="no-print glass border-b border-white/10" style={{ padding: "12px 20px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+            }}
+          >
             {/* Left: Title + back */}
-            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <button
                 onClick={() => router.push(`/clients/${resolvedParams.id}/view`)}
                 className="theme-card theme-heading"
-                style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", border:"1px solid rgba(255,255,255,0.1)", borderRadius:6, cursor:"pointer", fontSize:12, fontWeight:600 }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "6px 12px",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
               >
                 <X size={14} /> Close
               </button>
-              <span className="theme-heading" style={{ fontWeight:700, fontSize:15 }}>Client Ledger</span>
+              <span className="theme-heading" style={{ fontWeight: 700, fontSize: 15 }}>
+                Client Ledger
+              </span>
             </div>
 
             {/* Right: Filter toggle + Print */}
-            <div style={{ display:"flex", gap:8 }}>
+            <div style={{ display: "flex", gap: 8 }}>
               <button
-                onClick={() => setFilterOpen(v => !v)}
+                onClick={() => setFilterOpen((v) => !v)}
                 className={isFiltered ? "bg-blue-600 !text-white" : "theme-card theme-heading"}
-                style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 14px", border:"1px solid rgba(255,255,255,0.1)", borderRadius:6, cursor:"pointer", fontSize:12, fontWeight:600 }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "6px 14px",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
               >
                 <Filter size={13} />
                 Filters {isFiltered && "(On)"}
-                {filterOpen ? <ChevronUp size={13}/> : <ChevronDown size={13}/>}
+                {filterOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
               </button>
               <button
                 onClick={handlePrint}
-                style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 18px", background:"linear-gradient(135deg,#667eea,#764ba2)", color:"#fff", border:"none", borderRadius:6, cursor:"pointer", fontSize:12, fontWeight:700, boxShadow:"0 2px 8px rgba(102,126,234,0.4)" }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "6px 18px",
+                  background: "linear-gradient(135deg,#667eea,#764ba2)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  boxShadow: "0 2px 8px rgba(102,126,234,0.4)",
+                }}
               >
                 <Printer size={14} /> Print Statement
               </button>
@@ -517,32 +677,69 @@ ${el.innerHTML}
 
           {/* Filter Panel */}
           {filterOpen && (
-            <div className="theme-panel-2" style={{ marginTop:12, padding:16, borderRadius:8 }}>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+            <div className="theme-panel-2" style={{ marginTop: 12, padding: 16, borderRadius: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 {/* Date range */}
                 <div>
-                  <div className="theme-heading" style={{ fontWeight:700, fontSize:12, marginBottom:8 }}>
-                    <Calendar size={13} style={{ verticalAlign:"middle", marginRight:4 }}/>
+                  <div
+                    className="theme-heading"
+                    style={{ fontWeight: 700, fontSize: 12, marginBottom: 8 }}
+                  >
+                    <Calendar size={13} style={{ verticalAlign: "middle", marginRight: 4 }} />
                     Date Range
                   </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-                    <input type="date" value={localFrom} onChange={e => setLocalFrom(e.target.value)}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <input
+                      type="date"
+                      value={localFrom}
+                      onChange={(e) => setLocalFrom(e.target.value)}
                       className="theme-input"
-                      style={{ flex:1, padding:"6px 10px", borderRadius:6, fontSize:12, colorScheme:"light dark" }} />
-                    <span className="text-slate-500" style={{ fontWeight:700 }}>to</span>
-                    <input type="date" value={localTo} onChange={e => setLocalTo(e.target.value)}
+                      style={{
+                        flex: 1,
+                        padding: "6px 10px",
+                        borderRadius: 6,
+                        fontSize: 12,
+                        colorScheme: "light dark",
+                      }}
+                    />
+                    <span className="text-slate-500" style={{ fontWeight: 700 }}>
+                      to
+                    </span>
+                    <input
+                      type="date"
+                      value={localTo}
+                      onChange={(e) => setLocalTo(e.target.value)}
                       min={localFrom}
                       className="theme-input"
-                      style={{ flex:1, padding:"6px 10px", borderRadius:6, fontSize:12, colorScheme:"light dark" }} />
+                      style={{
+                        flex: 1,
+                        padding: "6px 10px",
+                        borderRadius: 6,
+                        fontSize: 12,
+                        colorScheme: "light dark",
+                      }}
+                    />
                   </div>
-                  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                    {([
-                      { label:"7 Days", t:"7d" }, { label:"30 Days", t:"30d" },
-                      { label:"This Month", t:"thisMonth" }, { label:"Last Month", t:"lastMonth" },
-                    ] as const).map(q => (
-                      <button key={q.t} onClick={() => quickDate(q.t)}
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {(
+                      [
+                        { label: "7 Days", t: "7d" },
+                        { label: "30 Days", t: "30d" },
+                        { label: "This Month", t: "thisMonth" },
+                        { label: "Last Month", t: "lastMonth" },
+                      ] as const
+                    ).map((q) => (
+                      <button
+                        key={q.t}
+                        onClick={() => quickDate(q.t)}
                         className="theme-card text-blue-500 border border-blue-500/30"
-                        style={{ padding:"3px 8px", fontSize:11, borderRadius:4, cursor:"pointer" }}>
+                        style={{
+                          padding: "3px 8px",
+                          fontSize: 11,
+                          borderRadius: 4,
+                          cursor: "pointer",
+                        }}
+                      >
                         {q.label}
                       </button>
                     ))}
@@ -551,31 +748,44 @@ ${el.innerHTML}
 
                 {/* Status filter */}
                 <div>
-                  <div className="theme-heading" style={{ fontWeight:700, fontSize:12, marginBottom:8 }}>
+                  <div
+                    className="theme-heading"
+                    style={{ fontWeight: 700, fontSize: 12, marginBottom: 8 }}
+                  >
                     Filter by Status / Type
                   </div>
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                    {FILTER_OPTIONS.map(opt => {
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {FILTER_OPTIONS.map((opt) => {
                       const cfg = STATUS_CONFIG[opt.key];
                       const active = localStatus.includes(opt.key);
                       return (
-                        <button key={String(opt.key)} onClick={() => toggleStatus(opt.key)}
+                        <button
+                          key={String(opt.key)}
+                          onClick={() => toggleStatus(opt.key)}
                           style={{
-                            padding:"3px 10px", fontSize:11, borderRadius:4, cursor:"pointer",
+                            padding: "3px 10px",
+                            fontSize: 11,
+                            borderRadius: 4,
+                            cursor: "pointer",
                             fontWeight: active ? 700 : 400,
                             border: `1px solid ${cfg?.bg || "#ccc"}`,
-                            background: active ? (cfg?.bg || "#eee") : "transparent",
+                            background: active ? cfg?.bg || "#eee" : "transparent",
                             color: active
-                              ? (["payment","direct_sale","loan","brought_fwd"].includes(String(opt.key)) ? "#fff" : "#333")
+                              ? ["payment", "direct_sale", "loan", "brought_fwd"].includes(
+                                  String(opt.key)
+                                )
+                                ? "#fff"
+                                : "#333"
                               : "#888",
-                          }}>
+                          }}
+                        >
                           {opt.label}
                         </button>
                       );
                     })}
                   </div>
                   {localStatus.length > 0 && (
-                    <p className="text-slate-500" style={{ fontSize:10, marginTop:6 }}>
+                    <p className="text-slate-500" style={{ fontSize: 10, marginTop: 6 }}>
                       Leave empty to show all types
                     </p>
                   )}
@@ -583,14 +793,34 @@ ${el.innerHTML}
               </div>
 
               {/* Buttons */}
-              <div style={{ display:"flex", gap:8, marginTop:12, justifyContent:"flex-end" }}>
-                <button onClick={clearFilter}
+              <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" }}>
+                <button
+                  onClick={clearFilter}
                   className="theme-card theme-heading"
-                  style={{ padding:"7px 16px", border:"none", borderRadius:6, cursor:"pointer", fontSize:12, fontWeight:600 }}>
+                  style={{
+                    padding: "7px 16px",
+                    border: "none",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                >
                   Clear All
                 </button>
-                <button onClick={applyFilter}
-                  style={{ padding:"7px 20px", background:"#001f3f", color:"#fff", border:"none", borderRadius:6, cursor:"pointer", fontSize:12, fontWeight:700 }}>
+                <button
+                  onClick={applyFilter}
+                  style={{
+                    padding: "7px 20px",
+                    background: "#001f3f",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
                   Apply Filters
                 </button>
               </div>
@@ -600,111 +830,235 @@ ${el.innerHTML}
       </div>
 
       {/* ── STATEMENT CONTAINER ───────────────────────────────────────── */}
-      <div id="ledger-statement" className="theme-panel" style={{ maxWidth:1100, margin:"16px auto", padding:20, borderRadius:6, boxShadow:"0 0 20px rgba(0,0,0,0.1)" }}>
-
+      <div
+        id="ledger-statement"
+        className="theme-panel"
+        style={{
+          maxWidth: 1100,
+          margin: "16px auto",
+          padding: 20,
+          borderRadius: 6,
+          boxShadow: "0 0 20px rgba(0,0,0,0.1)",
+        }}
+      >
         {/* ── HEADER ──────────────────────────────────────────────────── */}
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: 12,
+          }}
+        >
           <div>
-            <div className="theme-heading" style={{ fontWeight:900, fontSize:"1.2rem", textTransform:"uppercase", letterSpacing:1 }}>
+            <div
+              className="theme-heading"
+              style={{
+                fontWeight: 900,
+                fontSize: "1.2rem",
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
+            >
               {firmInfo.name}
             </div>
-            <div className="text-slate-500" style={{ fontSize:11, marginTop:2 }}>{firmInfo.address}</div>
-            {firmInfo.contact && <div className="text-slate-500" style={{ fontSize:11 }}>📞 {firmInfo.contact}</div>}
+            <div className="text-slate-500" style={{ fontSize: 11, marginTop: 2 }}>
+              {firmInfo.address}
+            </div>
+            {firmInfo.contact && (
+              <div className="text-slate-500" style={{ fontSize: 11 }}>
+                📞 {firmInfo.contact}
+              </div>
+            )}
           </div>
-          <div style={{ textAlign:"right" }}>
-            <div className="theme-heading" style={{ fontWeight:900, fontSize:"1.5rem", letterSpacing:2 }}>STATEMENT</div>
-            <div className="text-slate-500" style={{ fontSize:11, marginTop:2 }}>
+          <div style={{ textAlign: "right" }}>
+            <div
+              className="theme-heading"
+              style={{ fontWeight: 900, fontSize: "1.5rem", letterSpacing: 2 }}
+            >
+              STATEMENT
+            </div>
+            <div className="text-slate-500" style={{ fontSize: 11, marginTop: 2 }}>
               Generated: {fmtDate(new Date().toISOString())}
             </div>
             {isFiltered && (
-              <div className="text-slate-500" style={{ fontSize:10, marginTop:2 }}>
-                Period: {fromDate ? fmtDateShort(fromDate+"T00:00") : "All"} — {toDate ? fmtDateShort(toDate+"T00:00") : "All"}
+              <div className="text-slate-500" style={{ fontSize: 10, marginTop: 2 }}>
+                Period: {fromDate ? fmtDateShort(fromDate + "T00:00") : "All"} —{" "}
+                {toDate ? fmtDateShort(toDate + "T00:00") : "All"}
                 {activeStatuses.length > 0 && (
-                  <><br />Status: {activeStatuses.map(s => STATUS_CONFIG[s]?.label || s).join(", ")}</>
+                  <>
+                    <br />
+                    Status: {activeStatuses.map((s) => STATUS_CONFIG[s]?.label || s).join(", ")}
+                  </>
                 )}
               </div>
             )}
           </div>
         </div>
 
-        <div style={{ borderTop:"2px solid #001f3f", margin:"10px 0" }} />
+        <div style={{ borderTop: "2px solid #001f3f", margin: "10px 0" }} />
 
         {/* ── CLIENT + BALANCE ─────────────────────────────────────────── */}
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: 16,
+          }}
+        >
           <div>
-            <div className="text-slate-500" style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.5 }}>Account Holder</div>
-            <div className="theme-heading" style={{ fontWeight:900, fontSize:"1.1rem", marginTop:2 }}>{clientName}</div>
-            {client?.contact && <div className="text-slate-500" style={{ fontSize:11, marginTop:2 }}>📞 {client.contact}</div>}
-            {client?.address && <div className="text-slate-500" style={{ fontSize:11, marginTop:1 }}>📍 {client.address}</div>}
+            <div
+              className="text-slate-500"
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+              }}
+            >
+              Account Holder
+            </div>
+            <div
+              className="theme-heading"
+              style={{ fontWeight: 900, fontSize: "1.1rem", marginTop: 2 }}
+            >
+              {clientName}
+            </div>
+            {client?.contact && (
+              <div className="text-slate-500" style={{ fontSize: 11, marginTop: 2 }}>
+                📞 {client.contact}
+              </div>
+            )}
+            {client?.address && (
+              <div className="text-slate-500" style={{ fontSize: 11, marginTop: 1 }}>
+                📍 {client.address}
+              </div>
+            )}
           </div>
 
           {/* Balance box */}
-          <div style={{
-            padding:"12px 18px", borderRadius:8, minWidth:200, textAlign:"right",
-            background: balanceType === "debit" ? "linear-gradient(135deg,#ffebee,#ffcdd2)"
-              : balanceType === "credit" ? "linear-gradient(135deg,#e8f5e9,#c8e6c9)"
-              : "linear-gradient(135deg,#f5f5f5,#e0e0e0)",
-            border: balanceType === "debit" ? "1px solid #ffcdd2"
-              : balanceType === "credit" ? "1px solid #c8e6c9"
-              : "1px solid #e0e0e0",
-          }}>
-            <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:0.8, color:"#555" }}>
-              {balanceType === "debit" ? "AMOUNT RECEIVABLE FROM CLIENT"
-               : balanceType === "credit" ? "AMOUNT PAYABLE TO CLIENT"
-               : "FULLY SETTLED"}
+          <div
+            style={{
+              padding: "12px 18px",
+              borderRadius: 8,
+              minWidth: 200,
+              textAlign: "right",
+              background:
+                balanceType === "debit"
+                  ? "linear-gradient(135deg,#ffebee,#ffcdd2)"
+                  : balanceType === "credit"
+                    ? "linear-gradient(135deg,#e8f5e9,#c8e6c9)"
+                    : "linear-gradient(135deg,#f5f5f5,#e0e0e0)",
+              border:
+                balanceType === "debit"
+                  ? "1px solid #ffcdd2"
+                  : balanceType === "credit"
+                    ? "1px solid #c8e6c9"
+                    : "1px solid #e0e0e0",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 9,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: 0.8,
+                color: "#555",
+              }}
+            >
+              {balanceType === "debit"
+                ? "AMOUNT RECEIVABLE FROM CLIENT"
+                : balanceType === "credit"
+                  ? "AMOUNT PAYABLE TO CLIENT"
+                  : "FULLY SETTLED"}
             </div>
-            <div style={{ fontSize:"1.6rem", fontWeight:900, marginTop:4,
-              color: balanceType === "debit" ? "#c62828" : balanceType === "credit" ? "#2e7d32" : "#616161" }}>
+            <div
+              style={{
+                fontSize: "1.6rem",
+                fontWeight: 900,
+                marginTop: 4,
+                color:
+                  balanceType === "debit"
+                    ? "#c62828"
+                    : balanceType === "credit"
+                      ? "#2e7d32"
+                      : "#616161",
+              }}
+            >
               {inr(Math.abs(currentOutstanding))}
             </div>
-            <div style={{ fontSize:9, color:"#777", marginTop:2 }}>
-              {balanceType === "debit" ? "Debit balance — amount to receive"
-               : balanceType === "credit" ? "Credit balance — amount to pay"
-               : "Account fully settled ✓"}
+            <div style={{ fontSize: 9, color: "#777", marginTop: 2 }}>
+              {balanceType === "debit"
+                ? "Debit balance — amount to receive"
+                : balanceType === "credit"
+                  ? "Credit balance — amount to pay"
+                  : "Account fully settled ✓"}
             </div>
           </div>
         </div>
 
         {/* ── PERIOD SUMMARY (when filtered) ───────────────────────────── */}
         {isFiltered && (
-          <div className="theme-panel-2" style={{ borderRadius:6, padding:"10px 14px", marginBottom:14 }}>
-            <div className="theme-heading" style={{ fontWeight:700, fontSize:11, marginBottom:6 }}>
+          <div
+            className="theme-panel-2"
+            style={{ borderRadius: 6, padding: "10px 14px", marginBottom: 14 }}
+          >
+            <div
+              className="theme-heading"
+              style={{ fontWeight: 700, fontSize: 11, marginBottom: 6 }}
+            >
               📅 Display Period Summary
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
               {[
-                { label: "Brought Forward", val: rows.find(r=>r.isBroughtFwd)?.balance ?? 0, className:"text-slate-400" },
-                { label: "Period Debits",   val: periodDebit,   className:"text-red-400" },
-                { label: "Period Credits",  val: periodCredit,  className:"text-emerald-400" },
-                { label: "Period Discount", val: periodDiscount, className:"text-blue-400" },
-              ].map(item => (
+                {
+                  label: "Brought Forward",
+                  val: rows.find((r) => r.isBroughtFwd)?.balance ?? 0,
+                  className: "text-slate-400",
+                },
+                { label: "Period Debits", val: periodDebit, className: "text-red-400" },
+                { label: "Period Credits", val: periodCredit, className: "text-emerald-400" },
+                { label: "Period Discount", val: periodDiscount, className: "text-blue-400" },
+              ].map((item) => (
                 <div key={item.label}>
-                  <div className="text-slate-500" style={{ fontSize:9, fontWeight:600 }}>{item.label}</div>
-                  <div className={item.className} style={{ fontSize:12, fontWeight:700 }}>{inr(item.val)}</div>
+                  <div className="text-slate-500" style={{ fontSize: 9, fontWeight: 600 }}>
+                    {item.label}
+                  </div>
+                  <div className={item.className} style={{ fontSize: 12, fontWeight: 700 }}>
+                    {inr(item.val)}
+                  </div>
                 </div>
               ))}
             </div>
-            <div className="text-amber-400" style={{ marginTop:8, fontSize:10, fontStyle:"italic" }}>
-              ⚠ Display filter applied. Current outstanding (top right) calculated from ALL transactions.
+            <div
+              className="text-amber-400"
+              style={{ marginTop: 8, fontSize: 10, fontStyle: "italic" }}
+            >
+              ⚠ Display filter applied. Current outstanding (top right) calculated from ALL
+              transactions.
             </div>
           </div>
         )}
 
         {/* ── OVERALL SUMMARY ───────────────────────────────────────────── */}
-        <div className="theme-panel-2" style={{ borderRadius:6, padding:"10px 14px", marginBottom:14 }}>
-          <div className="theme-heading" style={{ fontWeight:700, fontSize:11, marginBottom:6 }}>
+        <div
+          className="theme-panel-2"
+          style={{ borderRadius: 6, padding: "10px 14px", marginBottom: 14 }}
+        >
+          <div className="theme-heading" style={{ fontWeight: 700, fontSize: 11, marginBottom: 6 }}>
             📊 Overall Account Summary (All Time)
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
             {[
-              { label:"Opening Balance", val: openingBal },
-              { label:"Total Repairs",   val: totals.repairs },
-              { label:"Total Direct Sales", val: totals.sales },
-              { label:"Total Loans",     val: totals.loans },
-              { label:"Total Payments",  val: totals.payments + totals.discount },
-              { label:"Total Discount Given",  val: totals.discount },
-            ].map(item => (
-              <div key={item.label} className="theme-heading" style={{ fontSize:10 }}>
+              { label: "Opening Balance", val: openingBal },
+              { label: "Total Repairs", val: totals.repairs },
+              { label: "Total Direct Sales", val: totals.sales },
+              { label: "Total Loans", val: totals.loans },
+              { label: "Total Payments", val: totals.payments + totals.discount },
+              { label: "Total Discount Given", val: totals.discount },
+            ].map((item) => (
+              <div key={item.label} className="theme-heading" style={{ fontSize: 10 }}>
                 <span className="text-slate-500">{item.label}:</span>{" "}
                 <strong>{inr(item.val)}</strong>
               </div>
@@ -713,119 +1067,292 @@ ${el.innerHTML}
         </div>
 
         {/* ── LEDGER TABLE ─────────────────────────────────────────────── */}
-        <div style={{ overflowX:"auto" }}>
-          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
             <thead>
-              <tr style={{ background:"#001f3f", color:"#fff" }}>
-                {["#","Date","Description","Ref ID","Status","Remark","Debit (Dr)","Credit (Cr)","Balance"].map((h,i) => (
-                  <th key={h} style={{
-                    padding:"8px 6px", fontSize:10, fontWeight:700, textTransform:"uppercase",
-                    textAlign: i >= 6 ? "right" : i === 0 ? "center" : "left",
-                    border:"1px solid rgba(255,255,255,0.15)", letterSpacing:0.5,
-                  }}>{h}</th>
+              <tr style={{ background: "#001f3f", color: "#fff" }}>
+                {[
+                  "#",
+                  "Date",
+                  "Description",
+                  "Ref ID",
+                  "Status",
+                  "Remark",
+                  "Debit (Dr)",
+                  "Credit (Cr)",
+                  "Balance",
+                ].map((h, i) => (
+                  <th
+                    key={h}
+                    style={{
+                      padding: "8px 6px",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      textAlign: i >= 6 ? "right" : i === 0 ? "center" : "left",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-slate-500" style={{ padding:24, textAlign:"center" }}>
-                    <AlertTriangle size={20} style={{ verticalAlign:"middle", marginRight:8, color:"#f39c12" }} />
+                  <td
+                    colSpan={9}
+                    className="text-slate-500"
+                    style={{ padding: 24, textAlign: "center" }}
+                  >
+                    <AlertTriangle
+                      size={20}
+                      style={{ verticalAlign: "middle", marginRight: 8, color: "#f39c12" }}
+                    />
                     No records found with current filters
                   </td>
                 </tr>
-              ) : rows.map((r, i) => {
-                const cfg = r.statusKey !== null ? STATUS_CONFIG[r.statusKey] : null;
-                const isPaymentType = r.statusKey === "payment" || r.statusKey === "brought_fwd";
-                const rowBg = r.isBroughtFwd ? "rgba(99,102,241,0.08)"
-                  : r.debit > 0 ? "rgba(239,68,68,0.04)"
-                  : r.effectiveCr > 0 ? "rgba(16,185,129,0.04)"
-                  : "transparent";
-                const balColor = r.balance > 0.005 ? "#ef4444" : r.balance < -0.005 ? "#22c55e" : "#888";
+              ) : (
+                rows.map((r, i) => {
+                  const cfg = r.statusKey !== null ? STATUS_CONFIG[r.statusKey] : null;
+                  const isPaymentType = r.statusKey === "payment" || r.statusKey === "brought_fwd";
+                  const rowBg = r.isBroughtFwd
+                    ? "rgba(99,102,241,0.08)"
+                    : r.debit > 0
+                      ? "rgba(239,68,68,0.04)"
+                      : r.effectiveCr > 0
+                        ? "rgba(16,185,129,0.04)"
+                        : "transparent";
+                  const balColor =
+                    r.balance > 0.005 ? "#ef4444" : r.balance < -0.005 ? "#22c55e" : "#888";
 
-                return (
-                  <tr key={i} style={{ background:rowBg, borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
-                    <td className="text-slate-500" style={{ padding:"6px 5px", textAlign:"center", border:"1px solid rgba(255,255,255,0.06)" }}>
-                      {r.isBroughtFwd ? "—" : i}
-                    </td>
-                    <td style={{ padding:"6px 5px", whiteSpace:"nowrap", border:"1px solid rgba(255,255,255,0.06)", fontSize:11 }}>
-                      {fmtDateShort(r.date)}
-                    </td>
-                    <td className="font-semibold" style={{ padding:"6px 5px", border:"1px solid rgba(255,255,255,0.06)" }}>
-                      {r.desc}
-                    </td>
-                    <td className="text-slate-500" style={{ padding:"6px 5px", textAlign:"center", fontFamily:"monospace", fontSize:10, border:"1px solid rgba(255,255,255,0.06)" }}>
-                      {r.ref}
-                    </td>
-                    <td style={{ padding:"6px 5px", textAlign:"center", border:"1px solid rgba(255,255,255,0.06)" }}>
-                      {cfg ? (
-                        <span style={{
-                          display:"inline-block", padding:"2px 7px", borderRadius:3,
-                          fontSize:9, fontWeight:700, textTransform:"uppercase",
-                          minWidth:65, textAlign:"center", lineHeight:1.3,
-                          background: cfg.bg,
-                          color: cfg.color,
-                          border:`1px solid ${isPaymentType ? cfg.bg : "transparent"}`,
-                        }}>
-                          {cfg.label}
-                        </span>
-                      ) : "—"}
-                      {r.deliveredDate && (
-                        <div className="text-emerald-400" style={{ fontSize:8, fontWeight:600, marginTop:2 }}>
-                          ✓ {fmtDateShort(r.deliveredDate)}
-                        </div>
-                      )}
-                    </td>
-                    <td className="text-slate-400" style={{ padding:"6px 5px", fontStyle:"italic", border:"1px solid rgba(255,255,255,0.06)", maxWidth:110, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}
-                      title={r.remark}>
-                      {r.remark ? (r.remark.length > 18 ? r.remark.slice(0,18)+"…" : r.remark) : "—"}
-                    </td>
-                    <td style={{ padding:"6px 5px", textAlign:"right", color: r.debit>0 ? "#ef4444" : "#555", fontWeight: r.debit>0 ? 700 : 400, border:"1px solid rgba(255,255,255,0.06)" }}>
-                      {r.debit > 0 ? inr(r.debit) : "—"}
-                    </td>
-                    <td style={{ padding:"6px 5px", textAlign:"right", border:"1px solid rgba(255,255,255,0.06)" }}>
-                      {r.effectiveCr > 0 || r.discount > 0 ? (
-                        <div>
-                          <div className="text-emerald-400" style={{ fontWeight:700 }}>{inr(r.effectiveCr)}</div>
-                          {r.discount > 0 && (
-                            <div className="text-blue-400" style={{ fontSize:9, fontStyle:"italic" }}>
-                              ({inr(r.credit)} + {inr(r.discount)} disc)
+                  return (
+                    <tr
+                      key={i}
+                      style={{
+                        background: rowBg,
+                        borderBottom: "1px solid rgba(255,255,255,0.06)",
+                      }}
+                    >
+                      <td
+                        className="text-slate-500"
+                        style={{
+                          padding: "6px 5px",
+                          textAlign: "center",
+                          border: "1px solid rgba(255,255,255,0.06)",
+                        }}
+                      >
+                        {r.isBroughtFwd ? "—" : i}
+                      </td>
+                      <td
+                        style={{
+                          padding: "6px 5px",
+                          whiteSpace: "nowrap",
+                          border: "1px solid rgba(255,255,255,0.06)",
+                          fontSize: 11,
+                        }}
+                      >
+                        {fmtDateShort(r.date)}
+                      </td>
+                      <td
+                        className="font-semibold"
+                        style={{ padding: "6px 5px", border: "1px solid rgba(255,255,255,0.06)" }}
+                      >
+                        {r.desc}
+                      </td>
+                      <td
+                        className="text-slate-500"
+                        style={{
+                          padding: "6px 5px",
+                          textAlign: "center",
+                          fontFamily: "monospace",
+                          fontSize: 10,
+                          border: "1px solid rgba(255,255,255,0.06)",
+                        }}
+                      >
+                        {r.ref}
+                      </td>
+                      <td
+                        style={{
+                          padding: "6px 5px",
+                          textAlign: "center",
+                          border: "1px solid rgba(255,255,255,0.06)",
+                        }}
+                      >
+                        {cfg ? (
+                          <span
+                            style={{
+                              display: "inline-block",
+                              padding: "2px 7px",
+                              borderRadius: 3,
+                              fontSize: 9,
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              minWidth: 65,
+                              textAlign: "center",
+                              lineHeight: 1.3,
+                              background: cfg.bg,
+                              color: cfg.color,
+                              border: `1px solid ${isPaymentType ? cfg.bg : "transparent"}`,
+                            }}
+                          >
+                            {cfg.label}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                        {r.deliveredDate && (
+                          <div
+                            className="text-emerald-400"
+                            style={{ fontSize: 8, fontWeight: 600, marginTop: 2 }}
+                          >
+                            ✓ {fmtDateShort(r.deliveredDate)}
+                          </div>
+                        )}
+                      </td>
+                      <td
+                        className="text-slate-400"
+                        style={{
+                          padding: "6px 5px",
+                          fontStyle: "italic",
+                          border: "1px solid rgba(255,255,255,0.06)",
+                          maxWidth: 110,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={r.remark}
+                      >
+                        {r.remark
+                          ? r.remark.length > 18
+                            ? r.remark.slice(0, 18) + "…"
+                            : r.remark
+                          : "—"}
+                      </td>
+                      <td
+                        style={{
+                          padding: "6px 5px",
+                          textAlign: "right",
+                          color: r.debit > 0 ? "#ef4444" : "#555",
+                          fontWeight: r.debit > 0 ? 700 : 400,
+                          border: "1px solid rgba(255,255,255,0.06)",
+                        }}
+                      >
+                        {r.debit > 0 ? inr(r.debit) : "—"}
+                      </td>
+                      <td
+                        style={{
+                          padding: "6px 5px",
+                          textAlign: "right",
+                          border: "1px solid rgba(255,255,255,0.06)",
+                        }}
+                      >
+                        {r.effectiveCr > 0 || r.discount > 0 ? (
+                          <div>
+                            <div className="text-emerald-400" style={{ fontWeight: 700 }}>
+                              {inr(r.effectiveCr)}
                             </div>
-                          )}
-                        </div>
-                      ) : "—"}
-                    </td>
-                    <td style={{ padding:"6px 5px", textAlign:"right", fontWeight:700, fontSize:11, color:balColor, border:"1px solid rgba(255,255,255,0.06)" }}>
-                      {inr(Math.abs(r.balance))}
-                      <span style={{ fontSize:9, marginLeft:2 }}>{r.balance > 0.005 ? "Dr" : r.balance < -0.005 ? "Cr" : ""}</span>
-                    </td>
-                  </tr>
-                );
-              })}
+                            {r.discount > 0 && (
+                              <div
+                                className="text-blue-400"
+                                style={{ fontSize: 9, fontStyle: "italic" }}
+                              >
+                                ({inr(r.credit)} + {inr(r.discount)} disc)
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td
+                        style={{
+                          padding: "6px 5px",
+                          textAlign: "right",
+                          fontWeight: 700,
+                          fontSize: 11,
+                          color: balColor,
+                          border: "1px solid rgba(255,255,255,0.06)",
+                        }}
+                      >
+                        {inr(Math.abs(r.balance))}
+                        <span style={{ fontSize: 9, marginLeft: 2 }}>
+                          {r.balance > 0.005 ? "Dr" : r.balance < -0.005 ? "Cr" : ""}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
             <tfoot>
-              <tr className="theme-panel-2" style={{ fontWeight:700 }}>
-                <th colSpan={6} className="theme-heading" style={{ padding:"8px 10px", textAlign:"right", fontSize:11 }}>Period Totals:</th>
-                <th className="text-red-400" style={{ padding:"8px 6px", textAlign:"right", fontSize:11, border:"1px solid rgba(255,255,255,0.06)" }}>{inr(periodDebit)}</th>
-                <th className="text-emerald-400" style={{ padding:"8px 6px", textAlign:"right", fontSize:11, border:"1px solid rgba(255,255,255,0.06)" }}>
+              <tr className="theme-panel-2" style={{ fontWeight: 700 }}>
+                <th
+                  colSpan={6}
+                  className="theme-heading"
+                  style={{ padding: "8px 10px", textAlign: "right", fontSize: 11 }}
+                >
+                  Period Totals:
+                </th>
+                <th
+                  className="text-red-400"
+                  style={{
+                    padding: "8px 6px",
+                    textAlign: "right",
+                    fontSize: 11,
+                    border: "1px solid rgba(255,255,255,0.06)",
+                  }}
+                >
+                  {inr(periodDebit)}
+                </th>
+                <th
+                  className="text-emerald-400"
+                  style={{
+                    padding: "8px 6px",
+                    textAlign: "right",
+                    fontSize: 11,
+                    border: "1px solid rgba(255,255,255,0.06)",
+                  }}
+                >
                   {/* Show total settled = cash + discount */}
                   <div>{inr(periodCredit + periodDiscount)}</div>
                   {periodDiscount > 0 && (
-                    <div className="text-blue-400" style={{ fontSize:9, fontStyle:"italic" }}>
+                    <div className="text-blue-400" style={{ fontSize: 9, fontStyle: "italic" }}>
                       Cash: {inr(periodCredit)} + Disc: {inr(periodDiscount)}
                     </div>
                   )}
                 </th>
-                <th style={{ padding:"8px 6px", textAlign:"right", border:"1px solid rgba(255,255,255,0.06)" }}>—</th>
+                <th
+                  style={{
+                    padding: "8px 6px",
+                    textAlign: "right",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                  }}
+                >
+                  —
+                </th>
               </tr>
-              <tr style={{ background:"#001f3f", color:"#fff", fontWeight:700 }}>
-                <th colSpan={8} style={{ padding:"10px", textAlign:"right", fontSize:12 }}>
+              <tr style={{ background: "#001f3f", color: "#fff", fontWeight: 700 }}>
+                <th colSpan={8} style={{ padding: "10px", textAlign: "right", fontSize: 12 }}>
                   CLOSING BALANCE:
                 </th>
-                <th style={{ padding:"10px 8px", textAlign:"right", fontSize:"1.1rem",
-                  color: finalBalance > 0.005 ? "#ffcdd2" : finalBalance < -0.005 ? "#c8e6c9" : "#e0e0e0" }}>
+                <th
+                  style={{
+                    padding: "10px 8px",
+                    textAlign: "right",
+                    fontSize: "1.1rem",
+                    color:
+                      finalBalance > 0.005
+                        ? "#ffcdd2"
+                        : finalBalance < -0.005
+                          ? "#c8e6c9"
+                          : "#e0e0e0",
+                  }}
+                >
                   {inr(Math.abs(finalBalance))}
-                  <span style={{ fontSize:10, marginLeft:4 }}>
+                  <span style={{ fontSize: 10, marginLeft: 4 }}>
                     {finalBalance > 0.005 ? "Dr" : finalBalance < -0.005 ? "Cr" : "Settled"}
                   </span>
                 </th>
@@ -835,23 +1362,62 @@ ${el.innerHTML}
         </div>
 
         {/* ── SIGNATURES ───────────────────────────────────────────────── */}
-        <div style={{ display:"flex", justifyContent:"space-between", marginTop:36, paddingTop:12 }}>
-          <div style={{ width:200, textAlign:"center" }}>
-            <div style={{ borderTop:"1.5px solid #333", paddingTop:6, fontSize:11, color:"#555", fontWeight:600 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginTop: 36,
+            paddingTop: 12,
+          }}
+        >
+          <div style={{ width: 200, textAlign: "center" }}>
+            <div
+              style={{
+                borderTop: "1.5px solid #333",
+                paddingTop: 6,
+                fontSize: 11,
+                color: "#555",
+                fontWeight: 600,
+              }}
+            >
               Customer Signature
             </div>
           </div>
-          <div style={{ width:200, textAlign:"center" }}>
-            <div style={{ borderTop:"1.5px solid #333", paddingTop:6, fontSize:11, color:"#555", fontWeight:600 }}>
+          <div style={{ width: 200, textAlign: "center" }}>
+            <div
+              style={{
+                borderTop: "1.5px solid #333",
+                paddingTop: 6,
+                fontSize: 11,
+                color: "#555",
+                fontWeight: 600,
+              }}
+            >
               Authorized Signatory
             </div>
           </div>
         </div>
 
         {/* ── FOOTER ───────────────────────────────────────────────────── */}
-        <div style={{ marginTop:20, borderTop:"1px solid #eee", paddingTop:10, display:"flex", justifyContent:"space-between", fontSize:10, color:"#aaa" }}>
-          <span>Generated: {fmtDate(new Date().toISOString())} — {firmInfo.name}</span>
-          <span>{fromDate && toDate ? `${fmtDateShort(fromDate+"T00:00")} – ${fmtDateShort(toDate+"T00:00")}` : "All Time"}</span>
+        <div
+          style={{
+            marginTop: 20,
+            borderTop: "1px solid #eee",
+            paddingTop: 10,
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: 10,
+            color: "#aaa",
+          }}
+        >
+          <span>
+            Generated: {fmtDate(new Date().toISOString())} — {firmInfo.name}
+          </span>
+          <span>
+            {fromDate && toDate
+              ? `${fmtDateShort(fromDate + "T00:00")} – ${fmtDateShort(toDate + "T00:00")}`
+              : "All Time"}
+          </span>
         </div>
       </div>
 

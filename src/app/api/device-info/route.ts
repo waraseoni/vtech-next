@@ -17,8 +17,9 @@ export async function GET() {
     }
   }
   // Prefer the usual home/office 192.168.x.x range, else any LAN IPv4
-  const lanIp = candidates.sort((a, b) =>
-    a.startsWith("192.168.") ? -1 : b.startsWith("192.168.") ? 1 : 0
-  )[0] ?? null;
+  const lanIp =
+    candidates.sort((a, b) =>
+      a.startsWith("192.168.") ? -1 : b.startsWith("192.168.") ? 1 : 0
+    )[0] ?? null;
   return NextResponse.json({ lanIp });
 }

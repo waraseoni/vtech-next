@@ -4,13 +4,21 @@ import { useRouter } from "next/navigation";
 import { Receipt, Loader2, AlertCircle, Inbox } from "lucide-react";
 
 type Payment = {
-  id: number; amount: number; discount?: number | null; payment_date?: string | null;
-  payment_mode?: string | null; remarks?: string | null; job_id?: string | null; loan_id?: number | null;
+  id: number;
+  amount: number;
+  discount?: number | null;
+  payment_date?: string | null;
+  payment_mode?: string | null;
+  remarks?: string | null;
+  job_id?: string | null;
+  loan_id?: number | null;
 };
 
 const inr = (v: number) => "₹" + Math.abs(v).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 const fmtDate = (d: string | null | undefined) =>
-  d ? new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+  d
+    ? new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+    : "—";
 
 export default function MyPaymentsPage() {
   const router = useRouter();
@@ -50,7 +58,9 @@ export default function MyPaymentsPage() {
           <p className="text-slate-500 text-xs mt-1">Aapke kiye gaye payments ki history</p>
         </div>
         <div className="text-right">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Total Paid</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+            Total Paid
+          </p>
           <p className="text-3xl font-black text-emerald-400">{inr(totalPaid)}</p>
         </div>
       </div>
@@ -83,15 +93,21 @@ export default function MyPaymentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#21293d]">
-              {payments.map(p => (
+              {payments.map((p) => (
                 <tr key={p.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3 text-slate-300 text-sm whitespace-nowrap">{fmtDate(p.payment_date)}</td>
+                  <td className="px-4 py-3 text-slate-300 text-sm whitespace-nowrap">
+                    {fmtDate(p.payment_date)}
+                  </td>
                   <td className="px-4 py-3 text-slate-400 text-sm">{p.payment_mode || "—"}</td>
                   <td className="px-4 py-3 text-slate-400 text-sm">
                     {p.job_id ? `#${p.job_id}` : p.loan_id ? `Loan #${p.loan_id}` : "—"}
                   </td>
-                  <td className="px-4 py-3 text-right text-slate-400 text-sm">{p.discount ? inr(p.discount) : "—"}</td>
-                  <td className="px-4 py-3 text-right font-black text-emerald-400 whitespace-nowrap">{inr(p.amount)}</td>
+                  <td className="px-4 py-3 text-right text-slate-400 text-sm">
+                    {p.discount ? inr(p.discount) : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-right font-black text-emerald-400 whitespace-nowrap">
+                    {inr(p.amount)}
+                  </td>
                 </tr>
               ))}
             </tbody>

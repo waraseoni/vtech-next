@@ -9,42 +9,63 @@ const supabase = getAdminSupabase();
 type RefRow = { id: string | number; [k: string]: unknown };
 type FileRef = { label: string; href: string | null };
 
-const fullName = (r: RefRow) => [r.firstname, r.middlename, r.lastname].filter(Boolean).join(" ") || `#${r.id}`;
+const fullName = (r: RefRow) =>
+  [r.firstname, r.middlename, r.lastname].filter(Boolean).join(" ") || `#${r.id}`;
 
 // Storage buckets → table mapping + kaunsi rows reference karti hain
 const BUCKET_MAP: {
-  bucket: string; label: string; table: string; column: string;
-  idCols: string[]; rowLabel: (r: RefRow) => string; hrefFor: (r: RefRow) => string | null;
+  bucket: string;
+  label: string;
+  table: string;
+  column: string;
+  idCols: string[];
+  rowLabel: (r: RefRow) => string;
+  hrefFor: (r: RefRow) => string | null;
 }[] = [
   {
-    bucket: "client-photos", label: "Client Photos", table: "client_list", column: "image_path",
+    bucket: "client-photos",
+    label: "Client Photos",
+    table: "client_list",
+    column: "image_path",
     idCols: ["id", "firstname", "middlename", "lastname"],
-    rowLabel: r => `Client: ${fullName(r)}`,
-    hrefFor: r => `/clients/${r.id}`,
+    rowLabel: (r) => `Client: ${fullName(r)}`,
+    hrefFor: (r) => `/clients/${r.id}`,
   },
   {
-    bucket: "mechanic-photos", label: "Mechanic Photos", table: "mechanic_list", column: "image_path",
+    bucket: "mechanic-photos",
+    label: "Mechanic Photos",
+    table: "mechanic_list",
+    column: "image_path",
     idCols: ["id", "firstname", "middlename", "lastname"],
-    rowLabel: r => `Mechanic: ${fullName(r)}`,
-    hrefFor: r => `/mechanics/${r.id}`,
+    rowLabel: (r) => `Mechanic: ${fullName(r)}`,
+    hrefFor: (r) => `/mechanics/${r.id}`,
   },
   {
-    bucket: "product-images", label: "Product Images", table: "product_list", column: "image_path",
+    bucket: "product-images",
+    label: "Product Images",
+    table: "product_list",
+    column: "image_path",
     idCols: ["id", "name"],
-    rowLabel: r => `Product: ${String(r.name || r.id)}`,
+    rowLabel: (r) => `Product: ${String(r.name || r.id)}`,
     hrefFor: () => null,
   },
   {
-    bucket: "user-avatars", label: "User Avatars", table: "profiles", column: "avatar_url",
+    bucket: "user-avatars",
+    label: "User Avatars",
+    table: "profiles",
+    column: "avatar_url",
     idCols: ["id", "full_name"],
-    rowLabel: r => `User: ${String(r.full_name || r.id)}`,
+    rowLabel: (r) => `User: ${String(r.full_name || r.id)}`,
     hrefFor: () => null,
   },
   {
-    bucket: "job-images", label: "Job Photos", table: "transaction_images", column: "image_path",
+    bucket: "job-images",
+    label: "Job Photos",
+    table: "transaction_images",
+    column: "image_path",
     idCols: ["id", "transaction_id"],
-    rowLabel: r => `Job #${r.transaction_id}`,
-    hrefFor: r => `/jobs/${r.transaction_id}`,
+    rowLabel: (r) => `Job #${r.transaction_id}`,
+    hrefFor: (r) => `/jobs/${r.transaction_id}`,
   },
 ];
 
@@ -57,8 +78,9 @@ async function listBucketFiles(bucket: string): Promise<BucketFile[]> {
     const { data, error } = await supabase.storage.from(bucket).list("", { limit: LIMIT, offset });
     if (error) throw new Error(error.message);
     if (!data || data.length === 0) break;
-    data.forEach(f => {
-      if (f.metadata) items.push({ name: f.name, size: f.metadata.size || 0, created_at: f.created_at || "" });
+    data.forEach((f) => {
+      if (f.metadata)
+        items.push({ name: f.name, size: f.metadata.size || 0, created_at: f.created_at || "" });
     });
     if (data.length < LIMIT) break;
   }
@@ -76,7 +98,7 @@ async function fetchFileRefs(m: (typeof BUCKET_MAP)[number]): Promise<Map<string
       .ilike(m.column, `%/${m.bucket}/%`)
       .range(from, from + PAGE - 1);
     if (error || !data || data.length === 0) break;
-    ((data as unknown as RefRow[]) || []).forEach(row => {
+    ((data as unknown as RefRow[]) || []).forEach((row) => {
       const v = row[m.column];
       if (typeof v !== "string") return;
       const name = v.split(`/${m.bucket}/`).pop();
@@ -99,14 +121,15 @@ function publicUrl(bucket: string, name: string): string {
 export async function GET() {
   try {
     const auth = await requireAdmin();
-    if (!auth) return NextResponse.json({ error: "Sirf Admin is action ko kar sakta hai" }, { status: 403 });
+    if (!auth)
+      return NextResponse.json({ error: "Sirf Admin is action ko kar sakta hai" }, { status: 403 });
 
     const buckets = [];
     for (const m of BUCKET_MAP) {
       const files = await listBucketFiles(m.bucket);
       const refs = await fetchFileRefs(m);
       const fileList = files
-        .map(f => ({
+        .map((f) => ({
           name: f.name,
           url: publicUrl(m.bucket, f.name),
           size: f.size,
@@ -119,7 +142,7 @@ export async function GET() {
         bucket: m.bucket,
         label: m.label,
         total: fileList.length,
-        orphanCount: fileList.filter(f => !f.referenced).length,
+        orphanCount: fileList.filter((f) => !f.referenced).length,
         files: fileList,
       });
     }
@@ -135,7 +158,8 @@ export async function GET() {
 export async function DELETE(request: NextRequest) {
   try {
     const auth = await requireAdmin();
-    if (!auth) return NextResponse.json({ error: "Sirf Admin is action ko kar sakta hai" }, { status: 403 });
+    if (!auth)
+      return NextResponse.json({ error: "Sirf Admin is action ko kar sakta hai" }, { status: 403 });
 
     const body = (await request.json()) as { bucket?: string; names?: string[] };
     if (!body.bucket || !Array.isArray(body.names) || body.names.length === 0) {

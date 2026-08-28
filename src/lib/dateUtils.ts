@@ -15,7 +15,10 @@ export const currentMonthIST = (): string => {
   return todayIST().slice(0, 7); // YYYY-MM
 };
 
-export const formatIST = (date: string | Date, options: Intl.DateTimeFormatOptions = {}): string => {
+export const formatIST = (
+  date: string | Date,
+  options: Intl.DateTimeFormatOptions = {}
+): string => {
   const d = typeof date === "string" ? new Date(date) : date;
   return new Intl.DateTimeFormat("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -36,7 +39,7 @@ export const toISTString = (date: Date = new Date()): string => {
     hour12: false,
   }).formatToParts(date);
 
-  const get = (type: string) => parts.find(p => p.type === type)?.value ?? "00";
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}:${get("second")}+05:30`;
 };
 
@@ -62,16 +65,26 @@ export const toISTDatePart = (date: string | Date | null | undefined): string =>
 };
 
 export const startOfMonthIST = (date?: Date): string => {
-  const todayStr = date 
-    ? new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(date)
+  const todayStr = date
+    ? new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(date)
     : todayIST();
   const [y, m] = todayStr.split("-");
   return `${y}-${m}-01`;
 };
 
 export const endOfMonthIST = (date?: Date): string => {
-  const todayStr = date 
-    ? new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(date)
+  const todayStr = date
+    ? new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(date)
     : todayIST();
   const [y, m] = todayStr.split("-");
   const lastDay = new Date(Number(y), Number(m), 0).getDate();
@@ -111,7 +124,7 @@ export const nowISTTime = (): string => {
     second: "2-digit",
     hour12: false,
   }).formatToParts(new Date());
-  const get = (type: string) => parts.find(p => p.type === type)?.value ?? "00";
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
   return `${get("hour")}:${get("minute")}:${get("second")}`;
 };
 
@@ -148,7 +161,10 @@ export const hoursBetweenIST = (timeIn: string | null, timeOut: string | null): 
  *  - Both, >= 6h      -> Present
  * Mirrors PHP save_attendance() / save_check_in_out() (21,600s threshold).
  */
-export const deriveStatusFromTimes = (timeIn: string | null, timeOut: string | null): 1 | 3 | null => {
+export const deriveStatusFromTimes = (
+  timeIn: string | null,
+  timeOut: string | null
+): 1 | 3 | null => {
   if (!timeIn) return null;
   if (!timeOut) return 1;
   const mins = minsBetweenIST(timeIn, timeOut);

@@ -11,14 +11,20 @@ import { timingSafeEqual } from "crypto";
 export async function POST(req: NextRequest) {
   try {
     const { email, fullName, password, token } = (await req.json()) as {
-      email?: string; fullName?: string; password?: string; token?: string;
+      email?: string;
+      fullName?: string;
+      password?: string;
+      token?: string;
     };
 
     if (!email || !fullName || !password) {
       return NextResponse.json({ error: "Sabhi fields required hain" }, { status: 400 });
     }
     if (password.length < 6) {
-      return NextResponse.json({ error: "Password kam se kam 6 characters ka hona chahiye" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Password kam se kam 6 characters ka hona chahiye" },
+        { status: 400 }
+      );
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Valid email daalein" }, { status: 400 });
@@ -27,9 +33,16 @@ export async function POST(req: NextRequest) {
     const adminClient = getAdminSupabase();
 
     // Setup sirf ek baar — admin pehle se hai to block.
-    const { data: admins } = await adminClient.from("profiles").select("id").eq("role", "admin").limit(1);
+    const { data: admins } = await adminClient
+      .from("profiles")
+      .select("id")
+      .eq("role", "admin")
+      .limit(1);
     if (admins && admins.length > 0) {
-      return NextResponse.json({ error: "Setup already complete — admin pehle se exist karta hai" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Setup already complete — admin pehle se exist karta hai" },
+        { status: 400 }
+      );
     }
 
     // Optional setup token check (seller package ke saath unique key deta hai).
@@ -38,7 +51,8 @@ export async function POST(req: NextRequest) {
       if (typeof token !== "string" || token.length !== expected.length) {
         return NextResponse.json({ error: "Setup token galat hai" }, { status: 403 });
       }
-      const a = Buffer.from(expected); const b = Buffer.from(token);
+      const a = Buffer.from(expected);
+      const b = Buffer.from(token);
       if (!timingSafeEqual(a, b)) {
         return NextResponse.json({ error: "Setup token galat hai" }, { status: 403 });
       }
@@ -61,7 +75,10 @@ export async function POST(req: NextRequest) {
       .insert({ id: newUser.user.id, full_name: fullName.trim(), role: "admin" });
     if (profileErr) {
       await adminClient.auth.admin.deleteUser(newUser.user.id);
-      return NextResponse.json({ error: "Profile save nahi hua: " + profileErr.message }, { status: 400 });
+      return NextResponse.json(
+        { error: "Profile save nahi hua: " + profileErr.message },
+        { status: 400 }
+      );
     }
 
     return NextResponse.json({

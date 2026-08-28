@@ -22,9 +22,9 @@ export const DEFAULT_PRINT_OPTIONS: PrintOptions = {
 };
 
 const LABEL_PRESETS: Record<LabelSize, { w: number; h: number; nameSize: number; svgH: number }> = {
-  medium:  { w: 63.5, h: 38.1, nameSize: 8,   svgH: 15 },
-  small:   { w: 63.5, h: 25.4, nameSize: 6.5, svgH: 10 },
-  compact: { w: 50,   h: 20,   nameSize: 5.5, svgH: 8 },
+  medium: { w: 63.5, h: 38.1, nameSize: 8, svgH: 15 },
+  small: { w: 63.5, h: 25.4, nameSize: 6.5, svgH: 10 },
+  compact: { w: 50, h: 20, nameSize: 5.5, svgH: 8 },
 };
 
 const PRINT_MARGINS: Record<PrintMargin, number> = {
@@ -36,7 +36,7 @@ const PRINT_MARGINS: Record<PrintMargin, number> = {
 const GAP_MM = 1.5;
 
 const PAGE_MM: Record<Orientation, { w: number; h: number }> = {
-  portrait:  { w: 210, h: 297 },
+  portrait: { w: 210, h: 297 },
   landscape: { w: 297, h: 210 },
 };
 
@@ -76,7 +76,10 @@ export function barcodeSvg(value: string, width = 140, height = 44): string {
 
 /** Guard: sanitise value so only safe Code128 characters pass through. */
 export function safeBarcode(value: string | null | undefined): string {
-  return (value || "").replace(/[^\x20-\x7E]/g, "").slice(0, 48).trim();
+  return (value || "")
+    .replace(/[^\x20-\x7E]/g, "")
+    .slice(0, 48)
+    .trim();
 }
 
 /**
@@ -86,8 +89,11 @@ export function safeBarcode(value: string | null | undefined): string {
  * opts: label size, page orientation, page margin — grid auto-fills the page
  * so the maximum number of labels prints per sheet.
  */
-export function printBarcodeLabels(items: BarcodeLabelItem[], opts: PrintOptions = DEFAULT_PRINT_OPTIONS): void {
-  const list = items.filter(i => safeBarcode(i.value));
+export function printBarcodeLabels(
+  items: BarcodeLabelItem[],
+  opts: PrintOptions = DEFAULT_PRINT_OPTIONS
+): void {
+  const list = items.filter((i) => safeBarcode(i.value));
   if (!list.length) return;
 
   const preset = LABEL_PRESETS[opts.size];
@@ -96,14 +102,21 @@ export function printBarcodeLabels(items: BarcodeLabelItem[], opts: PrintOptions
   const lw = `${preset.w}mm`;
   const lh = `${preset.h}mm`;
 
-  const labels = list.map(item => `
+  const labels = list
+    .map(
+      (item) => `
       <div class="label">
         ${barcodeSvg(safeBarcode(item.value))}
         <div class="name">${escapeHtml(item.name)}</div>
-      </div>`).join("");
+      </div>`
+    )
+    .join("");
 
   const w = window.open("", "_blank", "width=900,height=700");
-  if (!w) { alert("Popup blocked — popups allow kar ke dobara try karein."); return; }
+  if (!w) {
+    alert("Popup blocked — popups allow kar ke dobara try karein.");
+    return;
+  }
 
   w.document.write(`<!DOCTYPE html>
 <html>
@@ -152,5 +165,10 @@ export function printBarcodeLabels(items: BarcodeLabelItem[], opts: PrintOptions
 
 /** Minimal HTML escape for label text (XSS-safe for the print window). */
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }

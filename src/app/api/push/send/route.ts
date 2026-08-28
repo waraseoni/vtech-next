@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const title = typeof body.title === "string" ? body.title.trim() : "";
-    const text  = typeof body.body === "string" ? body.body.trim() : "";
+    const text = typeof body.body === "string" ? body.body.trim() : "";
 
     if (!title || !text) {
       return NextResponse.json({ error: "title aur body zaroori hai" }, { status: 400 });

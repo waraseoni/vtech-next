@@ -15,15 +15,23 @@ const SHOP = {
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   }).format(new Date(iso));
 }
 
 function fmtDateTime(iso: string | null): string {
   if (!iso) return "—";
   return new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
   }).format(new Date(iso));
 }
 
@@ -33,14 +41,16 @@ function inr(n: number) {
 
 export async function GET(request: NextRequest) {
   const user = await requireStaff();
-  if (!user) return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized \u2014 pehle login karein" }, { status: 401 });
   const url = new URL(request.url);
   const dateFrom = url.searchParams.get("from") || "";
   const dateTo = url.searchParams.get("to") || "";
   const paymentFilter = url.searchParams.get("payment_mode") || "all";
 
   let query = supabase
-    .from("direct_sales").select("*")
+    .from("direct_sales")
+    .select("*")
     .gte("date_created", `${dateFrom}T00:00:00`)
     .lte("date_created", `${dateTo}T23:59:59`)
     .order("date_created", { ascending: false });
@@ -59,39 +69,60 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const clientIds = [...new Set(salesData.map(s => s.client_id).filter(Boolean))];
-  const mechIds = [...new Set(salesData.map(s => s.created_by).filter(Boolean))];
+  const clientIds = [...new Set(salesData.map((s) => s.client_id).filter(Boolean))];
+  const mechIds = [...new Set(salesData.map((s) => s.created_by).filter(Boolean))];
 
   const [{ data: clients }, { data: mechanics }] = await Promise.all([
-    clientIds.length > 0 ? supabase.from("client_list").select("id, firstname, middlename, lastname").in("id", clientIds) : Promise.resolve({ data: [] }),
-    mechIds.length > 0 ? supabase.from("mechanic_list").select("id, firstname, lastname").in("id", mechIds) : Promise.resolve({ data: [] })
+    clientIds.length > 0
+      ? supabase
+          .from("client_list")
+          .select("id, firstname, middlename, lastname")
+          .in("id", clientIds)
+      : Promise.resolve({ data: [] }),
+    mechIds.length > 0
+      ? supabase.from("mechanic_list").select("id, firstname, lastname").in("id", mechIds)
+      : Promise.resolve({ data: [] }),
   ]);
 
-  const clientMap = new Map((clients || []).map(c => [c.id, [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ")]));
-  const mechMap = new Map((mechanics || []).map(m => [m.id, `${m.firstname} ${m.lastname}`.trim()]));
+  const clientMap = new Map(
+    (clients || []).map((c) => [
+      c.id,
+      [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" "),
+    ])
+  );
+  const mechMap = new Map(
+    (mechanics || []).map((m) => [m.id, `${m.firstname} ${m.lastname}`.trim()])
+  );
 
-  const sales = salesData.map(s => ({
+  const sales = salesData.map((s) => ({
     ...s,
     client_name: s.client_id ? clientMap.get(s.client_id) || "Unknown" : "Walk-in",
-    staff_name: s.created_by ? mechMap.get(s.created_by) || "Unknown" : "—"
+    staff_name: s.created_by ? mechMap.get(s.created_by) || "Unknown" : "—",
   }));
 
   const totalAmount = sales.reduce((s, sale) => s + (sale.total_amount || 0), 0);
   const totalSales = sales.length;
   const avgAmount = totalSales > 0 ? totalAmount / totalSales : 0;
 
-  const payBreakdown = sales.reduce((acc, s) => {
-    acc[s.payment_mode] = (acc[s.payment_mode] || 0) + s.total_amount;
-    return acc;
-  }, {} as Record<string, number>);
+  const payBreakdown = sales.reduce(
+    (acc, s) => {
+      acc[s.payment_mode] = (acc[s.payment_mode] || 0) + s.total_amount;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
-  const dateLabel = dateFrom && dateTo
-    ? (dateFrom === dateTo ? fmtDate(dateFrom) : `${fmtDate(dateFrom)} – ${fmtDate(dateTo)}`)
-    : "All Records";
+  const dateLabel =
+    dateFrom && dateTo
+      ? dateFrom === dateTo
+        ? fmtDate(dateFrom)
+        : `${fmtDate(dateFrom)} – ${fmtDate(dateTo)}`
+      : "All Records";
 
-  const rowsHtml = sales.map((s, i) => {
-    const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
-    return `<tr style="background:${rowBg}">
+  const rowsHtml = sales
+    .map((s, i) => {
+      const rowBg = i % 2 === 0 ? "#fff" : "#f8f9fa";
+      return `<tr style="background:${rowBg}">
       <td style="padding:7px 8px;border:1px solid #dee2e6;text-align:center;color:#666;font-size:12px">${i + 1}</td>
       <td style="padding:7px 8px;border:1px solid #dee2e6;font-weight:700;color:#1971c2;font-size:12px">${s.sale_code}</td>
       <td style="padding:7px 8px;border:1px solid #dee2e6;font-size:12px">${fmtDate(s.date_created)}</td>
@@ -100,7 +131,8 @@ export async function GET(request: NextRequest) {
       <td style="padding:7px 8px;border:1px solid #dee2e6;text-align:right;font-weight:700;font-size:12px">${inr(s.total_amount)}</td>
       <td style="padding:7px 8px;border:1px solid #dee2e6;font-size:12px">${s.payment_mode}</td>
     </tr>`;
-  }).join("");
+    })
+    .join("");
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -158,12 +190,16 @@ export async function GET(request: NextRequest) {
         <div class="stat-num" style="color:#1971c2">${inr(avgAmount)}</div>
         <div class="stat-label">Avg per Sale</div>
       </div>
-      ${Object.entries(payBreakdown).map(([mode, amt]) => `
+      ${Object.entries(payBreakdown)
+        .map(
+          ([mode, amt]) => `
       <div class="stat">
-        <div class="stat-num" style="color:${mode === 'Cash' ? '#28a745' : '#1971c2'}">${inr(Number(amt) || 0)}</div>
+        <div class="stat-num" style="color:${mode === "Cash" ? "#28a745" : "#1971c2"}">${inr(Number(amt) || 0)}</div>
         <div class="stat-label">${mode}</div>
       </div>
-      `).join("")}
+      `
+        )
+        .join("")}
     </div>
     <table>
       <thead>
