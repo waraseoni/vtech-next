@@ -14,6 +14,15 @@ const DashboardCharts = dynamic(() => import("./DashboardCharts"), {
     </div>
   ),
 });
+
+const AIAlertsWidget = dynamic(() => import("@/app/components/AIAlertsWidget"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[120px] flex items-center justify-center text-slate-500 text-xs font-bold">
+      Loading alerts…
+    </div>
+  ),
+});
 import {
   Wrench,
   Clock,
@@ -41,10 +50,8 @@ import {
   ShoppingBag,
   Layers,
 } from "lucide-react";
-import QRCode from "qrcode";
 import { pageAll } from "@/lib/fetch-all";
 import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
-import AIAlertsWidget from "@/app/components/AIAlertsWidget";
 import LicenseInfoCard from "@/app/components/LicenseInfoCard";
 import { logger } from "@/lib/logger";
 
@@ -194,6 +201,7 @@ export default function Dashboard() {
       }
       if (cancelled) return;
       setQrUrl(siteUrl);
+      const QRCode = await import("qrcode");
       QRCode.toDataURL(siteUrl, {
         width: 240,
         margin: 2,
