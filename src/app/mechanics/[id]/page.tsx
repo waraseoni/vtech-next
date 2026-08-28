@@ -447,14 +447,14 @@ export default function MechanicDetailPage() {
             <ArrowLeft size={16} />
           </Link>
           <div className="relative flex-shrink-0">
-            {mechanic?.image_path ? (
+            {safeImageSrc(mechanic?.image_path) ? (
               <Image
-                src={safeImageSrc(mechanic.image_path)}
+                src={safeImageSrc(mechanic?.image_path)}
                 alt={name}
                 width={56}
                 height={56}
                 className="w-14 h-14 rounded-xl object-cover shadow-lg border border-white/10 flex-shrink-0 cursor-zoom-in"
-                onDoubleClick={() => openImageLightbox(mechanic.image_path, name)}
+                onDoubleClick={() => openImageLightbox(mechanic?.image_path, name)}
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).style.display = "none";
                 }}

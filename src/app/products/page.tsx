@@ -471,7 +471,7 @@ export default function ProductsPage() {
                         <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
                           <td className="px-4 py-3.5">
                             <div className="flex items-center gap-2">
-                              {p.image_path ? (
+                              {safeImageSrc(p.image_path) ? (
                                 <Image
                                   src={safeImageSrc(p.image_path)}
                                   alt={p.name}
@@ -602,7 +602,7 @@ export default function ProductsPage() {
                       {/* Header: image + name + status */}
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
-                          {p.image_path ? (
+                          {safeImageSrc(p.image_path) ? (
                             <Image
                               src={safeImageSrc(p.image_path)}
                               alt={p.name}

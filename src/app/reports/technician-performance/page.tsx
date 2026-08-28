@@ -190,7 +190,7 @@ export default function TechnicianPerformancePage() {
                 >
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
-                    {m.image_path ? (
+                    {safeImageSrc(m.image_path) ? (
                       <Image
                         src={safeImageSrc(m.image_path)}
                         alt={m.name}

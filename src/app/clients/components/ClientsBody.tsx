@@ -652,7 +652,7 @@ export default function ClientsBody({
                   <div className="p-4 space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-3">
-                        {client.image_path ? (
+                        {safeImageSrc(client.image_path) ? (
                           <Image
                             src={safeImageSrc(client.image_path)}
                             alt={client.name}
@@ -929,7 +929,7 @@ export default function ClientsBody({
                       {/* Client — Name · ID · Mobile · WA */}
                       <td className="px-3 py-3.5 align-middle">
                         <div className="flex items-center gap-2 min-w-0">
-                          {client.image_path ? (
+                          {safeImageSrc(client.image_path) ? (
                             <Image
                               src={safeImageSrc(client.image_path)}
                               alt={client.name}

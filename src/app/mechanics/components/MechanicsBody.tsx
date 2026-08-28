@@ -390,7 +390,7 @@ export default function MechanicsBody({
                     <tr key={m.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
-                          {m.image_path ? (
+                          {safeImageSrc(m.image_path) ? (
                             <Image
                               src={safeImageSrc(m.image_path)}
                               alt={name}

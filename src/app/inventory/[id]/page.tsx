@@ -491,7 +491,7 @@ export default function ProductDetailPage() {
               </Link>
 
               <div className="flex items-start gap-3">
-                {product.image_path ? (
+                {safeImageSrc(product.image_path) ? (
                   <div className="relative flex-shrink-0">
                     <Image
                       src={safeImageSrc(product.image_path)}
