@@ -18,14 +18,12 @@ import {
   IndianRupee,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  format,
-  startOfMonth,
-  endOfMonth,
-  addMonths,
-  subMonths,
-  eachDayOfInterval,
-} from "date-fns";
+import { format } from "date-fns/format";
+import { startOfMonth } from "date-fns/startOfMonth";
+import { endOfMonth } from "date-fns/endOfMonth";
+import { addMonths } from "date-fns/addMonths";
+import { subMonths } from "date-fns/subMonths";
+import { eachDayOfInterval } from "date-fns/eachDayOfInterval";
 
 const inr = (n: number) =>
   "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

@@ -13,7 +13,7 @@ import {
   ChevronRight,
   Activity,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format } from "date-fns/format";
 import Link from "next/link";
 import { ExternalLink, Trash2, PlusCircle, Edit3, Eraser } from "lucide-react";
 

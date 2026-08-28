@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
 import { BarChart3, TrendingUp, DollarSign, Package, Receipt, Printer } from "lucide-react";
-import { format, eachMonthOfInterval } from "date-fns";
+import { format } from "date-fns/format";
+import { eachMonthOfInterval } from "date-fns/eachMonthOfInterval";
 import { X } from "lucide-react";
 import dynamic from "next/dynamic";
 

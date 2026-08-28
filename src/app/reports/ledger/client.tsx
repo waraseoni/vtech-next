@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { isValid } from "date-fns";
-import { addMonths, subMonths } from "date-fns";
+import { isValid } from "date-fns/isValid";
+import { addMonths } from "date-fns/addMonths";
+import { subMonths } from "date-fns/subMonths";
 import {
   BarChart3,
   TrendingUp,
