@@ -51,7 +51,6 @@ const MechAvatar = ({
       alt={name}
       width={32}
       height={32}
-      unoptimized
       className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";

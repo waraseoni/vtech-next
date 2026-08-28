@@ -176,7 +176,6 @@ export default function AttendanceModal({
                 alt={mechanicName}
                 width={48}
                 height={48}
-                unoptimized
                 className="w-12 h-12 rounded-full object-cover mx-auto mb-2 border border-white/10"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).style.display = "none";

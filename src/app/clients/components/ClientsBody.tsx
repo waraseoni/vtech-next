@@ -657,7 +657,6 @@ export default function ClientsBody({
                             alt={client.name}
                             width={56}
                             height={56}
-                            unoptimized
                             className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
                             onDoubleClick={(e) => {
                               e.stopPropagation();
@@ -935,7 +934,6 @@ export default function ClientsBody({
                               alt={client.name}
                               width={48}
                               height={48}
-                              unoptimized
                               className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
                               onDoubleClick={(e) => {
                                 e.stopPropagation();

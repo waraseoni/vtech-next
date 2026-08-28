@@ -1546,7 +1546,6 @@ export default function Dashboard() {
                 className="mx-auto rounded-xl bg-white p-2"
                 width={220}
                 height={220}
-                unoptimized
               />
             ) : (
               <div className="h-[220px] flex items-center justify-center">

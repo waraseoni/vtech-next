@@ -714,7 +714,6 @@ export default function LocationsPage() {
                 width={200}
                 height={200}
                 className="rounded-xl bg-white p-2"
-                unoptimized
               />
               <div className="text-center">
                 {qrModalLoc.code && (

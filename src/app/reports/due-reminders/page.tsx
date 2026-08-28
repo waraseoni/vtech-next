@@ -51,7 +51,6 @@ const ClientAvatar = ({
       alt={name}
       width={36}
       height={36}
-      unoptimized
       className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";

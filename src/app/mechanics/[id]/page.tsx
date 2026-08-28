@@ -452,7 +452,6 @@ export default function MechanicDetailPage() {
                 alt={name}
                 width={56}
                 height={56}
-                unoptimized
                 className="w-14 h-14 rounded-xl object-cover shadow-lg border border-white/10 flex-shrink-0 cursor-zoom-in"
                 onDoubleClick={() => openImageLightbox(mechanic.image_path, name)}
                 onError={(e) => {

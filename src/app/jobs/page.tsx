@@ -172,7 +172,6 @@ const ClientMiniAvatar = ({ image, name }: { image?: string; name: string }) => 
         alt={name}
         width={32}
         height={32}
-        unoptimized
         className="w-8 h-8 rounded-full object-cover flex-shrink-0 cursor-zoom-in border border-white/10"
         onDoubleClick={() => openImageLightbox(image, name)}
         onError={(e) => {

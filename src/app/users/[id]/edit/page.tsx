@@ -274,7 +274,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   alt={fullName || "User"}
                   width={40}
                   height={40}
-                  unoptimized
                   className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-white/10 cursor-zoom-in"
                   onDoubleClick={() => openImageLightbox(avatarUrl, fullName || "User")}
                   onError={(e) => {

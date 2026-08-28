@@ -333,7 +333,6 @@ export default function ImagesPage() {
                       src={f.url}
                       alt={f.name}
                       fill
-                      unoptimized
                       className="w-full h-full object-contain p-1 cursor-zoom-in"
                       sizes="200px"
                       onDoubleClick={() => openImageLightbox(f.url, f.name)}

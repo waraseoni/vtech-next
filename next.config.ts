@@ -5,6 +5,15 @@ import { withSentryConfig } from "@sentry/nextjs";
 const nextConfig: NextConfig = {
   reactCompiler: true,
   turbopack: {},
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
   allowedDevOrigins: [
     "192.168.1.*", // ghar/office WiFi
     "192.168.29.*", // mobile hotspot (optional)

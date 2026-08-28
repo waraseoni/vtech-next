@@ -497,7 +497,6 @@ export default function ProductDetailPage() {
                       alt={product.name}
                       width={64}
                       height={64}
-                      unoptimized
                       className="w-16 h-16 rounded-2xl object-cover border border-[#21293d] cursor-zoom-in"
                       onDoubleClick={() => openImageLightbox(product.image_path, product.name)}
                     />

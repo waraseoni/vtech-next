@@ -197,7 +197,6 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
               width={200}
               height={200}
               className="w-full h-full object-contain"
-              unoptimized
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400">

@@ -887,7 +887,6 @@ ${svcHtml}${prodHtml}
                             alt="Item"
                             width={640}
                             height={80}
-                            unoptimized
                             className="w-full h-20 object-cover rounded border border-[#21293d] hover:opacity-80 transition-opacity cursor-zoom-in"
                             onDoubleClick={() => openImageLightbox(img.image_path, "Job Photo")}
                             onError={(e) => {

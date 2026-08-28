@@ -81,7 +81,6 @@ export function ImageLightbox() {
           alt={state.alt}
           width={1600}
           height={1200}
-          unoptimized
           className="max-w-[92vw] max-h-[88vh] w-auto h-auto object-contain rounded-xl shadow-2xl border border-black/10 dark:border-white/10 bg-white"
         />
       </div>

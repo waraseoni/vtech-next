@@ -735,7 +735,6 @@ export default function SettingsPage() {
                         alt="Logo"
                         width={200}
                         height={64}
-                        unoptimized
                         className="max-h-16 max-w-[200px] object-contain bg-white rounded-lg p-1 cursor-zoom-in"
                         onDoubleClick={() => openImageLightbox(logo, "System Logo")}
                       />
@@ -839,7 +838,6 @@ export default function SettingsPage() {
                         alt="Cover"
                         width={260}
                         height={112}
-                        unoptimized
                         className="max-h-28 max-w-[260px] object-cover rounded-lg border border-[#21293d] cursor-zoom-in"
                         onDoubleClick={() => openImageLightbox(cover, "Website Cover")}
                       />
@@ -1202,7 +1200,6 @@ export default function SettingsPage() {
                     alt="Signature"
                     width={200}
                     height={64}
-                    unoptimized
                     className="max-h-16 object-contain cursor-zoom-in"
                     onDoubleClick={() => openImageLightbox(signature, "Invoice Signature")}
                   />
@@ -1582,7 +1579,6 @@ export default function SettingsPage() {
                   alt="Logo"
                   width={160}
                   height={48}
-                  unoptimized
                   className="max-h-12 max-w-[160px] object-contain bg-white rounded-lg p-0.5"
                 />
               )}

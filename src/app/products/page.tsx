@@ -476,7 +476,6 @@ export default function ProductsPage() {
                                   alt={p.name}
                                   width={48}
                                   height={48}
-                                  unoptimized
                                   className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
                                   onDoubleClick={(e) => {
                                     e.stopPropagation();
@@ -608,7 +607,6 @@ export default function ProductsPage() {
                               alt={p.name}
                               width={40}
                               height={40}
-                              unoptimized
                               className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
                               onDoubleClick={(e) => {
                                 e.stopPropagation();
@@ -810,7 +808,6 @@ export default function ProductsPage() {
                         alt="Product"
                         width={112}
                         height={112}
-                        unoptimized
                         className="w-28 h-28 rounded-xl object-cover border border-[#21293d]"
                       />
                     ) : (

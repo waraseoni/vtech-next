@@ -1295,7 +1295,6 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                     alt="Logo"
                     width={40}
                     height={40}
-                    unoptimized
                     className="w-full h-full object-contain rounded-xl"
                   />
                 ) : (
@@ -1365,7 +1364,6 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                       alt="Logo"
                       width={36}
                       height={36}
-                      unoptimized
                       className="w-full h-full object-contain rounded-xl"
                     />
                   ) : (
@@ -1409,7 +1407,6 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                     alt={displayName}
                     width={32}
                     height={32}
-                    unoptimized
                     className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-white/10 cursor-zoom-in"
                     onDoubleClick={(e) => {
                       e.stopPropagation();
@@ -1532,7 +1529,6 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                     alt={displayName}
                     width={36}
                     height={36}
-                    unoptimized
                     className="w-9 h-9 rounded-xl object-cover shadow-md flex-shrink-0 border border-white/10 cursor-zoom-in"
                     onDoubleClick={(e) => {
                       e.stopPropagation();

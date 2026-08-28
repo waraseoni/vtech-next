@@ -406,7 +406,6 @@ html,body{width:100%;height:100%}
           <Image
             src={urls[spot.id]}
             alt={`QR ${spot.name}`}
-            unoptimized
             width={150}
             height={150}
             style={{
@@ -557,7 +556,6 @@ html,body{width:100%;height:100%}
                       width={200}
                       height={200}
                       className="mx-auto w-full h-auto"
-                      unoptimized
                     />
                   ) : (
                     <div className="mx-auto w-full aspect-square bg-slate-100 animate-pulse rounded" />

@@ -277,7 +277,6 @@ export default function ProfilePage() {
                 alt={fullName || "User"}
                 width={64}
                 height={64}
-                unoptimized
                 className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 shadow-lg border border-white/10 cursor-zoom-in"
                 onDoubleClick={() => openImageLightbox(avatarUrl, fullName || "User")}
                 onError={(e) => {

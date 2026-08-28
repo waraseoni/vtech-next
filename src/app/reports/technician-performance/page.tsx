@@ -195,7 +195,6 @@ export default function TechnicianPerformancePage() {
                         alt={m.name}
                         width={40}
                         height={40}
-                        unoptimized
                         className="w-10 h-10 rounded-full object-cover border border-white/10 flex-shrink-0"
                         onError={(e) => {
                           (e.currentTarget as HTMLImageElement).style.display = "none";

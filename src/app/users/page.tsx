@@ -248,7 +248,6 @@ export default function UsersPage() {
         alt={name || "User"}
         width={36}
         height={36}
-        unoptimized
         className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
         onDoubleClick={(e) => {
           e.stopPropagation();
