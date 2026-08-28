@@ -109,3 +109,28 @@ No pre-migration numeric baseline existed for /mechanics (not in Session 1 set),
 > with the /clients LCP/SSR win. Ongoing direction: keep migrating bounded
 > fetch-once list pages (e.g. `expenses`) via this cookie+RLS pattern; leave
 > on-demand-query pages (`jobs`, `dashboard`, `inquiries`, `activity-logs`) alone.
+
+## Session 4 (28 Aug 2026) — G3: /expenses served server-side (cookie+RLS)
+`src/app/expenses/page.tsx` → async server component; data at render time via
+`fetchExpensesPageData()` (cookie+RLS client, **no service role**) — three bounded
+tables (`mechanic_list` active, `advance_payments` 500-cap, `expense_list` 500-cap)
+fetched server-side. Interactive UI (`ExpensesPageInner`) moved to
+`components/ExpensesPageInner.tsx`, a client component receiving
+`{initialMechanics, initialStaffPayments, initialShopExpenses}` props; `loadData()`
+re-queries only after add/edit/delete (no on-mount double-fetch). Route flipped
+`○ (Static)` → `ƒ (Dynamic)`. Runtime verified SSR parity (3 mechanics, staff
+payments ₹-totals, shop expenses — all embedded in first HTML, HTTP 200, no RLS
+errors). No pre-migration baseline existed for /expenses (not in Session 1 set).
+
+| Route | perf | FCP | LCP | TTI | CLS | SI | TBT |
+|-------|------|-----|-----|-----|-----|-----|-----|
+| /expenses (run 1) | 47 | 1.10s | 7.90s | 7.90s | 0.000 | 4.50s | 1530ms |
+| /expenses (run 2) | 47 | 1.10s | 8.20s | 8.20s | 0.000 | 4.20s | 1520ms |
+
+> /expenses after-state: FCP 1.10s confirms the SSR data deps reach first paint
+> (data no longer awaits a client fetch) — the same first-paint win as /clients
+> (1.98s post) and /mechanics (1.11s). TBT ~1525ms is the remaining cost and is
+> the client JS bundle (lucide + heavy admin UI), not the data path. LCP ~8s is
+> dominated by that bundle too. Bounded fetch-once migrations now done for
+> /clients, /mechanics, /expenses; remaining bounded candidates for future
+> sessions: /payments, /salary, /advance, /inquiries (if list-shaped).
