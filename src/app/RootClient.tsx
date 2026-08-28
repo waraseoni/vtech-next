@@ -2,19 +2,11 @@
 import PWAHead from "../components/PWAHead";
 import LicenseGate from "../components/LicenseGate";
 import { ImageLightbox, openImageLightbox } from "../components/ImageLightbox";
-import type { LicenseStatus } from "@/lib/license";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { supabase, invalidateCachedUser } from "@/lib/supabase";
-import {
-  IDLE_MS,
-  WARN_BEFORE_MS,
-  REVOKED_CHECK_MS,
-  REVOKED_401_TOLERANCE,
-  LAST_ACTIVE_KEY,
-} from "@/lib/session-policy";
+import { supabase } from "@/lib/supabase";
 import {
   LayoutDashboard,
   Users,
@@ -69,6 +61,7 @@ import {
 import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
 import { Toaster } from "sonner";
 import { logger } from "@/lib/logger";
+import { useAppBoot } from "./useAppBoot";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
 type SearchResult = {
@@ -1163,475 +1156,32 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
 
-  // BUG FIX 1: null prevents SSR↔client hydration mismatch.
-  // Server always renders null-state → no sidebar flicker.
-  const [isMobile, setIsMobile] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<{
-    full_name: string;
-    role: string;
-    avatar_url?: string | null;
-  } | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
-  // Default "dark" — DOM ka pre-paint attribute bhi dark hai (layout script),
-  // isliye React state ko pehle render se hi match rakhta hai.
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [license, setLicense] = useState<LicenseStatus | null>(null);
-  const [brandLogo, setBrandLogo] = useState<string | null>(null);
-  const [showIdleWarning, setShowIdleWarning] = useState(false);
+  // G1 gate-split: saara auth/boot state + effects ab useAppBoot() hook me hai.
+  // Ye component sirf shell render karta hai — behavior bilkul unchanged.
+  const {
+    isMobile,
+    loading,
+    profile,
+    userEmail,
+    dropdownOpen,
+    setDropdownOpen,
+    drawerOpen,
+    setDrawerOpen,
+    aiDrawerOpen,
+    setAiDrawerOpen,
+    theme,
+    license,
+    brandLogo,
+    showIdleWarning,
+    setShowIdleWarning,
+    lastActiveRef,
+    showIdleWarningRef,
+    refreshLicense,
+    handleLogout,
+    toggleTheme,
+  } = useAppBoot();
 
-  // Refs for staff idle timeout (stable across re-renders, no stale closures)
-  const lastActiveRef = useRef(Date.now());
-  const showIdleWarningRef = useRef(false);
-  const initialLicenseFetch = useRef(true);
-
-  // License status fetch — login ke baad har non-public page par.
-  // Gate (LicenseGate) isi state ko dekh kar render hota hai.
-  const refreshLicense = useCallback(async (force = false) => {
-    try {
-      const url = force ? "/api/license/status?force=true" : "/api/license/status";
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) {
-        setLicense(null);
-        return;
-      }
-      setLicense(await res.json());
-    } catch {
-      setLicense(null);
-    }
-  }, []);
-
-  const handleLogout = useCallback(async () => {
-    await supabase.auth.signOut();
-    invalidateCachedUser();
-    // Intentional full reload: RootClient ke stale in-memory state ko puri tarah reset karta hai
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.href = "/login";
-  }, []);
-
-  // BUG FIX 2: Auth runs ONCE on mount — NOT on pathname change.
-  // Original code: useEffect[pathname, router] → re-auth every navigation = slow + wasteful.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        // Public routes — redirect mat karo
-        const PUBLIC_PAGES = [
-          "/",
-          "/about",
-          "/contact",
-          "/job-status",
-          "/login",
-          "/setup",
-          "/stage-lighting",
-          "/industrial",
-          "/power-supply",
-        ];
-        const isPublicPage = PUBLIC_PAGES.some(
-          (p) => pathname === p || pathname.startsWith(p + "/")
-        );
-
-        // BUG FIX: getUser() kabhi-kabhi network par hang ho jata hai → "V-TECH
-        // Secure Boot" loader hamesha ke liye atak jata tha. 6s timeout + EK
-        // retry: pehle sirf ek 6s race thi — slow network par valid session
-        // bhi "not logged in" samajh kar /login par chala jata tha.
-        const AUTH_TIMEOUT_MS = 6000;
-        const TIMED_OUT = Symbol("auth-timeout");
-        const getUserWithTimeout = () =>
-          Promise.race([
-            supabase.auth.getUser(),
-            new Promise<typeof TIMED_OUT>((resolve) =>
-              setTimeout(() => resolve(TIMED_OUT), AUTH_TIMEOUT_MS)
-            ),
-          ]);
-        let authResult = await getUserWithTimeout();
-        if (authResult === TIMED_OUT) authResult = await getUserWithTimeout(); // ek retry — false logout se bachne ke liye
-        const user = authResult === TIMED_OUT ? null : authResult.data.user;
-        if (cancelled) return;
-        if (!user) {
-          if (!isPublicPage) router.push("/login");
-          setLoading(false);
-          return;
-        }
-        setUserEmail(user.email ?? null);
-        const { data: pd } = await supabase
-          .from("profiles")
-          .select("full_name, role, avatar_url")
-          .eq("id", user.id)
-          .maybeSingle();
-        if (cancelled) return;
-        setProfile({
-          full_name:
-            pd?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
-          role: pd?.role || "staff",
-          avatar_url: pd?.avatar_url || null,
-        });
-
-        // Auto-subscribe push notifications (fire-and-forget).
-        // Agar permission pehle se granted hai to silently subscribe.
-        // Agar "default" hai to browser ek baar prompt dikhayega (only once).
-        if (
-          typeof window !== "undefined" &&
-          "Notification" in window &&
-          "serviceWorker" in navigator
-        ) {
-          const perm = Notification.permission;
-          if (perm === "granted") {
-            import("@/lib/push").then((m) => m.subscribeToPush()).catch(() => {});
-          } else if (perm === "default" && !localStorage.getItem("vtech_push_prompted")) {
-            localStorage.setItem("vtech_push_prompted", "1");
-            Notification.requestPermission()
-              .then((p) => {
-                if (p === "granted")
-                  import("@/lib/push").then((m) => m.subscribeToPush()).catch(() => {});
-              })
-              .catch(() => {});
-          }
-        }
-      } catch (e) {
-        logger.error("Auth error:", e);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // ← empty deps: intentional, auth only on mount
-
-  // Brand logo (system_info) — settings mein save hua logo sidebar brand area
-  // mein dikhega. Save nahi kiya to default Sparkles icon hi rahega.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await supabase
-          .from("system_info")
-          .select("meta_value")
-          .eq("meta_field", "logo")
-          .maybeSingle();
-        if (!cancelled && data?.meta_value) setBrandLogo(String(data.meta_value));
-      } catch {
-        /* ignore — default logo use hoga */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // BUG FIX: Boot-guard inline script ko signal — React mount/hydrate ho gaya,
-  // loader isliye atka nahi hai. (8s watchdog tabhi reload karta hai jab ye
-  // set NAHIN hota — matlab hydration hi fail ho gaya tha.)
-  useEffect(() => {
-    try {
-      (window as unknown as { __VTECH_BOOTED__: boolean }).__VTECH_BOOTED__ = true;
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  // BUG FIX: loader (V-TECH Secure Boot) atak jata hai jab stale SW cache purana
-  // HTML/chunk serve karta hai ya auth call hang ho jati hai. Manual Ctrl+F5 ke
-  // bina auto-recover: 6s tak loader atka raha → ek baar auto hard reload.
-  // sessionStorage cooldown → reloads repeat ho sakte hain (har 30s me max ek),
-  // par tight infinite loop nahi. (Pehle "ek baar per tab session" guard tha —
-  // logout ke baad wahi tab me dobara hang hone par recover nahi hota tha.)
-  useEffect(() => {
-    if (!loading) return;
-    const t = setTimeout(() => {
-      try {
-        const k = "vtech_boot_reloaded";
-        const last = Number(sessionStorage.getItem(k) || "0");
-        if (Date.now() - last < 30000) return; // 30s cooldown — loop guard
-        sessionStorage.setItem(k, String(Date.now()));
-      } catch {
-        /* ignore */
-      }
-      window.location.reload();
-    }, 6000);
-    return () => clearTimeout(t);
-  }, [loading]);
-
-  // BUG FIX: Next.js kabhi-kabhi chunk load fail hone par router stuck chhod deta
-  // hai (loader hamesha ke liye). Chunk error → cooldown ke saath auto hard reload.
-  useEffect(() => {
-    const reloadWithCooldown = () => {
-      try {
-        const k = "vtech_chunk_reload";
-        const last = Number(sessionStorage.getItem(k) || "0");
-        if (Date.now() - last < 30000) return; // 30s cooldown — loop guard
-        sessionStorage.setItem(k, String(Date.now()));
-      } catch {
-        /* ignore */
-      }
-      window.location.reload();
-    };
-
-    const onErr = (e: ErrorEvent) => {
-      // 1) Dynamic import / module script failures (ErrorEvent with a message)
-      const m = e.message || "";
-      if (
-        /Failed to fetch dynamically imported module|ChunkLoadError|loading chunk|Importing a module script failed/i.test(
-          m
-        )
-      ) {
-        reloadWithCooldown();
-        return;
-      }
-      // 2) Classic <script>/<link> resource load failures ("Loading failed for
-      //    the <script>...") — in dev (Turbopack) stale HTML purane chunk URLs
-      //    reference karta hai jo recompile ke baad missing ho jate hain. Ye
-      //    error events bubble nahi karte, sirf CAPTURE phase me window tak
-      //    pahuchte hain — isliye addEventListener(..., true) zaroori hai.
-      //    favicon/icons ko skip (unka fail harmless hai).
-      if (e.target instanceof HTMLScriptElement) {
-        reloadWithCooldown();
-        return;
-      }
-      if (e.target instanceof HTMLLinkElement) {
-        const rel = e.target.rel || "";
-        if (/stylesheet|modulepreload/i.test(rel)) reloadWithCooldown();
-      }
-    };
-    window.addEventListener("error", onErr, true);
-    return () => window.removeEventListener("error", onErr, true);
-  }, []);
-
-  // Client role → sirf /my-account/* access. Baaki pages par redirect.
-  useEffect(() => {
-    if (profile?.role === "client" && !pathname.startsWith("/my-account")) {
-      router.replace("/my-account");
-    }
-  }, [profile?.role, pathname, router]);
-
-  // LICENSE GATE: profile milne ke baad non-public page par license status fetch.
-  // Login par force=true se central se fresh verify hota hai — seller ke changes
-  // (plan, expiry, revoke) jaldi reflect hote hain. Baad me normal cache interval.
-  useEffect(() => {
-    if (!profile) return;
-    const pub =
-      pathname === "/" ||
-      [
-        "/login",
-        "/about",
-        "/contact",
-        "/job-status",
-        "/stage-lighting",
-        "/industrial",
-        "/power-supply",
-      ].some((p) => pathname === p || pathname.startsWith(p + "/"));
-    if (pub) return;
-    const isFirst = initialLicenseFetch.current;
-    if (isFirst) initialLicenseFetch.current = false;
-    refreshLicense(isFirst);
-  }, [profile, pathname, refreshLicense]);
-
-  // ── Client portal revoked-access check ─────────────────────────────────
-  // login_allowed=false (ya session revoke) → auto-logoff.
-  // TOLERANCE: ek akela 401 network/token-refresh hiccup ho sakta hai —
-  // CONSECUTIVE 2 hi real revoke mane (pehle 1 par turant logout hota tha).
-  const forceClientLogout = useCallback(async (reason: "revoked" | "idle") => {
-    try {
-      await supabase.auth.signOut();
-      invalidateCachedUser();
-    } catch {
-      /* ignore */
-    }
-    // Intentional full reload: client session state clean karna zaroori hai
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.href = "/login?reason=" + reason;
-  }, []);
-
-  useEffect(() => {
-    if (profile?.role !== "client") return;
-    let cancelled = false;
-    let strikes = 0;
-    const check = async () => {
-      try {
-        const res = await fetch("/api/client/me", { cache: "no-store" });
-        if (res.status === 401) {
-          strikes += 1;
-          if (strikes >= REVOKED_401_TOLERANCE && !cancelled) forceClientLogout("revoked");
-        } else {
-          strikes = 0;
-        }
-      } catch {
-        /* network glitch ≠ revoke */
-      }
-    };
-    check();
-    const interval = setInterval(check, REVOKED_CHECK_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [profile?.role, forceClientLogout]);
-
-  // ── UNIFIED IDLE TIMEOUT — sab roles ke liye EK hi mechanism ────────────
-  // Pehle client(10min)/staff(30min) alag timers the → timing uneven thi.
-  // Ab sab IDLE_MS (30 min) par logout, last WARN_BEFORE_MS me warning modal.
-  // Activity localStorage (LAST_ACTIVE_KEY) me mirror hoti hai aur doosre
-  // tabs 'storage' event se sunte hain → MULTI-TAB BUG FIX: tab A idle baithe
-  // jabki aap tab B me kaam kar rahe ho, to tab A ab bhi "active" count hota
-  // hai (pehle tab A khud signOut() bula deta tha).
-  useEffect(() => {
-    if (!profile?.role) return;
-
-    let lastWrite = 0;
-    const resetTimer = () => {
-      lastActiveRef.current = Date.now();
-      if (showIdleWarningRef.current) {
-        showIdleWarningRef.current = false;
-        setShowIdleWarning(false);
-      }
-      const now = Date.now();
-      if (now - lastWrite > 5000) {
-        // har mousemove par localStorage write na karein
-        lastWrite = now;
-        try {
-          localStorage.setItem(LAST_ACTIVE_KEY, String(now));
-        } catch {
-          /* ignore */
-        }
-      }
-    };
-
-    // Doosre tab ne activity report ki → is tab ka timer bhi refresh
-    const onStorage = (e: StorageEvent) => {
-      if (e.key !== LAST_ACTIVE_KEY || !e.newValue) return;
-      lastActiveRef.current = Number(e.newValue) || lastActiveRef.current;
-    };
-
-    const evaluate = () => {
-      const elapsed = Date.now() - lastActiveRef.current;
-      if (elapsed >= IDLE_MS) {
-        supabase.auth.signOut().catch(() => {});
-        invalidateCachedUser();
-        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-        window.location.href = "/login?reason=idle";
-      } else if (elapsed >= IDLE_MS - WARN_BEFORE_MS && !showIdleWarningRef.current) {
-        showIdleWarningRef.current = true;
-        setShowIdleWarning(true);
-      }
-    };
-
-    // Sleep/wake ya tab-switch par turant evaluate (interval ka wait nahi)
-    const onVisible = () => {
-      if (!document.hidden) evaluate();
-    };
-
-    const events: (keyof WindowEventMap)[] = [
-      "mousemove",
-      "keydown",
-      "touchstart",
-      "click",
-      "scroll",
-    ];
-    events.forEach((e) => window.addEventListener(e, resetTimer, { passive: true }));
-    document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("storage", onStorage);
-    resetTimer();
-
-    const interval = setInterval(evaluate, 10_000);
-
-    return () => {
-      events.forEach((e) => window.removeEventListener(e, resetTimer));
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("storage", onStorage);
-      clearInterval(interval);
-      showIdleWarningRef.current = false;
-      setShowIdleWarning(false);
-    };
-  }, [profile?.role]);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 1024);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
-
-  // Theme init + persist + set body bg
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("vtech_theme") as "dark" | "light" | null;
-      const initial = saved || "dark"; // DEFAULT DARK — attribute hamesha SET rahe
-      setTheme(initial); // (pehle null par attribute REMOVE hota tha,
-      document.documentElement.setAttribute("data-theme", initial); // jisse vars light
-      document.body.style.backgroundColor = initial === "dark" ? "#0d1117" : "#f8f9fc"; // + body dark = mix)
-      document.body.style.color = initial === "dark" ? "#e2e8f0" : "#0f172a";
-    } catch {
-      document.documentElement.setAttribute("data-theme", "dark");
-    }
-  }, []);
-
-  // Public site is hardcoded dark-only. Saved light theme public par apply
-  // mat karo — warna globals.css ke `html[data-theme="light"]` overrides public
-  // ke dark colors par chal jate hain (text near-black on dark navy = unreadable).
-  // Pehle attribute REMOVE hota tha — jisse vars LIGHT ho jate the jabki page
-  // hardcoded DARK tha = wahi mix bug. Ab explicit "dark" set karte hain:
-  // saved-light bhi leak nahi hota aur poora DOM coherent dark rehta hai.
-  useEffect(() => {
-    const pub =
-      pathname === "/" ||
-      [
-        "/login",
-        "/setup",
-        "/about",
-        "/contact",
-        "/job-status",
-        "/stage-lighting",
-        "/industrial",
-        "/power-supply",
-      ].some((p) => pathname === p || pathname.startsWith(p + "/"));
-    try {
-      if (pub) {
-        document.documentElement.setAttribute("data-theme", "dark");
-        document.body.style.backgroundColor = "#070714";
-        document.body.style.color = "#e2e8f0";
-        setTheme("dark");
-      } else {
-        const saved = localStorage.getItem("vtech_theme") as "dark" | "light" | null;
-        const t = saved || "dark";
-        document.documentElement.setAttribute("data-theme", t);
-        document.body.style.backgroundColor = t === "dark" ? "#0d1117" : "#f8f9fc";
-        document.body.style.color = t === "dark" ? "#e2e8f0" : "#0f172a";
-        setTheme(t);
-      }
-    } catch {
-      // ignore
-    }
-  }, [pathname]);
-
-  const toggleTheme = useCallback(() => {
-    setTheme((prev) => {
-      const next = (prev || "dark") === "dark" ? "light" : "dark";
-      try {
-        localStorage.setItem("vtech_theme", next);
-      } catch {
-        // ignore
-      }
-      document.documentElement.setAttribute("data-theme", next);
-      // Set body inline styles for guaranteed effect
-      document.body.style.backgroundColor = next === "dark" ? "#0d1117" : "#f8f9fc";
-      document.body.style.color = next === "dark" ? "#e2e8f0" : "#0f172a";
-      return next;
-    });
-  }, []);
-
-  // Auto-close drawer on route change
-  useEffect(() => {
-    setDrawerOpen(false);
-  }, [pathname]);
-
-  // Public pages — no sidebar, no dashboard chrome. Marketing pages (/, /about,
-  // /contact, /job-status, services) logged-in user bhi dekh sakta hai — sidebar
-  // ke "V-TECH PRO" brand se yahan aata hai, navbar ke "Dashboard" button se wapas.
+  // Public pages — no sidebar, no dashboard chrome.
   const PUBLIC_PAGES = [
     "/login",
     "/setup",
@@ -1679,9 +1229,6 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   const isClient = profile?.role === "client";
 
   // ── LICENSE GATE ──
-  // License invalid (trial mode / expired / disabled) → pura dashboard block,
-  // full-screen gate dikhao jisme admin naya key daal sake. Login hamesha
-  // allowed hai, isliye yahan kabhi deadlock nahi hota.
   if (license && !license.valid) {
     return (
       <LicenseGate
@@ -1694,7 +1241,6 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   }
 
   // ── MODULE ROUTE GUARD ──
-  // Agar current page disabled module ka hai → "Module not available" dikhao.
   if (isAdmin && license?.enabledModules && isRouteDisabled(pathname, license.enabledModules)) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#0d1117]">
