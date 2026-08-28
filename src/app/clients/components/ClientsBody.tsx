@@ -35,6 +35,7 @@ import {
   Square,
   Send,
 } from "lucide-react";
+import { safeImageSrc } from "@/lib/image-utils";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { getBalanceMeta, daysSince, inr, type Client } from "./clientListHelpers";
 import dynamic from "next/dynamic";
@@ -653,7 +654,7 @@ export default function ClientsBody({
                       <div className="flex items-start gap-3">
                         {client.image_path ? (
                           <Image
-                            src={client.image_path}
+                            src={safeImageSrc(client.image_path)}
                             alt={client.name}
                             width={56}
                             height={56}
@@ -930,7 +931,7 @@ export default function ClientsBody({
                         <div className="flex items-center gap-2 min-w-0">
                           {client.image_path ? (
                             <Image
-                              src={client.image_path}
+                              src={safeImageSrc(client.image_path)}
                               alt={client.name}
                               width={48}
                               height={48}

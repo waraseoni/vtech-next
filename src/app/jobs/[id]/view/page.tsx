@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { safeBack } from "@/lib/utils";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { safeImageSrc } from "@/lib/image-utils";
 import {
   ArrowLeft,
   Wrench,
@@ -1208,7 +1209,7 @@ ${svcHtml}${prodHtml}
                         {images.map((img) => (
                           <div key={img.id} className="relative group">
                             <Image
-                              src={img.image_path}
+                              src={safeImageSrc(img.image_path)}
                               alt="Item"
                               width={640}
                               height={128}

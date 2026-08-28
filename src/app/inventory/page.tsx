@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { safeImageSrc } from "@/lib/image-utils";
 import { supabase } from "@/lib/supabase";
 import { stockStatusStyle, stockBarColor, alertThreshold, stockValue } from "@/lib/inventory";
 import { locPath } from "@/lib/locations";
@@ -792,7 +793,7 @@ export default function InventoryPage() {
                           <div className="flex items-center gap-3">
                             {p.image_path ? (
                               <Image
-                                src={p.image_path}
+                                src={safeImageSrc(p.image_path)}
                                 alt={p.name}
                                 width={48}
                                 height={48}
@@ -1062,7 +1063,7 @@ export default function InventoryPage() {
                     <div className="flex items-center gap-3 min-w-0">
                       {p.image_path ? (
                         <Image
-                          src={p.image_path}
+                          src={safeImageSrc(p.image_path)}
                           alt={p.name}
                           width={48}
                           height={48}

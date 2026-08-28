@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { safeImageSrc } from "@/lib/image-utils";
 import {
   Search,
   Plus,
@@ -391,7 +392,7 @@ export default function MechanicsBody({
                         <div className="flex items-center gap-3">
                           {m.image_path ? (
                             <Image
-                              src={m.image_path}
+                              src={safeImageSrc(m.image_path)}
                               alt={name}
                               width={36}
                               height={36}

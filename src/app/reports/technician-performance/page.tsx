@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
+import { safeImageSrc } from "@/lib/image-utils";
 import {
   Loader2,
   Wrench,
@@ -191,7 +192,7 @@ export default function TechnicianPerformancePage() {
                     {/* Avatar */}
                     {m.image_path ? (
                       <Image
-                        src={m.image_path}
+                        src={safeImageSrc(m.image_path)}
                         alt={m.name}
                         width={40}
                         height={40}

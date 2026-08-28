@@ -27,6 +27,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { safeImageSrc } from "@/lib/image-utils";
 import { compressImage } from "@/lib/imageCompression";
 import BarcodeCameraScanner from "@/app/components/BarcodeCameraScanner";
 
@@ -472,7 +473,7 @@ export default function ProductsPage() {
                             <div className="flex items-center gap-2">
                               {p.image_path ? (
                                 <Image
-                                  src={p.image_path}
+                                  src={safeImageSrc(p.image_path)}
                                   alt={p.name}
                                   width={48}
                                   height={48}
@@ -603,7 +604,7 @@ export default function ProductsPage() {
                         <div className="flex items-center gap-3 min-w-0">
                           {p.image_path ? (
                             <Image
-                              src={p.image_path}
+                              src={safeImageSrc(p.image_path)}
                               alt={p.name}
                               width={40}
                               height={40}

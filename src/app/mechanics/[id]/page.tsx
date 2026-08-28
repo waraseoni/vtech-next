@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { safeImageSrc } from "@/lib/image-utils";
 import { supabase } from "@/lib/supabase";
 import {
   Loader2,
@@ -448,7 +449,7 @@ export default function MechanicDetailPage() {
           <div className="relative flex-shrink-0">
             {mechanic?.image_path ? (
               <Image
-                src={mechanic.image_path}
+                src={safeImageSrc(mechanic.image_path)}
                 alt={name}
                 width={56}
                 height={56}

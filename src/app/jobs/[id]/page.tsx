@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { safeBack } from "@/lib/utils";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { safeImageSrc } from "@/lib/image-utils";
 import { JOB_STATUS } from "@/lib/status-colors";
 import {
   ArrowLeft,
@@ -883,7 +884,7 @@ ${svcHtml}${prodHtml}
                         {images.map((img) => (
                           <Image
                             key={img.id}
-                            src={img.image_path}
+                            src={safeImageSrc(img.image_path)}
                             alt="Item"
                             width={640}
                             height={80}

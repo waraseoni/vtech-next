@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { safeImageSrc } from "@/lib/image-utils";
 import { supabase } from "@/lib/supabase";
 import { stockStatusStyle, alertThreshold, stockValue } from "@/lib/inventory";
 import {
@@ -493,7 +494,7 @@ export default function ProductDetailPage() {
                 {product.image_path ? (
                   <div className="relative flex-shrink-0">
                     <Image
-                      src={product.image_path}
+                      src={safeImageSrc(product.image_path)}
                       alt={product.name}
                       width={64}
                       height={64}
