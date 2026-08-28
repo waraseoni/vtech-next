@@ -132,5 +132,27 @@ errors). No pre-migration baseline existed for /expenses (not in Session 1 set).
 > (1.98s post) and /mechanics (1.11s). TBT ~1525ms is the remaining cost and is
 > the client JS bundle (lucide + heavy admin UI), not the data path. LCP ~8s is
 > dominated by that bundle too. Bounded fetch-once migrations now done for
-> /clients, /mechanics, /expenses; remaining bounded candidates for future
-> sessions: /payments, /salary, /advance, /inquiries (if list-shaped).
+> /clients, /mechanics, /expenses, /payments; remaining bounded candidates for
+> future sessions: /salary, /advance, /inquiries (if list-shaped).
+
+## Session 5 (28 Aug 2026) — G3: /payments served server-side (cookie+RLS)
+`src/app/payments/page.tsx` → async server component; data at render time via
+`fetchPaymentsPageData()` (cookie+RLS client, **no service role**) — two bounded
+tables (`client_list` active, `client_payments` 1000-cap) fetched server-side.
+Interactive UI (`PaymentsPageInner`) moved to
+`components/PaymentsPageInner.tsx`, a client component receiving
+`{initialClients, initialPayments}` props; `loadData()` re-queries only after
+add/edit/delete (no on-mount double-fetch). Route flipped `○ (Static)` →
+`ƒ (Dynamic)`. Runtime verified SSR parity (HTTP 200, 160KB, data embedded in
+RSC payload — no RLS errors). No pre-migration baseline existed for /payments.
+
+| Route | perf | FCP | LCP | TTI | CLS | SI | TBT |
+|-------|------|-----|-----|-----|-----|-----|-----|
+| /payments (run 1) | 47 | 1.30s | 7.90s | 8.00s | 0.000 | 4.40s | 1540ms |
+| /payments (run 2) | 47 | 1.20s | 8.70s | 8.70s | 0.000 | 4.90s | 1390ms |
+
+> /payments after-state: FCP 1.2-1.3s, TBT 1390-1540ms — consistent with
+> /expenses (FCP 1.1s, TBT 1525ms) and /mechanics (FCP 1.1s, TBT 900ms).
+> All four bounded fetch-once pages now have SSR data in first paint. Remaining
+> bounded candidates: /salary (complex month-scoped aggregation), /advance
+> (date/mechanic filter-driven), /inquiries (if list-shaped).
