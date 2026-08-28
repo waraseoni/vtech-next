@@ -25,6 +25,7 @@ import {
   Eye,
   Trash2,
   MessageSquare,
+  User,
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -40,6 +41,7 @@ const fmtDate = (d: string | null) =>
     : "N/A";
 import { todayIST } from "@/lib/dateUtils";
 import SearchableSelect from "@/components/SearchableSelect";
+import PageLoader from "@/components/PageLoader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Client = {
@@ -398,15 +400,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
     }
   };
 
-  if (loading)
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center theme-body">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
-        <p className="text-[#475569] dark:text-slate-500 font-bold uppercase tracking-[0.3em] text-xs">
-          Loading Client…
-        </p>
-      </div>
-    );
+  if (loading) return <PageLoader icon={User} label="loading client..." tone="cyan" />;
 
   if (!client) return null;
 

@@ -20,7 +20,9 @@ import {
   UserCog,
   Smartphone,
   X,
+  Briefcase,
 } from "lucide-react";
+import PageLoader from "@/components/PageLoader";
 import { logActivity } from "@/lib/activity";
 import { fetchClientDue, dueLabel } from "@/lib/client-due";
 import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
@@ -699,14 +701,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   // LOADING STATE
   // ─────────────────────────────────────────────────────────────────────────
   if (fetchLoading)
-    return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 bg-[#0d1117]">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
-        <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.3em]">
-          Loading Job…
-        </p>
-      </div>
-    );
+    return <PageLoader icon={Briefcase} label="loading job..." tone="blue" />;
 
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import {
   Settings2,
+  Settings,
   Save,
   Loader2,
   CheckCircle,
@@ -30,6 +31,7 @@ import {
   Camera,
 } from "lucide-react";
 import NotificationSettings from "@/components/NotificationSettings";
+import PageLoader from "@/components/PageLoader";
 
 const inputCls =
   "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
@@ -612,15 +614,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 bg-[#0d1117]">
-        <Loader2 className="animate-spin text-blue-500" size={36} />
-        <p className="text-slate-600 text-xs font-black uppercase tracking-widest">
-          Loading Settings...
-        </p>
-      </div>
-    );
+  if (loading) return <PageLoader icon={Settings} label="loading settings..." tone="blue" />;
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-12">

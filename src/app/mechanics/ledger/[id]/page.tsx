@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
-  Loader2,
   ArrowLeft,
   Calendar,
   Printer,
@@ -15,8 +14,10 @@ import {
   Wallet,
   Info,
   CheckCircle,
+  BookOpen,
   IndianRupee,
 } from "lucide-react";
+import PageLoader from "@/components/PageLoader";
 import Link from "next/link";
 import { format } from "date-fns/format";
 import { startOfMonth } from "date-fns/startOfMonth";
@@ -288,11 +289,7 @@ export default function MechanicLedger() {
   };
 
   if (loading && !mechanic) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0d1117]">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
-      </div>
-    );
+    return <PageLoader icon={BookOpen} label="loading ledger..." tone="blue" />;
   }
 
   const name = mechanic

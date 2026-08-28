@@ -66,7 +66,9 @@ import {
   List,
   MapPin,
   Eraser,
+Briefcase,
 } from "lucide-react";
+import PageLoader from "@/components/PageLoader";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/activity";
@@ -1627,14 +1629,7 @@ function JobsListContent() {
   // instead — otherwise every keystroke unmounts to a full-screen spinner and
   // looks like a page reload.
   if (loading && !hasLoaded) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[80vh] gap-4 bg-[#0d1117]">
-        <Loader2 className="animate-spin text-blue-500" size={44} />
-        <p className="text-slate-600 font-bold uppercase tracking-[0.3em] text-xs">
-          V-TECH: Loading...
-        </p>
-      </div>
-    );
+    return <PageLoader icon={Briefcase} label="v-tech: loading..." tone="blue" />;
   }
 
   // ══════════════════════════════════════════════════════════════════

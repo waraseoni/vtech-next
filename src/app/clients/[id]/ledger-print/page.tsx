@@ -2,8 +2,9 @@
 import React, { useEffect, useState, use, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Printer, X, Filter, ChevronDown, ChevronUp, Calendar, AlertTriangle } from "lucide-react";
+import { Printer, X, Filter, ChevronDown, ChevronUp, Calendar, AlertTriangle, FileText } from "lucide-react";
 import { JOB_STATUS_INLINE } from "@/lib/status-colors";
+import PageLoader from "@/components/PageLoader";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // IST TIMEZONE HELPERS
@@ -563,31 +564,7 @@ ${el.innerHTML}
   // ─────────────────────────────────────────────────────────────────────────
   // LOADING
   // ─────────────────────────────────────────────────────────────────────────
-  if (loading)
-    return (
-      <div
-        className="min-h-screen theme-body flex items-center justify-center"
-        style={{ fontFamily: "Arial,sans-serif" }}
-      >
-        <div style={{ textAlign: "center" }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              border: "3px solid #001f3f",
-              borderTop: "3px solid transparent",
-              borderRadius: "50%",
-              animation: "spin 0.8s linear infinite",
-              margin: "0 auto 12px",
-            }}
-          />
-          <p className="text-slate-500" style={{ fontSize: 13 }}>
-            Loading ledger…
-          </p>
-        </div>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      </div>
-    );
+  if (loading) return <PageLoader icon={FileText} label="loading ledger..." tone="cyan" />;
 
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER

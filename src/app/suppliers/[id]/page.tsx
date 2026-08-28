@@ -21,6 +21,7 @@ import {
   Check,
   AlertCircle,
 } from "lucide-react";
+import PageLoader from "@/components/PageLoader";
 
 const fmtCurrency = (v: number) =>
   `₹${v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -192,12 +193,7 @@ export default function SupplierDetailPage() {
   if (loading) {
     return (
       <AdminPage title="Supplier Details" subtitle="Loading...">
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-12 text-center">
-          <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-          <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">
-            Loading supplier...
-          </p>
-        </div>
+        <PageLoader icon={Truck} label="loading supplier..." tone="emerald" />
       </AdminPage>
     );
   }

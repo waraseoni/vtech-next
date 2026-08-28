@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useParams } from "next/navigation";
-import { Save, ArrowLeft, UserPlus, Loader2, Edit3, CheckCircle2, AlertCircle } from "lucide-react";
+import { Save, ArrowLeft, UserPlus, UserCog, Loader2, Edit3, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { safeBack } from "@/lib/utils";
+import PageLoader from "@/components/PageLoader";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STYLE CONSTANTS (dark theme)
@@ -218,15 +219,7 @@ export default function ManageClientPage() {
   };
 
   // ── LOADING STATE ───────────────────────────────────────────────────────
-  if (fetchLoading)
-    return (
-      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
-        <p className="text-slate-500 text-xs font-extrabold uppercase tracking-[0.3em]">
-          Loading Client…
-        </p>
-      </div>
-    );
+  if (fetchLoading) return <PageLoader icon={UserCog} label="loading client..." tone="cyan" />;
 
   // ── RENDER ──────────────────────────────────────────────────────────────
   return (

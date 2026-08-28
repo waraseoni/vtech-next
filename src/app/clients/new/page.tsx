@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { logActivity } from "@/lib/activity";
 import { safeBack } from "@/lib/utils";
+import PageLoader from "@/components/PageLoader";
 
 // ── DARK THEME CONSTANTS ──────────────────────────────────
 const inputCls =
@@ -235,15 +236,7 @@ export default function ManageClientPage() {
   };
 
   // ── LOADING ────────────────────────────────────────────
-  if (fetchLoading)
-    return (
-      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
-        <p className="text-slate-500 text-xs font-extrabold uppercase tracking-[0.3em]">
-          Loading Client...
-        </p>
-      </div>
-    );
+  if (fetchLoading) return <PageLoader icon={UserPlus} label="loading client..." tone="cyan" />;
 
   // ── RENDER ─────────────────────────────────────────────
   return (

@@ -18,6 +18,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
+import PageLoader from "@/components/PageLoader";
 
 const inputCls =
   "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all";
@@ -94,12 +95,7 @@ export default function NewUserPage() {
     }
   };
 
-  if (checking)
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center bg-[#0d1117]">
-        <Loader2 className="animate-spin text-blue-500" size={36} />
-      </div>
-    );
+  if (checking) return <PageLoader icon={UserPlus} label="loading users..." tone="blue" />;
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-12">

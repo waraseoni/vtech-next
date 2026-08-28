@@ -22,10 +22,12 @@ import {
   Camera,
   Trash2,
   ImageIcon,
+  UserCog,
 } from "lucide-react";
 import { compressImage } from "@/lib/imageCompression";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import SearchableSelect from "@/components/SearchableSelect";
+import PageLoader from "@/components/PageLoader";
 
 const inputCls =
   "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all";
@@ -239,13 +241,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     }
   };
 
-  if (loading)
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 bg-[#0d1117]">
-        <Loader2 className="animate-spin text-blue-500" size={36} />
-        <p className="text-slate-600 text-xs font-black uppercase tracking-widest">Loading...</p>
-      </div>
-    );
+  if (loading) return <PageLoader icon={UserCog} label="loading user..." tone="blue" />;
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-12">

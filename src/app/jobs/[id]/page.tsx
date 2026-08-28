@@ -32,7 +32,9 @@ import {
   FileText,
   RefreshCw,
   Image as ImageIcon,
+  ClipboardList,
 } from "lucide-react";
+import PageLoader from "@/components/PageLoader";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/activity";
 import { logger } from "@/lib/logger";
@@ -600,14 +602,7 @@ ${svcHtml}${prodHtml}
 
   // ── LOADING ────────────────────────────────────────────────────────────────
   if (loading)
-    return (
-      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-3">
-        <Loader2 className="animate-spin text-blue-700" size={40} />
-        <p className="text-slate-500 font-medium uppercase tracking-widest text-sm animate-pulse">
-          Loading Transaction Details...
-        </p>
-      </div>
-    );
+    return <PageLoader icon={ClipboardList} label="loading transaction..." tone="blue" />;
   if (!job) return null;
 
   const st = STATUS_MAP[job.status] || STATUS_MAP[0];

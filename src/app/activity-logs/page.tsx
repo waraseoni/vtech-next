@@ -15,8 +15,10 @@ import {
   Package,
   ShoppingCart,
   ExternalLink,
+  ScrollText,
 } from "lucide-react";
 import { formatIST } from "@/lib/dateUtils";
+import PageLoader from "@/components/PageLoader";
 import Link from "next/link";
 
 interface LogEntry {
@@ -362,12 +364,7 @@ export default function ActivityLogsPage() {
         {/* Logs Table */}
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl">
           {loading && !hasLoaded ? (
-            <div className="p-20 flex flex-col items-center justify-center gap-4">
-              <Loader2 size={32} className="animate-spin text-blue-500" />
-              <p className="text-slate-600 text-xs font-black uppercase tracking-widest">
-                Fetching Audit Logs...
-              </p>
-            </div>
+            <PageLoader icon={ScrollText} label="fetching audit logs..." tone="blue" />
           ) : (
             <>
               {loading && hasLoaded && (

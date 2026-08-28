@@ -42,6 +42,7 @@ import {
   FileText,
   Camera,
   Loader,
+  UserRound,
   ImageIcon,
 } from "lucide-react";
 
@@ -58,6 +59,7 @@ import { firmVars } from "@/lib/whatsapp";
 import { compressImage } from "@/lib/imageCompression";
 import { JOB_STATUS } from "@/lib/status-colors";
 import JobSpotPicker from "@/components/JobSpotPicker";
+import PageLoader from "@/components/PageLoader";
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -880,14 +882,7 @@ export default function ViewClientProfile() {
 
   // ── LOADING / ERROR ────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 theme-body">
-        <Loader2 className="animate-spin text-blue-400" size={44} />
-        <p className="text-slate-400 font-bold italic uppercase tracking-[0.2em] text-sm">
-          Loading Profile...
-        </p>
-      </div>
-    );
+    return <PageLoader icon={UserRound} label="loading profile..." tone="cyan" />;
   }
   if (error || !client) {
     return (

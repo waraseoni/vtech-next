@@ -23,6 +23,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import PageLoader from "@/components/PageLoader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Profile {
@@ -270,15 +271,7 @@ export default function UsersPage() {
     );
 
   // ─────────────────────────────────────────────────────────────────────────
-  if (loading)
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 bg-[#0d1117]">
-        <Loader2 className="animate-spin text-blue-500" size={36} />
-        <p className="text-slate-600 text-xs font-black uppercase tracking-widest">
-          Loading Users...
-        </p>
-      </div>
-    );
+  if (loading) return <PageLoader icon={Users} label="loading users..." tone="blue" />;
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-12">

@@ -16,7 +16,9 @@ import {
   CheckCircle,
   RefreshCw,
   Users,
+  ClipboardList,
 } from "lucide-react";
+import PageLoader from "@/components/PageLoader";
 import SearchableSelect from "@/components/SearchableSelect";
 
 // ─── IST Helper ───────────────────────────────────────────────────────────────
@@ -228,12 +230,7 @@ export default function BulkEditPage() {
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading)
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 bg-[#0d1117]">
-        <Loader2 className="animate-spin text-blue-500" size={38} />
-        <p className="text-slate-600 text-xs font-black uppercase tracking-widest">Loading...</p>
-      </div>
-    );
+    return <PageLoader icon={ClipboardList} label="loading..." tone="blue" />;
 
   const mechOptions = mechanics.map((m) => ({
     id: m.id,

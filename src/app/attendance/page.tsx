@@ -7,9 +7,10 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase, getCachedUser } from "@/lib/supabase";
-import { Loader2, ClipboardCheck, CalendarDays } from "lucide-react";
+import { Loader2, ClipboardCheck, CalendarDays, CalendarCheck } from "lucide-react";
 import DailyAttendance from "./components/DailyAttendance";
 import MonthlyReport from "./components/MonthlyReport";
+import PageLoader from "@/components/PageLoader";
 
 // ── Inner component uses useSearchParams safely inside Suspense ──
 function AttendanceContent() {
@@ -67,14 +68,7 @@ function AttendanceContent() {
   };
 
   if (loading) {
-    return (
-      <div className="attendance-page min-h-[60vh] flex flex-col items-center justify-center gap-3">
-        <Loader2 className="animate-spin text-blue-500" size={36} />
-        <p className="text-slate-600 text-xs font-extrabold uppercase tracking-[0.25em]">
-          Loading...
-        </p>
-      </div>
-    );
+    return <PageLoader icon={CalendarCheck} label="loading attendance..." tone="blue" />;
   }
 
   return (
