@@ -1,7 +1,7 @@
 import { getServerSupabase } from "@/lib/api-auth";
 import {
   buildDueMaps,
-  balanceFromMaps,
+  computeClientDue,
   JOB_STATUS_DELIVERED,
   LOAN_STATUS_ACTIVE,
 } from "@/lib/client-due";
@@ -48,6 +48,17 @@ type ClientRow = {
   image_path: string | null;
   login_allowed: boolean | null;
 };
+
+type RpcFinancialRow = {
+  client_id: number;
+  repair_billed: number;
+  direct_sales_billed: number;
+  service_paid: number;
+  active_loan_given: number;
+  loan_repaid: number;
+  last_txn_date: string | null;
+};
+
 const toNum = (v: unknown): number => {
   const x = Number(v);
   return Number.isNaN(x) ? 0 : x;
@@ -59,66 +70,70 @@ export type ClientsPageData = {
   userRole: string;
 };
 
-export async function fetchClientsPageData(): Promise<ClientsPageData> {
-  const supabase = await getServerSupabase();
+export type FetchClientsPageOptions = {
+  /** Pass from requireStaffWithRole() to skip a duplicate auth+profile round-trip. */
+  userRole?: string;
+};
 
-  // ─── Batch 1: Parallel — auth/role + firmInfo + client list ──────────────
-  // Teen independent queries ek saath chalao — pehle sequential tha (~600ms),
-  // ab sab parallel (~200ms max).
-  const [roleResult, sysResult, clsResult] = await Promise.all([
-    // 1a. User role (2 chained queries — getUser → profile)
-    (async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return "staff";
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .maybeSingle();
-        return profile?.role ?? "staff";
-      } catch {
-        return "staff";
-      }
-    })(),
-
-    // 1b. system_info — firm vars for WhatsApp templates
-    supabase.from("system_info").select("meta_field, meta_value"),
-
-    // 1c. client_list — all active clients
-    supabase
-      .from("client_list")
-      .select(
-        "id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance, image_path, login_allowed"
-      )
-      .eq("delete_flag", 0),
-  ]);
-
-  const userRole = roleResult as string;
-
-  const firmInfo: Record<string, string> = {};
-  ((sysResult.data as DbRow[] | null) || []).forEach((r) => {
-    firmInfo[String(r.meta_field)] = String(r.meta_value ?? "");
+function buildClientRow(c: ClientRow, fin: RpcFinancialRow | undefined): Client {
+  const ob = toNum(c.opening_balance);
+  const rep = fin ? toNum(fin.repair_billed) : 0;
+  const dir = fin ? toNum(fin.direct_sales_billed) : 0;
+  const svcPaid = fin ? toNum(fin.service_paid) : 0;
+  const loan = fin ? toNum(fin.active_loan_given) : 0;
+  const loanPaid = fin ? toNum(fin.loan_repaid) : 0;
+  const due = computeClientDue({
+    openingBalance: ob,
+    repairBilled: rep,
+    directSalesBilled: dir,
+    servicePaid: svcPaid,
+    activeLoanGiven: loan,
+    loanRepaid: loanPaid,
   });
+  return {
+    id: c.id,
+    name: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ").trim(),
+    contact: c.contact || "",
+    email: c.email || "",
+    address: c.address || "",
+    date_created: c.date_created || "",
+    opening_balance: ob,
+    repair_billed: rep,
+    direct_sales_billed: dir,
+    total_loan_given: loan,
+    total_paid: svcPaid + loanPaid,
+    balance: due.netBalance,
+    last_txn_date: fin?.last_txn_date ? String(fin.last_txn_date) : null,
+    image_path: c.image_path || undefined,
+    login_allowed: !!c.login_allowed,
+  };
+}
 
-  const cls = clsResult.data;
-  if (!cls?.length) {
-    return { clients: [], firmInfo, userRole };
+/** Fast path: one RPC aggregates all financial rows in PostgreSQL (see migration). */
+async function fetchFinancialsViaRpc(
+  supabase: Awaited<ReturnType<typeof getServerSupabase>>
+): Promise<Map<number, RpcFinancialRow> | null> {
+  const { data, error } = await supabase.rpc("get_clients_page_financials");
+  if (error) return null;
+  const map = new Map<number, RpcFinancialRow>();
+  for (const row of (data as RpcFinancialRow[] | null) || []) {
+    const id = toNum(row.client_id);
+    if (id) map.set(id, row);
   }
+  return map;
+}
 
-  const ids = (cls as ClientRow[]).map((c) => c.id);
-
+/** Slow fallback when RPC migration not yet applied — row-by-row fetch + JS aggregate. */
+async function fetchFinancialsLegacy(
+  supabase: Awaited<ReturnType<typeof getServerSupabase>>,
+  ids: number[]
+): Promise<Map<number, RpcFinancialRow>> {
   const inBatches = (arr: number[], size = 400): number[][] => {
     const out: number[][] = [];
     for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
     return out;
   };
 
-  // Loose paginated query helper — same pattern as src/lib/client-due.ts
-  // (structural Postgrest `any`). Generic types yahan fight karte hain; ye pure
-  // data-layer helper hai, isliye any acceptable.
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const selectIn = async (
     table: string,
@@ -143,8 +158,6 @@ export async function fetchClientsPageData(): Promise<ClientsPageData> {
   };
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
-  // ─── Batch 2: Parallel — all 5 financial queries ─────────────────────────
-  // Pehle ye sequential chalti thi (~1500ms+). Ab sab ek saath (~300ms max).
   const [repairs, dirSales, payments, loans, lastTxns] = await Promise.all([
     selectIn(
       "transaction_list",
@@ -178,32 +191,97 @@ export async function fetchClientsPageData(): Promise<ClientsPageData> {
       lastTxnMap[cid] = String(t.date_created);
   });
 
-  const built: Client[] = (cls as ClientRow[]).map((c) => {
-    const ob = toNum(c.opening_balance);
-    const rep = m.repairBilled[c.id] ?? 0,
-      dir = m.directSalesBilled[c.id] ?? 0,
-      svcPaid = m.servicePaid[c.id] ?? 0,
-      loan = m.activeLoanGiven[c.id] ?? 0,
-      loanPaid = m.loanRepaid[c.id] ?? 0;
-    return {
-      id: c.id,
-      name: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ").trim(),
-      contact: c.contact || "",
-      email: c.email || "",
-      address: c.address || "",
-      date_created: c.date_created || "",
-      opening_balance: ob,
-      repair_billed: rep,
-      direct_sales_billed: dir,
-      total_loan_given: loan,
-      total_paid: svcPaid + loanPaid,
-      balance: balanceFromMaps(m, c.id, ob),
-      last_txn_date: lastTxnMap[c.id] || null,
-      image_path: c.image_path || undefined,
-      login_allowed: !!c.login_allowed,
-    };
+  const map = new Map<number, RpcFinancialRow>();
+  for (const id of ids) {
+    map.set(id, {
+      client_id: id,
+      repair_billed: m.repairBilled[id] ?? 0,
+      direct_sales_billed: m.directSalesBilled[id] ?? 0,
+      service_paid: m.servicePaid[id] ?? 0,
+      active_loan_given: m.activeLoanGiven[id] ?? 0,
+      loan_repaid: m.loanRepaid[id] ?? 0,
+      last_txn_date: lastTxnMap[id] || null,
+    });
+  }
+  return map;
+}
+
+/** meta_field keys the /clients page actually needs (firm vars + WA templates). */
+const FIRM_INFO_KEYS = [
+  "name",
+  "contact",
+  "address",
+  "owner",
+  "whatsapp_welcome",
+  "whatsapp_reminder",
+  "whatsapp_followup",
+  "whatsapp_offer",
+  "whatsapp_greeting",
+  "wp_default_whatsapp_welcome",
+  "wp_default_whatsapp_reminder",
+  "wp_default_whatsapp_followup",
+  "wp_default_whatsapp_offer",
+  "wp_default_whatsapp_greeting",
+];
+
+export async function fetchClientsPageData(
+  options: FetchClientsPageOptions = {}
+): Promise<ClientsPageData> {
+  const supabase = await getServerSupabase();
+
+  const finPromise = fetchFinancialsViaRpc(supabase).catch(() => null);
+
+  const [userRole, sysResult, clsResult, finResult] = await Promise.all([
+    options.userRole
+      ? Promise.resolve(options.userRole)
+      : (async () => {
+          try {
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
+            if (!user) return "staff";
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("role")
+              .eq("id", user.id)
+              .maybeSingle();
+            return profile?.role ?? "staff";
+          } catch {
+            return "staff";
+          }
+        })(),
+
+    supabase
+      .from("system_info")
+      .select("meta_field, meta_value")
+      .in("meta_field", FIRM_INFO_KEYS),
+
+    supabase
+      .from("client_list")
+      .select(
+        "id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance, image_path, login_allowed"
+      )
+      .eq("delete_flag", 0),
+
+    finPromise,
+  ]);
+
+  const firmInfo: Record<string, string> = {};
+  ((sysResult.data as DbRow[] | null) || []).forEach((r) => {
+    firmInfo[String(r.meta_field)] = String(r.meta_value ?? "");
   });
 
+  const cls = clsResult.data;
+  if (!cls?.length) {
+    return { clients: [], firmInfo, userRole };
+  }
+
+  const clientRows = cls as ClientRow[];
+  const ids = clientRows.map((c) => c.id);
+
+  const finMap = finResult ?? (await fetchFinancialsLegacy(supabase, ids));
+
+  const built = clientRows.map((c) => buildClientRow(c, finMap.get(c.id)));
   built.sort((a, b) => b.balance - a.balance);
 
   return { clients: built, firmInfo, userRole };

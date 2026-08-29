@@ -40,6 +40,15 @@ export async function requireUser() {
 }
 
 export async function requireStaff() {
+  const session = await requireStaffWithRole();
+  return session?.user ?? null;
+}
+
+/** Single round-trip auth + role — use on server pages that also need role. */
+export async function requireStaffWithRole(): Promise<{
+  user: NonNullable<Awaited<ReturnType<typeof requireUser>>>;
+  role: string;
+} | null> {
   const supabase = await getServerSupabase();
   try {
     const {
@@ -51,9 +60,9 @@ export async function requireStaff() {
       .select("role")
       .eq("id", user.id)
       .maybeSingle();
-    if (profile?.role !== "admin" && profile?.role !== "staff" && profile?.role !== "developer")
-      return null;
-    return user;
+    const role = profile?.role ?? "staff";
+    if (role !== "admin" && role !== "staff" && role !== "developer") return null;
+    return { user, role };
   } catch {
     return null;
   }

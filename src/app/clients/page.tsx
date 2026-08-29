@@ -1,4 +1,4 @@
-import { requireStaff } from "@/lib/api-auth";
+import { requireStaffWithRole } from "@/lib/api-auth";
 import { redirect } from "next/navigation";
 import { fetchClientsPageData } from "@/lib/server-clients";
 import ClientsBody from "./components/ClientsBody";
@@ -9,10 +9,12 @@ import ClientsBody from "./components/ClientsBody";
 export const dynamic = "force-dynamic";
 
 export default async function ClientsPage() {
-  const user = await requireStaff();
-  if (!user) redirect("/login");
+  const session = await requireStaffWithRole();
+  if (!session) redirect("/login");
 
-  const { clients, firmInfo, userRole } = await fetchClientsPageData();
+  const { clients, firmInfo, userRole } = await fetchClientsPageData({
+    userRole: session.role,
+  });
 
   return <ClientsBody clients={clients} firmInfo={firmInfo} userRole={userRole} />;
 }
