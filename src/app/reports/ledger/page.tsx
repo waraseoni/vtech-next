@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { BarChart3 } from "lucide-react";
 import LedgerReportClient from "./client";
+import PageLoader from "@/components/PageLoader";
 
 export const metadata = {
   title: "Business Ledger & Cash Flow — V-TECH",
@@ -24,19 +25,7 @@ export default async function LedgerReportPage({
   return (
     <div className="min-h-screen bg-[#0d1117]">
       <Suspense
-        fallback={
-          <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                <BarChart3 size={28} className="text-emerald-500/60" />
-              </div>
-              <div className="absolute inset-0 rounded-2xl border border-emerald-500/40 animate-ping" />
-            </div>
-            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-[0.3em]">
-              Loading Ledger Report...
-            </p>
-          </div>
-        }
+        fallback={<PageLoader icon={BarChart3} label="Loading Ledger Report..." tone="emerald" />}
       >
         <LedgerReportClient fromDate={from} toDate={to} />
       </Suspense>

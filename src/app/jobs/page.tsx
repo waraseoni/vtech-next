@@ -66,7 +66,7 @@ import {
   List,
   MapPin,
   Eraser,
-Briefcase,
+  Briefcase,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 import JobSpotPicker from "@/components/JobSpotPicker";

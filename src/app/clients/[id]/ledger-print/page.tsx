@@ -2,7 +2,16 @@
 import React, { useEffect, useState, use, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Printer, X, Filter, ChevronDown, ChevronUp, Calendar, AlertTriangle, FileText } from "lucide-react";
+import {
+  Printer,
+  X,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  AlertTriangle,
+  FileText,
+} from "lucide-react";
 import { JOB_STATUS_INLINE } from "@/lib/status-colors";
 import PageLoader from "@/components/PageLoader";
 

@@ -687,8 +687,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
   // ─────────────────────────────────────────────────────────────────────────
   // LOADING STATE
   // ─────────────────────────────────────────────────────────────────────────
-  if (fetchLoading)
-    return <PageLoader icon={Briefcase} label="loading job..." tone="blue" />;
+  if (fetchLoading) return <PageLoader icon={Briefcase} label="loading job..." tone="blue" />;
 
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER

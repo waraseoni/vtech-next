@@ -23,6 +23,7 @@ import {
   Plus,
 } from "lucide-react";
 import InquiryModal from "./components/InquiryModal";
+import PageLoader from "@/components/PageLoader";
 
 import { formatIST, parseISTDate, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
 
@@ -193,19 +194,7 @@ function InquiriesPageInner() {
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4">
-        <div className="relative">
-          <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-            <MessageSquare size={28} className="text-blue-500/60" />
-          </div>
-          <div className="absolute inset-0 rounded-2xl border border-blue-500/40 animate-ping" />
-        </div>
-        <p className="text-slate-600 text-xs font-extrabold uppercase tracking-[0.3em]">
-          Loading Inquiries...
-        </p>
-      </div>
-    );
+    return <PageLoader icon={MessageSquare} label="Loading Inquiries..." tone="blue" />;
   }
 
   // ══════════════════════════════════════════════════════════════════════════

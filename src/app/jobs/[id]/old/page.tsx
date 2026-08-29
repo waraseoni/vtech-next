@@ -430,8 +430,7 @@ export default function ManageJobPage() {
   };
 
   // ── Loading ─────────────────────────────────────────────────────────────────
-  if (loading)
-    return <PageLoader icon={ClipboardList} label="loading..." tone="blue" />;
+  if (loading) return <PageLoader icon={ClipboardList} label="loading..." tone="blue" />;
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (

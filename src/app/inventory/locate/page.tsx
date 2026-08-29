@@ -32,6 +32,7 @@ import {
   FileText,
   Link as LinkIcon,
 } from "lucide-react";
+import PageLoader from "@/components/PageLoader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type LocGroup = {
@@ -490,19 +491,7 @@ export default function LocatePage() {
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4">
-        <div className="relative">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-            <MapPin size={28} className="text-emerald-500/60" />
-          </div>
-          <div className="absolute inset-0 rounded-2xl border border-emerald-500/40 animate-ping" />
-        </div>
-        <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.3em]">
-          Locating Spares...
-        </p>
-      </div>
-    );
+    return <PageLoader icon={MapPin} label="Locating Spares..." tone="emerald" />;
   }
 
   const st = (p: ProductLoc): StockStatusStyle => stockStatusStyle(p.available, p.alert_quantity);

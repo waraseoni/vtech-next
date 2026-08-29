@@ -29,6 +29,7 @@ import {
 import { todayIST, startOfMonthIST, endOfMonthIST, formatIST, parseISTDate } from "@/lib/dateUtils";
 import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
+import PageLoader from "@/components/PageLoader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DirectSale {
@@ -391,19 +392,7 @@ function DirectSalesPageInner() {
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4">
-        <div className="relative">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-            <ShoppingBag size={28} className="text-emerald-500/60" />
-          </div>
-          <div className="absolute inset-0 rounded-2xl border border-emerald-500/40 animate-ping" />
-        </div>
-        <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.3em]">
-          Loading Sales...
-        </p>
-      </div>
-    );
+    return <PageLoader icon={ShoppingBag} label="Loading Sales..." tone="emerald" />;
   }
 
   const monthLabel = formatIST(dateFrom, { month: "long", year: "numeric" });

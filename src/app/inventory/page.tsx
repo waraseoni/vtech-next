@@ -31,6 +31,7 @@ import {
   Plus,
 } from "lucide-react";
 import QuickScanModal from "./components/QuickScanModal";
+import PageLoader from "@/components/PageLoader";
 import {
   printBarcodeLabels,
   safeBarcode,
@@ -429,19 +430,7 @@ export default function InventoryPage() {
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4">
-        <div className="relative">
-          <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-            <Package size={28} className="text-blue-500/60" />
-          </div>
-          <div className="absolute inset-0 rounded-2xl border border-blue-500/40 animate-ping" />
-        </div>
-        <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.3em]">
-          Loading Inventory...
-        </p>
-      </div>
-    );
+    return <PageLoader icon={Package} label="Loading Inventory..." tone="blue" />;
   }
 
   // ══════════════════════════════════════════════════════════════════════════

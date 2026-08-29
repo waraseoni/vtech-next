@@ -12,10 +12,7 @@ import type { LucideIcon } from "lucide-react";
 
 type Tone = "blue" | "emerald" | "amber" | "purple" | "rose" | "cyan";
 
-const TONES: Record<
-  Tone,
-  { box: string; icon: string; ring: string }
-> = {
+const TONES: Record<Tone, { box: string; icon: string; ring: string }> = {
   blue: {
     box: "bg-blue-500/10 border-blue-500/20",
     icon: "text-blue-500/60",

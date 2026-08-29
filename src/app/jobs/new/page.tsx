@@ -700,8 +700,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   // ─────────────────────────────────────────────────────────────────────────
   // LOADING STATE
   // ─────────────────────────────────────────────────────────────────────────
-  if (fetchLoading)
-    return <PageLoader icon={Briefcase} label="loading job..." tone="blue" />;
+  if (fetchLoading) return <PageLoader icon={Briefcase} label="loading job..." tone="blue" />;
 
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER

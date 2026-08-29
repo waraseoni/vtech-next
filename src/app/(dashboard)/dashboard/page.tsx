@@ -51,6 +51,7 @@ import {
   Layers,
 } from "lucide-react";
 import { pageAll } from "@/lib/fetch-all";
+import PageLoader from "@/components/PageLoader";
 import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
 import LicenseInfoCard from "@/app/components/LicenseInfoCard";
 import { logger } from "@/lib/logger";
@@ -863,19 +864,7 @@ export default function Dashboard() {
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 theme-body">
-        <div className="relative">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-600/40">
-            <Wrench className="text-slate-900 dark:text-white" size={30} />
-          </div>
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-white dark:border-[#0d1117] animate-ping" />
-        </div>
-        <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.35em]">
-          V-TECH Loading…
-        </p>
-      </div>
-    );
+    return <PageLoader icon={Wrench} label="V-TECH Loading..." tone="blue" />;
   }
 
   // Logged out — RootClient already redirects to /login. Guard here too

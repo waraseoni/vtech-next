@@ -229,8 +229,7 @@ export default function BulkEditPage() {
   };
 
   // ── Loading ────────────────────────────────────────────────────────────────
-  if (loading)
-    return <PageLoader icon={ClipboardList} label="loading..." tone="blue" />;
+  if (loading) return <PageLoader icon={ClipboardList} label="loading..." tone="blue" />;
 
   const mechOptions = mechanics.map((m) => ({
     id: m.id,
