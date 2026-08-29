@@ -65,6 +65,12 @@ async function prompt(q) {
   ok("transaction_list → 0 rows", r.count === 0 || r.status === 401, `status=${r.status}, rows=${r.count}`);
   r = await restGet(null, "client_payments", "select=*&limit=1");
   ok("client_payments → 0 rows", r.count === 0 || r.status === 401, `status=${r.status}, rows=${r.count}`);
+  // Location tables (20260912 fix) — anon ke liye 0 rows + INSERT blocked.
+  const locTables = ["locations", "location_zones", "location_racks", "location_bins", "location_boxes"];
+  for (const lt of locTables) {
+    r = await restGet(null, lt, "select=*&limit=1");
+    ok(`${lt} → anon 0 rows`, r.count === 0 || r.status === 401, `status=${r.status}, rows=${r.count}`);
+  }
 
   // ── [2] Staff session can read ───────────────────────────────────────────
   console.log("\n[2] Staff/Admin session — read allowed hona chahiye");

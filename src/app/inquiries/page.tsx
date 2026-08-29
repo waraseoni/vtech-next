@@ -114,15 +114,6 @@ function InquiriesPageInner() {
       const { data, error } = await q;
       if (error) throw error;
       setInquiries(data || []);
-
-      // All-time unread badge (separate lightweight query)
-      const { data: atData } = await supabase.from("message_list").select("status");
-      if (atData) {
-        setAllTimeStats({
-          total: atData.length,
-          unread: atData.filter((r) => r.status === 0).length,
-        });
-      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -133,6 +124,26 @@ function InquiriesPageInner() {
   useEffect(() => {
     fetchInquiries();
   }, [fetchInquiries]);
+
+  // All-time unread badge — sirf mount par ek baar (filter change par nahi).
+  // Pehle ye `fetchInquiries` ke andar tha → har filter change par ek extra
+  // full `select("status")` round-trip aata tha. Ab standalone + fetch-once.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { count: total } = await supabase
+        .from("message_list")
+        .select("status", { count: "exact", head: true });
+      const { count: unread } = await supabase
+        .from("message_list")
+        .select("status", { count: "exact", head: true })
+        .eq("status", 0);
+      if (!cancelled) setAllTimeStats({ total: total || 0, unread: unread || 0 });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleDelete = async (id: number) => {
     if (!confirm("Is inquiry ko permanently delete karna chahte hain?")) return;

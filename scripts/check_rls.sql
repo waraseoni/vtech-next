@@ -42,6 +42,26 @@ select
   exists(select 1 from information_schema.columns
          where table_schema='public' and table_name='profiles' and column_name='client_id') as profiles_client_id;
 
+-- ── 6.5) Location tables RLS (20260912 fix) ────────────────────────────────
+-- RLS ON + staff-gated policy (`is_frontend_staff`) honi chahiye — ab koi
+-- `to public` / `using (true)` policy nahi honi chahiye (warna anon leak).
+select
+  relname as table,
+  relrowsecurity as rls_enabled,
+  (select count(*) from pg_policies p
+    where p.schemaname='public' and p.tablename=pg_class.relname
+      and p.roles = '{public}') as public_role_policies
+from pg_class
+where relnamespace = 'public'::regnamespace
+  and relname in ('locations','location_zones','location_racks','location_bins','location_boxes')
+order by relname;
+
+select tablename, policyname, cmd as command, roles, qual, with_check
+from pg_policies
+where schemaname='public'
+  and tablename in ('locations','location_zones','location_racks','location_bins','location_boxes')
+order by tablename, policyname;
+
 -- ── 6) Ab kaunse clients portal ke liye eligible hain ──────────────────────
 -- Valid email + login_allowed=true → inhi se client login kar payega.
 -- ('not given' / phone-number wale emails ko client-emails.cjs se fix karo.)
