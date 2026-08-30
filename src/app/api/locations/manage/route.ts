@@ -5,6 +5,12 @@ import { requireStaff } from "@/lib/api-auth";
 
 const sb = getAdminSupabase();
 
+/** Supabase errors plain object hote hain (Error instance nahi) → .message safely nikalo. */
+function errMsg(e: unknown): string {
+  if (e && typeof e === "object" && "message" in e && !!e.message) return String(e.message);
+  return "Unknown error — server logs check karein";
+}
+
 type Entity = "zones" | "racks" | "bins" | "boxes";
 const TABLE: Record<Entity, string> = {
   zones: "location_zones",
@@ -111,8 +117,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ items });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error("[locations/manage] error:", err);
+    return NextResponse.json({ error: errMsg(err) }, { status: 500 });
   }
 }
 
@@ -129,7 +135,16 @@ export async function POST(request: NextRequest) {
 
     const row: Record<string, unknown> = { name: name.trim(), status: 1, delete_flag: 0 };
     const fk = PARENT_FK[tab];
-    if (fk && parent_id) row[fk] = parent_id;
+    if (fk) {
+      if (!parent_id)
+        return NextResponse.json(
+          {
+            error: `${tab.replace(/s$/, "")} ke liye parent select karna zaroori hai`,
+          },
+          { status: 400 }
+        );
+      row[fk] = parent_id;
+    }
 
     const { data, error } = await sb.from(TABLE[tab]).insert(row).select("id").single();
     if (error) {
@@ -140,8 +155,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ id: data.id });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error("[locations/manage] error:", err);
+    return NextResponse.json({ error: errMsg(err) }, { status: 500 });
   }
 }
 
@@ -161,8 +176,8 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error("[locations/manage] error:", err);
+    return NextResponse.json({ error: errMsg(err) }, { status: 500 });
   }
 }
 
@@ -191,8 +206,8 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error("[locations/manage] error:", err);
+    return NextResponse.json({ error: errMsg(err) }, { status: 500 });
   }
 }
 

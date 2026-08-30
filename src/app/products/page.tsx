@@ -382,9 +382,9 @@ export default function ProductsPage() {
     <AdminPage title="Products" subtitle="Product catalog management">
       {/* Header */}
       <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div className="relative">
+        <div className="px-5 py-3.5 border-b border-[#21293d] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-[180px]">
               <Search
                 size={14}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
@@ -400,7 +400,7 @@ export default function ProductsPage() {
               {filtered.length} of {rows.length} products
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Link
               href="/inventory"
               className="flex items-center gap-1.5 px-3 py-2 bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-bold transition-all"
@@ -789,8 +789,9 @@ export default function ProductsPage() {
                 <X size={16} />
               </button>
             </div>
-            <form onSubmit={handleSave} className="p-5 space-y-4 overflow-y-auto min-h-0">
-              {formErr && (
+            <form onSubmit={handleSave} className="flex flex-col min-h-0">
+              <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
+                {formErr && (
                 <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs">
                   <AlertCircle size={14} /> {formErr}
                 </div>
@@ -1162,7 +1163,8 @@ export default function ProductsPage() {
                   </p>
                 )}
               </div>
-              <div className="flex gap-3 pt-2">
+              </div>
+              <div className="flex-shrink-0 flex gap-3 p-5 pt-4 border-t border-[#21293d]">
                 <button
                   type="submit"
                   disabled={saving}

@@ -146,6 +146,18 @@ export default function ProductDetailPage() {
   const [productLocations, setProductLocations] = useState<
     { id: number; zone: string; rack: string; bin: string; box: string }[]
   >([]);
+  const [locSuggestions, setLocSuggestions] = useState<{
+    zone: string[];
+    rack: string[];
+    bin: string[];
+    box: string[];
+  }>({ zone: [], rack: [], bin: [], box: [] });
+  const [locHierarchy, setLocHierarchy] = useState<{
+    zones: { id: number; name: string }[];
+    racks: { id: number; name: string; zone_id: number }[];
+    bins: { id: number; name: string; rack_id: number }[];
+    boxes: { id: number; name: string; bin_id: number }[];
+  }>({ zones: [], racks: [], bins: [], boxes: [] });
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -174,22 +186,33 @@ export default function ProductDetailPage() {
       const prod = prodRes.data as Product | null;
       setProduct(prod);
 
-      const { data: plLocs } = await supabase
-        .from("product_locations")
-        .select("id, locations!inner(zone, rack, bin, box)")
-        .eq("product_id", productId);
-      const mappedLocs = (plLocs || []).map(
-        (row: {
-          id: number;
-          locations: { zone: string; rack: string; bin: string; box: string }[];
-        }) => ({
-          id: row.id,
-          zone: row.locations?.[0]?.zone || "",
-          rack: row.locations?.[0]?.rack || "",
-          bin: row.locations?.[0]?.bin || "",
-          box: row.locations?.[0]?.box || "",
-        })
-      );
+      // `product_locations`/`locations` RLS-gated hain → anon-client khali []
+      // deta hai. Isliye service-role server route se read hota hai.
+      let mappedLocs: {
+        id: number;
+        zone: string;
+        rack: string;
+        bin: string;
+        box: string;
+      }[] = [];
+      try {
+        const res = await fetch(`/api/locations/by-product?ids=${productId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const rows = data?.[productId] || [];
+          mappedLocs = rows.map(
+            (r: { zone?: string; rack?: string; bin?: string; box?: string }, i: number) => ({
+              id: i,
+              zone: r.zone || "",
+              rack: r.rack || "",
+              bin: r.bin || "",
+              box: r.box || "",
+            })
+          );
+        }
+      } catch {
+        mappedLocs = [];
+      }
       setProductLocations(mappedLocs);
 
       const stockInData = stockRes.data || [];
@@ -324,6 +347,38 @@ export default function ProductDetailPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Load existing zone/rack/bin/box options for the location picker dropdowns.
+  // Server route (service-role, RLS-bypass) se — anon-client ab location tables
+  // directly nahi padh sakta (RLS lockdown).
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/locations/options");
+        if (res.ok) {
+          const json = await res.json();
+          if (json && !json.error) {
+            setLocSuggestions({
+              zone: Array.isArray(json.zone) ? json.zone : [],
+              rack: Array.isArray(json.rack) ? json.rack : [],
+              bin: Array.isArray(json.bin) ? json.bin : [],
+              box: Array.isArray(json.box) ? json.box : [],
+            });
+            if (json.hierarchy) {
+              setLocHierarchy({
+                zones: Array.isArray(json.hierarchy.zones) ? json.hierarchy.zones : [],
+                racks: Array.isArray(json.hierarchy.racks) ? json.hierarchy.racks : [],
+                bins: Array.isArray(json.hierarchy.bins) ? json.hierarchy.bins : [],
+                boxes: Array.isArray(json.hierarchy.boxes) ? json.hierarchy.boxes : [],
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load location suggestions", e);
+      }
+    })();
+  }, []);
 
   const handleDeleteStock = async (id: number) => {
     if (!confirm("Delete this stock entry?")) return;
@@ -667,8 +722,8 @@ export default function ProductDetailPage() {
         </div>
 
         {/* ── STOCK LOCATION (Spare Finder) ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#21293d]">
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl">
+          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#21293d] rounded-t-2xl overflow-hidden">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center">
                 <MapPin size={14} className="text-emerald-400" />
@@ -715,57 +770,28 @@ export default function ProductDetailPage() {
                 <LocationPicker
                   value={editLoc}
                   onChange={setEditLoc}
-                  suggestions={{ zone: [], rack: [], bin: [], box: [] }}
+                  suggestions={locSuggestions}
+                  hierarchy={locHierarchy}
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={async () => {
                       setLocSaving(true);
                       try {
-                        const z = editLoc.zone || null;
-                        const r = editLoc.rack || null;
-                        const b = editLoc.bin || null;
-                        const bx = editLoc.box || null;
-
-                        let locationId: number | null = null;
-
-                        if (z || r || b || bx) {
-                          const { data: existingLoc } = await supabase
-                            .from("locations")
-                            .select("id")
-                            .eq("zone", z || "")
-                            .eq("rack", r || "")
-                            .eq("bin", b || "")
-                            .eq("box", bx || "")
-                            .maybeSingle();
-
-                          if (existingLoc) {
-                            locationId = existingLoc.id;
-                          } else {
-                            const { data: newLoc } = await supabase
-                              .from("locations")
-                              .insert({ zone: z, rack: r, bin: b, box: bx })
-                              .select("id")
-                              .single();
-                            if (newLoc) locationId = newLoc.id;
-                          }
-                        }
-
-                        if (productLocations.length > 0) {
-                          const existing = productLocations[0];
-                          if (locationId !== null) {
-                            await supabase
-                              .from("product_locations")
-                              .update({ location_id: locationId })
-                              .eq("id", existing.id);
-                          } else {
-                            await supabase.from("product_locations").delete().eq("id", existing.id);
-                          }
-                        } else if (locationId !== null) {
-                          await supabase
-                            .from("product_locations")
-                            .insert({ product_id: productId, location_id: locationId });
-                        }
+                        const res = await fetch("/api/locations/assign", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            product_id: productId,
+                            zone: editLoc.zone,
+                            rack: editLoc.rack,
+                            bin: editLoc.bin,
+                            box: editLoc.box,
+                          }),
+                        });
+                        const json = await res.json();
+                        if (!res.ok || !json?.ok)
+                          throw new Error(json?.error || "Save failed");
 
                         await logActivity(
                           "Updated Product Location",

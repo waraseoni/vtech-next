@@ -107,11 +107,6 @@ type MechRow = { id: string; daily_salary: number };
 type LoanRow = { amount_paid: number };
 type ExpenseRow = { amount: number };
 type PartsProductRow = { qty: number; price: number; products: { cost_price?: number }[] };
-type PlLocRow = {
-  product_id: number;
-  locations: { zone: string; rack: string; bin: string; box: string }[];
-};
-
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
@@ -590,18 +585,29 @@ export default function Dashboard() {
           );
 
           const placeMap = new Map<number, string>();
-          // Fetch locations from product_locations + locations tables
+          // `product_locations`/`locations` RLS-gated hain → anon-client khali
+          // [] deta hai. Service-role server route se read hota hai.
           const lowProdIds = (lowProds || []).map((p: { id: number }) => p.id);
           if (lowProdIds.length) {
-            const { data: plLocs } = await supabase
-              .from("product_locations")
-              .select("product_id, locations!inner(zone, rack, bin, box)")
-              .in("product_id", lowProdIds);
-            (plLocs || []).forEach((row: PlLocRow) => {
-              if (placeMap.has(row.product_id)) return;
-              const loc = Array.isArray(row.locations) ? row.locations[0] : row.locations;
+            let plLocsData: Record<string, unknown> = {};
+            try {
+              const res = await fetch(
+                `/api/locations/by-product?ids=${lowProdIds.join(",")}`
+              );
+              if (res.ok) plLocsData = (await res.json()) as Record<string, unknown>;
+            } catch {
+              plLocsData = {};
+            }
+            Object.entries(plLocsData).forEach(([pid, locs]) => {
+              if (placeMap.has(Number(pid))) return;
+              const loc = (Array.isArray(locs) ? locs[0] : locs) as {
+                zone?: string;
+                rack?: string;
+                bin?: string;
+                box?: string;
+              };
               const parts = [loc?.zone, loc?.rack, loc?.bin, loc?.box].filter(Boolean);
-              if (parts.length > 0) placeMap.set(row.product_id, parts.join(" ▸ "));
+              if (parts.length > 0) placeMap.set(Number(pid), parts.join(" ▸ "));
             });
           }
 

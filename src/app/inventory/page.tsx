@@ -145,34 +145,30 @@ export default function InventoryPage() {
           .select("product_id, qty, transaction_id")
           .in("product_id", ids),
         supabase.from("direct_sale_items").select("product_id, qty").in("product_id", ids),
-        supabase
-          .from("product_locations")
-          .select("product_id, locations!inner(id, zone, rack, bin, box)")
-          .in("product_id", ids),
+        // `product_locations`/`locations` RLS-gated hain → anon-client khali []
+        // deta hai. Service-role server route se read hota hai.
+        fetch(`/api/locations/by-product?ids=${ids.join(",")}`).then((r) =>
+          r.ok ? r.json() : Promise.reject()
+        ),
       ]);
 
-      const locMap = new Map<number, { zone: string; rack: string; bin: string; box: string }[]>();
-      (plLocs.data || []).forEach(
-        (row: {
-          product_id: number;
-          locations: {
-            zone: string | null;
-            rack: string | null;
-            bin: string | null;
-            box: string | null;
-          }[];
-        }) => {
-          const loc = row.locations?.[0];
-          const arr = locMap.get(row.product_id) || [];
-          arr.push({
-            zone: loc?.zone ?? "",
-            rack: loc?.rack ?? "",
-            bin: loc?.bin ?? "",
-            box: loc?.box ?? "",
-          });
-          locMap.set(row.product_id, arr);
-        }
-      );
+      const locMap = new Map<
+        number,
+        { zone: string; rack: string; bin: string; box: string }[]
+      >();
+      const plLocsData = (plLocs as Record<string, unknown>) || {};
+      Object.entries(plLocsData).forEach(([pid, locs]) => {
+        const arr = Array.isArray(locs)
+          ? (locs as { zone?: string | null; rack?: string | null; bin?: string | null; box?: string | null }[])
+          : [];
+        const mapped = (arr || []).map((loc) => ({
+          zone: loc?.zone ?? "",
+          rack: loc?.rack ?? "",
+          bin: loc?.bin ?? "",
+          box: loc?.box ?? "",
+        }));
+        if (mapped.length > 0) locMap.set(Number(pid), mapped);
+      });
 
       // Get valid (non-cancelled) transaction IDs once
       const txnIds = [...new Set((jobItemsRes.data || []).map((i) => i.transaction_id))];

@@ -174,35 +174,31 @@ export default function LocatePage() {
       }
       const ids = pl.map((p) => p.id);
 
-      const { data: plLocs } = await supabase
-        .from("product_locations")
-        .select("product_id, locations!inner(id, zone, rack, bin, box)")
-        .in("product_id", ids);
+      // `product_locations`/`locations` RLS-gated hain → anon-client khali []
+      // deta hai. Service-role server route se read hota hai.
+      let plLocsData: Record<string, unknown> = {};
+      try {
+        const res = await fetch(`/api/locations/by-product?ids=${ids.join(",")}`);
+        if (res.ok) plLocsData = (await res.json()) as Record<string, unknown>;
+      } catch {
+        plLocsData = {};
+      }
       const prodLocMap = new Map<
         number,
         { zone: string; rack: string; bin: string; box: string }[]
       >();
-      (plLocs || []).forEach(
-        (row: {
-          product_id: number;
-          locations: {
-            zone: string | null;
-            rack: string | null;
-            bin: string | null;
-            box: string | null;
-          }[];
-        }) => {
-          const loc = row.locations?.[0];
-          const arr = prodLocMap.get(row.product_id) || [];
-          arr.push({
-            zone: loc?.zone || "",
-            rack: loc?.rack || "",
-            bin: loc?.bin || "",
-            box: loc?.box || "",
-          });
-          prodLocMap.set(row.product_id, arr);
-        }
-      );
+      Object.entries(plLocsData).forEach(([pid, locs]) => {
+        const arr = Array.isArray(locs)
+          ? (locs as { zone?: string | null; rack?: string | null; bin?: string | null; box?: string | null }[])
+          : [];
+        const mapped = (arr || []).map((loc) => ({
+          zone: loc?.zone || "",
+          rack: loc?.rack || "",
+          bin: loc?.bin || "",
+          box: loc?.box || "",
+        }));
+        if (mapped.length > 0) prodLocMap.set(Number(pid), mapped);
+      });
 
       const [stockRes, jobRes, saleRes] = await Promise.all([
         supabase
