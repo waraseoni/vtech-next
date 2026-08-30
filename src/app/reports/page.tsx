@@ -60,8 +60,8 @@ const REPORTS: ReportItem[] = [
     isNew: true,
   },
   {
-    title: "Pending Jobs",
-    description: "Track all service jobs currently in progress.",
+    title: "Jobs in Shop",
+    description: "All jobs currently in the workshop — yet to be delivered.",
     href: "/reports/pending-jobs",
     icon: <Clock size={16} />,
     category: "Job Reports",

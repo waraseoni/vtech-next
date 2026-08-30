@@ -1,5 +1,6 @@
 "use client";
 import PWAHead from "../components/PWAHead";
+import LiveClock from "../components/LiveClock";
 import LicenseGate from "../components/LicenseGate";
 import { ImageLightbox, openImageLightbox } from "../components/ImageLightbox";
 import React, { useState, useEffect, useCallback, useRef } from "react";
@@ -40,6 +41,7 @@ import {
   ChevronDown,
   ChevronRight,
   X,
+  ArrowLeft,
   Menu,
   BarChart2,
   RefreshCw,
@@ -1005,7 +1007,7 @@ function SidebarNav({
                       onClick={onNavClick}
                     >
                       <Clock size={12} className="text-amber-400" />
-                      Pending Jobs
+                      Jobs in Shop
                     </Link>
                   </li>
 
@@ -1210,6 +1212,28 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     if (profile && isAuthPage) router.replace("/dashboard");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, pathname]);
+
+  // In-app back: track visited paths so the mobile back button stays inside
+  // the app instead of falling back to browser history (which can exit the site).
+  const appHistoryRef = useRef<string[]>([]);
+  useEffect(() => {
+    const h = appHistoryRef.current;
+    if (h[h.length - 1] !== pathname) {
+      h.push(pathname);
+      if (h.length > 20) h.shift();
+    }
+  }, [pathname]);
+
+  const goInAppBack = useCallback(() => {
+    const h = appHistoryRef.current;
+    h.pop(); // drop current page, land on the previous distinct one
+    const prev = h[h.length - 1];
+    if (prev && prev !== pathname) {
+      router.push(prev);
+    } else {
+      router.push("/dashboard");
+    }
+  }, [pathname, router]);
 
   if (isPublicPage) {
     // Auth pages par logged-in user ko flash na dikhe — blank while redirect.
@@ -1492,6 +1516,9 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               </div>
             </div>
 
+            {/* Live IST clock — desktop/tablet (mobile shows it in a strip below) */}
+            <LiveClock className="hidden md:flex" />
+
             {/* Refresh button — desktop */}
             {isMobile === false && (
               <button
@@ -1602,6 +1629,15 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
           </header>
         )}
 
+        {/* ── Live IST clock — floating pill (mobile only, fixed top-right) ── */}
+        {!isAiPage && (
+          <div className="fixed top-16 right-3 z-30 md:hidden">
+            <div className="shadow-lg shadow-black/40">
+              <LiveClock />
+            </div>
+          </div>
+        )}
+
         {/* ── PAGE CONTENT ── */}
         <main className={`flex-1 ${isAiPage ? "p-0" : "p-3 sm:p-5 theme-body"}`}>
           {isClient && !pathname.startsWith("/my-account") ? (
@@ -1614,6 +1650,18 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
           )}
         </main>
       </div>
+
+      {/* ── Floating in-app back button (mobile) ── */}
+      {!isClient && !isAiPage && (
+        <button
+          onClick={goInAppBack}
+          className="fixed bottom-5 left-4 z-40 md:hidden w-11 h-11 glass border rounded-full flex items-center justify-center text-slate-400 hover:text-white active:scale-95 transition-all shadow-lg"
+          title="Back"
+          aria-label="Back"
+        >
+          <ArrowLeft size={20} />
+        </button>
+      )}
 
       {/* ── AI ASSISTANT RIGHT DRAWER ── */}
       {!isClient && (

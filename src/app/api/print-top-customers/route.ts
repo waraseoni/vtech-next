@@ -2,7 +2,8 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireStaff } from "@/lib/api-auth";
-import { fetchAll } from "@/lib/fetch-all";
+import { fetchAll, pageAll, fetchAllIn } from "@/lib/fetch-all";
+import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
 
 const supabase = getAdminSupabase();
 
@@ -43,9 +44,45 @@ export async function GET(request: NextRequest) {
   const clients = await fetchAll(
     supabase
       .from("client_list")
-      .select("id, firstname, middlename, lastname, contact")
+      .select("id, firstname, middlename, lastname, contact, opening_balance")
       .eq("delete_flag", 0)
   );
+
+  const ids = (clients || []).map((c) => c.id);
+
+  const [{ data: dueRepairs }, { data: dueDirect }, { data: duePmts }, { data: dueLoans }] =
+    await Promise.all([
+      pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
+      fetchAllIn(
+        (ids: number[]) =>
+          supabase.from("direct_sales").select("client_id, total_amount").in("client_id", ids),
+        ids
+      ).then((rows) => ({ data: rows })),
+      fetchAllIn(
+        (ids: number[]) =>
+          supabase
+            .from("client_payments")
+            .select("client_id, amount, discount, loan_id")
+            .in("client_id", ids),
+        ids
+      ).then((rows) => ({ data: rows })),
+      fetchAllIn(
+        (ids: number[]) =>
+          supabase
+            .from("client_loans")
+            .select("id, client_id, total_payable")
+            .in("client_id", ids)
+            .eq("status", 1),
+        ids
+      ).then((rows) => ({ data: rows })),
+    ]);
+
+  const dueMaps = buildDueMaps({
+    repairs: dueRepairs,
+    directSales: dueDirect,
+    payments: duePmts,
+    loans: dueLoans,
+  });
 
   const topRows: {
     client_id: number;
@@ -59,13 +96,14 @@ export async function GET(request: NextRequest) {
 
   for (const c of clients || []) {
     const name = [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ");
+    const openingBalance = c.opening_balance || 0;
 
     const txns = await fetchAll(
       supabase
         .from("transaction_list")
         .select("id, amount, date_created")
         .eq("client_name", c.id)
-        .in("status", [3, 5])
+        .eq("status", 5)
         .gte("date_created", from)
         .lte("date_created", to)
     );
@@ -96,7 +134,7 @@ export async function GET(request: NextRequest) {
         total_jobs: txns?.length || 0,
         total_amount: totalAmt,
         total_payment: totalPmt,
-        current_balance: totalAmt - totalPmt,
+        current_balance: balanceFromMaps(dueMaps, c.id, openingBalance),
       });
     }
   }
@@ -106,7 +144,10 @@ export async function GET(request: NextRequest) {
 
   const grandTotal = rows.reduce((s, r) => s + r.total_amount, 0);
   const grandPayment = rows.reduce((s, r) => s + r.total_payment, 0);
-  const grandBalance = rows.reduce((s, r) => s + r.current_balance, 0);
+  const grandBalance = rows.reduce(
+    (s, r) => s + (r.current_balance > 0 ? r.current_balance : 0),
+    0
+  );
 
   const filterLabel =
     filterType === "monthly"

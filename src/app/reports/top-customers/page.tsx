@@ -6,6 +6,7 @@ import Image from "next/image";
 import { safeImageSrc } from "@/lib/image-utils";
 import { Loader2, Printer, Star, X } from "lucide-react";
 import { todayIST, formatIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0 });
 
@@ -123,19 +124,34 @@ function TopCustomersContent() {
         return list;
       };
 
-      const [clients, allTxns, allPmts, allDirectSales] = await Promise.all([
-        fetchList("client_list", "id, firstname, middlename, lastname, contact, image_path", (q) =>
-          q.eq("delete_flag", 0)
+      const [
+        clients,
+        allTxns,
+        allPmts,
+        allDirectSales,
+        allLoans,
+        dueTxns,
+        dueDirectSales,
+        duePmts,
+      ] = await Promise.all([
+        fetchList(
+          "client_list",
+          "id, firstname, middlename, lastname, contact, image_path, opening_balance",
+          (q) => q.eq("delete_flag", 0)
         ),
         fetchList("transaction_list", "client_name, amount", (q) =>
           q.eq("status", 5).gte("date_created", from).lte("date_created", to)
         ),
-        fetchList("client_payments", "client_id, amount, discount", (q) =>
+        fetchList("client_payments", "client_id, amount, discount, loan_id", (q) =>
           q.gte("payment_date", from.split("T")[0]).lte("payment_date", to.split("T")[0])
         ),
         fetchList("direct_sales", "client_id, total_amount", (q) =>
           q.gte("date_created", from).lte("date_created", to)
         ),
+        fetchList("client_loans", "id, client_id, total_payable", (q) => q.eq("status", 1)),
+        fetchList("transaction_list", "client_name, amount", (q) => q.eq("status", 5)),
+        fetchList("direct_sales", "client_id, total_amount", (q) => q),
+        fetchList("client_payments", "client_id, amount, discount, loan_id", (q) => q),
       ]);
 
       const txnsByClient = new Map<number, { amount: number; count: number }>();
@@ -167,6 +183,13 @@ function TopCustomersContent() {
         pmtsByClient.set(cId, curr);
       }
 
+      const dueMaps = buildDueMaps({
+        repairs: dueTxns,
+        directSales: dueDirectSales,
+        payments: duePmts,
+        loans: allLoans,
+      });
+
       const topRows: TopCustomer[] = [];
       for (const c of clients || []) {
         const tData = txnsByClient.get(c.id);
@@ -177,6 +200,7 @@ function TopCustomersContent() {
 
         if (totalAmt > 0 || totalPmt > 0) {
           const name = [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ");
+          const openingBalance = c.opening_balance || 0;
           topRows.push({
             client_id: c.id,
             customer_name: name,
@@ -185,8 +209,8 @@ function TopCustomersContent() {
             total_jobs: tData?.count || 0,
             total_amount: totalAmt,
             total_payment: totalPmt,
-            opening_balance: 0,
-            current_balance: totalAmt - totalPmt,
+            opening_balance: openingBalance,
+            current_balance: balanceFromMaps(dueMaps, c.id, openingBalance),
           });
         }
       }
@@ -279,7 +303,10 @@ function TopCustomersContent() {
 
   const grandTotal = rows.reduce((s, r) => s + r.total_amount, 0);
   const grandPayment = rows.reduce((s, r) => s + r.total_payment, 0);
-  const grandBalance = rows.reduce((s, r) => s + r.current_balance, 0);
+  const grandBalance = rows.reduce(
+    (s, r) => s + (r.current_balance > 0 ? r.current_balance : 0),
+    0
+  );
 
   const filterLabel =
     filterType === "monthly"
