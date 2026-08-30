@@ -157,10 +157,42 @@ export function useAppBoot() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // ← empty deps: intentional, auth only on mount
 
-  // Brand logo (system_info) — settings mein saved logo sidebar brand mein.
+  // Brand logo — pehle native app first-run setup se (Capacitor plugin), warna DB se.
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      let resolvedLogo: string | null = null;
+      try {
+      // Android app me: first-run setup screen se chuna gayi logo file/URL.
+      type VTechPlugin = { getLogo?: () => Promise<{ logo?: string }> };
+      type CapGlobal = {
+        isNativePlatform?: () => boolean;
+        Plugins?: { VTechBrand?: VTechPlugin };
+      };
+      const cap = (window as unknown as { Capacitor?: CapGlobal }).Capacitor;
+      const isNative = !!(cap && cap.isNativePlatform && cap.isNativePlatform());
+      if (isNative) {
+        try {
+          const plugin = cap?.Plugins?.VTechBrand;
+          if (plugin && typeof plugin.getLogo === "function") {
+            const res = await plugin.getLogo();
+            const val = res?.logo ?? "";
+            if (val) resolvedLogo = String(val);
+          }
+        } catch {
+          /* plugin call fail → industry DB me fallback */
+        }
+      }
+      } catch {
+        /* ignore */
+      }
+
+      if (cancelled) return;
+      if (resolvedLogo) {
+        setBrandLogo(resolvedLogo);
+        return;
+      }
+
       try {
         const { data } = await supabase
           .from("system_info")
