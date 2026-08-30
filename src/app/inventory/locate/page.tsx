@@ -66,11 +66,27 @@ type TreeNode = {
   parts: LocationParts;
   count: number;
   units: number;
-  products: { id: number; name: string; qty: number }[];
+  /** Is exact node par directly assign products (leaf: boxes). */
+  ownProducts: { id: number; name: string; qty: number }[];
+  /** Puri subtree (apne + children recursively) ka de-duplicated aggregate. */
+  allProducts: { id: number; name: string; qty: number }[];
   children: Map<string, TreeNode>;
 };
 
+function mergeProducts(
+  base: Map<number, { id: number; name: string; qty: number }>,
+  list: { id: number; name: string; qty: number }[] | undefined
+) {
+  for (const p of list || []) {
+    const cur = base.get(p.id);
+    if (cur) cur.qty += p.qty;
+    else base.set(p.id, { id: p.id, name: p.name, qty: p.qty });
+  }
+}
+
 // ─── Build location tree from product groups ─────────────────────────────────
+const SEGS = ["zone", "rack", "bin", "box"] as const;
+
 function buildTree(prods: ProductLoc[]): TreeNode {
   const root: TreeNode = {
     key: "",
@@ -80,52 +96,84 @@ function buildTree(prods: ProductLoc[]): TreeNode {
     parts: { ...EMPTY_LOCATION },
     count: 0,
     units: 0,
-    products: [],
+    ownProducts: [],
+    allProducts: [],
     children: new Map(),
   };
-  const segments = [
-    ["zone"],
-    ["zone", "rack"],
-    ["zone", "rack", "bin"],
-    ["zone", "rack", "bin", "box"],
-  ] as const;
+
+  /** Parent ke andar (nested location hierarchy) node get/create. */
+  const upsert = (
+    parent: TreeNode,
+    level: number,
+    parts: LocationParts
+  ): TreeNode => {
+    const key = SEGS.slice(0, level + 1).join("|") + ":" + locPath(parts);
+    let node = parent.children.get(key);
+    if (!node) {
+      node = {
+        key,
+        level,
+        label: parts[SEGS[level]],
+        path: locPath(parts),
+        parts: { ...parts },
+        count: 0,
+        units: 0,
+        ownProducts: [],
+        allProducts: [],
+        children: new Map(),
+      };
+      parent.children.set(key, node);
+    }
+    return node;
+  };
+
+  const addOwn = (
+    node: TreeNode,
+    prod: { id: number; name: string },
+    qty: number
+  ) => {
+    const existing = node.ownProducts.find((x) => x.id === prod.id);
+    if (existing) existing.qty += qty;
+    else node.ownProducts.push({ id: prod.id, name: prod.name, qty });
+  };
 
   for (const p of prods) {
     for (const g of p.groups) {
-      for (const seg of segments) {
-        const parts = { ...EMPTY_LOCATION };
-        seg.forEach((k) => {
-          parts[k] = (g.parts as LocationParts)[k];
-        });
-        const path = locPath(parts);
-        if (!path) continue;
-        const key = seg.join("|") + ":" + path;
-        let node = root.children.get(key);
-        if (!node) {
-          node = {
-            key,
-            level: seg.length - 1,
-            label: parts[seg[seg.length - 1] as keyof LocationParts],
-            path,
-            parts,
-            count: 0,
-            units: 0,
-            products: [],
-            children: new Map(),
-          };
-          root.children.set(key, node);
-        }
-        node.count++;
-        node.units += g.qty;
-        if (seg.length === 4) {
-          const existing = node.products.find((x) => x.id === p.id);
-          if (existing) existing.qty += g.qty;
-          else node.products.push({ id: p.id, name: p.name, qty: g.qty });
-        }
+      let current = root;
+      const occupied: TreeNode[] = [];
+      for (let lvl = 0; lvl < SEGS.length; lvl++) {
+        const name = g.parts[SEGS[lvl]];
+        if (!name) break;
+        const segParts = { ...EMPTY_LOCATION };
+        for (let k = 0; k <= lvl; k++) segParts[SEGS[k]] = g.parts[SEGS[k]];
+        current = upsert(current, lvl, segParts);
+        current.count++;
+        current.units += g.qty;
+        occupied.push(current);
       }
+      // Exact box-level assignment, ya partway (zone/rack/bin-only) assignment —
+      // us deepest node ke ownProducts me daalo taaki us level ka list mile.
+      if (current !== root) addOwn(current, p, g.qty);
     }
   }
+
+  // Post-order: har node ka subtree aggregate (de-duplicated, qty summed).
+  const computeAll = (node: TreeNode) => {
+    const agg = new Map<number, { id: number; name: string; qty: number }>();
+    mergeProducts(agg, node.ownProducts);
+    for (const child of node.children.values()) {
+      computeAll(child);
+      mergeProducts(agg, child.allProducts);
+    }
+    node.allProducts = [...agg.values()];
+  };
+  computeAll(root);
+
   return root;
+}
+
+function sumUnits(list: { id: number; name: string; qty: number }[]) {
+  return list.reduce((s, x) => s + x.qty, 0);
 }
 
 // ─── QR helpers ───────────────────────────────────────────────────────────────
@@ -348,22 +396,17 @@ export default function LocatePage() {
       setTab("tree");
       setExpanded((prev) => {
         const next = new Set(prev);
-        // expand all ancestors
+        // Nested tree ko root se walk karke saare ancestors expand karo.
         const segs = path.split(" ▸ ");
-        let acc = "";
-        for (const s of segs) {
-          acc = acc ? `${acc} ▸ ${s}` : s;
-          const keys = [
-            ["zone"],
-            ["zone", "rack"],
-            ["zone", "rack", "bin"],
-            ["zone", "rack", "bin", "box"],
-          ]
-            .map((k) => `${k.join("|")}:${acc}`)
-            .filter((k) => tree.children.has(k));
-          keys.forEach((k) => next.add(k));
-          // also add full-path node keys
-          next.add(acc);
+        const segParts = { ...EMPTY_LOCATION };
+        let cur: TreeNode = tree;
+        for (let lvl = 0; lvl < segs.length && lvl < SEGS.length; lvl++) {
+          segParts[SEGS[lvl]] = segs[lvl];
+          const key = SEGS.slice(0, lvl + 1).join("|") + ":" + locPath(segParts);
+          const child = cur.children.get(key);
+          if (!child) break;
+          next.add(child.key);
+          cur = child;
         }
         return next;
       });
@@ -1037,7 +1080,6 @@ function RecursiveTree({
     <>
       {nodes.map((node) => {
         const isOpen = expanded.has(node.key);
-        const isLeaf = node.level === 3;
         const hasChildren = node.children.size > 0;
         const isActive = activeLoc === node.path;
         return (
@@ -1050,7 +1092,7 @@ function RecursiveTree({
               }`}
               style={{ marginLeft: node.level * 18 }}
               onClick={() => {
-                if (hasChildren || !isLeaf) {
+                if (hasChildren) {
                   setExpanded((prev) => {
                     const next = new Set(prev);
                     if (next.has(node.key)) next.delete(node.key);
@@ -1072,7 +1114,7 @@ function RecursiveTree({
                   <QrCode size={12} />
                 )}
               </div>
-              {hasChildren || !isLeaf ? (
+              {hasChildren ? (
                 isOpen ? (
                   <ChevronDown size={13} className="text-slate-600 flex-shrink-0" />
                 ) : (
@@ -1087,7 +1129,7 @@ function RecursiveTree({
                 {node.label}
               </div>
               <span className="text-[10px] text-slate-600 font-bold flex-shrink-0">
-                {node.count} prod · {node.units} unit
+                {node.allProducts.length} prod · {sumUnits(node.allProducts)} unit
               </span>
               <button
                 type="button"
@@ -1102,9 +1144,9 @@ function RecursiveTree({
               </button>
             </div>
 
-            {isLeaf && isOpen && node.products.length > 0 && (
+            {node.ownProducts.length > 0 && (
               <div className="space-y-1 py-1" style={{ marginLeft: node.level * 18 + 22 }}>
-                {node.products
+                {[...node.ownProducts]
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map((x) => (
                     <Link
