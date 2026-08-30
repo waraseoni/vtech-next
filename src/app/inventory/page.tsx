@@ -31,6 +31,7 @@ import {
   Plus,
 } from "lucide-react";
 import QuickScanModal from "./components/QuickScanModal";
+import ProductFormModal from "@/components/ProductFormModal";
 import PageLoader from "@/components/PageLoader";
 import {
   printBarcodeLabels,
@@ -106,6 +107,7 @@ export default function InventoryPage() {
   const [printOpts, setPrintOpts] = useState(DEFAULT_PRINT_OPTIONS);
   const [printOpen, setPrintOpen] = useState(false);
   const [printCopies, setPrintCopies] = useState<Record<number, number>>({});
+  const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
@@ -469,6 +471,12 @@ export default function InventoryPage() {
 
             {/* Right: Actions */}
             <div className="flex items-center flex-wrap gap-2">
+              <button
+                onClick={() => setAddOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20"
+              >
+                <Plus size={13} /> Add Product
+              </button>
               <Link
                 href="/inventory/locate"
                 className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
@@ -1331,6 +1339,17 @@ export default function InventoryPage() {
           }}
         />
       )}
+
+      {/* ── ADD PRODUCT MODAL (shared component) ── */}
+      <ProductFormModal
+        open={addOpen}
+        editing={null}
+        onClose={() => setAddOpen(false)}
+        onSaved={() => {
+          setAddOpen(false);
+          fetchProducts();
+        }}
+      />
 
       {/* ── PRINT LABELS MODAL ── */}
       {printOpen && (

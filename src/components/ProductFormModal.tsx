@@ -1,0 +1,755 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  Plus,
+  Edit3,
+  Trash2,
+  X,
+  Loader2,
+  Check,
+  AlertCircle,
+  Package,
+  Camera,
+  ChevronDown,
+  ScanLine,
+  ExternalLink,
+  ImageIcon,
+  Search,
+} from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { compressImage } from "@/lib/imageCompression";
+import BarcodeCameraScanner from "@/app/components/BarcodeCameraScanner";
+
+/**
+ * Reusable Add/Edit Product modal.
+ *
+ * Products page aur Inventory page dono ise use karte hain (single source of
+ * truth). Saari form state, supplier linking, image upload, barcode scan aur
+ * duplicate-check isi component ke andar hai.
+ */
+export type ProductFormValue = {
+  id: number;
+  name: string;
+  description: string;
+  cost_price: number;
+  price: number;
+  hsn: string;
+  barcode: string | null;
+  alert_quantity: number;
+  image_path?: string | null;
+};
+
+interface ProductFormModalProps {
+  open: boolean;
+  /** Add mode ke liye null, edit mode ke liye product. */
+  editing: ProductFormValue | null;
+  onClose: () => void;
+  /** Save hone ke baad call — pages apna data refresh karte hain. */
+  onSaved: () => void | Promise<void>;
+}
+
+const EMPTY_FORM = {
+  name: "",
+  description: "",
+  cost_price: "",
+  price: "",
+  hsn: "",
+  barcode: "",
+  alert_quantity: "",
+};
+
+export default function ProductFormModal({
+  open,
+  editing,
+  onClose,
+  onSaved,
+}: ProductFormModalProps) {
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [formErr, setFormErr] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [barcodeScanning, setBarcodeScanning] = useState(false);
+  const [dupWarn, setDupWarn] = useState<Pick<ProductFormValue, "id" | "name" | "barcode"> | null>(
+    null
+  );
+
+  // Suppliers
+  const [suppliers, setSuppliers] = useState<{ id: number; name: string }[]>([]);
+  const [selectedSuppliers, setSelectedSuppliers] = useState<number[]>([]);
+  const [supplierOpen, setSupplierOpen] = useState(false);
+  const [supplierSearch, setSupplierSearch] = useState("");
+  const supplierRef = useRef<HTMLDivElement>(null);
+
+  // Image
+  const [imgPath, setImgPath] = useState("");
+  const [imgFile, setImgFile] = useState<File | null>(null);
+  const [imgPreview, setImgPreview] = useState("");
+  const [imgSaving, setImgSaving] = useState(false);
+  const [imgRemoved, setImgRemoved] = useState(false);
+  const [imgPopup, setImgPopup] = useState(false);
+  const imgRef = useRef<HTMLInputElement>(null);
+  const imgCamRef = useRef<HTMLInputElement>(null);
+
+  // Reset + seed on open/edit change
+  useEffect(() => {
+    if (!open) return;
+    setFormErr("");
+    setSaving(false);
+    setBarcodeScanning(false);
+    setDupWarn(null);
+    setSelectedSuppliers([]);
+    setSupplierOpen(false);
+    setSupplierSearch("");
+    setImgFile(null);
+    setImgRemoved(false);
+
+    if (editing) {
+      setForm({
+        name: editing.name,
+        description: editing.description || "",
+        cost_price: String(editing.cost_price || ""),
+        price: String(editing.price || ""),
+        hsn: editing.hsn || "",
+        barcode: editing.barcode || "",
+        alert_quantity: String(editing.alert_quantity || ""),
+      });
+      setImgPath(editing.image_path || "");
+      setImgPreview(editing.image_path || "");
+      supabase
+        .from("spare_supplier")
+        .select("supplier_id")
+        .eq("spare_id", editing.id)
+        .then(({ data }) => setSelectedSuppliers((data || []).map((d) => d.supplier_id)));
+    } else {
+      setForm({ ...EMPTY_FORM });
+      setImgPath("");
+      setImgPreview("");
+    }
+  }, [open, editing]);
+
+  // Load suppliers once
+  useEffect(() => {
+    supabase
+      .from("suppliers")
+      .select("id, name")
+      .eq("delete_flag", 0)
+      .eq("status", 1)
+      .order("name")
+      .then(({ data }) => setSuppliers((data || []) as { id: number; name: string }[]));
+  }, []);
+
+  // Outside-click → suppliers dropdown band
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (supplierRef.current && !supplierRef.current.contains(e.target as Node)) {
+        setSupplierOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleImgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    setImgFile(f);
+    setImgPreview(URL.createObjectURL(f));
+    setImgRemoved(false);
+  };
+
+  const removeImg = () => {
+    if (imgFile) {
+      setImgFile(null);
+      setImgPreview(imgPath);
+      setImgRemoved(false);
+    } else {
+      setImgFile(null);
+      setImgPreview("");
+      setImgRemoved(true);
+    }
+  };
+
+  const uploadProductImage = async (productId: number) => {
+    setImgSaving(true);
+    try {
+      const compressed = await compressImage(imgFile!);
+      if (compressed.bytes > 100 * 1024)
+        throw new Error("Image abhi bhi 100KB se bada hai — kam resolution ki photo try karein");
+      const fd = new FormData();
+      fd.append("file", compressed.file);
+      fd.append("productId", String(productId));
+      const res = await fetch("/api/product-image", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.msg || "Upload failed");
+      setImgPath(json.url);
+    } finally {
+      setImgSaving(false);
+    }
+  };
+
+  const removeProductImage = async (productId: number) => {
+    const fd = new FormData();
+    fd.append("productId", String(productId));
+    fd.append("delete", "1");
+    const res = await fetch("/api/product-image", { method: "POST", body: fd });
+    const json = await res.json();
+    if (json.status !== "success") throw new Error(json.msg || "Delete failed");
+    setImgPath("");
+  };
+
+  const syncSuppliers = async (spareId: number) => {
+    await supabase.from("spare_supplier").delete().eq("spare_id", spareId);
+    if (selectedSuppliers.length > 0) {
+      await supabase
+        .from("spare_supplier")
+        .insert(selectedSuppliers.map((supplier_id) => ({ spare_id: spareId, supplier_id })));
+    }
+  };
+
+  const checkBarcodeDuplicate = async (value: string) => {
+    const q = value.trim();
+    if (!q) {
+      setDupWarn(null);
+      return;
+    }
+    const { data } = await supabase
+      .from("product_list")
+      .select("id, name, barcode")
+      .eq("barcode", q)
+      .eq("delete_flag", 0)
+      .neq("id", editing?.id ?? -1)
+      .limit(1)
+      .single();
+    setDupWarn((data as { id: number; name: string; barcode: string | null } | null) ?? null);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim()) {
+      setFormErr("Product name zaroori hai!");
+      return;
+    }
+    if (!form.price || parseFloat(form.price) < 0) {
+      setFormErr("Valid selling price daalo!");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        name: form.name.trim(),
+        description: form.description.trim(),
+        cost_price: parseFloat(form.cost_price) || 0,
+        price: parseFloat(form.price),
+        hsn: form.hsn.trim().toUpperCase(),
+        barcode: form.barcode.trim() || null,
+        alert_quantity: parseInt(form.alert_quantity) || 0,
+        status: 1,
+      };
+      if (editing) {
+        const { error } = await supabase.from("product_list").update(payload).eq("id", editing.id);
+        if (error) throw error;
+        await syncSuppliers(editing.id);
+        if (imgRemoved && imgPath) await removeProductImage(editing.id);
+        if (imgFile) await uploadProductImage(editing.id);
+      } else {
+        const { data: inserted, error } = await supabase
+          .from("product_list")
+          .insert([{ ...payload, image_path: imgPath || "", delete_flag: 0 }])
+          .select("id");
+        if (error) throw error;
+        if (inserted && inserted[0]) {
+          await syncSuppliers(inserted[0].id);
+          if (imgFile) await uploadProductImage(inserted[0].id);
+        }
+      }
+      onClose();
+      await onSaved();
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : err && typeof err === "object" && "message" in err
+            ? String((err as { message?: unknown }).message)
+            : String(err);
+      setFormErr(msg || "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
+          <div className="flex items-center justify-between p-5 border-b border-[#21293d] flex-shrink-0">
+            <h3 className="font-bold text-white flex items-center gap-2">
+              {editing ? (
+                <>
+                  <Edit3 size={16} className="text-blue-400" /> Edit Product
+                </>
+              ) : (
+                <>
+                  <Plus size={16} className="text-blue-400" /> Add Product
+                </>
+              )}
+            </h3>
+            <button
+              onClick={() => {
+                setBarcodeScanning(false);
+                setDupWarn(null);
+                onClose();
+              }}
+              className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <form onSubmit={handleSave} className="flex flex-col min-h-0">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
+              {formErr && (
+                <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs">
+                  <AlertCircle size={14} /> {formErr}
+                </div>
+              )}
+
+              {/* Product Image */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  Product Image
+                </label>
+                <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    {imgPreview ? (
+                      <Image
+                        src={imgPreview}
+                        alt="Product"
+                        width={112}
+                        height={112}
+                        className="w-28 h-28 rounded-xl object-cover border border-[#21293d]"
+                      />
+                    ) : (
+                      <div className="w-28 h-28 rounded-xl bg-white/5 border border-dashed border-[#2a3450] flex items-center justify-center">
+                        <Package size={28} className="text-slate-600" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-[160px]">
+                      <input
+                        ref={imgRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={handleImgChange}
+                        className="hidden"
+                      />
+                      <input
+                        ref={imgCamRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        capture="environment"
+                        onChange={handleImgChange}
+                        className="hidden"
+                      />
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setImgPopup(!imgPopup)}
+                          disabled={imgSaving}
+                          className="text-xs bg-blue-600/20 text-blue-400 border border-blue-600/30 px-3 py-1.5 rounded-lg hover:bg-blue-600/30 transition-all disabled:opacity-50"
+                        >
+                          <span className="inline-flex items-center gap-1.5">
+                            <Camera size={12} /> Choose Image
+                          </span>
+                        </button>
+                        {imgPopup && (
+                          <div className="relative">
+                            <div className="absolute top-full left-0 mt-1 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setImgPopup(false);
+                                  imgCamRef.current?.click();
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors"
+                              >
+                                <Camera size={12} /> Camera
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setImgPopup(false);
+                                  imgRef.current?.click();
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors"
+                              >
+                                <ImageIcon size={12} /> Gallery
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {(imgPreview || imgPath) && (
+                          <button
+                            type="button"
+                            onClick={removeImg}
+                            disabled={imgSaving}
+                            className="text-xs text-red-400 hover:text-red-300 px-3 py-1.5 rounded-lg border border-red-500/30 hover:bg-red-500/10 transition-all disabled:opacity-50"
+                          >
+                            <span className="inline-flex items-center gap-1.5">
+                              <Trash2 size={12} /> {imgFile ? "Cancel" : "Remove"}
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                      {imgFile && (
+                        <p className="text-[10px] text-slate-600 mt-1.5 flex items-center gap-1">
+                          {imgSaving ? (
+                            <>
+                              <Loader2 size={10} className="animate-spin" />
+                              Uploading...
+                            </>
+                          ) : (
+                            "Save karne par image upload hogi"
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  Product Name <span className="text-red-400">*</span>
+                </label>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="e.g. SMPS Board, LED Strip"
+                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                  placeholder="Optional description..."
+                  rows={2}
+                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 resize-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                    Cost Price (₹)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.cost_price}
+                    onChange={(e) => setForm((p) => ({ ...p, cost_price: e.target.value }))}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                    Selling Price (₹) <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.price}
+                    onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                    HSN Code
+                  </label>
+                  <input
+                    value={form.hsn}
+                    onChange={(e) => setForm((p) => ({ ...p, hsn: e.target.value }))}
+                    placeholder="e.g. 8504"
+                    maxLength={20}
+                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                    Barcode{" "}
+                    <span className="normal-case font-semibold text-slate-600">
+                      (sticker scan karke link karein)
+                    </span>
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      value={form.barcode}
+                      onChange={(e) => {
+                        setForm((p) => ({ ...p, barcode: e.target.value }));
+                        if (dupWarn) setDupWarn(null);
+                      }}
+                      onBlur={() => checkBarcodeDuplicate(form.barcode)}
+                      placeholder="Optional barcode"
+                      maxLength={100}
+                      className="flex-1 min-w-0 px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setBarcodeScanning(true)}
+                      className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all border bg-blue-600/15 border-blue-600/30 text-blue-400 hover:bg-blue-600/25"
+                    >
+                      <ScanLine size={13} /> Scan
+                    </button>
+                  </div>
+
+                  {dupWarn && (
+                    <div className="mt-2 flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2.5">
+                      <AlertCircle size={14} className="text-amber-400 flex-shrink-0" />
+                      <p className="text-amber-400 text-xs font-bold flex-1">
+                        Ye barcode already <span className="underline">{dupWarn.name}</span> se
+                        linked hai.
+                      </p>
+                      <Link
+                        href={`/inventory/${dupWarn.id}`}
+                        target="_blank"
+                        className="flex-shrink-0 text-[10px] font-extrabold text-amber-400 hover:text-amber-300 border border-amber-500/30 px-2 py-1 rounded-lg transition-colors"
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          <ExternalLink size={10} /> View
+                        </span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                    Alert Quantity
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.alert_quantity}
+                    onChange={(e) => setForm((p) => ({ ...p, alert_quantity: e.target.value }))}
+                    placeholder="0"
+                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  Linked Suppliers{" "}
+                  <span className="normal-case font-semibold text-slate-600">
+                    (order karne ke liye)
+                  </span>
+                </label>
+                {suppliers.length === 0 ? (
+                  <p className="text-xs text-slate-600 italic">
+                    Koi active supplier nahi — pehle{" "}
+                    <Link href="/suppliers" className="text-blue-400 underline">
+                      Suppliers
+                    </Link>{" "}
+                    me add karein.
+                  </p>
+                ) : (
+                  <div ref={supplierRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setSupplierOpen((o) => !o)}
+                      className="w-full flex items-center justify-between gap-2 px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-left transition-all focus:border-blue-500"
+                    >
+                      <span className="flex items-center gap-1.5 flex-wrap">
+                        {selectedSuppliers.length === 0 ? (
+                          <span className="text-slate-600">Suppliers select karein...</span>
+                        ) : (
+                          <>
+                            {selectedSuppliers.slice(0, 3).map((id) => {
+                              const s = suppliers.find((x) => x.id === id);
+                              return s ? (
+                                <span
+                                  key={id}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-bold"
+                                >
+                                  {s.name}
+                                  <span
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedSuppliers((prev) => prev.filter((x) => x !== id));
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setSelectedSuppliers((prev) =>
+                                          prev.filter((x) => x !== id)
+                                        );
+                                      }
+                                    }}
+                                    className="hover:text-emerald-200 cursor-pointer"
+                                    title="Remove"
+                                  >
+                                    <X size={10} />
+                                  </span>
+                                </span>
+                              ) : null;
+                            })}
+                            {selectedSuppliers.length > 3 && (
+                              <span className="text-[10px] font-bold text-slate-500">
+                                +{selectedSuppliers.length - 3} aur
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </span>
+                      <ChevronDown
+                        size={14}
+                        className={`text-slate-500 flex-shrink-0 transition-transform ${supplierOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
+
+                    {supplierOpen && (
+                      <div className="absolute z-30 mt-2 w-full bg-[#111520] border border-[#21293d] rounded-xl shadow-2xl shadow-black/60 overflow-hidden">
+                        <div className="p-2 border-b border-[#21293d]">
+                          <div className="relative">
+                            <Search
+                              size={13}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                            />
+                            <input
+                              value={supplierSearch}
+                              onChange={(e) => setSupplierSearch(e.target.value)}
+                              placeholder="Supplier dhoondein..."
+                              autoFocus
+                              className="w-full pl-8 pr-3 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto p-1.5">
+                          {(() => {
+                            const list = suppliers.filter((s) =>
+                              s.name.toLowerCase().includes(supplierSearch.toLowerCase())
+                            );
+                            if (list.length === 0) {
+                              return (
+                                <p className="px-3 py-4 text-center text-xs text-slate-600">
+                                  Koi supplier nahi mila
+                                </p>
+                              );
+                            }
+                            return list.map((s) => {
+                              const checked = selectedSuppliers.includes(s.id);
+                              return (
+                                <button
+                                  key={s.id}
+                                  type="button"
+                                  onClick={() =>
+                                    setSelectedSuppliers((prev) =>
+                                      checked ? prev.filter((x) => x !== s.id) : [...prev, s.id]
+                                    )
+                                  }
+                                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${checked ? "bg-emerald-500/10 text-emerald-400" : "text-slate-300 hover:bg-white/5"}`}
+                                >
+                                  <span
+                                    className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border ${checked ? "bg-emerald-500 border-emerald-500 text-white" : "border-[#2a3550]"}`}
+                                  >
+                                    {checked && <Check size={11} />}
+                                  </span>
+                                  {s.name}
+                                </button>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {selectedSuppliers.length > 0 && (
+                  <p className="text-[10px] text-slate-700 mt-1.5">
+                    {selectedSuppliers.length} supplier linked
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex-shrink-0 flex gap-3 p-5 pt-4 border-t border-[#21293d]">
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Check size={14} /> {editing ? "Update" : "Save"}
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Barcode Scan Modal */}
+      {barcodeScanning && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setBarcodeScanning(false)}
+        >
+          <div
+            className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-[#21293d] flex-shrink-0">
+              <h3 className="font-bold text-white flex items-center gap-2 text-sm">
+                <ScanLine size={16} className="text-blue-400" /> Barcode Scan
+              </h3>
+              <button
+                type="button"
+                onClick={() => setBarcodeScanning(false)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1 min-h-0">
+              <BarcodeCameraScanner
+                onScan={(text) => {
+                  setBarcodeScanning(false);
+                  setForm((p) => ({ ...p, barcode: text }));
+                  void checkBarcodeDuplicate(text);
+                }}
+              />
+              <p className="text-[10px] text-slate-600 text-center mt-3">
+                Barcode / QR sticker ko camera ke samne rakhein — auto detect hoke barcode fill
+                hoga.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
