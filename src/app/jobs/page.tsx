@@ -74,6 +74,7 @@ import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/activity";
 import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { safeImageSrc } from "@/lib/image-utils";
 import { JOB_STATUS } from "@/lib/status-colors";
 import { logger } from "@/lib/logger";
 
@@ -167,15 +168,16 @@ const getStatusBadge = (s: number) => {
 
 // Mini client avatar — jobs list cells/cards ke liye (photo ya initials)
 const ClientMiniAvatar = ({ image, name }: { image?: string; name: string }) => {
-  if (image) {
+  const src = safeImageSrc(image);
+  if (src) {
     return (
       <Image
-        src={image}
+        src={src}
         alt={name}
         width={32}
         height={32}
         className="w-8 h-8 rounded-full object-cover flex-shrink-0 cursor-zoom-in border border-white/10"
-        onDoubleClick={() => openImageLightbox(image, name)}
+        onDoubleClick={() => openImageLightbox(src, name)}
         onError={(e) => {
           (e.currentTarget as HTMLImageElement).style.display = "none";
         }}
