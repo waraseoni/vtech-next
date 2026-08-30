@@ -44,6 +44,20 @@ export async function POST(request: NextRequest) {
     let locationId: number | null = null;
 
     if (anySet) {
+      // Kanonical normalized hierarchy se FK ids resolve karo (name ➜ id).
+      // `locations` row tab free-text strings ke SAATH proper FK references
+      // (zone_id/rack_id/bin_id/box_id) rakhta hai — same source of truth.
+      const [zRec, rRec, bRec, xRec] = await Promise.all([
+        sb.from("location_zones").select("id").eq("name", z).eq("delete_flag", 0).maybeSingle(),
+        sb.from("location_racks").select("id").eq("name", r).eq("delete_flag", 0).maybeSingle(),
+        sb.from("location_bins").select("id").eq("name", b).eq("delete_flag", 0).maybeSingle(),
+        sb.from("location_boxes").select("id").eq("name", bx).eq("delete_flag", 0).maybeSingle(),
+      ]);
+      const zone_id = z && zRec?.data?.id ? zRec.data.id : null;
+      const rack_id = r && rRec?.data?.id ? rRec.data.id : null;
+      const bin_id = b && bRec?.data?.id ? bRec.data.id : null;
+      const box_id = bx && xRec?.data?.id ? xRec.data.id : null;
+
       const { data: existing } = await sb
         .from("locations")
         .select("id")
@@ -55,10 +69,16 @@ export async function POST(request: NextRequest) {
 
       if (existing) {
         locationId = existing.id;
+        // Pichle save ke baad hierarchy badli ho to FKs sync rakho.
+        const { error: updErr } = await sb
+          .from("locations")
+          .update({ zone_id, rack_id, bin_id, box_id })
+          .eq("id", existing.id);
+        if (updErr) throw updErr;
       } else {
         const { data: newLoc, error: insErr } = await sb
           .from("locations")
-          .insert({ zone: z, rack: r, bin: b, box: bx })
+          .insert({ zone: z, rack: r, bin: b, box: bx, zone_id, rack_id, bin_id, box_id })
           .select("id")
           .single();
         if (insErr) throw insErr;

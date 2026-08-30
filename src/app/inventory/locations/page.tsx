@@ -6,7 +6,6 @@ import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { LocationParts, locPath, encodeLocationToken } from "@/lib/locations";
 import { logActivity } from "@/lib/activity";
-import Image from "next/image";
 import {
   Search,
   Plus,
@@ -708,7 +707,8 @@ export default function LocationsPage() {
               </button>
             </div>
             <div className="p-6 flex flex-col items-center gap-4">
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={qrUrl(toParts(qrModalLoc))}
                 alt="Location QR"
                 width={200}
