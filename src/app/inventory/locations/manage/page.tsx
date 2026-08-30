@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import AdminPage from "@/app/components/AdminPage";
 import {
   Search,
@@ -28,9 +29,24 @@ type EntityRow = {
   delete_flag: number;
   created_at: string;
   childCount?: number;
-  location_zones?: { name: string } | null;
-  location_racks?: { name: string; zone_id: number } | null;
-  location_bins?: { name: string; rack_id: number } | null;
+  location_zones?: { id: number; name: string } | null;
+  location_racks?: {
+    id: number;
+    name: string;
+    zone_id: number;
+    location_zones?: { id: number; name: string } | null;
+  } | null;
+  location_bins?: {
+    id: number;
+    name: string;
+    rack_id: number;
+    location_racks?: {
+      id: number;
+      name: string;
+      zone_id: number;
+      location_zones?: { id: number; name: string } | null;
+    } | null;
+  } | null;
 };
 
 type AllData = {
@@ -47,7 +63,24 @@ const TABS: { key: Tab; label: string; icon: typeof Layers; parent: Tab | null }
   { key: "boxes", label: "Boxes", icon: Package, parent: "bins" },
 ];
 
+// Har tab ke liye "saare parent" columns — sabse bade ancestor (Zone) se lekar
+// ek-dam parent tak, taaki sequence hamesha Zone → Rack → Bin ho.
+const PARENT_COLS: Record<Tab, { header: string; get: (r: EntityRow) => string }[]> = {
+  zones: [],
+  racks: [{ header: "Zone", get: (r) => r.location_zones?.name || "" }],
+  bins: [
+    { header: "Zone", get: (r) => r.location_racks?.location_zones?.name || "" },
+    { header: "Rack", get: (r) => r.location_racks?.name || "" },
+  ],
+  boxes: [
+    { header: "Zone", get: (r) => r.location_bins?.location_racks?.location_zones?.name || "" },
+    { header: "Rack", get: (r) => r.location_bins?.location_racks?.name || "" },
+    { header: "Bin", get: (r) => r.location_bins?.name || "" },
+  ],
+};
+
 export default function ManageLocationsPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("zones");
   const [allData, setAllData] = useState<AllData>({ zones: [], racks: [], bins: [], boxes: [] });
@@ -76,18 +109,20 @@ export default function ManageLocationsPage() {
     let items = allData[activeTab] || [];
 
     if (tab.parent && parentId) {
-      items = items.filter((r: Record<string, unknown>) => {
-        const parentTable =
-          tab.parent === "zones"
-            ? "location_zones"
-            : tab.parent === "racks"
-              ? "location_racks"
-              : "location_bins";
-        const parentData = r[parentTable] as { name: string } | null | undefined;
-        const allParentItems = allData[tab.parent!];
-        const parentRow = allParentItems?.find((p) => p.name === parentData?.name);
-        return parentRow?.id === parentId;
-      });
+      // Exact parent-id matching (row ke nested parent relation me parent ka id hota
+      // hai). Name-based lookup duplicate names ke saath galat ho jata tha (e.g. do
+      // "SELF 1" bins) — isliye id se match karte hain.
+      const parentTable =
+        tab.parent === "zones"
+          ? "location_zones"
+          : tab.parent === "racks"
+            ? "location_racks"
+            : "location_bins";
+      items = items.filter(
+        (r) =>
+          ((r as Record<string, unknown>)[parentTable] as { id?: number } | null | undefined)?.id ===
+          parentId
+      );
     }
 
     if (search) {
@@ -176,6 +211,35 @@ export default function ManageLocationsPage() {
       body: JSON.stringify({ tab: activeTab, id: row.id, status: row.status === 1 ? 0 : 1 }),
     });
     fetchData();
+  };
+
+  // Children sankhya par click → smart drill-down:
+  // Zones→racks, racks→bins, bins→boxes same page par parent filter set karke;
+  // boxes→products list (Spare Finder locate page) khol deta hai.
+  const handleChildrenClick = (row: EntityRow) => {
+    if (activeTab === "zones") {
+      setActiveTab("racks");
+      setParentId(row.id);
+      setSearch("");
+    } else if (activeTab === "racks") {
+      setActiveTab("bins");
+      setParentId(row.id);
+      setSearch("");
+    } else if (activeTab === "bins") {
+      setActiveTab("boxes");
+      setParentId(row.id);
+      setSearch("");
+    } else if (activeTab === "boxes" && row.childCount) {
+      const parts = {
+        zone: row.location_bins?.location_racks?.location_zones?.name || "",
+        rack: row.location_bins?.location_racks?.name || "",
+        bin: row.location_bins?.name || "",
+        box: row.name || "",
+      };
+      const path = [parts.zone, parts.rack, parts.bin, parts.box].filter(Boolean).join(" ▸ ");
+      if (!path) return;
+      router.push(`/inventory/locate?loc=${encodeURIComponent(path)}`);
+    }
   };
 
   const filtered = getFiltered();
@@ -302,51 +366,44 @@ export default function ManageLocationsPage() {
             <table className="w-full text-sm">
               <thead className="bg-[#111520]">
                 <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                  {tabInfo.parent && (
-                    <th className="text-left px-4 py-3">
-                      {tabInfo.parent.charAt(0).toUpperCase() + tabInfo.parent.slice(1)}
+                  {PARENT_COLS[activeTab].map((c) => (
+                    <th key={c.header} className="text-left px-4 py-3">
+                      {c.header}
                     </th>
-                  )}
+                  ))}
                   <th className="text-left px-4 py-3">Name</th>
-                  {tabInfo.key !== "boxes" && <th className="text-center px-4 py-3">Children</th>}
+                  <th className="text-center px-4 py-3">Children</th>
                   <th className="text-center px-4 py-3">Status</th>
                   <th className="text-center px-4 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1a2234]">
                 {filtered.map((row) => {
-                  let parentName = "";
-                  if (tabInfo.parent === "zones") {
-                    const rd = row as Record<string, unknown>;
-                    const rz = rd.location_zones as { name: string } | null | undefined;
-                    parentName = rz?.name || "";
-                  } else if (tabInfo.parent === "racks") {
-                    const rd = row as Record<string, unknown>;
-                    const rr = rd.location_racks as { name: string } | null | undefined;
-                    parentName = rr?.name || "";
-                  } else if (tabInfo.parent === "bins") {
-                    const rd = row as Record<string, unknown>;
-                    const rb = rd.location_bins as { name: string } | null | undefined;
-                    parentName = rb?.name || "";
-                  }
-
                   return (
                     <tr key={row.id} className="hover:bg-white/[0.02] transition-colors">
-                      {tabInfo.parent && (
-                        <td className="px-4 py-3.5">
-                          <span className="text-xs text-slate-400">{parentName || "—"}</span>
+                      {PARENT_COLS[activeTab].map((c) => (
+                        <td key={c.header} className="px-4 py-3.5">
+                          <span className="text-xs text-slate-400">{c.get(row) || "—"}</span>
                         </td>
-                      )}
+                      ))}
                       <td className="px-4 py-3.5">
                         <span className="font-bold text-slate-200 text-xs">{row.name}</span>
                       </td>
-                      {tabInfo.key !== "boxes" && (
-                        <td className="px-4 py-3.5 text-center">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border bg-violet-500/10 border-violet-500/20 text-violet-400">
-                            {row.childCount || 0}
-                          </span>
-                        </td>
-                      )}
+                      <td className="px-4 py-3.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleChildrenClick(row)}
+                          disabled={!row.childCount}
+                          title={
+                            activeTab === "boxes"
+                              ? `${row.childCount || 0} products is box me assign — click karke dekhein`
+                              : `${row.childCount || 0} children — click karke filter karein`
+                          }
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border bg-violet-500/10 border-violet-500/20 text-violet-400 hover:bg-violet-500/25 hover:border-violet-500/40 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-violet-500/10 disabled:hover:border-violet-500/20"
+                        >
+                          {row.childCount || 0}
+                        </button>
+                      </td>
                       <td className="px-4 py-3.5 text-center">
                         <button
                           onClick={() => toggleStatus(row)}

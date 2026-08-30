@@ -53,25 +53,103 @@ export async function GET(request: NextRequest) {
         sb.from("location_zones").select("*").eq("delete_flag", 0).order("name"),
         sb
           .from("location_racks")
-          .select("*, location_zones(name)")
+          .select("*, location_zones(id, name)")
           .eq("delete_flag", 0)
           .order("name"),
         sb
           .from("location_bins")
-          .select("*, location_racks(name, zone_id)")
+          .select(
+            "*, location_racks(id, name, zone_id, location_zones(id, name))"
+          )
           .eq("delete_flag", 0)
           .order("name"),
         sb
           .from("location_boxes")
-          .select("*, location_bins(name, rack_id)")
+          .select(
+            "*, location_bins(id, name, rack_id, location_racks(id, name, zone_id, location_zones(id, name)))"
+          )
           .eq("delete_flag", 0)
           .order("name"),
       ]);
+
+      // `tab=full` par bhi har item ke liye childCount banao (page isi fetch se
+      // "Children" column dikhata hai). Zones→racks, racks→bins, bins→boxes.
+      const countChildren = async (
+        rows: unknown[],
+        childTable: string,
+        childFk: string
+      ) => {
+        if (rows.length === 0) return rows;
+        const ids = rows.map((r) => (r as { id: number }).id);
+        const { data: childRows } = await sb
+          .from(childTable)
+          .select(childFk)
+          .eq("delete_flag", 0)
+          .in(childFk, ids);
+        const countMap: Record<number, number> = {};
+        (childRows as unknown as Array<Record<string, unknown>> | null)?.forEach((r) => {
+          const pid = r[childFk] as number;
+          countMap[pid] = (countMap[pid] || 0) + 1;
+        });
+        return rows.map((r) => ({
+          ...(r as Record<string, unknown>),
+          childCount: countMap[(r as { id: number }).id] || 0,
+        }));
+      };
+
+      // Box tab ke "Children" column ke liye: har box me kitne products assign hain.
+      // Products `product_locations.location_id → locations.id` se map hote hain aur
+      // `locations.box_id` FK idhar hota hai.
+      const countBoxProducts = async (rows: unknown[]) => {
+        if (rows.length === 0) return rows;
+        const boxIds = rows.map((r) => (r as { id: number }).id);
+        const { data: locRows } = await sb
+          .from("locations")
+          .select("id, box_id")
+          .eq("delete_flag", 0)
+          .in("box_id", boxIds);
+        const locIds = (locRows as unknown as Array<{ id: number; box_id: number }> | null)?.map(
+          (l) => l.id
+        );
+        const boxForLoc = new Map<number, number>();
+        (locRows as unknown as Array<{ id: number; box_id: number }> | null)?.forEach((l) => {
+          boxForLoc.set(l.id, l.box_id);
+        });
+        const countMap: Record<number, number> = {};
+        if (locIds && locIds.length > 0) {
+          const { data: plRows } = await sb
+            .from("product_locations")
+            .select("location_id, product_id")
+            .in("location_id", locIds);
+          const seen = new Set<string>();
+          (plRows as unknown as Array<{ location_id: number; product_id: number }> | null)?.forEach(
+            (r) => {
+              const boxId = boxForLoc.get(r.location_id);
+              if (boxId == null) return;
+              const dedupe = `${boxId}:${r.product_id}`;
+              if (seen.has(dedupe)) return;
+              seen.add(dedupe);
+              countMap[boxId] = (countMap[boxId] || 0) + 1;
+            }
+          );
+        }
+        return rows.map((r) => ({
+          ...(r as Record<string, unknown>),
+          childCount: countMap[(r as { id: number }).id] || 0,
+        }));
+      };
+
+      const [zonesWith, racksWith, binsWith, boxesWith] = await Promise.all([
+        countChildren(zones.data || [], "location_racks", "zone_id"),
+        countChildren(racks.data || [], "location_bins", "rack_id"),
+        countChildren(bins.data || [], "location_boxes", "bin_id"),
+        countBoxProducts(boxes.data || []),
+      ]);
       return NextResponse.json({
-        zones: zones.data || [],
-        racks: racks.data || [],
-        bins: bins.data || [],
-        boxes: boxes.data || [],
+        zones: zonesWith,
+        racks: racksWith,
+        bins: binsWith,
+        boxes: boxesWith,
       });
     }
 
