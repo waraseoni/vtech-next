@@ -237,7 +237,7 @@ export default function DailyDoneReportPage() {
   };
 
   return (
-    <AdminPage title="Daily Done" subtitle="Report of jobs completed on a specific day">
+    <AdminPage allowStaff title="Daily Done" subtitle="Report of jobs completed on a specific day">
       <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-xl shadow-black/20">
         {/* Header Controls */}
         <div className="px-5 py-4 border-b border-[#21293d] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

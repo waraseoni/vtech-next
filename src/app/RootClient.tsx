@@ -563,6 +563,72 @@ function SidebarNav({
           </Link>
         </li>
 
+        <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+          Customer
+        </li>
+        <SubMenu
+          title="Customer Report"
+          icon={<Users size={15} />}
+          matchPaths={["/reports/top-customers", "/reports/delivered", "/reports/due-reminders"]}
+        >
+          <li>
+            <Link
+              href="/reports/top-customers"
+              className={subLinkCls(pathname === "/reports/top-customers")}
+              onClick={onNavClick}
+            >
+              <Users size={12} />
+              Top Customers
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/reports/delivered"
+              className={subLinkCls(pathname === "/reports/delivered")}
+              onClick={onNavClick}
+            >
+              <Truck size={12} />
+              Delivered Report
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/reports/due-reminders"
+              className={subLinkCls(pathname === "/reports/due-reminders")}
+              onClick={onNavClick}
+            >
+              <CalendarClock size={12} className="text-red-400" />
+              Due Reminders
+            </Link>
+          </li>
+        </SubMenu>
+        <SubMenu
+          title="Jobs in Shop"
+          icon={<Wrench size={15} />}
+          matchPaths={["/reports/pending-jobs", "/reports/daily-done"]}
+        >
+          <li>
+            <Link
+              href="/reports/pending-jobs"
+              className={subLinkCls(pathname === "/reports/pending-jobs")}
+              onClick={onNavClick}
+            >
+              <Clock size={12} className="text-amber-400" />
+              Jobs in Shop
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/reports/daily-done"
+              className={subLinkCls(pathname === "/reports/daily-done")}
+              onClick={onNavClick}
+            >
+              <ClipboardList size={12} />
+              Daily Done Report
+            </Link>
+          </li>
+        </SubMenu>
+
         {canSeeInventory &&
           isModuleEnabled(enabledModules, "inventory") && (
             <>
@@ -964,50 +1030,6 @@ function SidebarNav({
                     >
                       <Wrench size={12} />
                       Custom Service
-                    </Link>
-                  </li>
-
-                  <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">
-                    Customers
-                  </li>
-                  <li>
-                    <Link
-                      href="/reports/top-customers"
-                      className={subLinkCls(pathname === "/reports/top-customers")}
-                      onClick={onNavClick}
-                    >
-                      <Users size={12} />
-                      Top Customers
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/reports/delivered"
-                      className={subLinkCls(pathname === "/reports/delivered")}
-                      onClick={onNavClick}
-                    >
-                      <Truck size={12} />
-                      Delivered Report
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/reports/due-reminders"
-                      className={subLinkCls(pathname === "/reports/due-reminders")}
-                      onClick={onNavClick}
-                    >
-                      <CalendarClock size={12} className="text-red-400" />
-                      Due Reminders
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/reports/pending-jobs"
-                      className={subLinkCls(pathname === "/reports/pending-jobs")}
-                      onClick={onNavClick}
-                    >
-                      <Clock size={12} className="text-amber-400" />
-                      Jobs in Shop
                     </Link>
                   </li>
 
