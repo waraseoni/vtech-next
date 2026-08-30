@@ -293,6 +293,37 @@ async function addForeignKeys(conn, tables) {
 
 // Supabase me naye columns aa jayein to MariaDB me bhi add kar do.
 // Existing columns ki nullable change ho to bhi update kar do.
+// Legacy PHP-era schema artifacts (unique indexes / columns) jo Supabase me nahi
+// hain, sync ko tod sakte hain — e.g. login_throttle.uniq_browser_user (empty
+// values collide). Supabase = source of truth, isliye har table ke saare
+// non-PK unique indexes drop kar dete hain taaki TRUNCATE+reinsert hamesha chale.
+async function dropLegacyUniqueIndexes(conn, tables) {
+  const indexes = await conn.query(
+    `SELECT TABLE_NAME, INDEX_NAME, NON_UNIQUE FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = ?`,
+    [DB_NAME]
+  );
+  const perTable = {};
+  for (const r of indexes) {
+    if (r.NON_UNIQUE === 0 && r.INDEX_NAME !== "PRIMARY") {
+      (perTable[r.TABLE_NAME] ||= []).push(r.INDEX_NAME);
+    }
+  }
+  let dropped = 0;
+  for (const t of tables) {
+    const toDrop = perTable[t.name] || [];
+    for (const ix of toDrop) {
+      try {
+        await conn.query(`ALTER TABLE \`${t.name}\` DROP INDEX \`${ix}\``);
+        log(`  ! dropped legacy unique index ${t.name}.${ix}`);
+        dropped++;
+      } catch (e) {
+        console.warn(`  ! INDEX drop skip ${t.name}.${ix}: ${e.message}`);
+      }
+    }
+  }
+  if (dropped) log(`  Dropped ${dropped} legacy unique index(es)`);
+}
+
 async function syncMissingColumns(conn, tables) {
   const existing = await conn.query(
     `SELECT TABLE_NAME, COLUMN_NAME, IS_NULLABLE, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ?`,
@@ -487,6 +518,7 @@ async function main() {
     for (const t of tables) {
       await conn.query(createTableSQL(t));
     }
+    await dropLegacyUniqueIndexes(conn, tables);
     await syncMissingColumns(conn, tables);
     if (!NO_FKS) await addForeignKeys(conn, tables);
     await conn.query("SET FOREIGN_KEY_CHECKS = 1");
