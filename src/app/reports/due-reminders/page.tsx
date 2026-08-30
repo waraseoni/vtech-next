@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
+import { safeImageSrc } from "@/lib/image-utils";
 import {
   CalendarClock,
   Search,
@@ -44,10 +45,11 @@ const ClientAvatar = ({
   image?: string | null;
   name: string;
   cls?: string;
-}) =>
-  image ? (
+}) => {
+  const src = safeImageSrc(image);
+  return src ? (
     <Image
-      src={image}
+      src={src}
       alt={name}
       width={36}
       height={36}
@@ -63,6 +65,7 @@ const ClientAvatar = ({
       {clientInitials(name)}
     </div>
   );
+};
 
 type DueRow = {
   id: number;

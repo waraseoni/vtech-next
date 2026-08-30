@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
+import { safeImageSrc } from "@/lib/image-utils";
 import { Loader2, Printer, Star, X } from "lucide-react";
 import { todayIST, formatIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
 
@@ -25,10 +26,11 @@ const ClientAvatar = ({
   image?: string | null;
   name: string;
   cls?: string;
-}) =>
-  image ? (
+}) => {
+  const src = safeImageSrc(image);
+  return src ? (
     <Image
-      src={image}
+      src={src}
       alt={name}
       width={32}
       height={32}
@@ -44,6 +46,7 @@ const ClientAvatar = ({
       {clientInitials(name)}
     </div>
   );
+};
 
 type DbRow = ReturnType<typeof JSON.parse>;
 

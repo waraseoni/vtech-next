@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { safeImageSrc } from "@/lib/image-utils";
 import { safeBack } from "@/lib/utils";
 import { useRouter, useParams } from "next/navigation";
 import {
@@ -247,15 +248,16 @@ function StatCard({
 // CLIENT AVATAR — photo upload hui ho to photo, warna initials
 // ─────────────────────────────────────────────────────────────
 function ClientAvatar({ name, imagePath }: { name: string; imagePath?: string }) {
-  if (imagePath) {
+  const src = safeImageSrc(imagePath);
+  if (src) {
     return (
       <Image
-        src={imagePath}
+        src={src}
         alt={name}
         width={144}
         height={144}
         className="w-28 h-28 md:w-36 md:h-36 rounded-2xl object-cover flex-shrink-0 shadow-lg border border-white/10 cursor-zoom-in"
-        onDoubleClick={() => openImageLightbox(imagePath, name)}
+        onDoubleClick={() => openImageLightbox(src, name)}
         onError={(e) => {
           (e.currentTarget as HTMLImageElement).style.display = "none";
         }}
