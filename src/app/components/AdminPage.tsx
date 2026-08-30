@@ -7,10 +7,11 @@ import { supabase, getCachedUser } from "@/lib/supabase";
 type Props = {
   title: string;
   subtitle?: string;
+  allowStaff?: boolean;
   children: React.ReactNode;
 };
 
-export default function AdminPage({ title, subtitle, children }: Props) {
+export default function AdminPage({ title, subtitle, allowStaff, children }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [allowed, setAllowed] = useState(false);
@@ -29,14 +30,19 @@ export default function AdminPage({ title, subtitle, children }: Props) {
         .select("role")
         .eq("id", user.id)
         .maybeSingle();
-      if (p?.role !== "admin") {
+      const role = p?.role;
+      const ok =
+        allowStaff
+          ? role === "admin" || role === "developer" || role === "staff"
+          : role === "admin";
+      if (!ok) {
         router.push("/");
         return;
       }
       setAllowed(true);
       setLoading(false);
     })();
-  }, [router]);
+  }, [router, allowStaff]);
 
   if (loading) {
     return (

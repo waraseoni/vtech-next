@@ -373,6 +373,7 @@ export default function LocationsPage() {
     <AdminPage
       title="Location Master"
       subtitle="Manage inventory locations — zones, racks, bins & boxes"
+      allowStaff
     >
       {/* ─── Stats Cards ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">

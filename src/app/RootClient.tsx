@@ -442,6 +442,7 @@ function SidebarNav({
   pathname,
   isAdmin,
   isClient,
+  canSeeInventory,
   onNavClick,
   sellerEnabled,
   devEnabled,
@@ -450,6 +451,7 @@ function SidebarNav({
   pathname: string;
   isAdmin: boolean;
   isClient?: boolean;
+  canSeeInventory: boolean;
   onNavClick?: () => void;
   sellerEnabled?: boolean;
   devEnabled?: boolean;
@@ -559,20 +561,19 @@ function SidebarNav({
           </Link>
         </li>
 
-        {isAdmin && (
-          <>
-            {/* ══ INVENTORY ════════════════════════════════════════════════ */}
-            {isModuleEnabled(enabledModules, "inventory") && (
-              <>
-                <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
-                  Inventory
-                </li>
-                <SubMenu
-                  title="Inventory"
-                  icon={<Package size={15} />}
-                  basePath="/inventory"
-                  matchPaths={["/products", "/suppliers"]}
-                >
+        {canSeeInventory &&
+          isModuleEnabled(enabledModules, "inventory") && (
+            <>
+              <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+                Inventory
+              </li>
+              <SubMenu
+                title="Inventory"
+                icon={<Package size={15} />}
+                basePath="/inventory"
+                matchPaths={["/products", "/suppliers"]}
+              >
+                {isAdmin && (
                   <li>
                     <Link
                       href="/inventory"
@@ -588,16 +589,18 @@ function SidebarNav({
                       Stock Overview
                     </Link>
                   </li>
-                  <li>
-                    <Link
-                      href="/products"
-                      className={subLinkCls(pathname === "/products")}
-                      onClick={onNavClick}
-                    >
-                      <Layers size={12} className="text-orange-400" />
-                      Products
-                    </Link>
-                  </li>
+                )}
+                <li>
+                  <Link
+                    href="/products"
+                    className={subLinkCls(pathname === "/products")}
+                    onClick={onNavClick}
+                  >
+                    <Layers size={12} className="text-orange-400" />
+                    Products
+                  </Link>
+                </li>
+                {isAdmin && (
                   <li>
                     <Link
                       href="/suppliers"
@@ -608,6 +611,8 @@ function SidebarNav({
                       Suppliers
                     </Link>
                   </li>
+                )}
+                {isAdmin && (
                   <li>
                     <Link
                       href="/inventory/purchase-orders"
@@ -618,16 +623,18 @@ function SidebarNav({
                       Purchase Orders
                     </Link>
                   </li>
-                  <li>
-                    <Link
-                      href="/inventory/locations"
-                      className={subLinkCls(pathname === "/inventory/locations")}
-                      onClick={onNavClick}
-                    >
-                      <MapPin size={12} className="text-rose-400" />
-                      Locations
-                    </Link>
-                  </li>
+                )}
+                <li>
+                  <Link
+                    href="/inventory/locations"
+                    className={subLinkCls(pathname === "/inventory/locations")}
+                    onClick={onNavClick}
+                  >
+                    <MapPin size={12} className="text-rose-400" />
+                    Locations
+                  </Link>
+                </li>
+                {isAdmin && (
                   <li>
                     <Link
                       href="/inventory/locations/manage"
@@ -638,20 +645,23 @@ function SidebarNav({
                       Location Hierarchy
                     </Link>
                   </li>
-                  <li>
-                    <Link
-                      href="/inventory/locate"
-                      className={subLinkCls(pathname === "/inventory/locate")}
-                      onClick={onNavClick}
-                    >
-                      <MapPin size={12} className="text-amber-400" />
-                      Spare Finder
-                    </Link>
-                  </li>
-                </SubMenu>
-              </>
-            )}
+                )}
+                <li>
+                  <Link
+                    href="/inventory/locate"
+                    className={subLinkCls(pathname === "/inventory/locate")}
+                    onClick={onNavClick}
+                  >
+                    <MapPin size={12} className="text-amber-400" />
+                    Spare Finder
+                  </Link>
+                </li>
+              </SubMenu>
+            </>
+          )}
 
+        {isAdmin && (
+          <>
             {/* ══ FINANCE ══════════════════════════════════════════════════ */}
             {isModuleEnabled(enabledModules, "finance") && (
               <>
@@ -1227,6 +1237,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
   const isAdmin = profile?.role === "admin" || profile?.role === "developer";
   const isClient = profile?.role === "client";
+  const isStaff = profile?.role === "staff";
+  const canSeeInventory = isAdmin || isStaff;
 
   // ── LICENSE GATE ──
   if (license && !license.valid) {
@@ -1317,6 +1329,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             pathname={pathname}
             isAdmin={isAdmin}
             isClient={isClient}
+            canSeeInventory={canSeeInventory}
             sellerEnabled={license?.sellerEnabled}
             devEnabled={license?.devEnabled}
             enabledModules={license?.enabledModules}
@@ -1392,6 +1405,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               pathname={pathname}
               isAdmin={isAdmin}
               isClient={isClient}
+              canSeeInventory={canSeeInventory}
               onNavClick={() => setDrawerOpen(false)}
               sellerEnabled={license?.sellerEnabled}
               devEnabled={license?.devEnabled}

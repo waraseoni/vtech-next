@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import { stockStatusStyle, stockBarColor, alertThreshold, stockValue } from "@/lib/inventory";
 import { locPath } from "@/lib/locations";
 import {
@@ -29,6 +29,7 @@ import {
   FileText,
   Minus,
   Plus,
+  ShieldCheck,
 } from "lucide-react";
 import QuickScanModal from "./components/QuickScanModal";
 import ProductFormModal from "@/components/ProductFormModal";
@@ -108,6 +109,26 @@ export default function InventoryPage() {
   const [printOpen, setPrintOpen] = useState(false);
   const [printCopies, setPrintCopies] = useState<Record<number, number>>({});
   const [addOpen, setAddOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string>("staff");
+  const [roleChecked, setRoleChecked] = useState(false);
+
+  useEffect(() => {
+    getCachedUser().then(({ data: { user } }) => {
+      if (!user) {
+        setRoleChecked(true);
+        return;
+      }
+      supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          setUserRole(data?.role ?? "staff");
+          setRoleChecked(true);
+        });
+    });
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
@@ -427,8 +448,23 @@ export default function InventoryPage() {
   };
 
   // ── Loading ────────────────────────────────────────────────────────────────
-  if (loading) {
+  if (loading || !roleChecked) {
     return <PageLoader icon={Package} label="Loading Inventory..." tone="blue" />;
+  }
+
+  // ── Role guard ── Stock Overview is admin-only ─────────────────────────
+  if (userRole !== "admin" && userRole !== "developer") {
+    return (
+      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-6">
+        <div className="text-center">
+          <ShieldCheck size={40} className="text-slate-700 mx-auto mb-3" />
+          <h1 className="text-lg font-black text-white tracking-tight">Admin only</h1>
+          <p className="text-slate-600 text-sm mt-1">
+            Stock Overview sirf admin dekh sakta hai.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   // ══════════════════════════════════════════════════════════════════════════

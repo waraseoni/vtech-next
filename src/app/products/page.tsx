@@ -144,7 +144,7 @@ export default function ProductsPage() {
   const totalValue = filtered.reduce((s, p) => s + (p.price || 0), 0);
 
   return (
-    <AdminPage title="Products" subtitle="Product catalog management">
+    <AdminPage title="Products" subtitle="Product catalog management" allowStaff>
       {/* Header */}
       <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
         <div className="px-5 py-3.5 border-b border-[#21293d] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

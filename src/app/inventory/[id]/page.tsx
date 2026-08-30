@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
-import { supabase } from "@/lib/supabase";
+import { supabase, getCachedUser } from "@/lib/supabase";
 import { stockStatusStyle, alertThreshold, stockValue } from "@/lib/inventory";
 import {
   ArrowLeft,
@@ -32,6 +32,7 @@ import {
   Search,
   AlertTriangle,
   FileText,
+  ShieldCheck,
 } from "lucide-react";
 import StockModal from "./components/StockModal";
 import LocationPicker from "@/components/LocationPicker";
@@ -130,6 +131,8 @@ export default function ProductDetailPage() {
   const [stockOut, setStockOut] = useState<StockOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string>("staff");
+  const [roleChecked, setRoleChecked] = useState(false);
   const [editingStock, setEditingStock] = useState<StockIn | null>(null);
   const [stats, setStats] = useState({
     totalIn: 0,
@@ -158,6 +161,15 @@ export default function ProductDetailPage() {
     bins: { id: number; name: string; rack_id: number }[];
     boxes: { id: number; name: string; bin_id: number }[];
   }>({ zones: [], racks: [], bins: [], boxes: [] });
+
+  useEffect(() => {
+    getCachedUser().then(({ data: { user } }) => {
+      if (!user) { setRoleChecked(true); return; }
+      supabase
+        .from("profiles").select("role").eq("id", user.id).single()
+        .then(({ data }) => { setUserRole(data?.role ?? "staff"); setRoleChecked(true); });
+    });
+  }, []);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -479,8 +491,20 @@ export default function ProductDetailPage() {
   }, [stockOut]);
 
   // ── Loading ────────────────────────────────────────────────────────────────
-  if (loading) {
+  if (loading || !roleChecked) {
     return <PageLoader icon={Package} label="Loading Product..." tone="blue" />;
+  }
+
+  if (userRole !== "admin" && userRole !== "developer") {
+    return (
+      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-6">
+        <div className="text-center">
+          <ShieldCheck size={40} className="text-slate-700 mx-auto mb-3" />
+          <h1 className="text-lg font-black text-white tracking-tight">Admin only</h1>
+          <p className="text-slate-600 text-sm mt-1">Product detail sirf admin dekh sakta hai.</p>
+        </div>
+      </div>
+    );
   }
 
   if (!product) {
