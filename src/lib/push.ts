@@ -58,7 +58,7 @@ export async function subscribeToPush(): Promise<PushResult> {
   // ── Native (Capacitor/Android) path ────────────────────────────────────
   if (isNative()) {
     try {
-      const { PushNotifications } = await import("@capacitor/push-notifications");
+      const { PushNotifications } = await import(/* webpackIgnore: true */ "@capacitor/push-notifications");
       const perm = await PushNotifications.requestPermissions();
       if (perm.receive !== "granted") return { ok: true, mode: "denied" };
 
@@ -142,7 +142,7 @@ export async function disablePush(): Promise<PushResult> {
   // ── Native path ────────────────────────────────────────────────────────
   if (isNative()) {
     try {
-      const { PushNotifications } = await import("@capacitor/push-notifications");
+      const { PushNotifications } = await import(/* webpackIgnore: true */ "@capacitor/push-notifications");
       await PushNotifications.unregister();
       const userId = await currentUserId();
       if (userId) {
