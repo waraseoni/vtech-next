@@ -1,13 +1,16 @@
 "use client";
-// ─────────────────────────────────────────────────────────────────
-// BUG FIX: useSearchParams() must be inside a Suspense boundary.
-// Moved tab-init + search-param logic into a separate inner component
-// wrapped with <Suspense>, so the outer page doesn't crash on build.
-// ─────────────────────────────────────────────────────────────────
+
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase, getCachedUser } from "@/lib/supabase";
-import { Loader2, ClipboardCheck, CalendarDays, CalendarCheck } from "lucide-react";
+import {
+  Loader2,
+  ClipboardCheck,
+  CalendarDays,
+  CalendarCheck,
+  Clock,
+  Sparkles,
+} from "lucide-react";
 import DailyAttendance from "./components/DailyAttendance";
 import MonthlyReport from "./components/MonthlyReport";
 import PageLoader from "@/components/PageLoader";
@@ -23,6 +26,27 @@ function AttendanceContent() {
   const [userRole, setUserRole] = useState<"admin" | "staff" | "developer">("staff");
   const [mechanicId, setMechanicId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Live IST Time
+  const [liveTime, setLiveTime] = useState("");
+
+  useEffect(() => {
+    const updateLiveTime = () => {
+      const now = new Date();
+      setLiveTime(
+        new Intl.DateTimeFormat("en-IN", {
+          timeZone: "Asia/Kolkata",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true,
+        }).format(now)
+      );
+    };
+    updateLiveTime();
+    const interval = setInterval(updateLiveTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const getProfile = async () => {
@@ -72,31 +96,56 @@ function AttendanceContent() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* ── TABS ── */}
-      <div className="flex border-b border-[#21293d] mb-6">
-        {(
-          [
-            { key: "daily", label: "Mark Attendance", icon: ClipboardCheck },
-            { key: "report", label: "Monthly Report", icon: CalendarDays },
-          ] as const
-        ).map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            onClick={() => handleTabChange(key)}
-            className={`flex items-center gap-2 px-5 py-3.5 text-xs font-extrabold uppercase tracking-wider transition-all ${
-              activeTab === key
-                ? "border-b-2 border-blue-500 text-blue-400"
-                : "text-slate-500 hover:text-slate-300"
-            }`}
-          >
-            <Icon size={15} />
-            {label}
-          </button>
-        ))}
+    <div className="w-full max-w-[1550px] mx-auto space-y-4">
+      {/* ── HEADER & TABS CARD ── */}
+      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3 sm:p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-600/20 border border-white/10 flex-shrink-0">
+            <ClipboardCheck size={20} className="text-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-base sm:text-lg font-black text-white tracking-tight">
+                Attendance Hub
+              </h1>
+              {liveTime && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{liveTime} IST</span>
+                </div>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium">
+              Daily staff check-in/out, GPS geofence punch & monthly attendance register
+            </p>
+          </div>
+        </div>
+
+        {/* Pill Navigation Tabs */}
+        <div className="flex bg-[#0d1117] p-1 rounded-xl border border-[#21293d] self-start sm:self-auto">
+          {(
+            [
+              { key: "daily", label: "Mark Attendance", icon: ClipboardCheck },
+              { key: "report", label: "Monthly Report", icon: CalendarDays },
+            ] as const
+          ).map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => handleTabChange(key)}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-150 ${
+                activeTab === key
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Icon size={13} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* ── CONTENT ── */}
+      {/* ── TAB CONTENT ── */}
       <Suspense
         fallback={
           <div className="flex justify-center py-16">
@@ -117,7 +166,7 @@ function AttendanceContent() {
 // ── Page wrapper — Suspense required for useSearchParams ─────────
 export default function AttendancePage() {
   return (
-    <div className="attendance-page min-h-screen bg-[#0d1117] text-white font-sans p-4 md:p-6">
+    <div className="attendance-page min-h-screen bg-[#0d1117] text-white font-sans p-2.5 sm:p-4 lg:p-6">
       <Suspense
         fallback={
           <div className="min-h-[60vh] flex items-center justify-center">

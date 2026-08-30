@@ -11,7 +11,19 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
-import { X, Check, Clock, UserX, Save, Eraser, LogIn, LogOut } from "lucide-react";
+import {
+  X,
+  Check,
+  Clock,
+  UserX,
+  Save,
+  Eraser,
+  LogIn,
+  LogOut,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 import { deriveStatusFromTimes, hoursBetweenIST } from "@/lib/dateUtils";
 
 interface Props {
@@ -22,32 +34,50 @@ interface Props {
   initialTimeIn?: string;
   initialTimeOut?: string;
   onClose: () => void;
-  onUpdate: (newStatus: 0 | 1 | 2 | 3) => void; // 🔧 FIX: Now receives the new status
+  onUpdate: (newStatus: 0 | 1 | 2 | 3) => void;
 }
+
+const mechInitials = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("") || name.charAt(0);
 
 const STATUS_OPTIONS = [
   {
     value: 1 as const,
-    label: "Present",
+    label: "Mark Present",
     icon: Check,
-    cls: "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20",
+    cls: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-900/30",
+    activeCls: "ring-2 ring-emerald-400/50",
   },
   {
     value: 3 as const,
-    label: "Half Day",
+    label: "Mark Half Day",
     icon: Clock,
-    cls: "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20",
+    cls: "bg-amber-500 hover:bg-amber-400 text-white shadow-sm shadow-amber-900/30",
+    activeCls: "ring-2 ring-amber-400/50",
   },
   {
     value: 2 as const,
-    label: "Absent",
+    label: "Mark Absent",
     icon: UserX,
-    cls: "bg-red-600 hover:bg-red-700 text-white shadow-red-500/20",
+    cls: "bg-red-600 hover:bg-red-500 text-white shadow-sm shadow-red-900/30",
+    activeCls: "ring-2 ring-red-400/50",
   },
 ];
 
+const STATUS_BADGE: Record<number, { label: string; cls: string }> = {
+  0: { label: "Not Marked", cls: "bg-slate-700/60 text-slate-400 border border-slate-600/40" },
+  1: { label: "Present", cls: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30" },
+  2: { label: "Absent", cls: "bg-red-500/10 text-red-400 border border-red-500/30" },
+  3: { label: "Half Day", cls: "bg-amber-500/10 text-amber-400 border border-amber-500/30" },
+};
+
 const inputCls =
-  "w-full px-2.5 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-white text-sm font-bold text-center focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 outline-none transition-all";
+  "w-full px-2.5 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-white text-sm font-bold text-center focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all [color-scheme:dark]";
 
 export default function AttendanceModal({
   mechanicId,
@@ -66,7 +96,7 @@ export default function AttendanceModal({
   const [timeOut, setTimeOut] = useState(initialTimeOut ?? "");
   const [currentStatus, setCurrentStatus] = useState<0 | 1 | 2 | 3>(0);
 
-  // Load existing record (status may not be passed in)
+  // Load existing record
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase
@@ -106,12 +136,14 @@ export default function AttendanceModal({
 
   const handleSetStatus = async (status: 1 | 2 | 3) => {
     const ok = await upsert({ status });
-    if (ok) onUpdate(status);
+    if (ok) {
+      setCurrentStatus(status);
+      onUpdate(status);
+    }
   };
 
   const handleSaveTimes = async () => {
     const derived = deriveStatusFromTimes(timeIn || null, timeOut || null);
-    // If times given, derive; otherwise keep current status (unmarked = 0, Absent nahi)
     const status: 0 | 1 | 2 | 3 =
       derived ?? (currentStatus !== 0 ? (currentStatus as 1 | 2 | 3) : 0);
     const ok = await upsert({
@@ -137,92 +169,92 @@ export default function AttendanceModal({
   };
 
   const hoursPreview = hoursBetweenIST(timeIn || null, timeOut || null);
-  const statusLabel =
-    currentStatus === 1
-      ? "Present"
-      : currentStatus === 3
-        ? "Half Day"
-        : currentStatus === 2
-          ? "Absent"
-          : "Not Marked";
+  const badge = STATUS_BADGE[currentStatus] ?? STATUS_BADGE[0];
 
-  const fmtDate = new Date(date).toLocaleDateString("en-IN", {
-    weekday: "short",
+  const fmtDate = new Date(date + "T00:00:00+05:30").toLocaleDateString("en-IN", {
+    weekday: "long",
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d]">
-          <h3 className="font-extrabold text-white text-sm">Update Attendance</h3>
+    <div
+      className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-150"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+        {/* ── Modal Header ── */}
+        <div className="flex items-center justify-between px-4 py-3.5 bg-[#0d1117] border-b border-[#21293d]">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+              <CheckCircle2 size={16} />
+            </div>
+            <div>
+              <h3 className="font-black text-white text-sm">Update Attendance</h3>
+              <p className="text-[10px] text-slate-400">{fmtDate}</p>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.05] transition-all"
+            className="w-7 h-7 rounded-lg bg-[#161b27] border border-[#21293d] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
           >
-            <X size={16} />
+            <X size={14} />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="p-5">
-          <div className="text-center mb-4">
-            {mechanicImage ? (
-              <Image
-                src={mechanicImage}
-                alt={mechanicName}
-                width={48}
-                height={48}
-                className="w-12 h-12 rounded-full object-cover mx-auto mb-2 border border-white/10"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.display = "none";
-                }}
-              />
-            ) : (
-              <div className="w-12 h-12 bg-blue-500/15 border border-blue-500/20 rounded-full flex items-center justify-center font-black text-blue-400 text-lg mx-auto mb-2">
-                {mechanicName
-                  .split(" ")
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map((w) => w[0].toUpperCase())
-                  .join("") || mechanicName.charAt(0)}
+        {/* ── Modal Body ── */}
+        <div className="p-4 space-y-4">
+          {/* Mechanic Info Card */}
+          <div className="bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {mechanicImage ? (
+                <Image
+                  src={mechanicImage}
+                  alt={mechanicName}
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/10"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600/30 to-indigo-600/30 border border-blue-500/30 rounded-full flex items-center justify-center font-black text-blue-400 text-[10px] flex-shrink-0">
+                  {mechInitials(mechanicName)}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-white font-black text-xs truncate">{mechanicName}</p>
               </div>
-            )}
-            <p className="font-bold text-slate-200">{mechanicName}</p>
-            <p className="text-xs text-slate-500 mt-0.5">{fmtDate}</p>
-            <span
-              className={`inline-block mt-1.5 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full ${
-                currentStatus === 1
-                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                  : currentStatus === 3
-                    ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                    : currentStatus === 2
-                      ? "bg-red-500/15 text-red-400 border border-red-500/30"
-                      : "bg-slate-700/60 text-slate-400 border border-slate-600/40"
-              }`}
-            >
-              {statusLabel}
+            </div>
+            <span className={`flex-shrink-0 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${badge.cls}`}>
+              {badge.label}
             </span>
           </div>
 
           {error && (
-            <div className="mb-4 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold">
+              <AlertCircle size={13} />
               {error}
             </div>
           )}
 
           {loading ? (
-            <div className="text-center py-6 text-xs font-bold text-slate-500">Loading...</div>
+            <div className="flex items-center justify-center py-6 gap-2 text-slate-500 text-xs font-bold">
+              <Loader2 size={18} className="animate-spin text-blue-500" />
+              Loading...
+            </div>
           ) : (
             <>
-              {/* ── Time inputs ── */}
-              <div className="grid grid-cols-2 gap-3 mb-2">
-                <div>
-                  <label className="block text-[9px] uppercase tracking-wider text-slate-500 font-black mb-1">
-                    <LogIn size={9} className="inline mr-0.5" /> Check In
+              {/* Time Inputs */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <label className="text-[9px] uppercase tracking-wider text-slate-500 font-black flex items-center gap-0.5">
+                    <LogIn size={9} className="text-emerald-400" />
+                    Check In
                   </label>
                   <input
                     type="time"
@@ -231,9 +263,10 @@ export default function AttendanceModal({
                     className={inputCls}
                   />
                 </div>
-                <div>
-                  <label className="block text-[9px] uppercase tracking-wider text-slate-500 font-black mb-1">
-                    <LogOut size={9} className="inline mr-0.5" /> Check Out
+                <div className="space-y-1">
+                  <label className="text-[9px] uppercase tracking-wider text-slate-500 font-black flex items-center gap-0.5">
+                    <LogOut size={9} className="text-red-400" />
+                    Check Out
                   </label>
                   <input
                     type="time"
@@ -244,54 +277,65 @@ export default function AttendanceModal({
                 </div>
               </div>
 
-              {/* Live hours preview */}
-              <div className={`text-center mb-4 ${hoursPreview !== "—" ? "" : "opacity-0"}`}>
-                <span className="inline-block px-4 py-1.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 text-xs font-extrabold">
+              {/* Working Hours Preview */}
+              <div className={`text-center ${hoursPreview !== "—" ? "" : "opacity-40"}`}>
+                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-black">
+                  <Clock size={12} />
                   Working Hours: {hoursPreview}
                 </span>
               </div>
 
+              {/* Save Times Button */}
               <button
                 onClick={handleSaveTimes}
                 disabled={saving}
-                className="w-full mb-2 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#001f3f] hover:bg-[#003366] text-white font-extrabold text-sm shadow-lg transition-all active:scale-[0.98] disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider shadow-md shadow-blue-600/20 transition-all active:scale-95 disabled:opacity-50"
               >
-                <Save size={15} />
+                {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                 Save In / Out Times
               </button>
-              <p className="text-center text-[9px] text-slate-500 font-bold mb-4">
-                Status auto-sets: &lt;6h = Half Day, check-in only = Present
+              <p className="text-center text-[9px] text-slate-500 font-bold -mt-2">
+                Auto-status: &lt;6h = Half Day · Check-in only = Present
               </p>
 
-              <div className="flex flex-col gap-2">
+              {/* Divider */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-px bg-[#21293d]" />
+                <span className="text-[9px] text-slate-600 font-bold uppercase tracking-wider">or mark directly</span>
+                <div className="flex-1 h-px bg-[#21293d]" />
+              </div>
+
+              {/* Status Quick Buttons */}
+              <div className="grid grid-cols-3 gap-2">
                 {STATUS_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => handleSetStatus(opt.value)}
                     disabled={saving}
-                    className={`flex items-center justify-center gap-2 py-3 rounded-xl font-extrabold text-sm shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 ${opt.cls}`}
+                    className={`flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 ${opt.cls} ${currentStatus === opt.value ? opt.activeCls : ""}`}
                   >
-                    <opt.icon size={16} />
-                    {opt.label}
+                    <opt.icon size={14} />
+                    {opt.label.replace("Mark ", "")}
                   </button>
                 ))}
-
-                <button
-                  onClick={handleClearTimes}
-                  disabled={saving}
-                  className="py-2.5 bg-[#21293d] hover:bg-[#2a3550] text-slate-300 font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 mt-1 disabled:opacity-50"
-                >
-                  <Eraser size={13} />
-                  Clear Times
-                </button>
-
-                <button
-                  onClick={onClose}
-                  className="py-2.5 bg-transparent hover:bg-white/[0.04] text-slate-500 font-bold rounded-xl text-sm transition-all"
-                >
-                  Cancel
-                </button>
               </div>
+
+              {/* Clear Times */}
+              <button
+                onClick={handleClearTimes}
+                disabled={saving}
+                className="w-full py-2 bg-[#21293d] hover:bg-[#2a3550] text-slate-400 hover:text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                <Eraser size={12} />
+                Clear In / Out Times
+              </button>
+
+              <button
+                onClick={onClose}
+                className="w-full py-2 bg-transparent hover:bg-white/[0.03] text-slate-500 hover:text-slate-300 font-bold rounded-xl text-xs transition-all"
+              >
+                Cancel
+              </button>
             </>
           )}
         </div>
