@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import { supabase, getCachedUser } from "@/lib/supabase";
+import { safeImageSrc } from "@/lib/image-utils";
 import {
   MessageSquare,
   ArrowLeft,
@@ -57,6 +59,41 @@ const fmtDay = (s: string) => {
 };
 const avatarInitial = (n: string | null | undefined) =>
   (n || "?").trim().charAt(0).toUpperCase();
+
+// circular avatar — jb avatar_url ho to image, warna initials circle.
+function Avatar({
+  name,
+  avatarUrl,
+  size = "sm",
+}: {
+  name: string | null | undefined;
+  avatarUrl?: string | null;
+  size?: "sm" | "md";
+}) {
+  const src = safeImageSrc(avatarUrl);
+  const cls = size === "md" ? "w-10 h-10 text-sm" : "w-9 h-9 text-sm";
+  if (src) {
+    return (
+      <Image
+        src={src}
+        alt={name || "User"}
+        width={40}
+        height={40}
+        className={`${cls} rounded-full object-cover border border-[#21293d]`}
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.display = "none";
+        }}
+      />
+    );
+  }
+  return (
+    <div
+      className={`${cls} rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black`}
+    >
+      {avatarInitial(name)}
+    </div>
+  );
+}
 
 export default function MessagesPage() {
   const router = useRouter();
@@ -133,7 +170,7 @@ export default function MessagesPage() {
         // staff/developer/admin profiles directory — messenger sirf staff ke liye
         const { data: profs, error: profErr } = await supabase
           .from("profiles")
-          .select("id, full_name, role")
+          .select("id, full_name, role, avatar_url")
           .neq("id", user.id)
           .in("role", ["admin", "staff", "developer"])
           .order("full_name", { ascending: true });
@@ -142,7 +179,7 @@ export default function MessagesPage() {
           // basic columns ke saath dubara try karo
           const { data: basic } = await supabase
             .from("profiles")
-            .select("id, full_name, role")
+            .select("id, full_name, role, avatar_url")
             .neq("id", user.id)
             .in("role", ["admin", "staff", "developer"])
             .order("full_name", { ascending: true });
@@ -522,11 +559,7 @@ export default function MessagesPage() {
           </button>
         )}
         <div className="relative">
-          <div
-            className={`w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black text-sm`}
-          >
-            {avatarInitial(activeConv.other.full_name)}
-          </div>
+          <Avatar name={activeConv.other.full_name} avatarUrl={activeConv.other.avatar_url} />
           {isOnline(activeConv.presence) && (
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#0d1117]" />
           )}
@@ -734,9 +767,7 @@ export default function MessagesPage() {
               }`}
             >
               <div className="relative flex-shrink-0">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black text-sm">
-                  {avatarInitial(c.other.full_name)}
-                </div>
+                <Avatar name={c.other.full_name} avatarUrl={c.other.avatar_url} size="md" />
                 {on && (
                   <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#0d1117]" />
                 )}
@@ -781,8 +812,8 @@ export default function MessagesPage() {
                 onClick={() => void openConversation(p.id, profiles)}
                 className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.04] transition-colors"
               >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-black text-sm">
-                  {avatarInitial(p.full_name)}
+                <div className="w-10 h-10 flex-shrink-0">
+                  <Avatar name={p.full_name} avatarUrl={p.avatar_url} size="md" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-slate-100 truncate">
