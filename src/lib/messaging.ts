@@ -102,6 +102,19 @@ export async function fetchMessages(me: string, other: string): Promise<Message[
   return (data as Message[]) || [];
 }
 
+// supervise tool ke liye — kisi bhi do users ke beech messages fetch karo.
+// (Admin/developer ke liye RLS select policy me exception hai; staff ise use nahi kar sakta.)
+export async function fetchPairMessages(a: string, b: string): Promise<Message[]> {
+  const { data, error } = await supabase
+    .from("messages")
+    .select(MSG_COLS)
+    .or(`and(sender_id.eq.${a},recipient_id.eq.${b}),and(sender_id.eq.${b},recipient_id.eq.${a})`)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+  if (error) return [];
+  return (data as Message[]) || [];
+}
+
 // send — message insert + recipient ko push.
 export async function sendMessage(
   me: string,

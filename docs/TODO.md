@@ -49,12 +49,21 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] Fix attach-image-only send (`messages_content_check`: non-empty placeholder content for media-only) — commit `6335f9b`
 - [x] Images manager: show + manage messenger `media` bucket (recursive folders + refs from `messages.media_url`) — commit `3335482`
 - [x] Fix media orphan bug (client storage.remove silently failed under RLS) → server `/api/media/delete` via service_role — commit `f65dad1`
-- [x] Delete-message confirmation (2-step "Confirm?") — commit (pending)
+- [x] Delete-message confirmation (2-step "Confirm?") — commit `9f2d2dc`
 
 ### Pending verification (manual QA — v3)
 - [ ] Confirm message delete now needs 2 clicks (no accidental delete)
 - [ ] Confirm deleting a media message removes image from `/images` manager (no orphan)
 - [ ] Confirm `/images` shows Messages Media bucket
+
+#### 4. Delete permissions + message supervision tool — DONE
+- [x] Delete rights: staff sirf apna send-kiya hua delete kare; admin/developer sab (UI + `/api/media/delete` + RLS)
+- [x] RLS `msg_messages_select`: admin/developer sab messages dekh sakte hain (supervise ke liye) — commit (pending)
+- [x] `fetchPairMessages` helper (kisi bhi do users ki chat fetch)
+- [x] `/messages/supervise` read-only tool (admin/developer: User A ⟷ User B + messages)
+- [x] "Supervise chats" link messages page me (sirf admin/dev ko)
+- [x] Typecheck + build pass
+- [ ] **USER ACTION**: RLS SQL run karna (delete-policy + select-policy) — run karne ke baad hi history + supervise both kaam karte hain
 
 ---
 

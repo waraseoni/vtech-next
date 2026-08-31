@@ -62,12 +62,21 @@ alter table public.messages enable row level security;
 
 -- Select: user tabhi dekh sakta hai jab wo sender YA recipient ho.
 -- (Realtime broadcast bhi isi SELECT policy ke under rehta hai.)
+-- Admin/developer: saari chats dekh sakte hain (supervise tool ke liye).
 drop policy if exists msg_messages_select on public.messages;
 create policy msg_messages_select on public.messages
   for select to authenticated
   using (
     public.is_frontend_staff()
-    and (sender_id = auth.uid() or recipient_id = auth.uid())
+    and (
+      exists (
+        select 1 from public.profiles p
+        where p.id = auth.uid()
+          and p.role in ('admin', 'developer')
+      )
+      or sender_id = auth.uid()
+      or recipient_id = auth.uid()
+    )
   );
 
 -- Insert: sirf sender khud + staff — koi aur ki taraf se message forge nahi.

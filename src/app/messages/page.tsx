@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { safeImageSrc } from "@/lib/image-utils";
@@ -18,6 +19,7 @@ import {
   Trash2,
   X,
   Image as ImageIcon,
+  Eye,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 import {
@@ -779,6 +781,14 @@ export default function MessagesPage() {
           <MessageSquare size={20} className="text-blue-400" />
           Messages
         </h1>
+        {myRole === "admin" || myRole === "developer" ? (
+          <Link
+            href="/messages/supervise"
+            className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300 bg-cyan-400/10 hover:bg-cyan-400/20 border border-cyan-400/20 rounded-lg px-2.5 py-1.5"
+          >
+            <Eye size={13} /> Supervise chats
+          </Link>
+        ) : null}
         <div className="relative mt-3">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
