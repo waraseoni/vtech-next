@@ -112,10 +112,13 @@ export async function sendMessage(
 ): Promise<{ ok: boolean; error?: string }> {
   const text = content.trim();
   if (!text && !media) return { ok: false, error: "Message khali hai" };
+  // DB me `content` not-null + non-empty check hai — media-only message me bhi
+  // koi placeholder rakho taaki insert fail na ho (bubble me chhupa dete hain).
+  const storedContent = text || media?.name || "Media attachment";
   const { error } = await supabase.from("messages").insert({
     sender_id: me,
     recipient_id: other,
-    content: text || "",
+    content: storedContent,
     media_url: media?.url || null,
     media_type: media?.type || null,
     media_name: media?.name || null,

@@ -628,7 +628,9 @@ export default function MessagesPage() {
                     )}
                   </div>
                 )}
-                {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
+                {m.content && !(isMedia && m.content === m.media_name) && (
+                  <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                )}
                 <div
                   className={`flex items-center gap-1 mt-1 text-[9px] ${
                     mine ? "text-blue-200" : "text-slate-500"
