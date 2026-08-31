@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import PageLoader from "@/components/PageLoader";
+import { isOnline, lastSeenText, type Presence } from "@/lib/messaging";
+import { subscribePresence } from "@/lib/presence";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Profile {
@@ -59,6 +61,7 @@ function fmtDate(d: string | null | undefined) {
 export default function UsersPage() {
   const router = useRouter();
   const [users, setUsers] = useState<Profile[]>([]);
+  const [presenceMap, setPresenceMap] = useState<Record<string, Presence>>({});
   const [loading, setLoading] = useState(true);
   const [myId, setMyId] = useState("");
   const [toast, setToast] = useState<Toast | null>(null);
@@ -73,6 +76,28 @@ export default function UsersPage() {
   // Delete confirm
   const [deleteUser, setDeleteUser] = useState<Profile | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Presence: sab users ke online/last_seen + live updates (admin directory).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: pres } = await supabase.from("user_presence").select("user_id, status, last_seen");
+        if (cancelled) return;
+        const pm: Record<string, Presence> = {};
+        (pres || []).forEach((r) => (pm[r.user_id] = { status: r.status, last_seen: r.last_seen }));
+        setPresenceMap(pm);
+      } catch { /* ignore */ }
+    })();
+    const sub = subscribePresence((userId, row) => {
+      setPresenceMap((prev) => ({ ...prev, [userId]: { status: row.status, last_seen: row.last_seen } }));
+    });
+    return () => {
+      cancelled = true;
+      sub.unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -370,9 +395,32 @@ export default function UsersPage() {
                         </td>
                         <td className="px-4 py-3">{avatar(u.full_name, u.role, u.avatar_url)}</td>
                         <td className="px-4 py-3">
-                          <span className="font-bold text-slate-200 text-sm">
-                            {u.full_name || "—"}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-200 text-sm">
+                              {u.full_name || "—"}
+                            </span>
+                            {presenceMap[u.id] ? (
+                              <span
+                                title={
+                                  isOnline(presenceMap[u.id])
+                                    ? "Online"
+                                    : `Last seen ${lastSeenText(presenceMap[u.id])}`
+                                }
+                                className={`inline-flex items-center gap-1 text-[9px] font-bold rounded-full px-1.5 py-0.5 ${
+                                  isOnline(presenceMap[u.id])
+                                    ? "bg-emerald-500/10 text-emerald-400"
+                                    : "bg-white/[0.04] text-slate-500"
+                                }`}
+                              >
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full ${
+                                    isOnline(presenceMap[u.id]) ? "bg-emerald-400" : "bg-slate-600"
+                                  }`}
+                                />
+                                {isOnline(presenceMap[u.id]) ? "Online" : "Offline"}
+                              </span>
+                            ) : null}
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-slate-500 text-xs">{u.email || "—"}</td>
                         <td className="px-4 py-3">{roleBadge(u.role)}</td>
@@ -427,6 +475,13 @@ export default function UsersPage() {
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-slate-200 text-sm truncate">
                           {u.full_name || "—"}
+                          {presenceMap[u.id] && (
+                            <span
+                              className={`ml-1.5 align-middle inline-block w-2 h-2 rounded-full ${
+                                isOnline(presenceMap[u.id]) ? "bg-emerald-400" : "bg-slate-600"
+                              }`}
+                            />
+                          )}
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
                           {roleBadge(u.role)}

@@ -63,6 +63,7 @@ import { Toaster } from "sonner";
 import { logger } from "@/lib/logger";
 import { useAppBoot } from "./useAppBoot";
 import { ThemeToggle } from "@/app/components/ui/ThemeToggle";
+import { TeamOnline } from "@/app/components/ui/TeamOnline";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
 type SearchResult = {
@@ -521,6 +522,12 @@ function SidebarNav({
           >
             <CalendarCheck size={16} />
             <span>Attendance</span>
+          </Link>
+        </li>
+        <li>
+          <Link href="/messages" className={navLinkCls(lk("/messages", true))} onClick={onNavClick}>
+            <MessageSquare size={16} />
+            <span>Messages</span>
           </Link>
         </li>
         {isModuleEnabled(enabledModules, "jobs") && (
@@ -1457,6 +1464,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               devEnabled={license?.devEnabled}
               enabledModules={license?.enabledModules}
             />
+
+            {!isClient && <TeamOnline />}
 
             {/* User info at drawer bottom */}
             <div className="px-3 py-3 border-t border-[#1a2234]">

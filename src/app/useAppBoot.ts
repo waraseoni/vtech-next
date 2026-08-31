@@ -12,6 +12,7 @@ import {
 } from "@/lib/session-policy";
 import type { LicenseStatus } from "@/lib/license";
 import { logger } from "@/lib/logger";
+import { initPresence, cleanupPresence } from "@/lib/presence";
 
 /**
  * useAppBoot — RootClient (app shell) ka saara auth/boot state + effects.
@@ -66,6 +67,7 @@ export function useAppBoot() {
   }, []);
 
   const handleLogout = useCallback(async () => {
+    cleanupPresence();
     await supabase.auth.signOut();
     invalidateCachedUser();
     // Intentional full reload: RootClient ke stale in-memory state ko puri tarah reset karta hai
@@ -128,6 +130,9 @@ export function useAppBoot() {
           role: pd?.role || "staff",
           avatar_url: pd?.avatar_url || null,
         });
+
+        // Presence: login par "online" mark + heartbeat (chat/status ke liye).
+        if (!isPublicPage) initPresence(user.id);
 
         // Auto-subscribe push notifications (fire-and-forget).
         if (
