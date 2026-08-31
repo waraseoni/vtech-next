@@ -19,6 +19,11 @@ let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 let unloadHandler: (() => void) | null = null;
 let visHandler: (() => void) | null = null;
 let sub: ReturnType<typeof supabase.channel> | null = null;
+// Multiple subscribers support — pehle sirf EK callback rehta tha (singleton),
+// isliye baaki pages/widgets (messages, users, TeamOnline) ko live updates nahi
+// milte the. Ab ek channel + saare listeners ko dispatch hota hai.
+type PresenceRow = { user_id: string; status: string; last_seen: string };
+const listeners = new Set<(userId: string, row: PresenceRow) => void>();
 
 async function writeStatus(userId: string, status: "online" | "offline") {
   try {
@@ -86,11 +91,9 @@ export function cleanupPresence() {
   currentUserId = null;
 }
 
-// Subscribe to realtime presence changes. cb(userId, row) ho call hota hai.
-export function subscribePresence(
-  cb: (userId: string, row: { status: string; last_seen: string }) => void
-): { unsubscribe: () => void } {
-  if (sub) return { unsubscribe: unsubscribePresence };
+// ek hi realtime channel rakho; har subscriber ka callback listeners me.
+function ensurePresenceChannel() {
+  if (sub) return;
   sub = supabase
     .channel("vtech-presence")
     .on(
@@ -102,15 +105,24 @@ export function subscribePresence(
       },
       (payload) => {
         if (!payload.new) return;
-        const row = payload.new as { user_id: string; status: string; last_seen: string };
-        cb(row.user_id, row);
+        const row = payload.new as PresenceRow;
+        for (const l of listeners) l(row.user_id, row);
       }
     )
     .subscribe();
-  return { unsubscribe: unsubscribePresence };
+}
+
+// Subscribe to realtime presence changes. cb(userId, row) ho call hota hai.
+export function subscribePresence(
+  cb: (userId: string, row: { status: string; last_seen: string }) => void
+): { unsubscribe: () => void } {
+  listeners.add(cb);
+  ensurePresenceChannel();
+  return { unsubscribe: () => listeners.delete(cb) };
 }
 
 export function unsubscribePresence() {
+  listeners.clear();
   if (sub) {
     void supabase.removeChannel(sub);
     sub = null;
