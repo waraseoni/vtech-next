@@ -121,7 +121,16 @@ html[data-theme="light"] {
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  /*
+   * IMPORTANT: `:root:not([data-theme])` — ye OS dark-mode fallback sirf tab
+   * apply hota hai jab app ne abhi tak koi explicit theme select nahi kiya
+   * (pre-boot/SSR). App useAppBoot se HTML pe HAMESHA data-theme set karta hai
+   * (dark ya light), isliye ye media query kabhi app ke theme toggle se fight
+   * nahi karni chahiye. Agar yahan sirf `:root` hota to mobile/OS dark mode
+   * hone par ye dark variables app ke LIGHT toggle ko bhi daba deta. Isse
+   * mobile dark set hone par bhi app ka light theme sahi chalta hai.
+   */
+  :root:not([data-theme]) {
     --app-bg: #0a0e17;
     --app-panel: #111827;
     --app-panel-2: #0d1321;
