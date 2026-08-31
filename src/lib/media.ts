@@ -96,10 +96,17 @@ export function mediaPublicUrl(path: string): string {
   return supabase.storage.from("media").getPublicUrl(path).data.publicUrl;
 }
 
+// Storage me se media object delete. Service_role server route se karte hain
+// (client RLS quirk se kabhi file bucket me orphan pad jati thi). @/lib/media
+// client me hai, isliye fetch se API hit karte hain.
 export async function deleteMedia(path: string): Promise<void> {
-  try {
-    await supabase.storage.from("media").remove([path]);
-  } catch {
-    // ignore
+  const res = await fetch("/api/media/delete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paths: [path] }),
+  });
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}));
+    throw new Error((json as { error?: string; msg?: string }).error || (json as { msg?: string }).msg || "Media delete fail hua");
   }
 }
