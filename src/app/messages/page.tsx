@@ -115,6 +115,10 @@ export default function MessagesPage() {
   const [typingFrom, setTypingFrom] = useState<string | null>(null);
   const [pendingMedia, setPendingMedia] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  // delete confirm — accidental delete se bachne ke liye 2-step (pehle click
+  // "Confirm?", 3s ke andar wahi message par dobara click = pakka delete).
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const confirmTimer = useRef<number | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -506,6 +510,23 @@ export default function MessagesPage() {
     );
   };
 
+  // delete confirm handler — pehli click "Confirm?", 3s ke andar dobara click = delete.
+  const handleDeleteClick = (m: Message) => {
+    if (confirmDeleteId === m.id) {
+      if (confirmTimer.current) {
+        clearTimeout(confirmTimer.current);
+        confirmTimer.current = null;
+      }
+      setConfirmDeleteId(null);
+      void deleteMessage(m);
+    } else {
+      setConfirmDeleteId(m.id);
+      if (confirmTimer.current) clearTimeout(confirmTimer.current);
+      confirmTimer.current = window.setTimeout(() => setConfirmDeleteId(null), 3000);
+    }
+  };
+
+
   const filteredProfiles = profiles.filter(
     (p) =>
       !conversations.some((c) => c.other.id === p.id) &&
@@ -650,13 +671,23 @@ export default function MessagesPage() {
                   )}
                   {(mine ||
                     (activeConv && m.sender_id === activeConv.other.id)) && (
-                    <button
-                      onClick={() => void deleteMessage(m)}
-                      title="Delete"
-                      className="ml-1 p-0.5 rounded hover:bg-white/10 text-slate-400 hover:text-rose-300"
-                    >
-                      <Trash2 size={10} />
-                    </button>
+                    confirmDeleteId === m.id ? (
+                      <button
+                        onClick={() => handleDeleteClick(m)}
+                        title="Confirm delete"
+                        className="ml-1 px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-500/40 text-rose-300 font-black text-[9px] uppercase"
+                      >
+                        Confirm?
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleDeleteClick(m)}
+                        title="Delete"
+                        className="ml-1 p-0.5 rounded hover:bg-white/10 text-slate-400 hover:text-rose-300"
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    )
                   )}
                 </div>
               </div>
