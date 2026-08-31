@@ -21,6 +21,9 @@ const BUCKET_MAP: {
   idCols: string[];
   rowLabel: (r: RefRow) => string;
   hrefFor: (r: RefRow) => string | null;
+  // `media` bucket apne files folders me rakhta hai (jaise "abc_xyz/img.jpg")
+  // aur messages.media_url me bare path store karta hai (bucket segment ke bina).
+  recursive?: boolean;
 }[] = [
   {
     bucket: "client-photos",
@@ -67,41 +70,69 @@ const BUCKET_MAP: {
     rowLabel: (r) => `Job #${r.transaction_id}`,
     hrefFor: (r) => `/jobs/${r.transaction_id}`,
   },
+  {
+    bucket: "media",
+    label: "Messages Media",
+    table: "messages",
+    column: "media_url",
+    recursive: true,
+    idCols: ["id", "content"],
+    rowLabel: (r) =>
+      typeof r.content === "string" && r.content.trim()
+        ? `Message: ${r.content.trim().slice(0, 24)}`
+        : `Message #${r.id}`,
+    hrefFor: () => "/messages",
+  },
 ];
 
 type BucketFile = { name: string; size: number; created_at: string };
 
-async function listBucketFiles(bucket: string): Promise<BucketFile[]> {
+async function listBucketFiles(
+  bucket: string,
+  recursive = false,
+  prefix = ""
+): Promise<BucketFile[]> {
   const items: BucketFile[] = [];
   const LIMIT = 100;
   for (let offset = 0; ; offset += LIMIT) {
-    const { data, error } = await supabase.storage.from(bucket).list("", { limit: LIMIT, offset });
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .list(prefix, { limit: LIMIT, offset });
     if (error) throw new Error(error.message);
     if (!data || data.length === 0) break;
-    data.forEach((f) => {
-      if (f.metadata)
-        items.push({ name: f.name, size: f.metadata.size || 0, created_at: f.created_at || "" });
-    });
+    for (const f of data) {
+      if (f.metadata) {
+        items.push({ name: prefix + f.name, size: f.metadata.size || 0, created_at: f.created_at || "" });
+      } else if (recursive) {
+        // folder — andar recurse (media bucket messenger files folders me rakhta hai)
+        items.push(...(await listBucketFiles(bucket, true, prefix + f.name + "/")));
+      }
+    }
     if (data.length < LIMIT) break;
   }
   return items;
 }
 
 // File name → reference rows (label + link)
+// Standard buckets: column me `/<bucket>/<file>` URL hota hai — filename nikalo.
+// Recursive (media): column me bare path `<folder>/<file>` hota hai — usi ko storage
+//   path ke roop me use karo (kyunki file bhi usi folder me list hoti hai).
 async function fetchFileRefs(m: (typeof BUCKET_MAP)[number]): Promise<Map<string, FileRef[]>> {
   const map = new Map<string, FileRef[]>();
   const PAGE = 1000;
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
+    let q = supabase
       .from(m.table)
       .select([m.column, ...m.idCols].join(", "))
-      .ilike(m.column, `%/${m.bucket}/%`)
       .range(from, from + PAGE - 1);
+    if (m.recursive) q = q.ilike(m.column, "%/%").not(m.column, "is", null);
+    else q = q.ilike(m.column, `%/${m.bucket}/%`);
+    const { data, error } = await q;
     if (error || !data || data.length === 0) break;
     ((data as unknown as RefRow[]) || []).forEach((row) => {
       const v = row[m.column];
       if (typeof v !== "string") return;
-      const name = v.split(`/${m.bucket}/`).pop();
+      const name = m.recursive ? v : v.split(`/${m.bucket}/`).pop();
       if (!name) return;
       const ref = { label: m.rowLabel(row), href: m.hrefFor(row) };
       const existing = map.get(name);
@@ -126,7 +157,7 @@ export async function GET() {
 
     const buckets = [];
     for (const m of BUCKET_MAP) {
-      const files = await listBucketFiles(m.bucket);
+      const files = await listBucketFiles(m.bucket, m.recursive);
       const refs = await fetchFileRefs(m);
       const fileList = files
         .map((f) => ({
