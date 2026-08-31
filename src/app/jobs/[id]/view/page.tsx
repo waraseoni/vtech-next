@@ -43,6 +43,7 @@ import PageLoader from "@/components/PageLoader";
 import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { compressImage } from "@/lib/imageCompression";
+import { openCamera } from "@/lib/nativeCamera";
 import { JOB_STATUS } from "@/lib/status-colors";
 import { logger } from "@/lib/logger";
 
@@ -1157,7 +1158,13 @@ ${svcHtml}${prodHtml}
                             <button
                               onClick={() => {
                                 setImgPopup(false);
-                                imgCamInputRef.current?.click();
+                                void openCamera(
+                                  (f) =>
+                                    handleImageUpload({
+                                      target: { files: [f], value: "" },
+                                    } as unknown as React.ChangeEvent<HTMLInputElement>),
+                                  imgCamInputRef
+                                );
                               }}
                               className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors"
                             >

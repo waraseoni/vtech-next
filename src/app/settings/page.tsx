@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { supabase, getCachedUser } from "@/lib/supabase";
+import { openCamera } from "@/lib/nativeCamera";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
@@ -773,7 +774,13 @@ export default function SettingsPage() {
                                 type="button"
                                 onClick={() => {
                                   setLogoPopup(false);
-                                  logoCamRef.current?.click();
+                                  void openCamera(
+                                    (f) =>
+                                      handleLogoFileChange({
+                                        target: { files: [f], value: "" },
+                                      } as unknown as React.ChangeEvent<HTMLInputElement>),
+                                    logoCamRef
+                                  );
                                 }}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors"
                               >
@@ -876,7 +883,13 @@ export default function SettingsPage() {
                                 type="button"
                                 onClick={() => {
                                   setCoverPopup(false);
-                                  coverCamRef.current?.click();
+                                  void openCamera(
+                                    (f) =>
+                                      handleCoverFileChange({
+                                        target: { files: [f], value: "" },
+                                      } as unknown as React.ChangeEvent<HTMLInputElement>),
+                                    coverCamRef
+                                  );
                                 }}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors"
                               >
@@ -1243,7 +1256,13 @@ export default function SettingsPage() {
                             type="button"
                             onClick={() => {
                               setSigPopup(false);
-                              fileCamRef.current?.click();
+                              void openCamera(
+                                (f) =>
+                                  handleSigFileChange({
+                                    target: { files: [f], value: "" },
+                                  } as unknown as React.ChangeEvent<HTMLInputElement>),
+                                fileCamRef
+                              );
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors"
                           >

@@ -25,6 +25,7 @@ import {
   UserCog,
 } from "lucide-react";
 import { compressImage } from "@/lib/imageCompression";
+import { openCamera } from "@/lib/nativeCamera";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import SearchableSelect from "@/components/SearchableSelect";
 import PageLoader from "@/components/PageLoader";
@@ -304,7 +305,13 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   <button
                     onClick={() => {
                       setPhotoPopup(false);
-                      photoCamRef.current?.click();
+                      void openCamera(
+                        (f) =>
+                          handlePhotoUpload({
+                            target: { files: [f], value: "" },
+                          } as unknown as React.ChangeEvent<HTMLInputElement>),
+                        photoCamRef
+                      );
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors"
                   >

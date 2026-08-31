@@ -2807,3 +2807,125 @@ html[data-theme="dark"] {
 .anim-scale {
   animation: popIn 0.25s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
+
+/* ============================================
+   LIGHT THEME — HARDENED FLAT OVERRIDES (v3)
+   Keep these at TOP-LEVEL (not nested inside
+   `html[data-theme="light"] { ... }`) taaki CSS
+   compiler inhe reliably emit kare. Pure nested
+   blocks ke andar rakhne par kuch selectors
+   (e.g. plain `.bg-[#0d1117]`) drop ho rahe the,
+   isliye light mode me backgrounds dark reh rahe.
+   ============================================ */
+html[data-theme="light"] .bg-\[\#0d1117\] {
+  background-color: #f8f9fc !important;
+}
+html[data-theme="light"] .bg-\[\#161b27\] {
+  background-color: #ffffff !important;
+}
+html[data-theme="light"] .bg-\[\#111520\] {
+  background-color: #f1f5f9 !important;
+}
+html[data-theme="light"] .bg-\[\#080d14\] {
+  background-color: #ffffff !important;
+}
+html[data-theme="light"] .bg-\[\#0a0e16\] {
+  background-color: #f1f5f9 !important;
+}
+html[data-theme="light"] .bg-\[\#1e2637\] {
+  background-color: #e9edf4 !important;
+}
+html[data-theme="light"] .bg-\[\#1e2740\] {
+  background-color: #e3e8f0 !important;
+}
+html[data-theme="light"] .bg-\[\#1a2234\] {
+  background-color: #eef2f7 !important;
+}
+html[data-theme="light"] .bg-\[\#1a2030\] {
+  background-color: #eef2f7 !important;
+}
+html[data-theme="light"] .bg-\[\#1a2035\] {
+  background-color: #eef2f7 !important;
+}
+html[data-theme="light"] .bg-\[\#10141d\] {
+  background-color: #eef2f7 !important;
+}
+html[data-theme="light"] .bg-\[\#0f1520\] {
+  background-color: #f1f5f9 !important;
+}
+html[data-theme="light"] .bg-\[\#12161f\] {
+  background-color: #f1f5f9 !important;
+}
+html[data-theme="light"] .bg-\[\#121723\] {
+  background-color: #eef2f7 !important;
+}
+html[data-theme="light"] .bg-\[\#252f42\] {
+  background-color: #e3e8f0 !important;
+}
+html[data-theme="light"] .bg-\[\#252f45\] {
+  background-color: #e3e8f0 !important;
+}
+html[data-theme="light"] .bg-\[\#253048\] {
+  background-color: #e3e8f0 !important;
+}
+html[data-theme="light"] .bg-\[\#1c2231\] {
+  background-color: #e2e8f0 !important;
+}
+html[data-theme="light"] .bg-\[\#232c42\] {
+  background-color: #e2e8f0 !important;
+}
+html[data-theme="light"] .bg-\[\#0f1a2e\] {
+  background-color: #f1f5f9 !important;
+}
+html[data-theme="light"] .bg-\[\#12161f\] {
+  background-color: #f1f5f9 !important;
+}
+html[data-theme="light"] .bg-\[\#090b10\] {
+  background-color: #f8f9fc !important;
+}
+html[data-theme="light"] .bg-\[\#111114\] {
+  background-color: #ffffff !important;
+}
+html[data-theme="light"] .bg-\[\#0d1f35\] {
+  background-color: #e0e7ef !important;
+}
+html[data-theme="light"] .bg-\[\#0a1628\] {
+  background-color: #e8eef5 !important;
+}
+
+/* Keep these darker accents light-mode friendly */
+html[data-theme="light"] .bg-\[\#0d1117\]\/\[0\.5\] {
+  background-color: rgba(15, 23, 42, 0.05) !important;
+}
+html[data-theme="light"] .bg-black\/50 {
+  background-color: rgba(15, 23, 42, 0.4) !important;
+}
+html[data-theme="light"] .bg-black\/60 {
+  background-color: rgba(15, 23, 42, 0.5) !important;
+}
+html[data-theme="light"] .bg-black\/70 {
+  background-color: rgba(15, 23, 42, 0.55) !important;
+}
+html[data-theme="light"] .bg-black\/80 {
+  background-color: rgba(15, 23, 42, 0.65) !important;
+}
+
+/* Main shell subsurfaces */
+html[data-theme="light"] .bg-\[\#080c14\] {
+  background-color: #f8f9fc !important;
+}
+html[data-theme="light"] .bg-\[\#0a0a18\] {
+  background-color: #f1f5f9 !important;
+}
+html[data-theme="light"] .bg-\[\#0b0b1a\] {
+  background-color: #f1f5f9 !important;
+}
+html[data-theme="light"] .bg-\[\#0c101a\] {
+  background-color: #eef2f7 !important;
+}
+html[data-theme="light"] .bg-\[\#1a2133\] {
+  background-color: #eef2f7 !important;
+}
+html[data-theme="light"] .bg-\[\#05050f\] {
+  background-color: #f8f9fc !important;
+}
