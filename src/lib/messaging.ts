@@ -66,15 +66,19 @@ export async function fetchConversations(
   }
 
   // presence unread-profile me bhi dal do jo messages-khali hain
+  // sirf unhike liye jo profiles list me milte hain — apna (me) + unknown profile
+  // skip (warna truncated-UUID gibberish name dikhta).
   for (const [id, p] of Object.entries(presenceMap)) {
-    if (!map.has(id)) {
-      map.set(id, {
-        other: profiles.find((x) => x.id === id) || { id, full_name: id.slice(0, 8), role: null },
-        lastMessage: null,
-        unread: 0,
-        presence: p,
-      });
-    }
+    if (id === me) continue;
+    if (map.has(id)) continue;
+    const prof = profiles.find((x) => x.id === id);
+    if (!prof) continue;
+    map.set(id, {
+      other: prof,
+      lastMessage: null,
+      unread: 0,
+      presence: p,
+    });
   }
 
   return [...map.values()].sort((a, b) => {
