@@ -31,13 +31,20 @@ create policy msg_messages_update on public.messages
     and public.is_frontend_staff()
   );
 
--- ── 3) DELETE policy (sender/recipient dono delete kar sakte hain) ─────
+-- ── 3) DELETE policy (admin/developer sab; staff sirf apna send-kiya hua) ──
 drop policy if exists msg_messages_delete on public.messages;
 create policy msg_messages_delete on public.messages
   for delete to authenticated
   using (
     public.is_frontend_staff()
-    and (sender_id = auth.uid() or recipient_id = auth.uid())
+    and (
+      exists (
+        select 1 from public.profiles p
+        where p.id = auth.uid()
+          and p.role in ('admin', 'developer')
+      )
+      or sender_id = auth.uid()
+    )
   );
 
 -- ── 4) Storage bucket (internal staff media) ───────────────────────────

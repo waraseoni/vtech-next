@@ -119,6 +119,8 @@ export default function MessagesPage() {
   // "Confirm?", 3s ke andar wahi message par dobara click = pakka delete).
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const confirmTimer = useRef<number | null>(null);
+  // delete rights: staff sirf apna send-kiya hua delete kare; admin/developer sab.
+  const [myRole, setMyRole] = useState<string>("");
 
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -163,6 +165,7 @@ export default function MessagesPage() {
           .maybeSingle();
         setMeName(myP?.full_name || user.email?.split("@")[0] || "Me");
         const myRole = myP?.role || "";
+        setMyRole(myRole);
         if (!["admin", "staff", "developer"].includes(myRole)) {
           if (!cancelled) {
             setNotFound(true);
@@ -669,8 +672,7 @@ export default function MessagesPage() {
                       )}
                     </span>
                   )}
-                  {(mine ||
-                    (activeConv && m.sender_id === activeConv.other.id)) && (
+                  {(myRole === "admin" || myRole === "developer" || mine) && (
                     confirmDeleteId === m.id ? (
                       <button
                         onClick={() => handleDeleteClick(m)}

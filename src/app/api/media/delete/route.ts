@@ -32,16 +32,18 @@ export async function POST(req: NextRequest) {
     }
 
     const admin = getAdminSupabase();
+    const isAdminDev = auth.role === "admin" || auth.role === "developer";
 
-    // Sirf usi message ki media delete karo jisme ye user sender YA recipient hai.
+    // Admin/developer: kisi bhi message ki media delete kar sakte hain.
+    // Staff: sirf usi message ki media jisme wo sender YA recipient hai.
     const allowed: string[] = [];
     for (const p of paths) {
-      const { data } = await admin
+      let q = admin
         .from("messages")
         .select("id")
-        .eq("media_url", p)
-        .or(`sender_id.eq.${me},recipient_id.eq.${me}`)
-        .maybeSingle();
+        .eq("media_url", p);
+      if (!isAdminDev) q = q.or(`sender_id.eq.${me},recipient_id.eq.${me}`);
+      const { data } = await q.maybeSingle();
       if (data) allowed.push(p);
     }
 
