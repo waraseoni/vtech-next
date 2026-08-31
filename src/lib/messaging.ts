@@ -264,11 +264,7 @@ function makeTypingChan(): ReturnType<typeof supabase.channel> {
 
 export function broadcastTyping(toUserId: string, fromUserId: string): void {
   try {
-    void makeTypingChan().send({
-      type: "broadcast",
-      event: "typing",
-      payload: { to: toUserId, from: fromUserId },
-    });
+    void makeTypingChan().httpSend("typing", { to: toUserId, from: fromUserId });
   } catch {
     // ignore
   }
