@@ -260,6 +260,26 @@ export default function MessagesPage() {
     activeRef.current = id;
     setActiveId(id);
     const me = meIdRef.current;
+    // ensure target conversation exists (offline/new user bhi chat pane open kare)
+    setConversations((prev) => {
+      if (prev.some((c) => c.other.id === id)) return prev;
+      const prof = profiles.find((p) => p.id === id);
+      const entry: Conversation = {
+        other:
+          prof ||
+          ({
+            id,
+            full_name: "User",
+            role: null,
+          } as ProfileLite),
+        lastMessage: null,
+        unread: 0,
+        presence: presenceMap[id] || null,
+      };
+      const next = [entry, ...prev];
+      convRef.current = next;
+      return next;
+    });
     setMessages([]);
     msgsRef.current = [];
     const history = await fetchMessages(me, id);
@@ -279,7 +299,7 @@ export default function MessagesPage() {
       sp.set("to", id);
       window.history.replaceState(null, "", `/messages?${sp.toString()}`);
     } catch { /* ignore */ }
-  }, [searchParams]);
+  }, [searchParams, presenceMap]);
 
   // todo: on first load if URL has ?to=, open it after profiles load
   useEffect(() => {
