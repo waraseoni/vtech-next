@@ -1733,7 +1733,9 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       </div>
 
       {/* ── Floating in-app back button (mobile) ── */}
-      {!isClient && !isAiPage && (
+      {/* /messages par nahi — messenger input ke paperclip se overlap hota tha;
+          chat pane me apna header back-button already hai. */}
+      {!isClient && !isAiPage && !pathname.startsWith("/messages") && (
         <button
           onClick={goInAppBack}
           className="fixed bottom-5 left-4 z-40 md:hidden w-11 h-11 glass border rounded-full flex items-center justify-center text-slate-400 hover:text-white active:scale-95 transition-all shadow-lg"
