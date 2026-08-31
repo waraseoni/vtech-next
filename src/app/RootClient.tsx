@@ -45,9 +45,6 @@ import {
   Menu,
   BarChart2,
   RefreshCw,
-  Sun,
-  Moon,
-  Monitor,
   History,
   Activity,
   BookOpen,
@@ -65,6 +62,7 @@ import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
 import { Toaster } from "sonner";
 import { logger } from "@/lib/logger";
 import { useAppBoot } from "./useAppBoot";
+import { ThemeToggle } from "@/app/components/ui/ThemeToggle";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
 type SearchResult = {
@@ -1215,7 +1213,6 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     showIdleWarningRef,
     refreshLicense,
     handleLogout,
-    toggleTheme,
   } = useAppBoot();
 
   // Public pages — no sidebar, no dashboard chrome.
@@ -1490,45 +1487,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                     {profile?.role}
                   </p>
                 </div>
-                {/* Theme selector — System / Dark / Light */}
-                <div className="flex items-center gap-1 p-1 rounded-lg bg-white/[0.04] border border-white/10">
-                  <button
-                    onClick={() => setThemePref("system")}
-                    title="System theme (OS ke saath)"
-                    aria-label="System theme"
-                    className={`p-1.5 rounded-md transition-colors ${
-                      themePref === "system"
-                        ? "bg-blue-600 text-white"
-                        : "text-slate-500 hover:text-white hover:bg-white/[0.06]"
-                    }`}
-                  >
-                    <Monitor size={13} />
-                  </button>
-                  <button
-                    onClick={() => setThemePref("light")}
-                    title="Light theme"
-                    aria-label="Light theme"
-                    className={`p-1.5 rounded-md transition-colors ${
-                      themePref === "light"
-                        ? "bg-blue-600 text-white"
-                        : "text-slate-500 hover:text-white hover:bg-white/[0.06]"
-                    }`}
-                  >
-                    <Sun size={13} />
-                  </button>
-                  <button
-                    onClick={() => setThemePref("dark")}
-                    title="Dark theme"
-                    aria-label="Dark theme"
-                    className={`p-1.5 rounded-md transition-colors ${
-                      themePref === "dark"
-                        ? "bg-blue-600 text-white"
-                        : "text-slate-500 hover:text-white hover:bg-white/[0.06]"
-                    }`}
-                  >
-                    <Moon size={13} />
-                  </button>
-                </div>
+                {/* Theme selector — System / Dark / Light (screen-aware dropdown) */}
+                <ThemeToggle themePref={themePref} theme={theme} onSelect={setThemePref} />
                 <button
                   onClick={handleLogout}
                   className="p-1.5 text-slate-600 hover:text-red-400 transition-colors"
@@ -1598,15 +1558,15 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               </Link>
             )}
 
-            {/* Theme toggle - desktop only */}
+            {/* Theme - desktop topbar (screen-aware dropdown) */}
             {isMobile === false && (
-              <button
-                onClick={toggleTheme}
-                className="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-blue-500/40 rounded-xl text-slate-500 hover:text-white transition-all"
-                title={theme === "light" ? "Switch to Dark" : "Switch to Light"}
-              >
-                {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
-              </button>
+              <ThemeToggle
+                themePref={themePref}
+                theme={theme}
+                onSelect={setThemePref}
+                size={16}
+                buttonClassName="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-blue-500/40 rounded-xl text-slate-500 hover:text-white transition-all"
+              />
             )}
 
             {/* User dropdown */}
