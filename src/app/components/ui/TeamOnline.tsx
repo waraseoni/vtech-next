@@ -47,8 +47,10 @@ export function TeamOnline() {
       </span>
       <span className="min-w-0">
         <span className="block text-[11px] font-bold text-slate-200 truncate">Team online</span>
-        <span className="block text-[10px] text-slate-500">
-          {online.length} of {total || 0} online
+        <span className="block text-[10px] text-slate-500 truncate">
+          {online.length > 0
+            ? online.map((m) => m.full_name || "User").join(", ")
+            : "Abhi koi online nahi"}
         </span>
       </span>
       {online.length > 0 && (

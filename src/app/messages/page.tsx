@@ -71,6 +71,7 @@ export default function MessagesPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [search, setSearch] = useState("");
   const [notFound, setNotFound] = useState(false);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
 
   const msgsRef = useRef<Message[]>([]);
   const convRef = useRef<Conversation[]>([]);
@@ -99,20 +100,48 @@ export default function MessagesPage() {
           return;
         }
         meIdRef.current = user.id;
-        // my name for push
+        // my name for push + apna role check (staff/admin/developer hi messenger use kar sakta hai)
         const { data: myP } = await supabase
           .from("profiles")
-          .select("full_name")
+          .select("full_name, role")
           .eq("id", user.id)
           .maybeSingle();
         setMeName(myP?.full_name || user.email?.split("@")[0] || "Me");
+        const myRole = myP?.role || "";
+        if (!["admin", "staff", "developer"].includes(myRole)) {
+          if (!cancelled) {
+            setNotFound(true);
+            setLoading(false);
+          }
+          return;
+        }
 
-        // staff profiles directory
-        const { data: profs } = await supabase
+        // staff/developer/admin profiles directory — messenger sirf staff ke liye
+        const { data: profs, error: profErr } = await supabase
           .from("profiles")
-          .select("id, full_name, role, avatar_url, mechanic_name")
+          .select("id, full_name, role")
           .neq("id", user.id)
+          .in("role", ["admin", "staff", "developer"])
           .order("full_name", { ascending: true });
+        if (profErr) {
+          // ek result par profile lookup fail (misleading "no users") se bachne ke liye
+          // basic columns ke saath dubara try karo
+          const { data: basic } = await supabase
+            .from("profiles")
+            .select("id, full_name, role")
+            .neq("id", user.id)
+            .in("role", ["admin", "staff", "developer"])
+            .order("full_name", { ascending: true });
+          if (cancelled) return;
+          const plist0 = (basic || []) as ProfileLite[];
+          setProfiles(plist0);
+          const pm0: Record<string, ProfileLite> = {};
+          plist0.forEach((p) => (pm0[p.id] = p));
+          profileMapRef.current = pm0;
+          setLoading(false);
+          setNotFound(plist0.length === 0);
+          return;
+        }
         if (cancelled) return;
         const plist = (profs || []) as ProfileLite[];
         setProfiles(plist);
@@ -121,23 +150,26 @@ export default function MessagesPage() {
         profileMapRef.current = pm;
 
         // presence snapshot
-        const { data: pres } = await supabase
+        const { data: pres, error: presErr } = await supabase
           .from("user_presence")
           .select("user_id, status, last_seen");
-        if (cancelled) return;
-        const pmap: Record<string, Presence> = {};
-        (pres || []).forEach((r) => (pmap[r.user_id] = { status: r.status, last_seen: r.last_seen }));
-        setPresenceMap(pmap);
-
-        // conversations
-        const convs = await fetchConversations(user.id, plist, pmap);
-        if (cancelled) return;
-        setConversations(convs);
-        convRef.current = convs;
+        if (!presErr && !cancelled) {
+          const pmap: Record<string, Presence> = {};
+          (pres || []).forEach((r) => (pmap[r.user_id] = { status: r.status, last_seen: r.last_seen }));
+          setPresenceMap(pmap);
+          // conversations
+          const convs = await fetchConversations(user.id, plist, pmap);
+          if (cancelled) return;
+          setConversations(convs);
+          convRef.current = convs;
+        }
         setLoading(false);
         setNotFound(plist.length === 0);
       } catch {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoadErr("Kuch gadbad hui — messenger load nahi hua");
+          setLoading(false);
+        }
       }
     })();
     return () => {
@@ -303,12 +335,23 @@ export default function MessagesPage() {
   const activeConv = conversations.find((c) => c.other.id === activeId);
 
   if (loading) return <PageLoader icon={MessageSquare} label="Loading Messages" />;
+  if (loadErr) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="text-center text-rose-400 text-sm">
+          <Inbox className="mx-auto mb-3" size={40} />
+          {loadErr}
+          <p className="mt-2 text-slate-500 text-xs">Thodi der baad dubara try karo.</p>
+        </div>
+      </div>
+    );
+  }
   if (notFound && !isMobile) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="text-center text-slate-400 text-sm">
           <Inbox className="mx-auto mb-3" size={40} />
-          Koi user nahi mila — messenger sirf registered staff/admin ke liye hai.
+          Koi aur staff/admin registered nahi hai — messenger sirf staff/admin ke beech chat ke liye hai.
         </div>
       </div>
     );
