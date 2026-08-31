@@ -39,7 +39,10 @@ export function useAppBoot() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+  // themePref: user ki choice — "system" (OS ke saath), "dark" ya "light".
+  // theme: USED/resolved theme (hamesha "dark" ya "light") jo CSS/UI ko milta hai.
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [themePref, setThemePrefState] = useState<"system" | "dark" | "light">("dark");
   const [license, setLicense] = useState<LicenseStatus | null>(null);
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const [showIdleWarning, setShowIdleWarning] = useState(false);
@@ -413,21 +416,97 @@ export function useAppBoot() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Theme init + persist + set body bg
-  useEffect(() => {
+  // ── THEME (3-way: system / dark / light) ─────────────────────────────────
+  // localStorage me "vtech_theme" = "system" | "dark" | "light".
+  // `resolveTheme(pref)` system ko OS (prefers-color-scheme) se resolve karta
+  // hai; data-theme hamesha "dark"/"light" hi hota hai. CSS (dark: variant,
+  // light overrides) isi binary attribute par depend karta hai.
+  const systemDark = useRef(false);
+  const isPublicRef = useRef(false);
+
+  const applyTheme = useCallback((pref: "system" | "dark" | "light") => {
     try {
-      const saved = localStorage.getItem("vtech_theme") as "dark" | "light" | null;
-      const initial = saved || "dark";
-      setTheme(initial);
-      document.documentElement.setAttribute("data-theme", initial);
-      document.body.style.backgroundColor = initial === "dark" ? "#0d1117" : "#f8f9fc";
-      document.body.style.color = initial === "dark" ? "#e2e8f0" : "#0f172a";
+      const system = systemDark.current;
+      const effective: "dark" | "light" =
+        pref === "system" ? (system ? "dark" : "light") : pref;
+      // public page hamesha dark-only hota hai (hardcoded design)
+      const t = isPublicRef.current ? "dark" : effective;
+      document.documentElement.setAttribute("data-theme", t);
+      document.body.style.backgroundColor =
+        isPublicRef.current ? "#070714" : t === "dark" ? "#0d1117" : "#f8f9fc";
+      document.body.style.color = t === "dark" ? "#e2e8f0" : "#0f172a";
+      setTheme(t);
+      return t;
     } catch {
       document.documentElement.setAttribute("data-theme", "dark");
+      return "dark";
     }
   }, []);
 
-  // Public site is hardcoded dark-only. Saved light theme public par apply mat karo.
+  // setThemePref — user ki choice save + apply karo
+  const setThemePref = useCallback(
+    (pref: "system" | "dark" | "light") => {
+      setThemePrefState(pref);
+      try {
+        localStorage.setItem("vtech_theme", pref);
+      } catch {
+        // ignore
+      }
+      applyTheme(pref);
+    },
+    [applyTheme]
+  );
+
+  // toggleTheme — quick switch: current effective opposite (dark<->light).
+  // Agar pref "system" hai to OS ke current effective ke opposite set karo.
+  const toggleTheme = useCallback(() => {
+    let pref: "system" | "dark" | "light" = "light";
+    try {
+      const saved = localStorage.getItem("vtech_theme");
+      const effectiveNow =
+        (document.documentElement.getAttribute("data-theme") as "dark" | "light") || "dark";
+      const next = effectiveNow === "dark" ? "light" : "dark";
+      pref = next;
+      localStorage.setItem("vtech_theme", next);
+    } catch {
+      pref = "light";
+    }
+    setThemePrefState(pref);
+    applyTheme(pref);
+  }, [applyTheme]);
+
+  // Init: systemDark ref + OS theme listener + initial apply
+  useEffect(() => {
+    try {
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      systemDark.current = mq.matches;
+      const onChange = (e: MediaQueryListEvent) => {
+        systemDark.current = e.matches;
+        // agar pref "system" hai to OS change par turant re-apply
+        const saved = localStorage.getItem("vtech_theme");
+        if (saved === "system") applyTheme("system");
+      };
+      mq.addEventListener("change", onChange);
+      const saved = (localStorage.getItem("vtech_theme") as
+        | "system"
+        | "dark"
+        | "light"
+        | null) || "dark";
+      setThemePrefState(saved);
+      applyTheme(saved);
+      return () => {
+        try {
+          mq.removeEventListener("change", onChange);
+        } catch {
+          // ignore
+        }
+      };
+    } catch {
+      applyTheme("dark");
+    }
+  }, [applyTheme]);
+
+  // Pathname change: public-page flag update + re-apply
   useEffect(() => {
     const pub =
       pathname === "/" ||
@@ -441,39 +520,19 @@ export function useAppBoot() {
         "/industrial",
         "/power-supply",
       ].some((p) => pathname === p || pathname.startsWith(p + "/"));
+    isPublicRef.current = pub;
     try {
-      if (pub) {
-        document.documentElement.setAttribute("data-theme", "dark");
-        document.body.style.backgroundColor = "#070714";
-        document.body.style.color = "#e2e8f0";
-        setTheme("dark");
-      } else {
-        const saved = localStorage.getItem("vtech_theme") as "dark" | "light" | null;
-        const t = saved || "dark";
-        document.documentElement.setAttribute("data-theme", t);
-        document.body.style.backgroundColor = t === "dark" ? "#0d1117" : "#f8f9fc";
-        document.body.style.color = t === "dark" ? "#e2e8f0" : "#0f172a";
-        setTheme(t);
-      }
+      const saved = (localStorage.getItem("vtech_theme") as
+        | "system"
+        | "dark"
+        | "light"
+        | null) || "dark";
+      applyTheme(saved);
     } catch {
-      // ignore
+      applyTheme("dark");
     }
-  }, [pathname]);
+  }, [pathname, applyTheme]);
 
-  const toggleTheme = useCallback(() => {
-    setTheme((prev) => {
-      const next = (prev || "dark") === "dark" ? "light" : "dark";
-      try {
-        localStorage.setItem("vtech_theme", next);
-      } catch {
-        // ignore
-      }
-      document.documentElement.setAttribute("data-theme", next);
-      document.body.style.backgroundColor = next === "dark" ? "#0d1117" : "#f8f9fc";
-      document.body.style.color = next === "dark" ? "#e2e8f0" : "#0f172a";
-      return next;
-    });
-  }, []);
 
   // Auto-close drawer on route change
   useEffect(() => {
@@ -492,6 +551,8 @@ export function useAppBoot() {
     aiDrawerOpen,
     setAiDrawerOpen,
     theme,
+    themePref,
+    setThemePref,
     license,
     brandLogo,
     showIdleWarning,

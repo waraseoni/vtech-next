@@ -47,6 +47,7 @@ import {
   RefreshCw,
   Sun,
   Moon,
+  Monitor,
   History,
   Activity,
   BookOpen,
@@ -1204,6 +1205,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     aiDrawerOpen,
     setAiDrawerOpen,
     theme,
+    themePref,
+    setThemePref,
     license,
     brandLogo,
     showIdleWarning,
@@ -1487,13 +1490,45 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                     {profile?.role}
                   </p>
                 </div>
-                <button
-                  onClick={toggleTheme}
-                  className="p-1.5 text-slate-600 hover:text-amber-400 transition-colors"
-                  title="Toggle Theme"
-                >
-                  {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-                </button>
+                {/* Theme selector — System / Dark / Light */}
+                <div className="flex items-center gap-1 p-1 rounded-lg bg-white/[0.04] border border-white/10">
+                  <button
+                    onClick={() => setThemePref("system")}
+                    title="System theme (OS ke saath)"
+                    aria-label="System theme"
+                    className={`p-1.5 rounded-md transition-colors ${
+                      themePref === "system"
+                        ? "bg-blue-600 text-white"
+                        : "text-slate-500 hover:text-white hover:bg-white/[0.06]"
+                    }`}
+                  >
+                    <Monitor size={13} />
+                  </button>
+                  <button
+                    onClick={() => setThemePref("light")}
+                    title="Light theme"
+                    aria-label="Light theme"
+                    className={`p-1.5 rounded-md transition-colors ${
+                      themePref === "light"
+                        ? "bg-blue-600 text-white"
+                        : "text-slate-500 hover:text-white hover:bg-white/[0.06]"
+                    }`}
+                  >
+                    <Sun size={13} />
+                  </button>
+                  <button
+                    onClick={() => setThemePref("dark")}
+                    title="Dark theme"
+                    aria-label="Dark theme"
+                    className={`p-1.5 rounded-md transition-colors ${
+                      themePref === "dark"
+                        ? "bg-blue-600 text-white"
+                        : "text-slate-500 hover:text-white hover:bg-white/[0.06]"
+                    }`}
+                  >
+                    <Moon size={13} />
+                  </button>
+                </div>
                 <button
                   onClick={handleLogout}
                   className="p-1.5 text-slate-600 hover:text-red-400 transition-colors"

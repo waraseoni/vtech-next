@@ -76,12 +76,16 @@ const BOOT_GUARD = `(function(){
 // data-theme attribute set na ho to CSS vars (:root = LIGHT palette) light
 // render karte hain jabki dark:* classes aur body DARK rehte hain → "kuch
 // light kuch dark" mix dikhtha tha. Ye inline script HTML parse hote hi
-// (first paint se PEHLE) sahi attribute laga deti hai: saved vtech_theme,
-// warna default 'dark'. Server layout me hi hai — BOOT_GUARD wala reason
-// (client render par <script> hydration error).
+// (first paint se PEHLE) sahi attribute laga deti hai: saved vtech_theme
+// ("light" | "dark" | "system"), warna default 'dark'. Server layout me hi
+// hai — BOOT_GUARD wala reason (client render par <script> hydration error).
 const THEME_BOOT = `(function(){
   var t="dark";
-  try{var s=localStorage.getItem("vtech_theme");if(s==="light")t="light";}catch(e){}
+  try{
+    var s=localStorage.getItem("vtech_theme");
+    if(s==="light")t="light";
+    else if(s==="system"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}
+  }catch(e){}
   document.documentElement.setAttribute("data-theme",t);
 })();`;
 
