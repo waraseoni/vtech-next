@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabase";
 
 // ─── Messaging helpers (1-on-1 staff chat) ────────────────────────────────
-// `messages` table (id, sender_id, recipient_id, content, read_at, created_at)
+// `messages` table (id, sender_id, recipient_id, content, read_at, delivered_at,
+// media_url, media_type, media_name, deleted_at, created_at)
 // + Realtime par live. Presence `user_presence` se. Push `/api/messages/push`.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -11,6 +12,11 @@ export type Message = {
   recipient_id: string;
   content: string;
   read_at: string | null;
+  delivered_at?: string | null;
+  media_url?: string | null;
+  media_type?: string | null;
+  media_name?: string | null;
+  deleted_at?: string | null;
   created_at: string;
 };
 
@@ -31,6 +37,8 @@ export type Conversation = {
   presence: Presence | null;
 };
 
+const MSG_COLS = "id, sender_id, recipient_id, content, read_at, delivered_at, media_url, media_type, media_name, deleted_at, created_at";
+
 // conversations — meri saari baat-cheetein (other-user + last msg + unread + presence).
 export async function fetchConversations(
   me: string,
@@ -39,7 +47,7 @@ export async function fetchConversations(
 ): Promise<Conversation[]> {
   const { data, error } = await supabase
     .from("messages")
-    .select("id, sender_id, recipient_id, content, created_at, read_at")
+    .select(MSG_COLS)
     .or(`sender_id.eq.${me},recipient_id.eq.${me}`)
     .order("created_at", { ascending: false });
   if (error) return [];
@@ -66,19 +74,12 @@ export async function fetchConversations(
   }
 
   // presence unread-profile me bhi dal do jo messages-khali hain
-  // sirf unhike liye jo profiles list me milte hain — apna (me) + unknown profile
-  // skip (warna truncated-UUID gibberish name dikhta).
   for (const [id, p] of Object.entries(presenceMap)) {
     if (id === me) continue;
     if (map.has(id)) continue;
     const prof = profiles.find((x) => x.id === id);
     if (!prof) continue;
-    map.set(id, {
-      other: prof,
-      lastMessage: null,
-      unread: 0,
-      presence: p,
-    });
+    map.set(id, { other: prof, lastMessage: null, unread: 0, presence: p });
   }
 
   return [...map.values()].sort((a, b) => {
@@ -92,35 +93,42 @@ export async function fetchConversations(
 export async function fetchMessages(me: string, other: string): Promise<Message[]> {
   const { data, error } = await supabase
     .from("messages")
-    .select("id, sender_id, recipient_id, content, created_at, read_at")
+    .select(MSG_COLS)
     .or(`and(sender_id.eq.${me},recipient_id.eq.${other}),and(sender_id.eq.${other},recipient_id.eq.${me})`)
+    .not("deleted_at", "is", null)
     .order("created_at", { ascending: true });
   if (error) return [];
   return (data as Message[]) || [];
 }
 
-// send — message insert + recipient ko push. sender bhi khud fire kare based on
-// sender's own write policy (sender khud hi insert kar sakta hai).
+// send — message insert + recipient ko push.
 export async function sendMessage(
   me: string,
   other: string,
   myName: string,
-  content: string
+  content: string,
+  media?: { url: string; type: string; name: string }
 ): Promise<{ ok: boolean; error?: string }> {
   const text = content.trim();
-  if (!text) return { ok: false, error: "Message khali hai" };
+  if (!text && !media) return { ok: false, error: "Message khali hai" };
   const { error } = await supabase.from("messages").insert({
     sender_id: me,
     recipient_id: other,
-    content: text,
+    content: text || "",
+    media_url: media?.url || null,
+    media_type: media?.type || null,
+    media_name: media?.name || null,
   });
   if (error) return { ok: false, error: error.message };
-  // recipient ko push (best-effort, fail to ignore)
   try {
     void fetch("/api/messages/push", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ recipientId: other, senderName: myName, content: text }),
+      body: JSON.stringify({
+        recipientId: other,
+        senderName: myName,
+        content: text || (media?.name ? "📎 " + media.name : "Media"),
+      }),
     }).catch(() => {});
   } catch {
     // ignore
@@ -128,20 +136,46 @@ export async function sendMessage(
   return { ok: true };
 }
 
-// markIncomingRead — me jo messages recipient hoon, unhe read kar do.
-export async function markRead(me: string, other: string): Promise<void> {
+// delivered mark — recipient ne message receive kar liya (double tick).
+export async function markDelivered(me: string, other: string): Promise<void> {
   await supabase
     .from("messages")
-    .update({ read_at: new Date().toISOString() })
+    .update({ delivered_at: new Date().toISOString() })
+    .eq("recipient_id", me)
+    .eq("sender_id", other)
+    .is("delivered_at", null);
+}
+
+// markRead — delivered + read (blue double tick).
+export async function markRead(me: string, other: string): Promise<void> {
+  const now = new Date().toISOString();
+  await supabase
+    .from("messages")
+    .update({ read_at: now, delivered_at: now })
     .eq("recipient_id", me)
     .eq("sender_id", other)
     .is("read_at", null);
 }
 
-// realtime messages subscription — naye message par cb(msg).
+// current user ka auth UUID (sidebar badge subscription ke liye).
+export async function getMyId(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
+// unread total (sidebar badge ke liye) — mere recipient, koi bhi sender se.
+export async function fetchUnreadCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from("messages")
+    .select("id", { count: "exact", head: true })
+    .is("read_at", null);
+  return error ? 0 : count || 0;
+}
+
+// realtime: INCOMING (recipient=me) INSERT + delivery/read UPDATE on my sent msgs.
 export function subscribeMessages(
   me: string,
-  cb: (msg: Message) => void
+  cb: (msg: Message, action: "insert" | "update") => void
 ): { unsubscribe: () => void } {
   let chan: ReturnType<typeof supabase.channel> | null = null;
   let removed = false;
@@ -158,7 +192,33 @@ export function subscribeMessages(
         },
         (payload) => {
           if (!payload.new) return;
-          cb(payload.new as Message);
+          cb(payload.new as Message, "insert");
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `sender_id=eq.${me}`,
+        },
+        (payload) => {
+          if (!payload.new) return;
+          cb(payload.new as Message, "update");
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "messages",
+          filter: `recipient_id=eq.${me}`,
+        },
+        (payload) => {
+          if (!payload.old) return;
+          cb({ ...(payload.old as Message), deleted_at: new Date().toISOString() }, "update");
         }
       )
       .subscribe();
@@ -176,12 +236,57 @@ export function subscribeMessages(
   };
 }
 
-// presence helpers
+// ─── Typing indicator (ephemeral realtime broadcast, koi table nahi) ────────
+// Sender apni typing broadcast karta hai → recipient uske name ke saath
+// "typing…" dikhata hai. Broadcast sirf DOOSRE clients ko milta hai (khud ko
+// nahi), isliye sender ko khud ka filter karne ki zaroorat nahi. Par payload me
+// kaun likh raha hai (from) bhejna zaroori hai — broadcast sender tag nahi karta.
+function makeTypingChan(): ReturnType<typeof supabase.channel> {
+  return supabase.channel("vtech-typing");
+}
+
+export function broadcastTyping(toUserId: string, fromUserId: string): void {
+  try {
+    void makeTypingChan().send({
+      type: "broadcast",
+      event: "typing",
+      payload: { to: toUserId, from: fromUserId },
+    });
+  } catch {
+    // ignore
+  }
+}
+
+export function subscribeTyping(
+  me: string,
+  cb: (fromUserId: string) => void
+): () => void {
+  let chan: ReturnType<typeof supabase.channel> | null = null;
+  try {
+    chan = makeTypingChan();
+    chan.on("broadcast", { event: "typing" }, (payload) => {
+      const to = payload.payload?.to as string | undefined;
+      const from = payload.payload?.from as string | undefined;
+      if (!to || !from) return;
+      if (to === me) cb(from);
+    });
+    chan.subscribe();
+  } catch {
+    chan = null;
+  }
+  return () => {
+    if (chan) {
+      void supabase.removeChannel(chan);
+      chan = null;
+    }
+  };
+}
+
+// ─── presence helpers ───────────────────────────────────────────────────────
 export function isOnline(p: Presence | null | undefined, now = Date.now()): boolean {
   if (!p) return false;
   if (p.status !== "online") return false;
   const last = new Date(p.last_seen).getTime();
-  // 2 min se zyada purana heartbeat = off reasoning
   return now - last <= 2 * 60 * 1000;
 }
 

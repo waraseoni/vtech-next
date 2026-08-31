@@ -64,6 +64,7 @@ import { logger } from "@/lib/logger";
 import { useAppBoot } from "./useAppBoot";
 import { ThemeToggle } from "@/app/components/ui/ThemeToggle";
 import { TeamOnline } from "@/app/components/ui/TeamOnline";
+import { fetchUnreadCount, getMyId } from "@/lib/messaging";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
 type SearchResult = {
@@ -449,6 +450,7 @@ function SidebarNav({
   sellerEnabled,
   devEnabled,
   enabledModules,
+  unreadCount,
 }: {
   pathname: string;
   isAdmin: boolean;
@@ -458,6 +460,7 @@ function SidebarNav({
   sellerEnabled?: boolean;
   devEnabled?: boolean;
   enabledModules?: string[] | null;
+  unreadCount?: number;
 }) {
   const lk = (href: string, exact = false) =>
     exact ? pathname === href : pathname.startsWith(href);
@@ -528,6 +531,11 @@ function SidebarNav({
           <Link href="/messages" className={navLinkCls(lk("/messages", true))} onClick={onNavClick}>
             <MessageSquare size={16} />
             <span>Messages</span>
+            {!!unreadCount && (
+              <span className="ml-auto flex items-center justify-center min-w-[20px] h-[20px] px-1.5 rounded-full bg-red-500 text-white text-[11px] font-black leading-none">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </Link>
         </li>
         {isModuleEnabled(enabledModules, "jobs") && (
@@ -1222,6 +1230,51 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     handleLogout,
   } = useAppBoot();
 
+  // ── Unread messages badge (sidebar Messages icon) ─────────────────────────
+  const [unreadCount, setUnreadCount] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    let sub: ReturnType<typeof supabase.channel> | null = null;
+    let me: string | null = null;
+
+    const refresh = () => {
+      fetchUnreadCount().then((n) => {
+        if (!cancelled) setUnreadCount(n);
+      });
+    };
+
+    // /messages par jaate hi read ho jaata hai — wapas aane par dobara count.
+    if (!pathname.startsWith("/messages")) refresh();
+
+    (async () => {
+      me = await getMyId();
+      if (cancelled || !me) return;
+      sub = supabase
+        .channel("vtech-unread-badge")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages", filter: `recipient_id=eq.${me}` },
+          refresh
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "messages", filter: `recipient_id=eq.${me}` },
+          refresh
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "messages", filter: `recipient_id=eq.${me}` },
+          refresh
+        )
+        .subscribe();
+    })();
+
+    return () => {
+      cancelled = true;
+      sub?.unsubscribe();
+    };
+  }, [pathname, profile]);
+
   // Public pages — no sidebar, no dashboard chrome.
   const PUBLIC_PAGES = [
     "/login",
@@ -1386,6 +1439,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             sellerEnabled={license?.sellerEnabled}
             devEnabled={license?.devEnabled}
             enabledModules={license?.enabledModules}
+            unreadCount={unreadCount}
           />
 
           <div className="px-4 py-3 border-t border-[#1a2234] flex items-center justify-between">
@@ -1463,6 +1517,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               sellerEnabled={license?.sellerEnabled}
               devEnabled={license?.devEnabled}
               enabledModules={license?.enabledModules}
+              unreadCount={unreadCount}
             />
 
             {!isClient && <TeamOnline />}

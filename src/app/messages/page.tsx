@@ -10,7 +10,12 @@ import {
   Loader2,
   Search,
   Inbox,
+  Check,
   CheckCheck,
+  Paperclip,
+  Trash2,
+  X,
+  Image as ImageIcon,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 import {
@@ -18,7 +23,10 @@ import {
   fetchMessages,
   sendMessage,
   markRead,
+  markDelivered,
   subscribeMessages,
+  subscribeTyping,
+  broadcastTyping,
   isOnline,
   lastSeenText,
   type Conversation,
@@ -26,6 +34,7 @@ import {
   type ProfileLite,
   type Presence,
 } from "@/lib/messaging";
+import { uploadMedia, deleteMedia, mediaPublicUrl } from "@/lib/media";
 import { subscribePresence } from "@/lib/presence";
 
 const fmtTime = (s: string) =>
@@ -66,6 +75,9 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
   const [draft, setDraft] = useState("");
   const [sendErr, setSendErr] = useState<string | null>(null);
+  const [typingFrom, setTypingFrom] = useState<string | null>(null);
+  const [pendingMedia, setPendingMedia] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -78,8 +90,10 @@ export default function MessagesPage() {
   const activeRef = useRef<string | null>(activeId);
   const subCleanup = useRef<{ unsubscribe: () => void } | null>(null);
   const presCleanup = useRef<{ unsubscribe: () => void } | null>(null);
+  const typingTimed = useRef<number | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const profileMapRef = useRef<Record<string, ProfileLite>>({});
+  const typingTimer = useRef<number | null>(null);
 
   useEffect(() => {
     setIsMobile(window.matchMedia("(max-width: 768px)").matches);
@@ -195,34 +209,51 @@ export default function MessagesPage() {
   }, []);
 
   // live messages — update conversations (list) + active chat + clear unread
-  const onIncoming = useCallback((msg: Message) => {
+  const onIncoming = useCallback((msg: Message, action: "insert" | "update") => {
     const me = meIdRef.current;
     const otherId = msg.sender_id === me ? msg.recipient_id : msg.sender_id;
-    const pm = profileMapRef.current;
-    // conversation list
+
+    if (action === "update") {
+      // delivery/read tick update ya delete — active chat me reflect karo
+      if (activeRef.current === msg.sender_id && msg.recipient_id === me) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === msg.id
+              ? { ...m, delivered_at: msg.delivered_at, read_at: msg.read_at }
+              : m
+          )
+        );
+      }
+      return;
+    }
+
+    // INSERT — naya message
     setConversations((prev) => {
-      const others = prev.map((c) => c.other.id);
-      let list = [...prev];
+      const list = [...prev];
       const existing = list.find((c) => c.other.id === otherId);
       const otherProf: ProfileLite =
-        existing?.other || pm[otherId] || { id: otherId, full_name: otherId.slice(0, 8), role: null };
+        existing?.other || profileMapRef.current[otherId] || {
+          id: otherId,
+          full_name: otherId.slice(0, 8),
+          role: null,
+        };
       if (existing) {
-        list = list.map((c) =>
-          c.other.id === otherId
-            ? {
-                ...c,
-                lastMessage: msg,
-                unread: msg.recipient_id === me && activeRef.current !== otherId ? c.unread + 1 : c.unread,
-              }
-            : c
-        );
+        list[list.indexOf(existing)] = {
+          ...existing,
+          lastMessage: msg,
+          unread:
+            msg.recipient_id === me && activeRef.current !== otherId
+              ? existing.unread + 1
+              : existing.unread,
+        };
       } else {
-        list = [
-          { other: otherProf, lastMessage: msg, unread: msg.recipient_id === me ? 1 : 0, presence: null },
-          ...list,
-        ];
+        list.unshift({
+          other: otherProf,
+          lastMessage: msg,
+          unread: msg.recipient_id === me ? 1 : 0,
+          presence: presenceMap[otherId] || null,
+        });
       }
-      // re-sort by recency
       list.sort(
         (a, b) =>
           (b.lastMessage ? new Date(b.lastMessage.created_at).getTime() : 0) -
@@ -231,7 +262,6 @@ export default function MessagesPage() {
       convRef.current = list;
       return list;
     });
-    // active chat append + mark read
     if (activeRef.current === msg.sender_id) {
       setMessages((prev) => {
         if (prev.some((m) => m.id === msg.id)) return prev;
@@ -245,8 +275,13 @@ export default function MessagesPage() {
       requestAnimationFrame(() => {
         listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
       });
+    } else {
+      // active nahi to bas delivered mark karo (double tick) — read baad me
+      if (msg.recipient_id === me) {
+        void markDelivered(me, msg.sender_id);
+      }
     }
-  }, []);
+  }, [presenceMap]);
 
   useEffect(() => {
     if (!meIdRef.current) return;
@@ -254,6 +289,36 @@ export default function MessagesPage() {
     subCleanup.current = sub;
     return () => subCleanup.current?.unsubscribe();
   }, [onIncoming]);
+
+  // typing indicator — dusre user ka typing state live + 2.5s me clear
+  useEffect(() => {
+    if (!meIdRef.current) return;
+    const off = subscribeTyping(meIdRef.current, (fromUserId) => {
+      if (fromUserId !== activeRef.current) return;
+      setTypingFrom(fromUserId);
+    });
+    return off;
+  }, []);
+
+  // active chat dikh raha ho to typing 2.5s baad hat jaye
+  useEffect(() => {
+    if (!typingFrom) return;
+    const t = setTimeout(() => setTypingFrom(null), 2500);
+    return () => clearTimeout(t);
+  }, [typingFrom]);
+
+  // draft change par typing broadcast (throttle ~1.3s)
+  useEffect(() => {
+    if (!meIdRef.current || !activeRef.current) return;
+    if (typingTimer.current) return;
+    typingTimer.current = window.setTimeout(() => {
+      typingTimer.current = null;
+    }, 1300);
+    broadcastTyping(activeRef.current, meIdRef.current);
+  }, [draft, activeId]);
+  useEffect(() => () => {
+    if (typingTimer.current) window.clearTimeout(typingTimer.current);
+  }, []);
 
   // load active conversation messages
   const openConversation = useCallback(async (id: string, profiles: ProfileLite[]) => {
@@ -312,21 +377,62 @@ export default function MessagesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profiles]);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const pickFiles = (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const arr = Array.from(files).slice(0, 5);
+    if (arr.some((f) => f.size > 5 * 1024 * 1024)) {
+      setSendErr("File 5MB se bada hai — chhota file select karo");
+      setTimeout(() => setSendErr(null), 4000);
+      return;
+    }
+    setPendingMedia((prev) => [...prev, ...arr]);
+  };
+
+  const removePending = (i: number) =>
+    setPendingMedia((prev) => prev.filter((_, idx) => idx !== i));
+
   const send = async () => {
-    if (!draft.trim() || sending) return;
     const other = activeRef.current;
     if (!other) return;
+    const text = draft.trim();
+    if ((!text && pendingMedia.length === 0) || sending) return;
     setSending(true);
-    const text = draft;
+
+    // media pehle upload (compress ho kar ~100KB me) — server space bachao
+    let media: { url: string; type: string; name: string } | undefined;
+    if (pendingMedia.length > 0) {
+      setUploading(true);
+      try {
+        const folder = [meIdRef.current, other].sort().join("_");
+        const uploaded = await uploadMedia(pendingMedia[0], folder);
+        media = uploaded;
+      } catch (e) {
+        setUploading(false);
+        setSending(false);
+        setSendErr(e instanceof Error ? e.message : "Media upload fail hua");
+        setTimeout(() => setSendErr(null), 4000);
+        return;
+      }
+      setUploading(false);
+    }
+
+    const bodyText = text || "";
     setDraft("");
+    setPendingMedia([]);
     // optimistic append
     const temp: Message = {
       id: -Date.now(),
       sender_id: meIdRef.current,
       recipient_id: other,
-      content: text,
+      content: bodyText,
       created_at: new Date().toISOString(),
       read_at: null,
+      delivered_at: null,
+      media_url: media?.url || null,
+      media_type: media?.type || null,
+      media_name: media?.name || null,
     };
     setMessages((prev) => {
       const next = [...prev, temp];
@@ -336,14 +442,31 @@ export default function MessagesPage() {
     requestAnimationFrame(() => {
       listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
     });
-    const res = await sendMessage(meIdRef.current, other, meName, text);
+    const res = await sendMessage(meIdRef.current, other, meName, bodyText, media);
     if (!res.ok) {
-      // rollback + show inline error
       setMessages(msgsRef.current.filter((m) => m.id !== temp.id));
       setSendErr(res.error || "Message bhejna fail hua");
       setTimeout(() => setSendErr(null), 4000);
     }
     setSending(false);
+  };
+
+  const deleteMessage = async (m: Message) => {
+    // sender/recipient dono delete kar sakte hain — row + (agar media ho) storage hatao
+    try {
+      if (m.media_url) await deleteMedia(m.media_url);
+    } catch { /* ignore */ }
+    await supabase.from("messages").delete().eq("id", m.id);
+    setMessages((prev) => prev.filter((x) => x.id !== m.id));
+    msgsRef.current = msgsRef.current.filter((x) => x.id !== m.id);
+    // conversation list last-message cleanup
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.other.id === (m.sender_id === meIdRef.current ? m.recipient_id : m.sender_id)
+          ? { ...c, lastMessage: null }
+          : c
+      )
+    );
   };
 
   const filteredProfiles = profiles.filter(
@@ -414,14 +537,16 @@ export default function MessagesPage() {
           </p>
           <p
             className={`text-[10px] font-semibold ${
-              isOnline(activeConv.presence) ? "text-emerald-400" : "text-slate-500"
+              typingFrom ? "text-emerald-400" : isOnline(activeConv.presence) ? "text-emerald-400" : "text-slate-500"
             }`}
           >
-            {isOnline(activeConv.presence)
-              ? "Online"
-              : activeConv.presence
-                ? `Last seen ${lastSeenText(activeConv.presence)}`
-                : "Offline"}
+            {typingFrom
+              ? "typing…"
+              : isOnline(activeConv.presence)
+                ? "Online"
+                : activeConv.presence
+                  ? `Last seen ${lastSeenText(activeConv.presence)}`
+                  : "Offline"}
           </p>
         </div>
       </div>
@@ -434,16 +559,43 @@ export default function MessagesPage() {
         )}
         {messages.map((m) => {
           const mine = m.sender_id === meIdRef.current;
+          const isMedia = !!m.media_url;
           return (
             <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-snug ${
+                className={`relative max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-snug ${
                   mine
                     ? "bg-blue-600 text-white rounded-br-md"
                     : "bg-white/[0.06] text-slate-100 rounded-bl-md"
                 }`}
               >
-                <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                {isMedia && (
+                  <div className="mb-1.5">
+                    {m.media_type?.startsWith("image/") ? (
+                      <a href={mediaPublicUrl(m.media_url!)} target="_blank" rel="noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={mediaPublicUrl(m.media_url!)}
+                          alt={m.media_name || "media"}
+                          className="max-h-56 w-auto max-w-full rounded-lg border border-black/20"
+                          loading="lazy"
+                        />
+                      </a>
+                    ) : (
+                      <a
+                        href={mediaPublicUrl(m.media_url!)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={`flex items-center gap-2 text-xs font-semibold underline ${
+                          mine ? "text-blue-100" : "text-blue-300"
+                        }`}
+                      >
+                        <ImageIcon size={14} /> {m.media_name || "File"}
+                      </a>
+                    )}
+                  </div>
+                )}
+                {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
                 <div
                   className={`flex items-center gap-1 mt-1 text-[9px] ${
                     mine ? "text-blue-200" : "text-slate-500"
@@ -453,11 +605,23 @@ export default function MessagesPage() {
                   {mine && (
                     <span className="flex items-center">
                       {m.read_at ? (
-                        <CheckCheck size={11} />
+                        <CheckCheck size={11} className="text-sky-300" />
+                      ) : m.delivered_at ? (
+                        <CheckCheck size={11} className="opacity-60" />
                       ) : (
-                        <span className="opacity-60">✓</span>
+                        <Check size={11} className="opacity-60" />
                       )}
                     </span>
+                  )}
+                  {(mine ||
+                    (activeConv && m.sender_id === activeConv.other.id)) && (
+                    <button
+                      onClick={() => void deleteMessage(m)}
+                      title="Delete"
+                      className="ml-1 p-0.5 rounded hover:bg-white/10 text-slate-400 hover:text-rose-300"
+                    >
+                      <Trash2 size={10} />
+                    </button>
                   )}
                 </div>
               </div>
@@ -470,7 +634,45 @@ export default function MessagesPage() {
         {sendErr && (
           <p className="mb-2 text-[11px] font-semibold text-rose-400 px-1">{sendErr}</p>
         )}
+        {pendingMedia.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {pendingMedia.map((f, i) => (
+              <div
+                key={i}
+                className="relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0d1117] border border-[#21293d] text-xs text-slate-300"
+              >
+                {f.type.startsWith("image/") ? <ImageIcon size={14} /> : <Paperclip size={14} />}
+                <span className="max-w-[140px] truncate">{f.name}</span>
+                <button
+                  onClick={() => removePending(i)}
+                  className="text-slate-500 hover:text-rose-300"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              pickFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending || uploading}
+            title="Attach media"
+            className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-[#0d1117] border border-[#21293d] text-slate-400 hover:text-blue-400 hover:border-blue-500/40 disabled:opacity-40 transition-all"
+          >
+            <Paperclip size={18} />
+          </button>
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -485,10 +687,16 @@ export default function MessagesPage() {
           />
           <button
             onClick={() => void send()}
-            disabled={sending || !draft.trim()}
+            disabled={sending || (!draft.trim() && pendingMedia.length === 0)}
             className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40 transition-all"
           >
-            {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            {uploading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : sending ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Send size={18} />
+            )}
           </button>
         </div>
       </div>
