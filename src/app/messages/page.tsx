@@ -133,6 +133,10 @@ export default function MessagesPage() {
   const msgsRef = useRef<Message[]>([]);
   const convRef = useRef<Conversation[]>([]);
   const activeRef = useRef<string | null>(activeId);
+  // `?to=` ke liye: jis conversation ka history fetch ho chuka hai uska record.
+  // (refresh par activeId pehle se ?to= se set rehta hai, isliye !activeId wala
+  // guard kaam nahi karta — isi liye history kabhi load na hoti thi.)
+  const loadedConvRef = useRef<string | null>(null);
   const subCleanup = useRef<{ unsubscribe: () => void } | null>(null);
   const presCleanup = useRef<{ unsubscribe: () => void } | null>(null);
   const typingTimed = useRef<number | null>(null);
@@ -415,13 +419,17 @@ export default function MessagesPage() {
   // todo: on first load if URL has ?to=, open it after profiles load
   useEffect(() => {
     const to = searchParams.get("to");
-    if (to && profiles.length && meIdRef.current && !activeId) {
-      if (profiles.some((p) => p.id === to)) {
+    if (to && profiles.length && meIdRef.current && profiles.some((p) => p.id === to)) {
+      // refresh par activeId pehle se `?to=` se bhar jata hai, isliye `!activeId`
+      // guard se history load nahi hoti thi. Isliye `loadedConvRef` se track karo
+      // taaki har baar kholne par history fetch ho, magar baar-baar na repeat ho.
+      if (to !== loadedConvRef.current) {
+        loadedConvRef.current = to;
         void openConversation(to, profiles);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profiles]);
+  }, [profiles, activeId]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
