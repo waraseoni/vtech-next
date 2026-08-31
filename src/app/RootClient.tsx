@@ -62,6 +62,8 @@ import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
 import { Toaster } from "sonner";
 import { logger } from "@/lib/logger";
 import { useAppBoot } from "./useAppBoot";
+import { hardReload } from "@/lib/hardRefresh";
+import PullToRefresh from "@/components/PullToRefresh";
 import { ThemeToggle } from "@/app/components/ui/ThemeToggle";
 import { TeamOnline } from "@/app/components/ui/TeamOnline";
 import { fetchUnreadCount, getMyId } from "@/lib/messaging";
@@ -1317,6 +1319,57 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     }
   }, [pathname, router]);
 
+  // ── Android hardware back-button override ────────────────────────────────
+  // Default me Capacitor WebView me phone ki back button app se bahar nikal
+  // deti (ya ek khali black screen chhod deti) — jab app login/loader par hang
+  // hua ho to user ke paas bahar jaane ke alawa koi rasta nahi hota. Isse
+  // intercept karte hain:
+  //   • Login / public pages par → login par hi rehkar hard refresh (agla load
+  //     fresh mile). Back se app EXIT nahi hoti.
+  //   • Baaki pages par → in-app back history (web UI ke back button jaisa).
+  //   • History khatam → `/login` par hard refresh, app exit nahi.
+  useEffect(() => {
+    type CapApp = {
+      addListener?: (
+        eventName: "backButton",
+        listener: (info: { canGoBack: boolean }) => void
+      ) => { remove: () => void };
+      removeAllListeners?: () => void;
+    };
+    let handler: { remove: () => void } | null = null;
+    try {
+      const cap = (window as unknown as { Capacitor?: { Plugins?: { App?: CapApp } } })
+        .Capacitor;
+      const app = cap?.Plugins?.App;
+      if (app && typeof app.addListener === "function") {
+        handler = app.addListener("backButton", () => {
+          const pub =
+            pathname === "/login" ||
+            pathname === "/setup" ||
+            pathname === "/" ||
+            ["/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"].some(
+              (p) => pathname === p || pathname.startsWith(p + "/")
+            );
+          if (pub) {
+            // Login/hang state → cache-clear hard refresh (app exit nahi).
+            hardReload();
+          } else {
+            goInAppBack();
+          }
+        });
+      }
+    } catch {
+      /* plugin unavailable (web) → ignore */
+    }
+    return () => {
+      try {
+        handler?.remove();
+      } catch {
+        /* ignore */
+      }
+    };
+  }, [pathname, goInAppBack]);
+
   if (isPublicPage) {
     // Auth pages par logged-in user ko flash na dikhe — blank while redirect.
     if (profile && isAuthPage) return <div className="min-h-screen bg-[#0d1117]" />;
@@ -1325,7 +1378,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#0d1117]">
+      <PullToRefresh className="h-screen flex items-center justify-center bg-[#0d1117]">
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
             <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-900/60">
@@ -1337,7 +1390,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             V-TECH Secure Boot
           </p>
         </div>
-      </div>
+      </PullToRefresh>
     );
   }
 
@@ -1721,14 +1774,16 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
         {/* ── PAGE CONTENT ── */}
         <main className={`flex-1 ${isAiPage ? "p-0" : "p-3 sm:p-5 theme-body"}`}>
-          {isClient && !pathname.startsWith("/my-account") ? (
-            <div className="h-[60vh] flex flex-col items-center justify-center gap-3 text-slate-600">
-              <Loader2 size={22} className="animate-spin" />
-              <p className="text-xs font-bold uppercase tracking-widest">Redirecting...</p>
-            </div>
-          ) : (
-            children
-          )}
+          <PullToRefresh>
+            {isClient && !pathname.startsWith("/my-account") ? (
+              <div className="h-[60vh] flex flex-col items-center justify-center gap-3 text-slate-600">
+                <Loader2 size={22} className="animate-spin" />
+                <p className="text-xs font-bold uppercase tracking-widest">Redirecting...</p>
+              </div>
+            ) : (
+              children
+            )}
+          </PullToRefresh>
         </main>
       </div>
 

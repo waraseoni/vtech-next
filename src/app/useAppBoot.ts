@@ -228,14 +228,28 @@ export function useAppBoot() {
 
   // BUG FIX: loader (V-TECH Secure Boot) atak jata hai jab stale SW cache purana
   // HTML/chunk serve karta hai ya auth call hang ho jati hai. 6s tak atka → auto reload.
+  // `vtech_manual_refresh` flag (hardRefresh se) set ho to cooldown bypass karte hain —
+  // user ne deliberately refresh kiya hai, isse roka nahi jaata.
   useEffect(() => {
     if (!loading) return;
     const t = setTimeout(() => {
       try {
-        const k = "vtech_boot_reloaded";
-        const last = Number(sessionStorage.getItem(k) || "0");
-        if (Date.now() - last < 30000) return; // 30s cooldown — loop guard
-        sessionStorage.setItem(k, String(Date.now()));
+        let manual = false;
+        try {
+          const m = Number(sessionStorage.getItem("vtech_manual_refresh") || "0");
+          if (Date.now() - m < 15000) {
+            manual = true;
+            sessionStorage.removeItem("vtech_manual_refresh");
+          }
+        } catch {
+          /* ignore */
+        }
+        if (!manual) {
+          const k = "vtech_boot_reloaded";
+          const last = Number(sessionStorage.getItem(k) || "0");
+          if (Date.now() - last < 30000) return; // 30s cooldown — loop guard
+          sessionStorage.setItem(k, String(Date.now()));
+        }
       } catch {
         /* ignore */
       }

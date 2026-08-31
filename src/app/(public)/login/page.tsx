@@ -18,6 +18,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { SITE } from "../site";
+import PullToRefresh from "@/components/PullToRefresh";
 
 type Tab = "staff" | "client";
 
@@ -206,7 +207,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-4">
+    <PullToRefresh className="min-h-screen">
+      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-4">
       {/* Background glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-3xl" />
@@ -482,6 +484,6 @@ export default function LoginPage() {
           {SITE.name} · {SITE.phone}
         </p>
       </div>
-    </div>
+    </PullToRefresh>
   );
 }
