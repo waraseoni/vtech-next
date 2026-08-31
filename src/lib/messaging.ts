@@ -262,9 +262,27 @@ function makeTypingChan(): ReturnType<typeof supabase.channel> {
   return supabase.channel("vtech-typing");
 }
 
+// Send ke liye ek persistent (ek-baar subscribe) typing channel.
+// Har keystroke par naya throwaway channel banaane se `send()` REST par fallback
+// ho jaata tha (deprecation warning) aur ab `httpSend()` broadcast receiver tak
+// nahi pahuncha raha. Persistent joined channel websocket par hi broadcast karta
+// hai — isliye delivery bhi hoti hai aur warning bhi nahi.
+let sendChan: ReturnType<typeof supabase.channel> | null = null;
+function typingSendChan(): ReturnType<typeof supabase.channel> {
+  if (!sendChan) {
+    sendChan = makeTypingChan();
+    sendChan.subscribe();
+  }
+  return sendChan;
+}
+
 export function broadcastTyping(toUserId: string, fromUserId: string): void {
   try {
-    void makeTypingChan().httpSend("typing", { to: toUserId, from: fromUserId });
+    void typingSendChan().send({
+      type: "broadcast",
+      event: "typing",
+      payload: { to: toUserId, from: fromUserId },
+    });
   } catch {
     // ignore
   }
