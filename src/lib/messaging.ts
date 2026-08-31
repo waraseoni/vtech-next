@@ -49,6 +49,7 @@ export async function fetchConversations(
     .from("messages")
     .select(MSG_COLS)
     .or(`sender_id.eq.${me},recipient_id.eq.${me}`)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) return [];
 
@@ -95,7 +96,7 @@ export async function fetchMessages(me: string, other: string): Promise<Message[
     .from("messages")
     .select(MSG_COLS)
     .or(`and(sender_id.eq.${me},recipient_id.eq.${other}),and(sender_id.eq.${other},recipient_id.eq.${me})`)
-    .not("deleted_at", "is", null)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (error) return [];
   return (data as Message[]) || [];
