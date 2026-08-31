@@ -348,7 +348,9 @@ export default function MessagesPage() {
       setTypingFrom(fromUserId);
     });
     return off;
-  }, []);
+    // `loading` ke false hone par meIdRef.current set ho chuka hota hai — isliye
+    // `[]` ki jagah `[loading]` taki mount par early-return ke baad dobara subscribe ho.
+  }, [loading]);
 
   // active chat dikh raha ho to typing 2.5s baad hat jaye
   useEffect(() => {
