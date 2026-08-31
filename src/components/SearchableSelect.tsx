@@ -289,8 +289,8 @@ export default function SearchableSelect({
         typeof document !== "undefined" &&
         !isDesktop &&
         createPortal(
-          /* ── MOBILE: bottom sheet ── */
-          <div className="fixed inset-0 z-[100]" role="dialog" aria-modal="true">
+          /* ── MOBILE: centered sheet ── */
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true">
             {/* Backdrop */}
             <div
               className="absolute inset-0 bg-black/70 animate-[fade-in_150ms_ease-out]"
@@ -299,7 +299,7 @@ export default function SearchableSelect({
             {/* Sheet */}
             <div
               ref={menuRef}
-              className="absolute bottom-0 left-0 right-0 bg-[#161b27] border-t border-[#21293d] rounded-t-2xl shadow-2xl flex flex-col max-h-[82vh] pb-[max(env(safe-area-inset-bottom),0.75rem)] animate-[sheet-up_220ms_cubic-bezier(0.22,1,0.36,1)]"
+              className="relative w-full max-w-md bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl flex flex-col max-h-[82vh] animate-[sheet-up_220ms_cubic-bezier(0.22,1,0.36,1)]"
             >
               {/* Drag handle */}
               <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0" onClick={close}>

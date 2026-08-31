@@ -26,6 +26,7 @@ export type Mechanic = {
   designation: string | null;
   status: number;
   delete_flag: number;
+  image_path: string | null;
 };
 
 export type AdvancePayment = {
@@ -50,7 +51,7 @@ export async function fetchExpensesPageData(): Promise<ExpensesPageData> {
   const [{ data: mechanicData }, { data: staffData }, { data: expenseData }] = await Promise.all([
     supabase
       .from("mechanic_list")
-      .select("id, firstname, middlename, lastname, designation, status, delete_flag")
+      .select("id, firstname, middlename, lastname, designation, status, delete_flag, image_path")
       .eq("status", 1)
       .eq("delete_flag", 0)
       .order("firstname", { ascending: true }),
@@ -75,6 +76,7 @@ export async function fetchExpensesPageData(): Promise<ExpensesPageData> {
     designation: (r.designation as string | null) ?? null,
     status: Number(r.status) || 0,
     delete_flag: Number(r.delete_flag) || 0,
+    image_path: (r.image_path as string | null) ?? null,
   })) as Mechanic[];
 
   const staffPayments = ((staffData as DbRow[] | null) || []).map((r) => ({
