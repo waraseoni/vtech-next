@@ -68,6 +68,7 @@ import PullToRefresh from "@/components/PullToRefresh";
 import { ThemeToggle } from "@/app/components/ui/ThemeToggle";
 import { TeamOnline } from "@/app/components/ui/TeamOnline";
 import NativePrintPreview from "@/components/NativePrintPreview";
+import SwipeNavigation from "@/components/SwipeNavigation";
 import { fetchUnreadCount, getMyId } from "@/lib/messaging";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
@@ -1443,6 +1444,12 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       <ImageLightbox />
       <Toaster theme="dark" position="top-right" richColors closeButton />
       <NativePrintPreview />
+      <SwipeNavigation
+        onBack={goInAppBack}
+        onForward={() => {
+          router.forward();
+        }}
+      />
 
       {/* ══════════════════════ DESKTOP SIDEBAR ══════════════════════ */}
       {isMobile === false && !isAiPage && (
