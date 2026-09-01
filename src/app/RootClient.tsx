@@ -67,6 +67,7 @@ import { App } from "@capacitor/app";
 import PullToRefresh from "@/components/PullToRefresh";
 import { ThemeToggle } from "@/app/components/ui/ThemeToggle";
 import { TeamOnline } from "@/app/components/ui/TeamOnline";
+import NativePrintPreview from "@/components/NativePrintPreview";
 import { fetchUnreadCount, getMyId } from "@/lib/messaging";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
@@ -1441,6 +1442,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       <PWAHead />
       <ImageLightbox />
       <Toaster theme="dark" position="top-right" richColors closeButton />
+      <NativePrintPreview />
 
       {/* ══════════════════════ DESKTOP SIDEBAR ══════════════════════ */}
       {isMobile === false && !isAiPage && (

@@ -22,6 +22,36 @@ import { Share } from "@capacitor/share";
 
 let initialized = false;
 
+// ── Native print preview event bus ─────────────────────────────────────────
+// Non-interactive `/api/print-*` routes seedha native dialog me jate hain.
+// Interactive routes (jinke paas GST/Retail "Select Bill Type" selector hai —
+// print-bill, print-combined-invoice) ko browser-ki-tarah ek in-app preview
+// (full-screen iframe) me kholte hain taaki page ke apne buttons se compare
+// karke Print dabaya ja sake. `onNativePrintPreview` se NativePrintPreview
+// component ko URL milta hai.
+type PrintPreviewListener = (url: string) => void;
+let printPreviewListener: PrintPreviewListener | null = null;
+
+export function onNativePrintPreview(l: PrintPreviewListener): () => void {
+  printPreviewListener = l;
+  return () => {
+    if (printPreviewListener === l) printPreviewListener = null;
+  };
+}
+
+function openNativePrintPreview(url: string): void {
+  try {
+    printPreviewListener?.(url);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Interactive print routes — pahele selector (GST/Retail) compare, fir print. */
+function printRouteNeedsSelector(pathname: string): boolean {
+  return pathname === "/api/print-bill" || pathname === "/api/print-combined-invoice";
+}
+
 export function isNativePlatform(): boolean {
   try {
     return typeof Capacitor !== "undefined" && !!Capacitor.isNativePlatform();
@@ -196,6 +226,19 @@ export function initNativeBridge(): void {
         return createPrintProxy(typeof target === "string" ? target : "V-Tech PRO");
       }
       if (isPrintRoute(u)) {
+        let pathname = u;
+        try {
+          pathname = new URL(u, window.location.href).pathname;
+        } catch {
+          /* ignore */
+        }
+        if (printRouteNeedsSelector(pathname) && typeof printPreviewListener === "function") {
+          // GST/Retail "Select Bill Type" wale print routes (print-bill, combined
+          // invoice) — browser-ki-tarah in-app preview me kholo (compare + print).
+          openNativePrintPreview(u);
+          return null;
+        }
+        // Baaki print routes (single report pages) seedha native print dialog.
         // Popup block ho jata hai WebView me, aur window.print() bhi nahi chalta.
         // Asli kaam: HTML fetch karke native print dialog kholna.
         fetch(u, { credentials: "same-origin" })
@@ -250,7 +293,7 @@ export function initNativeBridge(): void {
 
   // `<a href="/api/print-*">` anchors (jaise GST Bill buttons) — browser me new tab
   // khulta hai, WebView me WebView hi page par navigate ho jata hai (invoice raw page).
-  // Native par fetch + printHtml karke app me hi rehne do.
+  // Native par selector wale routes preview me, baaki fetch + printHtml.
   try {
     document.addEventListener(
       "click",
@@ -260,6 +303,16 @@ export function initNativeBridge(): void {
         if (isPrintRoute(href)) {
           e.preventDefault();
           e.stopPropagation();
+          let pathname = href;
+          try {
+            pathname = new URL(href, window.location.href).pathname;
+          } catch {
+            /* ignore */
+          }
+          if (printRouteNeedsSelector(pathname) && typeof printPreviewListener === "function") {
+            openNativePrintPreview(href);
+            return;
+          }
           fetch(href, { credentials: "same-origin" })
             .then((r) => r.text())
             .then((html) =>

@@ -281,7 +281,6 @@ function JobsListContent() {
   const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
   const [bulkMoveId, setBulkMoveId] = useState<number | null>(null);
   const [bulkMoveName, setBulkMoveName] = useState("");
-  const [invoiceTypeOpen, setInvoiceTypeOpen] = useState(false);
   // Delivered-but-spotted jobs ka one-click cleanup
   const [spotCleaning, setSpotCleaning] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -1455,7 +1454,7 @@ function JobsListContent() {
         </button>
 
         <button
-          onClick={() => setInvoiceTypeOpen(true)}
+          onClick={() => openCombinedInvoice("non_gst")}
           className="!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap bg-slate-600 hover:bg-slate-700 shadow-sm"
         >
           <FileText size={13} className="!text-white" /> Estimate
@@ -1513,72 +1512,6 @@ function JobsListContent() {
         >
           {bulkActionLoading ? "Moving…" : `${selectedIds.size} Job(s) Move karo`}
         </button>
-      </div>
-    </div>
-  );
-
-  // ── Invoice Type Modal — pehle GST/Retail select, phir print ─────────────
-  const invoiceTypeModal = invoiceTypeOpen && (
-    <div
-      className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={() => setInvoiceTypeOpen(false)}
-    >
-      <div
-        className="w-full max-w-xs bg-[#161b27] border border-[#21293d] rounded-2xl p-5 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-1">
-          <p className="font-black text-white text-sm flex items-center gap-1.5">
-            <FileText size={14} className="text-slate-400" /> Bulk Invoice
-          </p>
-          <button
-            onClick={() => setInvoiceTypeOpen(false)}
-            className="text-slate-500 hover:text-white"
-          >
-            <X size={16} />
-          </button>
-        </div>
-        <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-3">
-          {selectedIds.size} Job(s) — Print type chuno
-        </p>
-
-        <div className="space-y-2.5">
-          <button
-            onClick={() => {
-              setInvoiceTypeOpen(false);
-              openCombinedInvoice("non_gst");
-            }}
-            className={`w-full flex items-center gap-3 rounded-xl border border-[#21293d] bg-[#0d1117] px-4 py-3.5 text-left transition-colors cursor-pointer`}
-          >
-            <div className="w-9 h-9 bg-cyan-600/20 text-cyan-400 rounded-lg flex items-center justify-center flex-shrink-0">
-              <FileText size={16} />
-            </div>
-            <div className="flex-1">
-              <div className="font-bold text-white text-sm">Retail Invoice</div>
-              <div className="text-[10px] text-slate-500 mt-0.5">
-                Bina GST — normal dukaan bill (non_gst)
-              </div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => {
-              setInvoiceTypeOpen(false);
-              openCombinedInvoice("gst");
-            }}
-            className={`w-full flex items-center gap-3 rounded-xl border border-[#21293d] bg-[#0d1117] px-4 py-3.5 text-left transition-colors cursor-pointer`}
-          >
-            <div className="w-9 h-9 bg-red-600/20 text-red-400 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Printer size={16} />
-            </div>
-            <div className="flex-1">
-              <div className="font-bold text-white text-sm">GST Invoice</div>
-              <div className="text-[10px] text-slate-500 mt-0.5">
-                GST ke saath — tax invoice (gst)
-              </div>
-            </div>
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -2308,7 +2241,6 @@ function JobsListContent() {
         {bulkActionBar}
         {bulkWaModal}
         {bulkMoveModal}
-        {invoiceTypeModal}
         {staleModal}
       </div>
     );
@@ -3030,7 +2962,6 @@ function JobsListContent() {
       {bulkActionBar}
       {bulkWaModal}
       {bulkMoveModal}
-      {invoiceTypeModal}
       {staleModal}
       {/* ── Filter Modal ── */}
       {showFilterModal && (
