@@ -63,6 +63,7 @@ import { Toaster } from "sonner";
 import { logger } from "@/lib/logger";
 import { useAppBoot } from "./useAppBoot";
 import { hardReload } from "@/lib/hardRefresh";
+import { App } from "@capacitor/app";
 import PullToRefresh from "@/components/PullToRefresh";
 import { ThemeToggle } from "@/app/components/ui/ThemeToggle";
 import { TeamOnline } from "@/app/components/ui/TeamOnline";
@@ -1327,37 +1328,32 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   //   • Login / public pages par → login par hi rehkar hard refresh (agla load
   //     fresh mile). Back se app EXIT nahi hoti.
   //   • Baaki pages par → in-app back history (web UI ke back button jaisa).
-  //   • History khatam → `/login` par hard refresh, app exit nahi.
+  //   • History khatam → `/dashboard` par, app exit nahi.
+  // NOTE: @capacitor/app ka `App.addListener("backButton")` register karne se
+  // native side par `hasListeners` true ho jata hai, jisse default app-exit
+  // (goBack/exit) USE nahi hota — event humare JS handler ko milta hai.
   useEffect(() => {
-    type CapApp = {
-      addListener?: (
-        eventName: "backButton",
-        listener: (info: { canGoBack: boolean }) => void
-      ) => { remove: () => void };
-      removeAllListeners?: () => void;
-    };
+    const isPublicPath =
+      pathname === "/login" ||
+      pathname === "/setup" ||
+      pathname === "/" ||
+      ["/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"].some(
+        (p) => pathname === p || pathname.startsWith(p + "/")
+      );
+
     let handler: { remove: () => void } | null = null;
     try {
-      const cap = (window as unknown as { Capacitor?: { Plugins?: { App?: CapApp } } })
-        .Capacitor;
-      const app = cap?.Plugins?.App;
-      if (app && typeof app.addListener === "function") {
-        handler = app.addListener("backButton", () => {
-          const pub =
-            pathname === "/login" ||
-            pathname === "/setup" ||
-            pathname === "/" ||
-            ["/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"].some(
-              (p) => pathname === p || pathname.startsWith(p + "/")
-            );
-          if (pub) {
-            // Login/hang state → cache-clear hard refresh (app exit nahi).
-            hardReload();
-          } else {
-            goInAppBack();
-          }
-        });
-      }
+      const unsub = App.addListener("backButton", () => {
+        if (isPublicPath) {
+          // Login/hang state → cache-clear hard refresh (app exit nahi).
+          hardReload();
+        } else {
+          goInAppBack();
+        }
+      });
+      unsub.then((h) => {
+        handler = h;
+      });
     } catch {
       /* plugin unavailable (web) → ignore */
     }
