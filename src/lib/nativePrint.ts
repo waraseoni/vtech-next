@@ -41,6 +41,58 @@ function ensureBaseHref(html: string): string {
   }
 }
 
+/** Print route ya nahi? (window.open + anchor clicks dono ke liye). */
+function isPrintRoute(u: string): boolean {
+  if (u.startsWith("/api/print")) return true;
+  try {
+    if (u.startsWith("http")) {
+      const url = new URL(u, window.location.href);
+      return url.origin === window.location.origin && url.pathname.startsWith("/api/print");
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
+/** External http(s) link? Same-origin nahi → native me external app/browser me khulega. */
+function isExternalUrl(u: string): boolean {
+  try {
+    if (u.startsWith("http://") || u.startsWith("https://")) {
+      return new URL(u, window.location.href).origin !== window.location.origin;
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
+/** Top-level navigation → Capacitor `launchIntent` (host mismatch) → external app/browser. */
+function openExternalUrl(u: string): void {
+  try {
+    window.location.href = u;
+  } catch {
+    /* ignore */
+  }
+}
+
+/** WebView me Clipboard API undefined/fail ho to legacy copy fallback. */
+function copyViaExecCommand(text: string): void {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * Global bridge — SIRF native par run hota hai:
  *   1. `window.print()`  → Printer.printWebView() (Android native print dialog)
@@ -143,8 +195,7 @@ export function initNativeBridge(): void {
       if (u === "" || u === "about:blank") {
         return createPrintProxy(typeof target === "string" ? target : "V-Tech PRO");
       }
-      const isPrintRoute = u.startsWith("/api/print");
-      if (isPrintRoute) {
+      if (isPrintRoute(u)) {
         // Popup block ho jata hai WebView me, aur window.print() bhi nahi chalta.
         // Asli kaam: HTML fetch karke native print dialog kholna.
         fetch(u, { credentials: "same-origin" })
@@ -161,8 +212,64 @@ export function initNativeBridge(): void {
           });
         return null;
       }
+      // External http(s) (wa.me, api.whatsapp.com, etc.) — WebView me window.open
+      // onCreateWindow support nahi karta (silently null). Native app/browser me kholo.
+      if (isExternalUrl(u)) {
+        openExternalUrl(u);
+        return null;
+      }
       return originalOpen(u, target, features);
     };
+  } catch {
+    /* ignore */
+  }
+
+  // Clipboard API WebView me missing/fail ho to legacy `execCommand("copy")`
+  // fallback de — browser me koi change nahi (sirf native par wrap hota hai).
+  try {
+    if (typeof navigator.clipboard === "undefined") {
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: async (text: string) => copyViaExecCommand(text),
+        },
+      });
+    } else if (typeof navigator.clipboard.writeText === "function") {
+      const origWrite = navigator.clipboard.writeText.bind(navigator.clipboard);
+      navigator.clipboard.writeText = async (text: string) => {
+        try {
+          await origWrite(text);
+        } catch {
+          copyViaExecCommand(text);
+        }
+      };
+    }
+  } catch {
+    /* ignore */
+  }
+
+  // `<a href="/api/print-*">` anchors (jaise GST Bill buttons) — browser me new tab
+  // khulta hai, WebView me WebView hi page par navigate ho jata hai (invoice raw page).
+  // Native par fetch + printHtml karke app me hi rehne do.
+  try {
+    document.addEventListener(
+      "click",
+      (e) => {
+        const el = (e.target as Element | null)?.closest?.("a");
+        const href = el?.getAttribute?.("href") || "";
+        if (isPrintRoute(href)) {
+          e.preventDefault();
+          e.stopPropagation();
+          fetch(href, { credentials: "same-origin" })
+            .then((r) => r.text())
+            .then((html) =>
+              Printer.printHtml({ html: ensureBaseHref(html), name: "V-Tech PRO" })
+            )
+            .catch(() => openExternalUrl(href));
+        }
+      },
+      true
+    );
   } catch {
     /* ignore */
   }
