@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { downloadBlob } from "@/lib/nativePrint";
 import {
   Loader2,
   RefreshCw,
@@ -252,14 +253,7 @@ export default function DeveloperPage() {
       const disp = res.headers.get("Content-Disposition") || "";
       const m = disp.match(/filename="?([^";]+)"?/);
       const fname = m?.[1] || `client-${kitFor.id}-setup-kit.zip`;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fname;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, fname);
       setKitMsg(`Package download ho gaya: ${fname}`);
       load();
     } catch {

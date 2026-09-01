@@ -1,4 +1,5 @@
 import { toISTDatePart } from "./dateUtils";
+import { downloadBlob, nativePrintHtml } from "./nativePrint";
 
 export function exportToCSV<T extends Record<string, unknown>>(
   data: T[],
@@ -32,14 +33,7 @@ export function exportToCSV<T extends Record<string, unknown>>(
 
   // UTF-8 BOM so ₹/Hindi chars don't garble in Excel
   const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${filename}_${toISTDatePart(new Date())}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, `${filename}_${toISTDatePart(new Date())}.csv`);
 }
 
 export function printTable(tableId: string, title?: string) {
@@ -48,9 +42,6 @@ export function printTable(tableId: string, title?: string) {
     alert("Table not found");
     return;
   }
-
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) return;
 
   const styles = `
     <style>
@@ -62,7 +53,7 @@ export function printTable(tableId: string, title?: string) {
     </style>
   `;
 
-  printWindow.document.write(`
+  const html = `
     <html>
       <head>
         <title>${title || "Report"}</title>
@@ -73,10 +64,6 @@ export function printTable(tableId: string, title?: string) {
         ${table.outerHTML}
       </body>
     </html>
-  `);
-  printWindow.document.close();
-  setTimeout(() => {
-    printWindow.print();
-    setTimeout(() => printWindow.close(), 250);
-  }, 400);
+  `;
+  nativePrintHtml(html, title || "Report");
 }

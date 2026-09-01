@@ -39,6 +39,7 @@ import { endOfMonth } from "date-fns/endOfMonth";
 import { addMonths } from "date-fns/addMonths";
 import { subMonths } from "date-fns/subMonths";
 import { logActivity } from "@/lib/activity";
+import { downloadBlob } from "@/lib/nativePrint";
 import type { SalaryRecord, MechanicRow } from "@/lib/server-salary";
 
 const inr = (n: number) =>
@@ -531,14 +532,9 @@ export default function SalaryPageInner({ initialReportData, initialMechanics }:
     ]);
 
     const csvContent =
-      "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Salary_Report_${monthFormatted}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      "\uFEFF" + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    downloadBlob(blob, `Salary_Report_${monthFormatted}.csv`);
     showToast("Salary CSV exported successfully");
   };
 

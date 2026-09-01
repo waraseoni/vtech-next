@@ -13,6 +13,7 @@ import {
 import type { LicenseStatus } from "@/lib/license";
 import { logger } from "@/lib/logger";
 import { initPresence, cleanupPresence } from "@/lib/presence";
+import { initNativeBridge } from "@/lib/nativePrint";
 
 /**
  * useAppBoot — RootClient (app shell) ka saara auth/boot state + effects.
@@ -79,6 +80,9 @@ export function useAppBoot() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Android (Capacitor) me print/export natively kaam karne ke liye global
+      // bridge — window.print + window.open(/api/print-*) ko intercept karta hai.
+      initNativeBridge();
       try {
         const PUBLIC_PAGES = [
           "/",

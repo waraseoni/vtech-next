@@ -6,6 +6,7 @@ import Link from "next/link";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
+import { downloadBlob } from "@/lib/nativePrint";
 import {
   Loader2,
   ArrowLeft,
@@ -276,11 +277,8 @@ export default function MechanicLedgerPage() {
     const el = document.getElementById("ledger-table");
     if (!el) return;
     const html = el.outerHTML;
-    const url = "data:application/vnd.ms-excel," + encodeURIComponent(html);
-    const link = document.createElement("a");
-    link.download = `Ledger_${mechName.replace(/\s+/g, "_")}.xls`;
-    link.href = url;
-    link.click();
+    const blob = new Blob([html], { type: "application/vnd.ms-excel" });
+    downloadBlob(blob, `Ledger_${mechName.replace(/\s+/g, "_")}.xls`);
   };
 
   const printLedger = () => window.print();

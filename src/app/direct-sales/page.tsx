@@ -3,6 +3,7 @@ import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { downloadBlob } from "@/lib/nativePrint";
 import {
   Plus,
   Search,
@@ -372,13 +373,7 @@ function DirectSalesPageInner() {
       ]),
     ];
     const csv = rows.map((r) => r.join(",")).join("\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    const a = Object.assign(document.createElement("a"), {
-      href: url,
-      download: `sales_${todayIST().replace(/-/g, "")}.csv`,
-    });
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" }), `sales_${todayIST().replace(/-/g, "")}.csv`);
   };
 
   const printReport = () => {

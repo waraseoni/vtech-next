@@ -208,7 +208,7 @@ export default function LoginPage() {
 
   return (
     <PullToRefresh className="min-h-screen">
-      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-4 relative overflow-hidden">
       {/* Background glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-3xl" />
@@ -483,6 +483,7 @@ export default function LoginPage() {
         <p className="text-center text-slate-700 text-[11px] mt-5 font-medium">
           {SITE.name} · {SITE.phone}
         </p>
+      </div>
       </div>
     </PullToRefresh>
   );

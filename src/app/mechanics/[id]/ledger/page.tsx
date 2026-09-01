@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { downloadBlob } from "@/lib/nativePrint";
 import {
   Loader2,
   ArrowLeft,
@@ -259,11 +260,7 @@ export default function MechanicLedgerPage() {
       <tr><td colspan="5" style="text-align:right">Closing Balance:</td><td>${inr(closingBalance)}</td></tr>
     </table>`;
     const blob = new Blob([html], { type: "application/vnd.ms-excel" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Ledger_${name.replace(" ", "_")}.xls`;
-    a.click();
+    downloadBlob(blob, `Ledger_${name.replace(" ", "_")}.xls`);
   };
 
   const name = mechanic

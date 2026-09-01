@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import { downloadBlob } from "@/lib/nativePrint";
 import {
   Download,
   Upload,
@@ -526,13 +527,8 @@ export default function BackupPage() {
 
       const json = JSON.stringify(backup, null, 2);
       const blob = new Blob([json], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
       const now = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
-      a.href = url;
-      a.download = `vtech_backup_${now}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `vtech_backup_${now}.json`);
 
       const totalRows = BACKUP_TABLES.reduce((s, t) => s + (backup[t]?.length || 0), 0);
       setProgress("");

@@ -26,6 +26,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { todayIST, toISTString, parseISTDate, formatIST, dtLocalToIST } from "@/lib/dateUtils";
+import { downloadBlob } from "@/lib/nativePrint";
 import { buildDueMaps } from "@/lib/client-due";
 import {
   Plus,
@@ -1293,13 +1294,18 @@ function JobsListContent() {
     window.open(`/api/print-transactions?${p}`, "_blank");
   };
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     const p = new URLSearchParams();
     if (dateFrom) p.append("date_from", dateFrom);
     if (dateTo) p.append("date_to", dateTo);
-    // Download trigger (file response), page navigation nahi — isliye window.location intentional
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.href = `/api/export-transactions?${p}`;
+    // Download trigger (file response), page navigation nahi — isliye fetch+blob
+    const res = await fetch(`/api/export-transactions?${p}`);
+    if (res.ok) {
+      const blob = await res.blob();
+      downloadBlob(blob, `transactions_${todayIST()}.xls`);
+    } else {
+      alert("Export fail hua. Dobara try karein.");
+    }
   };
 
   // BUG FIX 4: shiftDay preserves all existing URL params

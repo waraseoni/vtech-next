@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { downloadBlob } from "@/lib/nativePrint";
 import {
   ArrowLeft,
   Copy,
@@ -405,14 +406,7 @@ export default function ClientDetailPage() {
       const disp = res.headers.get("Content-Disposition") || "";
       const m = disp.match(/filename="?([^";]+)"?/);
       const fname = m?.[1] || `client-${id}-setup-kit.zip`;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fname;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, fname);
       setSavedAt("Setup kit download ho gaya!");
     } catch {
       setErr("Setup kit download fail hua.");

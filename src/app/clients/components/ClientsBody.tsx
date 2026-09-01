@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { todayIST } from "@/lib/dateUtils";
+import { downloadBlob } from "@/lib/nativePrint";
 import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
@@ -309,17 +310,13 @@ export default function ClientsBody({
         c.balance,
       ]),
     ];
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(
-      new Blob(
-        [
-          `<table>${rows.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}</table>`,
-        ],
-        { type: "application/vnd.ms-excel" }
-      )
+    const blob = new Blob(
+      [
+        `<table>${rows.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}</table>`,
+      ],
+      { type: "application/vnd.ms-excel" }
     );
-    a.download = `clients_${todayIST()}.xls`;
-    a.click();
+    downloadBlob(blob, `clients_${todayIST()}.xls`);
   };
 
   // ── Derived ────────────────────────────────────────────────────────────────
