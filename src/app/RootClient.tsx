@@ -1347,39 +1347,64 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // NOTE: @capacitor/app ka `App.addListener("backButton")` register karne se
   // native side par `hasListeners` true ho jata hai, jisse default app-exit
   // (goBack/exit) USE nahi hota — event humare JS handler ko milta hai.
-  useEffect(() => {
-    const isPublicPath =
-      pathname === "/login" ||
-      pathname === "/setup" ||
-      pathname === "/" ||
-      ["/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"].some(
-        (p) => pathname === p || pathname.startsWith(p + "/")
-      );
+  //
+  // IMPORTANT: listener SIRF EK BAAR (mount par) register hota hai. Pehle isse
+  // `[pathname, goInAppBack]` par re-register karte the, par `addListener` ek
+  // Promise return karta hai aur cleanup async `then` se pehle chal jata tha —
+  // isliye purane listeners remove nahi hote the aur accumulate ho jaate the.
+  // Phir EK back press par MULTIPLE handlers fire karte the → app multiple
+  // screens (yahi to bahar) jump karti thi. Ab pathname/goInAppBack ko refs se
+  // track karte hain taaki listener dobara add kiye bina hamesha latest mile.
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+  const goInAppBackRef = useRef(goInAppBack);
+  goInAppBackRef.current = goInAppBack;
 
-    let handler: { remove: () => void } | null = null;
+  useEffect(() => {
+    let resolvedHandler: { remove: () => void } | null = null;
+    let disposed = false;
     try {
       const unsub = App.addListener("backButton", () => {
+        if (disposed) return;
+        const p = pathnameRef.current;
+        const isPublicPath =
+          p === "/login" ||
+          p === "/setup" ||
+          p === "/" ||
+          ["/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"].some(
+            (pp) => p === pp || p.startsWith(pp + "/")
+          );
         if (isPublicPath) {
           // Login/hang state → cache-clear hard refresh (app exit nahi).
           hardReload();
         } else {
-          goInAppBack();
+          goInAppBackRef.current();
         }
       });
       unsub.then((h) => {
-        handler = h;
+        if (disposed) {
+          // Mount ke baad hi cleanup hua (rare) — listener ko turant hata do.
+          try {
+            h.remove();
+          } catch {
+            /* ignore */
+          }
+        } else {
+          resolvedHandler = h;
+        }
       });
     } catch {
       /* plugin unavailable (web) → ignore */
     }
     return () => {
+      disposed = true;
       try {
-        handler?.remove();
+        resolvedHandler?.remove();
       } catch {
         /* ignore */
       }
     };
-  }, [pathname, goInAppBack]);
+  }, []);
 
   if (isPublicPage) {
     // Auth pages par logged-in user ko flash na dikhe — blank while redirect.
