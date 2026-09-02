@@ -1243,17 +1243,29 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     let me: string | null = null;
 
     const refresh = () => {
-      fetchUnreadCount().then((n) => {
+      fetchUnreadCount(me).then((n) => {
         if (!cancelled) setUnreadCount(n);
       });
     };
 
     // /messages par jaate hi read ho jaata hai — wapas aane par dobara count.
-    if (!pathname.startsWith("/messages")) refresh();
+    // NOTE: unread count hamesha current user (me) ke recipient_id se filter hota
+    // hai — isliye pehla refresh bhi me set hone ke BAAD hi hota hai (wana global
+    // count dikh jaata tha: doosre users ke unread bhi badge me aa jaate the).
+
+    // Chat me message padhne par (markRead ke baad) dispatch hota hai —
+    // realtime UPDATE delivery flaky hone par bhi badge turant clear ho jaye.
+    const onMessagesRead = () => {
+      if (me) refresh();
+    };
+    window.addEventListener("vtech:messages-read", onMessagesRead as EventListener);
 
     (async () => {
       me = await getMyId();
-      if (cancelled || !me) return;
+      if (cancelled) return;
+      // /messages par jaate hi read ho jaata hai — wapas aane par dobara count.
+      if (!pathname.startsWith("/messages")) refresh();
+      if (!me) return;
       sub = supabase
         .channel("vtech-unread-badge")
         .on(
@@ -1276,6 +1288,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
     return () => {
       cancelled = true;
+      window.removeEventListener("vtech:messages-read", onMessagesRead as EventListener);
       sub?.unsubscribe();
     };
   }, [pathname, profile]);

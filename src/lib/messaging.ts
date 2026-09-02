@@ -166,12 +166,22 @@ export async function markDelivered(me: string, other: string): Promise<void> {
 // markRead — delivered + read (blue double tick).
 export async function markRead(me: string, other: string): Promise<void> {
   const now = new Date().toISOString();
-  await supabase
+  const { error } = await supabase
     .from("messages")
     .update({ read_at: now, delivered_at: now })
     .eq("recipient_id", me)
     .eq("sender_id", other)
     .is("read_at", null);
+  if (!error) {
+    // Sidebar unread badge ko turant refresh karne ke liye — realtime-delivery
+    // par bharosa nahi karte (flaky hone par badge atki rehti thi; hard-refresh
+    // ke baad hi clear hoti thi). Custom event se RootClient ka badge refresh hota hai.
+    try {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("vtech:messages-read", { detail: { me } }));
+      }
+    } catch { /* ignore */ }
+  }
 }
 
 // current user ka auth UUID (sidebar badge subscription ke liye).
@@ -181,11 +191,13 @@ export async function getMyId(): Promise<string | null> {
 }
 
 // unread total (sidebar badge ke liye) — mere recipient, koi bhi sender se.
-export async function fetchUnreadCount(): Promise<number> {
-  const { count, error } = await supabase
+export async function fetchUnreadCount(me: string | null): Promise<number> {
+  let q = supabase
     .from("messages")
     .select("id", { count: "exact", head: true })
     .is("read_at", null);
+  if (me) q = q.eq("recipient_id", me);
+  const { count, error } = await q;
   return error ? 0 : count || 0;
 }
 

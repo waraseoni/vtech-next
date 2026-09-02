@@ -468,22 +468,22 @@ export default function DailyAttendance({
 
       {/* ── Self Check-In / Check-Out Hero Card (Staff only when self-data exists) ── */}
       {selfName && (
-        <div className="bg-gradient-to-r from-blue-950/70 via-indigo-950/60 to-blue-950/70 border border-blue-500/25 rounded-2xl overflow-hidden shadow-lg shadow-blue-900/20">
+        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 dark:from-blue-950/70 dark:via-indigo-950/60 dark:to-blue-950/70 border border-blue-200 dark:border-blue-500/25 rounded-2xl overflow-hidden shadow-lg shadow-blue-100 dark:shadow-blue-900/20">
           <div className="px-4 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Staff Identity */}
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative flex-shrink-0">
                 <MechAvatar image={selfImage} name={selfName} cls="w-11 h-11 text-base" />
                 <span
-                  className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[#0d1117] ${selfBadge.dot}`}
+                  className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-[#0d1117] ${selfBadge.dot}`}
                 />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <Fingerprint size={12} className="text-blue-400/70 flex-shrink-0" />
-                  <span className="text-white font-black text-sm truncate">{selfName}</span>
+                  <span className="text-slate-900 dark:text-white font-black text-sm truncate">{selfName}</span>
                 </div>
-                <p className="text-blue-200/60 text-[11px] mb-1.5">{displayDate}</p>
+                <p className="text-blue-600/70 dark:text-blue-200/60 text-[11px] mb-1.5">{displayDate}</p>
                 <span
                   className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${selfBadge.cls}`}
                 >
@@ -495,22 +495,22 @@ export default function DailyAttendance({
 
             {/* Time Tiles: In / Out / Hours */}
             <div className="grid grid-cols-3 gap-2 lg:flex lg:items-center lg:gap-2">
-              <div className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2 text-center min-w-[80px]">
-                <span className="block text-[8px] uppercase tracking-wider text-blue-200/60 font-bold mb-0.5">
+              <div className="bg-white/70 dark:bg-white/[0.06] border border-blue-100 dark:border-white/10 rounded-xl px-3 py-2 text-center min-w-[80px]">
+                <span className="block text-[8px] uppercase tracking-wider text-blue-600/70 dark:text-blue-200/60 font-bold mb-0.5">
                   <LogIn size={8} className="inline mr-0.5" />
                   Check In
                 </span>
-                <span className="block text-white font-black text-sm">
+                <span className="block text-slate-900 dark:text-white font-black text-sm">
                   {fmtTimeIST(selfStatus.time_in)}
                 </span>
               </div>
-              <ArrowRight size={13} className="hidden lg:block text-white/30 mx-1 flex-shrink-0" />
-              <div className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2 text-center min-w-[80px]">
-                <span className="block text-[8px] uppercase tracking-wider text-blue-200/60 font-bold mb-0.5">
+              <ArrowRight size={13} className="hidden lg:block text-slate-400 dark:text-white/30 mx-1 flex-shrink-0" />
+              <div className="bg-white/70 dark:bg-white/[0.06] border border-blue-100 dark:border-white/10 rounded-xl px-3 py-2 text-center min-w-[80px]">
+                <span className="block text-[8px] uppercase tracking-wider text-blue-600/70 dark:text-blue-200/60 font-bold mb-0.5">
                   <LogOut size={8} className="inline mr-0.5" />
                   Check Out
                 </span>
-                <span className="block text-white font-black text-sm">
+                <span className="block text-slate-900 dark:text-white font-black text-sm">
                   {fmtTimeIST(selfStatus.time_out)}
                 </span>
               </div>
@@ -518,13 +518,13 @@ export default function DailyAttendance({
                 className={`rounded-xl px-3 py-2 text-center min-w-[70px] ${
                   selfStatus.time_in && selfStatus.time_out
                     ? "bg-emerald-600/80 border border-emerald-500/30"
-                    : "bg-white/[0.06] border border-white/10"
+                    : "bg-white/70 dark:bg-white/[0.06] border border-blue-100 dark:border-white/10"
                 }`}
               >
-                <span className="block text-white font-black text-sm">
+                <span className="block text-slate-900 dark:text-white font-black text-sm">
                   {hoursBetweenIST(selfStatus.time_in, selfStatus.time_out)}
                 </span>
-                <span className="block text-[8px] uppercase tracking-wider text-white/70 font-bold">
+                <span className="block text-[8px] uppercase tracking-wider text-slate-500 dark:text-white/70 font-bold">
                   Hours
                 </span>
               </div>
@@ -538,8 +538,8 @@ export default function DailyAttendance({
                 disabled={!!selfStatus.time_in || selfBusy !== null}
                 className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
                   selfStatus.time_in
-                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 cursor-default"
-                    : "bg-white text-blue-950 hover:bg-blue-50 shadow-sm"
+                    ? "dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 cursor-default"
+                    : "bg-white dark:bg-white text-blue-950 hover:bg-blue-50 dark:hover:bg-blue-50 shadow-sm"
                 } disabled:opacity-60 disabled:cursor-not-allowed`}
               >
                 {selfBusy === "in" ? (
@@ -557,7 +557,7 @@ export default function DailyAttendance({
                 disabled={!selfStatus.time_in || !!selfStatus.time_out || selfBusy !== null}
                 className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
                   !selfStatus.time_in || selfStatus.time_out
-                    ? "bg-white/10 text-white/50 border border-white/10 cursor-default"
+                    ? "dark:bg-white/10 dark:text-white/50 dark:border-white/10 bg-slate-100 text-slate-400 border border-slate-200 cursor-default"
                     : "bg-red-500 hover:bg-red-400 text-white shadow-sm"
                 } disabled:opacity-60 disabled:cursor-not-allowed`}
               >
@@ -578,10 +578,10 @@ export default function DailyAttendance({
             <div
               className={`mx-4 mb-3 flex items-start gap-2 px-3 py-2 rounded-xl text-xs font-bold border ${
                 selfBusy
-                  ? "bg-blue-500/10 border-blue-500/20 text-blue-300"
+                  ? "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-300"
                   : selfMsg?.type === "ok"
-                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
-                  : "bg-red-500/10 border-red-500/20 text-red-300"
+                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-300"
+                  : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-300"
               }`}
             >
               {selfBusy ? (

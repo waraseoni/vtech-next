@@ -431,76 +431,89 @@ export default function ViewClientProfile() {
       setLoading(true);
       setError(null);
 
+      // Sabhi data queries PARALLEL chalayi jaati hain (sequential await page ko slow karta hai).
+      // Loans ke per-loan payments ki N+1 queries bhi ek hi query me badal di gayi hain.
+      const [
+        { data: cd, error: ce },
+        { data: remd },
+        { data: jd },
+        { data: sd },
+        { data: pd },
+        { data: ld },
+        { data: lpAll },
+      ] = await Promise.all([
+        supabase
+          .from("client_list")
+          .select(
+            "id, firstname, middlename, lastname, contact, email, address, opening_balance, payment_due_date, payment_due_remarks, image_path, date_created"
+          )
+          .eq("id", clientId)
+          .eq("delete_flag", 0)
+          .single(),
+        supabase
+          .from("payment_reminders")
+          .select("id, client_id, amount_due, channel, status, remarks, reminder_date")
+          .eq("client_id", clientId)
+          .order("reminder_date", { ascending: false }),
+        supabase
+          .from("transaction_list")
+          .select(
+            "id, job_id, code, item, fault, remark, uniq_id, status, amount, date_created, date_completed"
+          )
+          .eq("client_name", String(clientId))
+          .order("job_id", { ascending: false }),
+        supabase
+          .from("direct_sales")
+          .select("id, sale_code, payment_mode, remarks, total_amount, date_created")
+          .eq("client_id", clientId)
+          .order("date_created", { ascending: false }),
+        supabase
+          .from("client_payments")
+          .select(
+            "id, payment_date, amount, discount, payment_mode, payment_type, remarks, job_id, bill_no, loan_id"
+          )
+          .eq("client_id", clientId)
+          .order("payment_date", { ascending: false }),
+        supabase
+          .from("client_loans")
+          .select("*")
+          .eq("client_id", clientId)
+          .order("loan_date", { ascending: false }),
+        supabase
+          .from("client_payments")
+          .select("loan_id, amount, discount")
+          .eq("client_id", clientId)
+          .not("loan_id", "is", null),
+      ]);
+
       // 1. Client
-      const { data: cd, error: ce } = await supabase
-        .from("client_list")
-        .select(
-          "id, firstname, middlename, lastname, contact, email, address, opening_balance, payment_due_date, payment_due_remarks, image_path, date_created"
-        )
-        .eq("id", clientId)
-        .eq("delete_flag", 0)
-        .single();
       if (ce || !cd) throw ce || new Error("Client not found");
       const fullName = [cd.firstname, cd.middlename, cd.lastname].filter(Boolean).join(" ").trim();
       setClient({ ...cd, fullName });
 
       // 1b. Payment reminders (WhatsApp log)
-      const { data: remd } = await supabase
-        .from("payment_reminders")
-        .select("id, client_id, amount_due, channel, status, remarks, reminder_date")
-        .eq("client_id", clientId)
-        .order("reminder_date", { ascending: false });
       setReminders(remd || []);
 
       // 2. Jobs
-      const { data: jd } = await supabase
-        .from("transaction_list")
-        .select(
-          "id, job_id, code, item, fault, remark, uniq_id, status, amount, date_created, date_completed"
-        )
-        .eq("client_name", String(clientId))
-        .order("date_created", { ascending: false });
       setJobs(jd || []);
 
       // 3. Direct Sales
-      const { data: sd } = await supabase
-        .from("direct_sales")
-        .select("id, sale_code, payment_mode, remarks, total_amount, date_created")
-        .eq("client_id", clientId)
-        .order("date_created", { ascending: false });
       setDirectSales(sd || []);
 
       // 4. Payments
-      const { data: pd } = await supabase
-        .from("client_payments")
-        .select(
-          "id, payment_date, amount, discount, payment_mode, payment_type, remarks, job_id, bill_no, loan_id"
-        )
-        .eq("client_id", clientId)
-        .order("payment_date", { ascending: false });
       setPayments(pd || []);
 
-      const { data: ld } = await supabase
-        .from("client_loans")
-        .select("*")
-        .eq("client_id", clientId)
-        .order("loan_date", { ascending: false });
-
-      const enrichedLoans: Loan[] = await Promise.all(
-        (ld || []).map(async (loan: Loan) => {
-          const { data: lp } = await supabase
-            .from("client_payments")
-            .select("amount, discount")
-            .eq("loan_id", loan.id);
-          // Paid = Amount + Discount (credit) — matches client_api.php
-          const paid = (lp || []).reduce(
-            (s: number, r: { amount: number; discount: number }) =>
-              s + (r.amount + (r.discount || 0)),
-            0
-          );
-          return { ...loan, paid, balance: loan.total_payable - paid };
-        })
-      );
+      // Loans — paid amounts ek hi query me group kar ke nikaale gaye (N+1 fix)
+      const paymentMap = new Map<number, number>();
+      (lpAll || []).forEach((r: { loan_id: number; amount: number; discount: number }) => {
+        if (r.loan_id == null) return;
+        const key = Number(r.loan_id);
+        paymentMap.set(key, (paymentMap.get(key) || 0) + (r.amount + (r.discount || 0)));
+      });
+      const enrichedLoans: Loan[] = (ld || []).map((loan: Loan) => {
+        const paid = paymentMap.get(Number(loan.id)) || 0;
+        return { ...loan, paid, balance: loan.total_payable - paid };
+      });
       setLoans(enrichedLoans);
 
       // PHP view_client.php: sirf ACTIVE (status=1) loans balance me count hote hain;

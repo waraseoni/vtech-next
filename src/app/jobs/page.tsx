@@ -795,13 +795,13 @@ function JobsListContent() {
     if (bal > 0)
       return (
         <span className="bg-red-500/15 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded-full text-[9px] font-bold">
-          Due ₹{bal.toFixed(0)}
+          Due {"\u20B9"}{bal.toFixed(0)}
         </span>
       );
     if (bal < 0)
       return (
         <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full text-[9px] font-bold">
-          Adv ₹{Math.abs(bal).toFixed(0)}
+          Adv {"\u20B9"}{Math.abs(bal).toFixed(0)}
         </span>
       );
     return (
@@ -1062,13 +1062,13 @@ function JobsListContent() {
         `   Code: #${row.code || ""}\n` +
         `   Status: *${st}*\n`;
       if (row.status === 2 || row.status === 3 || row.status === 5) {
-        msg += `   Amount: ₹${amt.toLocaleString("en-IN")}\n`;
+        msg += `   Amount: \u20B9${amt.toLocaleString("en-IN")}\n`;
       }
       msg += `\n`;
     });
     msg +=
       `----------------------------\n` +
-      `*Grand Total: ₹${totalSum.toLocaleString("en-IN")}*\n\n` +
+      `*Grand Total: \u20B9${totalSum.toLocaleString("en-IN")}*\n\n` +
       `Kripya kisi bhi jankari ke liye workshop par sampark karein. 🙏\n\n` +
       `${businessName}`;
     return msg;
@@ -1281,7 +1281,7 @@ function JobsListContent() {
       item: txn.item || "",
       job_id: txn.job_id,
       code: txn.code || "",
-      amount: "₹" + (txn.amount || 0).toLocaleString("en-IN"),
+      amount: "\u20B9" + (txn.amount || 0).toLocaleString("en-IN"),
       ...firmVars(sysInfo),
     });
     window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
@@ -1794,18 +1794,18 @@ function JobsListContent() {
                     {txn.uniq_id ? (
                       <Link
                         href={`/jobs?search=${encodeURIComponent(txn.uniq_id)}`}
-                        title={`Spot: ${txn.uniq_id} — is spot ke sab items`}
+                        title={`Spot: ${txn.uniq_id} \u2014 is spot ke sab items`}
                         className="flex items-center gap-1 text-amber-400/90 hover:text-amber-300 no-underline transition-colors"
                       >
                         <MapPin size={10} className="flex-shrink-0" />
                         <span className="truncate">{txn.uniq_id}</span>
                       </Link>
                     ) : (
-                      <span className="text-slate-600">—</span>
+                      <span className="text-slate-600">{"\u2014"}</span>
                     )}
                   </td>
                   <td className="px-3 py-2.5 text-right font-bold text-sm text-slate-200">
-                    ₹{(txn.amount || 0).toFixed(0)}
+                    {"\u20B9"}{(txn.amount || 0).toFixed(0)}
                   </td>
 
                   <td className="px-3 py-2.5 text-center">
@@ -2042,7 +2042,7 @@ function JobsListContent() {
                 ? [
                     {
                       label: "Total Amount",
-                      value: `₹${stats.totalAmt.toLocaleString("en-IN")}`,
+                      value: `\u20B9${stats.totalAmt.toLocaleString("en-IN")}`,
                       icon: IndianRupee,
                       color: "text-purple-400",
                       bg: "bg-purple-500/10 border-purple-500/20",
@@ -2139,7 +2139,7 @@ function JobsListContent() {
               </button>
               <Link
                 href="/jobs/spot-labels"
-                title="Har spot ka printable QR label — scan karke us spot ke items khulenge"
+                        title="Har spot ka printable QR label \u2014 scan karke us spot ke items khulenge"
                 className="bg-[#21293d] hover:bg-[#2a3550] text-slate-400 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all no-underline"
               >
                 <MapPin size={13} /> QR
@@ -2147,7 +2147,7 @@ function JobsListContent() {
               <button
                 onClick={clearDeliveredSpots}
                 disabled={spotCleaning}
-                title="Delivered jobs jinki location abhi bhi lagi hai — sab ek saath khali karo"
+                        title="Delivered jobs jinki location abhi bhi lagi hai \u2014 sab ek saath khali karo"
                 className="bg-[#21293d] hover:bg-[#2a3550] text-slate-400 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-60"
               >
                 {spotCleaning ? (
@@ -2403,7 +2403,7 @@ function JobsListContent() {
         <div className="mx-3 mt-2 bg-purple-500/5 border border-purple-500/20 rounded-xl py-2 px-4 flex items-center justify-between">
           <span className="text-[10px] text-slate-600 font-bold uppercase">Total Amount</span>
           <span className="text-sm font-black text-purple-400">
-            ₹{stats.totalAmt.toLocaleString("en-IN")}
+            {"\u20B9"}{stats.totalAmt.toLocaleString("en-IN")}
           </span>
         </div>
       )}
@@ -2578,7 +2578,7 @@ function JobsListContent() {
                     {[
                       { label: "Item/Model", value: txn.item, cls: "text-slate-300 font-bold" },
                       { label: "Fault/Issue", value: txn.fault, cls: "text-red-400" },
-                      { label: "Spot", value: txn.uniq_id || "—", cls: "text-amber-400/90" },
+                      { label: "Spot", value: txn.uniq_id || "\u2014", cls: "text-amber-400/90" },
                     ].map(({ label, value, cls }) => (
                       <div key={label} className="flex justify-between gap-2">
                         <span className="text-slate-600 flex-shrink-0">{label}:</span>
@@ -2595,7 +2595,7 @@ function JobsListContent() {
                     )}
                     <div className="flex justify-between font-black text-sm pt-1 border-t border-[#21293d]">
                       <span className="text-slate-600">Bill Amount:</span>
-                      <span className="text-emerald-400">₹{(txn.amount || 0).toFixed(2)}</span>
+                      <span className="text-emerald-400">{"\u20B9"}{(txn.amount || 0).toFixed(2)}</span>
                     </div>
                   </div>
 

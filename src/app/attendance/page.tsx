@@ -98,24 +98,24 @@ function AttendanceContent() {
   return (
     <div className="w-full max-w-[1550px] mx-auto space-y-4">
       {/* ── HEADER & TABS CARD ── */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3 sm:p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="theme-card bg-[#161b27] border border-[#21293d] rounded-2xl p-3 sm:p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-600/20 border border-white/10 flex-shrink-0">
             <ClipboardCheck size={20} className="text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base sm:text-lg font-black text-white tracking-tight">
+              <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
                 Attendance Hub
               </h1>
               {liveTime && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span>{liveTime} IST</span>
                 </div>
               )}
             </div>
-            <p className="text-[11px] text-slate-400 font-medium">
+            <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
               Daily staff check-in/out, GPS geofence punch & monthly attendance register
             </p>
           </div>
@@ -135,7 +135,7 @@ function AttendanceContent() {
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-150 ${
                 activeTab === key
                   ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
-                  : "text-slate-400 hover:text-slate-200"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
             >
               <Icon size={13} />
