@@ -97,6 +97,16 @@ function bestMatch(query: string, products: Product[]): Product | null {
   return best;
 }
 
+/** All products that plausibly match the keyword (≥ MIN_MATCH_SCORE), highest score first. */
+const MIN_MATCH_SCORE = 60;
+function matchAlternates(query: string, products: Product[], excludeId: number | undefined): Product[] {
+  return products
+    .map((p) => ({ p, s: scoreMatch(query, p) }))
+    .filter((x) => x.s >= MIN_MATCH_SCORE && x.p.id !== excludeId)
+    .sort((a, b) => b.s - a.s)
+    .map((x) => x.p);
+}
+
 // ── BOM line result + status classification (spec §2.4) ─────────────────────
 type BomStatus = "available" | "low" | "insufficient" | "outofstock" | "notfound";
 
@@ -108,6 +118,13 @@ type BomLine = {
   status: BomStatus;
   available: number;
   deficit: number;
+  alternates: AlternateMatch[];
+};
+
+type AlternateMatch = {
+  product: Product;
+  score: number;
+  available: number;
 };
 
 const STATUS_META: Record<
@@ -192,7 +209,9 @@ export default function BomCheckPage() {
   }
 
   // ── Load catalog once ─────────────────────────────────────────────────────
-  const loadCatalog = async () => {
+  // Returns the loaded products so callers can use the FRESH array immediately
+  // (state updates are async and would otherwise fall behind the current render).
+  const loadCatalog = async (): Promise<Product[]> => {
     setLoadingCatalog(true);
     try {
       const [{ data: pl }, { data: suppliersRows }, { data: spareLink }] = await Promise.all([
@@ -224,6 +243,7 @@ export default function BomCheckPage() {
         bySpare.set(l.spare_id as number, arr);
       });
       setSuppliers(bySpare);
+      return prods;
     } finally {
       setLoadingCatalog(false);
     }
@@ -234,7 +254,9 @@ export default function BomCheckPage() {
     if (!input.trim()) return;
     setError(null);
     setAnalysis(null);
-    if (catalog.length === 0) await loadCatalog();
+    // Use the FRESH catalog — `catalog` state may not have updated within this
+    // same render/closure (async state update), causing first-run misses.
+    const prodCatalog: Product[] = catalog.length > 0 ? catalog : await loadCatalog();
     const parsed = input
       .split("\n")
       .map(parseBOMLine)
@@ -247,20 +269,32 @@ export default function BomCheckPage() {
 
     const productIds = new Set<number>();
     const matched: { parsedName: string; qty: number; best: Product | null }[] = parsed.map((p) => {
-      const best = bestMatch(p.name, catalog);
+      const best = bestMatch(p.name, prodCatalog);
       if (best) productIds.add(best.id);
+      matchAlternates(p.name, prodCatalog, best?.id).forEach((a) => productIds.add(a.id));
       return { parsedName: p.name, qty: p.qty, best };
     });
 
     let stockMap = new Map<number, { available: number }>();
     try {
       stockMap = await fetchStockByProducts([...productIds]);
-    } catch {
-      // stock read fails → treat all matched as 0 available, still render
+    } catch (e) {
+      // Stock read fail → surface it instead of silently marking in-stock items
+      // as out of stock (available=0). This was masking real data as "0".
+      setError(
+        e instanceof Error
+          ? `Stock count nahi mila: ${e.message}`
+          : "Stock count nahi mila. Dobara try karein."
+      );
     }
 
     const built: BomLine[] = matched.map((m, i) => {
       const product = m.best;
+      const alternates = matchAlternates(m.parsedName, prodCatalog, product?.id).map((p) => ({
+        product: p,
+        score: scoreMatch(m.parsedName, p),
+        available: stockMap.get(p.id)?.available ?? 0,
+      }));
       if (!product) {
         return {
           key: `${i}-${m.parsedName}`,
@@ -269,6 +303,7 @@ export default function BomCheckPage() {
           status: "notfound",
           available: 0,
           deficit: m.qty,
+          alternates,
         };
       }
       const available = stockMap.get(product.id)?.available ?? 0;
@@ -286,6 +321,7 @@ export default function BomCheckPage() {
         status,
         available,
         deficit: Math.max(0, needed - available),
+        alternates,
       };
     });
 
@@ -548,6 +584,35 @@ export default function BomCheckPage() {
                                 <div>
                                   <div className="text-slate-700 dark:text-slate-200">{l.product.name}</div>
                                   <div className="text-[10px] text-slate-500 dark:text-slate-600">id {l.product.id}</div>
+                                  {l.alternates.length > 0 && (
+                                    <div className="mt-2 border-t border-slate-100 dark:border-[#1a2134] pt-1.5">
+                                      <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                        Other matches ({l.alternates.length})
+                                      </div>
+                                      <div className="mt-1 space-y-1">
+                                        {l.alternates.map((alt) => (
+                                          <div
+                                            key={alt.product.id}
+                                            className="flex items-baseline justify-between gap-2 text-[11px]"
+                                          >
+                                            <span className="text-slate-600 dark:text-slate-300">
+                                              {alt.product.name}
+                                              <span className="text-slate-400 dark:text-slate-500"> #{alt.product.id}</span>
+                                            </span>
+                                            <span
+                                              className={`font-bold whitespace-nowrap ${
+                                                alt.available > 0
+                                                  ? "text-emerald-600 dark:text-emerald-400"
+                                                  : "text-rose-600 dark:text-rose-400"
+                                              }`}
+                                            >
+                                              have {alt.available}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <span className="text-[11px] text-slate-500 dark:text-slate-600">—</span>

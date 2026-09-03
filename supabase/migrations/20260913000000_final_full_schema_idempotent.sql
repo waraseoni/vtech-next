@@ -2809,6 +2809,121 @@ GRANT ALL ON TABLE public.stock_adjustments TO authenticated;
 GRANT ALL ON TABLE public.stock_adjustments TO service_role;
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- I4 — PO PARTIAL RECEIPT + AUTO-REORDER
+--   Fold-in of 20260915_po_partial_receipt.sql (isolated). Self-contained +
+--   idempotent. Adds 'partially_received' to purchase_orders.status CHECK and
+--   an atomic SECURITY DEFINER writer RPC `receive_po_receipt` that validates
+--   per-line received qty <= outstanding server-side (defensive), writes the
+--   inventory_list stock-in rows, bumps purchase_order_items.qty_received, and
+--   sets PO status to partially_received/received. The touch_purchase_orders
+--   trigger keeps date_updated fresh.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- Extend purchase_orders.status CHECK to allow 'partially_received'
+do $$
+declare v_def text;
+begin
+  select pg_get_constraintdef(oid) into v_def
+    from pg_constraint
+   where conrelid = 'public.purchase_orders'::regclass
+     and conname = 'purchase_orders_status_check';
+  if v_def is null or position('partially_received' in v_def) = 0 then
+    alter table public.purchase_orders drop constraint if exists purchase_orders_status_check;
+    alter table public.purchase_orders add constraint purchase_orders_status_check
+      check (status = ANY (ARRAY['pending'::text, 'ordered'::text, 'partially_received'::text, 'received'::text, 'cancelled'::text]));
+  end if;
+end $$;
+
+-- Atomic writer RPC: receive_po_receipt (SECURITY DEFINER + staff check)
+CREATE OR REPLACE FUNCTION public.receive_po_receipt(
+    p_po_id bigint,
+    p_lines jsonb
+)
+RETURNS TABLE(
+    item_id bigint,
+    product_id bigint,
+    qty_total_received integer,
+    outstanding_after integer
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+declare
+    l record;
+    v_outstanding integer;
+    v_any_open boolean := false;
+begin
+    if not public.is_frontend_staff() then
+        raise exception 'permission denied: staff only';
+    end if;
+    if p_po_id is null then
+        raise exception 'po_id is required';
+    end if;
+    if p_lines is null or jsonb_typeof(p_lines) <> 'array' or jsonb_array_length(p_lines) = 0 then
+        raise exception 'lines is required (non-empty array)';
+    end if;
+
+    for l in
+        select (e->>'product_id')::bigint as product_id,
+               (e->>'qty')::integer as qty
+          from jsonb_array_elements(p_lines) e
+    loop
+        if l.product_id is null or l.qty is null or l.qty <= 0 then
+            raise exception 'invalid line: product_id/qty required and qty > 0';
+        end if;
+
+        select poi.qty_ordered - poi.qty_received into v_outstanding
+          from public.purchase_order_items poi
+         where poi.purchase_order_id = p_po_id
+           and poi.product_id = l.product_id
+         for update;
+
+        if v_outstanding is null then
+            raise exception 'PO line not found: product % on PO %', l.product_id, p_po_id;
+        end if;
+        if l.qty > v_outstanding then
+            raise exception 'receiving % for product % exceeds outstanding %', l.qty, l.product_id, v_outstanding;
+        end if;
+
+        insert into public.inventory_list
+            (product_id, quantity, stock_date, supplier_id, purchase_cost,
+             purchase_order_id, date_created, date_updated)
+        select l.product_id, l.qty, current_date, po.supplier_id, poi.unit_cost,
+               p_po_id, now(), now()
+          from public.purchase_orders po
+          join public.purchase_order_items poi
+            on poi.purchase_order_id = po.id and poi.product_id = l.product_id
+         where po.id = p_po_id;
+
+        update public.purchase_order_items poi
+           set qty_received = poi.qty_received + l.qty
+         where poi.purchase_order_id = p_po_id
+           and poi.product_id = l.product_id;
+    end loop;
+
+    select bool_or(poi.qty_ordered - poi.qty_received > 0) into v_any_open
+      from public.purchase_order_items poi
+     where poi.purchase_order_id = p_po_id;
+
+    update public.purchase_orders po
+       set status = case when coalesce(v_any_open, false) then 'partially_received' else 'received' end,
+           received_date = coalesce(po.received_date, current_date)
+     where po.id = p_po_id;
+
+    return query
+      select poi.id::bigint, poi.product_id::bigint, poi.qty_received, poi.qty_ordered - poi.qty_received
+        from public.purchase_order_items poi
+       where poi.purchase_order_id = p_po_id
+       order by poi.id;
+end;
+$$;
+
+REVOKE ALL ON FUNCTION public.receive_po_receipt(bigint, jsonb) FROM public;
+GRANT EXECUTE ON FUNCTION public.receive_po_receipt(bigint, jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.receive_po_receipt(bigint, jsonb) TO service_role;
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- PostgREST ke liye schema reload (Supabase SQL Editor me dabane ke baad
 -- API immediately updated hota hai).
 -- ═══════════════════════════════════════════════════════════════════════════

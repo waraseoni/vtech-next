@@ -101,6 +101,7 @@ export default function MessagesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const meIdRef = useRef<string>("");
+  const [meId, setMeId] = useState<string>("");
   const [meName, setMeName] = useState("Me");
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -139,7 +140,6 @@ export default function MessagesPage() {
   const loadedConvRef = useRef<string | null>(null);
   const subCleanup = useRef<{ unsubscribe: () => void } | null>(null);
   const presCleanup = useRef<{ unsubscribe: () => void } | null>(null);
-  const typingTimed = useRef<number | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const profileMapRef = useRef<Record<string, ProfileLite>>({});
   const typingTimer = useRef<number | null>(null);
@@ -163,6 +163,7 @@ export default function MessagesPage() {
           return;
         }
         meIdRef.current = user.id;
+        setMeId(user.id);
         // my name for push + apna role check (staff/admin/developer hi messenger use kar sakta hai)
         const { data: myP } = await supabase
           .from("profiles")
@@ -627,7 +628,7 @@ export default function MessagesPage() {
           </p>
         )}
         {messages.map((m) => {
-          const mine = m.sender_id === meIdRef.current;
+          const mine = m.sender_id === meId;
           const isMedia = !!m.media_url;
           return (
             <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
@@ -841,7 +842,7 @@ export default function MessagesPage() {
                 <div className="flex items-center gap-1.5">
                   <p className="text-xs text-slate-500 truncate flex-1">
                     {c.lastMessage
-                      ? `${c.lastMessage.sender_id === meIdRef.current ? "You: " : ""}${c.lastMessage.content}`
+                      ? `${c.lastMessage.sender_id === meId ? "You: " : ""}${c.lastMessage.content}`
                       : "Koi message nahi"}
                   </p>
                   {c.unread > 0 && (

@@ -12,8 +12,10 @@ import {
   AlertTriangle,
   RefreshCw,
   Phone,
+  ShoppingCart,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { todayIST } from "@/lib/dateUtils";
 
 type ReqItem = {
@@ -29,6 +31,7 @@ type ReqItem = {
 };
 
 function RequirementListContent() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<ReqItem[]>([]);
   const [search, setSearch] = useState("");
@@ -119,6 +122,20 @@ function RequirementListContent() {
   const outOfStock = filtered.filter((i) => i.current_stock <= 0).length;
   const totalNeed = filtered.reduce((s, i) => s + i.need_to_order, 0);
 
+  const createPoFromList = () => {
+    const draft = filtered
+      .filter((i) => i.need_to_order > 0)
+      .map((i) => ({
+        product_id: i.id,
+        product_name: i.name,
+        qty: i.need_to_order,
+        unit_cost: i.price || 0,
+      }));
+    if (draft.length === 0) return;
+    window.sessionStorage.setItem("po_draft", JSON.stringify(draft));
+    router.push("/inventory/purchase-orders?create=draft");
+  };
+
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto pb-20">
       {/* Print header (only visible when printing) */}
@@ -166,6 +183,13 @@ function RequirementListContent() {
               className="flex items-center gap-2 px-5 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all"
             >
               <RefreshCw size={14} /> Refresh
+            </button>
+            <button
+              onClick={createPoFromList}
+              disabled={filtered.length === 0}
+              className="flex items-center gap-2 px-5 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-emerald-600/20"
+            >
+              <ShoppingCart size={14} /> Create PO
             </button>
             <button
               onClick={() => window.print()}

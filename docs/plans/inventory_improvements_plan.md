@@ -147,16 +147,26 @@ Only stock mutations today are stock-in modal, PO receive, delete row, indirect 
 - **Ordering note:** Phase 1 (core checker) stock read uses **I1**, not the old
   4-query copy. Phases 2 (AI), 3 (templates), 4 (PO draft), 5 (job→BOM) then follow.
 
-### I4 — PO workflow (partial receipt + auto-reorder)
-- **Partially-received state:** `purchase_orders.status` CHECK currently only allows
-  `pending/ordered/received/cancelled`. Add `partially_received` handling (store
-  outstanding `qty_received < qty_ordered` per item); receiving UI receives only the
-  remaining qty — see current all-or-nothing `receiveStock()` at
-  `purchase-orders/page.tsx:212-254`.
-- **Auto-reorder:** `requirement-list/page.tsx` computes `need_to_order` — add
-  "Create PO" that pre-fills a draft from that list (also feeds I3's "PO for missing").
-- **Defensive:** validate received qty ≤ ordered qty server-side (RPC/CHECK),
-  not only client.
+### I4 — PO workflow (partial receipt + auto-reorder) — ✓ DONE
+- **Partially-received state:** `purchase_orders.status` CHECK now allows
+  `partially_received` (guarded drop+recreate). Receiving is per-item via a new
+  atomic SECURITY DEFINER writer RPC `receive_po_receipt(po_id, jsonb lines)`;
+  each line's received qty is validated ≤ outstanding (`qty_ordered − qty_received`)
+  **server-side** — over-receipt raises an error. Writes `inventory_list` stock-in
+  rows + bumps `purchase_order_items.qty_received` + sets status
+  `partially_received` (any open) or `received` (all in), stamps `received_date` once.
+  App: `purchase-orders/page.tsx` got a per-item "Receive" modal (opens for both
+  `ordered` and `partially_received`), new status chip/filter; the old all-or-nothing
+  client insert (`receiveStock`) was replaced by the RPC.
+- **Auto-reorder:** `requirement-list/page.tsx` now has a **Create PO** button that
+  builds a draft from `need_to_order` (qty) + `price` (unit_cost) into
+  `sessionStorage`, then opens the PO create modal prefilled
+  (`/inventory/purchase-orders?create=draft`). Also feeds I3's "PO for missing".
+- **Defensive:** validated server-side in the RPC (over-receipt rejected) + staff-only
+  gate (`is_frontend_staff()`), not just the UI.
+- **Validated on PG18:** fresh consolidated apply exit 0; constraint includes
+  `partially_received`; 2-step partial→full receive works; inventory rows correct;
+  over-receipt + non-staff both rejected; isolated re-run idempotent.
 
 ### I5 — Oversell visibility
 Keep the allow-over-sell rule (`SaleForm.tsx:310-311, 376-377`) but:
@@ -229,14 +239,16 @@ Keep the allow-over-sell rule (`SaleForm.tsx:310-311, 376-377`) but:
 | `docs/plans/bom_checker_plan.md` | Full BOM feature spec (unchanged) |
 | `supabase/migrations/20260903_inventory_single_stock_rpc.sql` | I1 RPC (live) |
 | `supabase/migrations/20260914_stocktake_stock_adjustment.sql` | I2 stocktake (isolated, live) |
-| `supabase/migrations/20260913000000_final_full_schema_idempotent.sql` | Consolidated deliverable (I1 + I2 folded in) |
+| `supabase/migrations/20260915_po_partial_receipt.sql` | I4 partial receipt (isolated, live) |
+| `supabase/migrations/20260913000000_final_full_schema_idempotent.sql` | Consolidated deliverable (I1 + I2 + I4 folded in) |
 
 **Delivery rule (recorded):** each initiative ships in a **new isolated additive
-migration file**; the user ALSO instructs I2 objects to be folded idempotently into
+migration file**; the user ALSO instructs the objects to be folded idempotently into
 the consolidated `20260913_..._full_schema_idempotent.sql` ("full schema ko bhi
 idempotent add kar dena") — validated re-run safe + zero data loss. So the operative
-rule now: **isolated file + consolidated fold-in for every initiative** (I1 and I2
-both followed this).
+rule now: **isolated file + consolidated fold-in for every initiative** (I1, I2 and I4
+all followed this).
 
-Application code: `/inventory/stocktake` page (I2) + `src/lib/inventoryStock.ts` (I1)
-+ `/inventory/bom-check` page (I3 P1+P2, reuses `/api/chat`).
+Application code: `/inventory/stocktake` (I2) + `src/lib/inventoryStock.ts` (I1)
++ `/inventory/bom-check` (I3 P1+P2, reuses `/api/chat`) + `purchase-orders/page.tsx`
+receive modal & `requirement-list/page.tsx` Create-PO draft (I4).

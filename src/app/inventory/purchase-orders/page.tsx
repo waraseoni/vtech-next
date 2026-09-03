@@ -25,7 +25,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
-type POStatus = "pending" | "ordered" | "received" | "cancelled";
+type POStatus = "pending" | "ordered" | "partially_received" | "received" | "cancelled";
 
 interface PO {
   id: number;
@@ -73,6 +73,11 @@ const STATUS_META: Record<POStatus, { label: string; cls: string; dot: string }>
     cls: "bg-sky-500/10 text-sky-400 border-sky-500/20",
     dot: "bg-sky-400",
   },
+  partially_received: {
+    label: "Partially Received",
+    cls: "bg-teal-500/10 text-teal-400 border-teal-500/20",
+    dot: "bg-teal-400",
+  },
   received: {
     label: "Received",
     cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -102,6 +107,8 @@ export default function PurchaseOrdersPage() {
   const [statusF, setStatusF] = useState<"all" | POStatus>("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [acting, setActing] = useState<number | null>(null);
+  const [receiveTarget, setReceiveTarget] = useState<PO | null>(null);
+  const [initialDraft, setInitialDraft] = useState<DraftItem[] | null>(null);
 
   const fetchPos = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -173,6 +180,25 @@ export default function PurchaseOrdersPage() {
   }, []);
 
   useEffect(() => {
+    try {
+      const qs = window.location.search;
+      if (qs.includes("create=draft")) {
+        const raw = window.sessionStorage.getItem("po_draft");
+        if (raw) {
+          const parsed = JSON.parse(raw) as DraftItem[];
+          if (Array.isArray(parsed) && parsed.length) {
+            setInitialDraft(parsed);
+            setModalOpen(true);
+          }
+        }
+        window.sessionStorage.removeItem("po_draft");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.key === "Escape") setModalOpen(false);
     };
@@ -209,42 +235,34 @@ export default function PurchaseOrdersPage() {
     }
   };
 
-  const receiveStock = async (po: PO) => {
-    if (!confirm(`Receive all items from ${po.po_code} into stock?`)) return;
-    setActing(po.id);
+  const submitReceive = async (target: PO, lineQtys: Record<number, number>) => {
+    setActing(target.id);
     try {
-      const rows = po.items
-        .map((i) => ({
-          product_id: i.product_id,
-          quantity: Math.max(0, i.qty_ordered - i.qty_received),
-          purchase_order_id: po.id,
-          stock_date: todayIST(),
-          supplier_id: po.supplier_id,
-          purchase_cost: i.unit_cost,
-          courier_charges: 0,
-        }))
-        .filter((r) => r.quantity > 0);
-      if (rows.length === 0) throw new Error("No remaining quantity to receive");
-
-      const { error } = await supabase.from("inventory_list").insert(rows);
-      if (error) throw error;
-
-      const { error: updErr } = await supabase
-        .from("purchase_orders")
-        .update({
-          status: "received",
-          received_date: todayIST(),
-          date_updated: new Date().toISOString(),
+      const lines = target.items
+        .map((i) => {
+          const qty = lineQtys[i.product_id] || 0;
+          return { product_id: i.product_id, qty };
         })
-        .eq("id", po.id);
-      if (updErr) throw updErr;
+        .filter((l) => l.qty > 0);
+      if (lines.length === 0) throw new Error("Enter a quantity for at least one item");
+
+      const { data, error } = await supabase.rpc("receive_po_receipt", {
+        p_po_id: target.id,
+        p_lines: lines,
+      });
+      if (error) throw new Error(error.message);
+      const totalReceived = (data as Array<{ qty_total_received: number }> | null)?.reduce(
+        (s, r) => s + r.qty_total_received,
+        0
+      );
 
       await logActivity(
         "PO Received",
         "Inventory",
-        po.id,
-        `PO: ${po.po_code} | ${rows.length} item(s) stocked in`
+        target.id,
+        `PO: ${target.po_code} | ${lines.length} line(s) received (${totalReceived} units in)`
       );
+      setReceiveTarget(null);
       fetchPos();
     } catch (err) {
       alert("Failed: " + (err instanceof Error ? err.message : String(err)));
@@ -427,19 +445,25 @@ export default function PurchaseOrdersPage() {
             />
           </div>
           <div className="flex gap-2">
-            {(["all", "pending", "ordered", "received", "cancelled"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setStatusF(f)}
-                className={`px-3.5 py-2.5 rounded-xl text-xs font-bold border transition-all ${
-                  statusF === f
-                    ? "bg-emerald-600 text-white border-emerald-600"
-                    : "bg-[#161b27] text-slate-600 border-[#21293d] hover:border-emerald-500/30 hover:text-slate-400"
-                }`}
-              >
-                {f === "all" ? "All" : f[0].toUpperCase() + f.slice(1)}
-              </button>
-            ))}
+            {(["all", "pending", "ordered", "partially_received", "received", "cancelled"] as const).map(
+              (f) => (
+                <button
+                  key={f}
+                  onClick={() => setStatusF(f)}
+                  className={`px-3.5 py-2.5 rounded-xl text-xs font-bold border transition-all ${
+                    statusF === f
+                      ? "bg-emerald-600 text-white border-emerald-600"
+                      : "bg-[#161b27] text-slate-600 border-[#21293d] hover:border-emerald-500/30 hover:text-slate-400"
+                  }`}
+                >
+                  {f === "all"
+                    ? "All"
+                    : f === "partially_received"
+                      ? "Partial"
+                      : f[0].toUpperCase() + f.slice(1)}
+                </button>
+              )
+            )}
           </div>
         </div>
       </div>
@@ -487,20 +511,18 @@ export default function PurchaseOrdersPage() {
                       <span className="text-xs text-slate-500 font-bold mr-2">
                         ₹{po.total_amount.toLocaleString("en-IN")}
                       </span>
-                      {po.status === "ordered" && remaining > 0 && (
-                        <button
-                          onClick={() => receiveStock(po)}
-                          disabled={acting === po.id}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all active:scale-95"
-                        >
-                          {acting === po.id ? (
-                            <Loader2 size={12} className="animate-spin" />
-                          ) : (
+                      {(po.status === "ordered" || po.status === "partially_received") &&
+                        remaining > 0 && (
+                          <button
+                            onClick={() => setReceiveTarget(po)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all active:scale-95"
+                          >
                             <ArrowRight size={12} />
-                          )}
-                          Receive ({remaining})
-                        </button>
-                      )}
+                            {po.status === "partially_received"
+                              ? `Receive ${remaining} more`
+                              : `Receive (${remaining})`}
+                          </button>
+                        )}
                       {po.status === "pending" && (
                         <>
                           <button
@@ -595,11 +617,26 @@ export default function PurchaseOrdersPage() {
       {/* ── CREATE PO MODAL ── */}
       {modalOpen && (
         <CreatePOModal
-          onClose={() => setModalOpen(false)}
+          initialDraft={initialDraft}
+          onClose={() => {
+            setModalOpen(false);
+            setInitialDraft(null);
+          }}
           onSaved={() => {
             setModalOpen(false);
+            setInitialDraft(null);
             fetchPos();
           }}
+        />
+      )}
+
+      {/* ── RECEIVE MODAL ── */}
+      {receiveTarget && (
+        <ReceiveStockModal
+          target={receiveTarget}
+          busy={acting === receiveTarget.id}
+          onClose={() => setReceiveTarget(null)}
+          onSubmit={(lineQtys) => submitReceive(receiveTarget, lineQtys)}
         />
       )}
     </div>
@@ -607,13 +644,28 @@ export default function PurchaseOrdersPage() {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-function CreatePOModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function CreatePOModal({
+  onClose,
+  onSaved,
+  initialDraft,
+}: {
+  onClose: () => void;
+  onSaved: () => void;
+  initialDraft?: DraftItem[] | null;
+}) {
   const [supplierId, setSupplierId] = useState<string>("");
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Array<{ id: number; name: string }>>([]);
-  const [lines, setLines] = useState<DraftItem[]>([
-    { product_id: 0, product_name: "", qty: 1, unit_cost: 0 },
-  ]);
+  const [lines, setLines] = useState<DraftItem[]>(() =>
+    initialDraft && initialDraft.length
+      ? initialDraft.map((l) => ({
+          product_id: l.product_id,
+          product_name: l.product_name || "",
+          qty: l.qty > 0 ? l.qty : 1,
+          unit_cost: l.unit_cost || 0,
+        }))
+      : [{ product_id: 0, product_name: "", qty: 1, unit_cost: 0 }]
+  );
   const [expectedDate, setExpectedDate] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -910,6 +962,125 @@ function CreatePOModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
           to   { opacity: 1; transform: translateY(0)    scale(1);    }
         }
       `}</style>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+function ReceiveStockModal({
+  target,
+  busy,
+  onClose,
+  onSubmit,
+}: {
+  target: PO;
+  busy: boolean;
+  onClose: () => void;
+  onSubmit: (lineQtys: Record<number, number>) => void;
+}) {
+  const [qtys, setQtys] = useState<Record<number, number>>(() => {
+    const init: Record<number, number> = {};
+    target.items.forEach((i) => {
+      init[i.product_id] = Math.max(0, i.qty_ordered - i.qty_received);
+    });
+    return init;
+  });
+
+  const total = target.items.reduce((s, i) => s + (qtys[i.product_id] || 0), 0);
+  const allFull = target.items.every((i) => (qtys[i.product_id] || 0) >= i.qty_ordered - i.qty_received);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl shadow-black/50 max-h-[90vh] flex flex-col">
+        <div className="h-0.5 w-full bg-gradient-to-r from-emerald-500 to-teal-600" />
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d]">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center border bg-emerald-500/10 border-emerald-500/25">
+              <Truck size={16} className="text-emerald-400" />
+            </div>
+            <div>
+              <h3 className="text-base font-extrabold text-white leading-none">
+                Receive Stock — {target.po_code}
+              </h3>
+              <p className="text-[10px] text-slate-600 font-bold mt-0.5 uppercase tracking-wider">
+                Enter quantity to receive per item
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all"
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-2.5 overflow-y-auto">
+          {target.items.map((item) => {
+            const outstanding = Math.max(0, item.qty_ordered - item.qty_received);
+            if (outstanding <= 0) return null;
+            return (
+              <div
+                key={item.id}
+                className="bg-[#111520] border border-[#21293d] rounded-xl p-3 flex items-center justify-between gap-3"
+              >
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-300 truncate">{item.product_name}</div>
+                  <div className="text-[10px] text-slate-600 mt-0.5">
+                    Ordered {item.qty_ordered} · Recv {item.qty_received} ·{" "}
+                    <span className="text-emerald-400 font-bold">Open {outstanding}</span>
+                  </div>
+                </div>
+                <input
+                  type="number"
+                  min={0}
+                  max={outstanding}
+                  value={qtys[item.product_id] ?? 0}
+                  onChange={(e) => {
+                    const v = Math.max(0, Math.min(outstanding, Number(e.target.value) || 0));
+                    setQtys((q) => ({ ...q, [item.product_id]: v }));
+                  }}
+                  className="w-24 px-3 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-lg outline-none focus:border-emerald-500/60 text-sm text-center"
+                />
+              </div>
+            );
+          })}
+          {target.items.every((i) => i.qty_ordered - i.qty_received <= 0) && (
+            <p className="text-slate-600 text-sm font-bold text-center py-6">
+              Nothing left to receive on this PO.
+            </p>
+          )}
+        </div>
+
+        <div className="px-5 py-4 border-t border-[#21293d] flex items-center gap-3">
+          <div className="flex-1">
+            <span className="text-[10px] text-slate-700 font-bold uppercase tracking-widest block">
+              Receiving
+            </span>
+            <span className="text-xl font-black text-emerald-400">{total} units</span>
+            <span className="block text-[10px] text-slate-700 font-bold mt-0.5">
+              {allFull && total > 0 ? "Will mark PO as Received" : "PO stays Partially Received"}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-3 bg-[#111520] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-slate-300 rounded-xl font-bold text-sm transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={busy || total <= 0}
+            onClick={() => onSubmit(qtys)}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl font-extrabold text-sm transition-all active:scale-[0.98] disabled:opacity-60 shadow-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20"
+          >
+            {busy ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+            {busy ? "Receiving..." : "Receive"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

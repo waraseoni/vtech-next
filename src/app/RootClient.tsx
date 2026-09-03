@@ -1381,9 +1381,11 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // screens (yahi to bahar) jump karti thi. Ab pathname/goInAppBack ko refs se
   // track karte hain taaki listener dobara add kiye bina hamesha latest mile.
   const pathnameRef = useRef(pathname);
-  pathnameRef.current = pathname;
   const goInAppBackRef = useRef(goInAppBack);
-  goInAppBackRef.current = goInAppBack;
+  useEffect(() => {
+    pathnameRef.current = pathname;
+    goInAppBackRef.current = goInAppBack;
+  }, [pathname, goInAppBack]);
 
   useEffect(() => {
     let resolvedHandler: { remove: () => void } | null = null;

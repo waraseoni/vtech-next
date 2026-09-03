@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getChatResponse, generateWhatsAppReply, type ChatMessage } from "@/lib/gemini";
 import { getGroqChatResponse } from "@/lib/groq";
+import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 import { getAiSettings } from "@/lib/ai-settings";
 import { requireStaff, getSessionRole } from "@/lib/api-auth";
 import { getLiveContext, type AiRole } from "@/lib/gemini-tools";
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     let responseText: string;
 
-    if (type === "chat" && messages) {
+    if (type === "chat" && messages && messages.length > 0) {
       const enrichedMessages = [
         ...messages.slice(0, -1),
         {
@@ -65,12 +66,22 @@ export async function POST(request: NextRequest) {
       const prompt =
         (message || (messages && messages[messages.length - 1]?.content) || "") +
         `\n\n[${liveContext}]`;
-      responseText = await getChatResponse(
-        [{ role: "user", content: prompt }],
-        apiKey,
-        modelName,
-        role
-      );
+      const singleMessage = { role: "user", content: prompt } as const;
+      if (activeProvider === "groq") {
+        responseText = await getGroqChatResponse(
+          [singleMessage] as unknown as ChatCompletionMessageParam[],
+          apiKey,
+          modelName,
+          role
+        );
+      } else {
+        responseText = await getChatResponse(
+          [singleMessage] as unknown as ChatMessage[],
+          apiKey,
+          modelName,
+          role
+        );
+      }
     }
 
     return NextResponse.json({ response: responseText });
