@@ -6,6 +6,7 @@ import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { stockStatusStyle, stockBarColor, alertThreshold, stockValue } from "@/lib/inventory";
+import { fetchStockByProducts } from "@/lib/inventoryStock";
 import { locPath } from "@/lib/locations";
 import {
   Package,
@@ -158,21 +159,19 @@ export default function InventoryPage() {
       // Batch fetch all inventory + sold data at once (avoid N+1)
       const ids = pl.map((p) => p.id);
 
-      const [stockRes, jobItemsRes, saleItemsRes, plLocs] = await Promise.all([
+      const [poLinkRes, plLocs, stockMap] = await Promise.all([
         supabase
           .from("inventory_list")
-          .select("product_id, quantity, purchase_order_id")
+          .select("product_id, purchase_order_id")
           .in("product_id", ids),
-        supabase
-          .from("transaction_products")
-          .select("product_id, qty, transaction_id")
-          .in("product_id", ids),
-        supabase.from("direct_sale_items").select("product_id, qty").in("product_id", ids),
         // `product_locations`/`locations` RLS-gated hain → anon-client khali []
-        // deta hai. Service-role server route se read hota hai.
-        fetch(`/api/locations/by-product?ids=${ids.join(",")}`).then((r) =>
-          r.ok ? r.json() : Promise.reject()
-        ),
+        // deta hai. Service-role server route se read hota hai. Is route par auth
+        // fail ho to pura page nahi todna — stock ab independent RPC se aata hai,
+        // locations sirf "places" column ke liye hain. Fail-safe: khali {} maan lo.
+        fetch(`/api/locations/by-product?ids=${ids.join(",")}`)
+          .then((r) => (r.ok ? r.json() : {}))
+          .catch(() => ({})),
+        fetchStockByProducts(ids),
       ]);
 
       const locMap = new Map<
@@ -193,23 +192,9 @@ export default function InventoryPage() {
         if (mapped.length > 0) locMap.set(Number(pid), mapped);
       });
 
-      // Get valid (non-cancelled) transaction IDs once
-      const txnIds = [...new Set((jobItemsRes.data || []).map((i) => i.transaction_id))];
-      let validTxnSet = new Set<number>();
-      if (txnIds.length > 0) {
-        const { data: txns } = await supabase
-          .from("transaction_list")
-          .select("id")
-          .in("id", txnIds)
-          .neq("status", 4);
-        validTxnSet = new Set((txns || []).map((t) => t.id));
-      }
-
-      // Build maps
-      const stockMap = new Map<number, number>();
+      // Build PO-link map (available stock itself comes from get_inventory_stock RPC)
       const poIdMap = new Map<number, Set<number>>();
-      (stockRes.data || []).forEach((r) => {
-        stockMap.set(r.product_id, (stockMap.get(r.product_id) || 0) + r.quantity);
+      (poLinkRes.data || []).forEach((r) => {
         if (r.purchase_order_id) {
           const set = poIdMap.get(r.product_id) || new Set<number>();
           set.add(r.purchase_order_id);
@@ -230,24 +215,11 @@ export default function InventoryPage() {
         );
       }
 
-      const soldJobMap = new Map<number, number>();
-      (jobItemsRes.data || []).forEach((r) => {
-        if (validTxnSet.has(r.transaction_id)) {
-          soldJobMap.set(r.product_id, (soldJobMap.get(r.product_id) || 0) + (r.qty || 0));
-        }
-      });
-
-      const soldSaleMap = new Map<number, number>();
-      (saleItemsRes.data || []).forEach((r) => {
-        soldSaleMap.set(r.product_id, (soldSaleMap.get(r.product_id) || 0) + (r.qty || 0));
-      });
-
       const result: ProductStock[] = pl.map((p) => {
-        const qty = stockMap.get(p.id) || 0;
-        const soldJob = soldJobMap.get(p.id) || 0;
-        const soldSale = soldSaleMap.get(p.id) || 0;
-        const totalSold = soldJob + soldSale;
-        const available = qty - totalSold;
+        const sr = stockMap.get(p.id);
+        const totalIn = sr?.total_in ?? 0;
+        const totalSold = sr?.total_sold ?? 0;
+        const available = sr?.available ?? 0;
         const locs = locMap.get(p.id) || [];
         const placePaths = locs.map((l) => locPath(l)).filter(Boolean);
         const placePath = placePaths[0] || "";
@@ -260,10 +232,10 @@ export default function InventoryPage() {
           image_path: p.image_path || null,
           barcode: p.barcode || null,
           alert_quantity: p.alert_quantity || 5,
-          total_in: qty,
+          total_in: totalIn,
           total_sold: totalSold,
           available,
-          oversold: Math.max(0, -available),
+          oversold: sr?.oversold ?? 0,
           place: placePath || null,
           places: placePaths,
           poCodes: [...(poIdMap.get(p.id) || [])]

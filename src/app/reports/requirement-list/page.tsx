@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
+import { fetchStockByProducts } from "@/lib/inventoryStock";
 import {
   Search,
   Loader2,
@@ -57,43 +58,11 @@ function RequirementListContent() {
 
       const ids = pl.map((p) => p.id);
 
-      const [stockRes, jobItemsRes, saleItemsRes, linkRes, suppRes] = await Promise.all([
-        supabase.from("inventory_list").select("product_id, quantity").in("product_id", ids),
-        supabase
-          .from("transaction_products")
-          .select("product_id, qty, transaction_id")
-          .in("product_id", ids),
-        supabase.from("direct_sale_items").select("product_id, qty").in("product_id", ids),
+      const [stockRows, linkRes, suppRes] = await Promise.all([
+        fetchStockByProducts(ids),
         supabase.from("spare_supplier").select("spare_id, supplier_id").in("spare_id", ids),
         supabase.from("suppliers").select("id, name, contact").eq("delete_flag", 0).eq("status", 1),
       ]);
-
-      const txnIds = [...new Set((jobItemsRes.data || []).map((i) => i.transaction_id))];
-      let validTxnSet = new Set<number>();
-      if (txnIds.length > 0) {
-        const { data: txns } = await supabase
-          .from("transaction_list")
-          .select("id")
-          .in("id", txnIds)
-          .neq("status", 4);
-        validTxnSet = new Set((txns || []).map((t) => t.id));
-      }
-
-      const stockMap = new Map<number, number>();
-      (stockRes.data || []).forEach((r) =>
-        stockMap.set(r.product_id, (stockMap.get(r.product_id) || 0) + (r.quantity || 0))
-      );
-
-      const soldJobMap = new Map<number, number>();
-      (jobItemsRes.data || []).forEach((r) => {
-        if (validTxnSet.has(r.transaction_id))
-          soldJobMap.set(r.product_id, (soldJobMap.get(r.product_id) || 0) + (r.qty || 0));
-      });
-
-      const soldSaleMap = new Map<number, number>();
-      (saleItemsRes.data || []).forEach((r) =>
-        soldSaleMap.set(r.product_id, (soldSaleMap.get(r.product_id) || 0) + (r.qty || 0))
-      );
 
       const supplierMap = new Map<number, { id: number; name: string; contact: string }[]>();
       const suppById = new Map<number, { id: number; name: string; contact: string }>();
@@ -107,8 +76,7 @@ function RequirementListContent() {
       });
 
       const built: ReqItem[] = pl.map((p) => {
-        const sold = (soldJobMap.get(p.id) || 0) + (soldSaleMap.get(p.id) || 0);
-        const current_stock = (stockMap.get(p.id) || 0) - sold;
+        const current_stock = stockRows.get(p.id)?.available ?? 0;
         return {
           id: p.id,
           name: p.name,

@@ -51,6 +51,7 @@ import {
   Layers,
 } from "lucide-react";
 import { pageAll } from "@/lib/fetch-all";
+import { fetchStockByProducts, type StockRow } from "@/lib/inventoryStock";
 import PageLoader from "@/components/PageLoader";
 import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
 import LicenseInfoCard from "@/app/components/LicenseInfoCard";
@@ -484,7 +485,7 @@ export default function Dashboard() {
         }
 
         // Misc queries — low stock + recent data (small queries, kept client-side)
-        const [lpR, liR, ljR, lsR, rjR, rpR] = await Promise.all([
+        const [lpR, rjR, rpR] = await Promise.all([
           pageAll(
             supabase
               .from("product_list")
@@ -492,9 +493,6 @@ export default function Dashboard() {
               .eq("delete_flag", 0)
               .gt("alert_quantity", 0)
           ),
-          pageAll(supabase.from("inventory_list").select("product_id, quantity")),
-          pageAll(supabase.from("transaction_products").select("product_id, qty, transaction_id")),
-          pageAll(supabase.from("direct_sale_items").select("product_id, qty")),
           supabase
             .from("transaction_list")
             .select("id, job_id, client_name, item, amount, status")
@@ -509,9 +507,11 @@ export default function Dashboard() {
             .limit(10),
         ]);
         const lowProds = lpR.data;
-        const lowInvAll = liR.data;
-        const lowJobItems = ljR.data;
-        const lowSaleItems = lsR.data;
+        const lowStockMap = new Map<number, StockRow>();
+        const m = await fetchStockByProducts(
+          (lowProds || []).map((p: { id: number }) => p.id)
+        );
+        m.forEach((r, k) => lowStockMap.set(k, r));
         const recentTransRaw = rjR.data;
         const paymentsRaw = rpR.data;
 
@@ -557,32 +557,9 @@ export default function Dashboard() {
           );
         }
 
-        // Low stock — compute available stock (in − sold) vs alert_quantity
+        // Low stock — available stock comes from single-source RPC (I1)
         if ((lowProds || []).length) {
           let lowStock = 0;
-          const txnIds = [...new Set((lowJobItems || []).map((i) => i.transaction_id))];
-          let validTxnSet = new Set<number>();
-          if (txnIds.length) {
-            const { data: txns } = await supabase
-              .from("transaction_list")
-              .select("id")
-              .in("id", txnIds)
-              .neq("status", 4);
-            validTxnSet = new Set((txns || []).map((t) => t.id));
-          }
-          const stockMap = new Map<number, number>();
-          (lowInvAll || []).forEach((i) =>
-            stockMap.set(i.product_id, (stockMap.get(i.product_id) || 0) + n(i.quantity))
-          );
-          const soldJobMap = new Map<number, number>();
-          (lowJobItems || []).forEach((i) => {
-            if (validTxnSet.has(i.transaction_id))
-              soldJobMap.set(i.product_id, (soldJobMap.get(i.product_id) || 0) + n(i.qty));
-          });
-          const soldSaleMap = new Map<number, number>();
-          (lowSaleItems || []).forEach((i) =>
-            soldSaleMap.set(i.product_id, (soldSaleMap.get(i.product_id) || 0) + n(i.qty))
-          );
 
           const placeMap = new Map<number, string>();
           // `product_locations`/`locations` RLS-gated hain → anon-client khali
@@ -612,18 +589,12 @@ export default function Dashboard() {
           }
 
           const builtLow = (lowProds || [])
-            .map((p: { id: number; name: string; alert_quantity: number }) => {
-              const available =
-                (stockMap.get(p.id) || 0) -
-                (soldJobMap.get(p.id) || 0) -
-                (soldSaleMap.get(p.id) || 0);
-              return {
-                name: p.name,
-                quantity: available,
-                place: placeMap.get(p.id) || "—",
-                alert: n(p.alert_quantity),
-              };
-            })
+            .map((p: { id: number; name: string; alert_quantity: number }) => ({
+              name: p.name,
+              quantity: lowStockMap.get(p.id)?.available ?? 0,
+              place: placeMap.get(p.id) || "—",
+              alert: n(p.alert_quantity),
+            }))
             .filter((x) => x.quantity < x.alert)
             .sort((a, b) => a.quantity - a.alert - (b.quantity - b.alert));
 

@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, getCachedUser } from "@/lib/supabase";
+import { fetchStockByProducts } from "@/lib/inventoryStock";
 import {
   Plus,
   Trash2,
@@ -207,56 +208,39 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
 
     const ids = prods.map((p) => p.id);
 
-    // Batch fetch all related data
-    const [stockRes, txnProdRes, directRes] = await Promise.all([
-      supabase.from("inventory_list").select("product_id, quantity").in("product_id", ids),
-      supabase
-        .from("transaction_products")
-        .select("product_id, qty, transaction_id")
-        .in("product_id", ids),
-      supabase.from("direct_sale_items").select("product_id, qty, sale_id").in("product_id", ids),
+    // Available stock from single-source RPC (I1). Also fetch the current
+    // sale's own lines so edit-mode can exclude them (BUG FIX 5 parity).
+    const [stockMap, currentSaleItemsRes] = await Promise.all([
+      fetchStockByProducts(ids),
+      mode === "edit" && saleId
+        ? supabase
+            .from("direct_sale_items")
+            .select("product_id, qty, sale_id")
+            .eq("sale_id", saleId)
+            .in("product_id", ids)
+        : Promise.resolve({ data: null }),
     ]);
 
-    // Get valid (non-cancelled) transaction IDs
-    const allTxnIds = [...new Set((txnProdRes.data || []).map((r) => r.transaction_id))];
-    let validTxnSet = new Set<number>();
-    if (allTxnIds.length) {
-      const { data: validTxns } = await supabase
-        .from("transaction_list")
-        .select("id")
-        .in("id", allTxnIds)
-        .neq("status", 4);
-      validTxnSet = new Set((validTxns || []).map((t) => t.id));
+    const ownQtyMap = new Map<number, number>();
+    if (mode === "edit") {
+      (currentSaleItemsRes?.data || []).forEach((r) =>
+        ownQtyMap.set(r.product_id, (ownQtyMap.get(r.product_id) || 0) + r.qty)
+      );
     }
 
-    // Aggregate per product
-    const stockIn = new Map<number, number>();
-    const soldJobs = new Map<number, number>();
-    const soldDirect = new Map<number, number>();
-
-    (stockRes.data || []).forEach((r) =>
-      stockIn.set(r.product_id, (stockIn.get(r.product_id) || 0) + r.quantity)
-    );
-
-    (txnProdRes.data || []).forEach((r) => {
-      if (validTxnSet.has(r.transaction_id))
-        soldJobs.set(r.product_id, (soldJobs.get(r.product_id) || 0) + r.qty);
+    const result = prods.map((p) => {
+      const sr = stockMap.get(p.id);
+      const base = sr?.available ?? 0;
+      // In edit mode the RPC already counts this sale's lines as sold; add them
+      // back so the validator compares against pre-sale stock (matches old logic).
+      const available_stock = mode === "edit" ? base + (ownQtyMap.get(p.id) || 0) : base;
+      return {
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        available_stock,
+      };
     });
-
-    (directRes.data || []).forEach((r) => {
-      // BUG FIX 5: In edit mode, the current sale's items were included in soldDirect
-      // making available_stock appear lower than actual → wrong stock validation
-      if (mode === "edit" && saleId && r.sale_id === saleId) return;
-      soldDirect.set(r.product_id, (soldDirect.get(r.product_id) || 0) + r.qty);
-    });
-
-    const result = prods.map((p) => ({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      available_stock:
-        (stockIn.get(p.id) || 0) - (soldJobs.get(p.id) || 0) - (soldDirect.get(p.id) || 0),
-    }));
     setProducts(result);
     productsRef.current = result; // keep ref in sync immediately
   };

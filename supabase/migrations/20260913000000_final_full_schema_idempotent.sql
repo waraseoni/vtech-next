@@ -1460,7 +1460,7 @@ do $$ begin
 end $$;
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- FUNCTIONS (14) — CREATE OR REPLACE FUNCTION (signatures/bodies verbatim).
+-- FUNCTIONS (15) — CREATE OR REPLACE FUNCTION (signatures/bodies verbatim).
 -- NOTE: create-or-replace return type nahi badal sakta, par signatures verbatim
 -- preserve hone se ye safe hai. `ALTER FUNCTION ... OWNER` DROP kar diya hai.
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -1865,6 +1865,76 @@ begin
   return new;
 end;
 $$;
+
+-- ── I1: single-source stock RPC (added 20260903; also in 20260903_inventory_single_stock_rpc.sql) ──
+CREATE OR REPLACE FUNCTION public.get_inventory_stock(
+    p_product_ids int8[] DEFAULT NULL
+) RETURNS TABLE(
+    product_id        bigint,
+    total_in          bigint,
+    total_sold_job    bigint,
+    total_sold_sale   bigint,
+    total_sold        bigint,
+    available         bigint,
+    oversold          bigint,
+    avg_purchase_cost numeric,
+    last_stock_date   date,
+    place             text
+)
+    LANGUAGE sql
+    STABLE
+    SECURITY DEFINER
+    SET search_path = public
+AS $$
+    WITH inv AS (
+        SELECT product_id, SUM(quantity) AS total_in,
+               COALESCE(NULLIF(SUM(CASE WHEN quantity > 0 THEN quantity * purchase_cost END), 0)
+                        / NULLIF(SUM(CASE WHEN quantity > 0 THEN quantity END), 0), 0) AS avg_cost,
+               MAX(stock_date) AS last_date,
+               (array_agg(place ORDER BY stock_date DESC, id DESC))[1] AS place
+        FROM public.inventory_list
+        WHERE (p_product_ids IS NULL OR product_id = ANY (p_product_ids))
+        GROUP BY product_id
+    ),
+    sold_job AS (
+        SELECT tp.product_id, SUM(tp.qty) AS qty
+        FROM public.transaction_products tp
+        JOIN public.transaction_list t ON t.id = tp.transaction_id
+        WHERE t.status <> 4
+          AND (p_product_ids IS NULL OR tp.product_id = ANY (p_product_ids))
+        GROUP BY tp.product_id
+    ),
+    sold_sale AS (
+        SELECT product_id, SUM(qty) AS qty
+        FROM public.direct_sale_items
+        WHERE (p_product_ids IS NULL OR product_id = ANY (p_product_ids))
+        GROUP BY product_id
+    ),
+    all_ids AS (
+        SELECT product_id FROM inv
+        UNION SELECT product_id FROM sold_job
+        UNION SELECT product_id FROM sold_sale
+    )
+    SELECT a.product_id,
+           COALESCE(i.total_in, 0)            AS total_in,
+           COALESCE(j.qty, 0)                 AS total_sold_job,
+           COALESCE(s.qty, 0)                 AS total_sold_sale,
+           COALESCE(j.qty, 0) + COALESCE(s.qty, 0) AS total_sold,
+           COALESCE(i.total_in, 0) - COALESCE(j.qty, 0) - COALESCE(s.qty, 0) AS available,
+           GREATEST(0, COALESCE(j.qty, 0) + COALESCE(s.qty, 0) - COALESCE(i.total_in, 0)) AS oversold,
+           COALESCE(i.avg_cost, 0)            AS avg_purchase_cost,
+           i.last_date                        AS last_stock_date,
+           i.place                            AS place
+    FROM all_ids a
+    LEFT JOIN inv  i ON i.product_id = a.product_id
+    LEFT JOIN sold_job  j ON j.product_id = a.product_id
+    LEFT JOIN sold_sale s ON s.product_id = a.product_id
+    ORDER BY a.product_id;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_inventory_stock(int8[]) FROM public;
+GRANT EXECUTE ON FUNCTION public.get_inventory_stock(int8[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_inventory_stock(int8[]) TO service_role;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- ROW LEVEL SECURITY — ENABLE (40 tables; idempotent, policies se pehle)
@@ -2560,6 +2630,183 @@ begin
   alter publication supabase_realtime add table public.user_presence;
 exception when duplicate_object then null;
 end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- I2 — STOCKTAKE & STOCK ADJUSTMENT
+--   Fold-in of 20260914_stocktake_stock_adjustment.sql (isolated). Self-contained
+--   + idempotent; every referenced helper (is_frontend_staff, get_inventory_stock)
+--   is defined earlier in this file. Corrections write a +/− reconciliation row
+--   into inventory_list (negative allowed) + both audit-ledger tables atomically,
+--   so derived available matches the physical count WITHOUT deleting history.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- Tables
+CREATE TABLE IF NOT EXISTS public.stock_counts (
+    id bigint NOT NULL,
+    product_id integer NOT NULL,
+    counted_qty integer NOT NULL,
+    counted_at timestamptz DEFAULT now(),
+    counted_by uuid,
+    note text,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.stock_adjustments (
+    id bigint NOT NULL,
+    product_id integer NOT NULL,
+    delta integer NOT NULL,
+    reason text NOT NULL,
+    remark text,
+    created_at timestamptz DEFAULT now(),
+    created_by uuid,
+    inventory_list_id integer
+);
+
+-- Guarded column adds
+do $$ begin
+  alter table public.stock_counts add column if not exists id bigint;
+  alter table public.stock_counts add column if not exists product_id integer;
+  alter table public.stock_counts add column if not exists counted_qty integer;
+  alter table public.stock_counts add column if not exists counted_at timestamptz DEFAULT now();
+  alter table public.stock_counts add column if not exists counted_by uuid;
+  alter table public.stock_counts add column if not exists note text;
+  alter table public.stock_counts add column if not exists created_at timestamptz DEFAULT now();
+  if exists (select 1 from information_schema.columns where table_schema='public' and table_name='stock_counts' and column_name='id' and is_nullable='YES') then
+    alter table public.stock_counts alter column id set not null;
+  end if;
+exception when duplicate_column then null; end $$;
+
+do $$ begin
+  alter table public.stock_adjustments add column if not exists id bigint;
+  alter table public.stock_adjustments add column if not exists product_id integer;
+  alter table public.stock_adjustments add column if not exists delta integer;
+  alter table public.stock_adjustments add column if not exists reason text;
+  alter table public.stock_adjustments add column if not exists remark text;
+  alter table public.stock_adjustments add column if not exists created_at timestamptz DEFAULT now();
+  alter table public.stock_adjustments add column if not exists created_by uuid;
+  alter table public.stock_adjustments add column if not exists inventory_list_id integer;
+  if exists (select 1 from information_schema.columns where table_schema='public' and table_name='stock_adjustments' and column_name='id' and is_nullable='YES') then
+    alter table public.stock_adjustments alter column id set not null;
+  end if;
+exception when duplicate_column then null; end $$;
+
+-- Identity (id auto-increment)
+do $$ begin
+  if not exists (select 1 from pg_attribute a where a.attrelid='public.stock_counts'::regclass and a.attname='id' and a.attidentity<>'') then
+    alter table public.stock_counts alter column id add generated by default as identity;
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (select 1 from pg_attribute a where a.attrelid='public.stock_adjustments'::regclass and a.attname='id' and a.attidentity<>'') then
+    alter table public.stock_adjustments alter column id add generated by default as identity;
+  end if;
+end $$;
+
+ALTER TABLE public.stock_counts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.stock_adjustments ENABLE ROW LEVEL SECURITY;
+
+-- Primary keys + checks
+do $$ begin if not exists (select 1 from pg_constraint where conname='stock_counts_pkey' and conrelid='public.stock_counts'::regclass) then alter table only public.stock_counts add constraint stock_counts_pkey primary key (id); end if; end $$;
+do $$ begin if not exists (select 1 from pg_constraint where conname='stock_adjustments_pkey' and conrelid='public.stock_adjustments'::regclass) then alter table only public.stock_adjustments add constraint stock_adjustments_pkey primary key (id); end if; end $$;
+do $$ begin if not exists (select 1 from pg_constraint where conname='stock_adjustments_reason_check' and conrelid='public.stock_adjustments'::regclass) then alter table only public.stock_adjustments add constraint stock_adjustments_reason_check check ((reason in ('shrinkage'::text, 'damage'::text, 'correction'::text, 'return'::text))); end if; end $$;
+
+-- Foreign keys
+do $$ begin if not exists (select 1 from pg_constraint where conname='stock_counts_product_id_fkey' and conrelid='public.stock_counts'::regclass) then alter table only public.stock_counts add constraint stock_counts_product_id_fkey foreign key (product_id) references public.product_list(id) on delete cascade; end if; end $$;
+do $$ begin if not exists (select 1 from pg_constraint where conname='stock_counts_counted_by_fkey' and conrelid='public.stock_counts'::regclass) then alter table only public.stock_counts add constraint stock_counts_counted_by_fkey foreign key (counted_by) references public.profiles(id) on delete set null; end if; end $$;
+do $$ begin if not exists (select 1 from pg_constraint where conname='stock_adjustments_product_id_fkey' and conrelid='public.stock_adjustments'::regclass) then alter table only public.stock_adjustments add constraint stock_adjustments_product_id_fkey foreign key (product_id) references public.product_list(id) on delete cascade; end if; end $$;
+do $$ begin if not exists (select 1 from pg_constraint where conname='stock_adjustments_created_by_fkey' and conrelid='public.stock_adjustments'::regclass) then alter table only public.stock_adjustments add constraint stock_adjustments_created_by_fkey foreign key (created_by) references public.profiles(id) on delete set null; end if; end $$;
+do $$ begin if not exists (select 1 from pg_constraint where conname='stock_adjustments_inventory_list_id_fkey' and conrelid='public.stock_adjustments'::regclass) then alter table only public.stock_adjustments add constraint stock_adjustments_inventory_list_id_fkey foreign key (inventory_list_id) references public.inventory_list(id) on delete set null; end if; end $$;
+
+-- RLS policies — staff-only (anon = 0)
+DROP POLICY IF EXISTS rlslock_stock_counts_staff ON public.stock_counts;
+CREATE POLICY rlslock_stock_counts_staff ON public.stock_counts TO authenticated USING (public.is_frontend_staff()) WITH CHECK (public.is_frontend_staff());
+DROP POLICY IF EXISTS rlslock_stock_adjustments_staff ON public.stock_adjustments;
+CREATE POLICY rlslock_stock_adjustments_staff ON public.stock_adjustments TO authenticated USING (public.is_frontend_staff()) WITH CHECK (public.is_frontend_staff());
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS stock_counts_product_created_idx ON public.stock_counts USING btree (product_id, counted_at);
+CREATE INDEX IF NOT EXISTS stock_adjustments_product_created_idx ON public.stock_adjustments USING btree (product_id, created_at);
+
+-- Atomic writer RPC: record_stocktake (SECURITY DEFINER + staff check)
+CREATE OR REPLACE FUNCTION public.record_stocktake(
+    p_product_id integer,
+    p_counted_qty integer,
+    p_reason text DEFAULT 'correction',
+    p_note text DEFAULT NULL,
+    p_remark text DEFAULT NULL,
+    p_place text DEFAULT NULL
+) RETURNS TABLE(
+    adjustment_id bigint,
+    inventory_list_id integer,
+    available_before bigint,
+    delta integer
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+declare
+    v_available bigint;
+    v_delta integer;
+    v_inv_id integer;
+    v_adj_id bigint;
+begin
+    if not public.is_frontend_staff() then
+        raise exception 'permission denied: staff only';
+    end if;
+
+    if p_counted_qty is null then
+        raise exception 'counted_qty is required';
+    end if;
+    if p_reason is null or p_reason not in ('shrinkage','damage','correction','return') then
+        raise exception 'invalid reason: %', coalesce(p_reason, '<null>');
+    end if;
+    if p_product_id is null then
+        raise exception 'product_id is required';
+    end if;
+
+    select available into v_available
+      from public.get_inventory_stock(array[p_product_id]::int8[])
+      where product_id = p_product_id;
+    if v_available is null then
+        v_available := 0;
+    end if;
+
+    v_delta := p_counted_qty - v_available;
+
+    insert into public.inventory_list
+        (product_id, quantity, stock_date, purchase_cost, place, date_created, date_updated)
+    values
+        (p_product_id, v_delta, current_date, 0, p_place, now(), now())
+    returning id into v_inv_id;
+
+    insert into public.stock_adjustments
+        (product_id, delta, reason, remark, created_by, inventory_list_id)
+    values
+        (p_product_id, v_delta, p_reason, p_remark, auth.uid(), v_inv_id)
+    returning id into v_adj_id;
+
+    insert into public.stock_counts
+        (product_id, counted_qty, counted_by, note)
+    values
+        (p_product_id, p_counted_qty, auth.uid(), p_note);
+
+    return query select v_adj_id::bigint, v_inv_id, v_available, v_delta;
+end;
+$$;
+
+REVOKE ALL ON FUNCTION public.record_stocktake(integer, integer, text, text, text, text) FROM public;
+GRANT EXECUTE ON FUNCTION public.record_stocktake(integer, integer, text, text, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.record_stocktake(integer, integer, text, text, text, text) TO service_role;
+
+-- Store-level grants
+GRANT ALL ON TABLE public.stock_counts TO anon;
+GRANT ALL ON TABLE public.stock_counts TO authenticated;
+GRANT ALL ON TABLE public.stock_counts TO service_role;
+GRANT ALL ON TABLE public.stock_adjustments TO anon;
+GRANT ALL ON TABLE public.stock_adjustments TO authenticated;
+GRANT ALL ON TABLE public.stock_adjustments TO service_role;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- PostgREST ke liye schema reload (Supabase SQL Editor me dabane ke baad

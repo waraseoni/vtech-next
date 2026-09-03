@@ -57,6 +57,7 @@ import {
   Layers,
   MapPin,
   Terminal,
+  ListChecks,
 } from "lucide-react";
 import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
 import { Toaster } from "sonner";
@@ -668,7 +669,9 @@ function SidebarNav({
                         pathname === "/inventory" ||
                           (pathname.startsWith("/inventory/") &&
                             !pathname.startsWith("/inventory/purchase-orders") &&
-                            !pathname.startsWith("/inventory/locate"))
+                            !pathname.startsWith("/inventory/locate") &&
+                            !pathname.startsWith("/inventory/stocktake") &&
+                            !pathname.startsWith("/inventory/bom-check"))
                       )}
                       onClick={onNavClick}
                     >
@@ -711,6 +714,28 @@ function SidebarNav({
                     </Link>
                   </li>
                 )}
+                {isAdmin && (
+                  <li>
+                    <Link
+                      href="/inventory/stocktake"
+                      className={subLinkCls(pathname === "/inventory/stocktake")}
+                      onClick={onNavClick}
+                    >
+                      <ClipboardList size={12} className="text-cyan-400" />
+                      Stocktake
+                    </Link>
+                  </li>
+                )}
+                <li>
+                  <Link
+                    href="/inventory/bom-check"
+                    className={subLinkCls(pathname === "/inventory/bom-check")}
+                    onClick={onNavClick}
+                  >
+                    <ListChecks size={12} className="text-violet-400" />
+                    BOM Check
+                  </Link>
+                </li>
                 <li>
                   <Link
                     href="/inventory/locations"
