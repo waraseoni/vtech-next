@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 import { fetchStockByProducts } from "@/lib/inventoryStock";
+import { alertThreshold } from "@/lib/inventory";
 import {
   Search,
   Loader2,
@@ -25,6 +26,7 @@ type ReqItem = {
   price: number;
   hsn: string;
   alert_quantity: number;
+  effective_alert: number;
   current_stock: number;
   need_to_order: number;
   suppliers: { id: number; name: string; contact: string }[];
@@ -80,6 +82,7 @@ function RequirementListContent() {
       const built: ReqItem[] = pl.map((p) => {
         const current_stock = stockRows.get(p.id)?.available ?? 0;
         const alertQty = p.alert_quantity || 0;
+        const effective_alert = alertThreshold(alertQty);
         return {
           id: p.id,
           name: p.name,
@@ -87,16 +90,14 @@ function RequirementListContent() {
           price: p.price || 0,
           hsn: p.hsn || "",
           alert_quantity: alertQty,
+          effective_alert,
           current_stock,
-          need_to_order: Math.max(
-            0,
-            alertQty === 0 ? (current_stock <= 0 ? 1 : 0) : alertQty - current_stock
-          ),
+          need_to_order: Math.max(0, effective_alert - current_stock),
           suppliers: supplierMap.get(p.id) || [],
         };
       });
 
-      setItems(built.filter((i) => i.current_stock < i.alert_quantity || i.current_stock <= 0));
+      setItems(built.filter((i) => i.current_stock <= i.effective_alert));
     } catch (err) {
       console.error(err);
     } finally {
@@ -274,8 +275,11 @@ function RequirementListContent() {
               <tbody className="divide-y divide-[#21293d]">
                 {filtered.map((item) => {
                   const pct =
-                    item.alert_quantity > 0
-                      ? Math.min(100, Math.max(0, (item.current_stock / item.alert_quantity) * 100))
+                    item.effective_alert > 0
+                      ? Math.min(
+                          100,
+                          Math.max(0, (item.current_stock / item.effective_alert) * 100)
+                        )
                       : 0;
                   const isOut = item.current_stock <= 0;
                   return (
@@ -299,15 +303,15 @@ function RequirementListContent() {
                         >
                           {isOut ? (
                             <>
-                              <AlertTriangle size={11} /> {item.current_stock}
+                              <AlertTriangle size={11} /> Out
                             </>
                           ) : (
-                            item.current_stock
+                            `${item.current_stock} pcs`
                           )}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-xs text-white font-bold">
-                        {item.alert_quantity}
+                        {item.effective_alert}
                       </td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
@@ -360,8 +364,8 @@ function RequirementListContent() {
           <div className="grid grid-cols-1 gap-4 md:hidden">
             {filtered.map((item) => {
               const pct =
-                item.alert_quantity > 0
-                  ? Math.min(100, Math.max(0, (item.current_stock / item.alert_quantity) * 100))
+                item.effective_alert > 0
+                  ? Math.min(100, Math.max(0, (item.current_stock / item.effective_alert) * 100))
                   : 0;
               const isOut = item.current_stock <= 0;
               return (
@@ -406,7 +410,7 @@ function RequirementListContent() {
                       </div>
                     </div>
                     <div className="bg-[#0d1117] border border-[#21293d] rounded-xl p-3">
-                      <div className="text-xl font-black text-white">{item.alert_quantity}</div>
+                      <div className="text-xl font-black text-white">{item.effective_alert}</div>
                       <div className="text-[9px] font-black uppercase tracking-widest text-slate-600 mt-0.5">
                         Min Req
                       </div>
