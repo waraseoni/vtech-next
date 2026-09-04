@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 import { fetchStockByProducts } from "@/lib/inventoryStock";
 import { alertThreshold } from "@/lib/inventory";
@@ -47,6 +47,8 @@ function RequirementListContent() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [mobileVisible, setMobileVisible] = useState(12);
+  const mobileSentinelRef = useRef<HTMLDivElement | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -132,7 +134,24 @@ function RequirementListContent() {
 
   useEffect(() => {
     setPage(1);
+    setMobileVisible(12);
   }, [search, pageSize]);
+
+  // Mobile lazy-load: load more cards when the sentinel scrolls into view.
+  useEffect(() => {
+    if (typeof window === "undefined" || !mobileSentinelRef.current) return;
+    const el = mobileSentinelRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setMobileVisible((v) => Math.min(v + 12, filtered.length));
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [filtered.length]);
 
   const effectiveSize = pageSize === 0 ? Math.max(filtered.length, 1) : pageSize;
   const totalPages = Math.max(1, Math.ceil(filtered.length / effectiveSize));
@@ -481,7 +500,7 @@ function RequirementListContent() {
 
           {/* ── MOBILE CARDS ── */}
           <div className="grid grid-cols-1 gap-4 md:hidden">
-            {filtered.map((item) => {
+            {filtered.slice(0, mobileVisible).map((item) => {
               const pct =
                 item.effective_alert > 0
                   ? Math.min(100, Math.max(0, (item.current_stock / item.effective_alert) * 100))
@@ -586,6 +605,21 @@ function RequirementListContent() {
               );
             })}
           </div>
+
+          {filtered.length > mobileVisible && (
+            <div
+              ref={mobileSentinelRef}
+              className="flex flex-col items-center justify-center gap-2 py-6 md:hidden no-print"
+            >
+              <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500">
+                <Loader2 size={14} className="animate-spin text-amber-500" />
+                Loading more...
+              </div>
+              <p className="text-[10px] text-slate-600">
+                {mobileVisible} of {filtered.length} items loaded — scroll for more
+              </p>
+            </div>
+          )}
         </>
       )}
 
