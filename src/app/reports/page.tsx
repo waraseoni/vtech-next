@@ -85,15 +85,6 @@ const REPORTS: ReportItem[] = [
     color: "from-red-500 to-orange-600",
     isNew: true,
   },
-  {
-    title: "Requirement List",
-    description: "Low-stock spares with linked suppliers and order quantity.",
-    href: "/reports/requirement-list",
-    icon: <PackageX size={16} />,
-    category: "Job Reports",
-    color: "from-amber-500 to-orange-600",
-    isNew: true,
-  },
 
   // Finance & Accounts
   {

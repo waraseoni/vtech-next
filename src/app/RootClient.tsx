@@ -769,6 +769,18 @@ function SidebarNav({
                     Spare Finder
                   </Link>
                 </li>
+                {isAdmin && (
+                  <li>
+                    <Link
+                      href="/reports/requirement-list"
+                      className={subLinkCls(pathname === "/reports/requirement-list")}
+                      onClick={onNavClick}
+                    >
+                      <PackageX size={12} className="text-amber-400" />
+                      Requirement List
+                    </Link>
+                  </li>
+                )}
               </SubMenu>
             </>
           )}
@@ -1075,20 +1087,6 @@ function SidebarNav({
                     >
                       <Wrench size={12} />
                       Custom Service
-                    </Link>
-                  </li>
-
-                  <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">
-                    Inventory
-                  </li>
-                  <li>
-                    <Link
-                      href="/reports/requirement-list"
-                      className={subLinkCls(pathname === "/reports/requirement-list")}
-                      onClick={onNavClick}
-                    >
-                      <PackageX size={12} />
-                      Requirement List
                     </Link>
                   </li>
 
