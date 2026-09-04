@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import {
   Loader2,
   Send,
@@ -141,8 +142,35 @@ function FormattedMessage({ content }: { content: string }) {
 }
 
 function parseInline(text: string) {
-  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
+  const parts = text.split(/(\[[^\[\]]*\]\([^()]*\)|\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
   return parts.map((part, i) => {
+    const linkMatch = part.match(/^\[([^\[\]]*)\]\(([^()]*)\)$/);
+    if (linkMatch) {
+      const label = linkMatch[1];
+      const href = linkMatch[2].trim();
+      if (/^(https?:)?\/\//.test(href)) {
+        return (
+          <a
+            key={i}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:text-blue-400 underline underline-offset-2 font-semibold"
+          >
+            {label}
+          </a>
+        );
+      }
+      return (
+        <Link
+          key={i}
+          href={href}
+          className="text-blue-500 hover:text-blue-400 underline underline-offset-2 font-semibold"
+        >
+          {label}
+        </Link>
+      );
+    }
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
         <strong key={i} className="font-extrabold text-slate-200">
