@@ -352,7 +352,12 @@ function RequirementListContent() {
                   return (
                     <tr key={item.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-3">
-                        <div className="font-bold text-white">{item.name}</div>
+                        <Link
+                          href={`/inventory/${item.id}`}
+                          className="font-bold text-amber-400/90 hover:text-amber-300 hover:underline no-underline transition-colors"
+                        >
+                          {item.name}
+                        </Link>
                         {item.description && (
                           <div className="text-[10px] text-slate-600">{item.description}</div>
                         )}
@@ -513,7 +518,12 @@ function RequirementListContent() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="font-black text-white text-base truncate">{item.name}</h3>
+                      <Link
+                        href={`/inventory/${item.id}`}
+                        className="font-black text-amber-400/90 hover:text-amber-300 hover:underline no-underline transition-colors text-base truncate block"
+                      >
+                        {item.name}
+                      </Link>
                       <p className="text-[10px] text-slate-600 font-bold mt-0.5">
                         {item.hsn ? `HSN ${item.hsn}` : "No HSN"}
                         {item.description ? ` · ${item.description.slice(0, 40)}` : ""}
