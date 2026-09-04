@@ -20,6 +20,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
+import { safeImageSrc } from "@/lib/image-utils";
 import BarcodeCameraScanner from "@/app/components/BarcodeCameraScanner";
 import SupplierPicker from "@/components/SupplierPicker";
 
@@ -296,9 +297,9 @@ export default function ProductFormModal({
                 </label>
                 <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4">
                   <div className="flex items-center gap-4 flex-wrap">
-                    {imgPreview ? (
+                    {safeImageSrc(imgPreview) ? (
                       <Image
-                        src={imgPreview}
+                        src={safeImageSrc(imgPreview)}
                         alt="Product"
                         width={112}
                         height={112}

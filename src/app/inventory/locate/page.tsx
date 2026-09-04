@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { stockStatusStyle, alertThreshold, type StockStatusStyle } from "@/lib/inventory";
 import {
@@ -189,6 +190,7 @@ async function qrDataUrl(text: string, size = 260): Promise<string> {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function LocatePage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [prods, setProds] = useState<ProductLoc[]>([]);
@@ -435,6 +437,13 @@ export default function LocatePage() {
     setScanMsg(null);
     const loc = decodeLocationToken(s);
     if (loc) {
+      // Box-level location (Zone ▸ Rack ▸ Bin ▸ Box) ka QR → us box ka label page
+      // kholein, taaki uske items dekh/print kar sakein. Baki location (zone/rack/bin)
+      // Spare Finder me rukti hai.
+      if (loc.box) {
+        router.push(`/inventory/box-labels?box=${encodeURIComponent(locPath(loc))}`);
+        return;
+      }
       setScanOpen(false);
       setQ("");
       revealLocation(locPath(loc));

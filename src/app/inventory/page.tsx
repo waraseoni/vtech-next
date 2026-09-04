@@ -497,6 +497,13 @@ export default function InventoryPage() {
               >
                 <FileText size={13} /> Purchase Orders
               </Link>
+              <Link
+                href="/inventory/box-labels"
+                title="Har box ka printable label — box ID, QR aur items list (qty ke bina)"
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+              >
+                <Boxes size={13} /> Box Labels
+              </Link>
               <button
                 onClick={openPrintModal}
                 className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"

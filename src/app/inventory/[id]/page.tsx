@@ -606,7 +606,7 @@ export default function ProductDetailPage() {
                       </span>
                     )}
                     <Link
-                      href="/products"
+                      href={`/products?edit=${productId}&from=${encodeURIComponent(`/inventory/${productId}`)}`}
                       className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-white border border-[#21293d] rounded-md px-2 py-0.5 transition-colors"
                     >
                       <Boxes size={9} /> Edit in Products

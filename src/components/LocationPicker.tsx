@@ -134,7 +134,11 @@ export default function LocationPicker({
     const box = patch.box ?? value.box ?? "";
 
     if (box) {
-      const boxRec = hier.boxes.find((x) => x.name === box);
+      const curBinId = bin ? hier.bins.find((b) => b.name === bin)?.id : undefined;
+      let boxRec = curBinId != null
+        ? hier.boxes.find((x) => x.name === box && x.bin_id === curBinId)
+        : undefined;
+      if (!boxRec) boxRec = hier.boxes.find((x) => x.name === box);
       const binRec = boxRec ? hier.bins.find((b) => b.id === boxRec.bin_id) : undefined;
       if (binRec) {
         bin = binRec.name;
@@ -146,7 +150,11 @@ export default function LocationPicker({
         }
       }
     } else if (bin) {
-      const binRec = hier.bins.find((b) => b.name === bin);
+      const curRackId = rack ? hier.racks.find((r) => r.name === rack)?.id : undefined;
+      let binRec = curRackId != null
+        ? hier.bins.find((b) => b.name === bin && b.rack_id === curRackId)
+        : undefined;
+      if (!binRec) binRec = hier.bins.find((b) => b.name === bin);
       if (binRec) {
         const rackRec = hier.racks.find((r) => r.id === binRec.rack_id);
         if (rackRec) {
@@ -156,7 +164,11 @@ export default function LocationPicker({
         }
       }
     } else if (rack) {
-      const rackRec = hier.racks.find((r) => r.name === rack);
+      const curZoneId = zone ? hier.zones.find((z) => z.name === zone)?.id : undefined;
+      let rackRec = curZoneId != null
+        ? hier.racks.find((r) => r.name === rack && r.zone_id === curZoneId)
+        : undefined;
+      if (!rackRec) rackRec = hier.racks.find((r) => r.name === rack);
       if (rackRec) {
         const zoneRec = hier.zones.find((z) => z.id === rackRec.zone_id);
         if (zoneRec) zone = zoneRec.name;
@@ -252,10 +264,10 @@ export default function LocationPicker({
 
     // Not ambiguous — apply directly
     if (key === "rack") {
-      next = withAncestry({ rack: name });
+      next = withAncestry({ rack: name, bin: "", box: "" });
       next = { ...next, bin: "", box: "" };
     } else if (key === "bin") {
-      next = withAncestry({ bin: name });
+      next = withAncestry({ bin: name, box: "" });
       next = { ...next, box: "" };
     } else {
       next = withAncestry({ box: name });
@@ -271,10 +283,10 @@ export default function LocationPicker({
     const { key } = disambiguate;
     let next: LocationParts;
     if (key === "rack") {
-      next = withAncestry({ zone: chosen.zone, rack: chosen.rack });
+      next = withAncestry({ zone: chosen.zone, rack: chosen.rack, bin: "", box: "" });
       next = { ...next, bin: "", box: "" };
     } else if (key === "bin") {
-      next = withAncestry({ zone: chosen.zone, rack: chosen.rack, bin: chosen.bin });
+      next = withAncestry({ zone: chosen.zone, rack: chosen.rack, bin: chosen.bin, box: "" });
       next = { ...next, box: "" };
     } else {
       next = withAncestry({ zone: chosen.zone, rack: chosen.rack, bin: chosen.bin, box: chosen.box });

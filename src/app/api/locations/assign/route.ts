@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         // 1. Active record dhoondo
         let q = sb.from(table).select("id").eq("name", name).eq("delete_flag", 0);
         if (parentCol && parentId != null) q = q.eq(parentCol, parentId);
-        let { data: rec } = await q.maybeSingle();
+        const { data: rec } = await q.maybeSingle();
         if (rec?.id) return rec;
 
         // 2. Soft-deleted record mila to reactivate karo (duplicate prevention)

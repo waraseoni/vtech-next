@@ -45,6 +45,7 @@ export default function ProductsPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
+  const [returnTo, setReturnTo] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const [userRole, setUserRole] = useState("staff");
 
@@ -89,6 +90,20 @@ export default function ProductsPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get("edit");
+    const from = params.get("from");
+    if (from) setReturnTo(from);
+    if (!editId || rows.length === 0) return;
+    const p = rows.find((r) => r.id === Number(editId));
+    if (p) {
+      setEditing(p);
+      setShowModal(true);
+      window.history.replaceState({}, "", "/products");
+    }
+  }, [rows]);
 
   const filtered = rows.filter(
     (p) =>
@@ -532,8 +547,14 @@ export default function ProductsPage() {
       <ProductFormModal
         open={showModal}
         editing={editing}
-        onClose={() => setShowModal(false)}
-        onSaved={() => fetchData()}
+        onClose={() => {
+          setShowModal(false);
+          if (returnTo) window.location.href = returnTo;
+        }}
+        onSaved={() => {
+          fetchData();
+          if (returnTo) window.location.href = returnTo;
+        }}
       />
     </AdminPage>
   );
