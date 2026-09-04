@@ -45,32 +45,48 @@ export async function POST(request: NextRequest) {
 
     if (anySet) {
       // Kanonical normalized hierarchy se FK ids resolve karo (name ➜ id).
-      // `locations` row tab free-text strings ke SAATH proper FK references
-      // (zone_id/rack_id/bin_id/box_id) rakhta hai — same source of truth.
-      const [zRec, rRec, bRec, xRec] = await Promise.all([
-        sb.from("location_zones").select("id").eq("name", z).eq("delete_flag", 0).maybeSingle(),
-        sb.from("location_racks").select("id").eq("name", r).eq("delete_flag", 0).maybeSingle(),
-        sb.from("location_bins").select("id").eq("name", b).eq("delete_flag", 0).maybeSingle(),
-        sb.from("location_boxes").select("id").eq("name", bx).eq("delete_flag", 0).maybeSingle(),
-      ]);
+      // Agar hierarchy me nahi hai to auto-create kar do (old data migration).
+      // Duplicate prevention: pehle active (delete_flag=0) check, phir soft-deleted
+      // bhi check — agar mil jaye to reactivate karo, naya mat banao.
+      const findOrCreate = async (
+        table: string,
+        name: string,
+        parentCol: string | null,
+        parentId: number | null
+      ): Promise<{ id: number } | null> => {
+        if (!name) return null;
 
-      // Hierarchy validation — sirf existing entries allow.
-      const missing: string[] = [];
-      if (z && !zRec?.data?.id) missing.push(`Zone "${z}"`);
-      if (r && !rRec?.data?.id) missing.push(`Rack "${r}"`);
-      if (b && !bRec?.data?.id) missing.push(`Bin "${b}"`);
-      if (bx && !xRec?.data?.id) missing.push(`Box "${bx}"`);
-      if (missing.length > 0) {
-        return NextResponse.json(
-          { error: `${missing.join(", ")} location hierarchy me nahi hai. Pehle Location Master se banao.` },
-          { status: 400 }
-        );
-      }
+        // 1. Active record dhoondo
+        let q = sb.from(table).select("id").eq("name", name).eq("delete_flag", 0);
+        if (parentCol && parentId != null) q = q.eq(parentCol, parentId);
+        let { data: rec } = await q.maybeSingle();
+        if (rec?.id) return rec;
 
-      const zone_id = zRec?.data?.id ?? null;
-      const rack_id = rRec?.data?.id ?? null;
-      const bin_id = bRec?.data?.id ?? null;
-      const box_id = xRec?.data?.id ?? null;
+        // 2. Soft-deleted record mila to reactivate karo (duplicate prevention)
+        let q2 = sb.from(table).select("id").eq("name", name);
+        if (parentCol && parentId != null) q2 = q2.eq(parentCol, parentId);
+        const { data: deleted } = await q2.maybeSingle();
+        if (deleted?.id) {
+          await sb.from(table).update({ delete_flag: 0 }).eq("id", deleted.id);
+          return deleted;
+        }
+
+        // 3. Bilkul naya — create with parent FK
+        const payload: Record<string, unknown> = { name };
+        if (parentCol && parentId != null) payload[parentCol] = parentId;
+        const { data: ins } = await sb.from(table).insert(payload).select("id").single();
+        return ins;
+      };
+
+      const zRec = await findOrCreate("location_zones", z, null, null);
+      const rRec = await findOrCreate("location_racks", r, "zone_id", zRec?.id ?? null);
+      const bRec = await findOrCreate("location_bins", b, "rack_id", rRec?.id ?? null);
+      const xRec = await findOrCreate("location_boxes", bx, "bin_id", bRec?.id ?? null);
+
+      const zone_id = zRec?.id ?? null;
+      const rack_id = rRec?.id ?? null;
+      const bin_id = bRec?.id ?? null;
+      const box_id = xRec?.id ?? null;
 
       const { data: existing } = await sb
         .from("locations")
