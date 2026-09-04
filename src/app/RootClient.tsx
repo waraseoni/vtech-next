@@ -58,6 +58,7 @@ import {
   MapPin,
   Terminal,
   ListChecks,
+  PackageX,
 } from "lucide-react";
 import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
 import { Toaster } from "sonner";
@@ -1074,6 +1075,20 @@ function SidebarNav({
                     >
                       <Wrench size={12} />
                       Custom Service
+                    </Link>
+                  </li>
+
+                  <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">
+                    Inventory
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/requirement-list"
+                      className={subLinkCls(pathname === "/reports/requirement-list")}
+                      onClick={onNavClick}
+                    >
+                      <PackageX size={12} />
+                      Requirement List
                     </Link>
                   </li>
 
