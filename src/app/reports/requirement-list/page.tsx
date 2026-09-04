@@ -14,6 +14,12 @@ import {
   RefreshCw,
   Phone,
   ShoppingCart,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  X,
+  Layers,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -39,6 +45,8 @@ function RequirementListContent() {
   const [search, setSearch] = useState("");
   const [firmName, setFirmName] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -122,8 +130,19 @@ function RequirementListContent() {
       .sort((a, b) => b.need_to_order - a.need_to_order);
   }, [items, search]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, pageSize]);
+
+  const effectiveSize = pageSize === 0 ? Math.max(filtered.length, 1) : pageSize;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / effectiveSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedRows = filtered.slice((safePage - 1) * effectiveSize, safePage * effectiveSize);
+
   const totalItems = filtered.length;
   const outOfStock = filtered.filter((i) => i.current_stock <= 0).length;
+  const lowStock = filtered.filter((i) => i.current_stock > 0 && i.current_stock <= i.effective_alert)
+    .length;
   const totalNeed = filtered.reduce((s, i) => s + i.need_to_order, 0);
 
   const createPoFromList = () => {
@@ -206,38 +225,67 @@ function RequirementListContent() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-amber-600 to-orange-800 rounded-2xl p-5 text-white shadow-xl">
-          <div className="text-[10px] font-black uppercase tracking-widest opacity-80">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-gradient-to-br from-amber-600 to-orange-800 rounded-2xl p-4 sm:p-5 text-white shadow-xl">
+          <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest opacity-80">
             Items To Order
           </div>
-          <div className="text-3xl font-black mt-1">{totalItems}</div>
+          <div className="text-2xl sm:text-3xl font-black mt-1">{totalItems}</div>
         </div>
-        <div className="bg-gradient-to-br from-red-600 to-red-900 rounded-2xl p-5 text-white shadow-xl">
-          <div className="text-[10px] font-black uppercase tracking-widest opacity-80">
+        <div className="bg-gradient-to-br from-red-600 to-red-900 rounded-2xl p-4 sm:p-5 text-white shadow-xl">
+          <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest opacity-80">
             Out Of Stock
           </div>
-          <div className="text-3xl font-black mt-1">{outOfStock}</div>
+          <div className="text-2xl sm:text-3xl font-black mt-1">{outOfStock}</div>
         </div>
-        <div className="bg-gradient-to-br from-cyan-600 to-cyan-900 rounded-2xl p-5 text-white shadow-xl">
-          <div className="text-[10px] font-black uppercase tracking-widest opacity-80">
+        <div className="bg-gradient-to-br from-orange-500 to-amber-700 rounded-2xl p-4 sm:p-5 text-white shadow-xl">
+          <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest opacity-80">
+            Low Stock
+          </div>
+          <div className="text-2xl sm:text-3xl font-black mt-1">{lowStock}</div>
+        </div>
+        <div className="bg-gradient-to-br from-cyan-600 to-cyan-900 rounded-2xl p-4 sm:p-5 text-white shadow-xl">
+          <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest opacity-80">
             Total Need To Order
           </div>
-          <div className="text-3xl font-black mt-1">{totalNeed}</div>
+          <div className="text-2xl sm:text-3xl font-black mt-1">{totalNeed}</div>
         </div>
       </div>
 
       {/* Search */}
       <div className="bg-[#161b27] border border-[#21293d] rounded-[2rem] p-5 no-print">
-        <div className="relative w-full lg:w-96">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
-          <input
-            type="text"
-            placeholder="Search by name, HSN or supplier..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-12 pr-6 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-sm text-slate-200 outline-none focus:border-amber-500 transition-all"
-          />
+        <div className="flex flex-col md:flex-row md:items-center gap-3">
+          <div className="relative w-full md:flex-1 lg:max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+            <input
+              type="text"
+              placeholder="Search by name, HSN or supplier..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-12 pr-12 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-sm text-slate-200 outline-none focus:border-amber-500 transition-all"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-[#21293d] text-slate-400 hover:text-white hover:bg-slate-700/60 transition-all"
+                title="Clear search"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2 md:justify-end">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
+              <Layers size={13} className="text-amber-400" />
+              {filtered.length} item{filtered.length === 1 ? "" : "s"}
+            </span>
+            {(filtered.length === 0 || outOfStock > 0) && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-400">
+                <AlertTriangle size={13} />
+                {outOfStock} out
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -273,7 +321,7 @@ function RequirementListContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#21293d]">
-                {filtered.map((item) => {
+                {pagedRows.map((item) => {
                   const pct =
                     item.effective_alert > 0
                       ? Math.min(
@@ -358,6 +406,77 @@ function RequirementListContent() {
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* ── DESKTOP PAGINATION ── */}
+          <div className="hidden md:flex items-center justify-between flex-wrap gap-3 bg-[#161b27] border border-[#21293d] rounded-2xl p-3 no-print">
+            <div className="flex items-center gap-3 flex-wrap px-2">
+              <label className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Rows/page
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="bg-[#0d1117] border border-[#21293d] rounded-lg px-2 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-amber-500/50"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={0}>All</option>
+                </select>
+              </label>
+              <p className="text-xs text-slate-500 font-bold">
+                Showing{" "}
+                <span className="text-slate-300">
+                  {filtered.length > 0
+                    ? `${(safePage - 1) * effectiveSize + 1}–${Math.min(
+                        safePage * effectiveSize,
+                        filtered.length
+                      )}`
+                    : "0–0"}
+                </span>{" "}
+                of <span className="text-slate-300">{filtered.length}</span> items
+              </p>
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setPage(1)}
+                  disabled={safePage <= 1}
+                  className="w-9 h-9 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-300 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  title="First page"
+                >
+                  <ChevronsLeft size={15} />
+                </button>
+                <button
+                  onClick={() => setPage(safePage - 1)}
+                  disabled={safePage <= 1}
+                  className="w-9 h-9 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-300 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  title="Previous page"
+                >
+                  <ChevronLeft size={15} />
+                </button>
+                <button
+                  onClick={() => setPage(safePage + 1)}
+                  disabled={safePage >= totalPages}
+                  className="w-9 h-9 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-300 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  title="Next page"
+                >
+                  <ChevronRight size={15} />
+                </button>
+                <button
+                  onClick={() => setPage(totalPages)}
+                  disabled={safePage >= totalPages}
+                  className="w-9 h-9 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-300 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  title="Last page"
+                >
+                  <ChevronsRight size={15} />
+                </button>
+                <span className="ml-1 text-[11px] font-bold text-slate-500">
+                  {safePage} / {totalPages}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* ── MOBILE CARDS ── */}
