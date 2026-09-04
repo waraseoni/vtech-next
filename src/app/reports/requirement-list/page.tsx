@@ -354,7 +354,7 @@ function RequirementListContent() {
                       <td className="px-4 py-3">
                         <Link
                           href={`/inventory/${item.id}`}
-                          className="font-bold text-amber-400/90 hover:text-amber-300 hover:underline no-underline transition-colors"
+                          className="font-bold text-amber-700 hover:text-amber-600 hover:underline no-underline transition-colors dark:text-amber-400/90 dark:hover:text-amber-300"
                         >
                           {item.name}
                         </Link>
@@ -369,8 +369,8 @@ function RequirementListContent() {
                         <span
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black border ${
                             isOut
-                              ? "bg-red-500/15 text-red-300 border-red-500/30"
-                              : "bg-amber-500/10 text-amber-300 border-amber-500/20"
+                              ? "bg-red-500/15 text-red-400 dark:text-red-300 border-red-500/30"
+                              : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
                           }`}
                         >
                           {isOut ? (
@@ -419,7 +419,7 @@ function RequirementListContent() {
                           </div>
                         ) : (
                           <span className="text-[10px] text-slate-600 italic">
-                            <Link href="/products" className="text-amber-500">
+                            <Link href="/products" className="text-amber-700 dark:text-amber-500">
                               link in Products
                             </Link>
                           </span>
@@ -520,7 +520,7 @@ function RequirementListContent() {
                     <div className="min-w-0">
                       <Link
                         href={`/inventory/${item.id}`}
-                        className="font-black text-amber-400/90 hover:text-amber-300 hover:underline no-underline transition-colors text-base truncate block"
+                        className="font-black text-amber-700 hover:text-amber-600 hover:underline no-underline transition-colors dark:text-amber-400/90 dark:hover:text-amber-300 text-base truncate block"
                       >
                         {item.name}
                       </Link>
@@ -532,8 +532,8 @@ function RequirementListContent() {
                     <span
                       className={`shrink-0 px-3 py-1 rounded-lg text-[10px] font-black border uppercase tracking-wider ${
                         isOut
-                          ? "bg-red-500/15 text-red-300 border-red-500/30"
-                          : "bg-orange-500/15 text-orange-300 border-orange-500/30"
+                          ? "bg-red-500/15 text-red-400 dark:text-red-300 border-red-500/30"
+                          : "bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/30"
                       }`}
                     >
                       {isOut ? (
@@ -548,9 +548,9 @@ function RequirementListContent() {
 
                   <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                     <div className="bg-[#0d1117] border border-[#21293d] rounded-xl p-3">
-                      <div
-                        className={`text-xl font-black ${isOut ? "text-red-400" : "text-amber-400"}`}
-                      >
+                    <div
+                      className={`text-xl font-black ${isOut ? "text-red-400" : "text-amber-700 dark:text-amber-400"}`}
+                    >
                         {item.current_stock}
                       </div>
                       <div className="text-[9px] font-black uppercase tracking-widest text-slate-600 mt-0.5">
@@ -605,7 +605,7 @@ function RequirementListContent() {
                     ) : (
                       <span className="text-[10px] text-slate-600 italic">
                         No supplier linked —{" "}
-                        <Link href="/products" className="text-amber-500 no-print">
+                        <Link href="/products" className="text-amber-700 dark:text-amber-500 no-print">
                           link in Products
                         </Link>
                       </span>
