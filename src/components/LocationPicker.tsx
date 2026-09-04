@@ -1,9 +1,8 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
-import { MapPin, History, ChevronDown, Check, Plus } from "lucide-react";
+import { MapPin, History, ChevronDown, Check, Settings2, Hash, AlertTriangle } from "lucide-react";
 import { locPath, type LocationParts } from "@/lib/locations";
-
-type Suggestions = { zone: string[]; rack: string[]; bin: string[]; box: string[] };
 
 export type Hierarchy = {
   zones: { id: number; name: string }[];
@@ -12,13 +11,11 @@ export type Hierarchy = {
   boxes: { id: number; name: string; bin_id: number }[];
 };
 
-const EMPTY_SUGGESTIONS: Suggestions = { zone: [], rack: [], bin: [], box: [] };
 const EMPTY_HIERARCHY: Hierarchy = { zones: [], racks: [], bins: [], boxes: [] };
 
 interface LocationPickerProps {
   value: LocationParts;
   onChange: (p: LocationParts) => void;
-  suggestions?: Suggestions | null;
   /** Normalized hierarchy (zone→rack→bin→box) with parent links — cascading ke liye. */
   hierarchy?: Hierarchy | null;
   /** Last location is product pe istemal hui — "Use last" chip ke liye. */
@@ -30,30 +27,38 @@ interface LocationPickerProps {
 type FieldKey = keyof LocationParts;
 
 const FIELD_META: { key: FieldKey; label: string; placeholder: string; weight?: string }[] = [
-  { key: "zone", label: "Zone / Area", placeholder: "e.g. Main Shop, Store Room", weight: "sm:col-span-2" },
-  { key: "rack", label: "Rack / Shelf", placeholder: "e.g. Rack 1, Shelf A", weight: "" },
-  { key: "bin", label: "Bin / Section", placeholder: "e.g. Bin 3", weight: "" },
-  { key: "box", label: "Box / Drawer", placeholder: "e.g. Box B2", weight: "sm:col-span-2" },
+  { key: "zone", label: "Zone / Area", placeholder: "Type to search zone...", weight: "sm:col-span-2" },
+  { key: "rack", label: "Rack / Shelf", placeholder: "Type to search rack...", weight: "" },
+  { key: "bin", label: "Bin / Section", placeholder: "Type to search bin...", weight: "" },
+  { key: "box", label: "Box / Drawer", placeholder: "Type to search box...", weight: "sm:col-span-2" },
 ];
+
+/** Hierarchy IDs se code banata hai — Z1-R3-B2-X5 format me. */
+function genCode(ids: { zone?: number; rack?: number; bin?: number; box?: number }): string {
+  const segs: string[] = [];
+  if (ids.zone) segs.push(`Z${ids.zone}`);
+  if (ids.rack) segs.push(`R${ids.rack}`);
+  if (ids.bin) segs.push(`B${ids.bin}`);
+  if (ids.box) segs.push(`X${ids.box}`);
+  return segs.join("-");
+}
 
 /**
  * Structured cascading location picker: Zone ▸ Rack ▸ Bin ▸ Box.
  *
- *  • Hierarchy se jo parent select ho jaye, usi ke children dropdown me dikhte hain.
- *  • Agar koi parent select nahi kiya to SARE options dikhte hain (fallback).
- *  • Niche ka item select karne par uski poori ancestry auto-fill ho jaati hai —
- *    sirf box "TTL 1" chuno to zone/rack/bin khud set (agar pehle kuch nahi tha).
- *  • Naya value bhi type kiya ja sakta hai (free-text, save par wahi use hota hai).
+ *  • Type-to-search: har selector me type karke options filter kar sakte ho.
+ *  • Parent → Child: parent select karo to uske children dikhenge.
+ *  • Child → Parent: seedha child chuno to uske parents auto-fill ho jayenge.
+ *  • Code: selected location ka code (Z1-R3-B2-X5) hamesha dikhega.
+ *  • Hierarchy me jo nahi hai usko select nahi kar sakte — "Manage Hierarchy" link se banao.
  */
 export default function LocationPicker({
   value,
   onChange,
-  suggestions = null,
   hierarchy = null,
   lastUsed = null,
   compact = false,
 }: LocationPickerProps) {
-  const sug = suggestions || EMPTY_SUGGESTIONS;
   const hier = hierarchy || EMPTY_HIERARCHY;
   const lastPath = lastUsed && locPath(lastUsed);
 
@@ -64,6 +69,11 @@ export default function LocationPicker({
     box: "",
   });
   const [open, setOpen] = useState<FieldKey | null>(null);
+  const [disambiguate, setDisambiguate] = useState<{
+    key: FieldKey;
+    name: string;
+    options: LocationParts[];
+  } | null>(null);
   const menuRefs = useRef<Record<FieldKey, HTMLDivElement | null>>({
     zone: null,
     rack: null,
@@ -87,30 +97,33 @@ export default function LocationPicker({
   const zoneId = hier.zones.find((z) => z.name === value.zone.trim())?.id;
   const rackId = hier.racks.find((r) => r.name === value.rack.trim())?.id;
   const binId = hier.bins.find((b) => b.name === value.bin.trim())?.id;
+  const boxId = hier.boxes.find((x) => x.name === value.box.trim())?.id;
 
-  /** Selected parent ke hisab se children filter; koi parent na ho to SARE. */
+  /** Code from selected hierarchy IDs */
+  const locationCode = genCode({ zone: zoneId, rack: rackId, bin: binId, box: boxId });
+
+  /** Selected parent ke hisab se children filter; koi parent na ho to SARE hierarchy options. */
   const childrenFor = (key: FieldKey): string[] => {
     if (key === "zone") {
-      const fromHierarchy = hier.zones.map((z) => z.name);
-      return [...new Set([...fromHierarchy, ...(sug.zone || [])])];
+      return [...new Set(hier.zones.map((z) => z.name))];
     }
     if (key === "rack") {
       const list = zoneId != null ? hier.racks.filter((r) => r.zone_id === zoneId) : hier.racks;
-      return [...new Set([...list.map((r) => r.name), ...(sug.rack || [])])];
+      return [...new Set(list.map((r) => r.name))];
     }
     if (key === "bin") {
       const list = rackId != null ? hier.bins.filter((b) => b.rack_id === rackId) : hier.bins;
-      return [...new Set([...list.map((b) => b.name), ...(sug.bin || [])])];
+      return [...new Set(list.map((b) => b.name))];
     }
     const list = binId != null ? hier.boxes.filter((x) => x.bin_id === binId) : hier.boxes;
-    return [...new Set([...list.map((x) => x.name), ...(sug.box || [])])];
+    return [...new Set(list.map((x) => x.name))];
   };
 
   const filtered = (key: FieldKey) => {
     const all = childrenFor(key).sort((a, b) => a.localeCompare(b));
     const q = queries[key].trim().toLowerCase();
-    if (!q) return all.slice(0, 24);
-    return all.filter((o) => o.toLowerCase().includes(q)).slice(0, 24);
+    if (!q) return all;
+    return all.filter((o) => o.toLowerCase().includes(q));
   };
 
   /** Niche ka item chunne par uski ancestry (zone→rack→bin) auto-fill karo. */
@@ -160,7 +173,85 @@ export default function LocationPicker({
     if (key === "zone") {
       next = { zone: name, rack: "", bin: "", box: "" };
       if (!isClearAll) next = withAncestry({ zone: name });
-    } else if (key === "rack") {
+      onChange(next);
+      setQueries((q) => ({ ...q, [key]: "" }));
+      setOpen(null);
+      return;
+    }
+
+    // Ambiguity check: kya ye naam multiple parents ke under hai?
+    if (!isClearAll) {
+      let matches: LocationParts[] = [];
+      if (key === "rack") {
+        const racks = hier.racks.filter((r) => r.name === name);
+        if (zoneId) {
+          // Parent selected — exact match check
+          const exact = racks.find((r) => r.zone_id === zoneId);
+          if (!exact && racks.length > 0) {
+            // Name exists but not under selected zone — disambiguate
+            matches = racks.map((r) => {
+              const z = hier.zones.find((zz) => zz.id === r.zone_id);
+              return { zone: z?.name || "", rack: name, bin: "", box: "" };
+            });
+          }
+        } else if (racks.length > 1) {
+          // No parent selected, multiple matches
+          matches = racks.map((r) => {
+            const z = hier.zones.find((zz) => zz.id === r.zone_id);
+            return { zone: z?.name || "", rack: name, bin: "", box: "" };
+          });
+        }
+      } else if (key === "bin") {
+        const bins = hier.bins.filter((b) => b.name === name);
+        if (rackId) {
+          const exact = bins.find((b) => b.rack_id === rackId);
+          if (!exact && bins.length > 0) {
+            matches = bins.map((b) => {
+              const r = hier.racks.find((rr) => rr.id === b.rack_id);
+              const z = r ? hier.zones.find((zz) => zz.id === r.zone_id) : undefined;
+              return { zone: z?.name || "", rack: r?.name || "", bin: name, box: "" };
+            });
+          }
+        } else if (bins.length > 1) {
+          matches = bins.map((b) => {
+            const r = hier.racks.find((rr) => rr.id === b.rack_id);
+            const z = r ? hier.zones.find((zz) => zz.id === r.zone_id) : undefined;
+            return { zone: z?.name || "", rack: r?.name || "", bin: name, box: "" };
+          });
+        }
+      } else if (key === "box") {
+        const boxes = hier.boxes.filter((x) => x.name === name);
+        if (binId) {
+          const exact = boxes.find((x) => x.bin_id === binId);
+          if (!exact && boxes.length > 0) {
+            matches = boxes.map((x) => {
+              const b = hier.bins.find((bb) => bb.id === x.bin_id);
+              const r = b ? hier.racks.find((rr) => rr.id === b.rack_id) : undefined;
+              const z = r ? hier.zones.find((zz) => zz.id === r.zone_id) : undefined;
+              return { zone: z?.name || "", rack: r?.name || "", bin: b?.name || "", box: name };
+            });
+          }
+        } else if (boxes.length > 1) {
+          matches = boxes.map((x) => {
+            const b = hier.bins.find((bb) => bb.id === x.bin_id);
+            const r = b ? hier.racks.find((rr) => rr.id === b.rack_id) : undefined;
+            const z = r ? hier.zones.find((zz) => zz.id === r.zone_id) : undefined;
+            return { zone: z?.name || "", rack: r?.name || "", bin: b?.name || "", box: name };
+          });
+        }
+      }
+
+      if (matches.length > 1) {
+        // Ambiguous — disambiguation modal dikhao
+        setDisambiguate({ key, name, options: matches });
+        setQueries((q) => ({ ...q, [key]: "" }));
+        setOpen(null);
+        return;
+      }
+    }
+
+    // Not ambiguous — apply directly
+    if (key === "rack") {
       next = withAncestry({ rack: name });
       next = { ...next, bin: "", box: "" };
     } else if (key === "bin") {
@@ -174,12 +265,27 @@ export default function LocationPicker({
     setOpen(null);
   };
 
-  const isNewValue = (key: FieldKey, list: string[]) =>
-    value[key].trim() !== "" && !list.some((o) => o.toLowerCase() === value[key].trim().toLowerCase());
+  /** Disambiguation modal se parent choose karne par */
+  const resolveAmbiguity = (chosen: LocationParts) => {
+    if (!disambiguate) return;
+    const { key } = disambiguate;
+    let next: LocationParts;
+    if (key === "rack") {
+      next = withAncestry({ zone: chosen.zone, rack: chosen.rack });
+      next = { ...next, bin: "", box: "" };
+    } else if (key === "bin") {
+      next = withAncestry({ zone: chosen.zone, rack: chosen.rack, bin: chosen.bin });
+      next = { ...next, box: "" };
+    } else {
+      next = withAncestry({ zone: chosen.zone, rack: chosen.rack, bin: chosen.bin, box: chosen.box });
+    }
+    onChange(next);
+    setDisambiguate(null);
+  };
 
   return (
     <div className="space-y-2.5">
-      {/* Preview + last-used chip */}
+      {/* Preview + last-used chip + manage link */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 min-w-0">
           <MapPin size={12} className="text-emerald-500 flex-shrink-0" />
@@ -188,17 +294,32 @@ export default function LocationPicker({
           >
             {locPath(value) || "Location abhi set nahi hai"}
           </span>
+          {locationCode && (
+            <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono font-bold flex-shrink-0">
+              <Hash size={9} /> {locationCode}
+            </span>
+          )}
         </div>
-        {lastPath && lastPath !== locPath(value) && (
-          <button
-            type="button"
-            onClick={() => onChange(lastUsed!)}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[10px] font-extrabold hover:bg-emerald-500/20 transition-all"
-            title="Same location jo is product par aakhri baar use hui thi"
+        <div className="flex items-center gap-2">
+          {lastPath && lastPath !== locPath(value) && (
+            <button
+              type="button"
+              onClick={() => onChange(lastUsed!)}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[10px] font-extrabold hover:bg-emerald-500/20 transition-all"
+              title="Same location jo is product par aakhri baar use hui thi"
+            >
+              <History size={10} /> Use last: {lastPath}
+            </button>
+          )}
+          <Link
+            href="/inventory/locations/manage"
+            target="_blank"
+            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-500/10 border border-blue-500/25 text-blue-400 text-[10px] font-extrabold hover:bg-blue-500/20 transition-all"
+            title="Naya zone/rack/bin/box yahan se banao"
           >
-            <History size={10} /> Use last: {lastPath}
-          </button>
-        )}
+            <Settings2 size={10} /> Manage Hierarchy
+          </Link>
+        </div>
       </div>
 
       <div className={`grid grid-cols-1 sm:grid-cols-4 gap-2 ${compact ? "" : "gap-2.5"}`}>
@@ -206,7 +327,8 @@ export default function LocationPicker({
           const listId = `${listIdBase}-${key}`;
           const options = filtered(key);
           const isOpen = open === key;
-          const isNew = isNewValue(key, options);
+          const q = queries[key];
+          const displayValue = isOpen && q ? q : value[key];
           return (
             <div key={key} className={`relative ${weight || ""}`}>
               <label
@@ -219,12 +341,10 @@ export default function LocationPicker({
                 <input
                   id={listId}
                   type="text"
-                  value={value[key]}
+                  value={displayValue}
                   onChange={(e) => {
-                    const raw = e.target.value;
-                    onChange({ ...value, [key]: raw });
-                    setQueries((q) => ({ ...q, [key]: raw }));
-                    setOpen(key);
+                    setQueries((q) => ({ ...q, [key]: e.target.value }));
+                    if (!isOpen) setOpen(key);
                   }}
                   onFocus={() => {
                     setQueries((q) => ({ ...q, [key]: value[key] }));
@@ -258,9 +378,20 @@ export default function LocationPicker({
                     }}
                     className="absolute z-30 mt-1.5 w-full max-h-56 overflow-y-auto bg-[#161b27] border border-[#21293d] rounded-xl shadow-2xl shadow-black/60 p-1.5"
                   >
+                    {/* Clear option */}
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        pick(key, "");
+                      }}
+                      className="w-full flex items-center px-3 py-2 rounded-lg text-sm text-left text-slate-500 hover:bg-white/5 transition-all"
+                    >
+                      — Clear —
+                    </button>
                     {options.length === 0 ? (
                       <p className="px-3 py-3 text-center text-xs text-slate-600">
-                        Koi existing option nahi
+                        {q ? `"${q}" jaisa koi option nahi` : "Hierarchy me koi entry nahi hai"}
                       </p>
                     ) : (
                       options.map((o) => {
@@ -285,20 +416,6 @@ export default function LocationPicker({
                         );
                       })
                     )}
-                    {isNew && (
-                      <button
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          onChange({ ...value });
-                          setOpen(null);
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left text-emerald-400 font-bold bg-emerald-500/5 hover:bg-emerald-500/10 transition-all border-t border-[#21293d] mt-1"
-                      >
-                        <Plus size={13} className="flex-shrink-0" />
-                        <span className="truncate">Add &quot;{value[key].trim()}&quot;</span>
-                      </button>
-                    )}
                   </div>
                 )}
               </div>
@@ -311,7 +428,54 @@ export default function LocationPicker({
         <p className="flex items-center gap-1 text-[10px] text-slate-600 font-bold">
           <ChevronDown size={11} className="text-emerald-500/60 rotate-180" />
           Save hone par label: <span className="text-slate-400 font-mono">{locPath(value)}</span>
+          {locationCode && (
+            <> | Code: <span className="text-emerald-400 font-mono">{locationCode}</span></>
+          )}
         </p>
+      )}
+
+      {/* ── Disambiguation Modal ── */}
+      {disambiguate && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl shadow-black/80 overflow-hidden">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-[#21293d]">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={14} className="text-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-white">Multiple locations found</h3>
+                <p className="text-[10px] text-slate-600 font-bold">
+                  &quot;{disambiguate.name}&quot; multiple jagah hai — sahi chuno:
+                </p>
+              </div>
+            </div>
+            <div className="p-2 max-h-64 overflow-y-auto">
+              {disambiguate.options.map((opt, i) => (
+                <button
+                  key={i}
+                  onClick={() => resolveAmbiguity(opt)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] transition-colors text-left"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                    <MapPin size={12} className="text-emerald-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-semibold text-slate-200">{locPath(opt)}</span>
+                  </div>
+                  <ChevronDown size={12} className="text-slate-700 rotate-[-90deg] flex-shrink-0" />
+                </button>
+              ))}
+            </div>
+            <div className="px-4 py-2.5 border-t border-[#21293d]">
+              <button
+                onClick={() => setDisambiguate(null)}
+                className="w-full py-2 bg-[#111520] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-slate-300 rounded-xl font-bold text-xs transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

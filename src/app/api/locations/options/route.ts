@@ -22,12 +22,11 @@ export async function GET() {
     const user = await requireStaff();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const [zones, racks, bins, boxes, legacy] = await Promise.all([
+    const [zones, racks, bins, boxes] = await Promise.all([
       sb.from("location_zones").select("id, name").eq("delete_flag", 0),
       sb.from("location_racks").select("id, name, zone_id").eq("delete_flag", 0),
       sb.from("location_bins").select("id, name, rack_id").eq("delete_flag", 0),
       sb.from("location_boxes").select("id, name, bin_id").eq("delete_flag", 0),
-      sb.from("locations").select("zone, rack, bin, box").eq("delete_flag", 0),
     ]);
 
     const add = (rows: unknown[] | null | undefined, col: string) =>
@@ -37,11 +36,11 @@ export async function GET() {
     const uniq = (arr: string[]) => Array.from(new Set(arr)).sort((a, b) => a.localeCompare(b));
 
     return NextResponse.json({
-      // Flat option lists (backward-compat + legacy free-text values).
-      zone: uniq([...add(zones.data, "name"), ...add(legacy.data, "zone")]),
-      rack: uniq([...add(racks.data, "name"), ...add(legacy.data, "rack")]),
-      bin: uniq([...add(bins.data, "name"), ...add(legacy.data, "bin")]),
-      box: uniq([...add(boxes.data, "name"), ...add(legacy.data, "box")]),
+      // Hierarchy-only option lists (sirf managed entries, legacy free-text nahi).
+      zone: uniq(add(zones.data, "name")),
+      rack: uniq(add(racks.data, "name")),
+      bin: uniq(add(bins.data, "name")),
+      box: uniq(add(boxes.data, "name")),
       // Normalized hierarchy with parent links — cascading picker ke liye.
       hierarchy: {
         zones: zones.data || [],

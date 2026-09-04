@@ -56,6 +56,7 @@ import {
   FileText,
   Layers,
   MapPin,
+  LocateFixed,
   Terminal,
   ListChecks,
   PackageX,
@@ -72,6 +73,7 @@ import { TeamOnline } from "@/app/components/ui/TeamOnline";
 import NativePrintPreview from "@/components/NativePrintPreview";
 import SwipeNavigation from "@/components/SwipeNavigation";
 import { fetchUnreadCount, getMyId } from "@/lib/messaging";
+import { locPath } from "@/lib/locations";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
 type SearchResult = {
@@ -81,7 +83,7 @@ type SearchResult = {
   tag: string;
   tagColor: string;
   href: string;
-  icon: "client" | "job" | "product" | "mechanic" | "sale";
+  icon: "client" | "job" | "product" | "mechanic" | "sale" | "location" | "spot";
 };
 
 function NavbarSearch() {
@@ -132,7 +134,7 @@ function NavbarSearch() {
     const num = parseInt(q);
 
     try {
-      const [clientRes, jobRes, prodRes, mechRes, saleRes] = await Promise.all([
+      const [clientRes, jobRes, prodRes, mechRes, saleRes, locRes, spotRes] = await Promise.all([
         // Clients — name, contact, address
         supabase
           .from("client_list")
@@ -174,6 +176,28 @@ function NavbarSearch() {
           .from("direct_sales")
           .select("id, sale_code, total_amount, remarks, date_created")
           .or(`sale_code.ilike.${like},remarks.ilike.${like}`)
+          .limit(3),
+
+        // Inventory Locations — zone, rack, bin, box, label, code
+        supabase
+          .from("locations")
+          .select("id, zone, rack, bin, box, label, code, kind")
+          .eq("kind", "inventory")
+          .eq("status", 1)
+          .eq("delete_flag", 0)
+          .or(
+            `zone.ilike.${like},rack.ilike.${like},bin.ilike.${like},box.ilike.${like},label.ilike.${like},code.ilike.${like}`
+          )
+          .limit(3),
+
+        // Job Spots — rack (spot name)
+        supabase
+          .from("locations")
+          .select("id, rack, kind")
+          .eq("kind", "job")
+          .eq("status", 1)
+          .eq("delete_flag", 0)
+          .ilike("rack", like)
           .limit(3),
       ]);
 
@@ -228,7 +252,7 @@ function NavbarSearch() {
           subtitle: `Rs.${r.price?.toFixed(2) || "0.00"}`,
           tag: "Product",
           tagColor: "bg-amber-500/20 text-amber-400",
-          href: `/inventory`,
+          href: `/inventory/${r.id}`,
           icon: "product",
         });
       });
@@ -255,6 +279,31 @@ function NavbarSearch() {
           tagColor: "bg-pink-500/20 text-pink-400",
           href: `/direct-sales/${r.id}/view`,
           icon: "sale",
+        });
+      });
+
+      (locRes.data || []).forEach((r) => {
+        const path = locPath({ zone: r.zone, rack: r.rack, bin: r.bin, box: r.box });
+        out.push({
+          id: `loc-${r.id}`,
+          title: path,
+          subtitle: [r.code, r.label].filter(Boolean).join(" · ") || "—",
+          tag: "Location",
+          tagColor: "bg-green-500/20 text-green-400",
+          href: `/inventory/locate?loc=${encodeURIComponent(path)}`,
+          icon: "location",
+        });
+      });
+
+      (spotRes.data || []).forEach((r) => {
+        out.push({
+          id: `spot-${r.id}`,
+          title: r.rack,
+          subtitle: "Job Spot",
+          tag: "Spot",
+          tagColor: "bg-orange-500/20 text-orange-400",
+          href: `/jobs?spot=${r.id}`,
+          icon: "spot",
         });
       });
 
@@ -291,6 +340,8 @@ function NavbarSearch() {
     product: <Package size={13} className="text-amber-400 flex-shrink-0" />,
     mechanic: <User size={13} className="text-purple-400 flex-shrink-0" />,
     sale: <ShoppingCart size={13} className="text-pink-400 flex-shrink-0" />,
+    location: <MapPin size={13} className="text-green-400 flex-shrink-0" />,
+    spot: <LocateFixed size={13} className="text-orange-400 flex-shrink-0" />,
   };
 
   return (
@@ -350,7 +401,7 @@ function NavbarSearch() {
                   {results.length} result{results.length !== 1 ? "s" : ""}
                 </span>
                 <span className="text-[9px] text-slate-700">
-                  Clients · Jobs · Products · Mechanics · Sales
+                  Clients · Jobs · Products · Mechanics · Sales · Locations · Spots
                 </span>
               </div>
               <ul className="max-h-[400px] overflow-y-auto divide-y divide-[#1a2234]">

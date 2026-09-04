@@ -149,12 +149,6 @@ export default function ProductDetailPage() {
   const [productLocations, setProductLocations] = useState<
     { id: number; zone: string; rack: string; bin: string; box: string }[]
   >([]);
-  const [locSuggestions, setLocSuggestions] = useState<{
-    zone: string[];
-    rack: string[];
-    bin: string[];
-    box: string[];
-  }>({ zone: [], rack: [], bin: [], box: [] });
   const [locHierarchy, setLocHierarchy] = useState<{
     zones: { id: number; name: string }[];
     racks: { id: number; name: string; zone_id: number }[];
@@ -360,7 +354,7 @@ export default function ProductDetailPage() {
     fetchData();
   }, [fetchData]);
 
-  // Load existing zone/rack/bin/box options for the location picker dropdowns.
+  // Load hierarchy (zone→rack→bin→box) for the location picker dropdowns.
   // Server route (service-role, RLS-bypass) se — anon-client ab location tables
   // directly nahi padh sakta (RLS lockdown).
   useEffect(() => {
@@ -369,25 +363,17 @@ export default function ProductDetailPage() {
         const res = await fetch("/api/locations/options");
         if (res.ok) {
           const json = await res.json();
-          if (json && !json.error) {
-            setLocSuggestions({
-              zone: Array.isArray(json.zone) ? json.zone : [],
-              rack: Array.isArray(json.rack) ? json.rack : [],
-              bin: Array.isArray(json.bin) ? json.bin : [],
-              box: Array.isArray(json.box) ? json.box : [],
+          if (json && !json.error && json.hierarchy) {
+            setLocHierarchy({
+              zones: Array.isArray(json.hierarchy.zones) ? json.hierarchy.zones : [],
+              racks: Array.isArray(json.hierarchy.racks) ? json.hierarchy.racks : [],
+              bins: Array.isArray(json.hierarchy.bins) ? json.hierarchy.bins : [],
+              boxes: Array.isArray(json.hierarchy.boxes) ? json.hierarchy.boxes : [],
             });
-            if (json.hierarchy) {
-              setLocHierarchy({
-                zones: Array.isArray(json.hierarchy.zones) ? json.hierarchy.zones : [],
-                racks: Array.isArray(json.hierarchy.racks) ? json.hierarchy.racks : [],
-                bins: Array.isArray(json.hierarchy.bins) ? json.hierarchy.bins : [],
-                boxes: Array.isArray(json.hierarchy.boxes) ? json.hierarchy.boxes : [],
-              });
-            }
           }
         }
       } catch (e) {
-        console.error("Failed to load location suggestions", e);
+        console.error("Failed to load location hierarchy", e);
       }
     })();
   }, []);
@@ -794,7 +780,6 @@ export default function ProductDetailPage() {
                 <LocationPicker
                   value={editLoc}
                   onChange={setEditLoc}
-                  suggestions={locSuggestions}
                   hierarchy={locHierarchy}
                 />
                 <div className="flex gap-2">
@@ -845,7 +830,18 @@ export default function ProductDetailPage() {
               </div>
             ) : productLocations.length > 0 ? (
               <div className="space-y-1.5">
-                {productLocations.map((loc) => (
+                {productLocations.map((loc) => {
+                  const zId = locHierarchy.zones.find((z) => z.name === loc.zone)?.id;
+                  const rId = locHierarchy.racks.find((r) => r.name === loc.rack)?.id;
+                  const bId = locHierarchy.bins.find((b) => b.name === loc.bin)?.id;
+                  const xId = locHierarchy.boxes.find((x) => x.name === loc.box)?.id;
+                  const segs: string[] = [];
+                  if (zId) segs.push(`Z${zId}`);
+                  if (rId) segs.push(`R${rId}`);
+                  if (bId) segs.push(`B${bId}`);
+                  if (xId) segs.push(`X${xId}`);
+                  const code = segs.join("-");
+                  return (
                   <div
                     key={loc.id}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#111520] border border-[#21293d] hover:border-emerald-500/30 transition-colors"
@@ -854,15 +850,23 @@ export default function ProductDetailPage() {
                       <MapPin size={13} className="text-emerald-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-black text-slate-200 truncate">
-                        {locPath(loc)}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-slate-200 truncate">
+                          {locPath(loc)}
+                        </span>
+                        {code && (
+                          <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded flex-shrink-0">
+                            {code}
+                          </span>
+                        )}
                       </div>
                       <div className="text-[9px] text-slate-600 font-bold mt-0.5">
                         Product location
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 {stats.available <= 0 && (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[10px] text-amber-400 font-bold">
                     <AlertTriangle size={11} /> Out of stock — location retained

@@ -53,10 +53,24 @@ export async function POST(request: NextRequest) {
         sb.from("location_bins").select("id").eq("name", b).eq("delete_flag", 0).maybeSingle(),
         sb.from("location_boxes").select("id").eq("name", bx).eq("delete_flag", 0).maybeSingle(),
       ]);
-      const zone_id = z && zRec?.data?.id ? zRec.data.id : null;
-      const rack_id = r && rRec?.data?.id ? rRec.data.id : null;
-      const bin_id = b && bRec?.data?.id ? bRec.data.id : null;
-      const box_id = bx && xRec?.data?.id ? xRec.data.id : null;
+
+      // Hierarchy validation — sirf existing entries allow.
+      const missing: string[] = [];
+      if (z && !zRec?.data?.id) missing.push(`Zone "${z}"`);
+      if (r && !rRec?.data?.id) missing.push(`Rack "${r}"`);
+      if (b && !bRec?.data?.id) missing.push(`Bin "${b}"`);
+      if (bx && !xRec?.data?.id) missing.push(`Box "${bx}"`);
+      if (missing.length > 0) {
+        return NextResponse.json(
+          { error: `${missing.join(", ")} location hierarchy me nahi hai. Pehle Location Master se banao.` },
+          { status: 400 }
+        );
+      }
+
+      const zone_id = zRec?.data?.id ?? null;
+      const rack_id = rRec?.data?.id ?? null;
+      const bin_id = bRec?.data?.id ?? null;
+      const box_id = xRec?.data?.id ?? null;
 
       const { data: existing } = await sb
         .from("locations")
