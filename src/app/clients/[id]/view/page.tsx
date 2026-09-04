@@ -167,6 +167,18 @@ const fmtDate = (d: string) => {
   return formatIST(date, { day: "2-digit", month: "short", year: "numeric" });
 };
 
+const fmtDateTime = (d: string) => {
+  if (!d) return "";
+  const date = d.length === 10 ? parseISTDate(d) : new Date(d);
+  return formatIST(date, { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+};
+
+const getStatusDate = (job: Job) => {
+  if (job.status === 5 && job.date_completed) return job.date_completed;
+  if (job.date_updated) return job.date_updated;
+  return job.date_created;
+};
+
 const STATUS_MAP: Record<number, { label: string; cls: string }> = Object.fromEntries(
   Object.entries(JOB_STATUS).map(([k, v]) => [Number(k), { label: v.label, cls: v.cls }])
 );
@@ -1569,11 +1581,9 @@ export default function ViewClientProfile() {
                             >
                               {st.label}
                             </span>
-                            {job.status === 5 && job.date_completed && (
-                              <p className="text-[9px] text-slate-600 mt-0.5">
-                                {fmtDate(job.date_completed)}
-                              </p>
-                            )}
+                            <p className="text-[9px] text-slate-600 mt-0.5">
+                              {fmtDateTime(getStatusDate(job))}
+                            </p>
                           </td>
                           <td className={`${tdCls} text-right font-black text-white`}>
                             ₹{fmt(job.amount || 0)}
@@ -1627,6 +1637,9 @@ export default function ViewClientProfile() {
                             className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${st.cls}`}
                           >
                             {st.label}
+                          </span>
+                          <span className="text-[9px] text-slate-500">
+                            {fmtDateTime(getStatusDate(job))}
                           </span>
                           <span className="text-base font-black text-white">
                             ₹{fmt(job.amount || 0)}
