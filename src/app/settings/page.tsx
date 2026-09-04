@@ -182,11 +182,13 @@ export default function SettingsPage() {
       setGfLng(info.geofence_lng || "");
       setGfRadius(info.geofence_radius_m || "200");
 
-      // Signature
-      setSignature(info.signature || "");
+      // Signature (uploads/ wale purane relative paths next/image me nahi chalti)
+      const sig = info.signature || "";
+      setSignature(sig && /^https?:\/\//i.test(sig) ? sig : "");
 
-      // Logo
-      setLogo(info.logo || "");
+      // Logo (relative uploads/ paths next/image me nahi chalti — absolute/data URL hi rakho)
+      const lg = info.logo || "";
+      setLogo(lg && (/^https?:\/\//i.test(lg) || lg.startsWith("data:")) ? lg : "");
 
       // Website Cover
       const c = info.cover || "";
