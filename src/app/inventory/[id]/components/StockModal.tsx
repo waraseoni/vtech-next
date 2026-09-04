@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
 import { todayIST, toISTDatePart } from "@/lib/dateUtils";
-import SearchableSelect from "@/components/SearchableSelect";
+import SupplierPicker from "@/components/SupplierPicker";
 
 interface StockModalProps {
   productId: number;
@@ -31,11 +31,6 @@ interface StockModalProps {
   onSaved: () => void;
   productName?: string;
   productLocationLabel?: string | null;
-}
-
-interface Supplier {
-  id: number;
-  name: string;
 }
 
 export default function StockModal({
@@ -52,7 +47,6 @@ export default function StockModal({
   const [supplierId, setSupplierId] = useState<string>(
     stock?.supplier_id ? String(stock.supplier_id) : ""
   );
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [stockDate, setStockDate] = useState(stock?.stock_date || todayIST());
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -74,16 +68,6 @@ export default function StockModal({
     return () => {
       document.body.style.overflow = "";
     };
-  }, []);
-
-  useEffect(() => {
-    supabase
-      .from("suppliers")
-      .select("id, name")
-      .eq("delete_flag", 0)
-      .eq("status", 1)
-      .order("name")
-      .then(({ data }) => setSuppliers((data || []) as Supplier[]));
   }, []);
 
   const adjustQty = (delta: number) => {
@@ -266,22 +250,20 @@ export default function StockModal({
             </div>
 
             {/* Supplier */}
-            {suppliers.length > 0 && (
-              <div>
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
-                  <span className="flex items-center gap-1.5">
-                    <Package size={10} className="text-slate-700" /> Supplier (Optional)
-                  </span>
-                </label>
-                <SearchableSelect
-                  value={supplierId || null}
-                  options={suppliers.map((s) => ({ id: s.id, label: s.name }))}
-                  onSelect={(v) => setSupplierId(v)}
-                  placeholder="-- Select Supplier --"
-                  clearLabel="-- Select Supplier --"
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
+                <span className="flex items-center gap-1.5">
+                  <Package size={10} className="text-slate-700" /> Supplier (Optional)
+                </span>
+              </label>
+              <SupplierPicker
+                value={supplierId || null}
+                onSelect={(v) => setSupplierId(v || "")}
+                placeholder="-- Select Supplier --"
+                clearLabel="-- Select Supplier --"
+                hideIfEmpty
+              />
+            </div>
 
             {/* Stock Date */}
             <div>

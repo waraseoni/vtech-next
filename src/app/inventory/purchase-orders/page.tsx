@@ -4,6 +4,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { todayIST } from "@/lib/dateUtils";
 import SearchableSelect from "@/components/SearchableSelect";
+import SupplierPicker from "@/components/SupplierPicker";
 import { logActivity } from "@/lib/activity";
 import PageLoader from "@/components/PageLoader";
 import {
@@ -48,11 +49,6 @@ interface POItem {
   qty_ordered: number;
   qty_received: number;
   unit_cost: number;
-}
-
-interface Supplier {
-  id: number;
-  name: string;
 }
 
 interface DraftItem {
@@ -654,7 +650,6 @@ function CreatePOModal({
   initialDraft?: DraftItem[] | null;
 }) {
   const [supplierId, setSupplierId] = useState<string>("");
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Array<{ id: number; name: string }>>([]);
   const [lines, setLines] = useState<DraftItem[]>(() =>
     initialDraft && initialDraft.length
@@ -675,12 +670,6 @@ function CreatePOModal({
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    supabase
-      .from("suppliers")
-      .select("id, name")
-      .eq("delete_flag", 0)
-      .order("name")
-      .then(({ data }) => setSuppliers((data || []) as Supplier[]));
     supabase
       .from("product_list")
       .select("id, name")
@@ -804,10 +793,9 @@ function CreatePOModal({
                 <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
                   Supplier (Optional)
                 </label>
-                <SearchableSelect
+                <SupplierPicker
                   value={supplierId || null}
-                  options={suppliers.map((s) => ({ id: s.id, label: s.name }))}
-                  onSelect={(v) => setSupplierId(v)}
+                  onSelect={(v) => setSupplierId(v || "")}
                   placeholder="-- Select Supplier --"
                   clearLabel="-- No Supplier --"
                 />

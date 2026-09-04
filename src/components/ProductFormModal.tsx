@@ -13,16 +13,15 @@ import {
   AlertCircle,
   Package,
   Camera,
-  ChevronDown,
   ScanLine,
   ExternalLink,
   ImageIcon,
-  Search,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
 import BarcodeCameraScanner from "@/app/components/BarcodeCameraScanner";
+import SupplierPicker from "@/components/SupplierPicker";
 
 /**
  * Reusable Add/Edit Product modal.
@@ -77,11 +76,7 @@ export default function ProductFormModal({
   );
 
   // Suppliers
-  const [suppliers, setSuppliers] = useState<{ id: number; name: string }[]>([]);
   const [selectedSuppliers, setSelectedSuppliers] = useState<number[]>([]);
-  const [supplierOpen, setSupplierOpen] = useState(false);
-  const [supplierSearch, setSupplierSearch] = useState("");
-  const supplierRef = useRef<HTMLDivElement>(null);
 
   // Image
   const [imgPath, setImgPath] = useState("");
@@ -101,8 +96,6 @@ export default function ProductFormModal({
     setBarcodeScanning(false);
     setDupWarn(null);
     setSelectedSuppliers([]);
-    setSupplierOpen(false);
-    setSupplierSearch("");
     setImgFile(null);
     setImgRemoved(false);
 
@@ -129,28 +122,6 @@ export default function ProductFormModal({
       setImgPreview("");
     }
   }, [open, editing]);
-
-  // Load suppliers once
-  useEffect(() => {
-    supabase
-      .from("suppliers")
-      .select("id, name")
-      .eq("delete_flag", 0)
-      .eq("status", 1)
-      .order("name")
-      .then(({ data }) => setSuppliers((data || []) as { id: number; name: string }[]));
-  }, []);
-
-  // Outside-click → suppliers dropdown band
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (supplierRef.current && !supplierRef.current.contains(e.target as Node)) {
-        setSupplierOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   const handleImgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -561,129 +532,12 @@ export default function ProductFormModal({
                     (order karne ke liye)
                   </span>
                 </label>
-                {suppliers.length === 0 ? (
-                  <p className="text-xs text-slate-600 italic">
-                    Koi active supplier nahi — pehle{" "}
-                    <Link href="/suppliers" className="text-blue-400 underline">
-                      Suppliers
-                    </Link>{" "}
-                    me add karein.
-                  </p>
-                ) : (
-                  <div ref={supplierRef} className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setSupplierOpen((o) => !o)}
-                      className="w-full flex items-center justify-between gap-2 px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-left transition-all focus:border-blue-500"
-                    >
-                      <span className="flex items-center gap-1.5 flex-wrap">
-                        {selectedSuppliers.length === 0 ? (
-                          <span className="text-slate-600">Suppliers select karein...</span>
-                        ) : (
-                          <>
-                            {selectedSuppliers.slice(0, 3).map((id) => {
-                              const s = suppliers.find((x) => x.id === id);
-                              return s ? (
-                                <span
-                                  key={id}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-bold"
-                                >
-                                  {s.name}
-                                  <span
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedSuppliers((prev) => prev.filter((x) => x !== id));
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter" || e.key === " ") {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setSelectedSuppliers((prev) =>
-                                          prev.filter((x) => x !== id)
-                                        );
-                                      }
-                                    }}
-                                    className="hover:text-emerald-200 cursor-pointer"
-                                    title="Remove"
-                                  >
-                                    <X size={10} />
-                                  </span>
-                                </span>
-                              ) : null;
-                            })}
-                            {selectedSuppliers.length > 3 && (
-                              <span className="text-[10px] font-bold text-slate-500">
-                                +{selectedSuppliers.length - 3} aur
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </span>
-                      <ChevronDown
-                        size={14}
-                        className={`text-slate-500 flex-shrink-0 transition-transform ${supplierOpen ? "rotate-180" : ""}`}
-                      />
-                    </button>
-
-                    {supplierOpen && (
-                      <div className="absolute z-30 mt-2 w-full bg-[#111520] border border-[#21293d] rounded-xl shadow-2xl shadow-black/60 overflow-hidden">
-                        <div className="p-2 border-b border-[#21293d]">
-                          <div className="relative">
-                            <Search
-                              size={13}
-                              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
-                            />
-                            <input
-                              value={supplierSearch}
-                              onChange={(e) => setSupplierSearch(e.target.value)}
-                              placeholder="Supplier dhoondein..."
-                              autoFocus
-                              className="w-full pl-8 pr-3 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
-                            />
-                          </div>
-                        </div>
-                        <div className="max-h-48 overflow-y-auto p-1.5">
-                          {(() => {
-                            const list = suppliers.filter((s) =>
-                              s.name.toLowerCase().includes(supplierSearch.toLowerCase())
-                            );
-                            if (list.length === 0) {
-                              return (
-                                <p className="px-3 py-4 text-center text-xs text-slate-600">
-                                  Koi supplier nahi mila
-                                </p>
-                              );
-                            }
-                            return list.map((s) => {
-                              const checked = selectedSuppliers.includes(s.id);
-                              return (
-                                <button
-                                  key={s.id}
-                                  type="button"
-                                  onClick={() =>
-                                    setSelectedSuppliers((prev) =>
-                                      checked ? prev.filter((x) => x !== s.id) : [...prev, s.id]
-                                    )
-                                  }
-                                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${checked ? "bg-emerald-500/10 text-emerald-400" : "text-slate-300 hover:bg-white/5"}`}
-                                >
-                                  <span
-                                    className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border ${checked ? "bg-emerald-500 border-emerald-500 text-white" : "border-[#2a3550]"}`}
-                                  >
-                                    {checked && <Check size={11} />}
-                                  </span>
-                                  {s.name}
-                                </button>
-                              );
-                            });
-                          })()}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <SupplierPicker
+                  multi
+                  selected={selectedSuppliers}
+                  onMultiSelect={setSelectedSuppliers}
+                  placeholder="Suppliers select karein..."
+                />
                 {selectedSuppliers.length > 0 && (
                   <p className="text-[10px] text-slate-700 mt-1.5">
                     {selectedSuppliers.length} supplier linked
