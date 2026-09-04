@@ -1,10 +1,20 @@
 import type { NextConfig } from "next";
 import { withSerwist } from "@serwist/turbopack";
 import { withSentryConfig } from "@sentry/nextjs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+// Build-time app version: package.json se liya jata hai taaki app me
+// "v1.x.x" badge consistent rahe aur release version se match kare.
+const pkg = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"));
+const APP_VERSION: string = pkg.version || "0.0.0";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
   turbopack: {},
+  env: {
+    NEXT_PUBLIC_APP_VERSION: APP_VERSION,
+  },
   images: {
     remotePatterns: [
       {

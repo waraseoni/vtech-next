@@ -18,6 +18,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { SITE } from "../site";
+import { APP_VERSION_LABEL, APP_VERSION_FULL } from "@/lib/app-version";
 import PullToRefresh from "@/components/PullToRefresh";
 
 type Tab = "staff" | "client";
@@ -482,6 +483,14 @@ export default function LoginPage() {
         {/* Footer */}
         <p className="text-center text-slate-700 text-[11px] mt-5 font-medium">
           {SITE.name} · {SITE.phone}
+        </p>
+        <p className="text-center text-slate-700 text-[10px] mt-1 font-medium">
+          <span
+            className="px-1.5 py-0.5 rounded border border-slate-800 bg-slate-900/40"
+            title={APP_VERSION_FULL}
+          >
+            ver {APP_VERSION_LABEL}
+          </span>
         </p>
       </div>
       </div>

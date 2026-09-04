@@ -17,6 +17,10 @@
     "test:coverage": "vitest run --coverage",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,mjs,cjs,json,css}\" \"*.{ts,mts,js,mjs,json,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,mjs,cjs,json,css}\" \"*.{ts,mts,js,mjs,json,css}\"",
+    "version:patch": "npm version patch -m \"chore(release): v%s [skip ci]\" && git push --follow-tags",
+    "version:minor": "npm version minor -m \"chore(release): v%s [skip ci]\" && git push --follow-tags",
+    "version:major": "npm version major -m \"chore(release): v%s [skip ci]\" && git push --follow-tags",
+    "release": "semantic-release",
     "release:dry-run": "semantic-release --dry-run"
   },
   "dependencies": {

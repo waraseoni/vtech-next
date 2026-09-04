@@ -5,6 +5,7 @@ import { openCamera } from "@/lib/nativeCamera";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { APP_VERSION_FULL } from "@/lib/app-version";
 import {
   Settings2,
   Settings,
@@ -646,6 +647,14 @@ export default function SettingsPage() {
                   Admin Panel · Settings
                 </p>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span
+                title={APP_VERSION_FULL}
+                className="px-2 py-1 rounded-lg bg-[#0d1117] border border-[#21293d] text-[10px] font-bold text-slate-400"
+              >
+                ver {APP_VERSION_FULL}
+              </span>
             </div>
             <button
               type="submit"
