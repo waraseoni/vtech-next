@@ -6,10 +6,17 @@ import SalaryPageInner from "./components/SalaryPageInner";
 
 export const dynamic = "force-dynamic";
 
-async function SalaryPage() {
+type Props = {
+  searchParams: Promise<{ month?: string }>;
+};
+
+async function SalaryPage({ searchParams }: Props) {
   await requireStaff();
 
-  const month = format(new Date(), "yyyy-MM");
+  const params = await searchParams;
+  const currentMonthStr = format(new Date(), "yyyy-MM");
+  const month = params?.month && /^\d{4}-\d{2}$/.test(params.month) ? params.month : currentMonthStr;
+
   const [initialReportData, initialMechanics] = await Promise.all([
     fetchSalaryReportData(month),
     fetchSalaryMasterData(),
@@ -17,7 +24,11 @@ async function SalaryPage() {
 
   return (
     <Suspense>
-      <SalaryPageInner initialReportData={initialReportData} initialMechanics={initialMechanics} />
+      <SalaryPageInner
+        initialMonth={month}
+        initialReportData={initialReportData}
+        initialMechanics={initialMechanics}
+      />
     </Suspense>
   );
 }

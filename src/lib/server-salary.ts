@@ -1,4 +1,5 @@
 import { getServerSupabase } from "@/lib/api-auth";
+import { fetchAll } from "@/lib/fetch-all";
 
 /**
  * Server-data layer for the Salary page (G3 migration).
@@ -100,48 +101,61 @@ export async function fetchSalaryReportData(month: string): Promise<SalaryRecord
     effective_date: r.effective_date as string,
   })) as SalaryHistoryRow[];
 
-  // 2. Batch-fetch ALL attendance, commissions, advances for both months (6 queries)
-  const [prevAtt, currAtt, prevComm, currComm, prevAdv, currAdv] = await Promise.all([
-    supabase
-      .from("attendance_list")
-      .select("mechanic_id, curr_date, status")
-      .in("status", [1, 3])
-      .lte("curr_date", prevEnd),
-    supabase
-      .from("attendance_list")
-      .select("mechanic_id, curr_date, status")
-      .in("status", [1, 3])
-      .gte("curr_date", start)
-      .lte("curr_date", end),
-    supabase
-      .from("transaction_list")
-      .select("mechanic_id, mechanic_commission_amount")
-      .eq("status", 5)
-      .lte("date_completed", prevEnd + " 23:59:59"),
-    supabase
-      .from("transaction_list")
-      .select("mechanic_id, mechanic_commission_amount")
-      .eq("status", 5)
-      .gte("date_completed", start + " 00:00:00")
-      .lte("date_completed", end + " 23:59:59"),
-    supabase
-      .from("advance_payments")
-      .select("mechanic_id, amount, date_paid")
-      .lte("date_paid", prevEnd),
-    supabase
-      .from("advance_payments")
-      .select("mechanic_id, amount, date_paid")
-      .gte("date_paid", start)
-      .lte("date_paid", end),
-  ]);
+  // 2. Batch-fetch ALL attendance, commissions, advances for both months (6 queries with fetchAll to bypass 1000-row cap)
+  const [prevAttData, currAttData, prevCommData, currCommData, prevAdvData, currAdvData] =
+    await Promise.all([
+      fetchAll<AttRow>(
+        supabase
+          .from("attendance_list")
+          .select("mechanic_id, curr_date, status")
+          .in("status", [1, 3])
+          .lte("curr_date", prevEnd)
+      ),
+      fetchAll<AttRow>(
+        supabase
+          .from("attendance_list")
+          .select("mechanic_id, curr_date, status")
+          .in("status", [1, 3])
+          .gte("curr_date", start)
+          .lte("curr_date", end)
+      ),
+      fetchAll<CommRow>(
+        supabase
+          .from("transaction_list")
+          .select("mechanic_id, mechanic_commission_amount")
+          .eq("status", 5)
+          .lte("date_completed", prevEnd + " 23:59:59")
+      ),
+      fetchAll<CommRow>(
+        supabase
+          .from("transaction_list")
+          .select("mechanic_id, mechanic_commission_amount")
+          .eq("status", 5)
+          .gte("date_completed", start + " 00:00:00")
+          .lte("date_completed", end + " 23:59:59")
+      ),
+      fetchAll<AdvRow>(
+        supabase
+          .from("advance_payments")
+          .select("mechanic_id, amount, date_paid")
+          .lte("date_paid", prevEnd)
+      ),
+      fetchAll<AdvRow>(
+        supabase
+          .from("advance_payments")
+          .select("mechanic_id, amount, date_paid")
+          .gte("date_paid", start)
+          .lte("date_paid", end)
+      ),
+    ]);
 
   // 3. Group by mechanic_id in memory (O(N) instead of N queries)
-  const prevAttByMech = groupBy((prevAtt.data || []) as AttRow[], "mechanic_id");
-  const currAttByMech = groupBy((currAtt.data || []) as AttRow[], "mechanic_id");
-  const prevCommByMech = groupBy((prevComm.data || []) as CommRow[], "mechanic_id");
-  const currCommByMech = groupBy((currComm.data || []) as CommRow[], "mechanic_id");
-  const prevAdvByMech = groupBy((prevAdv.data || []) as AdvRow[], "mechanic_id");
-  const currAdvByMech = groupBy((currAdv.data || []) as AdvRow[], "mechanic_id");
+  const prevAttByMech = groupBy(prevAttData, "mechanic_id");
+  const currAttByMech = groupBy(currAttData, "mechanic_id");
+  const prevCommByMech = groupBy(prevCommData, "mechanic_id");
+  const currCommByMech = groupBy(currCommData, "mechanic_id");
+  const prevAdvByMech = groupBy(prevAdvData, "mechanic_id");
+  const currAdvByMech = groupBy(currAdvData, "mechanic_id");
 
   // 4. Compute per-mechanic aggregates
   return (mechs as DbRow[]).map((m) => {

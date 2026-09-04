@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { fetchAll } from "@/lib/fetch-all";
 import {
   ArrowLeft,
   Calendar,
@@ -44,6 +45,7 @@ type JobRow = {
   mechanic_commission_amount: string;
   status: number;
   date_created: string;
+  date_completed?: string | null;
 };
 
 type LedgerRow = {
@@ -121,60 +123,102 @@ export default function MechanicLedger() {
       const prevLimit = format(new Date(new Date(from).getTime() - 86400000), "yyyy-MM-dd");
 
       const [prevAtt, prevComm, prevAdv] = await Promise.all([
-        supabase
-          .from("attendance_list")
-          .select("curr_date, status")
-          .eq("mechanic_id", mid)
-          .in("status", [1, 3])
-          .lte("curr_date", prevLimit),
-        supabase
-          .from("transaction_list")
-          .select("mechanic_commission_amount")
-          .eq("mechanic_id", mid)
-          .eq("status", 5)
-          .lte("date_completed", prevLimit + " 23:59:59"),
-        supabase
-          .from("advance_payments")
-          .select("amount")
-          .eq("mechanic_id", mid)
-          .lte("date_paid", prevLimit),
+        fetchAll<{ curr_date: string; status: number }>(
+          supabase
+            .from("attendance_list")
+            .select("curr_date, status")
+            .eq("mechanic_id", mid)
+            .in("status", [1, 3])
+            .lte("curr_date", prevLimit)
+        ),
+        fetchAll<{ mechanic_commission_amount: string }>(
+          supabase
+            .from("transaction_list")
+            .select("mechanic_commission_amount")
+            .eq("mechanic_id", mid)
+            .eq("status", 5)
+            .lte("date_completed", prevLimit + " 23:59:59")
+        ),
+        fetchAll<{ amount: string }>(
+          supabase
+            .from("advance_payments")
+            .select("amount")
+            .eq("mechanic_id", mid)
+            .lte("date_paid", prevLimit)
+        ),
       ]);
 
       let earnedPrev = 0;
-      (prevAtt.data || []).forEach((att) => {
+      prevAtt.forEach((att) => {
         const rate = getDailyRate(att.curr_date);
         earnedPrev += att.status === 1 ? rate : rate / 2;
       });
 
-      const commPrev = (prevComm.data || []).reduce(
+      const commPrev = prevComm.reduce(
         (s, c) => s + (parseFloat(c.mechanic_commission_amount) || 0),
         0
       );
-      const advPrev = (prevAdv.data || []).reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
+      const advPrev = prevAdv.reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
 
       const opBal = earnedPrev + commPrev - advPrev;
       setOpeningBalance(opBal);
 
-      // 3. Period Data Fetching
-      const [attPeriod, jobsPeriod, advPeriod] = await Promise.all([
-        supabase
-          .from("attendance_list")
-          .select("curr_date, status")
-          .eq("mechanic_id", mid)
-          .gte("curr_date", from)
-          .lte("curr_date", to),
-        supabase
-          .from("transaction_list")
-          .select("id, job_id, item, mechanic_commission_amount, status, date_created")
-          .eq("mechanic_id", mid)
-          .gte("date_created", from + " 00:00:00")
-          .lte("date_created", to + " 23:59:59"),
-        supabase
-          .from("advance_payments")
-          .select("amount, date_paid")
-          .eq("mechanic_id", mid)
-          .gte("date_paid", from)
-          .lte("date_paid", to),
+      // 3. Period Data Fetching (Using fetchAll to bypass 1000-row cap)
+      // We fetch:
+      // a) Attendance in period
+      // b) Jobs created in period (for generated tracking & display)
+      // c) Jobs completed (delivered) in period (for payable commission credit)
+      // d) Advance payments in period
+      const [attPeriod, jobsCreatedPeriod, jobsCompletedPeriod, advPeriod] = await Promise.all([
+        fetchAll<{ curr_date: string; status: number }>(
+          supabase
+            .from("attendance_list")
+            .select("curr_date, status")
+            .eq("mechanic_id", mid)
+            .gte("curr_date", from)
+            .lte("curr_date", to)
+        ),
+        fetchAll<{
+          id: number;
+          job_id: string;
+          item: string;
+          mechanic_commission_amount: string;
+          status: number;
+          date_created: string;
+          date_completed?: string | null;
+        }>(
+          supabase
+            .from("transaction_list")
+            .select("id, job_id, item, mechanic_commission_amount, status, date_created, date_completed")
+            .eq("mechanic_id", mid)
+            .gte("date_created", from + " 00:00:00")
+            .lte("date_created", to + " 23:59:59")
+        ),
+        fetchAll<{
+          id: number;
+          job_id: string;
+          item: string;
+          mechanic_commission_amount: string;
+          status: number;
+          date_created: string;
+          date_completed?: string | null;
+        }>(
+          supabase
+            .from("transaction_list")
+            .select("id, job_id, item, mechanic_commission_amount, status, date_created, date_completed")
+            .eq("mechanic_id", mid)
+            .eq("status", 5)
+            .gte("date_completed", from + " 00:00:00")
+            .lte("date_completed", to + " 23:59:59")
+        ),
+        fetchAll<{ amount: string; date_paid: string }>(
+          supabase
+            .from("advance_payments")
+            .select("amount, date_paid")
+            .eq("mechanic_id", mid)
+            .gte("date_paid", from)
+            .lte("date_paid", to)
+        ),
       ]);
 
       // 4. Build Ledger Grid
@@ -189,7 +233,7 @@ export default function MechanicLedger() {
         const dStr = format(day, "yyyy-MM-dd");
 
         // Attendance logic
-        const att = (attPeriod.data || []).find((a) => a.curr_date === dStr);
+        const att = attPeriod.find((a) => a.curr_date === dStr);
         let attStatus = "-",
           attVal = 0,
           wage = 0;
@@ -210,18 +254,31 @@ export default function MechanicLedger() {
           }
         }
 
-        // Jobs logic
-        const dayJobs = (jobsPeriod.data || []).filter((j) => j.date_created.startsWith(dStr));
-        let commGen = 0,
-          commPay = 0;
-        dayJobs.forEach((j) => {
-          const val = parseFloat(j.mechanic_commission_amount) || 0;
-          commGen += val;
-          if (j.status === 5) commPay += val;
-        });
+        // Jobs created on this day (Generated commission)
+        const createdOnDay = jobsCreatedPeriod.filter((j) => j.date_created.startsWith(dStr));
+        const commGen = createdOnDay.reduce(
+          (s, j) => s + (parseFloat(j.mechanic_commission_amount) || 0),
+          0
+        );
+
+        // Jobs delivered (completed) on this day (Payable commission credited to balance)
+        const deliveredOnDay = jobsCompletedPeriod.filter(
+          (j) => j.date_completed && j.date_completed.startsWith(dStr)
+        );
+        const commPay = deliveredOnDay.reduce(
+          (s, j) => s + (parseFloat(j.mechanic_commission_amount) || 0),
+          0
+        );
+
+        // Combined unique job list for display on this date:
+        // Jobs created today OR jobs delivered today
+        const jobMap = new Map<number, JobRow>();
+        createdOnDay.forEach((j) => jobMap.set(j.id, j));
+        deliveredOnDay.forEach((j) => jobMap.set(j.id, j));
+        const dayJobs = Array.from(jobMap.values());
 
         // Advance logic
-        const dayAdv = (advPeriod.data || [])
+        const dayAdv = advPeriod
           .filter((a) => a.date_paid === dStr)
           .reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
 

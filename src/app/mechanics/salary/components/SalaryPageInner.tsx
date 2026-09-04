@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { fetchAll } from "@/lib/fetch-all";
 import Image from "next/image";
 import {
   Loader2,
@@ -85,6 +87,7 @@ const MechAvatar = ({
   );
 
 type Props = {
+  initialMonth: string;
   initialReportData: SalaryRecord[];
   initialMechanics: MechanicRow[];
 };
@@ -93,14 +96,34 @@ type FilterStatus = "all" | "payable" | "settled" | "advance";
 type SortField = "name" | "present" | "earned" | "commission" | "oldBalance" | "advance" | "netTotal";
 type SortDirection = "asc" | "desc";
 
-export default function SalaryPageInner({ initialReportData, initialMechanics }: Props) {
+export default function SalaryPageInner({
+  initialMonth,
+  initialReportData,
+  initialMechanics,
+}: Props) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"report" | "master">("report");
   const [loading, setLoading] = useState(false);
   const currentMonthStr = format(new Date(), "yyyy-MM");
-  const [month, setMonth] = useState(currentMonthStr);
+  const [month, setMonth] = useState(initialMonth || currentMonthStr);
 
   const [reportData, setReportData] = useState<SalaryRecord[]>(initialReportData);
   const [mechanics, setMechanics] = useState<MechanicRow[]>(initialMechanics);
+
+  // Sync state if initial props change (e.g. on router.push or SSR change)
+  useEffect(() => {
+    if (initialMonth) {
+      setMonth(initialMonth);
+    }
+  }, [initialMonth]);
+
+  useEffect(() => {
+    setReportData(initialReportData);
+  }, [initialReportData]);
+
+  useEffect(() => {
+    setMechanics(initialMechanics);
+  }, [initialMechanics]);
 
   // Search, Filter & Sort
   const [searchQuery, setSearchQuery] = useState("");
@@ -177,37 +200,49 @@ export default function SalaryPageInner({ initialReportData, initialMechanics }:
 
         const [prevAttAll, currAttAll, prevCommAll, currCommAll, prevAdvAll, currAdvAll] =
           await Promise.all([
-            supabase
-              .from("attendance_list")
-              .select("mechanic_id, curr_date, status")
-              .in("status", [1, 3])
-              .lte("curr_date", prevMonthEnd),
-            supabase
-              .from("attendance_list")
-              .select("mechanic_id, curr_date, status")
-              .in("status", [1, 3])
-              .gte("curr_date", start)
-              .lte("curr_date", end),
-            supabase
-              .from("transaction_list")
-              .select("mechanic_id, mechanic_commission_amount")
-              .eq("status", 5)
-              .lte("date_completed", prevMonthEnd + " 23:59:59"),
-            supabase
-              .from("transaction_list")
-              .select("mechanic_id, mechanic_commission_amount")
-              .eq("status", 5)
-              .gte("date_completed", start + " 00:00:00")
-              .lte("date_completed", end + " 23:59:59"),
-            supabase
-              .from("advance_payments")
-              .select("mechanic_id, amount")
-              .lte("date_paid", prevMonthEnd),
-            supabase
-              .from("advance_payments")
-              .select("mechanic_id, amount")
-              .gte("date_paid", start)
-              .lte("date_paid", end),
+            fetchAll<{ mechanic_id: number; curr_date: string; status: number }>(
+              supabase
+                .from("attendance_list")
+                .select("mechanic_id, curr_date, status")
+                .in("status", [1, 3])
+                .lte("curr_date", prevMonthEnd)
+            ),
+            fetchAll<{ mechanic_id: number; curr_date: string; status: number }>(
+              supabase
+                .from("attendance_list")
+                .select("mechanic_id, curr_date, status")
+                .in("status", [1, 3])
+                .gte("curr_date", start)
+                .lte("curr_date", end)
+            ),
+            fetchAll<{ mechanic_id: number; mechanic_commission_amount: string }>(
+              supabase
+                .from("transaction_list")
+                .select("mechanic_id, mechanic_commission_amount")
+                .eq("status", 5)
+                .lte("date_completed", prevMonthEnd + " 23:59:59")
+            ),
+            fetchAll<{ mechanic_id: number; mechanic_commission_amount: string }>(
+              supabase
+                .from("transaction_list")
+                .select("mechanic_id, mechanic_commission_amount")
+                .eq("status", 5)
+                .gte("date_completed", start + " 00:00:00")
+                .lte("date_completed", end + " 23:59:59")
+            ),
+            fetchAll<{ mechanic_id: number; amount: string; date_paid: string }>(
+              supabase
+                .from("advance_payments")
+                .select("mechanic_id, amount, date_paid")
+                .lte("date_paid", prevMonthEnd)
+            ),
+            fetchAll<{ mechanic_id: number; amount: string; date_paid: string }>(
+              supabase
+                .from("advance_payments")
+                .select("mechanic_id, amount, date_paid")
+                .gte("date_paid", start)
+                .lte("date_paid", end)
+            ),
           ]);
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -221,12 +256,12 @@ export default function SalaryPageInner({ initialReportData, initialMechanics }:
           return map;
         };
 
-        const pAtt = groupByMech(prevAttAll.data || []);
-        const cAtt = groupByMech(currAttAll.data || []);
-        const pComm = groupByMech(prevCommAll.data || []);
-        const cComm = groupByMech(currCommAll.data || []);
-        const pAdv = groupByMech(prevAdvAll.data || []);
-        const cAdv = groupByMech(currAdvAll.data || []);
+        const pAtt = groupByMech(prevAttAll);
+        const cAtt = groupByMech(currAttAll);
+        const pComm = groupByMech(prevCommAll);
+        const cComm = groupByMech(currCommAll);
+        const pAdv = groupByMech(prevAdvAll);
+        const cAdv = groupByMech(currAdvAll);
 
         const records: SalaryRecord[] = mechs.map((m) => {
           const mid = m.id;
@@ -383,14 +418,20 @@ export default function SalaryPageInner({ initialReportData, initialMechanics }:
     }
   };
 
+  const handleMonthChange = (newMonth: string) => {
+    setMonth(newMonth);
+    router.push(`/mechanics/salary?month=${newMonth}`);
+  };
+
   const changeMonth = (offset: number) => {
     const d = new Date(month + "-01");
     const next = offset > 0 ? addMonths(d, 1) : subMonths(d, 1);
-    setMonth(format(next, "yyyy-MM"));
+    const nextMonth = format(next, "yyyy-MM");
+    handleMonthChange(nextMonth);
   };
 
   const resetToCurrentMonth = () => {
-    setMonth(currentMonthStr);
+    handleMonthChange(currentMonthStr);
   };
 
   // Filtered & Sorted Salary Report Data
@@ -736,7 +777,9 @@ export default function SalaryPageInner({ initialReportData, initialMechanics }:
                 <input
                   type="month"
                   value={month}
-                  onChange={(e) => setMonth(e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value) handleMonthChange(e.target.value);
+                  }}
                   className="w-full h-full opacity-0 absolute inset-0 cursor-pointer [color-scheme:dark]"
                   title="Pick Month"
                 />
