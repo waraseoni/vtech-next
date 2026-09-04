@@ -394,10 +394,9 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
         <div className="flex items-center gap-1.5 self-end sm:self-auto">
           <Link
             href="/reports/daily-done"
-            className="p-1.5 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] rounded-xl text-slate-400 hover:text-white transition-all flex-shrink-0"
-            title="Done Jobs"
+            className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] rounded-xl text-[11px] font-bold text-slate-300 hover:text-white transition-all shadow-sm active:scale-95 no-underline flex-shrink-0"
           >
-            <CheckSquare size={13} />
+            <CheckSquare size={12} /> Done
           </Link>
           <button
             onClick={() => fetchData(true)}
