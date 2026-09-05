@@ -41,6 +41,7 @@ export interface NewRequiredPart {
   phone?: string | null;
   eta?: string | null;
   remark?: string | null;
+  photo_url?: string | null;
 }
 
 const ORDER: RequiredPartStatus[] = [0, 1, 2];
@@ -73,6 +74,7 @@ export async function addRequiredPart(part: NewRequiredPart) {
       phone: part.phone?.trim() || null,
       eta: part.eta || null,
       remark: part.remark?.trim() || null,
+      photo_url: part.photo_url ?? null,
     })
     .select()
     .single();

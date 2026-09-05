@@ -61,6 +61,9 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [uploading, setUploading] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const formPhotoRef = useRef<HTMLInputElement>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   // Master data
   const [suppliers, setSuppliers] = useState<{ id: number; name: string; contact: string }[]>([]);
@@ -119,6 +122,13 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
     setSearch(p.name);
   };
 
+  const clearFormPhoto = () => {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoPreview(null);
+    setPhotoFile(null);
+    if (formPhotoRef.current) formPhotoRef.current.value = "";
+  };
+
   const resetForm = () => {
     setUseCustom(true);
     setSearch("");
@@ -130,7 +140,27 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
     setPhone("");
     setEta("");
     setRemark("");
+    clearFormPhoto();
     setShowForm(false);
+  };
+
+  // Common spare-photo uploader: POST /api/spare-photos → public URL.
+  const uploadSpareFile = async (file: File): Promise<string> => {
+    const fd = new FormData();
+    fd.append("action", "upload");
+    fd.append("file", file);
+    const res = await fetch("/api/spare-photos", { method: "POST", body: fd });
+    const json = await res.json();
+    if (!res.ok || json.status !== "success") throw new Error(json.msg || "Photo upload fail");
+    return json.url as string;
+  };
+
+  const onFormPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    clearFormPhoto();
+    setPhotoFile(f);
+    setPhotoPreview(URL.createObjectURL(f));
   };
 
   const submit = async () => {
@@ -141,6 +171,8 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
     }
     setSaving(true);
     try {
+      let photoUrl: string | null = null;
+      if (photoFile) photoUrl = await uploadSpareFile(photoFile);
       await addRequiredPart({
         transaction_id: numId,
         product_id: useCustom ? null : picked,
@@ -151,6 +183,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
         phone: phone.trim() || null,
         eta: eta || null,
         remark: remark.trim() || null,
+        photo_url: photoUrl,
       });
       onToast({ type: "success", msg: "Required spare add ho gaya! ✅" });
       resetForm();
@@ -177,13 +210,8 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
           })(),
         }).catch(() => {});
       }
-      const fd = new FormData();
-      fd.append("action", "upload");
-      fd.append("file", file);
-      const res = await fetch("/api/spare-photos", { method: "POST", body: fd });
-      const json = await res.json();
-      if (!res.ok || json.status !== "success") throw new Error(json.msg || "Photo upload fail");
-      await updateRequiredPart(part.id, numId, { photo_url: json.url });
+      const url = await uploadSpareFile(file);
+      await updateRequiredPart(part.id, numId, { photo_url: url });
       await load();
       onToast({ type: "success", msg: "Spare photo save ho gayi ✅" });
     } catch (e) {
@@ -569,6 +597,52 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                 placeholder="Optional note..."
                 className={inputCls}
               />
+            </div>
+
+            <div>
+              <label className={labelCls}>Photo (optional)</label>
+              <div className="flex items-center gap-3">
+                {photoPreview ? (
+                  <div className="relative group">
+                    <Image
+                      src={photoPreview}
+                      alt="New spare"
+                      width={64}
+                      height={64}
+                      className="w-16 h-16 object-cover rounded-lg border border-[#21293d]"
+                    />
+                    <button
+                      type="button"
+                      onClick={clearFormPhoto}
+                      className="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition"
+                      title="Photo hatayein"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => formPhotoRef.current?.click()}
+                    className="w-16 h-16 rounded-lg border border-dashed border-[#2a3450] flex flex-col items-center justify-center text-slate-500 hover:text-amber-300 hover:border-amber-500/40 transition-all"
+                  >
+                    <Camera size={16} />
+                    <span className="text-[9px] mt-0.5">Photo</span>
+                  </button>
+                )}
+                <input
+                  ref={formPhotoRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={onFormPhotoChange}
+                />
+                {photoPreview && (
+                  <span className="text-[10px] text-slate-500">
+                    Spare ki photo attach ho jayegi
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-2">
