@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.5.0](https://github.com/waraseoni/vtech-next/compare/v1.4.0...v1.5.0) (2026-09-05)
+
+### Features
+
+* **jobs:** per-row spot set/change on jobs list page ([683b204](https://github.com/waraseoni/vtech-next/commit/683b2048b708aa2f95c1e7e2c241a565a1e26e85))
+
 ## [1.4.0](https://github.com/waraseoni/vtech-next/compare/v1.3.0...v1.4.0) (2026-09-05)
 
 ### Features
