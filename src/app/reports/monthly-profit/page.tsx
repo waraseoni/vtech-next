@@ -102,7 +102,7 @@ export default function MonthlyProfitReport() {
           pageAll(
             supabase
               .from("expense_list")
-              .select("id, amount, date_created, category, remarks, payment_mode")
+              .select("id, amount, date_created, category, remarks")
               .gte("date_created", start)
               .lte("date_created", end)
           ),
