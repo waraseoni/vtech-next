@@ -21,6 +21,7 @@ import {
   Search,
   SlidersHorizontal,
   X,
+  MapPin,
 } from "lucide-react";
 import {
   printBoxLabels,
@@ -44,6 +45,8 @@ type BoxRow = BoxLabelData & {
   qty: number;
   printQty: number;
   selected?: boolean;
+  /** Manual "Add Custom Box" se bana ho to true — DB me sync nahi hai. */
+  custom?: boolean;
 };
 
 type LocRow = {
@@ -205,6 +208,7 @@ export default function BoxLabelsPage() {
         qty: 1,
         printQty: 1,
         selected: true,
+        custom: true,
       },
       ...prev,
     ]);
@@ -236,10 +240,6 @@ export default function BoxLabelsPage() {
 
   const updateBoxId = (idx: number, val: string) => {
     setBoxes((prev) => prev.map((b, i) => (i === idx ? { ...b, boxId: val } : b)));
-  };
-
-  const updateLocation = (idx: number, val: string) => {
-    setBoxes((prev) => prev.map((b, i) => (i === idx ? { ...b, locationPath: val } : b)));
   };
 
   const updatePrintQty = (idx: number, qty: number) => {
@@ -554,7 +554,7 @@ export default function BoxLabelsPage() {
               <div className="mt-4 pt-3 border-t border-[#21293d] grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">
-                    Content Columns (0 = auto)
+                    Content Columns (0 = 2)
                   </label>
                   <input
                     type="number"
@@ -572,7 +572,7 @@ export default function BoxLabelsPage() {
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">
-                    Max Lines per Item (0 = auto / 2)
+                    Content Rows (0 = auto)
                   </label>
                   <input
                     type="number"
@@ -695,80 +695,106 @@ export default function BoxLabelsPage() {
                       : "border-[#21293d] hover:border-slate-700"
                   }`}
                 >
-                  {/* Card Header Row: Checkbox, Box ID, Location, Copies/PrintQty, and Dropdown toggle */}
-                  <div className="p-3.5 flex flex-wrap sm:flex-nowrap items-center gap-3">
-                    {/* Checkbox to include/exclude */}
-                    <button
-                      type="button"
-                      onClick={() => toggleSelectBox(originalIdx)}
-                      className="cursor-pointer text-slate-400 hover:text-white p-0.5"
-                      title={isSelected ? "Deselect box" : "Select box for printing"}
-                    >
-                      {isSelected ? (
-                        <CheckSquare size={18} className="text-blue-400 fill-blue-500/20" />
-                      ) : (
-                        <Square size={18} className="text-slate-500" />
-                      )}
-                    </button>
-
-                    {/* Box Title & Badges */}
-                    <div className="flex-1 min-w-[200px] flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={box.boxId}
-                        onChange={(e) => updateBoxId(originalIdx, e.target.value)}
-                        placeholder="Box ID (e.g. BOX-01)"
-                        className="w-32 sm:w-36 bg-[#0d1117] border border-[#21293d] rounded-lg px-2.5 py-1.5 text-xs font-bold text-white placeholder-slate-600 outline-none focus:border-blue-500"
-                      />
-                      <input
-                        type="text"
-                        value={box.locationPath || ""}
-                        onChange={(e) => updateLocation(originalIdx, e.target.value)}
-                        placeholder="Location (Zone ▸ Rack ▸ Bin)"
-                        className="flex-1 min-w-[140px] bg-[#0d1117] border border-[#21293d] rounded-lg px-2.5 py-1.5 text-xs text-slate-300 placeholder-slate-600 outline-none focus:border-blue-500"
-                      />
+                  {/* Card Header: Info row + action bar */}
+                  <div className="p-3.5">
+                    {/* TOP ROW — Box ID (left heading) + Location (right) */}
+                    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {/* Checkbox to include/exclude */}
+                        <button
+                          type="button"
+                          onClick={() => toggleSelectBox(originalIdx)}
+                          className="cursor-pointer text-slate-400 hover:text-white p-0.5 shrink-0"
+                          title={isSelected ? "Deselect box" : "Select box for printing"}
+                        >
+                          {isSelected ? (
+                            <CheckSquare size={18} className="text-blue-400 fill-blue-500/20" />
+                          ) : (
+                            <Square size={18} className="text-slate-500" />
+                          )}
+                        </button>
+                        {/* Box ID — sundar heading, borderless (custom boxes editable) */}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Box size={15} className="shrink-0 text-slate-500" />
+                          <input
+                            type="text"
+                            value={box.boxId}
+                            onChange={(e) => updateBoxId(originalIdx, e.target.value)}
+                            placeholder="BOX-XX"
+                            title="Box ID"
+                            className="min-w-[90px] flex-1 sm:flex-none bg-transparent border-none rounded px-0 py-0.5 text-base font-black tracking-tight text-white placeholder-slate-600 outline-none focus:text-blue-300"
+                          />
+                          {box.custom && (
+                            <span
+                              title="Custom box — DB me sync nahi. Link existing box se link kar sakte hain."
+                              className="shrink-0 inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-400"
+                            >
+                              <Plus size={9} strokeWidth={3} /> Custom
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {/* Location — top right with map pin */}
+                      <div
+                        title="Location"
+                        className="ml-auto max-w-full sm:max-w-[45%] min-w-0 flex items-start gap-1.5 text-[12px] leading-snug font-semibold text-slate-400 text-right break-words overflow-wrap-anywhere"
+                      >
+                        <MapPin size={12} className="mt-0.5 shrink-0 text-slate-500" />
+                        <span className="min-w-0">
+                          {box.locationPath || (
+                            <span className="italic font-normal text-amber-400/80">
+                              No location selected
+                            </span>
+                          )}
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Print Copies Control */}
-                    <div className="flex items-center gap-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg px-2 py-1">
-                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                        Print Copies:
-                      </span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={99}
-                        value={box.printQty || 1}
-                        onChange={(e) =>
-                          updatePrintQty(originalIdx, parseInt(e.target.value, 10) || 1)
-                        }
-                        className="w-12 bg-transparent text-center font-bold text-xs text-white outline-none focus:text-blue-400"
-                      />
+                    {/* BOTTOM ACTION BAR — Items / Copies / Delete */}
+                    <div className="mt-3 pt-2.5 border-t border-[#21293d] flex flex-wrap items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2">
+                        {/* Expand/Collapse Items Dropdown Button — bottom left */}
+                        <button
+                          type="button"
+                          onClick={() => toggleDropdown(originalIdx)}
+                          className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                            isOpen
+                              ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
+                              : "bg-[#21293d] hover:bg-[#2a3550] text-slate-300"
+                          }`}
+                        >
+                          <Package size={13} />
+                          <span>{box.items.length} Items</span>
+                          {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        </button>
+
+                        {/* Print Copies Control — bottom center */}
+                        <div className="shrink-0 flex items-center gap-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg px-2 py-1 whitespace-nowrap">
+                          <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                            Copies:
+                          </span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={99}
+                            value={box.printQty || 1}
+                            onChange={(e) =>
+                              updatePrintQty(originalIdx, parseInt(e.target.value, 10) || 1)
+                            }
+                            className="w-10 bg-transparent text-center font-bold text-xs text-white outline-none focus:text-blue-400"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Delete Box button — bottom right */}
+                      <button
+                        onClick={() => removeBox(originalIdx)}
+                        className="shrink-0 ml-auto p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        title="Remove this box"
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </div>
-
-                    {/* Expand/Collapse Items Dropdown Button */}
-                    <button
-                      type="button"
-                      onClick={() => toggleDropdown(originalIdx)}
-                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
-                        isOpen
-                          ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
-                          : "bg-[#21293d] hover:bg-[#2a3550] text-slate-300"
-                      }`}
-                    >
-                      <Package size={13} />
-                      <span>{box.items.length} Items</span>
-                      {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    </button>
-
-                    {/* Delete Box button */}
-                    <button
-                      onClick={() => removeBox(originalIdx)}
-                      className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                      title="Remove this box"
-                    >
-                      <Trash2 size={15} />
-                    </button>
                   </div>
 
                   {/* COLLAPSIBLE / DROPDOWN ITEMS SECTION */}
@@ -806,7 +832,7 @@ export default function BoxLabelsPage() {
                         ) : (
                           box.items.map((item, itemIdx) => (
                             <div key={itemIdx} className="flex items-center gap-2">
-                              <span className="text-[10px] text-slate-500 w-5 text-right font-mono">
+                              <span className="shrink-0 text-[10px] text-slate-500 w-5 text-right font-mono">
                                 {itemIdx + 1}.
                               </span>
                               <input
@@ -816,11 +842,11 @@ export default function BoxLabelsPage() {
                                   updateItem(originalIdx, itemIdx, e.target.value)
                                 }
                                 placeholder="Item / Product Name"
-                                className="flex-1 bg-[#161b27] border border-[#21293d] rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 outline-none focus:border-blue-500"
+                                className="min-w-0 flex-1 bg-[#161b27] border border-[#21293d] rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 outline-none focus:border-blue-500"
                               />
                               <button
                                 onClick={() => removeItem(originalIdx, itemIdx)}
-                                className="p-1 text-slate-500 hover:text-red-400 transition-colors"
+                                className="shrink-0 p-1 text-slate-500 hover:text-red-400 transition-colors"
                                 title="Delete item"
                               >
                                 <Trash2 size={13} />
@@ -958,11 +984,12 @@ function TemplatePreviewCard({
         height: H,
         border: "1px solid #94a3b8",
         borderRadius: 11,
-        padding: "5px 6px",
+        padding: "1mm 1mm",
         display: "flex",
         alignItems: "stretch",
-        gap: 5,
+        gap: 4,
         overflow: "hidden",
+        boxSizing: "border-box" as const,
         fontFamily: "Arial, Helvetica, sans-serif",
         background: "#fff",
       }}
@@ -977,21 +1004,23 @@ function TemplatePreviewCard({
           display: "flex",
           flexDirection: "column",
           alignItems: "stretch",
-          padding: "4px 7px",
-          gap: 2,
+          padding: "0.8mm 1mm",
+          gap: 1.5,
           minWidth: 0,
           minHeight: 0,
+          maxHeight: "100%",
           overflow: "hidden",
         }}
       >
         <div
           style={{
-            fontSize: 6.5,
+            fontSize: 5,
             fontWeight: 900,
             color: "#94a3b8",
             textTransform: "uppercase",
-            letterSpacing: "0.12em",
+            letterSpacing: "0.1em",
             lineHeight: 1,
+            flexShrink: 0,
           }}
         >
           Contents
@@ -1000,12 +1029,12 @@ function TemplatePreviewCard({
           style={{
             display: "grid",
             gridTemplateColumns: n > 0 ? `repeat(${cols}, 1fr)` : undefined,
-            gridAutoRows: "1fr",
-            columnGap: 5,
+            gridAutoRows: "1fr",   /* bounded: rows split available height equally */
+            columnGap: 4,
             rowGap: 2,
-            flex: 1,
+            flex: 1,               /* cell-content ki baaki height lena zaroori */
             minHeight: 0,
-            alignContent: "start",
+            maxHeight: "100%",
             overflow: "hidden",
           }}
         >
@@ -1017,13 +1046,21 @@ function TemplatePreviewCard({
                   fontSize: fontPx,
                   fontWeight: 800,
                   color: "#1f2937",
-                  lineHeight: 1.05,
-                  whiteSpace: "nowrap",
+                  lineHeight: 1.15,
+                  whiteSpace: "normal",
+                  wordBreak: "break-word",
                   overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  textAlign: "center",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: 3,
+                  background: "#fff",
+                  padding: "1px 2px",
+                  boxSizing: "border-box" as const,
                   minWidth: 0,
-                  display: "flex",
-                  alignItems: "center",
+                  alignSelf: "center",
                 }}
               >
                 {it.name || "—"}
@@ -1031,7 +1068,20 @@ function TemplatePreviewCard({
             ))
           ) : (
             <div
-              style={{ fontSize: fontPx, fontWeight: 800, color: "#9ca3af", fontStyle: "italic" }}
+              style={{
+                fontSize: fontPx,
+                fontWeight: 800,
+                color: "#9ca3af",
+                fontStyle: "italic",
+                border: "1px dashed #e5e7eb",
+                borderRadius: 3,
+                background: "#f9fafb",
+                padding: "1px 2px",
+                textAlign: "center",
+                boxSizing: "border-box" as const,
+                minWidth: 0,
+                alignSelf: "center",
+              }}
             >
               — khali —
             </div>
@@ -1047,6 +1097,8 @@ function TemplatePreviewCard({
           flexDirection: "column",
           gap: 4,
           width: rightColWidth,
+          maxHeight: "100%",
+          minHeight: 0,
         }}
       >
         {/* Box ID */}
@@ -1058,17 +1110,18 @@ function TemplatePreviewCard({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: 4,
-            padding: "3px 5px",
+            gap: 3,
+            padding: "2px 4px",
             overflow: "hidden",
+            boxSizing: "border-box" as const,
           }}
         >
-          <span style={{ fontSize: 8, fontWeight: 900, color: "#8a94a6", letterSpacing: "0.1em" }}>
+          <span style={{ fontSize: 7.5, fontWeight: 900, color: "#8a94a6", letterSpacing: "0.1em" }}>
             BOX
           </span>
           <span
             style={{
-              fontSize: 11,
+              fontSize: 9.5,
               fontWeight: 900,
               color: "#fff",
               letterSpacing: "0.03em",
@@ -1091,8 +1144,9 @@ function TemplatePreviewCard({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: 3,
+            padding: 2,
             minHeight: 0,
+            overflow: "hidden",
           }}
         >
           <div
@@ -1118,7 +1172,7 @@ function TemplatePreviewCard({
             border: cellBorder,
             borderRadius: cellRadius,
             background: "#f8fafc",
-            fontSize: 5.5,
+            fontSize: 5,
             fontWeight: 700,
             color: "#334155",
             textTransform: "uppercase",
@@ -1131,8 +1185,9 @@ function TemplatePreviewCard({
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
-            padding: "2px 4px",
-            maxHeight: 22,
+            padding: "1.5px 3px",
+            maxHeight: 20,
+            boxSizing: "border-box" as const,
           }}
           title={box.locationPath || "Location"}
         >
@@ -1238,25 +1293,32 @@ function SheetPreview({
                 rowGap: 1,
                 flex: 1,
                 minHeight: 0,
-                alignContent: "start",
                 overflow: "hidden",
               }}
             >
               {visibleItems.length > 0 ? (
-                visibleItems.slice(0, 10).map((it, idx) => (
+                visibleItems.slice(0, 12).map((it, idx) => (
                   <div
                     key={idx}
                     style={{
                       fontSize: Math.max(3, fontPt * 1.333 * miniFontScale),
                       fontWeight: 800,
                       color: "#1e293b",
-                      whiteSpace: "nowrap",
+                      whiteSpace: "normal",
+                      wordBreak: "break-word",
                       overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      lineHeight: 1,
-                      display: "flex",
-                      alignItems: "center",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      textAlign: "center",
+                      lineHeight: 1.1,
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 1.5,
+                      background: "#fff",
+                      padding: "0.5px 1px",
+                      boxSizing: "border-box" as const,
                       minWidth: 0,
+                      alignSelf: "center",
                     }}
                   >
                     {it.name}
