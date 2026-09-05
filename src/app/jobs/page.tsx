@@ -281,6 +281,11 @@ function JobsListContent() {
   const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
   const [bulkMoveId, setBulkMoveId] = useState<number | null>(null);
   const [bulkMoveName, setBulkMoveName] = useState("");
+  // Per-job spot edit (row me spot chhota change button) — single job ka spot badlo
+  const [spotEditTxn, setSpotEditTxn] = useState<Transaction | null>(null);
+  const [spotPickId, setSpotPickId] = useState<number | null>(null);
+  const [spotPickName, setSpotPickName] = useState("");
+  const [savingSpot, setSavingSpot] = useState(false);
   // Delivered-but-spotted jobs ka one-click cleanup
   const [spotCleaning, setSpotCleaning] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -990,6 +995,41 @@ function JobsListContent() {
     setBulkActionLoading(false);
   };
 
+  // ── Per-job spot edit (row ka "Change" button) ──
+  const openSpotEdit = (t: Transaction) => {
+    setSpotEditTxn(t);
+    setSpotPickId(t.location_id ?? null);
+    setSpotPickName(t.uniq_id || "");
+  };
+
+  const handleSpotSave = async () => {
+    if (!spotEditTxn) return;
+    setSavingSpot(true);
+    const t = spotEditTxn;
+    const { error } = await supabase
+      .from("transaction_list")
+      .update({ location_id: spotPickId, uniq_id: spotPickName, date_updated: toISTString() })
+      .eq("id", t.id);
+    if (!error) {
+      setTransactions((prev) =>
+        prev.map((x) =>
+          x.id === t.id ? ({ ...x, location_id: spotPickId, uniq_id: spotPickName } as Transaction) : x
+        )
+      );
+      await logActivity(
+        "Moved Job Item",
+        "Jobs",
+        t.id,
+        `Job #${t.job_id || t.id} → ${spotPickName || "No Spot"} | ${t.item || ""}`
+      );
+      setSpotEditTxn(null);
+      loadJobSpots();
+    } else {
+      alert("Spot update failed: " + error.message);
+    }
+    setSavingSpot(false);
+  };
+
   // ── Delivered jobs jinki spot abhi bhi lagi hai — sab ek saath clear ──────
   const clearDeliveredSpots = async () => {
     if (spotCleaning) return;
@@ -1516,6 +1556,48 @@ function JobsListContent() {
     </div>
   );
 
+  // ── Per-job Spot Edit Modal (row ka chhota "Change" button) ──
+  const spotEditModal = spotEditTxn && (
+    <div
+      className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={() => !savingSpot && setSpotEditTxn(null)}
+    >
+      <div
+        className="w-full max-w-xs bg-[#161b27] border border-[#21293d] rounded-2xl p-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <p className="font-black text-white text-sm flex items-center gap-1.5">
+            <MapPin size={14} className="text-amber-400" /> Spot — Job #{spotEditTxn.job_id}
+          </p>
+          <button
+            onClick={() => !savingSpot && setSpotEditTxn(null)}
+            className="text-slate-500 hover:text-white"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-3">
+          Is job ka spot chuno (ya hatao)
+        </p>
+        <JobSpotPicker
+          value={spotPickId}
+          onSelect={(id, spot) => {
+            setSpotPickId(id);
+            setSpotPickName(spot?.name || "");
+          }}
+        />
+        <button
+          onClick={handleSpotSave}
+          disabled={savingSpot}
+          className="mt-4 w-full bg-amber-600 hover:bg-amber-700 !text-white font-bold text-xs py-2.5 rounded-lg transition-colors disabled:opacity-50"
+        >
+          {savingSpot ? "Saving…" : "Spot Save karo"}
+        </button>
+      </div>
+    </div>
+  );
+
   // ── Stale Banner + Modal — Done/Paid items jo 7+ din se spot par hain ─────
   const dismissStale = () => {
     setStaleOpen(false);
@@ -1791,18 +1873,27 @@ function JobsListContent() {
                     {txn.fault}
                   </td>
                   <td className="px-3 py-2.5 text-xs">
-                    {txn.uniq_id ? (
-                      <Link
-                        href={`/jobs?search=${encodeURIComponent(txn.uniq_id)}`}
-                        title={`Spot: ${txn.uniq_id} \u2014 is spot ke sab items`}
-                        className="flex items-center gap-1 text-amber-400/90 hover:text-amber-300 no-underline transition-colors"
+                    <div className="flex items-center gap-1.5">
+                      {txn.uniq_id ? (
+                        <Link
+                          href={`/jobs?search=${encodeURIComponent(txn.uniq_id)}`}
+                          title={`Spot: ${txn.uniq_id} \u2014 is spot ke sab items`}
+                          className="flex items-center gap-1 text-amber-400/90 hover:text-amber-300 no-underline transition-colors"
+                        >
+                          <MapPin size={10} className="flex-shrink-0" />
+                          <span className="truncate max-w-[120px]">{txn.uniq_id}</span>
+                        </Link>
+                      ) : (
+                        <span className="text-slate-600">{"\u2014"}</span>
+                      )}
+                      <button
+                        onClick={() => openSpotEdit(txn)}
+                        title="Spot set karo / badlo"
+                        className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md border border-[#2a3550] bg-white/[0.02] text-slate-500 hover:text-amber-400 hover:border-amber-500/40 transition-all"
                       >
-                        <MapPin size={10} className="flex-shrink-0" />
-                        <span className="truncate">{txn.uniq_id}</span>
-                      </Link>
-                    ) : (
-                      <span className="text-slate-600">{"\u2014"}</span>
-                    )}
+                        <PenSquare size={11} />
+                      </button>
+                    </div>
                   </td>
                   <td className="px-3 py-2.5 text-right font-bold text-sm text-slate-200">
                     {"\u20B9"}{(txn.amount || 0).toFixed(0)}
@@ -2241,6 +2332,7 @@ function JobsListContent() {
         {bulkActionBar}
         {bulkWaModal}
         {bulkMoveModal}
+        {spotEditModal}
         {staleModal}
       </div>
     );
@@ -2578,13 +2670,27 @@ function JobsListContent() {
                     {[
                       { label: "Item/Model", value: txn.item, cls: "text-slate-300 font-bold" },
                       { label: "Fault/Issue", value: txn.fault, cls: "text-red-400" },
-                      { label: "Spot", value: txn.uniq_id || "\u2014", cls: "text-amber-400/90" },
                     ].map(({ label, value, cls }) => (
                       <div key={label} className="flex justify-between gap-2">
                         <span className="text-slate-600 flex-shrink-0">{label}:</span>
                         <span className={`${cls} text-right`}>{value}</span>
                       </div>
                     ))}
+                    <div className="flex justify-between gap-2 items-center">
+                      <span className="text-slate-600 flex-shrink-0">Spot:</span>
+                      <span className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-amber-400/90 text-right truncate">
+                          {txn.uniq_id || "\u2014"}
+                        </span>
+                        <button
+                          onClick={() => openSpotEdit(txn)}
+                          title="Spot set karo / badlo"
+                          className="inline-flex items-center justify-center p-1 rounded-md border border-[#2a3550] bg-white/[0.02] text-slate-500 hover:text-amber-400 hover:border-amber-500/40 transition-all flex-shrink-0"
+                        >
+                          <PenSquare size={10} />
+                        </button>
+                      </span>
+                    </div>
                     {txn.remark && (
                       <div className="flex justify-between gap-2">
                         <span className="text-slate-600 flex-shrink-0 flex items-center gap-1">
@@ -2962,6 +3068,7 @@ function JobsListContent() {
       {bulkActionBar}
       {bulkWaModal}
       {bulkMoveModal}
+      {spotEditModal}
       {staleModal}
       {/* ── Filter Modal ── */}
       {showFilterModal && (

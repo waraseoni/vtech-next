@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## [1.5.1](https://github.com/waraseoni/vtech-next/compare/v1.5.0...v1.5.1) (2026-09-05)
+
+### Bug Fixes
+
+* **box-labels:** rigid print layout with auto-fit content font ([eaced73](https://github.com/waraseoni/vtech-next/commit/eaced732fb4c35b1dd9f2bbc1fbb41898d113e56))
+
+## [1.5.0](https://github.com/waraseoni/vtech-next/compare/v1.4.0...v1.5.0) (2026-09-05)
+
+### Features
+
+* **jobs:** per-row spot set/change on jobs list page ([683b204](https://github.com/waraseoni/vtech-next/commit/683b2048b708aa2f95c1e7e2c241a565a1e26e85))
+
+## [1.4.0](https://github.com/waraseoni/vtech-next/compare/v1.3.0...v1.4.0) (2026-09-05)
+
+### Features
+
+* **locations:** cascading parent-tree picker for racks/bins/boxes; reparent on edit ([743041f](https://github.com/waraseoni/vtech-next/commit/743041f351cb6c10b116a17f9d47e6a295b492aa))
+
 ## [1.2.0](https://github.com/waraseoni/vtech-next/compare/v1.1.0...v1.2.0) (2026-09-05)
 
 ### Features

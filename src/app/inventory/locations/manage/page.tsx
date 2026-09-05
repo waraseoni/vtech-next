@@ -29,6 +29,9 @@ type EntityRow = {
   delete_flag: number;
   created_at: string;
   childCount?: number;
+  zone_id?: number;
+  rack_id?: number;
+  bin_id?: number;
   location_zones?: { id: number; name: string } | null;
   location_racks?: {
     id: number;
@@ -79,6 +82,57 @@ const PARENT_COLS: Record<Tab, { header: string; get: (r: EntityRow) => string }
   ],
 };
 
+const SINGULAR: Record<Tab, string> = { zones: "Zone", racks: "Rack", bins: "Bin", boxes: "Box" };
+
+function parentTabOf(tab: Tab): Tab | null {
+  return TABS.find((t) => t.key === tab)!.parent;
+}
+
+// Root (Zone) sе lekar ek-dam parent tak ka chain, e.g. boxes → [zones, racks, bins].
+function ancestorChain(tab: Tab): Tab[] {
+  const chain: Tab[] = [];
+  let cur = parentTabOf(tab);
+  while (cur) {
+    chain.unshift(cur);
+    cur = parentTabOf(cur);
+  }
+  return chain;
+}
+
+// Kisi row ka poora ancestor path (display ke liye), e.g. "Shelf A3 ▸ Rack 2 ▸ Main Shop".
+function rowTreePath(row: EntityRow, tab: Tab): string {
+  const parts: string[] = [];
+  if (tab === "racks") {
+    if (row.location_zones?.name) parts.push(row.location_zones.name);
+  } else if (tab === "bins") {
+    const r = row.location_racks;
+    if (r?.location_zones?.name) parts.push(r.location_zones.name);
+    if (r?.name) parts.push(r.name);
+  } else if (tab === "boxes") {
+    const b = row.location_bins;
+    const r = b?.location_racks;
+    if (r?.location_zones?.name) parts.push(r.location_zones.name);
+    if (r?.name) parts.push(r.name);
+    if (b?.name) parts.push(b.name);
+  }
+  return parts.join(" ▸ ");
+}
+
+// Row ke ancestors ke ids (root → immediate parent), edit me prefill ke liye.
+function rowTreeIds(row: EntityRow, tab: Tab): (number | null)[] {
+  if (tab === "racks") return [row.location_zones?.id ?? null];
+  if (tab === "bins") {
+    const r = row.location_racks;
+    return [r?.location_zones?.id ?? null, r?.id ?? null];
+  }
+  if (tab === "boxes") {
+    const b = row.location_bins;
+    const r = b?.location_racks;
+    return [r?.location_zones?.id ?? null, r?.id ?? null, b?.id ?? null];
+  }
+  return [];
+}
+
 export default function ManageLocationsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -91,6 +145,11 @@ export default function ManageLocationsPage() {
   const [formErr, setFormErr] = useState("");
   const [saving, setSaving] = useState(false);
   const [parentId, setParentId] = useState<number | null>(null);
+
+  // Add/Edit modal ka cascading parent-tree selection.
+  // Key = tab (zones/racks/bins), value = us level par chuna hua id. Root se deep
+  // tak chain fill hoti hai; koi level badle to uske neeche ke saare levels clear.
+  const [treeSel, setTreeSel] = useState<Record<string, number | null>>({});
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -138,10 +197,37 @@ export default function ManageLocationsPage() {
     return allData[tab.parent] || [];
   };
 
+  // Cascade me ek level ke options = us level ke rows, filtered by oopar wala chuna
+  // parent. zones ka koi parent nahi hota — saare dikhte hain.
+  const levelOptions = (level: Tab, parentValue: number | null) => {
+    const list = allData[level] || [];
+    if (!parentValue) return list;
+    if (level === "racks") return list.filter((r) => r.zone_id === parentValue);
+    if (level === "bins") return list.filter((r) => r.rack_id === parentValue);
+    if (level === "boxes") return list.filter((r) => r.bin_id === parentValue);
+    return list;
+  };
+
+  // Level chuna → uske neeche ke saare levels clear + immediate parent ko parentId set.
+  // Agar upper level badle to stale parentId bhi reset hota hai (save par purana vaule na jaye).
+  const setTreeLevel = (level: Tab, val: number | null) => {
+    const chain = ancestorChain(activeTab);
+    const idx = chain.indexOf(level);
+    const next: Record<string, number | null> = { ...treeSel, [level]: val };
+    if (idx !== -1) {
+      for (let i = idx + 1; i < chain.length; i++) next[chain[i]] = null;
+    }
+    setTreeSel(next);
+    const immediate = chain[chain.length - 1];
+    setParentId(level === immediate ? val : next[immediate] ?? null);
+  };
+
   const openAdd = () => {
     setEditing(null);
     setFormName("");
     setFormErr("");
+    setParentId(null);
+    setTreeSel({});
     setShowModal(true);
   };
 
@@ -149,6 +235,18 @@ export default function ManageLocationsPage() {
     setEditing(row);
     setFormName(row.name);
     setFormErr("");
+    // Row ka current parent tree prefill — edit me parent badal bhi sakte hain.
+    const chain = ancestorChain(activeTab);
+    const ids = rowTreeIds(row, activeTab);
+    if (chain.length > 0 && ids.length === chain.length) {
+      const sel: Record<string, number | null> = {};
+      chain.forEach((l, i) => (sel[l] = ids[i]));
+      setTreeSel(sel);
+      setParentId(ids[ids.length - 1]);
+    } else {
+      setTreeSel({});
+      setParentId(null);
+    }
     setShowModal(true);
   };
 
@@ -160,20 +258,36 @@ export default function ManageLocationsPage() {
     }
     setSaving(true);
     try {
+      const hasParent = parentTabOf(activeTab) !== null;
+      if (hasParent && parentId == null) {
+        setFormErr(
+          `Pehle ${ancestorChain(activeTab)
+            .map((l) => SINGULAR[l])
+            .join(" ▸ ")} select karo!`
+        );
+        setSaving(false);
+        return;
+      }
       if (editing) {
+        const body: Record<string, unknown> = { tab: activeTab, id: editing.id, name: formName };
+        if (hasParent) {
+          const parentFk =
+            activeTab === "racks" ? "zone_id" : activeTab === "bins" ? "rack_id" : "bin_id";
+          body.parent_id = parentId;
+          body[parentFk] = parentId;
+        }
         const res = await fetch("/api/locations/manage", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tab: activeTab, id: editing.id, name: formName }),
+          body: JSON.stringify(body),
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Update failed");
       } else {
         const body: Record<string, unknown> = { tab: activeTab, name: formName };
-        if (parentId) {
-          const parentTab = TABS.find((t) => t.key === activeTab)!.parent;
+        if (hasParent) {
           const parentFk =
-            parentTab === "zones" ? "zone_id" : parentTab === "racks" ? "rack_id" : "bin_id";
+            activeTab === "racks" ? "zone_id" : activeTab === "bins" ? "rack_id" : "bin_id";
           body.parent_id = parentId;
           body[parentFk] = parentId;
         }
@@ -245,6 +359,7 @@ export default function ManageLocationsPage() {
   const filtered = getFiltered();
   const tabInfo = TABS.find((t) => t.key === activeTab)!;
   const parentOptions = getParentOptions();
+  const treeChain = tabInfo.parent ? ancestorChain(activeTab) : [];
 
   return (
     <AdminPage
@@ -328,11 +443,15 @@ export default function ManageLocationsPage() {
                 className="px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500"
               >
                 <option value="">All {tabInfo.parent}</option>
-                {parentOptions.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
+                {parentOptions.map((p) => {
+                  const path = rowTreePath(p, tabInfo.parent!);
+                  return (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                      {path ? ` — ${path}` : ""}
+                    </option>
+                  );
+                })}
               </select>
             )}
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
@@ -445,7 +564,7 @@ export default function ManageLocationsPage() {
       {/* Add / Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl flex flex-col">
+          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl flex flex-col">
             <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
               <h3 className="font-bold text-white flex items-center gap-2">
                 {editing ? (
@@ -485,6 +604,57 @@ export default function ManageLocationsPage() {
                   autoFocus
                 />
               </div>
+              {tabInfo.parent && (
+                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3.5 space-y-3">
+                  <div className="flex items-center gap-1.5">
+                    <Layers size={13} className="text-blue-400" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">
+                      Parent Tree
+                    </p>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    {activeTab === "boxes"
+                      ? "Zone ▸ Rack ▸ Bin chuno — same naam wale bins alag racks me honge to tree se pehchane jayenge."
+                      : activeTab === "bins"
+                        ? "Zone ▸ Rack chuno — same naam wale racks alag zones me honge to tree se pehchane jayenge."
+                        : "Zone chuno — is zone ke under rack banega."}
+                  </p>
+                  {treeChain.map((level, i) => {
+                    const parentLevel = i === 0 ? null : treeChain[i - 1];
+                    const constrained = levelOptions(
+                      level,
+                      parentLevel ? (treeSel[parentLevel] ?? null) : null
+                    );
+                    const isDeepest = i === treeChain.length - 1;
+                    return (
+                      <div key={level}>
+                        <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">
+                          Step {i + 1} · {SINGULAR[level]}{" "}
+                          {isDeepest && <span className="text-red-400">*</span>}
+                        </label>
+                        <select
+                          value={treeSel[level] ?? ""}
+                          onChange={(e) =>
+                            setTreeLevel(level, e.target.value ? Number(e.target.value) : null)
+                          }
+                          className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                        >
+                          <option value="">— {SINGULAR[level]} chuno —</option>
+                          {constrained.map((p) => {
+                            const path = rowTreePath(p, level);
+                            return (
+                              <option key={p.id} value={p.id}>
+                                {p.name}
+                                {path ? ` — ${path}` : ""}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"

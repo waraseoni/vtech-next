@@ -572,7 +572,7 @@ export default function BoxLabelsPage() {
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">
-                    Content Rows (0 = auto / sab)
+                    Max Lines per Item (0 = auto / 2)
                   </label>
                   <input
                     type="number"
@@ -943,9 +943,10 @@ function TemplatePreviewCard({
   const cellBorder = "1px solid #cbd5e1";
   const cellRadius = 7;
   const n = box.items.length;
-  const { cols, capacity, fontSizePt } = itemsLayout(n, options);
+  const { cols, fonts, capacity } = itemsLayout(n, options, box.items.map((i) => i.name));
   const visibleItems = box.items.slice(0, capacity);
-  const fontPx = fontSizePt * 1.333;
+  const fontPt = (fonts[0] || 8) as number;
+  const fontPx = fontPt * 1.333;
   const W = options.widthMm * 3.78;
   const H = options.heightMm * 3.78;
   const rightColWidth = Math.min(H * 0.72, 28) * 3.78;
@@ -999,6 +1000,7 @@ function TemplatePreviewCard({
           style={{
             display: "grid",
             gridTemplateColumns: n > 0 ? `repeat(${cols}, 1fr)` : undefined,
+            gridAutoRows: "1fr",
             columnGap: 5,
             rowGap: 2,
             flex: 1,
@@ -1020,6 +1022,8 @@ function TemplatePreviewCard({
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   minWidth: 0,
+                  display: "flex",
+                  alignItems: "center",
                 }}
               >
                 {it.name || "—"}
@@ -1173,8 +1177,10 @@ function SheetPreview({
     if (item) {
       // Calculate realistic item layout for mini cell
       const n = item.items.length;
-      const { cols, capacity } = itemsLayout(n, options);
+      const { cols, fonts, capacity } = itemsLayout(n, options, item.items.map((i) => i.name));
       const visibleItems = item.items.slice(0, capacity);
+      const miniFontScale = cellPxH / (options.heightMm * 3.78);
+      const fontPt = (fonts[0] || 8) as number;
 
       cells.push(
         <div
@@ -1227,6 +1233,7 @@ function SheetPreview({
               style={{
                 display: "grid",
                 gridTemplateColumns: n > 0 ? `repeat(${cols}, 1fr)` : undefined,
+                gridAutoRows: "1fr",
                 columnGap: 2,
                 rowGap: 1,
                 flex: 1,
@@ -1240,13 +1247,16 @@ function SheetPreview({
                   <div
                     key={idx}
                     style={{
-                      fontSize: 4.5,
+                      fontSize: Math.max(3, fontPt * 1.333 * miniFontScale),
                       fontWeight: 800,
                       color: "#1e293b",
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       lineHeight: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      minWidth: 0,
                     }}
                   >
                     {it.name}

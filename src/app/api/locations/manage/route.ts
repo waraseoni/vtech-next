@@ -244,12 +244,29 @@ export async function PUT(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const { tab, id, name } = body as { tab: Entity; id: number; name: string };
+    const { tab, id, name, parent_id } = body as {
+      tab: Entity;
+      id: number;
+      name: string;
+      parent_id?: number | null;
+    };
 
     if (!tab || !TABLE[tab] || !id)
       return NextResponse.json({ error: "Invalid params" }, { status: 400 });
 
-    const { error } = await sb.from(TABLE[tab]).update({ name: name.trim() }).eq("id", id);
+    const patch: Record<string, unknown> = { name: name.trim() };
+    // Reparent support: parent_id bheja ho to FK update (child move karne ke liye).
+    const fk = PARENT_FK[tab];
+    if (fk && parent_id !== undefined) {
+      if (!parent_id)
+        return NextResponse.json(
+          { error: `${tab.replace(/s$/, "")} ke liye parent select karna zaroori hai` },
+          { status: 400 }
+        );
+      patch[fk] = parent_id;
+    }
+
+    const { error } = await sb.from(TABLE[tab]).update(patch).eq("id", id);
     if (error) throw error;
 
     return NextResponse.json({ ok: true });
