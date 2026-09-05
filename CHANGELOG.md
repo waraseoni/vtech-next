@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.1.0](https://github.com/waraseoni/vtech-next/compare/v1.0.2...v1.1.0) (2026-09-05)
+
+### Features
+
+* **reports:** redesign sales & service report UI; fix custom report date filtering ([8aace59](https://github.com/waraseoni/vtech-next/commit/8aace598a11c8d98001e53a6e8486b5763dbc177))
+
 ## [1.0.2](https://github.com/waraseoni/vtech-next/compare/v1.0.1...v1.0.2) (2026-09-05)
 
 ### Bug Fixes
