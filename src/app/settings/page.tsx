@@ -31,6 +31,7 @@ import {
   KeyRound,
   Bell,
   Camera,
+  Timer,
 } from "lucide-react";
 import NotificationSettings from "@/components/NotificationSettings";
 import PageLoader from "@/components/PageLoader";
@@ -60,6 +61,12 @@ export default function SettingsPage() {
   const [upiId, setUpiId] = useState("");
   const [bizHours, setBizHours] = useState({ open: "09:00", close: "19:00", days: "Mon-Sat" });
   const [logRetention, setLogRetention] = useState("90");
+
+  // Auto Logoff / Session (system_info me "auto_logout_minutes" / "auto_logout_warn_minutes")
+  const [sessionMinutes, setSessionMinutes] = useState("30");
+  const [sessionNever, setSessionNever] = useState(false);
+  const [warnMinutes, setWarnMinutes] = useState("2");
+  const [sessionSaving, setSessionSaving] = useState(false);
 
   // Attendance Geofencing
   const [gfEnabled, setGfEnabled] = useState(false);
@@ -176,6 +183,15 @@ export default function SettingsPage() {
       });
       setLogRetention(info.log_retention || "90");
 
+      // Auto Logoff
+      setSessionNever(info.auto_logout_minutes === "0");
+      setSessionMinutes(
+        info.auto_logout_minutes && info.auto_logout_minutes !== "0"
+          ? info.auto_logout_minutes
+          : "30"
+      );
+      setWarnMinutes(info.auto_logout_warn_minutes || "2");
+
       // Attendance Geofencing
       setGfEnabled(info.geofence_enabled === "true");
       setGfLat(info.geofence_lat || "");
@@ -265,6 +281,22 @@ export default function SettingsPage() {
       setToast({ type: "error", msg: err instanceof Error ? err.message : "Save failed!" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ── Save Auto Logoff settings ──────────────────────────────
+  const handleSaveSession = async () => {
+    setSessionSaving(true);
+    try {
+      await Promise.all([
+        upsertField("auto_logout_minutes", sessionNever ? "0" : sessionMinutes),
+        upsertField("auto_logout_warn_minutes", warnMinutes.trim() || "2"),
+      ]);
+      setToast({ type: "success", msg: "Auto Logoff settings save ho gayi! ✅" });
+    } catch (err: unknown) {
+      setToast({ type: "error", msg: err instanceof Error ? err.message : "Save failed!" });
+    } finally {
+      setSessionSaving(false);
     }
   };
 
@@ -1132,6 +1164,92 @@ export default function SettingsPage() {
                 Clean old logs action sirf isse zyada din purane logs delete karega. Default: 90
                 days.
               </p>
+            </div>
+          </div>
+
+          {/* Auto Logoff / Session */}
+          <div className={fieldsets}>
+            <div className={`${fHdr} from-amber-600/20 to-transparent`}>
+              <Timer size={14} className="text-amber-400" />
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+                Auto Logoff / Session
+              </h3>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className={labelCls}>Auto Logoff After (Inactivity)</label>
+                <div className="flex flex-wrap gap-2">
+                  {[5, 10, 15, 20, 30, 45, 60, 90, 120].map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => {
+                        setSessionNever(false);
+                        setSessionMinutes(String(m));
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
+                        !sessionNever && sessionMinutes === String(m)
+                          ? "bg-amber-500/15 text-amber-300 border-amber-500/50"
+                          : "bg-[#0d1117] text-slate-400 border-[#21293d] hover:text-white"
+                      }`}
+                    >
+                      {m} min
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setSessionNever(true)}
+                    className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
+                      sessionNever
+                        ? "bg-red-500/15 text-red-300 border-red-500/50"
+                        : "bg-[#0d1117] text-slate-400 border-[#21293d] hover:text-white"
+                    }`}
+                  >
+                    Never
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-700 mt-2">
+                  Itne minute tak koi activity na hone par user ko auto-logout kar dega.
+                  &quot;Never&quot; = hamesha active rahega (sirf manual logout). Default: 30 min.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Warning Before Logout (Minutes)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={warnMinutes}
+                    onChange={(e) => setWarnMinutes(e.target.value)}
+                    className={inputCls}
+                  />
+                  <p className="text-[10px] text-slate-700 mt-1">
+                    Logout se itne minute pehle warning modal dikhana hai. Default: 2 min.
+                  </p>
+                </div>
+                <div>
+                  <label className={labelCls}>Current Setting</label>
+                  <div className="px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm font-bold text-slate-300">
+                    {sessionNever
+                      ? "Never (off)"
+                      : `Login ke baad ${sessionMinutes} min idle → logout`}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveSession}
+                disabled={sessionSaving}
+                className="inline-flex items-center gap-2 text-xs bg-amber-600/20 text-amber-300 border border-amber-600/30 px-4 py-2 rounded-xl hover:bg-amber-600/30 transition-all disabled:opacity-50"
+              >
+                {sessionSaving ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Save size={14} />
+                )}
+                Save Session Settings
+              </button>
             </div>
           </div>
 

@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import { withSerwist } from "@serwist/turbopack";
 import { withSentryConfig } from "@sentry/nextjs";
 import { readFileSync } from "node:fs";
+import { execSync } from "node:child_process";
 import { join } from "node:path";
 
 // Build-time app version: package.json se liya jata hai taaki app me
@@ -9,11 +10,30 @@ import { join } from "node:path";
 const pkg = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"));
 const APP_VERSION: string = pkg.version || "0.0.0";
 
+const APP_COMMIT: string = (() => {
+  try {
+    const sha = execSync("git rev-parse HEAD", {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    if (sha) return sha;
+  } catch {
+    /* git unavailable (CI/zip builds) — env fallbacks below */
+  }
+  return (
+    process.env.GITHUB_SHA ||
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.NEXT_PUBLIC_APP_COMMIT ||
+    ""
+  ).trim();
+})();
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
   turbopack: {},
   env: {
     NEXT_PUBLIC_APP_VERSION: APP_VERSION,
+    NEXT_PUBLIC_APP_COMMIT: APP_COMMIT,
   },
   images: {
     remotePatterns: [

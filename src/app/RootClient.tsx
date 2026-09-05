@@ -8,6 +8,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import { APP_VERSION_LABEL, APP_COMMIT } from "@/lib/app-version";
 import {
   LayoutDashboard,
   Users,
@@ -701,140 +702,139 @@ function SidebarNav({
           </li>
         </SubMenu>
 
-        {canSeeInventory &&
-          isModuleEnabled(enabledModules, "inventory") && (
-            <>
-              <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
-                Inventory
+        {canSeeInventory && isModuleEnabled(enabledModules, "inventory") && (
+          <>
+            <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+              Inventory
+            </li>
+            <SubMenu
+              title="Inventory"
+              icon={<Package size={15} />}
+              basePath="/inventory"
+              matchPaths={["/products", "/suppliers"]}
+            >
+              {isAdmin && (
+                <li>
+                  <Link
+                    href="/inventory"
+                    className={subLinkCls(
+                      pathname === "/inventory" ||
+                        (pathname.startsWith("/inventory/") &&
+                          !pathname.startsWith("/inventory/purchase-orders") &&
+                          !pathname.startsWith("/inventory/locate") &&
+                          !pathname.startsWith("/inventory/stocktake") &&
+                          !pathname.startsWith("/inventory/bom-check"))
+                    )}
+                    onClick={onNavClick}
+                  >
+                    <Package size={12} className="text-emerald-400" />
+                    Stock Overview
+                  </Link>
+                </li>
+              )}
+              <li>
+                <Link
+                  href="/products"
+                  className={subLinkCls(pathname === "/products")}
+                  onClick={onNavClick}
+                >
+                  <Layers size={12} className="text-orange-400" />
+                  Products
+                </Link>
               </li>
-              <SubMenu
-                title="Inventory"
-                icon={<Package size={15} />}
-                basePath="/inventory"
-                matchPaths={["/products", "/suppliers"]}
-              >
-                {isAdmin && (
-                  <li>
-                    <Link
-                      href="/inventory"
-                      className={subLinkCls(
-                        pathname === "/inventory" ||
-                          (pathname.startsWith("/inventory/") &&
-                            !pathname.startsWith("/inventory/purchase-orders") &&
-                            !pathname.startsWith("/inventory/locate") &&
-                            !pathname.startsWith("/inventory/stocktake") &&
-                            !pathname.startsWith("/inventory/bom-check"))
-                      )}
-                      onClick={onNavClick}
-                    >
-                      <Package size={12} className="text-emerald-400" />
-                      Stock Overview
-                    </Link>
-                  </li>
-                )}
+              {isAdmin && (
                 <li>
                   <Link
-                    href="/products"
-                    className={subLinkCls(pathname === "/products")}
+                    href="/suppliers"
+                    className={subLinkCls(pathname === "/suppliers")}
                     onClick={onNavClick}
                   >
-                    <Layers size={12} className="text-orange-400" />
-                    Products
+                    <Truck size={12} className="text-sky-400" />
+                    Suppliers
                   </Link>
                 </li>
-                {isAdmin && (
-                  <li>
-                    <Link
-                      href="/suppliers"
-                      className={subLinkCls(pathname === "/suppliers")}
-                      onClick={onNavClick}
-                    >
-                      <Truck size={12} className="text-sky-400" />
-                      Suppliers
-                    </Link>
-                  </li>
-                )}
-                {isAdmin && (
-                  <li>
-                    <Link
-                      href="/inventory/purchase-orders"
-                      className={subLinkCls(pathname === "/inventory/purchase-orders")}
-                      onClick={onNavClick}
-                    >
-                      <FileText size={12} className="text-teal-400" />
-                      Purchase Orders
-                    </Link>
-                  </li>
-                )}
-                {isAdmin && (
-                  <li>
-                    <Link
-                      href="/inventory/stocktake"
-                      className={subLinkCls(pathname === "/inventory/stocktake")}
-                      onClick={onNavClick}
-                    >
-                      <ClipboardList size={12} className="text-cyan-400" />
-                      Stocktake
-                    </Link>
-                  </li>
-                )}
+              )}
+              {isAdmin && (
                 <li>
                   <Link
-                    href="/inventory/bom-check"
-                    className={subLinkCls(pathname === "/inventory/bom-check")}
+                    href="/inventory/purchase-orders"
+                    className={subLinkCls(pathname === "/inventory/purchase-orders")}
                     onClick={onNavClick}
                   >
-                    <ListChecks size={12} className="text-violet-400" />
-                    BOM Check
+                    <FileText size={12} className="text-teal-400" />
+                    Purchase Orders
                   </Link>
                 </li>
+              )}
+              {isAdmin && (
                 <li>
                   <Link
-                    href="/inventory/locations"
-                    className={subLinkCls(pathname === "/inventory/locations")}
+                    href="/inventory/stocktake"
+                    className={subLinkCls(pathname === "/inventory/stocktake")}
                     onClick={onNavClick}
                   >
-                    <MapPin size={12} className="text-rose-400" />
-                    Locations
+                    <ClipboardList size={12} className="text-cyan-400" />
+                    Stocktake
                   </Link>
                 </li>
-                {isAdmin && (
-                  <li>
-                    <Link
-                      href="/inventory/locations/manage"
-                      className={subLinkCls(pathname === "/inventory/locations/manage")}
-                      onClick={onNavClick}
-                    >
-                      <Settings2 size={12} className="text-slate-400" />
-                      Location Hierarchy
-                    </Link>
-                  </li>
-                )}
+              )}
+              <li>
+                <Link
+                  href="/inventory/bom-check"
+                  className={subLinkCls(pathname === "/inventory/bom-check")}
+                  onClick={onNavClick}
+                >
+                  <ListChecks size={12} className="text-violet-400" />
+                  BOM Check
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/inventory/locations"
+                  className={subLinkCls(pathname === "/inventory/locations")}
+                  onClick={onNavClick}
+                >
+                  <MapPin size={12} className="text-rose-400" />
+                  Locations
+                </Link>
+              </li>
+              {isAdmin && (
                 <li>
                   <Link
-                    href="/inventory/locate"
-                    className={subLinkCls(pathname === "/inventory/locate")}
+                    href="/inventory/locations/manage"
+                    className={subLinkCls(pathname === "/inventory/locations/manage")}
                     onClick={onNavClick}
                   >
-                    <MapPin size={12} className="text-amber-400" />
-                    Spare Finder
+                    <Settings2 size={12} className="text-slate-400" />
+                    Location Hierarchy
                   </Link>
                 </li>
-                {isAdmin && (
-                  <li>
-                    <Link
-                      href="/reports/requirement-list"
-                      className={subLinkCls(pathname === "/reports/requirement-list")}
-                      onClick={onNavClick}
-                    >
-                      <PackageX size={12} className="text-amber-400" />
-                      Requirement List
-                    </Link>
-                  </li>
-                )}
-              </SubMenu>
-            </>
-          )}
+              )}
+              <li>
+                <Link
+                  href="/inventory/locate"
+                  className={subLinkCls(pathname === "/inventory/locate")}
+                  onClick={onNavClick}
+                >
+                  <MapPin size={12} className="text-amber-400" />
+                  Spare Finder
+                </Link>
+              </li>
+              {isAdmin && (
+                <li>
+                  <Link
+                    href="/reports/requirement-list"
+                    className={subLinkCls(pathname === "/reports/requirement-list")}
+                    onClick={onNavClick}
+                  >
+                    <PackageX size={12} className="text-amber-400" />
+                    Requirement List
+                  </Link>
+                </li>
+              )}
+            </SubMenu>
+          </>
+        )}
 
         {isAdmin && (
           <>
@@ -1320,6 +1320,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     setShowIdleWarning,
     lastActiveRef,
     showIdleWarningRef,
+    idleLogoutMin,
+    idleWarnMin,
     refreshLicense,
     handleLogout,
   } = useAppBoot();
@@ -1462,9 +1464,14 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
           p === "/login" ||
           p === "/setup" ||
           p === "/" ||
-          ["/about", "/contact", "/job-status", "/stage-lighting", "/industrial", "/power-supply"].some(
-            (pp) => p === pp || p.startsWith(pp + "/")
-          );
+          [
+            "/about",
+            "/contact",
+            "/job-status",
+            "/stage-lighting",
+            "/industrial",
+            "/power-supply",
+          ].some((pp) => p === pp || p.startsWith(pp + "/"));
         if (isPublicPath) {
           // Login/hang state → cache-clear hard refresh (app exit nahi).
           hardReload();
@@ -1630,8 +1637,11 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
           />
 
           <div className="px-4 py-3 border-t border-[#1a2234] flex items-center justify-between">
-            <span className="text-[9px] text-slate-500 dark:text-slate-300 font-black tracking-widest uppercase">
-              V-TECH PRO v4.2
+            <span
+              className="text-[9px] text-slate-500 dark:text-slate-300 font-black tracking-widest uppercase"
+              title={APP_COMMIT ? `Build ${APP_COMMIT.slice(0, 7)}` : undefined}
+            >
+              V-TECH PRO {APP_VERSION_LABEL}
             </span>
             <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
           </div>
@@ -1998,9 +2008,11 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               <Clock size={24} className="text-amber-400" />
             </div>
             <h3 className="text-white font-bold text-base mb-2">Session expiring soon</h3>
-            <p className="text-slate-400 text-sm mb-1">Aap 30 minute se kuch nahi kar rahe.</p>
+            <p className="text-slate-400 text-sm mb-1">
+              Aap {idleLogoutMin} minute se kuch nahi kar rahe.
+            </p>
             <p className="text-slate-500 text-xs mb-5">
-              Agar 2 minute mein kuch nahi kiya to aap automatically logout ho jayenge.
+              Agar {idleWarnMin} minute mein kuch nahi kiya to aap automatically logout ho jayenge.
             </p>
             <button
               onClick={() => {

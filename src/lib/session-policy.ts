@@ -27,3 +27,8 @@ export const PORTAL_LOCK_MS = PORTAL_LOCK_MINUTES * 60 * 1000;
 
 /** Cross-tab activity timestamp yahan mirror hota hai (localStorage) */
 export const LAST_ACTIVE_KEY = "vtech_last_active";
+
+/** system_info meta_field keys — Settings > Auto Logoff/Session se set hote hain.
+ *  "auto_logout_minutes" = "0" matlab Never (auto logout off). */
+export const AUTO_LOGOUT_MINUTES_KEY = "auto_logout_minutes";
+export const AUTO_LOGOUT_WARN_KEY = "auto_logout_warn_minutes";

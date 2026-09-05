@@ -6,6 +6,10 @@ import { supabase, invalidateCachedUser } from "@/lib/supabase";
 import {
   IDLE_MS,
   WARN_BEFORE_MS,
+  IDLE_MINUTES,
+  WARN_BEFORE_MIN,
+  AUTO_LOGOUT_MINUTES_KEY,
+  AUTO_LOGOUT_WARN_KEY,
   REVOKED_CHECK_MS,
   REVOKED_401_TOLERANCE,
   LAST_ACTIVE_KEY,
@@ -48,10 +52,49 @@ export function useAppBoot() {
   const [license, setLicense] = useState<LicenseStatus | null>(null);
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const [showIdleWarning, setShowIdleWarning] = useState(false);
+  // Display ke liye resolved minutes (modal text) — runtime refs ka render-safe copy.
+  const [idleLogoutMin, setIdleLogoutMin] = useState(IDLE_MINUTES);
+  const [idleWarnMin, setIdleWarnMin] = useState(WARN_BEFORE_MIN);
 
   const lastActiveRef = useRef(Date.now());
   const showIdleWarningRef = useRef(false);
   const initialLicenseFetch = useRef(true);
+  // Auto-logoff config — system_info se override hote hain (Settings > Auto Logoff).
+  // Defaults session-policy.ts ke hain. `idleMsRef.current === 0` = Never (off).
+  const idleMsRef = useRef<number>(IDLE_MS);
+  const warnMsRef = useRef<number>(WARN_BEFORE_MS);
+
+  // Dynamic session settings load karo (staff/admin/developer — login ke baad).
+  useEffect(() => {
+    if (!profile?.role) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("system_info")
+          .select("meta_field, meta_value")
+          .in("meta_field", [AUTO_LOGOUT_MINUTES_KEY, AUTO_LOGOUT_WARN_KEY]);
+        if (cancelled || !data) return;
+        const map: Record<string, string> = {};
+        data.forEach((r) => (map[r.meta_field] = String(r.meta_value ?? "")));
+        const idleMin = parseInt(map[AUTO_LOGOUT_MINUTES_KEY] || "", 10);
+        if (Number.isFinite(idleMin) && idleMin >= 0) {
+          idleMsRef.current = idleMin === 0 ? 0 : idleMin * 60 * 1000;
+          setIdleLogoutMin(idleMin);
+        }
+        const warnMin = parseInt(map[AUTO_LOGOUT_WARN_KEY] || "", 10);
+        if (Number.isFinite(warnMin) && warnMin > 0) {
+          warnMsRef.current = warnMin * 60 * 1000;
+          setIdleWarnMin(warnMin);
+        }
+      } catch {
+        /* ignore — defaults hi rakhte hain */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.role]);
 
   const refreshLicense = useCallback(async (force = false) => {
     try {
@@ -175,26 +218,26 @@ export function useAppBoot() {
     (async () => {
       let resolvedLogo: string | null = null;
       try {
-      // Android app me: first-run setup screen se chuna gayi logo file/URL.
-      type VTechPlugin = { getLogo?: () => Promise<{ logo?: string }> };
-      type CapGlobal = {
-        isNativePlatform?: () => boolean;
-        Plugins?: { VTechBrand?: VTechPlugin };
-      };
-      const cap = (window as unknown as { Capacitor?: CapGlobal }).Capacitor;
-      const isNative = !!(cap && cap.isNativePlatform && cap.isNativePlatform());
-      if (isNative) {
-        try {
-          const plugin = cap?.Plugins?.VTechBrand;
-          if (plugin && typeof plugin.getLogo === "function") {
-            const res = await plugin.getLogo();
-            const val = res?.logo ?? "";
-            if (val) resolvedLogo = String(val);
+        // Android app me: first-run setup screen se chuna gayi logo file/URL.
+        type VTechPlugin = { getLogo?: () => Promise<{ logo?: string }> };
+        type CapGlobal = {
+          isNativePlatform?: () => boolean;
+          Plugins?: { VTechBrand?: VTechPlugin };
+        };
+        const cap = (window as unknown as { Capacitor?: CapGlobal }).Capacitor;
+        const isNative = !!(cap && cap.isNativePlatform && cap.isNativePlatform());
+        if (isNative) {
+          try {
+            const plugin = cap?.Plugins?.VTechBrand;
+            if (plugin && typeof plugin.getLogo === "function") {
+              const res = await plugin.getLogo();
+              const val = res?.logo ?? "";
+              if (val) resolvedLogo = String(val);
+            }
+          } catch {
+            /* plugin call fail → industry DB me fallback */
           }
-        } catch {
-          /* plugin call fail → industry DB me fallback */
         }
-      }
       } catch {
         /* ignore */
       }
@@ -392,13 +435,15 @@ export function useAppBoot() {
     };
 
     const evaluate = () => {
+      const idleMs = idleMsRef.current;
+      if (idleMs <= 0) return; // "Never" — auto logout off
       const elapsed = Date.now() - lastActiveRef.current;
-      if (elapsed >= IDLE_MS) {
+      if (elapsed >= idleMs) {
         supabase.auth.signOut().catch(() => {});
         invalidateCachedUser();
         // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = "/login?reason=idle";
-      } else if (elapsed >= IDLE_MS - WARN_BEFORE_MS && !showIdleWarningRef.current) {
+      } else if (elapsed >= idleMs - warnMsRef.current && !showIdleWarningRef.current) {
         showIdleWarningRef.current = true;
         setShowIdleWarning(true);
       }
@@ -450,13 +495,15 @@ export function useAppBoot() {
   const applyTheme = useCallback((pref: "system" | "dark" | "light") => {
     try {
       const system = systemDark.current;
-      const effective: "dark" | "light" =
-        pref === "system" ? (system ? "dark" : "light") : pref;
+      const effective: "dark" | "light" = pref === "system" ? (system ? "dark" : "light") : pref;
       // public page hamesha dark-only hota hai (hardcoded design)
       const t = isPublicRef.current ? "dark" : effective;
       document.documentElement.setAttribute("data-theme", t);
-      document.body.style.backgroundColor =
-        isPublicRef.current ? "#070714" : t === "dark" ? "#0d1117" : "#f8f9fc";
+      document.body.style.backgroundColor = isPublicRef.current
+        ? "#070714"
+        : t === "dark"
+          ? "#0d1117"
+          : "#f8f9fc";
       document.body.style.color = t === "dark" ? "#e2e8f0" : "#0f172a";
       setTheme(t);
       return t;
@@ -510,11 +557,8 @@ export function useAppBoot() {
         if (saved === "system") applyTheme("system");
       };
       mq.addEventListener("change", onChange);
-      const saved = (localStorage.getItem("vtech_theme") as
-        | "system"
-        | "dark"
-        | "light"
-        | null) || "dark";
+      const saved =
+        (localStorage.getItem("vtech_theme") as "system" | "dark" | "light" | null) || "dark";
       setThemePrefState(saved);
       applyTheme(saved);
       return () => {
@@ -545,17 +589,13 @@ export function useAppBoot() {
       ].some((p) => pathname === p || pathname.startsWith(p + "/"));
     isPublicRef.current = pub;
     try {
-      const saved = (localStorage.getItem("vtech_theme") as
-        | "system"
-        | "dark"
-        | "light"
-        | null) || "dark";
+      const saved =
+        (localStorage.getItem("vtech_theme") as "system" | "dark" | "light" | null) || "dark";
       applyTheme(saved);
     } catch {
       applyTheme("dark");
     }
   }, [pathname, applyTheme]);
-
 
   // Auto-close drawer on route change
   useEffect(() => {
@@ -582,6 +622,10 @@ export function useAppBoot() {
     setShowIdleWarning,
     lastActiveRef,
     showIdleWarningRef,
+    idleMsRef,
+    warnMsRef,
+    idleLogoutMin,
+    idleWarnMin,
     refreshLicense,
     handleLogout,
     toggleTheme,
