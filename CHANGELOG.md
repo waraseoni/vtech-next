@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.7.0](https://github.com/waraseoni/vtech-next/compare/v1.6.0...v1.7.0) (2026-09-05)
+
+### Features
+
+* **inventory:** box labels print/preview parity + card UI overhaul ([1d6b821](https://github.com/waraseoni/vtech-next/commit/1d6b821b45ca89b63320fb1f1ae98e36fc9f3e9d))
+
 ## [1.6.0](https://github.com/waraseoni/vtech-next/compare/v1.5.1...v1.6.0) (2026-09-05)
 
 ### Features
