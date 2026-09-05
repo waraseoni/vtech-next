@@ -61,6 +61,7 @@ import {
   Terminal,
   ListChecks,
   PackageX,
+  Boxes,
 } from "lucide-react";
 import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
 import { Toaster } from "sonner";
@@ -1138,6 +1139,16 @@ function SidebarNav({
                     >
                       <Wrench size={12} />
                       Custom Service
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/parts-pending"
+                      className={subLinkCls(pathname === "/reports/parts-pending")}
+                      onClick={onNavClick}
+                    >
+                      <Boxes size={12} />
+                      Waiting for Parts
                     </Link>
                   </li>
 

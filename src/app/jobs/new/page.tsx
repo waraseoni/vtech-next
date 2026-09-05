@@ -21,6 +21,7 @@ import {
   Smartphone,
   X,
   Briefcase,
+  Plus,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 import { logActivity } from "@/lib/activity";
@@ -61,7 +62,7 @@ type Product = { id: number; name: string; price: number; available_stock: numbe
 type ServiceRow = { tempId: number; service_id: number; service_name: string; price: number };
 type ProductRow = {
   tempId: number;
-  product_id: number;
+  product_id: number | null; // null = custom spare (inventory se alag)
   product_name: string;
   qty: number;
   price: number;
@@ -127,6 +128,11 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   const [productRows, setProductRows] = useState<ProductRow[]>([]);
   const [commissionAmt, setCommissionAmt] = useState<string>("0");
   const tempIdRef = useRef(0);
+
+  // Custom (non-inventory) spare
+  const [showCustom, setShowCustom] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customPrice, setCustomPrice] = useState("");
 
   // Add New Client Modal
   const [showAddClientModal, setShowAddClientModal] = useState(false);
@@ -518,6 +524,30 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
         price: prd.price,
       },
     ]);
+  };
+
+  // Custom spare (inventory me nahi hai) — product_id NULL, name/price free text.
+  // Stock math product_id se key karti hai → NULL row khud-ba-khud kabhi subtract nahi hota.
+  const addProductCustom = () => {
+    const nm = customName.trim();
+    if (!nm) {
+      setToast({ type: "error", msg: "Spare ka naam do!" });
+      return;
+    }
+    const price = parseFloat(customPrice) || 0;
+    setProductRows((prev) => [
+      ...prev,
+      {
+        tempId: ++tempIdRef.current,
+        product_id: null, // NOT NULL column → migration 20260905 se nullable
+        product_name: nm,
+        qty: 1,
+        price,
+      },
+    ]);
+    setCustomName("");
+    setCustomPrice("");
+    setShowCustom(false);
   };
 
   const removeProduct = (tempId: number) =>
@@ -1152,6 +1182,61 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
               />
             </div>
 
+            {/* Custom spare — inventory me nahi, alag se add */}
+            {!showCustom ? (
+              <button
+                type="button"
+                onClick={() => setShowCustom(true)}
+                className="w-full mb-3 text-xs bg-slate-600/10 text-slate-400 border border-dashed border-slate-600/40 px-3 py-2 rounded-xl hover:text-emerald-300 hover:border-emerald-500/40 transition-all inline-flex items-center justify-center gap-1.5"
+              >
+                <Plus size={13} /> Custom spare add karo (inventory se alag)
+              </button>
+            ) : (
+              <div className="mb-3 border border-[#21293d] rounded-xl bg-[#111520] p-3 grid grid-cols-1 sm:grid-cols-[1fr_90px_120px_auto] gap-2 items-end">
+                <div>
+                  <label className={labelCls}>Spare naam *</label>
+                  <input
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    placeholder="e.g. SMPS Board, Belt..."
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Price</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={customPrice}
+                    onChange={(e) => setCustomPrice(e.target.value)}
+                    placeholder="0"
+                    className={inputCls}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={addProductCustom}
+                    className="bg-emerald-600/20 text-emerald-300 border border-emerald-600/40 px-3 py-2 rounded-xl hover:bg-emerald-600/30 transition-all text-xs font-bold inline-flex items-center gap-1"
+                  >
+                    <Plus size={12} /> Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCustom(false);
+                      setCustomName("");
+                      setCustomPrice("");
+                    }}
+                    className="text-slate-500 hover:text-red-400 text-xs px-2 py-2"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Product table */}
             <div className="space-y-0 border border-[#21293d] rounded-xl overflow-hidden">
               <div className="grid grid-cols-[1fr_50px_80px_80px_36px] bg-[#111520] px-3 py-2">
@@ -1171,7 +1256,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
               ) : (
                 productRows.map((r) => {
                   const stock = products.find((p) => p.id === r.product_id)?.available_stock ?? 0;
-                  const overStock = !isEdit && r.qty > stock;
+                  const overStock = !isEdit && r.product_id != null && r.qty > stock;
                   return (
                     <div
                       key={r.tempId}

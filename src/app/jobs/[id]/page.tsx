@@ -38,6 +38,7 @@ import PageLoader from "@/components/PageLoader";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/activity";
 import { logger } from "@/lib/logger";
+import JobRequiredParts from "@/components/JobRequiredParts";
 
 // ─── IST HELPERS ─────────────────────────────────────────────────────────────
 function fmtDate(d: string | null) {
@@ -844,6 +845,9 @@ ${svcHtml}${prodHtml}
                       </div>
                     </Fieldset>
                   )}
+
+                  {/* Required saman / waiting parts */}
+                  <JobRequiredParts numId={job.id} jobStatus={job.status} onToast={setToast} />
                 </div>
 
                 {/* ── RIGHT COLUMN (5/12) ────────────────────────────────── */}

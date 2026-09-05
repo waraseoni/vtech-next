@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 
   const { data: prodData } = await supabase
     .from("transaction_products")
-    .select("product_id, qty, price")
+    .select("product_id, product_name, qty, price")
     .eq("transaction_id", txn.id);
 
   const productIds = (prodData || []).map((p) => p.product_id).filter(Boolean);
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
   }
 
   const products = (prodData || []).map((p) => ({
-    product_name: productNames[p.product_id] || "Unknown",
+    product_name: p.product_name || productNames[p.product_id] || "Unknown",
     qty: p.qty,
     price: p.price,
     total: p.qty * p.price,

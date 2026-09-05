@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
   const tpData = [] as {
     transaction_id: number;
     product_id: number;
+    product_name?: string | null;
     price: number;
     qty: number;
   }[];
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
       ...(await fetchAll(
         supabase
           .from("transaction_products")
-          .select("transaction_id, product_id, price, qty")
+          .select("transaction_id, product_id, product_name, price, qty")
           .in("transaction_id", txnIds.slice(i, i + 500))
       ))
     );
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
       client_name: client
         ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
         : "Walk-in",
-      product_name: product?.name || "Unknown",
+      product_name: product?.name || tp.product_name || "Unknown",
       price: tp.price || 0,
       qty: tp.qty || 1,
       total: (tp.price || 0) * (tp.qty || 1),

@@ -85,6 +85,15 @@ const REPORTS: ReportItem[] = [
     color: "from-red-500 to-orange-600",
     isNew: true,
   },
+  {
+    title: "Waiting for Parts",
+    description: "Jobs jo spare purchase ke intezaar me hain — saman, source, ETA.",
+    href: "/reports/parts-pending",
+    icon: <Wrench size={16} />,
+    category: "Job Reports",
+    color: "from-sky-500 to-indigo-600",
+    isNew: true,
+  },
 
   // Finance & Accounts
   {
