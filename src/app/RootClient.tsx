@@ -679,7 +679,7 @@ function SidebarNav({
         <SubMenu
           title="Jobs in Shop"
           icon={<Wrench size={15} />}
-          matchPaths={["/reports/pending-jobs", "/reports/daily-done"]}
+          matchPaths={["/reports/pending-jobs", "/reports/daily-done", "/reports/parts-pending"]}
         >
           <li>
             <Link
@@ -689,6 +689,16 @@ function SidebarNav({
             >
               <Clock size={12} className="text-amber-400" />
               Jobs in Shop
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/reports/parts-pending"
+              className={subLinkCls(pathname === "/reports/parts-pending")}
+              onClick={onNavClick}
+            >
+              <Boxes size={12} className="text-amber-400" />
+              Waiting for Parts
             </Link>
           </li>
           <li>

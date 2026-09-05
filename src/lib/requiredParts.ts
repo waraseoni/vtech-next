@@ -194,6 +194,78 @@ export async function fetchOpenPartCounts(txnIds: number[]): Promise<Map<number,
   return map;
 }
 
+/** Dashboard/card ke liye lightweight derived summary (report jaisi heavy nai). */
+export interface WaitingSummary {
+  waitingJobs: number; // status 0..3 + del_status=0 jobs jinke open parts hain
+  waitingParts: number; // kull open required parts
+  orderedCount: number; // status=1 (ordered)
+  waitingCount: number; // status=0 (abhi waiting)
+  oldestDays: number; // sabse purane waiting part ke din
+  oldestJobId: string | null;
+}
+
+export async function fetchWaitingSummary(): Promise<WaitingSummary> {
+  const empty: WaitingSummary = {
+    waitingJobs: 0,
+    waitingParts: 0,
+    orderedCount: 0,
+    waitingCount: 0,
+    oldestDays: 0,
+    oldestJobId: null,
+  };
+  const { data: parts, error: perr } = await supabase
+    .from("job_required_parts")
+    .select("transaction_id, status, date_created")
+    .in("status", ORDER);
+  if (perr) throw new Error(perr.message);
+  const rows = (parts || []) as {
+    transaction_id: number;
+    status: number;
+    date_created: string;
+  }[];
+  if (rows.length === 0) return empty;
+
+  const txnIds = [...new Set(rows.map((p) => p.transaction_id))];
+  const { data: jobs } = await supabase
+    .from("transaction_list")
+    .select("id, job_id")
+    .in("id", txnIds)
+    .in("status", [0, 1, 2, 3])
+    .eq("del_status", 0);
+  const jobRows = (jobs || []) as { id: number; job_id: string | null }[];
+  if (jobRows.length === 0) return empty;
+
+  const active = new Set(jobRows.map((j) => j.id));
+  const jobMap = new Map(jobRows.map((j) => [j.id, j.job_id || `#${j.id}`]));
+
+  let oldestTs: number | null = null;
+  let oldestTxn = 0;
+  let orderedCount = 0;
+  let waitingCount = 0;
+  let waitingParts = 0;
+  for (const p of rows) {
+    if (!active.has(p.transaction_id)) continue;
+    waitingParts++;
+    if (p.status === 1) orderedCount++;
+    else waitingCount++;
+    const ts = new Date(p.date_created).getTime();
+    if (oldestTs === null || ts < oldestTs) {
+      oldestTs = ts;
+      oldestTxn = p.transaction_id;
+    }
+  }
+  if (waitingParts === 0) return empty;
+  return {
+    waitingJobs: active.size,
+    waitingParts,
+    orderedCount,
+    waitingCount,
+    oldestDays:
+      oldestTs === null ? 0 : Math.max(0, Math.floor((Date.now() - oldestTs) / 86400000)),
+    oldestJobId: jobMap.get(oldestTxn) || null,
+  };
+}
+
 // ── Report: jobs waiting for part purchase ──────────────────────────────────
 export interface WaitingPartRow extends RequiredPart {
   job_id: string | null;

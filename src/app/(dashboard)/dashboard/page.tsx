@@ -49,9 +49,11 @@ import {
   UserPlus,
   ShoppingBag,
   Layers,
+  Hourglass,
 } from "lucide-react";
 import { pageAll } from "@/lib/fetch-all";
 import { fetchStockByProducts, type StockRow } from "@/lib/inventoryStock";
+import { fetchWaitingSummary, type WaitingSummary } from "@/lib/requiredParts";
 import PageLoader from "@/components/PageLoader";
 import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
 import LicenseInfoCard from "@/app/components/LicenseInfoCard";
@@ -244,6 +246,14 @@ export default function Dashboard() {
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
   const [recentPayments, setRecentPayments] = useState<RecentPayment[]>([]);
   const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
+  const [waitingSummary, setWaitingSummary] = useState<WaitingSummary>({
+    waitingJobs: 0,
+    waitingParts: 0,
+    orderedCount: 0,
+    waitingCount: 0,
+    oldestDays: 0,
+    oldestJobId: null,
+  });
   const [dueStats, setDueStats] = useState<{
     overdue: number;
     today: number;
@@ -656,6 +666,19 @@ export default function Dashboard() {
     })();
   }, []);
 
+  // ── WAITING PARTS SUMMARY ───────────────────────────────────────────────
+  useEffect(() => {
+    let alive = true;
+    fetchWaitingSummary()
+      .then((s) => {
+        if (alive) setWaitingSummary(s);
+      })
+      .catch((e) => logger.error("Waiting parts summary fetch error:", e));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   // ── FINANCIAL FETCH ──────────────────────────────────────────────────────
   const fetchFinancial = useCallback(async () => {
     if (!profile || profile.role !== "admin") return;
@@ -1038,6 +1061,13 @@ export default function Dashboard() {
           href="/jobs?status=5"
         />
         <StatCard
+          label="Waiting Parts"
+          value={waitingSummary.waitingJobs}
+          icon={<Hourglass size={18} />}
+          color="amber"
+          href="/reports/parts-pending"
+        />
+        <StatCard
           label="Mechanics"
           value={stats.totalMechanics}
           icon={<Users size={18} />}
@@ -1058,6 +1088,45 @@ export default function Dashboard() {
           color="indigo"
         />
       </section>
+
+      {waitingSummary.waitingJobs > 0 && (
+        <Link
+          href="/reports/parts-pending"
+          className="no-underline block mt-3"
+        >
+          <div
+            className={`rounded-2xl border px-4 py-3 flex items-center justify-between gap-3 hover:brightness-110 transition-all duration-200 cursor-pointer ${
+              waitingSummary.oldestDays >= 7
+                ? "border-red-500/40 bg-red-500/10"
+                : "border-amber-500/40 bg-amber-500/10"
+            }`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className={`p-2 rounded-xl flex-shrink-0 ${
+                  waitingSummary.oldestDays >= 7 ? "text-red-400" : "text-amber-400"
+                }`}
+              >
+                <Hourglass size={18} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-600 dark:text-slate-400">
+                  Waiting for Parts · {waitingSummary.waitingJobs} jobs
+                </p>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
+                  {waitingSummary.waitingParts} spares (
+                  {waitingSummary.waitingCount} waiting · {waitingSummary.orderedCount} ordered)
+                  {" "}· oldest: {waitingSummary.oldestDays}d
+                  {waitingSummary.oldestJobId
+                    ? ` (Job ${waitingSummary.oldestJobId})`
+                    : ""}
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={15} className="text-slate-500 flex-shrink-0" />
+          </div>
+        </Link>
+      )}
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ CHARTS */}
       <DashboardCharts
