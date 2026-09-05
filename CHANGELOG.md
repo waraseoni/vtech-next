@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.0.2](https://github.com/waraseoni/vtech-next/compare/v1.0.1...v1.0.2) (2026-09-05)
+
+### Bug Fixes
+
+* **reports:** drop non-existent payment_mode column from expense_list select ([7fb6438](https://github.com/waraseoni/vtech-next/commit/7fb6438008bf56acbc5f00410fcc18ac221aac7c))
+
 This file is maintained automatically by [semantic-release](https://semantic-release.gitbook.io/) —
 do not edit by hand. Version bumps follow [Conventional Commits](https://www.conventionalcommits.org/).
 
