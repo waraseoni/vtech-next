@@ -42,6 +42,8 @@ import {
 import PageLoader from "@/components/PageLoader";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import JobRequiredParts from "@/components/JobRequiredParts";
+import WaitingPartsBadge from "@/components/WaitingPartsBadge";
+import { fetchOpenPartCounts } from "@/lib/requiredParts";
 import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { compressImage } from "@/lib/imageCompression";
@@ -329,6 +331,21 @@ export default function JobDetailsPage() {
   const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
   const [prevJob, setPrevJob] = useState<{ id: number; job_id: string } | null>(null);
   const [nextJob, setNextJob] = useState<{ id: number; job_id: string } | null>(null);
+  const [waitOpen, setWaitOpen] = useState(0);
+
+  useEffect(() => {
+    const numId = Number(jobId?.trim());
+    if (!Number.isFinite(numId) || numId <= 0) return;
+    let alive = true;
+    fetchOpenPartCounts([numId])
+      .then((m) => {
+        if (alive) setWaitOpen(m.get(numId) ?? 0);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [jobId, job?.status]);
 
   // ── Spot picker (Locate row — "Change") ─────────────────────────
   const [showSpotModal, setShowSpotModal] = useState(false);
@@ -901,6 +918,7 @@ ${svcHtml}${prodHtml}
               <h5 className="font-bold text-base flex items-center gap-2 m-0">
                 <FileText size={16} />
                 Transaction Details — {job.job_id} ({job.code})
+                {job.status <= 3 && waitOpen > 0 && <WaitingPartsBadge count={waitOpen} />}
               </h5>
               <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:flex-wrap">
                 <Link

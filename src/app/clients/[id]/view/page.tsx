@@ -5,6 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
+import WaitingPartsBadge from "@/components/WaitingPartsBadge";
+import { fetchOpenPartCounts } from "@/lib/requiredParts";
 import { safeBack } from "@/lib/utils";
 import { useRouter, useParams } from "next/navigation";
 import {
@@ -170,7 +172,13 @@ const fmtDate = (d: string) => {
 const fmtDateTime = (d: string) => {
   if (!d) return "";
   const date = d.length === 10 ? parseISTDate(d) : new Date(d);
-  return formatIST(date, { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return formatIST(date, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
 const getStatusDate = (job: Job) => {
@@ -324,6 +332,7 @@ export default function ViewClientProfile() {
   const [dueForm, setDueForm] = useState({ due_date: "", due_remarks: "" });
   const [savingDue, setSavingDue] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [openPartCounts, setOpenPartCounts] = useState<Map<number, number>>(new Map());
   const [directSales, setDirectSales] = useState<DirectSale[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
@@ -602,6 +611,23 @@ export default function ViewClientProfile() {
   const filteredPayments = payments.filter((p) => !p.loan_id && inRange(p.payment_date));
   const filteredLoanPay = payments.filter((p) => !!p.loan_id && inRange(p.payment_date));
 
+  useEffect(() => {
+    const ids = jobs.map((j) => j.id);
+    if (ids.length === 0) {
+      setOpenPartCounts(new Map());
+      return;
+    }
+    let alive = true;
+    fetchOpenPartCounts(ids)
+      .then((m) => {
+        if (alive) setOpenPartCounts(m);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [jobs]);
+
   // ── BULK SELECTION (PHP parity: jobs page) ──────────────────
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) => {
@@ -743,9 +769,7 @@ export default function ViewClientProfile() {
     if (!error) {
       setJobs((prev) =>
         prev.map((j) =>
-          j.id === id
-            ? ({ ...j, location_id: spotPickId, uniq_id: spotPickName } as Job)
-            : j
+          j.id === id ? ({ ...j, location_id: spotPickId, uniq_id: spotPickName } as Job) : j
         )
       );
       await logActivity(
@@ -1589,6 +1613,9 @@ export default function ViewClientProfile() {
                             >
                               {job.job_id || `#${job.id}`}
                             </Link>
+                            {job.status <= 3 && (openPartCounts.get(job.id) || 0) > 0 && (
+                              <WaitingPartsBadge count={openPartCounts.get(job.id)!} />
+                            )}
                             {job.code && (
                               <p className="text-[10px] text-slate-600 font-mono mt-0.5">
                                 {job.code}
@@ -1676,6 +1703,9 @@ export default function ViewClientProfile() {
                           >
                             {job.job_id || `#${job.id}`}
                           </Link>
+                          {job.status <= 3 && (openPartCounts.get(job.id) || 0) > 0 && (
+                            <WaitingPartsBadge count={openPartCounts.get(job.id)!} />
+                          )}
                           <p className="text-sm font-semibold text-white mt-0.5 truncate">
                             {job.item}
                           </p>

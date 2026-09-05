@@ -149,9 +149,49 @@ export async function receiveRequiredPartQty(id: number, txnId: number, qty: num
 }
 
 export async function removeRequiredPart(id: number, txnId: number) {
+  const { data: row } = await supabase
+    .from("job_required_parts")
+    .select("photo_url, product_name")
+    .eq("id", id)
+    .single();
+  const photo = row?.photo_url as string | null;
+  if (photo?.includes("/spare-photos/")) {
+    await fetch("/api/spare-photos", {
+      method: "POST",
+      body: (() => {
+        const f = new FormData();
+        f.append("action", "delete");
+        f.append("imagePath", photo);
+        return f;
+      })(),
+    }).catch(() => {});
+  }
   const { error } = await supabase.from("job_required_parts").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  await logActivity("Removed Required Part", "Jobs", txnId, "Required spare delete kar diya");
+  await logActivity(
+    "Removed Required Part",
+    "Jobs",
+    txnId,
+    `Required spare delete kar diya${row?.product_name ? `: ${row.product_name}` : ""}`
+  );
+}
+
+/** Open (waiting/ordered) required-part count per job — ek query me rows fetch karke count. */
+export async function fetchOpenPartCounts(txnIds: number[]): Promise<Map<number, number>> {
+  const map = new Map<number, number>();
+  const uniq = [...new Set(txnIds.filter((v) => typeof v === "number" && Number.isFinite(v)))];
+  if (uniq.length === 0) return map;
+  const { data, error } = await supabase
+    .from("job_required_parts")
+    .select("transaction_id")
+    .in("status", ORDER)
+    .in("transaction_id", uniq);
+  if (error) throw new Error(error.message);
+  (data || []).forEach((r) => {
+    const k = Number(r.transaction_id);
+    map.set(k, (map.get(k) || 0) + 1);
+  });
+  return map;
 }
 
 // ── Report: jobs waiting for part purchase ──────────────────────────────────

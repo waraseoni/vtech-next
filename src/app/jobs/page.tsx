@@ -71,6 +71,8 @@ import {
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 import JobSpotPicker from "@/components/JobSpotPicker";
+import WaitingPartsBadge from "@/components/WaitingPartsBadge";
+import { fetchOpenPartCounts } from "@/lib/requiredParts";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/activity";
 import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
@@ -224,6 +226,7 @@ function JobsListContent() {
 
   // Data
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [openPartCounts, setOpenPartCounts] = useState<Map<number, number>>(new Map());
   const [totalRows, setTotalRows] = useState(0);
   const [stats, setStats] = useState({
     total: 0,
@@ -800,13 +803,15 @@ function JobsListContent() {
     if (bal > 0)
       return (
         <span className="bg-red-500/15 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded-full text-[9px] font-bold">
-          Due {"\u20B9"}{bal.toFixed(0)}
+          Due {"\u20B9"}
+          {bal.toFixed(0)}
         </span>
       );
     if (bal < 0)
       return (
         <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full text-[9px] font-bold">
-          Adv {"\u20B9"}{Math.abs(bal).toFixed(0)}
+          Adv {"\u20B9"}
+          {Math.abs(bal).toFixed(0)}
         </span>
       );
     return (
@@ -825,6 +830,24 @@ function JobsListContent() {
   const paginatedTransactions = transactions;
   const filteredTransactions = transactions; // For backwards compatibility with other UI components
   const totalPages = Math.ceil(totalRows / pageSize);
+
+  useEffect(() => {
+    const ids = paginatedTransactions.map((t) => t.id);
+    if (ids.length === 0) {
+      setOpenPartCounts(new Map());
+      return;
+    }
+    let alive = true;
+    fetchOpenPartCounts(ids)
+      .then((m) => {
+        if (alive) setOpenPartCounts(m);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactions]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const handleDelete = useCallback(
@@ -1013,7 +1036,9 @@ function JobsListContent() {
     if (!error) {
       setTransactions((prev) =>
         prev.map((x) =>
-          x.id === t.id ? ({ ...x, location_id: spotPickId, uniq_id: spotPickName } as Transaction) : x
+          x.id === t.id
+            ? ({ ...x, location_id: spotPickId, uniq_id: spotPickName } as Transaction)
+            : x
         )
       );
       await logActivity(
@@ -1819,6 +1844,9 @@ function JobsListContent() {
                     >
                       #{txn.job_id}
                     </Link>
+                    {txn.status <= 3 && (openPartCounts.get(txn.id) || 0) > 0 && (
+                      <WaitingPartsBadge count={openPartCounts.get(txn.id)!} />
+                    )}
                     {txn.code && (
                       <Link
                         href={`/jobs/${txn.id}/view`}
@@ -1896,7 +1924,8 @@ function JobsListContent() {
                     </div>
                   </td>
                   <td className="px-3 py-2.5 text-right font-bold text-sm text-slate-200">
-                    {"\u20B9"}{(txn.amount || 0).toFixed(0)}
+                    {"\u20B9"}
+                    {(txn.amount || 0).toFixed(0)}
                   </td>
 
                   <td className="px-3 py-2.5 text-center">
@@ -2230,7 +2259,7 @@ function JobsListContent() {
               </button>
               <Link
                 href="/jobs/spot-labels"
-                        title="Har spot ka printable QR label \u2014 scan karke us spot ke items khulenge"
+                title="Har spot ka printable QR label \u2014 scan karke us spot ke items khulenge"
                 className="bg-[#21293d] hover:bg-[#2a3550] text-slate-400 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all no-underline"
               >
                 <MapPin size={13} /> QR
@@ -2238,7 +2267,7 @@ function JobsListContent() {
               <button
                 onClick={clearDeliveredSpots}
                 disabled={spotCleaning}
-                        title="Delivered jobs jinki location abhi bhi lagi hai \u2014 sab ek saath khali karo"
+                title="Delivered jobs jinki location abhi bhi lagi hai \u2014 sab ek saath khali karo"
                 className="bg-[#21293d] hover:bg-[#2a3550] text-slate-400 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-60"
               >
                 {spotCleaning ? (
@@ -2495,7 +2524,8 @@ function JobsListContent() {
         <div className="mx-3 mt-2 bg-purple-500/5 border border-purple-500/20 rounded-xl py-2 px-4 flex items-center justify-between">
           <span className="text-[10px] text-slate-600 font-bold uppercase">Total Amount</span>
           <span className="text-sm font-black text-purple-400">
-            {"\u20B9"}{stats.totalAmt.toLocaleString("en-IN")}
+            {"\u20B9"}
+            {stats.totalAmt.toLocaleString("en-IN")}
           </span>
         </div>
       )}
@@ -2561,6 +2591,9 @@ function JobsListContent() {
                         >
                           #{txn.job_id}
                         </Link>
+                        {txn.status <= 3 && (openPartCounts.get(txn.id) || 0) > 0 && (
+                          <WaitingPartsBadge count={openPartCounts.get(txn.id)!} />
+                        )}
                         <div className="flex flex-wrap gap-1.5 mt-1">
                           <Link
                             href={`/jobs/${txn.id}/view`}
@@ -2701,7 +2734,10 @@ function JobsListContent() {
                     )}
                     <div className="flex justify-between font-black text-sm pt-1 border-t border-[#21293d]">
                       <span className="text-slate-600">Bill Amount:</span>
-                      <span className="text-emerald-400">{"\u20B9"}{(txn.amount || 0).toFixed(2)}</span>
+                      <span className="text-emerald-400">
+                        {"\u20B9"}
+                        {(txn.amount || 0).toFixed(2)}
+                      </span>
                     </div>
                   </div>
 
