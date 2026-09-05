@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.5.1](https://github.com/waraseoni/vtech-next/compare/v1.5.0...v1.5.1) (2026-09-05)
+
+### Bug Fixes
+
+* **box-labels:** rigid print layout with auto-fit content font ([eaced73](https://github.com/waraseoni/vtech-next/commit/eaced732fb4c35b1dd9f2bbc1fbb41898d113e56))
+
 ## [1.5.0](https://github.com/waraseoni/vtech-next/compare/v1.4.0...v1.5.0) (2026-09-05)
 
 ### Features
