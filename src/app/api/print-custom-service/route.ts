@@ -28,26 +28,28 @@ export async function GET(request: NextRequest) {
   const fromTs = `${from}T00:00:00+05:30`;
   const toTs = `${to}T23:59:59+05:30`;
 
-  const tsData = await fetchAll(
+  const txns = await fetchAll(
     supabase
-      .from("transaction_services")
-      .select("service_id, price, date_updated, transaction_id")
+      .from("transaction_list")
+      .select("id, code, client_name, status, date_updated")
       .gte("date_updated", fromTs)
       .lte("date_updated", toTs)
+      .in("status", [1, 2, 3, 5])
   );
 
-  const txnIds = [
-    ...new Set(tsData?.map((t: { transaction_id: number }) => t.transaction_id) || []),
-  ];
-  const txns = [];
+  const txnIds = [...new Set(txns?.map((t: { id: number }) => t.id) || [])];
+  const tsData = [] as {
+    transaction_id: number;
+    service_id: number;
+    price: number;
+  }[];
   for (let i = 0; i < txnIds.length; i += 500) {
-    txns.push(
+    tsData.push(
       ...(await fetchAll(
         supabase
-          .from("transaction_list")
-          .select("id, code, client_name, status, date_updated")
-          .in("id", txnIds.slice(i, i + 500))
-          .in("status", [1, 2, 3, 5])
+          .from("transaction_services")
+          .select("service_id, price, transaction_id")
+          .in("transaction_id", txnIds.slice(i, i + 500))
       ))
     );
   }
@@ -74,7 +76,7 @@ export async function GET(request: NextRequest) {
     const client = (clients || []).find((c: { id: number }) => c.id === txn.client_name);
     const service = (services || []).find((s: { id: number }) => s.id === ts.service_id);
     serviceRows.push({
-      date_updated: ts.date_updated || txn.date_updated,
+      date_updated: txn.date_updated,
       code: txn.code,
       client_name: client
         ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")

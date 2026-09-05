@@ -28,26 +28,29 @@ export async function GET(request: NextRequest) {
   const fromTs = `${from}T00:00:00+05:30`;
   const toTs = `${to}T23:59:59+05:30`;
 
-  const tpData = await fetchAll(
+  const txns = await fetchAll(
     supabase
-      .from("transaction_products")
-      .select("product_id, price, qty, date_updated, transaction_id")
+      .from("transaction_list")
+      .select("id, code, client_name, status, date_updated")
       .gte("date_updated", fromTs)
       .lte("date_updated", toTs)
+      .in("status", [1, 2, 3, 5])
   );
 
-  const txnIds = [
-    ...new Set(tpData?.map((t: { transaction_id: number }) => t.transaction_id) || []),
-  ];
-  const txns = [];
+  const txnIds = [...new Set(txns?.map((t: { id: number }) => t.id) || [])];
+  const tpData = [] as {
+    transaction_id: number;
+    product_id: number;
+    price: number;
+    qty: number;
+  }[];
   for (let i = 0; i < txnIds.length; i += 500) {
-    txns.push(
+    tpData.push(
       ...(await fetchAll(
         supabase
-          .from("transaction_list")
-          .select("id, code, client_name, status, date_updated")
-          .in("id", txnIds.slice(i, i + 500))
-          .in("status", [1, 2, 3, 5])
+          .from("transaction_products")
+          .select("transaction_id, product_id, price, qty")
+          .in("transaction_id", txnIds.slice(i, i + 500))
       ))
     );
   }
@@ -75,7 +78,7 @@ export async function GET(request: NextRequest) {
     const client = (clients || []).find((c: { id: number }) => c.id === txn.client_name);
     const product = (products || []).find((p: { id: number }) => p.id === tp.product_id);
     saleRows.push({
-      date_updated: tp.date_updated || txn.date_updated,
+      date_updated: txn.date_updated,
       code: txn.code,
       client_name: client
         ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
