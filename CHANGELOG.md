@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.2.0](https://github.com/waraseoni/vtech-next/compare/v1.1.0...v1.2.0) (2026-09-05)
+
+### Features
+
+* **settings,ui:** configurable auto-logoff timing; dynamic sidebar build version ([1a2f655](https://github.com/waraseoni/vtech-next/commit/1a2f655d380285c5705f55b562f71d8e327dc5ed))
+
 ## [1.1.0](https://github.com/waraseoni/vtech-next/compare/v1.0.2...v1.1.0) (2026-09-05)
 
 ### Features
