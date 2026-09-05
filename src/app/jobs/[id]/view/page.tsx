@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 import JobSpotPicker from "@/components/JobSpotPicker";
+import JobRequiredParts from "@/components/JobRequiredParts";
 import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { compressImage } from "@/lib/imageCompression";
@@ -1159,6 +1160,9 @@ ${svcHtml}${prodHtml}
                       </div>
                     </Fieldset>
                   )}
+
+                  {/* Required Saman / Waiting for Part Purchase */}
+                  <JobRequiredParts numId={job.id} jobStatus={job.status} onToast={setToast} />
                 </div>
 
                 {/* ── RIGHT COLUMN (5/12) ────────────────────────────────── */}

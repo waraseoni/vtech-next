@@ -420,7 +420,7 @@ export default function ManageJobPage() {
       }
 
       setToast({ type: "success", msg: isEdit ? "Job updated!" : "Job saved!" });
-      setTimeout(() => router.replace(`/jobs/${txnId}`), 800);
+      setTimeout(() => router.replace(`/jobs/${txnId}/view`), 800);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Save failed!";
       setToast({ type: "error", msg });

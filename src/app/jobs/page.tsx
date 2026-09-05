@@ -2724,7 +2724,7 @@ function JobsListContent() {
                     <div className="grid grid-cols-3 gap-1.5">
                       {[
                         {
-                          href: `/jobs/${txn.id}`,
+                          href: `/jobs/${txn.id}/view`,
                           icon: Eye,
                           label: "View",
                           border: "border-blue-500/20",

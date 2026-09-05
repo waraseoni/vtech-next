@@ -68,7 +68,7 @@ const BUCKET_MAP: {
     column: "image_path",
     idCols: ["id", "transaction_id"],
     rowLabel: (r) => `Job #${r.transaction_id}`,
-    hrefFor: (r) => `/jobs/${r.transaction_id}`,
+    hrefFor: (r) => `/jobs/${r.transaction_id}/view`,
   },
   {
     bucket: "media",

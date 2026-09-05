@@ -64,7 +64,7 @@ export async function notifyJobStatusChanged(opts: {
   const payload: PushPayload = {
     title: "Job Update",
     body: `Aapka job "${opts.jobTitle}" ab ${statusLabels[opts.newStatus] || opts.newStatus} hai.`,
-    url: `/jobs/${opts.jobId}`,
+    url: `/jobs/${opts.jobId}/view`,
     tag: `job-${opts.jobId}`,
   };
 

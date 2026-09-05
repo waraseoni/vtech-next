@@ -310,7 +310,7 @@ export default function ProductDetailPage() {
             qty: item.qty,
             price: item.price,
             total: item.qty * item.price,
-            link: `/jobs/${t.id}`,
+            link: `/jobs/${t.id}/view`,
           });
       });
 

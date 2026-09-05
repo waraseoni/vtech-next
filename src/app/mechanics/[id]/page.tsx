@@ -771,7 +771,7 @@ export default function MechanicDetailPage() {
                                   </td>
                                   <td className="px-4 py-3">
                                     <Link
-                                      href={`/jobs/${job.id}`}
+                                      href={`/jobs/${job.id}/view`}
                                       className="font-bold text-blue-400 hover:text-blue-300 no-underline"
                                     >
                                       {job.job_id}

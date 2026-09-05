@@ -218,7 +218,7 @@ export default function PartsPendingReport() {
                 {/* Group header */}
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 border-b border-[#21293d] bg-[#111520]/60">
                   <Link
-                    href={`/jobs/${g.transaction_id}`}
+                    href={`/jobs/${g.transaction_id}/view`}
                     className="flex items-center gap-3 group"
                   >
                     <span className="w-11 h-11 bg-sky-600/10 border border-sky-500/30 rounded-xl flex items-center justify-center text-sky-300 font-black text-sm group-hover:bg-sky-600/20 transition-colors">
@@ -309,7 +309,7 @@ export default function PartsPendingReport() {
 
                         <div className="md:justify-self-end">
                           <Link
-                            href={`/jobs/${g.transaction_id}`}
+                            href={`/jobs/${g.transaction_id}/view`}
                             className="text-[11px] font-bold text-sky-400 hover:text-sky-300 transition-colors no-print"
                           >
                             Open job →
