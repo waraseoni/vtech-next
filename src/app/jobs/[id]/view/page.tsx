@@ -40,6 +40,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
+import JobSpotPicker from "@/components/JobSpotPicker";
 import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { compressImage } from "@/lib/imageCompression";
@@ -327,6 +328,12 @@ export default function JobDetailsPage() {
   const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
   const [prevJob, setPrevJob] = useState<{ id: number; job_id: string } | null>(null);
   const [nextJob, setNextJob] = useState<{ id: number; job_id: string } | null>(null);
+
+  // ── Spot picker (Locate row — "Change") ─────────────────────────
+  const [showSpotModal, setShowSpotModal] = useState(false);
+  const [spotPickId, setSpotPickId] = useState<number | null>(null);
+  const [spotPickName, setSpotPickName] = useState("");
+  const [savingSpot, setSavingSpot] = useState(false);
 
   // ── Item photo upload/delete ─────────────────────────────────
   const [uploading, setUploading] = useState(false);
@@ -701,6 +708,39 @@ export default function JobDetailsPage() {
     setUpdatingStatus(false);
   };
 
+  // ── CHANGE SPOT (Locate row — JobSpotPicker) ─────────────────────────────
+  const openSpotPicker = () => {
+    if (!job) return;
+    setSpotPickId(job.location_id ?? null);
+    setSpotPickName(job.uniq_id || "");
+    setShowSpotModal(true);
+  };
+
+  const handleSpotSave = async () => {
+    if (!job) return;
+    setSavingSpot(true);
+    const updates = {
+      location_id: spotPickId,
+      uniq_id: spotPickName,
+      date_updated: nowIST(),
+    };
+    const { error } = await supabase.from("transaction_list").update(updates).eq("id", job.id);
+    if (error) {
+      setToast({ type: "error", msg: "Spot update failed: " + error.message });
+    } else {
+      setJob({ ...job, ...updates } as JobDetail);
+      await logActivity(
+        "Moved Job Item",
+        "Jobs",
+        job.job_id,
+        `Job #${job.job_id} → ${spotPickName || "No Spot"} | ${job.item}`
+      );
+      setToast({ type: "success", msg: "Spot update ho gaya!" });
+      setShowSpotModal(false);
+    }
+    setSavingSpot(false);
+  };
+
   // ── ADD PAYMENT ────────────────────────────────────────────────────────────
   const handleAddPayment = async () => {
     if (!client || !job) return;
@@ -975,21 +1015,31 @@ ${svcHtml}${prodHtml}
                       <InfoRow
                         label="Locate"
                         value={
-                          job.location_id || job.uniq_id ? (
-                            <Link
-                              href={
-                                job.location_id
-                                  ? `/jobs?spot=${job.location_id}`
-                                  : `/jobs?search=${encodeURIComponent(job.uniq_id || "")}`
-                              }
-                              className="text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                          <span className="flex items-center gap-2 flex-wrap">
+                            {job.location_id || job.uniq_id ? (
+                              <Link
+                                href={
+                                  job.location_id
+                                    ? `/jobs?spot=${job.location_id}`
+                                    : `/jobs?search=${encodeURIComponent(job.uniq_id || "")}`
+                                }
+                                className="text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                              >
+                                <MapPin size={12} />
+                                {job.uniq_id}
+                              </Link>
+                            ) : (
+                              <em className="text-slate-600">N/A</em>
+                            )}
+                            <button
+                              onClick={openSpotPicker}
+                              title="Spot set karo / badlo"
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold border border-[#2a3550] bg-white/[0.02] text-slate-400 hover:text-amber-400 hover:border-amber-500/40 transition-all"
                             >
-                              <MapPin size={12} />
-                              {job.uniq_id}
-                            </Link>
-                          ) : (
-                            <em className="text-slate-600">N/A</em>
-                          )
+                              <MapPin size={11} />
+                              Change
+                            </button>
+                          </span>
                         }
                       />
                       <InfoRow label="Del. Status" value={DEL_STATUS[job.del_status]} />
@@ -1856,6 +1906,48 @@ ${svcHtml}${prodHtml}
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ CHANGE SPOT MODAL ═════════════════════════════════════════════════ */}
+      {showSpotModal && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => !savingSpot && setShowSpotModal(false)}
+        >
+          <div
+            className="w-full max-w-xs bg-[#161b27] border border-[#21293d] rounded-2xl p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <p className="font-black text-white text-sm flex items-center gap-1.5">
+                <MapPin size={14} className="text-amber-400" /> Job Spot
+              </p>
+              <button
+                onClick={() => !savingSpot && setShowSpotModal(false)}
+                className="text-slate-500 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-3">
+              Is job ka spot chuno (ya hatao)
+            </p>
+            <JobSpotPicker
+              value={spotPickId}
+              onSelect={(id, spot) => {
+                setSpotPickId(id);
+                setSpotPickName(spot?.name || "");
+              }}
+            />
+            <button
+              onClick={handleSpotSave}
+              disabled={savingSpot}
+              className="mt-4 w-full bg-amber-600 hover:bg-amber-700 !text-white font-bold text-xs py-2.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {savingSpot ? "Saving…" : "Spot Save karo"}
+            </button>
           </div>
         </div>
       )}

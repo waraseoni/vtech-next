@@ -144,7 +144,7 @@ function NavbarSearch() {
           .or(
             `firstname.ilike.${like},middlename.ilike.${like},lastname.ilike.${like},contact.ilike.${like},address.ilike.${like}`
           )
-          .limit(5),
+          .limit(25),
 
         // Jobs — item, fault, job_id, code, uniq_id
         supabase
@@ -154,7 +154,7 @@ function NavbarSearch() {
           .or(
             `item.ilike.${like},fault.ilike.${like},job_id.ilike.${like},code.ilike.${like},uniq_id.ilike.${like}${!isNaN(num) ? `,job_id.eq.${q}` : ""}`
           )
-          .limit(5),
+          .limit(25),
 
         // Products
         supabase
@@ -162,7 +162,7 @@ function NavbarSearch() {
           .select("id, name, price")
           .eq("delete_flag", 0)
           .ilike("name", like)
-          .limit(4),
+          .limit(25),
 
         // Mechanics
         supabase
@@ -170,14 +170,14 @@ function NavbarSearch() {
           .select("id, firstname, lastname, designation, contact")
           .eq("status", 1)
           .or(`firstname.ilike.${like},lastname.ilike.${like},contact.ilike.${like}`)
-          .limit(3),
+          .limit(25),
 
         // Direct Sales — sale_code, remarks
         supabase
           .from("direct_sales")
           .select("id, sale_code, total_amount, remarks, date_created")
           .or(`sale_code.ilike.${like},remarks.ilike.${like}`)
-          .limit(3),
+          .limit(25),
 
         // Inventory Locations — zone, rack, bin, box, label, code
         supabase
@@ -189,7 +189,7 @@ function NavbarSearch() {
           .or(
             `zone.ilike.${like},rack.ilike.${like},bin.ilike.${like},box.ilike.${like},label.ilike.${like},code.ilike.${like}`
           )
-          .limit(3),
+          .limit(25),
 
         // Job Spots — rack (spot name)
         supabase
@@ -199,7 +199,7 @@ function NavbarSearch() {
           .eq("status", 1)
           .eq("delete_flag", 0)
           .ilike("rack", like)
-          .limit(3),
+          .limit(25),
       ]);
 
       const STATUS_LABELS: Record<number, string> = {

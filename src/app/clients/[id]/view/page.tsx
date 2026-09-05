@@ -362,6 +362,12 @@ export default function ViewClientProfile() {
   const [bulkMoveId, setBulkMoveId] = useState<number | null>(null);
   const [bulkMoveName, setBulkMoveName] = useState("");
 
+  // Per-job spot edit (spot column) — single job ka spot badlo
+  const [spotEditJob, setSpotEditJob] = useState<Job | null>(null);
+  const [spotPickId, setSpotPickId] = useState<number | null>(null);
+  const [spotPickName, setSpotPickName] = useState("");
+  const [savingSpot, setSavingSpot] = useState(false);
+
   // Selected jobs ka current status distribution (bulk bar me dikhata hai — jobs page jaisa)
   const selectedStatusCounts = useMemo(() => {
     const counts: Record<number, number> = {};
@@ -717,6 +723,42 @@ export default function ViewClientProfile() {
       alert("Move failed: " + error.message);
     }
     setBulkActionLoading(false);
+  };
+
+  // ── PER-JOB SPOT EDIT (spot column — single job) ──
+  const openSpotEdit = (j: Job) => {
+    setSpotEditJob(j);
+    setSpotPickId(j.location_id ?? null);
+    setSpotPickName(j.uniq_id || "");
+  };
+
+  const handleSpotSave = async () => {
+    if (!spotEditJob) return;
+    setSavingSpot(true);
+    const id = spotEditJob.id;
+    const { error } = await supabase
+      .from("transaction_list")
+      .update({ location_id: spotPickId, uniq_id: spotPickName, date_updated: toISTString() })
+      .eq("id", id);
+    if (!error) {
+      setJobs((prev) =>
+        prev.map((j) =>
+          j.id === id
+            ? ({ ...j, location_id: spotPickId, uniq_id: spotPickName } as Job)
+            : j
+        )
+      );
+      await logActivity(
+        "Moved Job Item",
+        "Jobs",
+        spotEditJob?.job_id || id,
+        `Job #${spotEditJob?.job_id || id} → ${spotPickName || "No Spot"} | ${spotEditJob?.item || ""}`
+      );
+      setSpotEditJob(null);
+    } else {
+      alert("Spot update failed: " + error.message);
+    }
+    setSavingSpot(false);
   };
 
   // ── BULK WHATSAPP REPORT (PHP parity: sendBulkWhatsAppReport) ──
@@ -1562,18 +1604,27 @@ export default function ViewClientProfile() {
                             {job.fault || "—"}
                           </td>
                           <td className={`${tdCls} text-xs`}>
-                            {job.uniq_id ? (
-                              <Link
-                                href={`/jobs?search=${encodeURIComponent(job.uniq_id)}`}
-                                title="Is spot ke sab jobs"
-                                className="inline-flex items-center gap-1 text-amber-400/90 hover:text-amber-300 no-underline transition-colors"
+                            <div className="flex items-center gap-1.5">
+                              {job.uniq_id ? (
+                                <Link
+                                  href={`/jobs?search=${encodeURIComponent(job.uniq_id)}`}
+                                  title="Is spot ke sab jobs"
+                                  className="inline-flex items-center gap-1 text-amber-400/90 hover:text-amber-300 no-underline transition-colors"
+                                >
+                                  <MapPin size={11} className="flex-shrink-0" />
+                                  {job.uniq_id}
+                                </Link>
+                              ) : (
+                                <span className="text-slate-600">—</span>
+                              )}
+                              <button
+                                onClick={() => openSpotEdit(job)}
+                                title="Spot set karo / badlo"
+                                className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md border border-[#2a3550] bg-white/[0.02] text-slate-500 hover:text-amber-400 hover:border-amber-500/40 transition-all"
                               >
-                                <MapPin size={11} className="flex-shrink-0" />
-                                {job.uniq_id}
-                              </Link>
-                            ) : (
-                              "—"
-                            )}
+                                <PencilLine size={11} />
+                              </button>
+                            </div>
                           </td>
                           <td className={tdCls}>
                             <span
@@ -1660,14 +1711,25 @@ export default function ViewClientProfile() {
                           {isSel ? "Selected" : "Select"}
                         </button>
                         <span>{fmtDate(job.date_created)}</span>
-                        {job.uniq_id && (
-                          <Link
-                            href={`/jobs?search=${encodeURIComponent(job.uniq_id)}`}
-                            className="text-amber-400/90 hover:text-amber-300 no-underline inline-flex items-center gap-0.5"
+                        <span className="inline-flex items-center gap-1">
+                          {job.uniq_id ? (
+                            <Link
+                              href={`/jobs?search=${encodeURIComponent(job.uniq_id)}`}
+                              className="text-amber-400/90 hover:text-amber-300 no-underline inline-flex items-center gap-0.5"
+                            >
+                              <MapPin size={11} /> {job.uniq_id}
+                            </Link>
+                          ) : (
+                            <span className="text-slate-600">—</span>
+                          )}
+                          <button
+                            onClick={() => openSpotEdit(job)}
+                            title="Spot set karo / badlo"
+                            className="inline-flex items-center justify-center p-1 rounded-md border border-[#2a3550] bg-white/[0.02] text-slate-500 hover:text-amber-400 hover:border-amber-500/40 transition-all"
                           >
-                            <MapPin size={11} /> {job.uniq_id}
-                          </Link>
-                        )}
+                            <PencilLine size={10} />
+                          </button>
+                        </span>
                         {job.code && <span className="font-mono">{job.code}</span>}
                       </div>
                     </div>
@@ -2489,6 +2551,48 @@ export default function ViewClientProfile() {
               className="mt-4 w-full bg-amber-600 hover:bg-amber-700 !text-white font-bold text-xs py-2.5 rounded-lg transition-colors disabled:opacity-50"
             >
               {bulkActionLoading ? "Moving…" : `${selectedIds.size} Job(s) Move karo`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── PER-JOB SPOT EDIT MODAL ── */}
+      {spotEditJob && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => !savingSpot && setSpotEditJob(null)}
+        >
+          <div
+            className="w-full max-w-xs glass border border-[var(--glass-border)] rounded-2xl p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <p className="font-black text-white text-sm flex items-center gap-1.5">
+                <MapPin size={14} className="text-amber-400" /> Spot — Job #{spotEditJob.job_id}
+              </p>
+              <button
+                onClick={() => !savingSpot && setSpotEditJob(null)}
+                className="text-slate-500 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-3">
+              Is job ka spot chuno (ya hatao)
+            </p>
+            <JobSpotPicker
+              value={spotPickId}
+              onSelect={(id, spot) => {
+                setSpotPickId(id);
+                setSpotPickName(spot?.name || "");
+              }}
+            />
+            <button
+              onClick={handleSpotSave}
+              disabled={savingSpot}
+              className="mt-4 w-full bg-amber-600 hover:bg-amber-700 !text-white font-bold text-xs py-2.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {savingSpot ? "Saving…" : "Spot Save karo"}
             </button>
           </div>
         </div>
