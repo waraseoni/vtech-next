@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [1.6.0](https://github.com/waraseoni/vtech-next/compare/v1.5.1...v1.6.0) (2026-09-05)
+
+### Features
+
+* **db:** backport job_required_parts + transaction_products PK rework into final idempotent schema ([23feab3](https://github.com/waraseoni/vtech-next/commit/23feab3dedf4b4d02320a139e868b9a408d15d35))
+* **jobs:** photo attach option in required spare add form ([d6b570b](https://github.com/waraseoni/vtech-next/commit/d6b570b0afe24aa07a34a87ce3d7f19a546bfa48))
+* **jobs:** required parts / waiting for spare purchase tracking ([a147034](https://github.com/waraseoni/vtech-next/commit/a1470344d35d4f11fa605e5eb7f1e30b00a5e7b4))
+* **jobs:** waiting-parts badge + bucket cleanup on part delete ([268e9fe](https://github.com/waraseoni/vtech-next/commit/268e9febe95f4bbbb7b6e09add53e6766f5d6b0a))
+* **parts:** dashboard waiting-parts summary card + sidebar link ([ac12312](https://github.com/waraseoni/vtech-next/commit/ac12312af12a7939bafea07b5efa21dcc66466d4))
+
+### Bug Fixes
+
+* **jobs:** rework transaction_products PK to allow nullable product_id ([569d579](https://github.com/waraseoni/vtech-next/commit/569d579ae7ed74bb239a177f364e134e4146e2b8))
+
 ## [1.5.1](https://github.com/waraseoni/vtech-next/compare/v1.5.0...v1.5.1) (2026-09-05)
 
 ### Bug Fixes
