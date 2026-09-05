@@ -72,41 +72,88 @@ export function boxQrToken(data: BoxLabelData, parts?: Partial<LocationParts> | 
   return `BOX:${data.boxId}`;
 }
 
+/* ── Print metric (mm) constants — .label / .cell-content / .items CSS se ── */
+const LABEL_PAD_MM = 1.5; // .label padding
+const CONTENT_GAP_MM = 1.5; // label ke andar left-content ↔ right column gap
+const CONTENT_PAD_X_MM = 2; // .cell-content horizontal padding
+const GRID_COL_GAP_MM = 1.5; // .items grid-column-gap
+const CHAR_EM = 0.62; // bold Arial me avg char width (em)
+const MIN_FONT_PT = 3.5;
+
+/** Content column ki width (mm) — right column ko minus kar ke. */
+function contentColWidthMm(opts: BoxPrintOptions, cols: number): number {
+  const rightW = Math.min(opts.heightMm * 0.72, 28);
+  const outer = opts.widthMm - rightW - LABEL_PAD_MM * 2 - CONTENT_GAP_MM;
+  const inner = outer - CONTENT_PAD_X_MM * 2;
+  return (inner - GRID_COL_GAP_MM * (cols - 1)) / cols;
+}
+
+/** Available content height (mm). */
+function contentHeightMm(opts: BoxPrintOptions): number {
+  return Math.max(8, opts.heightMm - 8.5);
+}
+
+/** Rows ke liye height-based max font (pt). */
+function heightFitFontPt(opts: BoxPrintOptions, rows: number): number {
+  return (contentHeightMm(opts) / Math.max(rows, 1)) * 0.85 / 0.3528;
+}
+
+/** Sabse lambe naam ko single-line column me fit karne ke liye font (pt). */
+function widthFitFontPt(opts: BoxPrintOptions, cols: number, names: string[]): number {
+  const colWmm = contentColWidthMm(opts, cols);
+  const longest = Math.max(1, ...names.map((name) => (name || "").length || 1));
+  return colWmm / 0.3528 / (longest * CHAR_EM);
+}
+
 /**
- * Items ka best-fit grid.
- * - contentCols > 0 → fixed columns; warna auto (item count ke hisaab se)
- * - contentRows > 0 → max visible rows (extra items isliye hide ho jaayenge)
- * - fontSizePt > 0 → fixed font; warna rows ke hisaab se auto (maxFont cap)
+ * Items ka best-fit lookup (rigid grid).
+ * - contentCols > 0 → fixed columns; warna auto (font maximize karne wala cols)
+ * - contentRows > 0 → fixed rows (grid rigid rahta hai); 0 = auto → ceil(n/cols)
+ * - fontSizePt > 0 → fixed font; warna height+width se auto (maxFont cap)
+ *
+ * STRUCTURE HAMESHA LOCK: right column (BOX ID / QR / Location) bilkul nahi
+ * hilta. Content box ka grid fix hai (cols × rows). Har naam SINGLE-LINE
+ * dikhta hai — font uniform itna chhota hota hai ki sabse lambe naam ki
+ * line column me fit ho jaye. Isliye kuch bhi nahi kat-ta, sab pura dikhta
+ * hai, aur frame kabhi nahi tootta.
  */
 export function itemsLayout(
   n: number,
-  opts: BoxPrintOptions
-): { cols: number; rows: number; capacity: number; fontSizePt: number } {
+  opts: BoxPrintOptions,
+  names: string[] = []
+): { cols: number; fonts: number[]; lines: number[]; capacity: number; wrap: number } {
   if (n <= 0) {
     const cols = opts.contentCols || 3;
     const font = opts.fontSizePt || Math.min(opts.maxFont, 10);
-    return { cols, rows: 1, capacity: 0, fontSizePt: font };
+    return { cols, fonts: [font], lines: [], capacity: 0, wrap: 1 };
   }
 
-  const cols = opts.contentCols || (opts.autoCols ? (n <= 18 ? 3 : 4) : 3);
-  const autoRows = Math.ceil(n / cols);
-  const rows = opts.contentRows > 0 ? Math.min(opts.contentRows, autoRows) : autoRows;
-  const capacity = cols * rows;
-  const visible = Math.min(n, capacity);
+  const effNames = names.length >= n ? names.slice(0, n) : Array.from({ length: n }, () => "");
 
-  let fontSizePt: number;
-  if (opts.fontSizePt > 0) {
-    fontSizePt = opts.fontSizePt;
-  } else {
-    // Content box poori height ka hai — rows ke liye available space.
-    const AVAIL_H_MM = 28;
-    const visibleRows = Math.ceil(visible / cols);
-    const rowHmm = AVAIL_H_MM / Math.max(visibleRows, 1);
-    fontSizePt = (rowHmm / 0.3528) * 0.85;
-    fontSizePt = Math.min(opts.maxFont, Math.max(4.5, fontSizePt));
+  const fixedCols = opts.contentCols > 0;
+  const maxAutoCols = Math.min(opts.autoCols ? 5 : 3, n);
+  let bestCol = fixedCols ? opts.contentCols : 1;
+  let bestFont = -1;
+
+  for (let c = fixedCols ? opts.contentCols : 1; c <= maxAutoCols; c++) {
+    const rows = opts.contentRows > 0 ? opts.contentRows : Math.ceil(n / c);
+    const hFit = heightFitFontPt(opts, rows);
+    const wFit = widthFitFontPt(opts, c, effNames);
+    const f = opts.fontSizePt > 0
+      ? Math.min(opts.fontSizePt, Math.max(MIN_FONT_PT, wFit))
+      : Math.min(opts.maxFont, Math.max(MIN_FONT_PT, Math.min(hFit, wFit)));
+    if (f > bestFont) {
+      bestFont = f;
+      bestCol = c;
+    }
   }
 
-  return { cols, rows, capacity, fontSizePt };
+  const rows = opts.contentRows > 0 ? opts.contentRows : Math.ceil(n / bestCol);
+  const capacity = bestCol * rows;
+  const fonts = Array.from({ length: capacity }, () => bestFont);
+  const lines = Array.from({ length: capacity }, () => 1);
+
+  return { cols: bestCol, fonts, lines, capacity, wrap: 1 };
 }
 
 function buildLabelHtml(
@@ -117,19 +164,20 @@ function buildLabelHtml(
   opts: BoxPrintOptions
 ): string {
   const n = data.items.length;
-  const { cols, capacity, fontSizePt } = itemsLayout(n, opts);
+  const { cols, fonts, capacity } = itemsLayout(n, opts, data.items.map((i) => i.name));
   const visibleItems = data.items.slice(0, capacity);
+  const fontPt = (fonts[0] || 8) as number;
 
   const itemsHtml = visibleItems.length
     ? visibleItems
         .map(
-          (it) =>
-            `<div class="item" style="font-size:${fontSizePt}pt;">${escapeHtml(it.name)}</div>`
+          (it, i) =>
+            `<div class="item" style="font-size:${fontPt}pt;">${escapeHtml(it.name)}</div>`
         )
         .join("")
-    : `<div class="item item--empty" style="font-size:${fontSizePt}pt;">— khali —</div>`;
+    : `<div class="item item--empty" style="font-size:${fontPt}pt;">— khali —</div>`;
 
-  const itemsStyle = visibleItems.length > 0 ? `grid-template-columns:repeat(${cols},1fr);` : "";
+  const itemsStyle = `grid-template-columns:repeat(${cols},1fr);grid-auto-rows:1fr;`;
 
   return `
     <div class="label" style="width:${wMm}mm;height:${hMm}mm;">
@@ -249,6 +297,7 @@ body{font-family:Arial,Helvetica,sans-serif;background:#fff;color:#000;-webkit-p
 }
 .items{
   display:grid;
+  grid-auto-rows:1fr;
   grid-column-gap:1.5mm;
   grid-row-gap:0.6mm;
   flex:1;
@@ -258,6 +307,8 @@ body{font-family:Arial,Helvetica,sans-serif;background:#fff;color:#000;-webkit-p
 }
 
 .item{
+  display:flex;
+  align-items:center;
   font-weight:800;
   color:#1f2937;
   line-height:1.05;
