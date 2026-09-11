@@ -5,16 +5,23 @@ import { supabase } from "@/lib/supabase";
 export const FALLBACK_LAST_JOB_ID = 28101;
 
 // Sabhi entry points (new / quick create / bulk) isi se next job_id lete hain.
-// Counter row missing ho to transaction_list ka max numeric job_id compute karo
-// (taaki alag-alag fallback numbers ki wajah se IDs collide na hon).
+// Sabse pehle ATOMIC RPC claim karo (20260916 migration) — read+increment+return
+// ek hi statement me hota hai, isliye concurrent saves kabhi same id nahi pa
+// sakte. Migration apply na hone par fallback: counter row ya max job_id + 1.
 export async function getNextJobId(): Promise<number> {
-  const { data } = await supabase
+  // Preferred: atomic counter claim (concurrency-safe).
+  const { data, error } = await supabase.rpc("next_job_id");
+  if (!error && typeof data === "number" && data > 0) return data;
+
+  // Fallback (RPC migration SQL editor me apply na hone tak) — read-then-write,
+  // race-scenario bacha sakta hai, isliye client re-entrancy guard bhi hai.
+  const { data: row } = await supabase
     .from("job_id_counter")
     .select("last_job_id")
     .eq("id", 1)
     .maybeSingle();
 
-  if (data?.last_job_id) return Number(data.last_job_id) + 1;
+  if (row?.last_job_id) return Number(row.last_job_id) + 1;
 
   let max = FALLBACK_LAST_JOB_ID;
   const { data: jobs } = await supabase

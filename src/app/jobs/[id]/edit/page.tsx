@@ -89,6 +89,9 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
   // ── STATE ─────────────────────────────────────────────────────────────
   const [fetchLoading, setFetchLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
+  // Re-entrancy guard — double click / Enter double submit par duplicate row
+  // nahi banegaa (handleSave in-flight ho to doosra call ignore hota hai).
+  const savingRef = useRef(false);
   const [toast, setToast] = useState<Toast | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number>(0); // numeric user id from profiles
 
@@ -563,6 +566,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
 
   // ── SUBMIT ─────────────────────────────────────────────────────────────
   const handleSave = async () => {
+    if (savingRef.current) return;
     if (!selectedClient) {
       setToast({ type: "error", msg: "Client select karo!" });
       return;
@@ -583,6 +587,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
     // NOTE: No hard stock validation — out-of-stock products can still be sold.
     // Shortfall is shown as an amber warning in the product rows.
 
+    savingRef.current = true;
     setSaving(true);
     try {
       const payload = {
@@ -710,6 +715,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
       logger.error("save error:", e instanceof Error ? e.message : JSON.stringify(e));
       setToast({ type: "error", msg: e instanceof Error ? e.message : "Save karne mein galti!" });
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };

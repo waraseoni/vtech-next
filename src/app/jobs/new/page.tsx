@@ -98,6 +98,9 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   // ── STATE ─────────────────────────────────────────────────────────────
   const [fetchLoading, setFetchLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
+  // Re-entrancy guard — double click / Enter double submit par duplicate row
+  // nahi banegaa (handleSave in-flight ho to doosra call ignore hota hai).
+  const savingRef = useRef(false);
   const [toast, setToast] = useState<Toast | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number>(0); // numeric user id from profiles
 
@@ -565,6 +568,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
     );
 
   const handleSave = async () => {
+    if (savingRef.current) return;
     if (!selectedClient) {
       setToast({ type: "error", msg: "Client select karo!" });
       return;
@@ -581,6 +585,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
     // NOTE: No hard stock validation — out-of-stock products can still be sold.
     // Shortfall is shown as an amber warning in the product rows.
 
+    savingRef.current = true;
     setSaving(true);
     try {
       // Auto-calculate commission for staff (they can't see the input)
@@ -718,6 +723,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       logger.error("save error:", e instanceof Error ? e.message : JSON.stringify(e));
       setToast({ type: "error", msg: e instanceof Error ? e.message : "Save karne mein galti!" });
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };

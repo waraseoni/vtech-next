@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -98,6 +98,9 @@ export default function BulkJobPage() {
   const [rowKey, setRowKey] = useState(100); // unique key counter
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Re-entrancy guard — double click / slow network par bulk save do baar na
+  // chale (har baar fresh getNextJobId aur duplicate rows ki possibility).
+  const savingRef = useRef(false);
   const [toast, setToast] = useState<{ type: "success" | "error" | "warn"; msg: string } | null>(
     null
   );
@@ -190,6 +193,7 @@ export default function BulkJobPage() {
 
   // ── Save all ───────────────────────────────────────────────────────────────
   const handleSaveAll = async () => {
+    if (savingRef.current) return;
     if (!clientId) {
       setToast({ type: "error", msg: "Pehle client select karo!" });
       return;
@@ -202,6 +206,7 @@ export default function BulkJobPage() {
       return;
     }
 
+    savingRef.current = true;
     setSaving(true);
     try {
       const {
@@ -260,6 +265,7 @@ export default function BulkJobPage() {
       const msg = err instanceof Error ? err.message : "Save failed!";
       setToast({ type: "error", msg });
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };

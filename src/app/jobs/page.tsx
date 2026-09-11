@@ -20,7 +20,7 @@
 // ✅ remark field added to Transaction type + displayed in mobile card
 // ═══════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import Image from "next/image";
 import Link from "next/link";
@@ -1212,6 +1212,9 @@ function JobsListContent() {
 
   // ── Quick Create Job ───────────────────────────────────────────────────────
   const [quickCreateLoading, setQuickCreateLoading] = useState(false);
+  // Re-entrancy guard — double click / Enter double submit / slow network par
+  // do calls chalti hain to in-flight me ek hi baar data insert hoga.
+  const quickCreateRef = useRef(false);
   const [quickForm, setQuickForm] = useState({
     clientName: "",
     contact: "",
@@ -1267,6 +1270,7 @@ function JobsListContent() {
   });
 
   const handleQuickCreate = async () => {
+    if (quickCreateRef.current) return;
     if (!quickForm.item.trim()) {
       alert("Item/Model zaroori hai!");
       return;
@@ -1280,6 +1284,7 @@ function JobsListContent() {
       return;
     }
 
+    quickCreateRef.current = true;
     setQuickCreateLoading(true);
     try {
       // Generate job code
@@ -1328,6 +1333,7 @@ function JobsListContent() {
     } catch (e) {
       alert("Error: " + (e instanceof Error && e.message ? e.message : "Unknown error"));
     } finally {
+      quickCreateRef.current = false;
       setQuickCreateLoading(false);
     }
   };
