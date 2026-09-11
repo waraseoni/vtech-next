@@ -124,6 +124,32 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 ---
 
+## Project: Image Crop / Edit on Upload
+
+> Full plan + expert advice: `docs/plans/image_crop_edit_plan.md`
+
+### Phase 1 — Core crop + pilot (Visiting card + Product photo)
+- [ ] Add `react-easy-crop` dependency
+- [ ] `src/lib/imageCropper.ts` — cropImage(dataUrl, crop, rotation) → File/Blob (canvas)
+- [ ] `src/components/ImageCropperModal.tsx` — dark full-screen editor (move, zoom, rotate 90°, aspect toggle, "Use Original" skip button)
+- [ ] `src/lib/useImageUpload.ts` — orchestrator hook: pick → crop → compress → CompressedImage
+- [ ] Pilot: SupplierFormModal visiting card wired via hook
+- [ ] Pilot: ProductFormModal product photo wired via hook
+- [ ] Typecheck + eslint + tests
+
+### Phase 2 — Rollout (avatars 1:1)
+- [ ] Profile avatar
+- [ ] User avatar (users/[id]/edit)
+- [ ] Client photo
+- [ ] Mechanic photo
+- [ ] Job repair photos (batch — per-photo edit button; logo/cover/signature EXCLUDED)
+
+### DROPPED (expert advice)
+- ~ Phase 3 contrast/brightness/redo — no business value, don't build
+- ~ Crop on Settings logo/cover/signature — keep original always (transparency)
+
+---
+
 ## Open Questions / Notes
 - Comments Hinglish me; no emojis in UI.
 - Sanitized: migration must be re-run if any part fails midway (idempotent file).
