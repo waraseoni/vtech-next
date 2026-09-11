@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.7.2](https://github.com/waraseoni/vtech-next/compare/v1.7.1...v1.7.2) (2026-09-11)
+
+### Bug Fixes
+
+* **jobs:** preview-only job-id peek, claim at save (no id waste on page open) ([05b4022](https://github.com/waraseoni/vtech-next/commit/05b4022f4b7f5327cd6d89b2bcfdf100dc02ca4d))
+
 ## [1.7.1](https://github.com/waraseoni/vtech-next/compare/v1.7.0...v1.7.1) (2026-09-11)
 
 ### Bug Fixes
