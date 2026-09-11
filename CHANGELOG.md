@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.7.1](https://github.com/waraseoni/vtech-next/compare/v1.7.0...v1.7.1) (2026-09-11)
+
+### Bug Fixes
+
+* **jobs:** atomic job-id claim + double-submit guard (duplicate rows race) ([d263094](https://github.com/waraseoni/vtech-next/commit/d263094df7e2f6b7a50fe23dc8e175e199087602))
+
 ## [1.7.0](https://github.com/waraseoni/vtech-next/compare/v1.6.0...v1.7.0) (2026-09-05)
 
 ### Features
