@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.8.0](https://github.com/waraseoni/vtech-next/compare/v1.7.2...v1.8.0) (2026-09-11)
+
+### Features
+
+* **suppliers:** visiting card + multi-contact + WhatsApp + global image zoom + image manager ([9f9735e](https://github.com/waraseoni/vtech-next/commit/9f9735ede17125d2e58d5edd39da518079dc2209))
+
 ## [1.7.2](https://github.com/waraseoni/vtech-next/compare/v1.7.1...v1.7.2) (2026-09-11)
 
 ### Bug Fixes
