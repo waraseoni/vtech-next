@@ -1460,7 +1460,7 @@ do $$ begin
 end $$;
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- FUNCTIONS (15) — CREATE OR REPLACE FUNCTION (signatures/bodies verbatim).
+-- FUNCTIONS (19) — CREATE OR REPLACE FUNCTION (signatures/bodies verbatim).
 -- NOTE: create-or-replace return type nahi badal sakta, par signatures verbatim
 -- preserve hone se ye safe hai. `ALTER FUNCTION ... OWNER` DROP kar diya hai.
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -2997,6 +2997,100 @@ $$;
 REVOKE ALL ON FUNCTION public.receive_po_receipt(bigint, jsonb) FROM public;
 GRANT EXECUTE ON FUNCTION public.receive_po_receipt(bigint, jsonb) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.receive_po_receipt(bigint, jsonb) TO service_role;
+
+-- Atomic writer RPC: next_job_id (SECURITY DEFINER + RLS bypass).
+-- job_id_counter read-then-bump race (duplicate job rows) fix ki atomic scheme —
+-- increment + RETURN ek hi UPDATE me. Counter row missing ho to max numeric
+-- job_id / 28100 se self-seed karta hai. (20260916_atomic_job_id_counter.sql se.)
+CREATE OR REPLACE FUNCTION public.next_job_id()
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  next_val integer;
+BEGIN
+  UPDATE public.job_id_counter
+  SET last_job_id = last_job_id + 1
+  WHERE id = 1
+  RETURNING last_job_id INTO next_val;
+
+  IF next_val IS NULL THEN
+    -- id=1 row missing (edge case) — max numeric job_id se seed, phir increment
+    INSERT INTO public.job_id_counter (id, last_job_id)
+    SELECT 1, GREATEST(
+      COALESCE((SELECT MAX(CASE WHEN job_id ~ '^[0-9]+$' THEN job_id::BIGINT END)
+                FROM public.transaction_list), 0),
+      28100
+    )
+    ON CONFLICT (id) DO UPDATE
+      SET last_job_id = public.job_id_counter.last_job_id + 1
+    RETURNING last_job_id INTO next_val;
+  END IF;
+
+  RETURN next_val;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.next_job_id() FROM public;
+GRANT EXECUTE ON FUNCTION public.next_job_id() TO anon;
+GRANT EXECUTE ON FUNCTION public.next_job_id() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.next_job_id() TO service_role;
+
+-- DB-level guard: auto-generated job_ids (>= 28101) unique. Legacy manual-era
+-- ids (< 28101, jaise 27322) iske daayre se bahar hain — index unhe nahi ragadta.
+CREATE UNIQUE INDEX IF NOT EXISTS transaction_list_job_id_autogen_uniq
+  ON public.transaction_list (job_id)
+  WHERE job_id ~ '^[0-9]+$' AND job_id::bigint >= 28101;
+
+-- READ-ONLY preview RPC — next_job_id() ke ULTA: counter increment NAHI karta.
+-- Form (new/bulk) par "Job No." preview isi se aata hai taaki page kholne se
+-- IDs waste na hon. Asli claim hamesha save-par next_job_id() se hota hai.
+CREATE OR REPLACE FUNCTION public.peek_next_job_id()
+RETURNS integer
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  next_val integer;
+BEGIN
+  SELECT COALESCE(last_job_id, 0) + 1
+    INTO next_val
+    FROM public.job_id_counter
+   WHERE id = 1;
+
+  IF next_val IS NULL THEN
+    SELECT GREATEST(COALESCE(MAX((job_id)::bigint), 0), 28100) + 1
+      INTO next_val
+      FROM public.transaction_list
+     WHERE job_id ~ '^[0-9]+$';
+  END IF;
+
+  RETURN next_val;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.peek_next_job_id() FROM public;
+GRANT EXECUTE ON FUNCTION public.peek_next_job_id() TO anon;
+GRANT EXECUTE ON FUNCTION public.peek_next_job_id() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.peek_next_job_id() TO service_role;
+
+-- Counter self-heal: agar counter actual max job_id se aage hai (waste claims),
+-- to wapas actual max par le aata hai. Idempotent — kabhi bhi re-run safe.
+UPDATE public.job_id_counter
+   SET last_job_id = GREATEST(
+         COALESCE(
+           (SELECT MAX((job_id)::bigint)
+              FROM public.transaction_list
+             WHERE job_id ~ '^[0-9]+$'),
+           0
+         ),
+         28100
+       )
+ WHERE id = 1;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- PostgREST ke liye schema reload (Supabase SQL Editor me dabane ke baad

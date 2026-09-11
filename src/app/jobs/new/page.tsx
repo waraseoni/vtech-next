@@ -26,7 +26,7 @@ import {
 import PageLoader from "@/components/PageLoader";
 import { logActivity } from "@/lib/activity";
 import { fetchClientDue, dueLabel } from "@/lib/client-due";
-import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
+import { getNextJobId, peekNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import SearchableSelect from "@/components/SearchableSelect";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import { logger } from "@/lib/logger";
@@ -470,8 +470,8 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       const dailySeq = String((todayCount || 0) + 1).padStart(2, "0");
       setTxnCode(`${datePrefix}${dailySeq}`); // e.g. "2025102401"
 
-      // job_id = job_id_counter table se last_job_id + 1
-      const nextJobId = await getNextJobId();
+      // job_id = job_id_counter se peek (NO claim) — asli claim save par hota hai
+      const nextJobId = await peekNextJobId();
       setJobCode(String(nextJobId));
     };
     genCode();
@@ -598,13 +598,22 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
         }
       }
 
+      // New job: form par jo number dikha tha wo sirf peek (preview) tha — asli
+      // job_id yahan save karne par ATOMIC claim hota hai, taaki page kholne se
+      // IDs waste na hon aur concurrent saves duplicate na layen.
+      let finalJobCode = jobCode;
+      if (!isEdit) {
+        finalJobCode = String(await getNextJobId());
+        setJobCode(finalJobCode);
+      }
+
       const payload = {
         // user_id = logged-in user's numeric id (profiles.mechanic_id → old PHP users.id)
         user_id: currentUserId,
         client_name: String(selectedClient.id),
         mechanic_id: parseInt(selectedMechanic),
         code: txnCode, // YYYYMMDD+seq e.g. "2025102401"
-        job_id: jobCode, // global seq e.g. "27270
+        job_id: finalJobCode, // global seq e.g. "27270
         item: item.trim(),
         fault: fault.trim(),
         uniq_id: (locId ? locName : uniqId).trim() || "", // dual-write: location ho to spot naam, warna legacy text
@@ -698,12 +707,12 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
 
       // Increment job_id_counter after successful save (new job only)
       if (!isEdit) {
-        await bumpJobCounter(parseInt(jobCode));
+        await bumpJobCounter(parseInt(finalJobCode));
         await logActivity(
           "Created New Job",
           "Jobs",
           txnId ?? undefined,
-          `Job #${jobCode} for ${selectedClient.fullname} — Amount: ₹${grandTotal.toLocaleString("en-IN")}`
+          `Job #${finalJobCode} for ${selectedClient.fullname} — Amount: ₹${grandTotal.toLocaleString("en-IN")}`
         );
       } else {
         await logActivity(

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 import SearchableSelect from "@/components/SearchableSelect";
-import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
+import { getNextJobId, peekNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 
 // ─── IST Helper ───────────────────────────────────────────────────────────────
 function nowIST(): string {
@@ -128,7 +128,7 @@ export default function BulkJobPage() {
     ]);
     setClients(cRes.data || []);
     setMechanics(mRes.data || []);
-    const nextId = await getNextJobId();
+    const nextId = await peekNextJobId(); // preview only — no claim
     setBaseJobId(nextId);
     // Start with 3 empty rows
     const initial: BulkRow[] = [0, 1, 2].map((i) => ({

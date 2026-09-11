@@ -36,6 +36,23 @@ export async function getNextJobId(): Promise<number> {
   return max + 1;
 }
 
+// PREVIEW ONLY — counter ko bump NAHI karta (unlike getNextJobId jo claim
+// karta hai). Naya job form / bulk form ki "next number" preview ke liye, taaki
+// page kholne bhar se IDs waste na hon. Pehle readonly RPC peek_next_job_id,
+// migration na hone par direct counter read (RLS-approved read) ka fallback.
+export async function peekNextJobId(): Promise<number> {
+  const { data, error } = await supabase.rpc("peek_next_job_id");
+  if (!error && typeof data === "number" && data > 0) return data;
+
+  const { data: row } = await supabase
+    .from("job_id_counter")
+    .select("last_job_id")
+    .eq("id", 1)
+    .maybeSingle();
+  if (row?.last_job_id) return Number(row.last_job_id) + 1;
+  return FALLBACK_LAST_JOB_ID + 1;
+}
+
 // Save ke baad counter bump — upsert taaki row missing ho to ban jaye
 // (pehle `.eq("id",1).update()` khaali table par 0 rows chhod deta tha).
 export async function bumpJobCounter(lastJobId: number): Promise<void> {
