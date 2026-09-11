@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { todayIST, formatIST, parseISTDate } from "@/lib/dateUtils";
 import { JOB_STATUS } from "@/lib/status-colors";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import { resolveTemplate, substituteTemplate, firmVars } from "@/lib/whatsapp";
 
@@ -75,7 +76,8 @@ const MechAvatar = ({
       alt={name}
       width={24}
       height={24}
-      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/20 shadow-sm`}
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/20 shadow-sm cursor-zoom-in`}
+      onDoubleClick={() => openImageLightbox(image, name)}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}
@@ -112,7 +114,8 @@ const ClientAvatar = ({
       alt={name}
       width={32}
       height={32}
-      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-violet-500/20 shadow-sm`}
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-violet-500/20 shadow-sm cursor-zoom-in`}
+      onDoubleClick={() => openImageLightbox(src, name)}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}

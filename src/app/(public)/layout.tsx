@@ -20,6 +20,7 @@ import {
 import { SITE, SERVICES, getSiteInfo, type SiteInfo } from "./site";
 import { QrShareModal } from "./components/qr-share";
 import { getCachedUser } from "@/lib/supabase";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -157,6 +158,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="min-h-screen bg-[#070714] text-white overflow-x-hidden">
+      <ImageLightbox />
       {/* ─── NAVBAR ─────────────────────────────────────────────────────── */}
       <header
         className={`fixed inset-x-0 top-0 z-50 border-b transition-all duration-300 ${

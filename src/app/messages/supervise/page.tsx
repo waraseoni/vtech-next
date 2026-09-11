@@ -12,6 +12,7 @@ import {
   type ProfileLite,
 } from "@/lib/messaging";
 import { mediaPublicUrl } from "@/lib/media";
+import { openImageLightbox } from "@/components/ImageLightbox";
 
 const fmtTime = (s: string) =>
   new Date(s).toLocaleTimeString("en-IN", {
@@ -36,13 +37,13 @@ const avatarInitial = (n: string | null | undefined) => (n || "?").trim().charAt
 function Avatar({ name, url, size = 36 }: { name: string | null | undefined; url?: string | null; size?: number }) {
   if (url) {
     const src = safeImageSrc(url);
-    // eslint-disable-next-line @next/next/no-img-element
     return (
       <img
         src={src}
         alt={name || "avatar"}
         style={{ width: size, height: size }}
-        className="rounded-full object-cover bg-slate-700 shrink-0"
+        className="rounded-full object-cover bg-slate-700 shrink-0 cursor-zoom-in"
+        onDoubleClick={() => openImageLightbox(src, name || "User")}
       />
     );
   }
@@ -300,8 +301,14 @@ export default function SupervisePage() {
                             <img
                               src={mediaPublicUrl(m.media_url!)}
                               alt={m.media_name || "media"}
-                              className="max-h-48 w-auto rounded-lg border border-black/20"
+                              className="max-h-48 w-auto rounded-lg border border-black/20 cursor-zoom-in"
                               loading="lazy"
+                              onDoubleClick={() =>
+                                openImageLightbox(
+                                  mediaPublicUrl(m.media_url!),
+                                  m.media_name || "Chat Image",
+                                )
+                              }
                             />
                           ) : (
                             <a

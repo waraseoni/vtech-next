@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { safeImageSrc } from "@/lib/image-utils";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import {
   MessageSquare,
   ArrowLeft,
@@ -81,7 +82,8 @@ function Avatar({
         alt={name || "User"}
         width={40}
         height={40}
-        className={`${cls} rounded-full object-cover border border-[#21293d]`}
+        className={`${cls} rounded-full object-cover border border-[#21293d] cursor-zoom-in`}
+        onDoubleClick={() => openImageLightbox(src, name || "User")}
         onError={(e) => {
           (e.target as HTMLImageElement).style.display = "none";
         }}
@@ -647,8 +649,14 @@ export default function MessagesPage() {
                         <img
                           src={mediaPublicUrl(m.media_url!)}
                           alt={m.media_name || "media"}
-                          className="max-h-56 w-auto max-w-full rounded-lg border border-black/20"
+                          className="max-h-56 w-auto max-w-full rounded-lg border border-black/20 cursor-zoom-in"
                           loading="lazy"
+                          onDoubleClick={() =>
+                            openImageLightbox(
+                              mediaPublicUrl(m.media_url!),
+                              m.media_name || "Chat Image",
+                            )
+                          }
                         />
                       </a>
                     ) : (

@@ -43,6 +43,7 @@ import { subMonths } from "date-fns/subMonths";
 import { logActivity } from "@/lib/activity";
 import { downloadBlob } from "@/lib/nativePrint";
 import type { SalaryRecord, MechanicRow } from "@/lib/server-salary";
+  import { openImageLightbox } from "@/components/ImageLightbox";
 
 const inr = (n: number) =>
   "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -73,7 +74,8 @@ const MechAvatar = ({
       alt={name}
       width={24}
       height={24}
-      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/20 shadow-sm`}
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/20 shadow-sm cursor-zoom-in`}
+      onDoubleClick={() => openImageLightbox(image, name)}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}

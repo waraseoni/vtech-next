@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import {
   CalendarClock,
@@ -53,7 +54,8 @@ const ClientAvatar = ({
       alt={name}
       width={36}
       height={36}
-      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 cursor-zoom-in`}
+      onDoubleClick={() => openImageLightbox(src, name)}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { BatteryCharging, ShieldCheck, CircuitBoard, Gauge, Zap, Phone } from "lucide-react";
 import { SITE, IS_BRANDED } from "../site";
 import {
@@ -137,21 +137,21 @@ export default function PowerSupplyPage() {
             <div>
               <div className="rounded-3xl overflow-hidden border border-white/[0.08] bg-[#0b0b1a]">
                 <div className="grid grid-cols-2 gap-1">
-                  <Image
+                  <ZoomableImage
                     src="/ev_charger_repair.png"
                     alt="EV charger repair — open PCB"
                     width={600}
                     height={400}
                     className="aspect-[3/2] w-full object-cover hover:scale-[1.03] transition-transform duration-500"
                   />
-                  <Image
+                  <ZoomableImage
                     src="/komaki_ev_charger_1.png"
                     alt="Komaki EV charger"
                     width={600}
                     height={400}
                     className="aspect-[3/2] w-full object-cover hover:scale-[1.03] transition-transform duration-500"
                   />
-                  <Image
+                  <ZoomableImage
                     src="/komaki_ev_charger_2.png"
                     alt="Komaki EV charger repair"
                     width={600}

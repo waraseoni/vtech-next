@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import SpotJobsModal from "@/components/SpotJobsModal";
+import { openImageLightbox } from "@/components/ImageLightbox";
 
 type Spot = { id: number; name: string };
 type Orientation = "portrait" | "landscape";
@@ -408,6 +409,7 @@ html,body{width:100%;height:100%}
             alt={`QR ${spot.name}`}
             width={150}
             height={150}
+            className="cursor-zoom-in"
             style={{
               width: "60%",
               maxWidth: 150,
@@ -415,6 +417,7 @@ html,body{width:100%;height:100%}
               display: "block",
               margin: "0 auto",
             }}
+            onDoubleClick={() => openImageLightbox(urls[spot.id], `Spot QR: ${spot.name}`)}
           />
         ) : (
           <div
@@ -555,7 +558,8 @@ html,body{width:100%;height:100%}
                       alt={`QR ${s.name}`}
                       width={200}
                       height={200}
-                      className="mx-auto w-full h-auto"
+                      className="mx-auto w-full h-auto cursor-zoom-in"
+                      onDoubleClick={() => openImageLightbox(urls[s.id], `Spot QR: ${s.name}`)}
                     />
                   ) : (
                     <div className="mx-auto w-full aspect-square bg-slate-100 animate-pulse rounded" />

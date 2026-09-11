@@ -1186,7 +1186,7 @@ function SidebarNav({
             <SubMenu
               title="System"
               icon={<Settings2 size={15} />}
-              matchPaths={["/users", "/settings", "/backup", "/back-office/db-tools"]}
+              matchPaths={["/users", "/settings", "/backup", "/back-office/db-tools", "/images"]}
             >
               <li>
                 <Link
@@ -1236,6 +1236,16 @@ function SidebarNav({
                 >
                   <Database size={12} />
                   Backup
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/images"
+                  className={subLinkCls(pathname === "/images")}
+                  onClick={onNavClick}
+                >
+                  <Images size={12} className="text-amber-400" />
+                  Images
                 </Link>
               </li>
             </SubMenu>
@@ -1628,7 +1638,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                     alt="Logo"
                     width={40}
                     height={40}
-                    className="w-full h-full object-contain rounded-xl"
+                    className="w-full h-full object-contain rounded-xl cursor-zoom-in"
+                    onDoubleClick={() => openImageLightbox(brandLogo, "System Logo")}
                   />
                 ) : (
                   <Sparkles size={20} className="text-white" />
@@ -1702,7 +1713,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                       alt="Logo"
                       width={36}
                       height={36}
-                      className="w-full h-full object-contain rounded-xl"
+                      className="w-full h-full object-contain rounded-xl cursor-zoom-in"
+                      onDoubleClick={() => openImageLightbox(brandLogo, "System Logo")}
                     />
                   ) : (
                     <Sparkles size={18} className="text-white" />

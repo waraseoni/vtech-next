@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import {
   ChevronRight,
   MessageCircle,
@@ -71,7 +71,7 @@ export function EquipmentGrid({
         >
           <div className="relative h-32 sm:h-36 overflow-hidden bg-[#080a18]">
             {it.image ? (
-              <Image
+              <ZoomableImage
                 src={it.image}
                 alt={it.name}
                 fill

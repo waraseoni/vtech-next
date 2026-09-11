@@ -26,6 +26,7 @@ const inr = (n: number) =>
   "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 import { currentMonthIST, parseISTDate } from "@/lib/dateUtils";
 import { logActivity } from "@/lib/activity";
+  import { openImageLightbox } from "@/components/ImageLightbox";
 
 // Mechanic avatar — photo ho to photo, warna 2-letter initials.
 const mechInitials = (name: string) =>
@@ -51,7 +52,8 @@ const MechAvatar = ({
       alt={name}
       width={32}
       height={32}
-      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 cursor-zoom-in`}
+      onDoubleClick={() => openImageLightbox(image, name)}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}

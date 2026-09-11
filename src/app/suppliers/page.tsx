@@ -2,8 +2,15 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
+import { safeImageSrc } from "@/lib/image-utils";
+import SupplierFormModal, {
+  SupplierRow,
+  SupplierContact,
+} from "@/components/SupplierFormModal";
+import Lightbox from "@/components/Lightbox";
 import {
   Search,
   Plus,
@@ -11,43 +18,29 @@ import {
   Trash2,
   ToggleLeft,
   ToggleRight,
-  X,
   Loader2,
-  Check,
-  AlertCircle,
   Truck,
-  Phone,
   Mail,
   MapPin,
   Package,
   ClipboardList,
   Eye,
+  MessageCircle,
+  Star,
 } from "lucide-react";
 
-type Supplier = {
-  id: number;
-  name: string;
-  contact: string | null;
-  email: string | null;
-  address: string | null;
-  status: number;
-  delete_flag: number;
-  date_created: string;
-};
-
-const defaultForm = { name: "", contact: "", email: "", address: "" };
+const waLink = (phone: string) => `https://wa.me/91${phone.replace(/\D/g, "")}`;
 
 export default function SuppliersPage() {
   const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<Supplier[]>([]);
+  const [rows, setRows] = useState<SupplierRow[]>([]);
+  const [contactsMap, setContactsMap] = useState<Record<number, SupplierContact[]>>({});
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<Supplier | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState<SupplierRow | null>(null);
   const [err, setErr] = useState("");
   const [userRole, setUserRole] = useState("staff");
-  const [form, setForm] = useState(defaultForm);
-  const [formErr, setFormErr] = useState("");
+  const [zoomSrc, setZoomSrc] = useState("");
 
   useEffect(() => {
     getCachedUser().then(({ data: { user } }) => {
@@ -63,13 +56,26 @@ export default function SuppliersPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("suppliers")
-      .select("*")
-      .eq("delete_flag", 0)
-      .order("name");
+    const [{ data, error }, { data: contactRows }] = await Promise.all([
+      supabase
+        .from("suppliers")
+        .select("*")
+        .eq("delete_flag", 0)
+        .order("name"),
+      supabase.from("supplier_contacts").select("id, supplier_id, label, phone, is_primary"),
+    ]);
     if (error) setErr(error.message);
-    setRows((data || []) as Supplier[]);
+    setRows((data || []) as SupplierRow[]);
+
+    const map: Record<number, SupplierContact[]> = {};
+    for (const c of (contactRows || []) as (SupplierContact & { supplier_id: number })[]) {
+      if (!map[c.supplier_id]) map[c.supplier_id] = [];
+      map[c.supplier_id].push(c);
+    }
+    for (const id of Object.keys(map)) {
+      map[Number(id)].sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
+    }
+    setContactsMap(map);
     setLoading(false);
   }, []);
 
@@ -77,63 +83,24 @@ export default function SuppliersPage() {
     fetchData();
   }, [fetchData]);
 
+  const allPhones = (id: number) =>
+    (contactsMap[id] || []).map((c) => c.phone).join(" ");
+
   const filtered = rows.filter(
     (s) =>
       s.name.toLowerCase().includes(search.toLowerCase()) ||
       s.contact?.toLowerCase().includes(search.toLowerCase()) ||
-      s.email?.toLowerCase().includes(search.toLowerCase())
+      s.email?.toLowerCase().includes(search.toLowerCase()) ||
+      allPhones(s.id).toLowerCase().includes(search.toLowerCase())
   );
 
   const openAdd = () => {
     setEditing(null);
-    setForm(defaultForm);
-    setFormErr("");
     setShowModal(true);
   };
-  const openEdit = (s: Supplier) => {
+  const openEdit = (s: SupplierRow) => {
     setEditing(s);
-    setForm({
-      name: s.name,
-      contact: s.contact || "",
-      email: s.email || "",
-      address: s.address || "",
-    });
-    setFormErr("");
     setShowModal(true);
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name.trim()) {
-      setFormErr("Supplier name zaroori hai!");
-      return;
-    }
-    setSaving(true);
-    try {
-      const payload = {
-        name: form.name.trim(),
-        contact: form.contact.trim() || null,
-        email: form.email.trim() || null,
-        address: form.address.trim() || null,
-        status: 1,
-      };
-      if (editing) {
-        const { error } = await supabase
-          .from("suppliers")
-          .update({ ...payload, date_updated: new Date().toISOString() })
-          .eq("id", editing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("suppliers").insert([{ ...payload, delete_flag: 0 }]);
-        if (error) throw error;
-      }
-      setShowModal(false);
-      fetchData();
-    } catch (error) {
-      setFormErr(error instanceof Error ? error.message : String(error));
-    } finally {
-      setSaving(false);
-    }
   };
 
   const handleDelete = async (id: number, name: string) => {
@@ -146,7 +113,7 @@ export default function SuppliersPage() {
     fetchData();
   };
 
-  const toggleStatus = async (s: Supplier) => {
+  const toggleStatus = async (s: SupplierRow) => {
     if (userRole !== "admin") {
       alert("Sirf Admin status change kar sakta hai!");
       return;
@@ -223,7 +190,7 @@ export default function SuppliersPage() {
               <thead className="bg-[#111520]">
                 <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
                   <th className="text-left px-4 py-3">Supplier Name</th>
-                  <th className="text-left px-4 py-3">Contact</th>
+                  <th className="text-left px-4 py-3">Contact Numbers</th>
                   <th className="text-left px-4 py-3">Email</th>
                   <th className="text-left px-4 py-3">Address</th>
                   <th className="text-center px-4 py-3">Status</th>
@@ -231,192 +198,153 @@ export default function SuppliersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1a2234]">
-                {filtered.map((s) => (
-                  <tr key={s.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <Truck size={14} className="text-violet-500 flex-shrink-0" />
-                        <span className="font-bold text-slate-200">{s.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      {s.contact ? (
-                        <div className="flex items-center gap-1.5 text-slate-400 text-xs">
-                          <Phone size={11} className="text-slate-600" /> {s.contact}
+                {filtered.map((s) => {
+                  const contacts =
+                    contactsMap[s.id]?.length
+                      ? contactsMap[s.id]
+                      : s.contact
+                        ? [{ label: "Mobile", phone: s.contact, is_primary: true }]
+                        : [];
+                  return (
+                    <tr key={s.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          {safeImageSrc(s.photo_url) ? (
+                            <button
+                              type="button"
+                              onClick={() => setZoomSrc(safeImageSrc(s.photo_url))}
+                              title="Visiting card bada karke dekho"
+                              className="flex-shrink-0 rounded-lg border border-transparent p-0.5 hover:border-blue-500/50 hover:scale-105 transition-all cursor-zoom-in"
+                            >
+                              <Image
+                                src={safeImageSrc(s.photo_url)}
+                                alt={`${s.name} visiting card`}
+                                width={36}
+                                height={36}
+                                className="w-9 h-9 rounded-lg object-cover border border-[#21293d]"
+                              />
+                            </button>
+                          ) : (
+                            <div className="w-9 h-9 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
+                              <Truck size={14} className="text-violet-500" />
+                            </div>
+                          )}
+                          <span className="font-bold text-slate-200">{s.name}</span>
                         </div>
-                      ) : (
-                        <span className="text-slate-700 text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      {s.email ? (
-                        <div className="flex items-center gap-1.5 text-slate-400 text-xs">
-                          <Mail size={11} className="text-slate-600" /> {s.email}
-                        </div>
-                      ) : (
-                        <span className="text-slate-700 text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      {s.address ? (
-                        <div
-                          className="flex items-center gap-1.5 text-slate-400 text-xs max-w-[200px] truncate"
-                          title={s.address}
-                        >
-                          <MapPin size={11} className="text-slate-600 flex-shrink-0" /> {s.address}
-                        </div>
-                      ) : (
-                        <span className="text-slate-700 text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3.5 text-center">
-                      <button
-                        onClick={() => toggleStatus(s)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
-                          s.status === 1
-                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-                            : "bg-slate-500/10 border-slate-500/20 text-slate-500 hover:bg-slate-500/20"
-                        }`}
-                      >
-                        {s.status === 1 ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-                        {s.status === 1 ? "Active" : "Inactive"}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center justify-center gap-2">
-                        <Link
-                          href={`/suppliers/${s.id}`}
-                          className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition"
-                        >
-                          <Eye size={13} />
-                        </Link>
-                        <button
-                          onClick={() => openEdit(s)}
-                          className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition"
-                        >
-                          <Edit3 size={13} />
-                        </button>
-                        {userRole === "admin" && (
-                          <button
-                            onClick={() => handleDelete(s.id, s.name)}
-                            className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        {contacts.length === 0 ? (
+                          <span className="text-slate-700 text-xs">—</span>
+                        ) : (
+                          <div className="flex flex-col gap-1">
+                            {contacts.map((c, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center gap-1.5 text-slate-400 text-xs"
+                              >
+                                {c.is_primary && (
+                                  <Star
+                                    size={9}
+                                    className="text-amber-400 flex-shrink-0"
+                                    fill="currentColor"
+                                  />
+                                )}
+                                <span className="text-slate-600 text-[9px] font-black uppercase flex-shrink-0">
+                                  {c.label}
+                                </span>
+                                <span className="font-mono">{c.phone}</span>
+                                {c.phone.replace(/\D/g, "").length >= 10 && (
+                                  <a
+                                    href={waLink(c.phone)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title={`WhatsApp: ${c.phone}`}
+                                    className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform inline-flex"
+                                  >
+                                    <MessageCircle size={12} />
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        {s.email ? (
+                          <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+                            <Mail size={11} className="text-slate-600" /> {s.email}
+                          </div>
+                        ) : (
+                          <span className="text-slate-700 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        {s.address ? (
+                          <div
+                            className="flex items-center gap-1.5 text-slate-400 text-xs max-w-[200px] truncate"
+                            title={s.address}
+                          >
+                            <MapPin size={11} className="text-slate-600 flex-shrink-0" />{" "}
+                            {s.address}
+                          </div>
+                        ) : (
+                          <span className="text-slate-700 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5 text-center">
+                        <button
+                          onClick={() => toggleStatus(s)}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
+                            s.status === 1
+                              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
+                              : "bg-slate-500/10 border-slate-500/20 text-slate-500 hover:bg-slate-500/20"
+                          }`}
+                        >
+                          {s.status === 1 ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                          {s.status === 1 ? "Active" : "Inactive"}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center justify-center gap-2">
+                          <Link
+                            href={`/suppliers/${s.id}`}
+                            className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition"
+                          >
+                            <Eye size={13} />
+                          </Link>
+                          <button
+                            onClick={() => openEdit(s)}
+                            className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition"
+                          >
+                            <Edit3 size={13} />
+                          </button>
+                          {userRole === "admin" && (
+                            <button
+                              onClick={() => handleDelete(s.id, s.name)}
+                              className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Add/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
-              <h3 className="font-bold text-white flex items-center gap-2">
-                {editing ? (
-                  <>
-                    <Edit3 size={16} className="text-blue-400" /> Edit Supplier
-                  </>
-                ) : (
-                  <>
-                    <Plus size={16} className="text-blue-400" /> Add Supplier
-                  </>
-                )}
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <form onSubmit={handleSave} className="p-5 space-y-4">
-              {formErr && (
-                <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs">
-                  <AlertCircle size={14} /> {formErr}
-                </div>
-              )}
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                  Supplier Name <span className="text-red-400">*</span>
-                </label>
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="e.g. Raj Electronics, Patel Traders"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                  Contact Number
-                </label>
-                <input
-                  value={form.contact}
-                  onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))}
-                  placeholder="9876543210"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                  placeholder="supplier@example.com"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                  Address
-                </label>
-                <textarea
-                  value={form.address}
-                  onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                  placeholder="Full address..."
-                  rows={2}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 resize-none"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" /> Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Check size={14} /> {editing ? "Update" : "Save"}
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <SupplierFormModal
+        open={showModal}
+        editing={editing}
+        onClose={() => setShowModal(false)}
+        onSaved={fetchData}
+      />
+
+      {zoomSrc && <Lightbox src={zoomSrc} alt="Visiting card" onClose={() => setZoomSrc("")} />}
     </AdminPage>
   );
 }

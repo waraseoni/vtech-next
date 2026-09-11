@@ -125,6 +125,7 @@ const STATUS_META = [
 ];
 
 import { todayIST, formatIST, startOfMonthIST, endOfMonthIST, parseISTDate } from "@/lib/dateUtils";
+import { openImageLightbox } from "@/components/ImageLightbox";
 
 // ─── Timezone-safe helpers ────────────────────────────────────────────────────
 // BUG FIX 4: fmtDate — new Date('YYYY-MM-DD') parses as UTC midnight.
@@ -1578,9 +1579,10 @@ export default function Dashboard() {
               <Image
                 src={qrDataUrl}
                 alt="Site QR Code"
-                className="mx-auto rounded-xl bg-white p-2"
+                className="mx-auto rounded-xl bg-white p-2 cursor-zoom-in"
                 width={220}
                 height={220}
+                onDoubleClick={() => openImageLightbox(qrDataUrl, "Site QR Code")}
               />
             ) : (
               <div className="h-[220px] flex items-center justify-center">

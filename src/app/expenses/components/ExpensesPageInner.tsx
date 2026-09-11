@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate, formatIST } from "@/lib/dateUtils";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import SearchableSelect from "@/components/SearchableSelect";
 import {
@@ -143,7 +144,8 @@ const MechAvatar = ({
       alt={name}
       width={24}
       height={24}
-      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/20 shadow-sm`}
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/20 shadow-sm cursor-zoom-in`}
+      onDoubleClick={() => openImageLightbox(src, name)}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}

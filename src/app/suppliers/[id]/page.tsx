@@ -3,8 +3,15 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
+import { safeImageSrc } from "@/lib/image-utils";
+import SupplierFormModal, {
+  SupplierRow,
+  SupplierContact,
+} from "@/components/SupplierFormModal";
+import Lightbox from "@/components/Lightbox";
 import { PO_STATUS } from "@/lib/status-colors";
 import {
   ArrowLeft,
@@ -12,14 +19,13 @@ import {
   Phone,
   Mail,
   MapPin,
-  Loader2,
   Truck,
   ChevronDown,
   ChevronRight,
   Eye,
-  X,
-  Check,
-  AlertCircle,
+  MessageCircle,
+  Star,
+  ImageIcon,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 
@@ -35,16 +41,7 @@ const fmtDate = (d: string | null) =>
       })
     : "—";
 
-type Supplier = {
-  id: number;
-  name: string;
-  contact: string | null;
-  email: string | null;
-  address: string | null;
-  status: number;
-  delete_flag: number;
-  date_created: string;
-};
+const waLink = (phone: string) => `https://wa.me/91${phone.replace(/\D/g, "")}`;
 
 type PurchaseOrder = {
   id: number;
@@ -73,22 +70,19 @@ const STATUS_MAP: Record<number, { label: string; color: string }> = Object.from
   Object.entries(PO_STATUS).map(([k, v]) => [Number(k), { label: v.label, color: v.cls }])
 );
 
-const defaultForm = { name: "", contact: "", email: "", address: "" };
-
 export default function SupplierDetailPage() {
   const params = useParams();
   const id = Number(params.id);
 
   const [loading, setLoading] = useState(true);
-  const [supplier, setSupplier] = useState<Supplier | null>(null);
+  const [supplier, setSupplier] = useState<SupplierRow | null>(null);
+  const [contacts, setContacts] = useState<SupplierContact[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [poItemsMap, setPoItemsMap] = useState<Record<number, POItem[]>>({});
   const [expandedPO, setExpandedPO] = useState<number | null>(null);
 
   const [showModal, setShowModal] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [formErr, setFormErr] = useState("");
-  const [form, setForm] = useState(defaultForm);
+  const [zoomSrc, setZoomSrc] = useState("");
 
   const fetchData = useCallback(async () => {
     if (!id || isNaN(id)) {
@@ -97,14 +91,27 @@ export default function SupplierDetailPage() {
     }
     setLoading(true);
 
-    const { data: sup } = await supabase
-      .from("suppliers")
-      .select("*")
-      .eq("id", id)
-      .eq("delete_flag", 0)
-      .single();
+    const [{ data: sup }, { data: contactRows }] = await Promise.all([
+      supabase
+        .from("suppliers")
+        .select("*")
+        .eq("id", id)
+        .eq("delete_flag", 0)
+        .single(),
+      supabase
+        .from("supplier_contacts")
+        .select("id, label, phone, is_primary")
+        .eq("supplier_id", id)
+        .order("is_primary", { ascending: false }),
+    ]);
 
-    setSupplier(sup as Supplier | null);
+    setSupplier(sup as SupplierRow | null);
+
+    let contactList = (contactRows || []) as SupplierContact[];
+    if (contactList.length === 0 && sup?.contact) {
+      contactList = [{ label: "Mobile", phone: sup.contact, is_primary: true }];
+    }
+    setContacts(contactList);
 
     const { data: pos } = await supabase
       .from("purchase_orders")
@@ -150,46 +157,6 @@ export default function SupplierDetailPage() {
     .filter((p) => p.status === 0 || p.status === 1)
     .reduce((s, p) => s + (p.total_amount || 0), 0);
 
-  const openEdit = () => {
-    if (!supplier) return;
-    setForm({
-      name: supplier.name,
-      contact: supplier.contact || "",
-      email: supplier.email || "",
-      address: supplier.address || "",
-    });
-    setFormErr("");
-    setShowModal(true);
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name.trim()) {
-      setFormErr("Supplier name is required!");
-      return;
-    }
-    setSaving(true);
-    try {
-      const payload = {
-        name: form.name.trim(),
-        contact: form.contact.trim() || null,
-        email: form.email.trim() || null,
-        address: form.address.trim() || null,
-      };
-      const { error } = await supabase
-        .from("suppliers")
-        .update({ ...payload, date_updated: new Date().toISOString() })
-        .eq("id", id);
-      if (error) throw error;
-      setShowModal(false);
-      fetchData();
-    } catch (error) {
-      setFormErr(error instanceof Error ? error.message : String(error));
-    } finally {
-      setSaving(false);
-    }
-  };
-
   if (loading) {
     return (
       <AdminPage title="Supplier Details" subtitle="Loading...">
@@ -214,6 +181,8 @@ export default function SupplierDetailPage() {
     );
   }
 
+  const photoSrc = safeImageSrc(supplier.photo_url);
+
   return (
     <AdminPage title={supplier.name} subtitle="Supplier Details">
       <div className="space-y-4">
@@ -226,7 +195,7 @@ export default function SupplierDetailPage() {
             <ArrowLeft size={14} /> Back to Suppliers
           </Link>
           <button
-            onClick={openEdit}
+            onClick={() => setShowModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all"
           >
             <Edit3 size={13} /> Edit Supplier
@@ -241,6 +210,32 @@ export default function SupplierDetailPage() {
             </h3>
           </div>
           <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {photoSrc && (
+              <div className="sm:col-span-2 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
+                  <ImageIcon size={14} className="text-violet-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+                    Visiting Card
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setZoomSrc(photoSrc)}
+                    title="Visiting card bada karke dekho"
+                    className="block rounded-lg border border-transparent p-0.5 hover:border-blue-500/50 transition-all cursor-zoom-in"
+                  >
+                    <Image
+                      src={photoSrc}
+                      alt="Visiting card"
+                      width={100}
+                      height={60}
+                      className="h-24 w-auto max-w-full rounded-lg object-cover border border-[#21293d]"
+                    />
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
                 <Truck size={14} className="text-violet-400" />
@@ -252,15 +247,46 @@ export default function SupplierDetailPage() {
                 <p className="text-sm font-bold text-slate-200">{supplier.name}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
                 <Phone size={14} className="text-blue-400" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                  Contact
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+                  Contact Numbers
                 </p>
-                <p className="text-sm font-bold text-slate-200">{supplier.contact || "—"}</p>
+                {contacts.length === 0 ? (
+                  <p className="text-sm font-bold text-slate-200">—</p>
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    {contacts.map((c, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5 text-slate-300 text-sm">
+                        {c.is_primary && (
+                          <Star
+                            size={10}
+                            className="text-amber-400 flex-shrink-0"
+                            fill="currentColor"
+                          />
+                        )}
+                        <span className="text-[10px] font-black uppercase text-slate-500">
+                          {c.label}
+                        </span>
+                        <span className="font-mono font-bold">{c.phone}</span>
+                        {c.phone.replace(/\D/g, "").length >= 10 && (
+                          <a
+                            href={waLink(c.phone)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={`WhatsApp: ${c.phone}`}
+                            className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform inline-flex"
+                          >
+                            <MessageCircle size={13} />
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -374,7 +400,9 @@ export default function SupplierDetailPage() {
                           <td className="px-4 py-3.5 text-slate-400 text-xs">
                             {fmtDate(po.date_created)}
                           </td>
-                          <td className="px-4 py-3.5 text-center text-slate-400">{items.length}</td>
+                          <td className="px-4 py-3.5 text-center text-slate-400">
+                            {items.length}
+                          </td>
                           <td className="px-4 py-3.5 text-right font-bold text-slate-200">
                             {fmtCurrency(po.total_amount || 0)}
                           </td>
@@ -462,101 +490,14 @@ export default function SupplierDetailPage() {
         </div>
       </div>
 
-      {/* Edit Supplier Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
-              <h3 className="font-bold text-white flex items-center gap-2">
-                <Edit3 size={16} className="text-blue-400" /> Edit Supplier
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <form onSubmit={handleSave} className="p-5 space-y-4">
-              {formErr && (
-                <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs">
-                  <AlertCircle size={14} /> {formErr}
-                </div>
-              )}
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                  Supplier Name <span className="text-red-400">*</span>
-                </label>
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="e.g. Raj Electronics, Patel Traders"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                  Contact Number
-                </label>
-                <input
-                  value={form.contact}
-                  onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))}
-                  placeholder="9876543210"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                  placeholder="supplier@example.com"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                  Address
-                </label>
-                <textarea
-                  value={form.address}
-                  onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                  placeholder="Full address..."
-                  rows={2}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 resize-none"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" /> Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Check size={14} /> Update
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <SupplierFormModal
+        open={showModal}
+        editing={supplier}
+        onClose={() => setShowModal(false)}
+        onSaved={fetchData}
+      />
+
+      {zoomSrc && <Lightbox src={zoomSrc} alt="Visiting card" onClose={() => setZoomSrc("")} />}
     </AdminPage>
   );
 }

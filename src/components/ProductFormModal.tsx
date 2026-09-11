@@ -21,6 +21,7 @@ import { supabase } from "@/lib/supabase";
 import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
 import { safeImageSrc } from "@/lib/image-utils";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import BarcodeCameraScanner from "@/app/components/BarcodeCameraScanner";
 import SupplierPicker from "@/components/SupplierPicker";
 
@@ -303,7 +304,8 @@ export default function ProductFormModal({
                         alt="Product"
                         width={112}
                         height={112}
-                        className="w-28 h-28 rounded-xl object-cover border border-[#21293d]"
+                        className="w-28 h-28 rounded-xl object-cover border border-[#21293d] cursor-zoom-in"
+                        onDoubleClick={() => openImageLightbox(safeImageSrc(imgPreview), "Product Image")}
                       />
                     ) : (
                       <div className="w-28 h-28 rounded-xl bg-white/5 border border-dashed border-[#2a3450] flex items-center justify-center">

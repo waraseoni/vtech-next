@@ -1721,7 +1721,8 @@ export default function SettingsPage() {
                   alt="Logo"
                   width={160}
                   height={48}
-                  className="max-h-12 max-w-[160px] object-contain bg-white rounded-lg p-0.5"
+                  className="max-h-12 max-w-[160px] object-contain bg-white rounded-lg p-0.5 cursor-zoom-in"
+                  onDoubleClick={() => openImageLightbox(logo, "System Logo")}
                 />
               )}
               <p className="text-white font-black text-base">{name || "System Name"}</p>

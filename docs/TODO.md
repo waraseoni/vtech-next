@@ -67,6 +67,63 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 ---
 
+## Project: Suppliers Module — Fixes & Features
+
+> Full plan: `docs/plans/suppliers_module_plan.md`
+> Created: 2026-09-17
+
+### Pending verification (manual QA — current uncommitted work)
+- [ ] Test supplier visiting card upload on live test-DB
+- [ ] Test multiple contacts + WhatsApp link per contact
+- [ ] Test `/images` page shows Spare Parts Photos + Supplier Visiting Cards buckets
+- [ ] Test product image preview zoom in ProductFormModal
+- [ ] Test chat image zoom (double-click in-app lightbox)
+- [ ] Test QR zoom on dashboard + public pages
+
+### Phase A — Bug fix + Supplier Payment Ledger (HIGH)
+- [ ] **Fix PO status bug** — supplier detail page status map numeric vs text mismatch (`suppliers/[id]/page.tsx` + `status-colors.ts`)
+- [ ] **`supplier_payments` table** — amount, payment_mode (cash/upi/bank/cheque/adjustment), reference, payment_date, notes, created_by
+- [ ] **Payment entry modal** on supplier detail page — add payment, show total paid / outstanding
+- [ ] **Outstanding balance** calculation on supplier detail page (sum PO total − sum payments)
+- [ ] **Due column** on supplier list page — outstanding balance per supplier
+- [ ] **`/reports/supplier-dues`** report — all suppliers with outstanding, sortable, printable
+- [ ] **RLS** — staff insert, admin delete, authenticated read
+- [ ] **Full schema** integrate (`final_full_schema_idempotent.sql`)
+- [ ] **Typecheck + eslint + tests pass**
+
+### Phase B — Required Parts → PO + GST Fields (MEDIUM)
+- [ ] `purchase_order_items.job_id` nullable FK — which job triggered the purchase
+- [ ] `job_required_parts.purchase_order_id` nullable FK — link part to its PO
+- [ ] Parts-pending report: bulk-select parts → "Create PO" (group by supplier)
+- [ ] Job page: per-part "Add to PO" or batch "Create PO for this supplier"
+- [ ] Supplier form: GSTIN, bank_name, bank_account, bank_ifsc, credit_limit, payment_terms, city, state
+- [ ] Supplier detail: show GST/bank details in info card
+- [ ] Full schema + typecheck + lint + tests
+
+### Phase C — Reports + Expense Link (MEDIUM)
+- [ ] `/reports/supplier-purchases` — date range, per-supplier PO summary + product breakdown
+- [ ] Add `supplier_id` FK to `expense_list` (nullable)
+- [ ] Payment entry (Phase A) optionally auto-creates expense entry
+
+### Phase D — Active Product-Supplier Link (LOW)
+- [ ] Supplier detail: "Recommended Orders" section — low-stock products linked via `spare_supplier`
+- [ ] Quick-add: one-click PO from suggested items
+
+### Completed (this session)
+- [x] Supplier visiting card upload + lightbox zoom
+- [x] Multiple contacts (label + phone + is_primary) + WhatsApp buttons
+- [x] Search across all phones
+- [x] Supplier photo API route (`/api/supplier-photo`)
+- [x] Shared SupplierFormModal component
+- [x] Supplier list + detail page rewrite
+- [x] Image manager: spare-photos + supplier-photos buckets added to BUCKET_MAP
+- [x] System menu "Images" link for admin
+- [x] Global image zoom overhaul — every image display now supports double-click → fullscreen lightbox
+- [x] ZoomableImage wrapper for server/public pages
+- [x] (public) layout ImageLightbox mount for anonymous visitors
+
+---
+
 ## Open Questions / Notes
 - Comments Hinglish me; no emojis in UI.
 - Sanitized: migration must be re-run if any part fails midway (idempotent file).

@@ -6,6 +6,7 @@ import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { LocationParts, locPath, encodeLocationToken } from "@/lib/locations";
 import { logActivity } from "@/lib/activity";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import {
   Search,
   Plus,
@@ -714,7 +715,8 @@ export default function LocationsPage() {
                 alt="Location QR"
                 width={200}
                 height={200}
-                className="rounded-xl bg-white p-2"
+                className="rounded-xl bg-white p-2 cursor-zoom-in"
+                onDoubleClick={() => openImageLightbox(qrUrl(toParts(qrModalLoc)), "Location QR")}
               />
               <div className="text-center">
                 {qrModalLoc.code && (

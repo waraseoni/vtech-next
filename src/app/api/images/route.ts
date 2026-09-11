@@ -83,6 +83,24 @@ const BUCKET_MAP: {
         : `Message #${r.id}`,
     hrefFor: () => "/messages",
   },
+  {
+    bucket: "spare-photos",
+    label: "Spare Part Photos",
+    table: "job_required_parts",
+    column: "photo_url",
+    idCols: ["id", "transaction_id"],
+    rowLabel: (r) => `Required Part — Job #${r.transaction_id}`,
+    hrefFor: (r) => `/jobs/${r.transaction_id}/view`,
+  },
+  {
+    bucket: "supplier-photos",
+    label: "Supplier Visiting Cards",
+    table: "suppliers",
+    column: "photo_url",
+    idCols: ["id", "name"],
+    rowLabel: (r) => `Supplier: ${String(r.name || r.id)}`,
+    hrefFor: (r) => `/suppliers/${r.id}`,
+  },
 ];
 
 type BucketFile = { name: string; size: number; created_at: string };

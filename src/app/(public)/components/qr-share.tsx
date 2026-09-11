@@ -18,6 +18,7 @@ import {
   Download,
 } from "lucide-react";
 import Image from "next/image";
+import { openImageLightbox } from "@/components/ImageLightbox";
 import { SITE } from "../site";
 
 export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -196,7 +197,8 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
               alt="Website QR code"
               width={200}
               height={200}
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain cursor-zoom-in"
+              onDoubleClick={() => openImageLightbox(qrDataUrl, "Website QR Code")}
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400">

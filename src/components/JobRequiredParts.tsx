@@ -609,7 +609,8 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                       alt="New spare"
                       width={64}
                       height={64}
-                      className="w-16 h-16 object-cover rounded-lg border border-[#21293d]"
+                      className="w-16 h-16 object-cover rounded-lg border border-[#21293d] cursor-zoom-in"
+                      onDoubleClick={() => openImageLightbox(photoPreview, "New Spare Photo")}
                     />
                     <button
                       type="button"
