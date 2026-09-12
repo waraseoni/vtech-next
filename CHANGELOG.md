@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.8.2](https://github.com/waraseoni/vtech-next/compare/v1.8.1...v1.8.2) (2026-09-12)
+
+### Bug Fixes
+
+* **jobs:** commission on services only (exclude spare parts); link job number to job view ([bbae555](https://github.com/waraseoni/vtech-next/commit/bbae555a3f26d0eb18ac4d0575e45a88f0dae491))
+
 ## [1.8.1](https://github.com/waraseoni/vtech-next/compare/v1.8.0...v1.8.1) (2026-09-12)
 
 ### Bug Fixes
