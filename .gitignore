@@ -44,6 +44,10 @@ vikram_db_supabase.txt
 public/sw*
 public/swe-worker*
 
+# 5b. Commission-rule scratch helpers + PII DB-rollback snapshots (NEVER push)
+*.cjs
+backup_comm_hist_*.json
+
 # 6. Logs & Debugging
 npm-debug.log*
 yarn-debug.log*
