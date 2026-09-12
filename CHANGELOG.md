@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.12.0](https://github.com/waraseoni/vtech-next/compare/v1.11.0...v1.12.0) (2026-09-12)
+
+### Features
+
+* **parts:** required-parts to PO conversion bridge ([45cb463](https://github.com/waraseoni/vtech-next/commit/45cb4634f9c9ace56d20e65142ab658f1d6337c1))
+
 ## [1.11.0](https://github.com/waraseoni/vtech-next/compare/v1.10.0...v1.11.0) (2026-09-12)
 
 ### Features
