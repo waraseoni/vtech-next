@@ -3195,6 +3195,23 @@ create index if not exists jrp_po_idx on public.job_required_parts(purchase_orde
 -- ═══ end required-parts → PO bridge backport block ═══
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- BACKPORT (2026-09-13) — Supplier form enrichment (suppliers plan P2).
+-- Provenance: supabase/migrations/20260913_suppliers_gst_bank.sql
+--   gstin / bank details / credit / payment terms / city-state
+-- ═══════════════════════════════════════════════════════════════════════════
+
+alter table public.suppliers
+  add column if not exists gstin          text,
+  add column if not exists bank_name      text,
+  add column if not exists bank_account   text,
+  add column if not exists bank_ifsc      text,
+  add column if not exists credit_limit   numeric(12,2),
+  add column if not exists payment_terms  text,
+  add column if not exists city           text,
+  add column if not exists state          text;
+-- ═══ end supplier form enrichment backport block ═══
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- PostgREST ke liye schema reload (Supabase SQL Editor me dabane ke baad
 -- API immediately updated hota hai).
 -- ═══════════════════════════════════════════════════════════════════════════

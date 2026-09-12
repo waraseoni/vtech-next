@@ -31,6 +31,7 @@ import {
   ImageIcon,
   Wallet,
   Landmark,
+  FileSignature,
   Plus,
   Loader2,
   X,
@@ -377,6 +378,72 @@ export default function SupplierDetailPage() {
                 <p className="text-sm font-bold text-slate-200">{supplier.address || "—"}</p>
               </div>
             </div>
+            {supplier.gstin && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                  <FileSignature size={14} className="text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                    GSTIN
+                  </p>
+                  <p className="text-sm font-bold text-slate-200 font-mono">{supplier.gstin}</p>
+                </div>
+              </div>
+            )}
+            {(supplier.city || supplier.state) && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center flex-shrink-0">
+                  <MapPin size={14} className="text-sky-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                    City / State
+                  </p>
+                  <p className="text-sm font-bold text-slate-200">
+                    {[supplier.city, supplier.state].filter(Boolean).join(", ") || "—"}
+                  </p>
+                </div>
+              </div>
+            )}
+            {supplier.bank_name && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
+                  <Landmark size={14} className="text-violet-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                    Bank Account
+                  </p>
+                  <p className="text-sm font-bold text-slate-200">
+                    {supplier.bank_name}
+                    {supplier.bank_account && ` · ${supplier.bank_account}`}
+                    {supplier.bank_ifsc && (
+                      <span className="text-slate-400 font-mono"> · {supplier.bank_ifsc}</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
+            {(supplier.credit_limit != null || supplier.payment_terms) && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                  <Wallet size={14} className="text-indigo-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                    Business Terms
+                  </p>
+                  <p className="text-sm font-bold text-slate-200">
+                    {supplier.credit_limit != null && (
+                      <>Credit limit: {fmtCurrency(Number(supplier.credit_limit))}</>
+                    )}
+                    {supplier.credit_limit != null && supplier.payment_terms && " · "}
+                    {supplier.payment_terms && <>{supplier.payment_terms}</>}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

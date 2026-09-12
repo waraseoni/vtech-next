@@ -29,6 +29,15 @@ export type SupplierRow = {
   delete_flag: number;
   date_created: string;
   photo_url?: string | null;
+  // P2 enrichment (migration 20260913_suppliers_gst_bank.sql)
+  gstin?: string | null;
+  bank_name?: string | null;
+  bank_account?: string | null;
+  bank_ifsc?: string | null;
+  credit_limit?: number | string | null;
+  payment_terms?: string | null;
+  city?: string | null;
+  state?: string | null;
 };
 
 export type SupplierContact = {
@@ -50,7 +59,19 @@ type Props = {
 };
 
 export default function SupplierFormModal({ open, editing, onClose, onSaved }: Props) {
-  const [form, setForm] = useState({ name: "", email: "", address: "" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    address: "",
+    gstin: "",
+    bankName: "",
+    bankAccount: "",
+    bankIfsc: "",
+    creditLimit: "",
+    paymentTerms: "",
+    city: "",
+    state: "",
+  });
   const [contacts, setContacts] = useState<SupplierContact[]>(defaultContacts);
   const [photoUrl, setPhotoUrl] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -70,6 +91,14 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
       name: editing?.name || "",
       email: editing?.email || "",
       address: editing?.address || "",
+      gstin: editing?.gstin || "",
+      bankName: editing?.bank_name || "",
+      bankAccount: editing?.bank_account || "",
+      bankIfsc: editing?.bank_ifsc || "",
+      creditLimit: editing?.credit_limit?.toString() || "",
+      paymentTerms: editing?.payment_terms || "",
+      city: editing?.city || "",
+      state: editing?.state || "",
     });
     setPhotoUrl(editing?.photo_url || "");
     setPhotoPreview("");
@@ -218,6 +247,14 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
         contact: primary,
         email: form.email.trim(),
         address: form.address.trim(),
+        gstin: form.gstin.trim() || null,
+        bank_name: form.bankName.trim() || null,
+        bank_account: form.bankAccount.trim() || null,
+        bank_ifsc: form.bankIfsc.trim() || null,
+        credit_limit: form.creditLimit.trim() ? parseFloat(form.creditLimit) : null,
+        payment_terms: form.paymentTerms.trim() || null,
+        city: form.city.trim() || null,
+        state: form.state.trim() || null,
         status: 1,
       };
 
@@ -483,6 +520,130 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
               rows={2}
               className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 resize-none"
             />
+          </div>
+
+          {/* GST / Tax Details */}
+          <div className="border border-[#21293d] rounded-xl p-3.5 space-y-3 bg-[#111520]/60">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+              GST / Tax Details
+            </p>
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                GSTIN
+              </label>
+              <input
+                value={form.gstin}
+                onChange={(e) => setForm((f) => ({ ...f, gstin: e.target.value }))}
+                placeholder="e.g. 27ABCDE1234F1Z5"
+                maxLength={15}
+                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 uppercase"
+              />
+            </div>
+          </div>
+
+          {/* Bank Details */}
+          <div className="border border-[#21293d] rounded-xl p-3.5 space-y-3 bg-[#111520]/60">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+              Bank Details
+            </p>
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="col-span-2">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                  Bank Name
+                </label>
+                <input
+                  value={form.bankName}
+                  onChange={(e) => setForm((f) => ({ ...f, bankName: e.target.value }))}
+                  placeholder="e.g. HDFC Bank"
+                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                  Account Number
+                </label>
+                <input
+                  value={form.bankAccount}
+                  onChange={(e) => setForm((f) => ({ ...f, bankAccount: e.target.value }))}
+                  placeholder="Account no."
+                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                  IFSC
+                </label>
+                <input
+                  value={form.bankIfsc}
+                  onChange={(e) => setForm((f) => ({ ...f, bankIfsc: e.target.value }))}
+                  placeholder="e.g. HDFC0001234"
+                  maxLength={11}
+                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 uppercase"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Business Terms */}
+          <div className="border border-[#21293d] rounded-xl p-3.5 space-y-3 bg-[#111520]/60">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+              Business Terms
+            </p>
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                Credit Limit (₹)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={form.creditLimit}
+                onChange={(e) => setForm((f) => ({ ...f, creditLimit: e.target.value }))}
+                placeholder="e.g. 50000"
+                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                Payment Terms
+              </label>
+              <select
+                value={form.paymentTerms}
+                onChange={(e) => setForm((f) => ({ ...f, paymentTerms: e.target.value }))}
+                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+              >
+                <option value="">— Select —</option>
+                <option value="COD">COD (Cash on Delivery)</option>
+                <option value="Net 15">Net 15 days</option>
+                <option value="Net 30">Net 30 days</option>
+                <option value="Credit 15 days">Credit 15 days</option>
+                <option value="Advance">Advance / Full payment</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                  City
+                </label>
+                <input
+                  value={form.city}
+                  onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+                  placeholder="City"
+                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                  State
+                </label>
+                <input
+                  value={form.state}
+                  onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
+                  placeholder="State"
+                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-2">

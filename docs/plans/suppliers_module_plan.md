@@ -1,6 +1,6 @@
 # Plan: Suppliers Module — Fixes, Updates & New Features
 
-> Status: **IN PROGRESS — Phase A (PO status fix + P0 payments) DONE; P1 (required-parts → PO) SHIPPED (2026-09-13, migration apply pending); P2/P3 pending**
+> Status: **IN PROGRESS — Phase A (PO status fix + P0 payments) DONE; P1 (required-parts → PO) SHIPPED (2026-09-13, migration applied ✅); P2 (GST/bank) SHIPPED (2026-09-13, migration apply pending); P3 pending**
 > Created: 2026-09-17 · Basis: full codebase audit of supplier flows, DB schema, PO module, required-parts flow
 > Phase A (2026-09-12): bug fix + supplier_payments ledger shipped. Migration `20260912_supplier_payments.sql` user par apply pending (Supabase SQL Editor).
 
@@ -23,7 +23,7 @@
 | Supplier payment / dues ledger | ✅ DONE (2026-09-12) — `supplier_payments` table + detail "Payments & Outstanding" section + Add Payment modal + list "Due" column + `/reports/supplier-dues` |
 | Supplier spending / purchase report | ❌ Not started (P3) |
 | Required-parts → PO conversion | ✅ **SHIPPED (P1, 2026-09-13)** — Convert-to-PO + parts/PO link + source-job trace |
-| Supplier form GST/bank fields | ❌ Not started (P2) |
+| Supplier form GST/bank fields | ✅ **SHIPPED (P2, 2026-09-13)** — GSTIN + bank + credit/terms + city/state in form & detail card |
 
 ---
 
@@ -135,7 +135,9 @@ CREATE TABLE IF NOT EXISTS public.supplier_payments (
 
 **Why:** GST number needed for purchase bills (Indian tax). Bank details for large payments. Credit limit for tracking overdue.
 
-#### DB changes
+> **Status: SHIPPED (2026-09-13)** — `feat(suppliers)` commit. Migration `20260913_suppliers_gst_bank.sql` apply pending (idempotent; full-schema backport block bhi included).
+
+#### DB changes (migration 20260913_suppliers_gst_bank.sql)
 
 ```sql
 ALTER TABLE public.suppliers
@@ -149,10 +151,10 @@ ALTER TABLE public.suppliers
   ADD COLUMN IF NOT EXISTS state       text;
 ```
 
-#### UI changes
+#### UI changes (implemented)
 
-- SupplierFormModal: "GST / Tax Details" fieldset (gstin), "Bank Details" fieldset (bank_name, account, ifsc), "Business Terms" (credit_limit, payment_terms), City/State fields
-- Supplier detail page: show GSTIN + bank details in info card
+- `src/components/SupplierFormModal.tsx` — `SupplierRow` type + P2 fields. Fieldsets: "GST / Tax Details" (gstin, 15-char uppercase), "Bank Details" (bank_name, bank_account, bank_ifsc), "Business Terms" (credit_limit numeric ₹, payment_terms dropdown: COD / Net 15 / Net 30 / Credit 15 days / Advance), City + State. Edit me prefilled, save par payload me (empty → null).
+- `src/app/suppliers/[id]/page.tsx` — info card me conditional rows: GSTIN (mono), City/State, Bank Account (name · acct · IFSC), Business Terms (credit limit + payment terms).
 
 ---
 
