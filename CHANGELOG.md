@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.8.3](https://github.com/waraseoni/vtech-next/compare/v1.8.2...v1.8.3) (2026-09-12)
+
+### Bug Fixes
+
+* **jobs:** don't reset status to pending when editing a job ([5911330](https://github.com/waraseoni/vtech-next/commit/59113300330d5871ed9574f724fe4fb017557801))
+
 ## [1.8.2](https://github.com/waraseoni/vtech-next/compare/v1.8.1...v1.8.2) (2026-09-12)
 
 ### Bug Fixes
