@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.10.0](https://github.com/waraseoni/vtech-next/compare/v1.9.0...v1.10.0) (2026-09-12)
+
+### Features
+
+* **images:** crop/rotate editor on upload — visiting card + product pilot ([00185f0](https://github.com/waraseoni/vtech-next/commit/00185f029ff5b42e143ecd16ab51dd3e8b2cd264))
+
 ## [1.9.0](https://github.com/waraseoni/vtech-next/compare/v1.8.3...v1.9.0) (2026-09-12)
 
 ### Features
