@@ -104,6 +104,15 @@ const REPORTS: ReportItem[] = [
     color: "from-emerald-500 to-teal-600",
     isNew: true,
   },
+  {
+    title: "Supplier Purchases",
+    description: "Kharidari summary — POs, qty, spend, avg unit cost.",
+    href: "/reports/supplier-purchases",
+    icon: <ShoppingCart size={16} />,
+    category: "Job Reports",
+    color: "from-teal-500 to-cyan-700",
+    isNew: true,
+  },
 
   // Finance & Accounts
   {

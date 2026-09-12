@@ -1,6 +1,6 @@
 # Plan: Suppliers Module — Fixes, Updates & New Features
 
-> Status: **IN PROGRESS — Phase A (PO status fix + P0 payments) DONE; P1 (required-parts → PO) SHIPPED (2026-09-13, migration applied ✅); P2 (GST/bank) SHIPPED (2026-09-13, migration apply pending); P3 pending**
+> Status: **IN PROGRESS — Phase A DONE; P1 (PO bridge) SHIPPED (migration applied ✅); P2 (GST/bank) SHIPPED (migration apply pending); P3 (spending report) SHIPPED (2026-09-13); P4/P5 optional pending**
 > Created: 2026-09-17 · Basis: full codebase audit of supplier flows, DB schema, PO module, required-parts flow
 > Phase A (2026-09-12): bug fix + supplier_payments ledger shipped. Migration `20260912_supplier_payments.sql` user par apply pending (Supabase SQL Editor).
 
@@ -21,7 +21,7 @@
 | Required parts on jobs (`job_required_parts`) | ✅ CRUD + photo + supplier assignment |
 | Required parts ↔ Supplier assignment | ✅ Informative only (no cost, no PO bridge) |
 | Supplier payment / dues ledger | ✅ DONE (2026-09-12) — `supplier_payments` table + detail "Payments & Outstanding" section + Add Payment modal + list "Due" column + `/reports/supplier-dues` |
-| Supplier spending / purchase report | ❌ Not started (P3) |
+| Supplier spending / purchase report | ✅ **SHIPPED (P3, 2026-09-13)** — `/reports/supplier-purchases` (KPI + trend + product breakdown) |
 | Required-parts → PO conversion | ✅ **SHIPPED (P1, 2026-09-13)** — Convert-to-PO + parts/PO link + source-job trace |
 | Supplier form GST/bank fields | ✅ **SHIPPED (P2, 2026-09-13)** — GSTIN + bank + credit/terms + city/state in form & detail card |
 
@@ -162,12 +162,16 @@ ALTER TABLE public.suppliers
 
 **Why:** See which suppliers are being used most, track purchase volume, identify best rates.
 
+> **Status: SHIPPED (2026-09-13)** — `feat(reports)` commit. `/reports/supplier-purchases` + lib `src/lib/supplierPurchases.ts`. Date range backend-only (canceled POs excluded), monthly trend bar chart, supplier product breakdown (double-click ya chevron se expand).
+
 #### New report: `/reports/supplier-purchases`
 
-- Date range filter
-- Per supplier: total POs, total qty ordered, total amount, average unit cost
-- Breakdown by product (what was bought from whom)
-- Source: `purchase_orders` + `purchase_order_items` + `inventory_list`
+- Date range filter (From/To date inputs + presets: Today / 7 Din / 30 Din / This Month; default = current month)
+- Per supplier: total POs, total qty ordered/received, total amount, **weighted average unit cost** (spend ÷ qty)
+- Breakdown by product (what was bought from whom) — expandable per supplier
+- Monthly spend bar chart (selected range), KPIs (Total Spend, POs, Qty Ordered, Avg Unit Cost), Search, Print
+- Source: `purchase_orders` (delete_flag=0, `neq status cancelled`, IST day bounds `T00:00:00+05:30`/`T23:59:59+05:30`) + `purchase_order_items` + `product_list`
+- Reports index me "Supplier Purchases" card (teal gradient, NEW badge)
 
 ---
 
