@@ -448,7 +448,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
             </label>
             <div className="space-y-2">
               {contacts.map((c, i) => (
-                <div key={i} className="flex items-center gap-2">
+                <div key={i} className="flex flex-wrap items-center gap-2">
                   <select
                     value={c.label}
                     onChange={(e) => updateContact(i, { label: e.target.value })}
@@ -464,7 +464,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                     value={c.phone}
                     onChange={(e) => updateContact(i, { phone: e.target.value })}
                     placeholder="Phone no."
-                    className="flex-1 px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 min-w-0"
+                    className="flex-1 px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 min-w-[120px]"
                   />
                   <button
                     type="button"

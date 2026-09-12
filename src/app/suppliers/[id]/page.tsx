@@ -51,6 +51,7 @@ const fmtDate = (d: string | null) =>
     : "—";
 
 const waLink = (phone: string) => `https://wa.me/91${phone.replace(/\D/g, "")}`;
+const telLink = (phone: string) => `tel:+91${phone.replace(/\D/g, "")}`;
 
 type PurchaseOrder = {
   id: number;
@@ -111,6 +112,15 @@ export default function SupplierDetailPage() {
   const [payDate, setPayDate] = useState("");
   const [savingPay, setSavingPay] = useState(false);
   const [payErr, setPayErr] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const h = (e: MediaQueryList | MediaQueryListEvent) => setIsMobile(e.matches);
+    setIsMobile(mq.matches);
+    mq.addEventListener("change", h);
+    return () => mq.removeEventListener("change", h);
+  }, []);
 
   const fetchData = useCallback(async () => {
     if (!id || isNaN(id)) {
@@ -254,7 +264,7 @@ export default function SupplierDetailPage() {
     <AdminPage title={supplier.name} subtitle="Supplier Details">
       <div className="space-y-4">
         {/* Back + Edit */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <Link
             href="/suppliers"
             className="text-sm text-slate-500 hover:text-white flex items-center gap-1 transition-colors"
@@ -338,17 +348,27 @@ export default function SupplierDetailPage() {
                         <span className="text-[10px] font-black uppercase text-slate-500">
                           {c.label}
                         </span>
-                        <span className="font-mono font-bold">{c.phone}</span>
-                        {c.phone.replace(/\D/g, "").length >= 10 && (
-                          <a
-                            href={waLink(c.phone)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title={`WhatsApp: ${c.phone}`}
-                            className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform inline-flex"
-                          >
-                            <MessageCircle size={13} />
-                          </a>
+                        {c.phone.replace(/\D/g, "").length >= 10 ? (
+                          <>
+                            <a
+                              href={telLink(c.phone)}
+                              title={`Call: ${c.phone}`}
+                              className="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline"
+                            >
+                              {c.phone}
+                            </a>
+                            <a
+                              href={waLink(c.phone)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`WhatsApp: ${c.phone}`}
+                              className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform inline-flex"
+                            >
+                              <MessageCircle size={13} />
+                            </a>
+                          </>
+                        ) : (
+                          <span className="font-mono font-bold">{c.phone}</span>
                         )}
                       </div>
                     ))}
@@ -364,7 +384,17 @@ export default function SupplierDetailPage() {
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
                   Email
                 </p>
-                <p className="text-sm font-bold text-slate-200">{supplier.email || "—"}</p>
+                {supplier.email ? (
+                  <a
+                    href={`mailto:${supplier.email}`}
+                    title={`Email: ${supplier.email}`}
+                    className="text-sm font-bold text-slate-200 hover:text-blue-400 hover:underline transition-colors"
+                  >
+                    {supplier.email}
+                  </a>
+                ) : (
+                  <p className="text-sm font-bold text-slate-200">—</p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -510,135 +540,238 @@ export default function SupplierDetailPage() {
               No purchase orders found for this supplier.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-[#111520]">
-                  <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                    <th className="text-left px-4 py-3"></th>
-                    <th className="text-left px-4 py-3">PO Code</th>
-                    <th className="text-left px-4 py-3">Date</th>
-                    <th className="text-center px-4 py-3">Items</th>
-                    <th className="text-right px-4 py-3">Total Amount</th>
-                    <th className="text-center px-4 py-3">Status</th>
-                    <th className="text-left px-4 py-3">Received Date</th>
-                    <th className="text-center px-4 py-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#1a2234]">
+            <>
+              {!isMobile && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-[#111520]">
+                      <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                        <th className="text-left px-4 py-3"></th>
+                        <th className="text-left px-4 py-3">PO Code</th>
+                        <th className="text-left px-4 py-3">Date</th>
+                        <th className="text-center px-4 py-3">Items</th>
+                        <th className="text-right px-4 py-3">Total Amount</th>
+                        <th className="text-center px-4 py-3">Status</th>
+                        <th className="text-left px-4 py-3">Received Date</th>
+                        <th className="text-center px-4 py-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#1a2234]">
+                      {purchaseOrders.map((po) => {
+                        const items = poItemsMap[po.id] || [];
+                        const isExpanded = expandedPO === po.id;
+                        const statusInfo = PO_STATUS_META[po.status] || PO_STATUS_META.pending;
+
+                        return (
+                          <React.Fragment key={po.id}>
+                            <tr
+                              className="hover:bg-white/[0.02] transition-colors cursor-pointer"
+                              onClick={() => setExpandedPO(isExpanded ? null : po.id)}
+                            >
+                              <td className="px-4 py-3.5 w-8">
+                                {isExpanded ? (
+                                  <ChevronDown size={14} className="text-slate-500" />
+                                ) : (
+                                  <ChevronRight size={14} className="text-slate-500" />
+                                )}
+                              </td>
+                              <td className="px-4 py-3.5">
+                                <Link
+                                  href="/inventory/purchase-orders"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="font-mono text-emerald-400 font-bold hover:underline"
+                                >
+                                  {po.po_code}
+                                </Link>
+                              </td>
+                              <td className="px-4 py-3.5 text-slate-400 text-xs">
+                                {fmtDate(po.date_created)}
+                              </td>
+                              <td className="px-4 py-3.5 text-center text-slate-400">
+                                {items.length}
+                              </td>
+                              <td className="px-4 py-3.5 text-right font-bold text-slate-200">
+                                {fmtCurrency(po.total_amount || 0)}
+                              </td>
+                              <td className="px-4 py-3.5 text-center">
+                                <span
+                                  className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusInfo.cls}`}
+                                >
+                                  {statusInfo.label}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3.5 text-slate-400 text-xs">
+                                {fmtDate(po.received_date)}
+                              </td>
+                              <td className="px-4 py-3.5 text-center">
+                                <Link
+                                  href="/inventory/purchase-orders"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition inline-flex"
+                                >
+                                  <Eye size={13} />
+                                </Link>
+                              </td>
+                            </tr>
+
+                            {isExpanded && (
+                              <tr>
+                                <td colSpan={8} className="px-4 py-4 bg-[#0d1117]/50">
+                                  {po.notes && (
+                                    <div className="mb-3 px-3 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs text-slate-400">
+                                      <span className="font-bold text-slate-500">Notes:</span>{" "}
+                                      {po.notes}
+                                    </div>
+                                  )}
+                                  {items.length === 0 ? (
+                                    <p className="text-xs text-slate-600 text-center py-2">
+                                      No items found for this PO.
+                                    </p>
+                                  ) : (
+                                    <table className="w-full text-xs">
+                                      <thead>
+                                        <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                                          <th className="text-left px-3 py-2">Product Name</th>
+                                          <th className="text-center px-3 py-2">Ordered Qty</th>
+                                          <th className="text-right px-3 py-2">Unit Price</th>
+                                          <th className="text-center px-3 py-2">Received Qty</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-[#1a2234]">
+                                        {items.map((item) => (
+                                          <tr key={item.id} className="hover:bg-white/[0.02]">
+                                            <td className="px-3 py-2 text-slate-300">
+                                              <Link
+                                                href={`/inventory/${item.product_id}`}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="text-blue-400 hover:underline"
+                                              >
+                                                {item.product_list?.name ||
+                                                  `Product #${item.product_id}`}
+                                              </Link>
+                                            </td>
+                                            <td className="px-3 py-2 text-center text-slate-400">
+                                              {item.quantity}
+                                            </td>
+                                            <td className="px-3 py-2 text-right text-slate-400">
+                                              {fmtCurrency(item.unit_price || 0)}
+                                            </td>
+                                            <td className="px-3 py-2 text-center text-slate-400">
+                                              {item.received_qty ?? 0}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  )}
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {isMobile && (
+                <div className="divide-y divide-[#1a2234]">
                   {purchaseOrders.map((po) => {
                     const items = poItemsMap[po.id] || [];
                     const isExpanded = expandedPO === po.id;
                     const statusInfo = PO_STATUS_META[po.status] || PO_STATUS_META.pending;
-
                     return (
-                      <React.Fragment key={po.id}>
-                        <tr
-                          className="hover:bg-white/[0.02] transition-colors cursor-pointer"
+                      <div key={po.id}>
+                        <button
+                          type="button"
                           onClick={() => setExpandedPO(isExpanded ? null : po.id)}
+                          className="w-full text-left px-4 py-3.5 flex items-start justify-between gap-3 transition-colors active:bg-white/[0.02]"
                         >
-                          <td className="px-4 py-3.5 w-8">
-                            {isExpanded ? (
-                              <ChevronDown size={14} className="text-slate-500" />
-                            ) : (
-                              <ChevronRight size={14} className="text-slate-500" />
-                            )}
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <Link
-                              href="/inventory/purchase-orders"
-                              onClick={(e) => e.stopPropagation()}
-                              className="font-mono text-emerald-400 font-bold hover:underline"
-                            >
-                              {po.po_code}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3.5 text-slate-400 text-xs">
-                            {fmtDate(po.date_created)}
-                          </td>
-                          <td className="px-4 py-3.5 text-center text-slate-400">{items.length}</td>
-                          <td className="px-4 py-3.5 text-right font-bold text-slate-200">
-                            {fmtCurrency(po.total_amount || 0)}
-                          </td>
-                          <td className="px-4 py-3.5 text-center">
-                            <span
-                              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusInfo.cls}`}
-                            >
-                              {statusInfo.label}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3.5 text-slate-400 text-xs">
-                            {fmtDate(po.received_date)}
-                          </td>
-                          <td className="px-4 py-3.5 text-center">
-                            <Link
-                              href="/inventory/purchase-orders"
-                              onClick={(e) => e.stopPropagation()}
-                              className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition inline-flex"
-                            >
-                              <Eye size={13} />
-                            </Link>
-                          </td>
-                        </tr>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              {isExpanded ? (
+                                <ChevronDown size={14} className="text-slate-500 flex-shrink-0" />
+                              ) : (
+                                <ChevronRight size={14} className="text-slate-500 flex-shrink-0" />
+                              )}
+                              <Link
+                                href="/inventory/purchase-orders"
+                                onClick={(e) => e.stopPropagation()}
+                                className="font-mono text-emerald-400 font-bold text-sm hover:underline"
+                              >
+                                {po.po_code}
+                              </Link>
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-1">
+                              {fmtDate(po.date_created)}
+                              {po.received_date && <> · Received {fmtDate(po.received_date)}</>}
+                            </div>
+                            <div className="text-xs text-slate-400 mt-1">
+                              {items.length} item{items.length === 1 ? "" : "s"} ·{" "}
+                              <span className="font-bold text-slate-200">
+                                {fmtCurrency(po.total_amount || 0)}
+                              </span>
+                            </div>
+                          </div>
+                          <span
+                            className={`flex-shrink-0 inline-block px-2.5 py-1 rounded-full text-[10px] font-bold ${statusInfo.cls}`}
+                          >
+                            {statusInfo.label}
+                          </span>
+                        </button>
 
                         {isExpanded && (
-                          <tr>
-                            <td colSpan={8} className="px-4 py-4 bg-[#0d1117]/50">
-                              {po.notes && (
-                                <div className="mb-3 px-3 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs text-slate-400">
-                                  <span className="font-bold text-slate-500">Notes:</span>{" "}
-                                  {po.notes}
-                                </div>
-                              )}
-                              {items.length === 0 ? (
-                                <p className="text-xs text-slate-600 text-center py-2">
-                                  No items found for this PO.
-                                </p>
-                              ) : (
-                                <table className="w-full text-xs">
-                                  <thead>
-                                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                                      <th className="text-left px-3 py-2">Product Name</th>
-                                      <th className="text-center px-3 py-2">Ordered Qty</th>
-                                      <th className="text-right px-3 py-2">Unit Price</th>
-                                      <th className="text-center px-3 py-2">Received Qty</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-[#1a2234]">
-                                    {items.map((item) => (
-                                      <tr key={item.id} className="hover:bg-white/[0.02]">
-                                        <td className="px-3 py-2 text-slate-300">
-                                          <Link
-                                            href={`/inventory/${item.product_id}`}
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="text-blue-400 hover:underline"
-                                          >
-                                            {item.product_list?.name ||
-                                              `Product #${item.product_id}`}
-                                          </Link>
-                                        </td>
-                                        <td className="px-3 py-2 text-center text-slate-400">
-                                          {item.quantity}
-                                        </td>
-                                        <td className="px-3 py-2 text-right text-slate-400">
-                                          {fmtCurrency(item.unit_price || 0)}
-                                        </td>
-                                        <td className="px-3 py-2 text-center text-slate-400">
-                                          {item.received_qty ?? 0}
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              )}
-                            </td>
-                          </tr>
+                          <div className="px-4 pb-4 bg-[#0d1117]/40">
+                            {po.notes && (
+                              <div className="mb-3 px-3 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs text-slate-400">
+                                <span className="font-bold text-slate-500">Notes:</span> {po.notes}
+                              </div>
+                            )}
+                            {items.length === 0 ? (
+                              <p className="text-xs text-slate-600 text-center py-2">
+                                No items found for this PO.
+                              </p>
+                            ) : (
+                              <div className="space-y-2">
+                                {items.map((item) => (
+                                  <div
+                                    key={item.id}
+                                    className="px-3 py-2.5 bg-[#161b27] border border-[#21293d] rounded-xl"
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <Link
+                                        href={`/inventory/${item.product_id}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="text-xs font-bold text-blue-400 hover:underline min-w-0 truncate"
+                                      >
+                                        {item.product_list?.name || `Product #${item.product_id}`}
+                                      </Link>
+                                      <span className="text-xs font-black text-slate-200 flex-shrink-0">
+                                        {fmtCurrency(item.unit_price || 0)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
+                                      <span>
+                                        Ordered: <b className="text-slate-200">{item.quantity}</b>
+                                      </span>
+                                      <span>
+                                        Received:{" "}
+                                        <b className="text-slate-200">{item.received_qty ?? 0}</b>
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         )}
-                      </React.Fragment>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -675,41 +808,76 @@ export default function SupplierDetailPage() {
               Abhi tak koi payment record nahi hai. Sabse pehla payment add karein.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-[#111520]">
-                  <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                    <th className="text-left px-4 py-3">Date</th>
-                    <th className="text-right px-4 py-3">Amount</th>
-                    <th className="text-center px-4 py-3">Mode</th>
-                    <th className="text-left px-4 py-3">Reference</th>
-                    <th className="text-left px-4 py-3">Notes</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#1a2234]">
+            <>
+              {!isMobile && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-[#111520]">
+                      <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                        <th className="text-left px-4 py-3">Date</th>
+                        <th className="text-right px-4 py-3">Amount</th>
+                        <th className="text-center px-4 py-3">Mode</th>
+                        <th className="text-left px-4 py-3">Reference</th>
+                        <th className="text-left px-4 py-3">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#1a2234]">
+                      {payments.map((p) => (
+                        <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="px-4 py-3 text-slate-400 text-xs">
+                            {fmtDate(p.payment_date)}
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-emerald-400">
+                            − {fmtCurrency(p.amount)}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-slate-300 border border-[#21293d]">
+                              {PAYMENT_MODES.find((m) => m.value === p.payment_mode)?.label ||
+                                p.payment_mode}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">{p.reference || "—"}</td>
+                          <td className="px-4 py-3 text-slate-500 text-xs max-w-[220px] truncate">
+                            {p.notes || "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {isMobile && (
+                <div className="divide-y divide-[#1a2234]">
                   {payments.map((p) => (
-                    <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-4 py-3 text-slate-400 text-xs">
-                        {fmtDate(p.payment_date)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-emerald-400">
+                    <div key={p.id} className="px-4 py-3.5 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-slate-200">
+                          {fmtDate(p.payment_date)}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-300 border border-[#21293d]">
+                            {PAYMENT_MODES.find((m) => m.value === p.payment_mode)?.label ||
+                              p.payment_mode}
+                          </span>
+                          {p.reference && (
+                            <span className="text-[11px] text-slate-500 font-mono">
+                              {p.reference}
+                            </span>
+                          )}
+                        </div>
+                        {p.notes && (
+                          <div className="text-[11px] text-slate-500 mt-1 truncate">{p.notes}</div>
+                        )}
+                      </div>
+                      <div className="text-sm font-black text-emerald-400 flex-shrink-0">
                         − {fmtCurrency(p.amount)}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-slate-300 border border-[#21293d]">
-                          {PAYMENT_MODES.find((m) => m.value === p.payment_mode)?.label ||
-                            p.payment_mode}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-400 text-xs">{p.reference || "—"}</td>
-                      <td className="px-4 py-3 text-slate-500 text-xs max-w-[220px] truncate">
-                        {p.notes || "—"}
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
