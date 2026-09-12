@@ -1,6 +1,6 @@
 # Plan: Suppliers Module — Fixes, Updates & New Features
 
-> Status: **IN PROGRESS — Phase A DONE; P1 (PO bridge) SHIPPED (migration applied ✅); P2 (GST/bank) SHIPPED (migration apply pending); P3 (spending report) SHIPPED (2026-09-13); P4/P5 optional pending**
+> Status: **COMPLETE — Phase A DONE; Phase B SHIPPED (P1 PO bridge apply ✅, P2 GST/bank apply ✅, P3 spending report); P4/P5 optional**
 > Created: 2026-09-17 · Basis: full codebase audit of supplier flows, DB schema, PO module, required-parts flow
 > Phase A (2026-09-12): bug fix + supplier_payments ledger shipped. Migration `20260912_supplier_payments.sql` user par apply pending (Supabase SQL Editor).
 
@@ -22,8 +22,8 @@
 | Required parts ↔ Supplier assignment | ✅ Informative only (no cost, no PO bridge) |
 | Supplier payment / dues ledger | ✅ DONE (2026-09-12) — `supplier_payments` table + detail "Payments & Outstanding" section + Add Payment modal + list "Due" column + `/reports/supplier-dues` |
 | Supplier spending / purchase report | ✅ **SHIPPED (P3, 2026-09-13)** — `/reports/supplier-purchases` (KPI + trend + product breakdown) |
-| Required-parts → PO conversion | ✅ **SHIPPED (P1, 2026-09-13)** — Convert-to-PO + parts/PO link + source-job trace |
-| Supplier form GST/bank fields | ✅ **SHIPPED (P2, 2026-09-13)** — GSTIN + bank + credit/terms + city/state in form & detail card |
+| Required-parts → PO conversion | ✅ **SHIPPED (P1, 2026-09-13, applied ✅)** — Convert-to-PO + parts/PO link + source-job trace |
+| Supplier form GST/bank fields | ✅ **SHIPPED (P2, 2026-09-13, applied ✅)** — GSTIN + bank + credit/terms + city/state in form & detail card |
 
 ---
 
@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS public.supplier_payments (
 
 **Why:** When a job needs a spare part, you add it as a "waiting" required part with supplier + photo + phone. But to actually buy it, you must manually go to `/inventory/purchase-orders` and recreate the line items. This duplication is error-prone and time-consuming.
 
-> **Status: SHIPPED (2026-09-13)** — `feat(parts)` commit. Migration `20260913_required_parts_po_bridge.sql` apply pending (idempotent; full-schema backport block bhi included).
+> **Status: SHIPPED (2026-09-13)** — `feat(parts)` commit `45cb463`. Migration `20260913_required_parts_po_bridge.sql` **applied** (full-schema backport block bhi included).
 
 #### Flow (implemented)
 
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS public.supplier_payments (
 
 **Why:** GST number needed for purchase bills (Indian tax). Bank details for large payments. Credit limit for tracking overdue.
 
-> **Status: SHIPPED (2026-09-13)** — `feat(suppliers)` commit. Migration `20260913_suppliers_gst_bank.sql` apply pending (idempotent; full-schema backport block bhi included).
+> **Status: SHIPPED (2026-09-13)** — `feat(suppliers)` commit `b168495`. Migration `20260913_suppliers_gst_bank.sql` **applied** (full-schema backport block bhi included).
 
 #### DB changes (migration 20260913_suppliers_gst_bank.sql)
 
@@ -207,14 +207,17 @@ ALTER TABLE public.suppliers
 | **Phase C** | P3 supplier spending report + P4 expense linkage | 1-2 sessions |
 | **Phase D** | P5 spare_supplier active usage | 1 session |
 
+> **Execution status (2026-09-13):** Phase A ✅ (commits `34bb8e0`), P1 ✅ (`45cb463`, migration apply ✅), P2 ✅ (`b168495`, migration apply ✅), P3 ✅ (`1a0ad01`). Phase C ka P3 ho chuka; P4/P5 optional (batao to karenge).
+
 ---
 
 ## 5. Migration notes
 
 All DB changes go into:
-- New file: `supabase/migrations/YYYYMMDD_supplier_payments.sql` (Phase A) ✅ DONE → `20260912_supplier_payments.sql` (apply pending on live DB)
-- New file: `supabase/migrations/YYYYMMDD_supplier_enrichment.sql` (Phase B)
-- Update: `supabase/migrations/20260913000000_final_full_schema_idempotent.sql` (all phases) — Phase A backport DONE
+- New file: `supabase/migrations/20260912_supplier_payments.sql` (Phase A) ✅ DONE **and applied** on live DB
+- New file: `supabase/migrations/20260913_required_parts_po_bridge.sql` (Phase B P1) ✅ DONE **and applied**
+- New file: `supabase/migrations/20260913_suppliers_gst_bank.sql` (Phase B P2) ✅ DONE **and applied**
+- Update: `supabase/migrations/20260913000000_final_full_schema_idempotent.sql` (all phases) — backports DONE (supplier_payments, P1 bridge, P2 enrichment)
 
 Follow `docs/DATA_MIGRATION_NOTES.md` conventions:
 - All tables use `bigint` PKs (identity)
