@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [1.15.0](https://github.com/waraseoni/vtech-next/compare/v1.14.0...v1.15.0) (2026-09-12)
+
+### Features
+
+* **reports:** stock valuation report with per-category valuation breakdown ([85e9ccf](https://github.com/waraseoni/vtech-next/commit/85e9ccf13e3c68880b9f4ce5f1ec7858627c9f83))
+* **suppliers:** mobile-first card redesign + active call/WhatsApp/mail links ([32f3081](https://github.com/waraseoni/vtech-next/commit/32f30818bb06b743a356db360370e55819f1a050))
+
 ## [1.14.0](https://github.com/waraseoni/vtech-next/compare/v1.13.0...v1.14.0) (2026-09-12)
 
 ### Features
