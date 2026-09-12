@@ -616,7 +616,6 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         remark: remark.trim() || "", // NOT NULL in DB — empty string safe
         amount: grandTotal,
         mechanic_commission_amount: finalCommission,
-        status: 0, // Pending
         date_updated:
           new Intl.DateTimeFormat("en-CA", {
             timeZone: "Asia/Kolkata",
@@ -649,7 +648,11 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
       let txnId = jobId;
 
       if (isEdit) {
-        const { error } = await supabase.from("transaction_list").update(payload).eq("id", jobId);
+        // Edit me status kabhi touch mat karo — existing status waisa hi rahe
+        const { error } = await supabase
+          .from("transaction_list")
+          .update(payload)
+          .eq("id", jobId);
         if (error) throw error;
 
         // Delete existing services & products, re-insert
@@ -663,6 +666,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
           .insert([
             {
               ...payload,
+              status: 0, // Pending — sirf naye job par
               del_status: 0,
               date_created: (() => {
                 const p = new Intl.DateTimeFormat("en-CA", {
