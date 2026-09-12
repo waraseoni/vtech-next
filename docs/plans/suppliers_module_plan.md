@@ -1,7 +1,8 @@
 # Plan: Suppliers Module — Fixes, Updates & New Features
 
-> Status: **PLANNING — Not started**
+> Status: **IN PROGRESS — Phase A (PO status fix + P0 payments) DONE; P1/P2/P3 pending**
 > Created: 2026-09-17 · Basis: full codebase audit of supplier flows, DB schema, PO module, required-parts flow
+> Phase A (2026-09-12): bug fix + supplier_payments ledger shipped. Migration `20260912_supplier_payments.sql` user par apply pending (Supabase SQL Editor).
 
 ---
 
@@ -19,10 +20,10 @@
 | PO Receive → stock-in (`receive_po_receipt` RPC) | ✅ Atomic + partial receive |
 | Required parts on jobs (`job_required_parts`) | ✅ CRUD + photo + supplier assignment |
 | Required parts ↔ Supplier assignment | ✅ Informative only (no cost, no PO bridge) |
-| Supplier payment / dues ledger | ❌ Not started |
-| Supplier spending / purchase report | ❌ Not started |
-| Required-parts → PO conversion | ❌ Not started |
-| Supplier form GST/bank fields | ❌ Not started |
+| Supplier payment / dues ledger | ✅ DONE (2026-09-12) — `supplier_payments` table + detail "Payments & Outstanding" section + Add Payment modal + list "Due" column + `/reports/supplier-dues` |
+| Supplier spending / purchase report | ❌ Not started (P3) |
+| Required-parts → PO conversion | ❌ Not started (P1) |
+| Supplier form GST/bank fields | ❌ Not started (P2) |
 
 ---
 
@@ -49,7 +50,7 @@ const STATUS_MAP: Record<number, { label: string; cls: string }> = {
 - `STATUS_MAP["received"]` → `undefined` → falls back to STATUS_MAP[0] → **always shows "Pending"**
 - `p.status === 2` check in stats never matches string → **Received Value always 0**
 
-### Fix
+### Fix ✅ DONE (2026-09-12)
 
 - Use text-based status map (matching `/inventory/purchase-orders` page which already uses text keys)
 - Fix stat card filter logic to compare strings
@@ -198,9 +199,9 @@ ALTER TABLE public.suppliers
 ## 5. Migration notes
 
 All DB changes go into:
-- New file: `supabase/migrations/YYYYMMDD_supplier_payments.sql` (Phase A)
+- New file: `supabase/migrations/YYYYMMDD_supplier_payments.sql` (Phase A) ✅ DONE → `20260912_supplier_payments.sql` (apply pending on live DB)
 - New file: `supabase/migrations/YYYYMMDD_supplier_enrichment.sql` (Phase B)
-- Update: `supabase/migrations/20260913000000_final_full_schema_idempotent.sql` (all phases)
+- Update: `supabase/migrations/20260913000000_final_full_schema_idempotent.sql` (all phases) — Phase A backport DONE
 
 Follow `docs/DATA_MIGRATION_NOTES.md` conventions:
 - All tables use `bigint` PKs (identity)

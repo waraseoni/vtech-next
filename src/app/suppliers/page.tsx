@@ -6,11 +6,9 @@ import Image from "next/image";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { safeImageSrc } from "@/lib/image-utils";
-import SupplierFormModal, {
-  SupplierRow,
-  SupplierContact,
-} from "@/components/SupplierFormModal";
+import SupplierFormModal, { SupplierRow, SupplierContact } from "@/components/SupplierFormModal";
 import Lightbox from "@/components/Lightbox";
+import { fetchSupplierDues } from "@/lib/supplierPayments";
 import {
   Search,
   Plus,
@@ -41,6 +39,7 @@ export default function SuppliersPage() {
   const [err, setErr] = useState("");
   const [userRole, setUserRole] = useState("staff");
   const [zoomSrc, setZoomSrc] = useState("");
+  const [duesMap, setDuesMap] = useState<Record<number, number>>({});
 
   useEffect(() => {
     getCachedUser().then(({ data: { user } }) => {
@@ -57,11 +56,7 @@ export default function SuppliersPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     const [{ data, error }, { data: contactRows }] = await Promise.all([
-      supabase
-        .from("suppliers")
-        .select("*")
-        .eq("delete_flag", 0)
-        .order("name"),
+      supabase.from("suppliers").select("*").eq("delete_flag", 0).order("name"),
       supabase.from("supplier_contacts").select("id, supplier_id, label, phone, is_primary"),
     ]);
     if (error) setErr(error.message);
@@ -76,6 +71,8 @@ export default function SuppliersPage() {
       map[Number(id)].sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
     }
     setContactsMap(map);
+    const dues = await fetchSupplierDues();
+    setDuesMap(Object.fromEntries(dues.map((d) => [d.supplierId, d.outstanding])));
     setLoading(false);
   }, []);
 
@@ -83,8 +80,7 @@ export default function SuppliersPage() {
     fetchData();
   }, [fetchData]);
 
-  const allPhones = (id: number) =>
-    (contactsMap[id] || []).map((c) => c.phone).join(" ");
+  const allPhones = (id: number) => (contactsMap[id] || []).map((c) => c.phone).join(" ");
 
   const filtered = rows.filter(
     (s) =>
@@ -194,17 +190,17 @@ export default function SuppliersPage() {
                   <th className="text-left px-4 py-3">Email</th>
                   <th className="text-left px-4 py-3">Address</th>
                   <th className="text-center px-4 py-3">Status</th>
+                  <th className="text-center px-4 py-3">Due</th>
                   <th className="text-center px-4 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1a2234]">
                 {filtered.map((s) => {
-                  const contacts =
-                    contactsMap[s.id]?.length
-                      ? contactsMap[s.id]
-                      : s.contact
-                        ? [{ label: "Mobile", phone: s.contact, is_primary: true }]
-                        : [];
+                  const contacts = contactsMap[s.id]?.length
+                    ? contactsMap[s.id]
+                    : s.contact
+                      ? [{ label: "Mobile", phone: s.contact, is_primary: true }]
+                      : [];
                   return (
                     <tr key={s.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-3.5">
@@ -304,7 +300,25 @@ export default function SuppliersPage() {
                           {s.status === 1 ? "Active" : "Inactive"}
                         </button>
                       </td>
-                      <td className="px-4 py-3.5">
+                      <td className="px-4 py-3.5 text-center">
+                        {(() => {
+                          const due = duesMap[s.id] ?? 0;
+                          return (
+                            <span
+                              className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                                due > 0
+                                  ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                                  : due < 0
+                                    ? "bg-red-500/10 border-red-500/20 text-red-400"
+                                    : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                              }`}
+                            >
+                              ₹{due.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                      <td className="px-4 py-3.5 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <Link
                             href={`/suppliers/${s.id}`}

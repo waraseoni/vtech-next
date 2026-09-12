@@ -62,6 +62,7 @@ import {
   ListChecks,
   PackageX,
   Boxes,
+  Landmark,
 } from "lucide-react";
 import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
 import { Toaster } from "sonner";
@@ -679,7 +680,12 @@ function SidebarNav({
         <SubMenu
           title="Jobs in Shop"
           icon={<Wrench size={15} />}
-          matchPaths={["/reports/pending-jobs", "/reports/daily-done", "/reports/parts-pending"]}
+          matchPaths={[
+            "/reports/pending-jobs",
+            "/reports/daily-done",
+            "/reports/parts-pending",
+            "/reports/supplier-dues",
+          ]}
         >
           <li>
             <Link
@@ -699,6 +705,16 @@ function SidebarNav({
             >
               <Boxes size={12} className="text-amber-400" />
               Waiting for Parts
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/reports/supplier-dues"
+              className={subLinkCls(pathname === "/reports/supplier-dues")}
+              onClick={onNavClick}
+            >
+              <Landmark size={12} className="text-emerald-400" />
+              Supplier Dues
             </Link>
           </li>
           <li>
@@ -1159,6 +1175,16 @@ function SidebarNav({
                     >
                       <Boxes size={12} />
                       Waiting for Parts
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/supplier-dues"
+                      className={subLinkCls(pathname === "/reports/supplier-dues")}
+                      onClick={onNavClick}
+                    >
+                      <Landmark size={12} />
+                      Supplier Dues
                     </Link>
                   </li>
 

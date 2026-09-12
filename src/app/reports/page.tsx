@@ -28,6 +28,7 @@ import {
   CheckCircle,
   CalendarClock,
   PackageX,
+  Landmark,
 } from "lucide-react";
 
 // --- Types ---
@@ -92,6 +93,15 @@ const REPORTS: ReportItem[] = [
     icon: <Wrench size={16} />,
     category: "Job Reports",
     color: "from-sky-500 to-indigo-600",
+    isNew: true,
+  },
+  {
+    title: "Supplier Dues",
+    description: "Supplier outstanding balances — billed, paid, due.",
+    href: "/reports/supplier-dues",
+    icon: <Landmark size={16} />,
+    category: "Job Reports",
+    color: "from-emerald-500 to-teal-600",
     isNew: true,
   },
 
