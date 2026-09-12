@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.9.0](https://github.com/waraseoni/vtech-next/compare/v1.8.3...v1.9.0) (2026-09-12)
+
+### Features
+
+* **suppliers:** fix PO status display + supplier payments/dues ledger ([34bb8e0](https://github.com/waraseoni/vtech-next/commit/34bb8e04e8ed9d20917231b370f09c76016c2523))
+
 ## [1.8.3](https://github.com/waraseoni/vtech-next/compare/v1.8.2...v1.8.3) (2026-09-12)
 
 ### Bug Fixes
