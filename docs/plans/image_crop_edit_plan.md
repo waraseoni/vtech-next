@@ -182,12 +182,21 @@ Feature **banao, par slim banao** — crop + rotate hi hai jo iska 80% value hai
 
 ---
 
-## 10. SHIPPED — Phase 1 (2026-09-12)
+## 10. SHIPPED — Phase 1 + Phase 2 (2026-09-12)
 
+**Phase 1:**
 - ✅ `react-easy-crop@6.2.3` installed → `Cropper` component (CSS auto-inject, koi global-css import nahi chahiye — Next App Router safe)
 - ✅ `src/lib/imageCropper.ts` — `cropImage(src, pixelCrop, rotation, maxDim?)` canvas util (rotateSize + bbox rotated draw + crop-extract; official easy-crop approach, 90°-steps)
 - ✅ `src/components/ImageCropperModal.tsx` — full-screen dark editor: crop/move/zoom (pinch+wheel+buttons), 90° L/R rotate, Fixed↔Free aspect toggle, **"Original rakho"** one-tap skip, "Crop Karo" confirm (ref render-access lint rule safe — `cropReady` state)
 - ✅ `src/lib/useImageUpload.tsx` — `openCropper(file, {aspect,title,maxDim}) → Promise<File|null>` (null = cancelled); cropped blob → File, "original" → as-is File; blob-URL revoke cleanup
-- ✅ **Pilot sites wired:** ProductFormModal (1:1 square) + SupplierFormModal visiting card (3:2 landscape) — camera & gallery dono flows editor se hoke jate hain
-- Upload compression unchanged (crop → `compressImage` → ≤100 KB)
+
+**Phase 2 (avatars — 1:1 preset):**
+- ✅ **ProductFormModal** (1:1) + **SupplierFormModal visiting card** (3:2) — camera & gallery dono flows editor se hoke jate hain
+- ✅ **Profile avatar** (`profile/page.tsx`) — 1:1
+- ✅ **User avatar** (`users/[id]/edit/page.tsx`) — 1:1
+- ✅ **Client photo** (`clients/[id]/view/page.tsx`) — 1:1
+- ✅ **Mechanic photo** (`mechanics/[id]/page.tsx`) — 1:1
+- Logo/cover/signature (settings) crop flow me NAHI — plan ke hisaab se excluded
+
+Upload compression unchanged (crop → `compressImage` → ≤100 KB)
 - Verify: tsc ✅ · eslint ✅ (new files 0 issues) · vitest 101 ✅ · `npm run build` ✅

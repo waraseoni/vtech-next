@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
+import { useImageUpload } from "@/lib/useImageUpload";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import SearchableSelect from "@/components/SearchableSelect";
 import PageLoader from "@/components/PageLoader";
@@ -66,15 +67,19 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [photoPopup, setPhotoPopup] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
   const photoCamRef = useRef<HTMLInputElement>(null);
+  const { openCropper, cropperEl } = useImageUpload();
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    // Avatar circle 1:1 dikhta hai — crop editor pehle.
+    const picked = await openCropper(file, { aspect: 1, title: "User Photo — Crop" });
+    if (!picked) return;
     setPhotoSaving(true);
     setPhotoErr("");
     try {
-      const compressed = await compressImage(file);
+      const compressed = await compressImage(picked);
       if (compressed.bytes > 100 * 1024) {
         setPhotoErr("Image abhi bhi 100KB se bada hai — kam resolution ki photo try karein");
         setPhotoSaving(false);
@@ -570,6 +575,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           </form>
         </div>
       </div>
+      {cropperEl}
     </div>
   );
 }

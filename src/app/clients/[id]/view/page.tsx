@@ -61,6 +61,7 @@ import { logActivity } from "@/lib/activity";
 import { firmVars } from "@/lib/whatsapp";
 import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
+import { useImageUpload } from "@/lib/useImageUpload";
 import { JOB_STATUS } from "@/lib/status-colors";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import PageLoader from "@/components/PageLoader";
@@ -392,15 +393,19 @@ export default function ViewClientProfile() {
   const [photoPopup, setPhotoPopup] = useState(false);
   const photoRef = React.useRef<HTMLInputElement>(null);
   const photoCamRef = React.useRef<HTMLInputElement>(null);
+  const { openCropper, cropperEl } = useImageUpload();
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    // Client card photo square dikhti hai — crop editor pehle.
+    const picked = await openCropper(file, { aspect: 1, title: "Client Photo — Crop" });
+    if (!picked) return;
     setPhotoSaving(true);
     setPhotoErr("");
     try {
-      const compressed = await compressImage(file);
+      const compressed = await compressImage(picked);
       if (compressed.bytes > 100 * 1024) {
         setPhotoErr("Image abhi bhi 100KB se bada hai — kam resolution ki photo try karein");
         setPhotoSaving(false);
@@ -2677,6 +2682,7 @@ export default function ViewClientProfile() {
           </div>
         </div>
       )}
+      {cropperEl}
     </div>
   );
 }
