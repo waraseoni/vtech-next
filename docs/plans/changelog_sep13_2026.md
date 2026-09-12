@@ -65,6 +65,17 @@
 - New report `/reports/supplier-purchases` — date range (Today / 7 Din / 30 Din / This Month presets, default current month), KPIs (Total Spend, POs, Qty Ordered, Avg Unit Cost), monthly spend bar chart, supplier table with expandable "inhone kya-kya supply kiya" product breakdown, search + print
 - Reports index — "Supplier Purchases" card (teal, NEW badge)
 
+### 6. Stock Valuation Report (I6) — `/reports/stock-valuation`
+
+**Problem:** "Mere store me abhi kitna paisa ka stock pada hai" — koi single answer nahi tha; available × avg purchase cost kahin nahi dikhta.
+
+**What changed:**
+- `src/lib/stockValuation.ts` — two honest views:
+  - `fetchProductValuation()` — active products × `available` (I1 RPC) × `avg_purchase_cost` → per-product value (searchable table, link → inventory detail)
+  - `fetchLocationValuation()` — Σ(qty × purchase_cost) over `inventory_list` grouped by shelf (Zone ▸ Rack ▸ Bin ▸ Box), expandable per-product breakdown
+- New report `/reports/stock-valuation`: KPI cards (Total Stock Value / Units / In Stock / Out Of Stock), two-view note (available basis vs inbound shelf value), print header + print CSS
+- Reports index — "Stock Valuation" card (emerald, NEW badge)
+
 ---
 
 ## Migrations Applied (2026-09-12/13)

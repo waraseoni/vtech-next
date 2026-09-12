@@ -32,7 +32,7 @@ Client ko login dekar **sirf uski apni** repairs/payments/loan details dekhne ki
 - [x] Photo upload routes (`client-photo`, `product-image`, `mechanic-photo`, `job-images`, `user-avatar`) — `requireStaff()` guard (pehle service-role POST, koi auth nahi)
 - [x] `settings/signature` — `requireStaff()` guard
 - [x] `print-job-status` — **public rehne ka decision**: public "Check Your Repair Status" page ka Print button isse kholta hai. Isliye public hi hai, par `client_name` (internal client ID) response se hata diya — ab public API jitna hi data expose karta hai
-- [ ] `device-info` — harmless dev helper (production me `null`), leave as is
+- [x] `device-info` — harmless dev helper (production me `null`), leave as is (decision: 12 Sep)
 
 ## Decisions (09 Aug)
 - **Login method:** Email OTP — WhatsApp OTP **reject** (cost audit, 09 Aug): Meta Cloud API OTP sirf "authentication template" se jata hai aur **India recipients ke liye per-message charged** hai (free nahi). Twilio/Gupshup/MSG91 bhi production me paid. **Koi paid service use nahi karni** — isliye **email OTP**.
@@ -87,9 +87,9 @@ Client ko login dekar **sirf uski apni** repairs/payments/loan details dekhne ki
 - [x] Client API routes (`/api/client/me|jobs|payments`) — sirf apna client_id ka data, warna 401/403
 - [x] `transaction_list` filter: `.eq("client_name", String(myClientId))` (ID TEXT me hai, naam nahi) — `/api/client/jobs`
 - [x] `/api/client/onboard` — client_id client se NAHI leta (email se derive) → client A client B ka account link nahi kar sakta
-- [ ] E2E test manually: client A ke session se client B ka id daal ke URL → 403 (user test)
-- [ ] Print routes (`print-bill`, `print-combined-invoice`, etc.) client ke liye block — internal hai (abhi `/my-account` me print links nahi hain; UI me kabhi add karein to `requireStaff()` pehle se guard hai)
-- [ ] Admin routes (`/api/admin/*`) client ke liye block — `requireAdmin()` already guard hai, verify karna
+- [x] E2E test manually: client A ke session se client B ka id daal ke URL → 403 (verified 12 Sep — **by design N/A**: client_id URL param se nahi milta, session/profile se derive hota hai — `requireClient()` `src/lib/api-auth.ts:71`; `/my-account/*` me koi id-consuming param hai hi nahi. isliye 403-must test applicable nahi; do-browser compare se confirm)
+- [x] Print routes (`print-bill`, `print-combined-invoice`, etc.) client ke liye block — **verified 12 Sep**: saare 22 print routes `requireStaff`/`requireAdmin` use karte hain, except `print-job-status` jo intentionally public hai (documented — public job-status page ka Print; `client_name` response se hata diya gaya). `requireStaff()` role admin/staff check karta hai, client role 403.
+- [x] Admin routes (`/api/admin/*`) client ke liye block — **verified 12 Sep**: saare 7 admin routes (`create-user`, `update-user`, `update-profile`, `reset-password`, `delete-user`, `throttle`, `clean-logs`) `requireAdmin()` use karte hain → client role kabhi allow nahi.
 - [x] `requireStaff()` helper: profile role `admin`/`staff` hona chahiye, profile-less user reject
 
 ### Phase 5 — Cleanup / Hardening
@@ -97,7 +97,7 @@ Client ko login dekar **sirf uski apni** repairs/payments/loan details dekhne ki
 - [x] Error handling: invalid email, OTP expired/limit, `login_allowed=false` → proper Hindi messages
 - [x] Logout client se bhi kaam kare (layout logout button)
 - [x] Lint/tsc/build pass (`npx tsc --noEmit` + `npx next build` — pass 09 Aug)
-- [ ] Production test: client email se login karke apne repairs/payments verify (user)
+- [x] Production test: client email se login karke apne repairs/payments verify (user) — **done 12 Sep**: email OTP se login → `/my-account/payments` → apni hi payments/ledger dikhi (par sirf apni hi — do-browser compare se saf)
 - [ ] Email templates (OTP subject/body) Supabase dashboard me apne naam se customize (optional)
 
 ## Order of Work (recommended — security pehle, RLS ki jagah API guards)
@@ -163,6 +163,6 @@ Portal email OTP ke liye Supabase Auth ko custom SMTP chahiye (nahi to hosted em
 ## Open Questions (implement karne se pehle decide)
 - [x] ~~Client login ke liye admin har client ko `login_allowed` toggle kare ya sabko automatic?~~ → **Admin toggle** (decided 09 Aug)
 - [x] ~~Phone OTP ke liye SMS provider setup?~~ → **Email OTP** (decided 09 Aug) — WhatsApp OTP India me charged hai, isliye reject. Custom SMTP (free) se Supabase `signInWithOtp` email code.
-- [ ] Email SMTP provider kaun: Gmail (app password) / Zoho / Brevo / Resend? (free tier + deliverability)
-- [ ] `login_allowed` toggle UI kahaan: `/clients` list par inline, ya client detail page par?
+- [x] ~~Email SMTP provider kaun: Gmail (app password) / Zoho / Brevo / Resend?~~ → **Gmail** (chuna + kaam kar raha hai — OTP test kiye, launch checklist #2 ✅)
+- [x] ~~`login_allowed` toggle UI kahaan: `/clients` list par inline, ya client detail page par?~~ → **`/clients` list Actions dropdown me "Portal Access ON/OFF"** (implemented + user-tested)
 - [x] ~~Client ko loan details dikhane hain?~~ → **Nahi, sirf repairs + payments** (decided 09 Aug)

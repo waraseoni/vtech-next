@@ -27,8 +27,8 @@ import {
   Info,
   CheckCircle,
   CalendarClock,
-  PackageX,
   Landmark,
+  Coins,
 } from "lucide-react";
 
 // --- Types ---
@@ -111,6 +111,15 @@ const REPORTS: ReportItem[] = [
     icon: <ShoppingCart size={16} />,
     category: "Job Reports",
     color: "from-teal-500 to-cyan-700",
+    isNew: true,
+  },
+  {
+    title: "Stock Valuation",
+    description: "Kitna paisa stock me pada hai — available value + shelf-wise.",
+    href: "/reports/stock-valuation",
+    icon: <Coins size={16} />,
+    category: "Job Reports",
+    color: "from-emerald-500 to-teal-700",
     isNew: true,
   },
 

@@ -1,6 +1,6 @@
 # Inventory System — Master Improvement & BOM Plan
 
-> Status: **PLAN / DESIGN ONLY** — no code written.
+> Status: **I1/I2/I3/I4/I5-tracker active — I6 valuation report DONE (2026-09-12); location data-model cleanup pending.**
 > This is a single, merged, ordered plan built from two prior design docs:
 >   1. `inventory_improvements_plan.md` (system-wide upgrades)
 >   2. `bom_checker_plan.md` (BOM auto-check feature)
@@ -175,12 +175,12 @@ Keep the allow-over-sell rule (`SaleForm.tsx:310-311, 376-377`) but:
   oversell from shrinkage/typo.
 
 ### I6 — Valuation report & location data-model cleanup (LAST)
-- **Stock valuation report:** Σ(available × avg purchase_cost) per location
-  (zone→rack→bin→box), drillable. Data present in `inventory_list.purchase_cost`;
-  avg cost surfaced by **I1**.
-- **Data-model cleanup:** retire legacy `place*` columns from `inventory_list`
-  in favor of canonical `product_locations`/`locations`. Must be additive + verified
-  against the consolidated idempotent migration.
+- **Stock valuation report ✓ DONE (2026-09-12)** — `/reports/stock-valuation` shipped:
+  - `src/lib/stockValuation.ts` — `fetchProductValuation()` (active products × `available` from I1 RPC × `avg_purchase_cost` → value) + `fetchLocationValuation()` (Σ qty × purchase_cost over `inventory_list` grouped by shelf path via `locPath`/`partsFromRow`, drillable per product).
+  - Page: KPI cards (Total Stock Value / Units / In Stock / Out Of Stock), searchable product table (link → `/inventory/[id]`), location-wise table with expandable product breakdown (Zone ▸ Rack ▸ Bin ▸ Box), print header + print CSS. Card added to reports index (`Coins`, Job Reports, NEW badge).
+  - Honest two-view note: product value (sales kat ke = available basis) vs location value (inbound kharid value — sales shelf-level split nahi hoti).
+  - Verified: tsc clean · eslint clean · vitest 101/101 · build PASS (route `/reports/stock-valuation`).
+- **Data-model cleanup (place\* → product_locations/locations) — ⏳ PENDING** (alag session; risky blast-radius, stock base ab stable hai isliye kiya ja sakta hai).
 
 ---
 
