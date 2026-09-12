@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.8.1](https://github.com/waraseoni/vtech-next/compare/v1.8.0...v1.8.1) (2026-09-12)
+
+### Bug Fixes
+
+* **suppliers:** prevent null email/address crash + bigger visiting card preview ([a99c34f](https://github.com/waraseoni/vtech-next/commit/a99c34fd4cef615c989dc8fe5bcff67693ff8911))
+
 ## [1.8.0](https://github.com/waraseoni/vtech-next/compare/v1.7.2...v1.8.0) (2026-09-11)
 
 ### Features
