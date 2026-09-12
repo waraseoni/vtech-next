@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.11.0](https://github.com/waraseoni/vtech-next/compare/v1.10.0...v1.11.0) (2026-09-12)
+
+### Features
+
+* **images:** crop/rotate editor for all avatar sites (1:1) ([4f8fbc7](https://github.com/waraseoni/vtech-next/commit/4f8fbc720765c88103a08b87c83778e67373d7f0))
+
 ## [1.10.0](https://github.com/waraseoni/vtech-next/compare/v1.9.0...v1.10.0) (2026-09-12)
 
 ### Features
