@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.13.0](https://github.com/waraseoni/vtech-next/compare/v1.12.0...v1.13.0) (2026-09-12)
+
+### Features
+
+* **suppliers:** GST/bank/credit-terms supplier form enrichment ([b168495](https://github.com/waraseoni/vtech-next/commit/b168495bfd3e50e87403a9f5fbfbfb6e6ea5801d))
+
 ## [1.12.0](https://github.com/waraseoni/vtech-next/compare/v1.11.0...v1.12.0) (2026-09-12)
 
 ### Features
