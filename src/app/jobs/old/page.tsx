@@ -250,18 +250,19 @@ export default function ManageJobPage() {
     })();
   }, [fetchMaster, fetchJob, isEdit]);
 
-  // ── Auto-calc mechanic amount from commission ──────────────────────────────
-  useEffect(() => {
-    const mech = mechanics.find((m) => m.id === parseInt(mechanicId));
-    if (mech && mech.commission_percent > 0) {
-      setMechAmount(((totalAmount * mech.commission_percent) / 100).toFixed(2));
-    }
-  }, [mechanicId, mechanics]); // eslint-disable-line
-
   // ── Derived totals ─────────────────────────────────────────────────────────
   const svcTotal = selServices.reduce((s, r) => s + r.price, 0);
   const prodTotal = selProducts.reduce((s, r) => s + r.price * r.qty, 0);
   const totalAmount = svcTotal + prodTotal;
+
+  // ── Auto-calc mechanic amount from commission ──────────────────────────────
+  // Rule: commission = services total ONLY (spare parts excluded) × DB rate
+  useEffect(() => {
+    const mech = mechanics.find((m) => m.id === parseInt(mechanicId));
+    if (mech && mech.commission_percent > 0) {
+      setMechAmount(((svcTotal * mech.commission_percent) / 100).toFixed(2));
+    }
+  }, [mechanicId, svcTotal, mechanics]);
 
   // ── Add service ────────────────────────────────────────────────────────────
   const addService = (svcId: number) => {

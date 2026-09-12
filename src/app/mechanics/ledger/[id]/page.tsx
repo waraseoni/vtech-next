@@ -522,7 +522,13 @@ export default function MechanicLedger() {
                             className="flex items-center justify-between gap-4 text-[11px] bg-[#0d1117]/50 rounded-lg px-2 py-1 border border-white/[0.03]"
                           >
                             <div className="flex items-center gap-2 truncate">
-                              <span className="text-blue-400 font-black">#{j.job_id}</span>
+                              <Link
+                                href={`/jobs/${j.id}/view`}
+                                title="View Job"
+                                className="text-blue-400 font-black hover:text-blue-300 hover:underline"
+                              >
+                                #{j.job_id}
+                              </Link>
                               <span className="text-slate-500 truncate max-w-[120px]">
                                 {j.item}
                               </span>

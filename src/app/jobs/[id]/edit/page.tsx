@@ -556,13 +556,14 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
   const grandTotal = serviceTotal + productTotal;
 
   // Auto-calculate mechanic commission when mechanic changes
+  // Rule: commission = services total ONLY (spare parts excluded) × DB rate
   useEffect(() => {
     if (!selectedMechanic) return;
     const mech = mechanics.find((m) => m.id === parseInt(selectedMechanic));
     if (mech && mech.commission_percent > 0) {
-      setCommissionAmt(((grandTotal * mech.commission_percent) / 100).toFixed(2));
+      setCommissionAmt(((serviceTotal * mech.commission_percent) / 100).toFixed(2));
     }
-  }, [selectedMechanic, grandTotal, mechanics]);
+  }, [selectedMechanic, serviceTotal, mechanics]);
 
   // ── SUBMIT ─────────────────────────────────────────────────────────────
   const handleSave = async () => {
@@ -590,6 +591,17 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
     savingRef.current = true;
     setSaving(true);
     try {
+      // Auto-calculate commission for staff (they can't see/edit the input).
+      // Rule: services total ONLY × DB commission rate.
+      let finalCommission = parseFloat(commissionAmt) || 0;
+      if (userRole !== "admin" && userRole !== "developer" && selectedMechanic) {
+        const svcTotal = serviceRows.reduce((s, r) => s + r.price, 0);
+        const mech = mechanics.find((m) => m.id === parseInt(selectedMechanic));
+        if (mech && mech.commission_percent > 0) {
+          finalCommission = Math.round((svcTotal * mech.commission_percent) / 100);
+        }
+      }
+
       const payload = {
         // user_id = logged-in user's numeric id (profiles.mechanic_id → old PHP users.id)
         user_id: currentUserId,
@@ -603,7 +615,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         location_id: locId,
         remark: remark.trim() || "", // NOT NULL in DB — empty string safe
         amount: grandTotal,
-        mechanic_commission_amount: parseFloat(commissionAmt) || 0,
+        mechanic_commission_amount: finalCommission,
         status: 0, // Pending
         date_updated:
           new Intl.DateTimeFormat("en-CA", {
@@ -1317,29 +1329,31 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
               <IndianRupee className="text-blue-500/30" size={48} strokeWidth={1.5} />
             </div>
 
-            {/* Mechanic Commission */}
-            <div>
-              <label className={labelCls}>Mechanic Commission (₹)</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={commissionAmt ?? "0"}
-                  onChange={(e) => setCommissionAmt(e.target.value)}
-                  className={inputCls}
-                  placeholder="0.00"
-                />
-                {(() => {
-                  const mech = mechanics.find((m) => m.id === parseInt(selectedMechanic));
-                  return selectedMechanic && mech && mech.commission_percent > 0 ? (
-                    <p className="text-[9px] text-slate-600 mt-1">
-                      Auto: {mech.commission_percent}% of grand total
-                    </p>
-                  ) : null;
-                })()}
+            {/* Mechanic Commission — admin/developer only */}
+            {(userRole === "admin" || userRole === "developer") && (
+              <div>
+                <label className={labelCls}>Mechanic Commission (₹)</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={commissionAmt ?? "0"}
+                    onChange={(e) => setCommissionAmt(e.target.value)}
+                    className={inputCls}
+                    placeholder="0.00"
+                  />
+                  {(() => {
+                    const mech = mechanics.find((m) => m.id === parseInt(selectedMechanic));
+                    return selectedMechanic && mech && mech.commission_percent > 0 ? (
+                      <p className="text-[9px] text-slate-600 mt-1">
+                        Auto: {mech.commission_percent}% of services total
+                      </p>
+                    ) : null;
+                  })()}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
