@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.14.0](https://github.com/waraseoni/vtech-next/compare/v1.13.0...v1.14.0) (2026-09-12)
+
+### Features
+
+* **reports:** supplier spending / purchase report page ([1a0ad01](https://github.com/waraseoni/vtech-next/commit/1a0ad010383c6c3d0ae7f13aad10f3cb904d47c0))
+
 ## [1.13.0](https://github.com/waraseoni/vtech-next/compare/v1.12.0...v1.13.0) (2026-09-12)
 
 ### Features
