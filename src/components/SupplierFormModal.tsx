@@ -214,8 +214,8 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
       const payload = {
         name: form.name.trim(),
         contact: primary,
-        email: form.email.trim() || null,
-        address: form.address.trim() || null,
+        email: form.email.trim(),
+        address: form.address.trim(),
         status: 1,
       };
 

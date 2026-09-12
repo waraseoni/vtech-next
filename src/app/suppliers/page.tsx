@@ -219,14 +219,14 @@ export default function SuppliersPage() {
                               <Image
                                 src={safeImageSrc(s.photo_url)}
                                 alt={`${s.name} visiting card`}
-                                width={36}
-                                height={36}
-                                className="w-9 h-9 rounded-lg object-cover border border-[#21293d]"
+                                width={48}
+                                height={48}
+                                className="w-12 h-12 rounded-xl object-cover border border-[#21293d]"
                               />
                             </button>
                           ) : (
-                            <div className="w-9 h-9 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
-                              <Truck size={14} className="text-violet-500" />
+                            <div className="w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
+                              <Truck size={16} className="text-violet-500" />
                             </div>
                           )}
                           <span className="font-bold text-slate-200">{s.name}</span>

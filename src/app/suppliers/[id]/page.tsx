@@ -223,14 +223,14 @@ export default function SupplierDetailPage() {
                     type="button"
                     onClick={() => setZoomSrc(photoSrc)}
                     title="Visiting card bada karke dekho"
-                    className="block rounded-lg border border-transparent p-0.5 hover:border-blue-500/50 transition-all cursor-zoom-in"
+                    className="block rounded-xl border border-transparent p-0.5 hover:border-blue-500/50 transition-all cursor-zoom-in"
                   >
                     <Image
                       src={photoSrc}
                       alt="Visiting card"
-                      width={100}
-                      height={60}
-                      className="h-24 w-auto max-w-full rounded-lg object-cover border border-[#21293d]"
+                      width={200}
+                      height={120}
+                      className="h-36 sm:h-44 w-auto max-w-full rounded-xl object-contain border border-[#21293d] bg-black/30"
                     />
                   </button>
                 </div>
