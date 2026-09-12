@@ -22,6 +22,7 @@ import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
 import { safeImageSrc } from "@/lib/image-utils";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { useImageUpload } from "@/lib/useImageUpload";
 import BarcodeCameraScanner from "@/app/components/BarcodeCameraScanner";
 import SupplierPicker from "@/components/SupplierPicker";
 
@@ -89,6 +90,7 @@ export default function ProductFormModal({
   const [imgPopup, setImgPopup] = useState(false);
   const imgRef = useRef<HTMLInputElement>(null);
   const imgCamRef = useRef<HTMLInputElement>(null);
+  const { openCropper, cropperEl } = useImageUpload();
 
   // Reset + seed on open/edit change
   useEffect(() => {
@@ -129,9 +131,13 @@ export default function ProductFormModal({
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
-    setImgFile(f);
-    setImgPreview(URL.createObjectURL(f));
-    setImgRemoved(false);
+    // Product thumbnails square dikhte hain — 1:1 crop editor default.
+    void openCropper(f, { aspect: 1, title: "Product Photo — Crop" }).then((cropped) => {
+      if (!cropped) return;
+      setImgFile(cropped);
+      setImgPreview(URL.createObjectURL(cropped));
+      setImgRemoved(false);
+    });
   };
 
   const removeImg = () => {
@@ -305,7 +311,9 @@ export default function ProductFormModal({
                         width={112}
                         height={112}
                         className="w-28 h-28 rounded-xl object-cover border border-[#21293d] cursor-zoom-in"
-                        onDoubleClick={() => openImageLightbox(safeImageSrc(imgPreview), "Product Image")}
+                        onDoubleClick={() =>
+                          openImageLightbox(safeImageSrc(imgPreview), "Product Image")
+                        }
                       />
                     ) : (
                       <div className="w-28 h-28 rounded-xl bg-white/5 border border-dashed border-[#2a3450] flex items-center justify-center">
@@ -614,6 +622,7 @@ export default function ProductFormModal({
           </div>
         </div>
       )}
+      {cropperEl}
     </>
   );
 }

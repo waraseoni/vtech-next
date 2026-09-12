@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { useImageUpload } from "@/lib/useImageUpload";
 import {
   X,
   Camera,
@@ -61,6 +62,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
   const [imgPopup, setImgPopup] = useState(false);
   const imgRef = useRef<HTMLInputElement>(null);
   const imgCamRef = useRef<HTMLInputElement>(null);
+  const { openCropper, cropperEl } = useImageUpload();
 
   useEffect(() => {
     if (!open) return;
@@ -101,9 +103,14 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
-    setPhotoFile(f);
-    setPhotoPreview(URL.createObjectURL(f));
-    setPhotoRemoved(false);
+    // Visiting card landscape photo hoti hai — 3:2 crop editor kholo,
+    // user crop ya "original rakho" choose kare.
+    void openCropper(f, { aspect: 3 / 2, title: "Visiting Card — Crop" }).then((cropped) => {
+      if (!cropped) return;
+      setPhotoFile(cropped);
+      setPhotoPreview(URL.createObjectURL(cropped));
+      setPhotoRemoved(false);
+    });
   };
 
   const removeImg = () => {
@@ -158,16 +165,11 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
   };
 
   const setPrimary = (i: number) => {
-    setContacts((prev) =>
-      prev.map((c, idx) => ({ ...c, is_primary: idx === i }))
-    );
+    setContacts((prev) => prev.map((c, idx) => ({ ...c, is_primary: idx === i })));
   };
 
   const addContact = () => {
-    setContacts((prev) => [
-      ...prev,
-      { label: "Mobile", phone: "", is_primary: prev.length === 0 },
-    ]);
+    setContacts((prev) => [...prev, { label: "Mobile", phone: "", is_primary: prev.length === 0 }]);
   };
 
   const removeContact = (i: number) => {
@@ -508,6 +510,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
             </button>
           </div>
         </form>
+        {cropperEl}
       </div>
     </div>
   );

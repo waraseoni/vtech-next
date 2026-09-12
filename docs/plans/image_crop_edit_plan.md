@@ -1,6 +1,6 @@
 # Plan: Image Crop / Edit on Upload
 
-> Status: **PLANNING — No code changes yet**
+> Status: **PHASE 1 DONE (2026-09-12)** — crop editor + hook + 2 pilot sites.
 > Created: 2026-09-17 · User request: "images ko crop ya edit ka feature" (plan only)
 
 ---
@@ -179,3 +179,15 @@ Feature **banao, par slim banao** — crop + rotate hi hai jo iska 80% value hai
 - Q2 → Table 4.2 ok, except logo/cover/signature ko "free/crop-nahi" karo (hamesha original).
 - Q3 → Skip toggle ki jagah better: un 3 settings-wale sites ko editor se **completely exclude** karo.
 - Q4 → **Visiting card pehle**.
+
+---
+
+## 10. SHIPPED — Phase 1 (2026-09-12)
+
+- ✅ `react-easy-crop@6.2.3` installed → `Cropper` component (CSS auto-inject, koi global-css import nahi chahiye — Next App Router safe)
+- ✅ `src/lib/imageCropper.ts` — `cropImage(src, pixelCrop, rotation, maxDim?)` canvas util (rotateSize + bbox rotated draw + crop-extract; official easy-crop approach, 90°-steps)
+- ✅ `src/components/ImageCropperModal.tsx` — full-screen dark editor: crop/move/zoom (pinch+wheel+buttons), 90° L/R rotate, Fixed↔Free aspect toggle, **"Original rakho"** one-tap skip, "Crop Karo" confirm (ref render-access lint rule safe — `cropReady` state)
+- ✅ `src/lib/useImageUpload.tsx` — `openCropper(file, {aspect,title,maxDim}) → Promise<File|null>` (null = cancelled); cropped blob → File, "original" → as-is File; blob-URL revoke cleanup
+- ✅ **Pilot sites wired:** ProductFormModal (1:1 square) + SupplierFormModal visiting card (3:2 landscape) — camera & gallery dono flows editor se hoke jate hain
+- Upload compression unchanged (crop → `compressImage` → ≤100 KB)
+- Verify: tsc ✅ · eslint ✅ (new files 0 issues) · vitest 101 ✅ · `npm run build` ✅
