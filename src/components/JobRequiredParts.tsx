@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { openImageLightbox } from "@/components/ImageLightbox";
@@ -54,6 +55,7 @@ function daysOld(d: string): number {
 }
 
 export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
+  const router = useRouter();
   const closed = jobStatus === 4 || jobStatus === 5;
   const [parts, setParts] = useState<RequiredPart[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,6 +111,29 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [numId]);
+
+  const convertToPO = () => {
+    const convertable = parts.filter((p) => p.status !== 2 && p.product_id != null);
+    if (convertable.length === 0) {
+      onToast({
+        type: "error",
+        msg: "PO banane ke liye koi product-linked waiting/ordered part nahi — custom spare skip hote hain",
+      });
+      return;
+    }
+    const draft = convertable.map((p) => ({
+      product_id: p.product_id as number,
+      product_name: p.product_name,
+      qty: Math.max(1, p.qty_needed - p.qty_received),
+      unit_cost: 0,
+    }));
+    window.sessionStorage.setItem("po_draft", JSON.stringify(draft));
+    window.sessionStorage.setItem(
+      "po_parts_meta",
+      JSON.stringify({ partIds: convertable.map((p) => p.id), transactionId: numId })
+    );
+    router.push("/inventory/purchase-orders?create=draft");
+  };
 
   const filtered = search.trim()
     ? products.filter((p) => p.name.toLowerCase().includes(search.trim().toLowerCase()))
@@ -339,6 +364,11 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                     >
                       {STATUS_LABEL[part.status]}
                     </span>
+                    {part.purchase_order_id != null && (
+                      <span className="px-2 py-0.5 text-[10px] font-black rounded-full border border-indigo-500/30 bg-indigo-600/10 text-indigo-300">
+                        PO #{part.purchase_order_id} se linked
+                      </span>
+                    )}
                     <span className="text-[10px] text-slate-500 flex items-center gap-1">
                       <Clock size={10} /> {daysOld(part.date_created)} din se waiting
                     </span>
@@ -451,12 +481,22 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
         )}
 
         {!closed && !showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="mt-3 text-xs bg-amber-600/15 text-amber-300 border border-amber-600/30 px-4 py-2 rounded-xl hover:bg-amber-600/25 transition-all inline-flex items-center gap-1.5"
-          >
-            <Plus size={14} /> Required saman add karo
-          </button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={() => setShowForm(true)}
+              className="text-xs bg-amber-600/15 text-amber-300 border border-amber-600/30 px-4 py-2 rounded-xl hover:bg-amber-600/25 transition-all inline-flex items-center gap-1.5"
+            >
+              <Plus size={14} /> Required saman add karo
+            </button>
+            {parts.some((p) => p.status !== 2 && p.product_id != null) && (
+              <button
+                onClick={convertToPO}
+                className="text-xs bg-blue-600/15 text-blue-300 border border-blue-600/30 px-4 py-2 rounded-xl hover:bg-blue-600/25 transition-all inline-flex items-center gap-1.5"
+              >
+                <Truck size={14} /> Waiting parts ka PO banao
+              </button>
+            )}
+          </div>
         )}
 
         {!closed && showForm && (

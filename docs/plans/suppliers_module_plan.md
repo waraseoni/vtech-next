@@ -1,6 +1,6 @@
 # Plan: Suppliers Module — Fixes, Updates & New Features
 
-> Status: **IN PROGRESS — Phase A (PO status fix + P0 payments) DONE; P1/P2/P3 pending**
+> Status: **IN PROGRESS — Phase A (PO status fix + P0 payments) DONE; P1 (required-parts → PO) SHIPPED (2026-09-13, migration apply pending); P2/P3 pending**
 > Created: 2026-09-17 · Basis: full codebase audit of supplier flows, DB schema, PO module, required-parts flow
 > Phase A (2026-09-12): bug fix + supplier_payments ledger shipped. Migration `20260912_supplier_payments.sql` user par apply pending (Supabase SQL Editor).
 
@@ -22,7 +22,7 @@
 | Required parts ↔ Supplier assignment | ✅ Informative only (no cost, no PO bridge) |
 | Supplier payment / dues ledger | ✅ DONE (2026-09-12) — `supplier_payments` table + detail "Payments & Outstanding" section + Add Payment modal + list "Due" column + `/reports/supplier-dues` |
 | Supplier spending / purchase report | ❌ Not started (P3) |
-| Required-parts → PO conversion | ❌ Not started (P1) |
+| Required-parts → PO conversion | ✅ **SHIPPED (P1, 2026-09-13)** — Convert-to-PO + parts/PO link + source-job trace |
 | Supplier form GST/bank fields | ❌ Not started (P2) |
 
 ---
@@ -105,22 +105,29 @@ CREATE TABLE IF NOT EXISTS public.supplier_payments (
 
 **Why:** When a job needs a spare part, you add it as a "waiting" required part with supplier + photo + phone. But to actually buy it, you must manually go to `/inventory/purchase-orders` and recreate the line items. This duplication is error-prone and time-consuming.
 
-#### Flow
+> **Status: SHIPPED (2026-09-13)** — `feat(parts)` commit. Migration `20260913_required_parts_po_bridge.sql` apply pending (idempotent; full-schema backport block bhi included).
 
-1. On required parts list (job page or `/reports/parts-pending`), add **"Convert to PO"** button per group
-2. Group required parts by supplier
-3. Click opens Create PO modal pre-filled with those line items (product, qty, supplier)
-4. User reviews, confirms → PO created
+#### Flow (implemented)
 
-#### DB changes
+1. Job page required-parts section → **"Waiting parts ka PO banao"** button (job status < 4/5). `/reports/parts-pending` par har job-group header me **"PO banao"** button.
+2. Button sirf product-linked (non-custom-spare) open parts ke liye dikhta hai. Custom spares (product_id null) skip hote hain. Outstanding qty = `qty_needed - qty_received` per line.
+3. `sessionStorage.po_draft` (line items) + `sessionStorage.po_parts_meta` (`{ partIds, transactionId }`) likh kar `/inventory/purchase-orders?create=draft` par navigate karta hai (existing requirement-list draft flow reuse).
+4. Pre-filled Create PO modal me user review karke save karta hai → PO + items insert hotay hain.
+5. PO save par linked parts ko `.update({ purchase_order_id: po.id, status: 1 })` → parts auto-Ordered mark + trace back available.
 
-- `purchase_order_items.job_id` column (nullable FK → `transaction_list.id`) — traces back which job triggered the purchase
-- `job_required_parts.purchase_order_id` column (nullable FK → `purchase_orders.id`) — links required part to its PO
+#### DB changes (migration 20260913_required_parts_po_bridge.sql)
 
-#### UI changes
+- `purchase_orders.transaction_id integer` (nullable FK → `transaction_list.id` ON DELETE SET NULL) — source job trace. PO page par "Job #… se" chip + link.
+- `job_required_parts.purchase_order_id bigint` (nullable FK → `purchase_orders.id` ON DELETE SET NULL) — required-part → PO link. Job page par "PO #… se linked" chip.
+- Indexes: `po_transaction_idx` (purchase_orders.transaction_id), `jrp_po_idx` (job_required_parts.purchase_order_id).
+- Design divergence from notes: `purchase_order_items.job_id` ki jagah `purchase_orders.transaction_id` use kiya (ek PO ek hi job se aata hai; header-level trace PO page par clean display deta hai). Grouping supplier se nhin, pure-job-se hai (user modal me supplier pick karta hai).
 
-- Parts-pending report: bulk-select parts → "Create PO"
-- Job page required-parts section: per-part "Add to PO" or batch "Create PO for this supplier"
+#### UI changes (implemented)
+
+- `src/components/JobRequiredParts.tsx` — Convert-to-PO button + PO-linked chip
+- `src/app/reports/parts-pending/page.tsx` — per-job-group "PO banao" button
+- `src/app/inventory/purchase-orders/page.tsx` — CreatePOModal: `po_parts_meta` read+clear, `transaction_id` header insert (sirf jab parts-meta ho — normal PO creation unaffected), parts link + auto-Order status after items insert; PO row par source-job chip
+- `src/lib/requiredParts.ts` — `RequiredPart.purchase_order_id` field (+ WaitingPartRow extends it)
 
 ---
 

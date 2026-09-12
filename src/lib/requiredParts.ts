@@ -21,6 +21,7 @@ export interface RequiredPart {
   qty_received: number;
   status: RequiredPartStatus;
   supplier_id: number | null;
+  purchase_order_id: number | null; // P1 bridge: linked purchase_orders.id (migration 20260913)
   source_name: string | null;
   phone: string | null;
   eta: string | null; // date (YYYY-MM-DD)
@@ -260,8 +261,7 @@ export async function fetchWaitingSummary(): Promise<WaitingSummary> {
     waitingParts,
     orderedCount,
     waitingCount,
-    oldestDays:
-      oldestTs === null ? 0 : Math.max(0, Math.floor((Date.now() - oldestTs) / 86400000)),
+    oldestDays: oldestTs === null ? 0 : Math.max(0, Math.floor((Date.now() - oldestTs) / 86400000)),
     oldestJobId: jobMap.get(oldestTxn) || null,
   };
 }

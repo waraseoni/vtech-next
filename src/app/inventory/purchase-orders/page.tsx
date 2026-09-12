@@ -32,6 +32,7 @@ interface PO {
   id: number;
   po_code: string;
   supplier_id: number | null;
+  transaction_id: number | null;
   supplier_name: string;
   status: POStatus;
   expected_date: string | null;
@@ -119,6 +120,7 @@ export default function PurchaseOrdersPage() {
         id: number;
         po_code: string;
         supplier_id: number | null;
+        transaction_id: number | null;
         status: string;
         expected_date: string | null;
         notes: string;
@@ -441,25 +443,25 @@ export default function PurchaseOrdersPage() {
             />
           </div>
           <div className="flex gap-2">
-            {(["all", "pending", "ordered", "partially_received", "received", "cancelled"] as const).map(
-              (f) => (
-                <button
-                  key={f}
-                  onClick={() => setStatusF(f)}
-                  className={`px-3.5 py-2.5 rounded-xl text-xs font-bold border transition-all ${
-                    statusF === f
-                      ? "bg-emerald-600 text-white border-emerald-600"
-                      : "bg-[#161b27] text-slate-600 border-[#21293d] hover:border-emerald-500/30 hover:text-slate-400"
-                  }`}
-                >
-                  {f === "all"
-                    ? "All"
-                    : f === "partially_received"
-                      ? "Partial"
-                      : f[0].toUpperCase() + f.slice(1)}
-                </button>
-              )
-            )}
+            {(
+              ["all", "pending", "ordered", "partially_received", "received", "cancelled"] as const
+            ).map((f) => (
+              <button
+                key={f}
+                onClick={() => setStatusF(f)}
+                className={`px-3.5 py-2.5 rounded-xl text-xs font-bold border transition-all ${
+                  statusF === f
+                    ? "bg-emerald-600 text-white border-emerald-600"
+                    : "bg-[#161b27] text-slate-600 border-[#21293d] hover:border-emerald-500/30 hover:text-slate-400"
+                }`}
+              >
+                {f === "all"
+                  ? "All"
+                  : f === "partially_received"
+                    ? "Partial"
+                    : f[0].toUpperCase() + f.slice(1)}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -501,6 +503,14 @@ export default function PurchaseOrdersPage() {
                         <div className="text-[11px] text-slate-600 mt-0.5">
                           {po.supplier_name} · {fmtDate(po.date_created)}
                         </div>
+                        {po.transaction_id != null && (
+                          <Link
+                            href={`/jobs/${po.transaction_id}/view`}
+                            className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-600/10 border border-indigo-500/30 text-[10px] font-bold text-indigo-300 hover:bg-indigo-600/25 transition-colors"
+                          >
+                            <ClipboardList size={10} /> Job #{po.transaction_id} se
+                          </Link>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -666,6 +676,22 @@ function CreatePOModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // P1 bridge: "required parts → PO" conversion se partIds + source job aate hain.
+  // CreatePOModal mount hone par ek baar utha kar clear kar lete hain.
+  const [partsMeta] = useState<{ partIds: number[]; transactionId?: number | null } | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.sessionStorage.getItem("po_parts_meta");
+      window.sessionStorage.removeItem("po_parts_meta");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { partIds?: number[]; transactionId?: number | null };
+      if (!parsed.partIds?.length) return null;
+      return { partIds: parsed.partIds, transactionId: parsed.transactionId };
+    } catch {
+      return null;
+    }
+  });
+
   const today = todayIST();
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -696,18 +722,18 @@ function CreatePOModal({
     setSaving(true);
     try {
       const poCode = "PO-" + Date.now().toString().slice(-6);
+      const headerPayload: Record<string, unknown> = {
+        po_code: poCode,
+        supplier_id: supplierId ? Number(supplierId) : null,
+        status: "pending",
+        expected_date: expectedDate || null,
+        notes: notes.trim(),
+        total_amount: total,
+      };
+      if (partsMeta?.transactionId) headerPayload.transaction_id = partsMeta.transactionId;
       const { data: po, error: poErr } = await supabase
         .from("purchase_orders")
-        .insert([
-          {
-            po_code: poCode,
-            supplier_id: supplierId ? Number(supplierId) : null,
-            status: "pending",
-            expected_date: expectedDate || null,
-            notes: notes.trim(),
-            total_amount: total,
-          },
-        ])
+        .insert([headerPayload])
         .select()
         .single();
       if (poErr) throw poErr;
@@ -722,6 +748,16 @@ function CreatePOModal({
         }))
       );
       if (itErr) throw itErr;
+
+      // P1 bridge: converted required parts ko banaye gaye PO se link karo
+      // (PO place matlab supplier order — parts ab "Ordered" status).
+      if (partsMeta?.partIds?.length) {
+        const { error: linkErr } = await supabase
+          .from("job_required_parts")
+          .update({ purchase_order_id: po.id, status: 1 })
+          .in("id", partsMeta.partIds);
+        if (linkErr) throw linkErr;
+      }
 
       await logActivity(
         "PO Created",
@@ -975,7 +1011,9 @@ function ReceiveStockModal({
   });
 
   const total = target.items.reduce((s, i) => s + (qtys[i.product_id] || 0), 0);
-  const allFull = target.items.every((i) => (qtys[i.product_id] || 0) >= i.qty_ordered - i.qty_received);
+  const allFull = target.items.every(
+    (i) => (qtys[i.product_id] || 0) >= i.qty_ordered - i.qty_received
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1014,7 +1052,9 @@ function ReceiveStockModal({
                 className="bg-[#111520] border border-[#21293d] rounded-xl p-3 flex items-center justify-between gap-3"
               >
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-300 truncate">{item.product_name}</div>
+                  <div className="text-xs font-bold text-slate-300 truncate">
+                    {item.product_name}
+                  </div>
                   <div className="text-[10px] text-slate-600 mt-0.5">
                     Ordered {item.qty_ordered} · Recv {item.qty_received} ·{" "}
                     <span className="text-emerald-400 font-bold">Open {outstanding}</span>

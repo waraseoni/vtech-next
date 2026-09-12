@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { todayIST } from "@/lib/dateUtils";
 import { fetchWaitingPartsReport, type WaitingJobGroup } from "@/lib/requiredParts";
@@ -40,6 +41,7 @@ const fmtDay = new Intl.DateTimeFormat("en-IN", {
 const fmtShort = new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short" });
 
 export default function PartsPendingReport() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<WaitingJobGroup[]>([]);
   const [search, setSearch] = useState("");
@@ -67,6 +69,23 @@ export default function PartsPendingReport() {
   useEffect(() => {
     load();
   }, [load, refreshKey]);
+
+  const createPOForGroup = (g: WaitingJobGroup) => {
+    const convertable = g.parts.filter((p) => p.product_id != null && p.status !== 2);
+    if (convertable.length === 0) return;
+    const draft = convertable.map((p) => ({
+      product_id: p.product_id as number,
+      product_name: p.product_name,
+      qty: Math.max(1, p.qty_needed - p.qty_received),
+      unit_cost: 0,
+    }));
+    window.sessionStorage.setItem("po_draft", JSON.stringify(draft));
+    window.sessionStorage.setItem(
+      "po_parts_meta",
+      JSON.stringify({ partIds: convertable.map((p) => p.id), transactionId: g.transaction_id })
+    );
+    router.push("/inventory/purchase-orders?create=draft");
+  };
 
   const q = search.trim().toLowerCase();
   const filtered = useMemo(() => {
@@ -239,6 +258,14 @@ export default function PartsPendingReport() {
                   >
                     {badge.label}
                   </span>
+                  {g.parts.some((p) => p.product_id != null && p.status !== 2) && (
+                    <button
+                      onClick={() => createPOForGroup(g)}
+                      className="text-[10px] font-black px-2.5 py-1.5 rounded-lg border border-sky-500/30 bg-sky-600/10 text-sky-300 hover:bg-sky-600/25 transition-all flex items-center gap-1.5 no-print"
+                    >
+                      <Truck size={11} /> PO banao
+                    </button>
+                  )}
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-bold ml-auto">
                     <Clock size={12} />
                     Waiting since {fmtDay.format(new Date(g.oldestWait))}

@@ -3176,6 +3176,25 @@ UPDATE public.job_id_counter
  WHERE id = 1;
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- BACKPORT (2026-09-13) - Required Parts → PO bridge (suppliers plan P1).
+-- Provenance: supabase/migrations/20260913_required_parts_po_bridge.sql
+--   purchase_orders.transaction_id       = source job (display/trace)
+--   job_required_parts.purchase_order_id = linked PO
+-- ═══════════════════════════════════════════════════════════════════════════
+
+alter table public.purchase_orders
+  add column if not exists transaction_id integer
+    references public.transaction_list(id) on delete set null;
+
+alter table public.job_required_parts
+  add column if not exists purchase_order_id bigint
+    references public.purchase_orders(id) on delete set null;
+
+create index if not exists po_transaction_idx on public.purchase_orders(transaction_id);
+create index if not exists jrp_po_idx on public.job_required_parts(purchase_order_id);
+-- ═══ end required-parts → PO bridge backport block ═══
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- PostgREST ke liye schema reload (Supabase SQL Editor me dabane ke baad
 -- API immediately updated hota hai).
 -- ═══════════════════════════════════════════════════════════════════════════
