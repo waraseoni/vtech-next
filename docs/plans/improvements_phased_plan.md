@@ -19,7 +19,7 @@ service nahi). Priority order me. "Iske bagair bhi chalega?" footnote har phase 
 | Working tree | clean (koi uncommitted nahi) |
 | Server-component migration | **already 60% done** (clients, mechanics, expenses, payments, salary migrated — perf_baseline ses 2–5) |
 | RLS (7 old tables) | hardened ✅ |
-| **RLS (location tables)** | ❌ **OPEN — live confirmed** (see Phase 1) |
+| **RLS (location tables)** | ✅ **CLOSED (13 Sep 2026)** — migration applied + behavioral verify 20/20 |
 
 ---
 
@@ -42,12 +42,13 @@ hain, isliye hardening ne inhe kabhi cover nahi kiya.
   lead hai.
 - Verify script: `scripts/verify-rls.cjs` me ye tables add karke re-run.
 
-**STATUS: ✅ READY (29 Aug).** `supabase/migrations/20260912_rls_location_tables.sql`
-ban chuka hai (`is_frontend_staff()` gate, `product_locations` pehle se gated). 
-`scripts/verify-rls.cjs` (anon 0-rows check) + `scripts/check_rls.sql` (catalog check)
-update kiye. App-break audit: saare location CRUD `/api/locations*` service-role +
-`requireStaff()` se hote hain → RLS bypass, app safe. **Bas user ko Supabase SQL
-Editor me migration chalaana + verify karna hai.**
+**STATUS: ✅ DONE (applied + verified 13 Sep 2026).** Migration
+`supabase/migrations/20260912_rls_location_tables.sql` user ne SQL Editor me
+chala diya. Behavioral verify (anon 0 rows/insert 401 + profile-less ghost
+0 rows/insert 403, 5 tables × 4 = **20/20 PASS**) confirm karta hai ki ab sirf
+`is_frontend_staff()` wale hi location tables padh/change kar sakte hain.
+App-break audit: saare location CRUD `/api/locations*` routes se service-role +
+`requireStaff()` se hote hain → RLS bypass, app safe.
 
 **WORTH-IT:** ✅ **Yes — must.** Anon write hole = data tampering. Free fix, ~1–2 hr.
 

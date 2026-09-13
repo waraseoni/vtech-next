@@ -82,11 +82,14 @@
 
 | Migration | Applied | Purpose |
 |---|---|---|
+| `20260912_rls_location_tables.sql` | ✅ | 🔒 Location RLS lockdown (anon hole close) — verified 20/20 |
 | `20260912_supplier_payments.sql` | ✅ | Supplier payments + dues ledger |
 | `20260913_required_parts_po_bridge.sql` | ✅ | P1: PO ↔ required-parts bridge + job trace |
 | `20260913_suppliers_gst_bank.sql` | ✅ | P2: GST/bank/credit/terms/city/state |
 
 Full-schema backports for all three added to `20260913000000_final_full_schema_idempotent.sql` (idempotent).
+
+**2026-09-13:** Full schema audit (har migration vs fold-in) — sirf **`20260912_rls_location_tables.sql`** backport missing tha; ab fold-in kar diya (location RLS lockdown: open `to authenticated USING(true)` policies → `rlslock_*_staff` `is_frontend_staff()` gate, dynamic policy drop = idempotent). Ab saari 41 migrations folded hain. **Live apply bhi ho gaya (SQL Editor) + behavioral verify 20/20 PASS** — anon 0 rows / insert 401, profile-less ghost 0 rows / insert 403, sab 5 tables par. 🔒 **#1 security hole CLOSED.**
 
 ---
 

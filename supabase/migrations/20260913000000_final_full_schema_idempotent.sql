@@ -2203,20 +2203,37 @@ CREATE POLICY rlslock_push_subscriptions_staff ON public.push_subscriptions TO a
 DROP POLICY IF EXISTS rlslock_push_subscriptions_self ON public.push_subscriptions;
 CREATE POLICY rlslock_push_subscriptions_self ON public.push_subscriptions TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
 
-DROP POLICY IF EXISTS "Allow authenticated access" ON public.locations;
-CREATE POLICY "Allow authenticated access" ON public.locations TO authenticated USING (true) WITH CHECK (true);
+-- ── Location RLS lockdown — fold-in of 20260912_rls_location_tables.sql ──
+--   (Security hole: open `to authenticated USING(true)` policies. Ab sirf
+--    is_frontend_staff() (admin/staff/developer) hi location CRUD kare.
+--    Dynamic drop sab legacy permissive policy names ko kha jata hai, phir
+--    staff-gate policies banate hain → idempotent, re-run safe.)
+do $$
+declare p record;
+begin
+  for p in
+    select policyname, tablename
+    from pg_policies
+    where schemaname = 'public'
+      and tablename in (
+        'locations', 'location_zones', 'location_racks',
+        'location_bins', 'location_boxes'
+      )
+  loop
+    execute format('drop policy if exists %I on public.%I', p.policyname, p.tablename);
+  end loop;
+end $$;
 
-DROP POLICY IF EXISTS "Allow authenticated access" ON public.location_zones;
-CREATE POLICY "Allow authenticated access" ON public.location_zones TO authenticated USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "Allow authenticated access" ON public.location_racks;
-CREATE POLICY "Allow authenticated access" ON public.location_racks TO authenticated USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "Allow authenticated access" ON public.location_bins;
-CREATE POLICY "Allow authenticated access" ON public.location_bins TO authenticated USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "Allow authenticated access" ON public.location_boxes;
-CREATE POLICY "Allow authenticated access" ON public.location_boxes TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS rlslock_locations_staff ON public.locations;
+CREATE POLICY rlslock_locations_staff ON public.locations TO authenticated USING (public.is_frontend_staff()) WITH CHECK (public.is_frontend_staff());
+DROP POLICY IF EXISTS rlslock_location_zones_staff ON public.location_zones;
+CREATE POLICY rlslock_location_zones_staff ON public.location_zones TO authenticated USING (public.is_frontend_staff()) WITH CHECK (public.is_frontend_staff());
+DROP POLICY IF EXISTS rlslock_location_racks_staff ON public.location_racks;
+CREATE POLICY rlslock_location_racks_staff ON public.location_racks TO authenticated USING (public.is_frontend_staff()) WITH CHECK (public.is_frontend_staff());
+DROP POLICY IF EXISTS rlslock_location_bins_staff ON public.location_bins;
+CREATE POLICY rlslock_location_bins_staff ON public.location_bins TO authenticated USING (public.is_frontend_staff()) WITH CHECK (public.is_frontend_staff());
+DROP POLICY IF EXISTS rlslock_location_boxes_staff ON public.location_boxes;
+CREATE POLICY rlslock_location_boxes_staff ON public.location_boxes TO authenticated USING (public.is_frontend_staff()) WITH CHECK (public.is_frontend_staff());
 
 DROP POLICY IF EXISTS rlslock_product_locations_staff ON public.product_locations;
 CREATE POLICY rlslock_product_locations_staff ON public.product_locations TO authenticated USING (public.is_frontend_staff()) WITH CHECK (public.is_frontend_staff());
