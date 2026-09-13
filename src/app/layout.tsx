@@ -101,6 +101,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body
         className={`h-full m-0 font-sans antialiased overflow-x-hidden`}
       >
+        {/* Supabase (auth + realtime + REST) ka TCP/TLS connection pehle se
+            warm — boot ke pehle network round-trip ka latency kam hota hai.
+            React 19 in <link> tags ko hoist kar ke <head> me chala deta hai. */}
+        <link
+          rel="preconnect"
+          href={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+          crossOrigin="anonymous"
+        />
+        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
         <Script
           id="vtech-theme-boot"
           strategy="beforeInteractive"

@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { ABSOLUTE_MS } from "@/lib/session-policy";
 import { logger } from "@/lib/logger";
+import { LITE_MODE, isLiteRouteAllowed } from "@/lib/lite";
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next({
@@ -72,6 +73,15 @@ export async function proxy(request: NextRequest) {
 
   if (!user) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // ── LITE MODE ROUTE GUARD ───────────────────────────────────────────────
+  // Sirf login + attendance + staff wale routes allowed. Baaki (jobs, clients,
+  // reports, AI, finance...) → /dashboard. Ye hard redirect Link-prefetch ki RSC
+  // fetches ko bhi fail kar deta hai → lite build me baaki modules ka JS kabhi
+  // download nahi hota.
+  if (LITE_MODE && !isLiteRouteAllowed(path)) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   // Session age check: absolute hard cap via login timestamp cookie

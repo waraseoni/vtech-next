@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { LITE_MODE } from "@/lib/lite";
 import {
   Bell,
   ChevronDown,
@@ -99,6 +100,9 @@ export default function AIAlertsWidget() {
     setOpen(true);
     load();
   };
+
+  // LITE MODE: AI/automation widget lite build me nahi (bina hooks ke bytes)
+  if (LITE_MODE) return null;
 
   // Hidden — slim pill se wapas dikhaya ja sakta hai
   if (dismissed) {

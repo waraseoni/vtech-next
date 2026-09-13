@@ -17,7 +17,7 @@ import {
 import type { LicenseStatus } from "@/lib/license";
 import { logger } from "@/lib/logger";
 import { initPresence, cleanupPresence } from "@/lib/presence";
-import { initNativeBridge } from "@/lib/nativePrint";
+
 
 /**
  * useAppBoot — RootClient (app shell) ka saara auth/boot state + effects.
@@ -125,7 +125,16 @@ export function useAppBoot() {
     (async () => {
       // Android (Capacitor) me print/export natively kaam karne ke liye global
       // bridge — window.print + window.open(/api/print-*) ko intercept karta hai.
-      initNativeBridge();
+      // Dynamic import: nativePrint module (capgo printer, filesystem, share)
+      // shell ke critical JS me NAHI khinchta. Web par module load hi nahi hota.
+      try {
+        if (/Android/i.test(navigator.userAgent)) {
+          const { initNativeBridge } = await import("@/lib/nativePrint");
+          initNativeBridge();
+        }
+      } catch {
+        /* ignore — browser fallback chalta rahega */
+      }
       try {
         const PUBLIC_PAGES = [
           "/",
@@ -141,6 +150,23 @@ export function useAppBoot() {
         const isPublicPage = PUBLIC_PAGES.some(
           (p) => pathname === p || pathname.startsWith(p + "/")
         );
+
+        // FAST PATH: getSession() storage se (network ke bina) turant session
+        // deta hai. Session hai → shell turant render (spinner 6s tak nahi
+        // atakta); getUser() validation + profile fetch NICHE background me
+        // chalta hai. Session nahi → turant /login. RLS har query ko protect
+        // karta hai, isliye shell pehle dikhana safe hai.
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (cancelled) return;
+        if (!session) {
+          if (!isPublicPage) router.push("/login");
+          setLoading(false);
+          return;
+        }
+        setUserEmail(session.user.email ?? null);
+        setLoading(false); // shell itni der me dikh jata hai — data background
 
         // BUG FIX: getUser() kabhi-kabhi network par hang ho jata hai → "V-TECH
         // Secure Boot" loader hamesha ke liye atak jata tha. 6s timeout + EK
@@ -160,11 +186,16 @@ export function useAppBoot() {
         const user = authResult === TIMED_OUT ? null : authResult.data.user;
         if (cancelled) return;
         if (!user) {
-          if (!isPublicPage) router.push("/login");
-          setLoading(false);
+          // Local session hai par server validation fail (revoked/expired) →
+          // signOut + /login. Sirf TIMED_OUT (network atak gaya) par user ko
+          // tabah NAHI karte — shell RLS-gated hai, agle load par validate hoga.
+          if (authResult !== TIMED_OUT) {
+            await supabase.auth.signOut();
+            invalidateCachedUser();
+            if (!isPublicPage) router.push("/login");
+          }
           return;
         }
-        setUserEmail(user.email ?? null);
         const { data: pd } = await supabase
           .from("profiles")
           .select("full_name, role, avatar_url")

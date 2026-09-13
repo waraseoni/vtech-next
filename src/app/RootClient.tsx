@@ -65,6 +65,7 @@ import {
   Landmark,
 } from "lucide-react";
 import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
+import { LITE_MODE, LITE_MODULES, isLiteRouteAllowed } from "@/lib/lite";
 import { Toaster } from "sonner";
 import { logger } from "@/lib/logger";
 import { useAppBoot } from "./useAppBoot";
@@ -73,7 +74,15 @@ import { App } from "@capacitor/app";
 import PullToRefresh from "@/components/PullToRefresh";
 import { ThemeToggle } from "@/app/components/ui/ThemeToggle";
 import { TeamOnline } from "@/app/components/ui/TeamOnline";
-import NativePrintPreview from "@/components/NativePrintPreview";
+import dynamic from "next/dynamic";
+
+// NativePrintPreview sirf native print preview routes par dikhta hai (opens
+// null). Dynamic chunk: capgo printer + nativePrint bridge shell ke critical
+// JS me nahi khinchte — first paint + parse kam hota hai.
+const NativePrintPreview = dynamic(
+  () => import("@/components/NativePrintPreview"),
+  { ssr: false }
+);
 import SwipeNavigation from "@/components/SwipeNavigation";
 import { fetchUnreadCount, getMyId } from "@/lib/messaging";
 import { locPath } from "@/lib/locations";
@@ -588,17 +597,23 @@ function SidebarNav({
             <span>Attendance</span>
           </Link>
         </li>
-        <li>
-          <Link href="/messages" className={navLinkCls(lk("/messages", true))} onClick={onNavClick}>
-            <MessageSquare size={16} />
-            <span>Messages</span>
-            {!!unreadCount && (
-              <span className="ml-auto flex items-center justify-center min-w-[20px] h-[20px] px-1.5 rounded-full bg-red-500 text-white text-[11px] font-black leading-none">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
-          </Link>
-        </li>
+        {!LITE_MODE && (
+          <li>
+            <Link
+              href="/messages"
+              className={navLinkCls(lk("/messages", true))}
+              onClick={onNavClick}
+            >
+              <MessageSquare size={16} />
+              <span>Messages</span>
+              {!!unreadCount && (
+                <span className="ml-auto flex items-center justify-center min-w-[20px] h-[20px] px-1.5 rounded-full bg-red-500 text-white text-[11px] font-black leading-none">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </Link>
+          </li>
+        )}
         {isModuleEnabled(enabledModules, "jobs") && (
           <li>
             <Link href="/jobs" className={navLinkCls(lk("/jobs"))} onClick={onNavClick}>
@@ -1354,6 +1369,10 @@ function SidebarNav({
 export default function RootClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  // AI drawer: iframe har app page par mount rehta tha → har load par poora /ai
+  // route (≈540KB JS + dobara auth boot) load hota tha. Ab iframe ka src sirf
+  // first open par set hota hai — pehle load par koi /ai fetch nahi hota.
+  const [aiOpenedOnce, setAiOpenedOnce] = useState(false);
 
   // G1 gate-split: saara auth/boot state + effects ab useAppBoot() hook me hai.
   // Ye component sirf shell render karta hai — behavior bilkul unchanged.
@@ -1590,6 +1609,10 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   const isStaff = profile?.role === "staff";
   const canSeeInventory = isAdmin || isStaff;
 
+  // LITE MODE: sidebar me sirf allowed modules dikhao (license ki jagah).
+  // Full mode me license?.enabledModules hi chalta hai (jaise pehle).
+  const navEnabledModules = LITE_MODE ? LITE_MODULES : (license?.enabledModules ?? null);
+
   // ── LICENSE GATE ──
   if (license && !license.valid) {
     return (
@@ -1599,6 +1622,31 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         onActivated={refreshLicense}
         onLogout={handleLogout}
       />
+    );
+  }
+
+  // ── LITE MODE ROUTE GUARD ──
+  // (Middleware server par bhi block karta hai; ye client-side backup hai —
+  // client-side navigation middleware se kabhi nahi guzarti.)
+  if (LITE_MODE && !isLiteRouteAllowed(pathname)) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#0d1117]">
+        <div className="text-center max-w-sm mx-auto px-6">
+          <div className="w-16 h-16 mx-auto bg-slate-500/15 text-slate-400 rounded-2xl flex items-center justify-center mb-5">
+            <Package size={28} />
+          </div>
+          <h1 className="text-lg font-black text-white mb-2">Feature Not Available</h1>
+          <p className="text-sm text-slate-400 mb-6">
+            Is lite version me sirf Dashboard, Attendance aur Staff modules hain.
+          </p>
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black transition-all"
+          >
+            Dashboard par jao
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -1690,7 +1738,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             canSeeInventory={canSeeInventory}
             sellerEnabled={license?.sellerEnabled}
             devEnabled={license?.devEnabled}
-            enabledModules={license?.enabledModules}
+            enabledModules={navEnabledModules}
             unreadCount={unreadCount}
           />
 
@@ -1772,7 +1820,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               onNavClick={() => setDrawerOpen(false)}
               sellerEnabled={license?.sellerEnabled}
               devEnabled={license?.devEnabled}
-              enabledModules={license?.enabledModules}
+              enabledModules={navEnabledModules}
               unreadCount={unreadCount}
             />
 
@@ -1868,7 +1916,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             )}
 
             {/* AI Assistant - Desktop */}
-            {isMobile === false && !isClient && (
+            {isMobile === false && !isClient && !LITE_MODE && (
               <Link
                 href="/ai"
                 className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 hover:border-purple-500/50 rounded-xl text-purple-400 hover:text-purple-300 transition-all"
@@ -2005,14 +2053,17 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       )}
 
       {/* ── AI ASSISTANT RIGHT DRAWER ── */}
-      {!isClient && (
+      {!isClient && !LITE_MODE && (
         <>
           {/* Floating Button Group - Bottom Right (hidden while AI window is open) */}
           {!aiDrawerOpen && !isAiPage && (
             <div className="fixed bottom-20 right-4 z-40 flex flex-col gap-3">
               {/* AI Assistant Button - positioned above Jobs FAB */}
               <button
-                onClick={() => setAiDrawerOpen(true)}
+                onClick={() => {
+                  setAiOpenedOnce(true);
+                  setAiDrawerOpen(true);
+                }}
                 className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg shadow-purple-500/30 flex items-center justify-center text-white hover:scale-110 transition-transform"
                 title="AI Assistant"
               >
@@ -2044,7 +2095,9 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
               {/* Iframe for AI Page */}
               <div className="flex-1">
-                <iframe src="/ai" className="w-full h-full border-0" title="AI Assistant" />
+                {aiOpenedOnce && (
+                  <iframe src="/ai" className="w-full h-full border-0" title="AI Assistant" />
+                )}
               </div>
             </div>
           </div>
