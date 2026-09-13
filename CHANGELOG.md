@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.15.2](https://github.com/waraseoni/vtech-next/compare/v1.15.1...v1.15.2) (2026-09-13)
+
+### Bug Fixes
+
+* **ci:** shorten vercel.json ignoreCommand to <=256 chars ([d8a2fa5](https://github.com/waraseoni/vtech-next/commit/d8a2fa5c4e71e94c4b57d07082bf42605d641e05))
+
 ## [1.15.1](https://github.com/waraseoni/vtech-next/compare/v1.15.0...v1.15.1) (2026-09-13)
 
 ### Performance Improvements
