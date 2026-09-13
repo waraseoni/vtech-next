@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.15.1](https://github.com/waraseoni/vtech-next/compare/v1.15.0...v1.15.1) (2026-09-13)
+
+### Performance Improvements
+
+* **app:** faster boot + lighter eager load; add NEXT_PUBLIC_LITE_MODE build ([c26e800](https://github.com/waraseoni/vtech-next/commit/c26e800836cad6cd077ab9d53e41397edd3c30da))
+
 ## [1.15.0](https://github.com/waraseoni/vtech-next/compare/v1.14.0...v1.15.0) (2026-09-12)
 
 ### Features
