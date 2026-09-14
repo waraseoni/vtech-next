@@ -6,7 +6,7 @@ import Image from "next/image";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { safeImageSrc } from "@/lib/image-utils";
-import SupplierFormModal, { SupplierRow, SupplierContact } from "@/components/SupplierFormModal";
+import SupplierFormModal, { SupplierRow, ContactPerson, ContactPhone } from "@/components/SupplierFormModal";
 import Lightbox from "@/components/Lightbox";
 import { fetchSupplierDues } from "@/lib/supplierPayments";
 import {
@@ -31,10 +31,91 @@ import {
 const waLink = (phone: string) => `https://wa.me/91${phone.replace(/\D/g, "")}`;
 const telLink = (phone: string) => `tel:+91${phone.replace(/\D/g, "")}`;
 
+function PhoneChip({ phone, big = false }: { phone: string; big?: boolean }) {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length >= 10) {
+    return (
+      <>
+        <a
+          href={telLink(phone)}
+          title={`Call: ${phone}`}
+          className={`font-mono text-blue-400 hover:text-blue-300 hover:underline inline-flex items-center gap-1 flex-1 min-w-0 truncate ${big ? "font-bold" : ""}`}
+        >
+          <Phone size={big ? 10 : 9} className="flex-shrink-0" />
+          <span className="truncate">{phone}</span>
+        </a>
+        <a
+          href={waLink(phone)}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={`WhatsApp: ${phone}`}
+          className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform inline-flex flex-shrink-0"
+        >
+          <MessageCircle size={big ? 13 : 12} />
+        </a>
+      </>
+    );
+  }
+  return <span className="font-mono truncate">{phone}</span>;
+}
+
+function ContactBlock({ persons }: { persons: ContactPerson[] }) {
+  if (persons.length === 0) return <span className="text-slate-700 text-xs">—</span>;
+  return (
+    <div className="flex flex-col gap-2">
+      {persons.map((p, i) => (
+        <div key={i} className="flex flex-col gap-1 min-w-0">
+          {(p.name.trim() !== "" || p.role.trim() !== "") && (
+            <div className="flex items-center gap-1">
+              {p.is_primary && (
+                <Star size={9} className="text-amber-400 flex-shrink-0" fill="currentColor" />
+              )}
+              <span className="text-slate-500 text-[10px] font-black uppercase tracking-wide truncate">
+                {p.name || "Person"}
+              </span>
+              {p.role && (
+                <span className="text-slate-700 text-[10px] normal-case tracking-normal truncate">
+                  · {p.role}
+                </span>
+              )}
+            </div>
+          )}
+          {p.phones.length === 0 ? (
+            <span className="text-xs text-slate-700">—</span>
+          ) : (
+            <div className="flex flex-col gap-1">
+              {p.phones.map((ph, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-1.5 text-slate-400 text-xs min-w-0"
+                >
+                  {ph.is_primary && (
+                    <Star
+                      size={9}
+                      className="text-amber-400 flex-shrink-0"
+                      fill="currentColor"
+                    />
+                  )}
+                  <span className="text-slate-600 text-[9px] font-black uppercase flex-shrink-0">
+                    {ph.label}
+                  </span>
+                  <span className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <PhoneChip phone={ph.phone} />
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function SuppliersPage() {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<SupplierRow[]>([]);
-  const [contactsMap, setContactsMap] = useState<Record<number, SupplierContact[]>>({});
+  const [personsMap, setPersonsMap] = useState<Record<number, ContactPerson[]>>({});
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<SupplierRow | null>(null);
@@ -66,22 +147,48 @@ export default function SuppliersPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [{ data, error }, { data: contactRows }] = await Promise.all([
+    const [{ data, error }, { data: personRows }, { data: phoneRows }] = await Promise.all([
       supabase.from("suppliers").select("*").eq("delete_flag", 0).order("name"),
-      supabase.from("supplier_contacts").select("id, supplier_id, label, phone, is_primary"),
+      supabase
+        .from("supplier_contact_persons")
+        .select("id, supplier_id, name, role, is_primary"),
+      supabase
+        .from("supplier_contact_phones")
+        .select("id, person_id, label, phone, is_primary"),
     ]);
     if (error) setErr(error.message);
     setRows((data || []) as SupplierRow[]);
 
-    const map: Record<number, SupplierContact[]> = {};
-    for (const c of (contactRows || []) as (SupplierContact & { supplier_id: number })[]) {
-      if (!map[c.supplier_id]) map[c.supplier_id] = [];
-      map[c.supplier_id].push(c);
+    const phoneMap: Record<number, ContactPhone[]> = {};
+    for (const ph of (phoneRows || []) as Array<ContactPhone & { person_id: number }>) {
+      if (!phoneMap[ph.person_id]) phoneMap[ph.person_id] = [];
+      phoneMap[ph.person_id].push(ph);
+    }
+    for (const pid of Object.keys(phoneMap))
+      phoneMap[Number(pid)].sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
+
+    const map: Record<number, ContactPerson[]> = {};
+    for (const per of (personRows || []) as Array<{
+      id: number;
+      supplier_id: number;
+      name: string;
+      role: string | null;
+      is_primary: boolean;
+    }>) {
+      if (!map[per.supplier_id]) map[per.supplier_id] = [];
+      map[per.supplier_id].push({
+        id: per.id,
+        name: per.name,
+        role: per.role || "",
+        notes: "",
+        is_primary: per.is_primary,
+        phones: phoneMap[per.id] || [],
+      });
     }
     for (const id of Object.keys(map)) {
       map[Number(id)].sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
     }
-    setContactsMap(map);
+    setPersonsMap(map);
     const dues = await fetchSupplierDues();
     setDuesMap(Object.fromEntries(dues.map((d) => [d.supplierId, d.outstanding])));
     setLoading(false);
@@ -91,11 +198,33 @@ export default function SuppliersPage() {
     fetchData();
   }, [fetchData]);
 
-  const allPhones = (id: number) => (contactsMap[id] || []).map((c) => c.phone).join(" ");
+  const allPhones = (id: number) =>
+  (personsMap[id] || []).flatMap((p) => p.phones.map((ph) => ph.phone)).join(" ");
+
+  const personsOf = (s: SupplierRow): ContactPerson[] => {
+    const list = personsMap[s.id];
+    if (list && list.length) return list;
+    if (s.contact)
+      return [
+        {
+          id: undefined,
+          name: "",
+          role: "",
+          notes: "",
+          is_primary: true,
+          phones: [{ label: "Mobile", phone: s.contact, is_primary: true }],
+        },
+      ];
+    return [];
+  };
+
+  const allPersonNames = (id: number) =>
+  (personsMap[id] || []).map((p) => p.name).join(" ");
 
   const filtered = rows.filter(
     (s) =>
       s.name.toLowerCase().includes(search.toLowerCase()) ||
+      allPersonNames(s.id).toLowerCase().includes(search.toLowerCase()) ||
       s.contact?.toLowerCase().includes(search.toLowerCase()) ||
       s.email?.toLowerCase().includes(search.toLowerCase()) ||
       allPhones(s.id).toLowerCase().includes(search.toLowerCase())
@@ -209,11 +338,6 @@ export default function SuppliersPage() {
                   </thead>
                   <tbody className="divide-y divide-[#1a2234]">
                     {filtered.map((s) => {
-                      const contacts = contactsMap[s.id]?.length
-                        ? contactsMap[s.id]
-                        : s.contact
-                          ? [{ label: "Mobile", phone: s.contact, is_primary: true }]
-                          : [];
                       return (
                         <tr key={s.id} className="hover:bg-white/[0.02] transition-colors">
                           <td className="px-4 py-3.5">
@@ -238,56 +362,16 @@ export default function SuppliersPage() {
                                   <Truck size={16} className="text-violet-500" />
                                 </div>
                               )}
-                              <span className="font-bold text-slate-200">{s.name}</span>
+                              <Link
+                                href={`/suppliers/${s.id}`}
+                                className="font-bold text-slate-200 hover:text-emerald-400 hover:underline transition-colors"
+                              >
+                                {s.name}
+                              </Link>
                             </div>
                           </td>
                           <td className="px-4 py-3.5">
-                            {contacts.length === 0 ? (
-                              <span className="text-slate-700 text-xs">—</span>
-                            ) : (
-                              <div className="flex flex-col gap-1">
-                                {contacts.map((c, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="flex items-center gap-1.5 text-slate-400 text-xs"
-                                  >
-                                    {c.is_primary && (
-                                      <Star
-                                        size={9}
-                                        className="text-amber-400 flex-shrink-0"
-                                        fill="currentColor"
-                                      />
-                                    )}
-                                    <span className="text-slate-600 text-[9px] font-black uppercase flex-shrink-0">
-                                      {c.label}
-                                    </span>
-                                    {c.phone.replace(/\D/g, "").length >= 10 ? (
-                                      <>
-                                        <a
-                                          href={telLink(c.phone)}
-                                          title={`Call: ${c.phone}`}
-                                          className="font-mono text-blue-400 hover:text-blue-300 hover:underline inline-flex items-center gap-1"
-                                        >
-                                          <Phone size={9} className="flex-shrink-0" />
-                                          {c.phone}
-                                        </a>
-                                        <a
-                                          href={waLink(c.phone)}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          title={`WhatsApp: ${c.phone}`}
-                                          className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform inline-flex"
-                                        >
-                                          <MessageCircle size={12} />
-                                        </a>
-                                      </>
-                                    ) : (
-                                      <span className="font-mono">{c.phone}</span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                            <ContactBlock persons={personsOf(s)} />
                           </td>
                           <td className="px-4 py-3.5">
                             {s.email ? (
@@ -385,11 +469,6 @@ export default function SuppliersPage() {
             {isMobile && (
               <div className="divide-y divide-[#1a2234]">
                 {filtered.map((s) => {
-                  const contacts = contactsMap[s.id]?.length
-                    ? contactsMap[s.id]
-                    : s.contact
-                      ? [{ label: "Mobile", phone: s.contact, is_primary: true }]
-                      : [];
                   const due = duesMap[s.id] ?? 0;
                   const place = [s.city, s.state].filter(Boolean).join(", ");
                   return (
@@ -418,9 +497,12 @@ export default function SuppliersPage() {
                             </div>
                           )}
                           <div className="min-w-0">
-                            <div className="font-bold text-slate-200 text-sm truncate">
+                            <Link
+                              href={`/suppliers/${s.id}`}
+                              className="font-bold text-slate-200 text-sm truncate hover:text-emerald-400 hover:underline transition-colors"
+                            >
                               {s.name}
-                            </div>
+                            </Link>
                             {s.email ? (
                               <a
                                 href={`mailto:${s.email}`}
@@ -473,48 +555,9 @@ export default function SuppliersPage() {
                       </div>
 
                       {/* Contacts */}
-                      {contacts.length > 0 && (
-                        <div className="space-y-1.5">
-                          {contacts.map((c, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-center gap-1.5 text-slate-400 text-xs"
-                            >
-                              {c.is_primary && (
-                                <Star
-                                  size={9}
-                                  className="text-amber-400 flex-shrink-0"
-                                  fill="currentColor"
-                                />
-                              )}
-                              <span className="text-slate-600 text-[9px] font-black uppercase flex-shrink-0">
-                                {c.label}
-                              </span>
-                              {c.phone.replace(/\D/g, "").length >= 10 ? (
-                                <>
-                                  <a
-                                    href={telLink(c.phone)}
-                                    title={`Call: ${c.phone}`}
-                                    className="font-mono flex-1 min-w-0 truncate text-blue-400 hover:text-blue-300 hover:underline inline-flex items-center gap-1"
-                                  >
-                                    <Phone size={10} className="flex-shrink-0" />
-                                    <span className="truncate">{c.phone}</span>
-                                  </a>
-                                  <a
-                                    href={waLink(c.phone)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    title={`WhatsApp: ${c.phone}`}
-                                    className="text-emerald-400 hover:text-emerald-300 inline-flex"
-                                  >
-                                    <MessageCircle size={13} />
-                                  </a>
-                                </>
-                              ) : (
-                                <span className="font-mono flex-1 min-w-0 truncate">{c.phone}</span>
-                              )}
-                            </div>
-                          ))}
+                      {personsOf(s).length > 0 && (
+                        <div className="bg-[#111520] border border-[#21293d] rounded-xl px-3 py-2.5">
+                          <ContactBlock persons={personsOf(s)} />
                         </div>
                       )}
 

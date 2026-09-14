@@ -24,6 +24,8 @@ import {
   Search,
   Clock,
   ArrowLeft,
+  Pencil,
+  Eye,
 } from "lucide-react";
 
 type POStatus = "pending" | "ordered" | "partially_received" | "received" | "cancelled";
@@ -32,8 +34,10 @@ interface PO {
   id: number;
   po_code: string;
   supplier_id: number | null;
+  contact_person_id?: number | null;
   transaction_id: number | null;
   supplier_name: string;
+  person_name?: string;
   status: POStatus;
   expected_date: string | null;
   notes: string;
@@ -105,21 +109,30 @@ export default function PurchaseOrdersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [acting, setActing] = useState<number | null>(null);
   const [receiveTarget, setReceiveTarget] = useState<PO | null>(null);
+  const [editTarget, setEditTarget] = useState<PO | null>(null);
   const [initialDraft, setInitialDraft] = useState<DraftItem[] | null>(null);
 
   const fetchPos = async (silent = false) => {
     if (!silent) setLoading(true);
     else setRefreshing(true);
     try {
-      const [poRes, supRes] = await Promise.all([
+      const [poRes, supRes, personRes] = await Promise.all([
         supabase.from("purchase_orders").select("*").order("date_created", { ascending: false }),
         supabase.from("suppliers").select("id, name").eq("delete_flag", 0),
+        supabase
+          .from("supplier_contact_persons")
+          .select("id, supplier_id, name")
+          .order("is_primary", { ascending: false }),
       ]);
       const supplierMap = new Map((supRes.data || []).map((s) => [s.id, s.name]));
+      const personById = new Map(
+        (personRes.data || []).map((p) => [p.id, { supplier_id: p.supplier_id, name: p.name }])
+      );
       const poRows = (poRes.data || []) as Array<{
         id: number;
         po_code: string;
         supplier_id: number | null;
+        contact_person_id?: number | null;
         transaction_id: number | null;
         status: string;
         expected_date: string | null;
@@ -161,6 +174,10 @@ export default function PurchaseOrdersPage() {
         poRows.map((p) => ({
           ...p,
           supplier_name: p.supplier_id ? supplierMap.get(p.supplier_id) || "Unknown" : "—",
+          person_name:
+            p.contact_person_id && personById.get(p.contact_person_id)
+              ? personById.get(p.contact_person_id)!.name
+              : undefined,
           status: p.status as POStatus,
           items: itemMap.get(p.id) || [],
         }))
@@ -286,7 +303,12 @@ export default function PurchaseOrdersPage() {
     const q = search.trim().toLowerCase();
     return pos.filter((p) => {
       if (statusF !== "all" && p.status !== statusF) return false;
-      if (q && !p.po_code.toLowerCase().includes(q) && !p.supplier_name.toLowerCase().includes(q))
+      if (
+        q &&
+        !p.po_code.toLowerCase().includes(q) &&
+        !p.supplier_name.toLowerCase().includes(q) &&
+        !(p.person_name || "").toLowerCase().includes(q)
+      )
         return false;
       return true;
     });
@@ -492,7 +514,12 @@ export default function PurchaseOrdersPage() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-black text-white text-sm">{po.po_code}</span>
+                          <Link
+                            href={`/inventory/purchase-orders/${po.id}`}
+                            className="font-black text-white text-sm hover:text-emerald-300 transition-colors"
+                          >
+                            {po.po_code}
+                          </Link>
                           <span
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold border ${meta.cls}`}
                           >
@@ -501,7 +528,18 @@ export default function PurchaseOrdersPage() {
                           </span>
                         </div>
                         <div className="text-[11px] text-slate-600 mt-0.5">
-                          {po.supplier_name} · {fmtDate(po.date_created)}
+                          {po.supplier_id != null ? (
+                            <Link
+                              href={`/suppliers/${po.supplier_id}`}
+                              className="text-slate-500 hover:text-blue-400 transition-colors"
+                            >
+                              {po.supplier_name}
+                            </Link>
+                          ) : (
+                            po.supplier_name
+                          )}{" "}
+                          · {fmtDate(po.date_created)}
+                          {po.person_name && <> · <b className="text-slate-400 font-bold">{po.person_name}</b></>}
                         </div>
                         {po.transaction_id != null && (
                           <Link
@@ -514,6 +552,22 @@ export default function PurchaseOrdersPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      <Link
+                        href={`/inventory/purchase-orders/${po.id}`}
+                        title="View PO"
+                        className="p-2 bg-[#21293d] hover:bg-blue-600/30 border border-[#21293d] hover:border-blue-500/40 rounded-lg text-slate-500 hover:text-blue-400 transition-all"
+                      >
+                        <Eye size={13} />
+                      </Link>
+                      {(po.status === "pending" || po.status === "cancelled") && (
+                        <button
+                          onClick={() => setEditTarget(po)}
+                          title="Edit PO"
+                          className="p-2 bg-[#21293d] hover:bg-amber-600/30 border border-[#21293d] hover:border-amber-500/40 rounded-lg text-slate-500 hover:text-amber-400 transition-all"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                      )}
                       <span className="text-xs text-slate-500 font-bold mr-2">
                         ₹{po.total_amount.toLocaleString("en-IN")}
                       </span>
@@ -620,16 +674,19 @@ export default function PurchaseOrdersPage() {
         )}
       </div>
 
-      {/* ── CREATE PO MODAL ── */}
-      {modalOpen && (
+      {/* ── CREATE / EDIT PO MODAL ── */}
+      {(modalOpen || editTarget) && (
         <CreatePOModal
+          editing={editTarget}
           initialDraft={initialDraft}
           onClose={() => {
             setModalOpen(false);
+            setEditTarget(null);
             setInitialDraft(null);
           }}
           onSaved={() => {
             setModalOpen(false);
+            setEditTarget(null);
             setInitialDraft(null);
             fetchPos();
           }}
@@ -654,25 +711,42 @@ function CreatePOModal({
   onClose,
   onSaved,
   initialDraft,
+  editing,
 }: {
   onClose: () => void;
   onSaved: () => void;
   initialDraft?: DraftItem[] | null;
+  editing?: PO | null;
 }) {
-  const [supplierId, setSupplierId] = useState<string>("");
+  const [supplierId, setSupplierId] = useState<string>(
+    editing?.supplier_id ? String(editing.supplier_id) : ""
+  );
   const [products, setProducts] = useState<Array<{ id: number; name: string }>>([]);
   const [lines, setLines] = useState<DraftItem[]>(() =>
-    initialDraft && initialDraft.length
-      ? initialDraft.map((l) => ({
+    editing && editing.items.length
+      ? editing.items.map((l) => ({
           product_id: l.product_id,
           product_name: l.product_name || "",
-          qty: l.qty > 0 ? l.qty : 1,
+          qty: l.qty_ordered > 0 ? l.qty_ordered : 1,
           unit_cost: l.unit_cost || 0,
         }))
-      : [{ product_id: 0, product_name: "", qty: 1, unit_cost: 0 }]
+      : initialDraft && initialDraft.length
+        ? initialDraft.map((l) => ({
+            product_id: l.product_id,
+            product_name: l.product_name || "",
+            qty: l.qty > 0 ? l.qty : 1,
+            unit_cost: l.unit_cost || 0,
+          }))
+        : [{ product_id: 0, product_name: "", qty: 1, unit_cost: 0 }]
   );
-  const [expectedDate, setExpectedDate] = useState("");
-  const [notes, setNotes] = useState("");
+  const [expectedDate, setExpectedDate] = useState(editing?.expected_date || "");
+  const [notes, setNotes] = useState(editing?.notes || "");
+  const [contactPerson, setContactPerson] = useState(
+    editing?.contact_person_id != null ? String(editing.contact_person_id) : ""
+  );
+  const [persons, setPersons] = useState<Array<{ id: number; name: string; is_primary: boolean }>>(
+    []
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -705,6 +779,33 @@ function CreatePOModal({
       .then(({ data }) => setProducts((data || []).map((p) => ({ id: p.id, name: p.name }))));
   }, []);
 
+  // Supplier badalne par uske contact persons load karo.
+  // Edit mode mein pehli baar (mount par) contactPerson prefill preserve karo.
+  const isFirstRun = useRef(true);
+  useEffect(() => {
+    if (isFirstRun.current) isFirstRun.current = false;
+    else setContactPerson("");
+
+    if (!supplierId) {
+      setPersons([]);
+      return;
+    }
+    supabase
+      .from("supplier_contact_persons")
+      .select("id, name, is_primary")
+      .eq("supplier_id", Number(supplierId))
+      .order("is_primary", { ascending: false })
+      .then(({ data }) =>
+        setPersons(
+          ((data || []) as Array<{ id: number; name: string; is_primary: boolean }>).map((p) => ({
+            id: p.id,
+            name: p.name,
+            is_primary: p.is_primary,
+          }))
+        )
+      );
+  }, [supplierId]);
+
   const setLine = (idx: number, patch: Partial<DraftItem>) =>
     setLines((ls) => ls.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
 
@@ -721,19 +822,58 @@ function CreatePOModal({
 
     setSaving(true);
     try {
-      const poCode = "PO-" + Date.now().toString().slice(-6);
       const headerPayload: Record<string, unknown> = {
-        po_code: poCode,
         supplier_id: supplierId ? Number(supplierId) : null,
-        status: "pending",
+        contact_person_id: contactPerson ? Number(contactPerson) : null,
         expected_date: expectedDate || null,
         notes: notes.trim(),
         total_amount: total,
       };
-      if (partsMeta?.transactionId) headerPayload.transaction_id = partsMeta.transactionId;
+
+      if (editing) {
+        const { error: upErr } = await supabase
+          .from("purchase_orders")
+          .update(headerPayload)
+          .eq("id", editing.id);
+        if (upErr) throw upErr;
+
+        const { error: delItemsErr } = await supabase
+          .from("purchase_order_items")
+          .delete()
+          .eq("purchase_order_id", editing.id);
+        if (delItemsErr) throw delItemsErr;
+
+        const { error: itErr } = await supabase.from("purchase_order_items").insert(
+          valid.map((l) => ({
+            purchase_order_id: editing.id,
+            product_id: l.product_id,
+            qty_ordered: l.qty,
+            qty_received: 0,
+            unit_cost: l.unit_cost,
+          }))
+        );
+        if (itErr) throw itErr;
+
+        await logActivity(
+          "PO Updated",
+          "Inventory",
+          editing.id,
+          `PO: ${editing.po_code} | ${valid.length} item(s) | Total: ₹${total}`
+        );
+        onSaved();
+        return;
+      }
+
+      const poCode = "PO-" + Date.now().toString().slice(-6);
+      const createPayload: Record<string, unknown> = {
+        ...headerPayload,
+        po_code: poCode,
+        status: "pending",
+      };
+      if (partsMeta?.transactionId) createPayload.transaction_id = partsMeta.transactionId;
       const { data: po, error: poErr } = await supabase
         .from("purchase_orders")
-        .insert([headerPayload])
+        .insert([createPayload])
         .select()
         .single();
       if (poErr) throw poErr;
@@ -794,15 +934,25 @@ function CreatePOModal({
         <div className="h-0.5 w-full bg-gradient-to-r from-emerald-500 to-teal-600" />
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d]">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center border bg-emerald-500/10 border-emerald-500/25">
-              <Plus size={16} className="text-emerald-400" />
+            <div
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border ${
+                editing
+                  ? "bg-amber-500/10 border-amber-500/25"
+                  : "bg-emerald-500/10 border-emerald-500/25"
+              }`}
+            >
+              {editing ? (
+                <Pencil size={16} className="text-amber-400" />
+              ) : (
+                <Plus size={16} className="text-emerald-400" />
+              )}
             </div>
             <div>
               <h3 className="text-base font-extrabold text-white leading-none">
-                New Purchase Order
+                {editing ? `Edit ${editing.po_code}` : "New Purchase Order"}
               </h3>
               <p className="text-[10px] text-slate-600 font-bold mt-0.5 uppercase tracking-wider">
-                Reorder stock from supplier
+                {editing ? "Update supplier, dates & line items" : "Reorder stock from supplier"}
               </p>
             </div>
           </div>
@@ -845,12 +995,34 @@ function CreatePOModal({
                 <input
                   type="date"
                   value={expectedDate}
-                  min={today}
+                  min={editing ? undefined : today}
                   onChange={(e) => setExpectedDate(e.target.value)}
                   className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm [color-scheme:dark]"
                 />
               </div>
             </div>
+
+            {/* Contact person (optional) */}
+            {supplierId && persons.length > 0 && (
+              <div>
+                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
+                  Contact Person (Optional)
+                </label>
+                <select
+                  value={contactPerson}
+                  onChange={(e) => setContactPerson(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm [color-scheme:dark]"
+                >
+                  <option value="">-- Koi bhi person --</option>
+                  {persons.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                      {p.is_primary ? " (Primary)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Line items */}
             <div>
@@ -972,7 +1144,7 @@ function CreatePOModal({
                 </>
               ) : (
                 <>
-                  <CheckCircle2 size={16} /> Create PO
+                  <CheckCircle2 size={16} /> {editing ? "Save Changes" : "Create PO"}
                 </>
               )}
             </button>

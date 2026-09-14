@@ -40,16 +40,27 @@ export type SupplierRow = {
   state?: string | null;
 };
 
-export type SupplierContact = {
+export type ContactPhone = {
   id?: number;
   label: string;
   phone: string;
   is_primary: boolean;
 };
 
-const CONTACT_LABELS = ["Mobile", "Office", "WhatsApp", "Shop", "Other"];
+export type ContactPerson = {
+  id?: number;
+  name: string;
+  role: string;
+  notes: string;
+  is_primary: boolean;
+  phones: ContactPhone[];
+};
 
-const defaultContacts: SupplierContact[] = [{ label: "Mobile", phone: "", is_primary: true }];
+export const CONTACT_LABELS = ["Mobile", "Office", "WhatsApp", "Shop", "Other"];
+
+const defaultPersons: ContactPerson[] = [
+  { name: "", role: "", notes: "", is_primary: true, phones: [{ label: "Mobile", phone: "", is_primary: true }] },
+];
 
 type Props = {
   open: boolean;
@@ -72,7 +83,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
     city: "",
     state: "",
   });
-  const [contacts, setContacts] = useState<SupplierContact[]>(defaultContacts);
+  const [contacts, setContacts] = useState<ContactPerson[]>(defaultPersons);
   const [photoUrl, setPhotoUrl] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState("");
@@ -106,24 +117,61 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
     setPhotoRemoved(false);
     setFormErr("");
     setImgPopup(false);
-    setContacts(defaultContacts);
+    setContacts(defaultPersons);
 
     if (editing) {
       supabase
-        .from("supplier_contacts")
-        .select("id, label, phone, is_primary")
+        .from("supplier_contact_persons")
+        .select("id, name, role, notes, is_primary")
         .eq("supplier_id", editing.id)
         .order("is_primary", { ascending: false })
-        .then(({ data }) => {
-          const list = (data || []) as SupplierContact[];
-          if (list.length === 0) {
-            // Fallback: suppliers.contact (migration seed ke baad shouldn't happen)
+        .then(async ({ data }) => {
+          const persons = (data || []) as Array<{
+            id: number;
+            name: string;
+            role: string | null;
+            notes: string | null;
+            is_primary: boolean;
+          }>;
+          if (persons.length === 0) {
+            // Fallback: suppliers.contact (abhi tak person model save nahi hua)
             setContacts(
-              editing.contact ? [{ label: "Mobile", phone: editing.contact, is_primary: true }] : []
+              editing.contact
+                ? [
+                    {
+                      id: undefined,
+                      name: "",
+                      role: "",
+                      notes: "",
+                      is_primary: true,
+                      phones: [{ label: "Mobile", phone: editing.contact, is_primary: true }],
+                    },
+                  ]
+                : defaultPersons
             );
-          } else {
-            setContacts(list);
+            return;
           }
+          const { data: phoneRows } = await supabase
+            .from("supplier_contact_phones")
+            .select("id, person_id, label, phone, is_primary")
+            .in("person_id", persons.map((p) => p.id));
+          const phoneMap: Record<number, ContactPhone[]> = {};
+          for (const ph of (phoneRows || []) as Array<ContactPhone & { person_id: number }>) {
+            if (!phoneMap[ph.person_id]) phoneMap[ph.person_id] = [];
+            phoneMap[ph.person_id].push(ph);
+          }
+          for (const id of Object.keys(phoneMap))
+            phoneMap[Number(id)].sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
+          setContacts(
+            persons.map((p) => ({
+              id: p.id,
+              name: p.name,
+              role: p.role || "",
+              notes: p.notes || "",
+              is_primary: p.is_primary,
+              phones: phoneMap[p.id] || [],
+            }))
+          );
         });
     }
   }, [open, editing]);
@@ -189,38 +237,145 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
     setPhotoRemoved(false);
   };
 
-  const updateContact = (i: number, patch: Partial<SupplierContact>) => {
+  const updatePerson = (i: number, patch: Partial<ContactPerson>) => {
     setContacts((prev) => prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
   };
 
-  const setPrimary = (i: number) => {
+  const setPrimaryPerson = (i: number) => {
     setContacts((prev) => prev.map((c, idx) => ({ ...c, is_primary: idx === i })));
   };
 
-  const addContact = () => {
-    setContacts((prev) => [...prev, { label: "Mobile", phone: "", is_primary: prev.length === 0 }]);
+  const addPerson = () => {
+    setContacts((prev) => [
+      ...prev,
+      { name: "", role: "", notes: "", is_primary: prev.length === 0, phones: [{ label: "Mobile", phone: "", is_primary: true }] },
+    ]);
   };
 
-  const removeContact = (i: number) => {
+  const removePerson = (i: number) => {
     setContacts((prev) => {
       const next = prev.filter((_, idx) => idx !== i);
-      if (next.length > 0 && !next.some((c) => c.is_primary)) next[0].is_primary = true;
+      if (next.length > 0 && !next.some((p) => p.is_primary)) next[0].is_primary = true;
       return next;
     });
   };
 
-  const syncContacts = async (supplierId: number, list: SupplierContact[]) => {
-    await supabase.from("supplier_contacts").delete().eq("supplier_id", supplierId);
-    if (list.length === 0) return;
-    const { error } = await supabase.from("supplier_contacts").insert(
-      list.map((c) => ({
-        supplier_id: supplierId,
-        label: c.label.trim() || "Mobile",
-        phone: c.phone.trim(),
-        is_primary: c.is_primary,
-      }))
+  const updatePhone = (pi: number, phi: number, patch: Partial<ContactPhone>) => {
+    setContacts((prev) =>
+      prev.map((p, pi2) =>
+        pi2 === pi
+          ? { ...p, phones: p.phones.map((ph, phi2) => (phi2 === phi ? { ...ph, ...patch } : ph)) }
+          : p
+      )
     );
-    if (error) throw error;
+  };
+
+  const setPrimaryPhone = (pi: number, phi: number) => {
+    setContacts((prev) =>
+      prev.map((p, pi2) =>
+        pi2 === pi ? { ...p, phones: p.phones.map((ph, phi2) => ({ ...ph, is_primary: phi2 === phi })) } : p
+      )
+    );
+  };
+
+  const addPhone = (pi: number) => {
+    setContacts((prev) =>
+      prev.map((p, pi2) =>
+        pi2 === pi
+          ? { ...p, phones: [...p.phones, { label: "Mobile", phone: "", is_primary: p.phones.length === 0 }] }
+          : p
+      )
+    );
+  };
+
+  const removePhone = (pi: number, phi: number) => {
+    setContacts((prev) =>
+      prev.map((p, pi2) => {
+        if (pi2 !== pi) return p;
+        const next = p.phones.filter((_, phi2) => phi2 !== phi);
+        if (next.length > 0 && !next.some((ph) => ph.is_primary)) next[0].is_primary = true;
+        return { ...p, phones: next };
+      })
+    );
+  };
+
+  const syncContactPersons = async (supplierId: number, persons: ContactPerson[]) => {
+    const { data: existing } = await supabase
+      .from("supplier_contact_persons")
+      .select("id, name")
+      .eq("supplier_id", supplierId);
+    const existingRows = (existing || []) as { id: number; name: string }[];
+
+    const personIds: (number | null)[] = [];
+    for (const p of persons) {
+      const fields = {
+        name: p.name.trim(),
+        role: p.role.trim() || null,
+        notes: p.notes.trim() || null,
+        is_primary: p.is_primary,
+      };
+      let pid = p.id ?? null;
+      if (pid) {
+        const { error } = await supabase
+          .from("supplier_contact_persons")
+          .update({ ...fields, date_updated: new Date().toISOString() })
+          .eq("id", pid);
+        if (error) throw error;
+      } else {
+        // Naya person — pehle se naam se koi ho to usi ko update karo (id preserve,
+        // taaki purane PO/payment person-links tootein nahi)
+        const match = existingRows.find(
+          (e) => e.name.trim().toLowerCase() === p.name.trim().toLowerCase()
+        );
+        if (match) {
+          pid = match.id;
+          const { error } = await supabase
+            .from("supplier_contact_persons")
+            .update({ ...fields, date_updated: new Date().toISOString() })
+            .eq("id", pid);
+          if (error) throw error;
+        } else {
+          const { data, error } = await supabase
+            .from("supplier_contact_persons")
+            .insert([{ supplier_id: supplierId, ...fields }])
+            .select("id")
+            .single();
+          if (error) throw error;
+          pid = data.id;
+        }
+      }
+      personIds.push(pid);
+
+      // Phones: delete + reinsert (koi aur FK phones ko point nahi karta)
+      const { error: delErr } = await supabase
+        .from("supplier_contact_phones")
+        .delete()
+        .eq("person_id", pid);
+      if (delErr) throw delErr;
+      if (p.phones.length > 0) {
+        const { error } = await supabase.from("supplier_contact_phones").insert(
+          p.phones.map((ph) => ({
+            person_id: pid,
+            label: ph.label.trim() || "Mobile",
+            phone: ph.phone.trim(),
+            is_primary: ph.is_primary,
+          }))
+        );
+        if (error) throw error;
+      }
+    }
+
+    // Form se hata diye gaye persons → delete (phones cascade, PO/payment refs
+    // set null ho jate hain)
+    const kept = new Set(personIds.filter((x): x is number => x != null));
+    const stale = existingRows.filter((e) => !kept.has(e.id));
+    if (stale.length > 0) {
+      const { error } = await supabase
+        .from("supplier_contact_persons")
+        .delete()
+        .in("id", stale.map((e) => e.id));
+      if (error) throw error;
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -229,16 +384,31 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
       setFormErr("Supplier name zaroori hai!");
       return;
     }
-    // Normalize + trim valid contacts
-    const valid = contacts
-      .map((c) => ({
-        label: c.label.trim() || "Mobile",
-        phone: c.phone.trim(),
-        is_primary: c.is_primary,
+    // Normalize + trim valid persons (each with valid phones)
+    const validPersons = contacts
+      .map((p) => ({
+        name: p.name.trim(),
+        role: p.role.trim(),
+        notes: p.notes.trim(),
+        is_primary: p.is_primary,
+        phones: p.phones
+          .map((ph) => ({
+            label: ph.label.trim() || "Mobile",
+            phone: ph.phone.trim(),
+            is_primary: ph.is_primary,
+          }))
+          .filter((ph) => ph.phone !== ""),
       }))
-      .filter((c) => c.phone !== "");
-    if (valid.length > 0 && !valid.some((c) => c.is_primary)) valid[0].is_primary = true;
-    const primary = valid.find((c) => c.is_primary)?.phone || valid[0]?.phone || "";
+      .filter((p) => p.name !== "");
+    if (validPersons.length > 0 && !validPersons.some((p) => p.is_primary)) validPersons[0].is_primary = true;
+    for (const p of validPersons) {
+      if (p.phones.length > 0 && !p.phones.some((ph) => ph.is_primary)) p.phones[0].is_primary = true;
+    }
+    const primaryPerson = validPersons.find((p) => p.is_primary) || validPersons[0];
+    const primary =
+      primaryPerson?.phones.find((ph) => ph.is_primary)?.phone ||
+      primaryPerson?.phones[0]?.phone ||
+      "";
 
     setSaving(true);
     try {
@@ -275,7 +445,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
         supplierId = data.id;
       }
 
-      await syncContacts(supplierId, valid);
+      await syncContactPersons(supplierId, validPersons);
 
       if (photoRemoved) await removePhoto(supplierId);
       if (photoFile) await uploadPhoto(supplierId);
@@ -441,60 +611,121 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
             />
           </div>
 
-          {/* Contact numbers */}
-          <div>
-            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-              Contact Numbers <span className="text-slate-700">(ek se zyada ho sakein)</span>
+          {/* Contact persons */}
+          <div className="space-y-3">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
+              Contact Persons{" "}
+              <span className="text-slate-700">(firm ke 1 se zyada person, har ke 1+ mobile)</span>
             </label>
-            <div className="space-y-2">
-              {contacts.map((c, i) => (
-                <div key={i} className="flex flex-wrap items-center gap-2">
-                  <select
-                    value={c.label}
-                    onChange={(e) => updateContact(i, { label: e.target.value })}
-                    className="px-2 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-slate-300 outline-none focus:border-blue-500"
-                  >
-                    {CONTACT_LABELS.map((l) => (
-                      <option key={l} value={l}>
-                        {l}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    value={c.phone}
-                    onChange={(e) => updateContact(i, { phone: e.target.value })}
-                    placeholder="Phone no."
-                    className="flex-1 px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 min-w-[120px]"
-                  />
+            {contacts.map((p, pi) => (
+              <div
+                key={pi}
+                className="bg-[#111520]/60 border border-[#21293d] rounded-xl p-3 space-y-3"
+              >
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setPrimary(i)}
-                    title={c.is_primary ? "Primary contact" : "Primary banao"}
+                    onClick={() => setPrimaryPerson(pi)}
+                    title={p.is_primary ? "Primary person" : "Primary person banao"}
                     className={`p-1.5 rounded-lg transition ${
-                      c.is_primary
+                      p.is_primary
                         ? "bg-amber-500/20 text-amber-400"
                         : "bg-white/5 text-slate-600 hover:text-amber-400"
                     }`}
                   >
-                    <Star size={14} fill={c.is_primary ? "currentColor" : "none"} />
+                    <Star size={14} fill={p.is_primary ? "currentColor" : "none"} />
                   </button>
+                  <span className="flex-1 px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-slate-200 font-bold">
+                    Person {pi + 1}
+                    {p.is_primary ? " — Primary" : ""}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => removeContact(i)}
-                    className="p-1.5 rounded-lg bg-white/5 text-slate-600 hover:text-red-400 transition"
+                    onClick={() => removePerson(pi)}
+                    disabled={contacts.length <= 1}
+                    title="Person hatao"
+                    className="p-1.5 rounded-lg bg-white/5 text-slate-600 hover:text-red-400 disabled:opacity-40 transition"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={13} />
                   </button>
                 </div>
-              ))}
-              <button
-                type="button"
-                onClick={addContact}
-                className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 font-bold transition-colors"
-              >
-                <Plus size={13} /> Add Contact
-              </button>
-            </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    value={p.name}
+                    onChange={(e) => updatePerson(pi, { name: e.target.value })}
+                    placeholder="Person ka naam (e.g. Ramesh)"
+                    className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  />
+                  <input
+                    value={p.role}
+                    onChange={(e) => updatePerson(pi, { role: e.target.value })}
+                    placeholder="Role (e.g. Manager)"
+                    className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  {p.phones.length === 0 && (
+                    <p className="text-[11px] text-slate-600">
+                      Koi phone nahi. Neeche apne numbers add karo.
+                    </p>
+                  )}
+                  {p.phones.map((ph, phi) => (
+                    <div key={phi} className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={ph.label}
+                        onChange={(e) => updatePhone(pi, phi, { label: e.target.value })}
+                        className="px-2 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-slate-300 outline-none focus:border-blue-500"
+                      >
+                        {CONTACT_LABELS.map((l) => (
+                          <option key={l} value={l}>
+                            {l}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        value={ph.phone}
+                        onChange={(e) => updatePhone(pi, phi, { phone: e.target.value })}
+                        placeholder="Phone no."
+                        className="flex-1 px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 min-w-[110px]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setPrimaryPhone(pi, phi)}
+                        title={ph.is_primary ? "Primary number" : "Primary number banao"}
+                        className={`p-1.5 rounded-lg transition ${
+                          ph.is_primary
+                            ? "bg-amber-500/20 text-amber-400"
+                            : "bg-white/5 text-slate-600 hover:text-amber-400"
+                        }`}
+                      >
+                        <Star size={13} fill={ph.is_primary ? "currentColor" : "none"} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removePhone(pi, phi)}
+                        className="p-1.5 rounded-lg bg-white/5 text-slate-600 hover:text-red-400 transition"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addPhone(pi)}
+                    className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-blue-300 font-bold transition-colors"
+                  >
+                    <Plus size={12} /> Phone aur add karo
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addPerson}
+              className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 font-bold transition-colors"
+            >
+              <Plus size={13} /> Add Person
+            </button>
           </div>
 
           <div>

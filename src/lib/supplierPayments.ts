@@ -22,6 +22,7 @@ export type SupplierPayment = {
   payment_date: string;
   created_by: number | null;
   date_created: string;
+  contact_person_id?: number | null;
 };
 
 export type SupplierDues = {
@@ -72,6 +73,7 @@ export type AddPaymentInput = {
   reference?: string;
   notes?: string;
   payment_date?: string; // YYYY-MM-DD (default aaj)
+  contact_person_id?: number | null;
 };
 
 /** Payment record + activity log (writer rule: meta_id = supplier id). */
@@ -87,6 +89,7 @@ export async function addSupplierPayment(input: AddPaymentInput): Promise<Suppli
       notes: input.notes?.trim() || null,
       payment_date: input.payment_date || new Date().toISOString().slice(0, 10),
       created_by: createdBy,
+      contact_person_id: input.contact_person_id ?? null,
     })
     .select("*")
     .single();
@@ -106,8 +109,46 @@ export async function removeSupplierPayment(id: number, supplierId: number): Pro
   void logActivity("Deleted Supplier Payment", "Suppliers", supplierId, `payment #${id}`);
 }
 
+export type UpdatePaymentInput = {
+  amount: number;
+  payment_mode: PaymentMode;
+  reference?: string;
+  notes?: string;
+  payment_date?: string; // YYYY-MM-DD
+  contact_person_id?: number | null;
+};
+
+/** Payment record update + activity log (writer rule: meta_id = supplier id). */
+export async function updateSupplierPayment(
+  id: number,
+  supplierId: number,
+  input: UpdatePaymentInput
+): Promise<SupplierPayment | null> {
+  const { data, error } = await supabase
+    .from("supplier_payments")
+    .update({
+      amount: input.amount,
+      payment_mode: input.payment_mode,
+      reference: input.reference?.trim() || null,
+      notes: input.notes?.trim() || null,
+      payment_date: input.payment_date || new Date().toISOString().slice(0, 10),
+      contact_person_id: input.contact_person_id ?? null,
+    })
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  void logActivity(
+    "Updated Supplier Payment",
+    "Suppliers",
+    supplierId,
+    `payment #${id} · ₹${input.amount} (${input.payment_mode})`
+  );
+  return data as SupplierPayment;
+}
+
 /**
- * Har supplier ka outstanding (due) — billed = Σ PO total_amount (delete_flag=0),
+ * Har supplier ka outstanding (due) — billed = Σ PO total_amount,
  * paid = Σ supplier_payments. Koi PO kam se kam ho ya na ho dono cases safe.
  * supplierIds empty → sab active suppliers.
  */
@@ -118,7 +159,7 @@ export async function fetchSupplierDues(supplierIds?: number[]): Promise<Supplie
   const [{ data: suppliers }, { data: payments }, { data: pos }] = await Promise.all([
     supQuery.order("name"),
     supabase.from("supplier_payments").select("supplier_id, amount"),
-    supabase.from("purchase_orders").select("supplier_id, total_amount").eq("delete_flag", 0),
+    supabase.from("purchase_orders").select("supplier_id, total_amount"),
   ]);
 
   const paidBySupplier: Record<number, number> = {};

@@ -57,7 +57,6 @@ export async function fetchSupplierPurchases(
   let poQuery = supabase
     .from("purchase_orders")
     .select("id, po_code, supplier_id, total_amount, date_created")
-    .eq("delete_flag", 0)
     .neq("status", "cancelled")
     .order("date_created", { ascending: true });
 

@@ -7,11 +7,13 @@ import Image from "next/image";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { safeImageSrc } from "@/lib/image-utils";
-import SupplierFormModal, { SupplierRow, SupplierContact } from "@/components/SupplierFormModal";
+import SupplierFormModal, { SupplierRow, ContactPerson, ContactPhone } from "@/components/SupplierFormModal";
 import Lightbox from "@/components/Lightbox";
 import {
   listSupplierPayments,
   addSupplierPayment,
+  updateSupplierPayment,
+  removeSupplierPayment,
   SupplierPayment,
   PAYMENT_MODES,
   PaymentMode,
@@ -35,6 +37,8 @@ import {
   Plus,
   Loader2,
   X,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 
@@ -53,10 +57,56 @@ const fmtDate = (d: string | null) =>
 const waLink = (phone: string) => `https://wa.me/91${phone.replace(/\D/g, "")}`;
 const telLink = (phone: string) => `tel:+91${phone.replace(/\D/g, "")}`;
 
+function PaymentSummary({ amount, baseDue }: { amount: number; baseDue: number }) {
+  const remaining = baseDue - amount;
+  return (
+    <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-3 space-y-2">
+      <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+        Payment Summary
+      </p>
+      <div className="flex justify-between text-sm">
+        <span className="text-slate-500">Amount</span>
+        <span className="text-white font-bold">{fmtCurrency(amount)}</span>
+      </div>
+      <div className="flex justify-between text-sm">
+        <span className="text-slate-500">Outstanding</span>
+        <span className={`font-bold ${baseDue > 0 ? "text-red-400" : "text-emerald-400"}`}>
+          {fmtCurrency(baseDue)}
+        </span>
+      </div>
+      {baseDue > 0 && (
+        <div className="flex justify-between text-sm border-t border-[#21293d] pt-2">
+          {remaining > 0 ? (
+            <>
+              <span className="text-slate-400 font-black">Remaining After</span>
+              <span className="text-red-400 font-black">{fmtCurrency(remaining)}</span>
+            </>
+          ) : remaining === 0 ? (
+            <>
+              <span className="text-slate-400 font-black">After Payment</span>
+              <span className="text-emerald-400 font-black">
+                Cleared {fmtCurrency(0)}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="text-slate-400 font-black">Overpaid (Advance)</span>
+              <span className="text-amber-400 font-black">
+                {fmtCurrency(Math.abs(remaining))}
+              </span>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 type PurchaseOrder = {
   id: number;
   po_code: string;
   supplier_id: number;
+  contact_person_id?: number | null;
   total_amount: number;
   status: "pending" | "ordered" | "partially_received" | "received" | "cancelled";
   date_created: string;
@@ -69,9 +119,9 @@ type POItem = {
   id: number;
   purchase_order_id: number;
   product_id: number;
-  quantity: number;
-  unit_price: number;
-  received_qty: number;
+  qty_ordered: number;
+  qty_received: number;
+  unit_cost: number;
   delete_flag: number;
   product_list?: { id: number; name: string } | null;
 };
@@ -95,7 +145,8 @@ export default function SupplierDetailPage() {
 
   const [loading, setLoading] = useState(true);
   const [supplier, setSupplier] = useState<SupplierRow | null>(null);
-  const [contacts, setContacts] = useState<SupplierContact[]>([]);
+  const [persons, setPersons] = useState<ContactPerson[]>([]);
+  const [personNameMap, setPersonNameMap] = useState<Record<number, string>>({});
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [poItemsMap, setPoItemsMap] = useState<Record<number, POItem[]>>({});
   const [expandedPO, setExpandedPO] = useState<number | null>(null);
@@ -105,11 +156,14 @@ export default function SupplierDetailPage() {
 
   const [payments, setPayments] = useState<SupplierPayment[]>([]);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [payTarget, setPayTarget] = useState<SupplierPayment | null>(null);
+  const [payTargetReadOnly, setPayTargetReadOnly] = useState(false);
   const [payAmount, setPayAmount] = useState("");
   const [payMode, setPayMode] = useState<PaymentMode>("cash");
   const [payRef, setPayRef] = useState("");
   const [payNotes, setPayNotes] = useState("");
   const [payDate, setPayDate] = useState("");
+  const [payPerson, setPayPerson] = useState("");
   const [savingPay, setSavingPay] = useState(false);
   const [payErr, setPayErr] = useState("");
   const [isMobile, setIsMobile] = useState(false);
@@ -129,28 +183,78 @@ export default function SupplierDetailPage() {
     }
     setLoading(true);
 
-    const [{ data: sup }, { data: contactRows }] = await Promise.all([
+    const [{ data: sup }, { data: personRows }] = await Promise.all([
       supabase.from("suppliers").select("*").eq("id", id).eq("delete_flag", 0).single(),
       supabase
-        .from("supplier_contacts")
-        .select("id, label, phone, is_primary")
+        .from("supplier_contact_persons")
+        .select("id, name, role, notes, is_primary")
         .eq("supplier_id", id)
         .order("is_primary", { ascending: false }),
     ]);
 
     setSupplier(sup as SupplierRow | null);
 
-    let contactList = (contactRows || []) as SupplierContact[];
-    if (contactList.length === 0 && sup?.contact) {
-      contactList = [{ label: "Mobile", phone: sup.contact, is_primary: true }];
+    const rawPersons = (personRows || []) as Array<{
+      id: number;
+      name: string;
+      role: string | null;
+      notes: string | null;
+      is_primary: boolean;
+    }>;
+
+    let phoneRows: Array<ContactPhone & { person_id: number }> = [];
+    if (rawPersons.length > 0) {
+      const { data } = await supabase
+        .from("supplier_contact_phones")
+        .select("id, person_id, label, phone, is_primary")
+        .in(
+          "person_id",
+          rawPersons.map((p) => p.id)
+        );
+      phoneRows = (data || []) as Array<ContactPhone & { person_id: number }>;
     }
-    setContacts(contactList);
+
+    const phoneMap: Record<number, ContactPhone[]> = {};
+    for (const ph of phoneRows) {
+      if (!phoneMap[ph.person_id]) phoneMap[ph.person_id] = [];
+      phoneMap[ph.person_id].push(ph);
+    }
+    for (const pid of Object.keys(phoneMap))
+      phoneMap[Number(pid)].sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
+
+    let personList: ContactPerson[];
+    if (rawPersons.length === 0 && sup?.contact) {
+      personList = [
+        {
+          id: undefined,
+          name: "",
+          role: "",
+          notes: "",
+          is_primary: true,
+          phones: [{ label: "Mobile", phone: sup.contact, is_primary: true }],
+        },
+      ];
+    } else {
+      personList = rawPersons.map((p) => ({
+        id: p.id,
+        name: p.name,
+        role: p.role || "",
+        notes: p.notes || "",
+        is_primary: p.is_primary,
+        phones: phoneMap[p.id] || [],
+      }));
+    }
+    setPersons(personList);
+    setPersonNameMap(
+      Object.fromEntries(
+        personList.filter((p) => p.id != null && p.name.trim()).map((p) => [p.id as number, p.name])
+      )
+    );
 
     const { data: pos } = await supabase
       .from("purchase_orders")
       .select("*")
       .eq("supplier_id", id)
-      .eq("delete_flag", 0)
       .order("date_created", { ascending: false });
 
     const poList = (pos || []) as PurchaseOrder[];
@@ -161,8 +265,7 @@ export default function SupplierDetailPage() {
       const { data: items } = await supabase
         .from("purchase_order_items")
         .select("*, product_list(id, name)")
-        .in("purchase_order_id", poIds)
-        .eq("delete_flag", 0);
+        .in("purchase_order_id", poIds);
 
       const map: Record<number, POItem[]> = {};
       for (const item of (items || []) as POItem[]) {
@@ -204,6 +307,7 @@ export default function SupplierDetailPage() {
     setPayRef("");
     setPayNotes("");
     setPayDate("");
+    setPayPerson("");
     setPayErr("");
     setShowPayModal(true);
   };
@@ -223,6 +327,7 @@ export default function SupplierDetailPage() {
         reference: payRef,
         notes: payNotes,
         payment_date: payDate || undefined,
+        contact_person_id: payPerson ? Number(payPerson) : undefined,
       });
       setShowPayModal(false);
       const fresh = await listSupplierPayments(id);
@@ -231,6 +336,19 @@ export default function SupplierDetailPage() {
       setPayErr(e instanceof Error ? e.message : "Payment save nahi hua!");
     } finally {
       setSavingPay(false);
+    }
+  };
+
+  const deletePayment = async (p: SupplierPayment): Promise<boolean> => {
+    if (!confirm(`Payment ₹${p.amount} (${p.payment_mode}) delete karein?`)) return false;
+    try {
+      await removeSupplierPayment(p.id, id);
+      const fresh = await listSupplierPayments(id);
+      setPayments(fresh);
+      return true;
+    } catch (e) {
+      alert("Delete fail: " + (e instanceof Error ? e.message : String(e)));
+      return false;
     }
   };
 
@@ -330,45 +448,75 @@ export default function SupplierDetailPage() {
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
-                  Contact Numbers
+                  Contact Persons
                 </p>
-                {contacts.length === 0 ? (
+                {persons.length === 0 ? (
                   <p className="text-sm font-bold text-slate-200">—</p>
                 ) : (
-                  <div className="flex flex-col gap-1.5">
-                    {contacts.map((c, idx) => (
-                      <div key={idx} className="flex items-center gap-1.5 text-slate-300 text-sm">
-                        {c.is_primary && (
-                          <Star
-                            size={10}
-                            className="text-amber-400 flex-shrink-0"
-                            fill="currentColor"
-                          />
+                  <div className="flex flex-col gap-3">
+                    {persons.map((p, i) => (
+                      <div key={i} className="flex flex-col gap-1">
+                        {(p.name.trim() !== "" || p.role.trim() !== "") && (
+                          <div className="flex items-center gap-1.5">
+                            {p.is_primary && (
+                              <Star
+                                size={10}
+                                className="text-amber-400 flex-shrink-0"
+                                fill="currentColor"
+                              />
+                            )}
+                            <span className="text-xs font-black text-slate-200 uppercase tracking-wide">
+                              {p.name || "Person"}
+                            </span>
+                            {p.role && (
+                              <span className="text-[10px] text-slate-500">· {p.role}</span>
+                            )}
+                          </div>
                         )}
-                        <span className="text-[10px] font-black uppercase text-slate-500">
-                          {c.label}
-                        </span>
-                        {c.phone.replace(/\D/g, "").length >= 10 ? (
-                          <>
-                            <a
-                              href={telLink(c.phone)}
-                              title={`Call: ${c.phone}`}
-                              className="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline"
-                            >
-                              {c.phone}
-                            </a>
-                            <a
-                              href={waLink(c.phone)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title={`WhatsApp: ${c.phone}`}
-                              className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform inline-flex"
-                            >
-                              <MessageCircle size={13} />
-                            </a>
-                          </>
+                        {p.phones.length === 0 ? (
+                          <p className="text-sm font-bold text-slate-200">—</p>
                         ) : (
-                          <span className="font-mono font-bold">{c.phone}</span>
+                          <div className="flex flex-col gap-1">
+                            {p.phones.map((c, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center gap-1.5 text-slate-300 text-sm"
+                              >
+                                {c.is_primary && (
+                                  <Star
+                                    size={10}
+                                    className="text-amber-400 flex-shrink-0"
+                                    fill="currentColor"
+                                  />
+                                )}
+                                <span className="text-[10px] font-black uppercase text-slate-500">
+                                  {c.label}
+                                </span>
+                                {c.phone.replace(/\D/g, "").length >= 10 ? (
+                                  <>
+                                    <a
+                                      href={telLink(c.phone)}
+                                      title={`Call: ${c.phone}`}
+                                      className="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline"
+                                    >
+                                      {c.phone}
+                                    </a>
+                                    <a
+                                      href={waLink(c.phone)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      title={`WhatsApp: ${c.phone}`}
+                                      className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform inline-flex"
+                                    >
+                                      <MessageCircle size={13} />
+                                    </a>
+                                  </>
+                                ) : (
+                                  <span className="font-mono font-bold">{c.phone}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
                     ))}
@@ -549,6 +697,7 @@ export default function SupplierDetailPage() {
                         <th className="text-left px-4 py-3"></th>
                         <th className="text-left px-4 py-3">PO Code</th>
                         <th className="text-left px-4 py-3">Date</th>
+                        <th className="text-left px-4 py-3">Contact Person</th>
                         <th className="text-center px-4 py-3">Items</th>
                         <th className="text-right px-4 py-3">Total Amount</th>
                         <th className="text-center px-4 py-3">Status</th>
@@ -577,7 +726,7 @@ export default function SupplierDetailPage() {
                               </td>
                               <td className="px-4 py-3.5">
                                 <Link
-                                  href="/inventory/purchase-orders"
+                                  href={`/inventory/purchase-orders/${po.id}`}
                                   onClick={(e) => e.stopPropagation()}
                                   className="font-mono text-emerald-400 font-bold hover:underline"
                                 >
@@ -586,6 +735,16 @@ export default function SupplierDetailPage() {
                               </td>
                               <td className="px-4 py-3.5 text-slate-400 text-xs">
                                 {fmtDate(po.date_created)}
+                              </td>
+                              <td className="px-4 py-3.5">
+                                {po.contact_person_id &&
+                                personNameMap[po.contact_person_id] ? (
+                                  <span className="inline-flex items-center gap-1 text-xs text-slate-300 font-bold">
+                                    {personNameMap[po.contact_person_id]}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-700 text-xs">—</span>
+                                )}
                               </td>
                               <td className="px-4 py-3.5 text-center text-slate-400">
                                 {items.length}
@@ -605,7 +764,7 @@ export default function SupplierDetailPage() {
                               </td>
                               <td className="px-4 py-3.5 text-center">
                                 <Link
-                                  href="/inventory/purchase-orders"
+                                  href={`/inventory/purchase-orders/${po.id}`}
                                   onClick={(e) => e.stopPropagation()}
                                   className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition inline-flex"
                                 >
@@ -616,7 +775,7 @@ export default function SupplierDetailPage() {
 
                             {isExpanded && (
                               <tr>
-                                <td colSpan={8} className="px-4 py-4 bg-[#0d1117]/50">
+                                <td colSpan={9} className="px-4 py-4 bg-[#0d1117]/50">
                                   {po.notes && (
                                     <div className="mb-3 px-3 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs text-slate-400">
                                       <span className="font-bold text-slate-500">Notes:</span>{" "}
@@ -651,13 +810,13 @@ export default function SupplierDetailPage() {
                                               </Link>
                                             </td>
                                             <td className="px-3 py-2 text-center text-slate-400">
-                                              {item.quantity}
+                                              {item.qty_ordered}
                                             </td>
                                             <td className="px-3 py-2 text-right text-slate-400">
-                                              {fmtCurrency(item.unit_price || 0)}
+                                              {fmtCurrency(item.unit_cost || 0)}
                                             </td>
                                             <td className="px-3 py-2 text-center text-slate-400">
-                                              {item.received_qty ?? 0}
+                                              {item.qty_received ?? 0}
                                             </td>
                                           </tr>
                                         ))}
@@ -696,7 +855,7 @@ export default function SupplierDetailPage() {
                                 <ChevronRight size={14} className="text-slate-500 flex-shrink-0" />
                               )}
                               <Link
-                                href="/inventory/purchase-orders"
+                                href={`/inventory/purchase-orders/${po.id}`}
                                 onClick={(e) => e.stopPropagation()}
                                 className="font-mono text-emerald-400 font-bold text-sm hover:underline"
                               >
@@ -706,6 +865,9 @@ export default function SupplierDetailPage() {
                             <div className="text-[11px] text-slate-500 mt-1">
                               {fmtDate(po.date_created)}
                               {po.received_date && <> · Received {fmtDate(po.received_date)}</>}
+                              {po.contact_person_id && personNameMap[po.contact_person_id] && (
+                                <> · via {personNameMap[po.contact_person_id]}</>
+                              )}
                             </div>
                             <div className="text-xs text-slate-400 mt-1">
                               {items.length} item{items.length === 1 ? "" : "s"} ·{" "}
@@ -748,16 +910,16 @@ export default function SupplierDetailPage() {
                                         {item.product_list?.name || `Product #${item.product_id}`}
                                       </Link>
                                       <span className="text-xs font-black text-slate-200 flex-shrink-0">
-                                        {fmtCurrency(item.unit_price || 0)}
+                                        {fmtCurrency(item.unit_cost || 0)}
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
                                       <span>
-                                        Ordered: <b className="text-slate-200">{item.quantity}</b>
+                                        Ordered: <b className="text-slate-200">{item.qty_ordered}</b>
                                       </span>
                                       <span>
                                         Received:{" "}
-                                        <b className="text-slate-200">{item.received_qty ?? 0}</b>
+                                        <b className="text-slate-200">{item.qty_received ?? 0}</b>
                                       </span>
                                     </div>
                                   </div>
@@ -819,6 +981,8 @@ export default function SupplierDetailPage() {
                         <th className="text-center px-4 py-3">Mode</th>
                         <th className="text-left px-4 py-3">Reference</th>
                         <th className="text-left px-4 py-3">Notes</th>
+                        <th className="text-left px-4 py-3">Contact Person</th>
+                        <th className="text-center px-4 py-3">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#1a2234]">
@@ -839,6 +1003,46 @@ export default function SupplierDetailPage() {
                           <td className="px-4 py-3 text-slate-400 text-xs">{p.reference || "—"}</td>
                           <td className="px-4 py-3 text-slate-500 text-xs max-w-[220px] truncate">
                             {p.notes || "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            {p.contact_person_id && personNameMap[p.contact_person_id] ? (
+                              <span className="text-xs font-bold text-slate-300">
+                                {personNameMap[p.contact_person_id]}
+                              </span>
+                            ) : (
+                              <span className="text-slate-700 text-xs">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setPayTarget(p);
+                                  setPayTargetReadOnly(true);
+                                }}
+                                title="View"
+                                className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition"
+                              >
+                                <Eye size={13} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setPayTarget(p);
+                                  setPayTargetReadOnly(false);
+                                }}
+                                title="Edit"
+                                className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition"
+                              >
+                                <Pencil size={13} />
+                              </button>
+                              <button
+                                onClick={() => deletePayment(p)}
+                                title="Delete"
+                                className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -869,9 +1073,45 @@ export default function SupplierDetailPage() {
                         {p.notes && (
                           <div className="text-[11px] text-slate-500 mt-1 truncate">{p.notes}</div>
                         )}
+                        {p.contact_person_id && personNameMap[p.contact_person_id] && (
+                          <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wide">
+                            via {personNameMap[p.contact_person_id]}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-sm font-black text-emerald-400 flex-shrink-0">
-                        − {fmtCurrency(p.amount)}
+                      <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                        <div className="text-sm font-black text-emerald-400">
+                          − {fmtCurrency(p.amount)}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              setPayTarget(p);
+                              setPayTargetReadOnly(true);
+                            }}
+                            title="View"
+                            className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition"
+                          >
+                            <Eye size={12} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setPayTarget(p);
+                              setPayTargetReadOnly(false);
+                            }}
+                            title="Edit"
+                            className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition"
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          <button
+                            onClick={() => deletePayment(p)}
+                            title="Delete"
+                            className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -905,6 +1145,45 @@ export default function SupplierDetailPage() {
                   {payErr}
                 </div>
               )}
+              {/* Balance context card */}
+              <div
+                className={`rounded-xl border p-3 flex items-center gap-3 ${
+                  outstanding > 0
+                    ? "bg-red-500/8 border-red-500/20"
+                    : "bg-emerald-500/8 border-emerald-500/20"
+                }`}
+              >
+                <div
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    outstanding > 0
+                      ? "bg-red-500/15 text-red-400"
+                      : "bg-emerald-500/15 text-emerald-400"
+                  }`}
+                >
+                  <Wallet size={16} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                    {outstanding > 0 ? "Outstanding (Due)" : "No Due / Cleared"}
+                  </p>
+                  <p
+                    className={`text-lg font-black mt-0.5 ${
+                      outstanding > 0 ? "text-red-400" : "text-emerald-400"
+                    }`}
+                  >
+                    {fmtCurrency(outstanding)}
+                  </p>
+                </div>
+                {outstanding > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setPayAmount(outstanding.toFixed(2))}
+                    className="text-[10px] font-black uppercase tracking-wider px-3 py-2 rounded-xl bg-red-500/15 border border-red-500/25 text-red-400 hover:bg-red-500/25 transition-all whitespace-nowrap flex-shrink-0"
+                  >
+                    Full Amount
+                  </button>
+                )}
+              </div>
               <div>
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
                   Amount (₹)
@@ -966,6 +1245,26 @@ export default function SupplierDetailPage() {
               </div>
               <div>
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+                  Contact Person <span className="text-slate-700">(optional)</span>
+                </label>
+                <select
+                  value={payPerson}
+                  onChange={(e) => setPayPerson(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-emerald-500 [color-scheme:dark]"
+                >
+                  <option value="">— Firm / koi bhi —</option>
+                  {persons
+                    .filter((p) => p.id != null && p.name.trim())
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                        {p.is_primary ? " (Primary)" : ""}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
                   Notes
                 </label>
                 <input
@@ -975,6 +1274,10 @@ export default function SupplierDetailPage() {
                   className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-emerald-500"
                 />
               </div>
+              {/* Summary strip */}
+              {payAmount && parseFloat(payAmount) > 0 && (
+                <PaymentSummary amount={parseFloat(payAmount) || 0} baseDue={outstanding} />
+              )}
               <button
                 onClick={confirmPay}
                 disabled={savingPay}
@@ -993,6 +1296,25 @@ export default function SupplierDetailPage() {
         </div>
       )}
 
+      {payTarget && (
+        <SupplierPaymentModal
+          payment={payTarget}
+          readOnly={payTargetReadOnly}
+          outstanding={outstanding}
+          persons={persons}
+          onClose={() => setPayTarget(null)}
+          onSaved={() => {
+            setPayTarget(null);
+            fetchData();
+          }}
+          onSwitchToEdit={() => setPayTargetReadOnly(false)}
+          onDelete={async (p) => {
+            const ok = await deletePayment(p);
+            if (ok && p.id === payTarget.id) setPayTarget(null);
+          }}
+        />
+      )}
+
       <SupplierFormModal
         open={showModal}
         editing={supplier}
@@ -1002,5 +1324,268 @@ export default function SupplierDetailPage() {
 
       {zoomSrc && <Lightbox src={zoomSrc} alt="Visiting card" onClose={() => setZoomSrc("")} />}
     </AdminPage>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+function SupplierPaymentModal({
+  payment,
+  readOnly,
+  outstanding,
+  persons,
+  onClose,
+  onSaved,
+  onSwitchToEdit,
+  onDelete,
+}: {
+  payment: SupplierPayment;
+  readOnly: boolean;
+  outstanding: number;
+  persons: ContactPerson[];
+  onClose: () => void;
+  onSaved: () => void;
+  onSwitchToEdit: () => void;
+  onDelete: (p: SupplierPayment) => void | Promise<void>;
+}) {
+  const [amount, setAmount] = useState(String(payment.amount ?? ""));
+  const [mode, setMode] = useState<PaymentMode>(payment.payment_mode || "cash");
+  const [date, setDate] = useState((payment.payment_date || "").slice(0, 10));
+  const [ref, setRef] = useState(payment.reference || "");
+  const [person, setPerson] = useState(
+    payment.contact_person_id != null ? String(payment.contact_person_id) : ""
+  );
+  const [notes, setNotes] = useState(payment.notes || "");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const amt = parseFloat(amount) || 0;
+  const baseDue = outstanding + (payment.amount || 0);
+  const personName = persons.find((p) => p.id === payment.contact_person_id)?.name || "—";
+
+  const inputCls = readOnly
+    ? "w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-600 outline-none"
+    : "w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-emerald-500";
+
+  const handleSave = async () => {
+    if (!amt || amt <= 0) {
+      setErr("Amount sahi daalo!");
+      return;
+    }
+    setSaving(true);
+    setErr("");
+    try {
+      await updateSupplierPayment(payment.id, payment.supplier_id, {
+        amount: amt,
+        payment_mode: mode,
+        reference: ref,
+        notes,
+        payment_date: date,
+        contact_person_id: person ? Number(person) : null,
+      });
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[201] bg-black/70 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-[#111520] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl">
+        <div className="px-5 py-4 border-b border-[#21293d] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Wallet size={16} className="text-emerald-400" />
+            <h3 className="text-sm font-black text-slate-200">
+              {readOnly ? "Payment Details" : `Edit Payment #${payment.id}`}
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-white/5 text-slate-500 transition"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {err && (
+            <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-lg">
+              {err}
+            </div>
+          )}
+
+          {readOnly ? (
+            <div className="flex items-start gap-3 rounded-xl border border-[#21293d] bg-[#0d1117] p-3.5">
+              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                <Wallet size={15} className="text-emerald-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  Paid Amount
+                </p>
+                <p className="text-xl font-black text-emerald-400 mt-0.5">
+                  {fmtCurrency(payment.amount)}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  Mode
+                </p>
+                <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-slate-300 border border-[#21293d]">
+                  {PAYMENT_MODES.find((m) => m.value === payment.payment_mode)?.label ||
+                    payment.payment_mode}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+                Amount (₹)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+          )}
+
+          {readOnly ? (
+            <PaymentSummary amount={payment.amount} baseDue={baseDue} />
+          ) : (
+            amt > 0 && <PaymentSummary amount={amt} baseDue={baseDue} />
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+                Date
+              </label>
+              <input
+                type="date"
+                value={date}
+                disabled={readOnly}
+                onChange={(e) => setDate(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+                Reference
+              </label>
+              <input
+                value={ref}
+                disabled={readOnly}
+                onChange={(e) => setRef(e.target.value)}
+                placeholder="UPI ref / cheque no"
+                className={inputCls}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+              Payment Mode
+            </label>
+            {readOnly ? (
+              <p className="text-sm font-bold text-slate-300">
+                {PAYMENT_MODES.find((m) => m.value === payment.payment_mode)?.label ||
+                  payment.payment_mode}
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {PAYMENT_MODES.map((m) => (
+                  <button
+                    key={m.value}
+                    type="button"
+                    onClick={() => setMode(m.value)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                      mode === m.value
+                        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                        : "bg-[#0d1117] text-slate-500 border-[#21293d] hover:text-slate-300"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+              Contact Person <span className="text-slate-700">(optional)</span>
+            </label>
+            {readOnly ? (
+              <p className="text-sm font-bold text-slate-300">{personName}</p>
+            ) : (
+              <select
+                value={person}
+                onChange={(e) => setPerson(e.target.value)}
+                className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-emerald-500 [color-scheme:dark]"
+              >
+                <option value="">— Firm / koi bhi —</option>
+                {persons
+                  .filter((p) => p.id != null && p.name.trim())
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                      {p.is_primary ? " (Primary)" : ""}
+                    </option>
+                  ))}
+              </select>
+            )}
+          </div>
+
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+              Notes
+            </label>
+            <input
+              value={notes}
+              disabled={readOnly}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Kuch bhi memo (optional)"
+              className={inputCls}
+            />
+          </div>
+
+          {readOnly ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onSwitchToEdit}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-black transition-all"
+              >
+                <Pencil size={14} /> Edit Payment
+              </button>
+              <button
+                onClick={() => onDelete(payment)}
+                className="p-2.5 bg-red-500/10 hover:bg-red-500/25 border border-red-500/25 text-red-400 rounded-xl transition-all"
+                title="Delete payment"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all"
+            >
+              {saving ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" /> Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
