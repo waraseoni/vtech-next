@@ -93,14 +93,15 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] Supplier detail: show GST/bank details in info card
 - [x] Full schema + typecheck + lint + tests (migrations `20260913_required_parts_po_bridge.sql` + `20260913_suppliers_gst_bank.sql` applied)
 
-### Phase C — Reports + Expense Link (MEDIUM) — partial (P4 optional)
+### Phase C — Reports + Expense Link (MEDIUM) — complete (P4 done)
 - [x] `/reports/supplier-purchases` — date range, KPIs, per-supplier product breakdown (commit `1a0ad01`)
-- [ ] Add `supplier_id` FK to `expense_list` (nullable) — **P4, optional, pending**
-- [ ] Payment entry (Phase A) optionally auto-creates expense entry — **P4, optional, pending**
+- [x] Add `supplier_id` FK to `expense_list` (nullable) — **P4** (migration `20260919_expense_supplier_link.sql`, folded into full schema)
+- [x] Payment entry (Phase A) optionally auto-creates expense entry — **P4** (toggle in Add Payment modal → "Spare Parts Purchase" ledger entry; `supplier_payment_id` FK for dedup/traceability)
+- [x] Old payments ko backfill karne ke liye payment modal me "Expense entry banao" button — **P4** (dedup via `supplier_payment_id`)
 
-### Phase D — Active Product-Supplier Link (LOW) — **P5, optional, pending**
-- [ ] Supplier detail: "Recommended Orders" section — low-stock products linked via `spare_supplier`
-- [ ] Quick-add: one-click PO from suggested items
+### Phase D — Active Product-Supplier Link (LOW) — complete (P5 done)
+- [x] Supplier detail: "Recommended Orders" section — low-stock products linked via `spare_supplier`
+- [x] Quick-add: one-click PO from suggested items (`po_draft` + `po_draft_supplier` → prefilled Create PO modal)
 
 ### Completed (this session + earlier suppliers rounds)
 - [x] Supplier visiting card upload + lightbox zoom

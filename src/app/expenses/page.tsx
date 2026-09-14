@@ -14,7 +14,7 @@ export default async function ExpensesPage() {
   const user = await requireStaff();
   if (!user) redirect("/login");
 
-  const { mechanics, staffPayments, shopExpenses } = await fetchExpensesPageData();
+  const { mechanics, staffPayments, shopExpenses, supplierMap } = await fetchExpensesPageData();
 
   return (
     <Suspense fallback={<div className="min-h-screen" />}>
@@ -22,6 +22,7 @@ export default async function ExpensesPage() {
         initialMechanics={mechanics}
         initialStaffPayments={staffPayments}
         initialShopExpenses={shopExpenses}
+        initialSupplierMap={supplierMap}
       />
     </Suspense>
   );

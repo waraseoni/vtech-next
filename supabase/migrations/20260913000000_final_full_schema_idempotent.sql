@@ -3525,6 +3525,56 @@ $$;
 grant execute on function public.get_clients_page_financials() to authenticated;
 -- ═══ end clients page financials RPC fold-in block ═══
 
+-- ═══ FOLD-IN (2026-09-19) — expense_list ↔ suppliers link ═══
+--   P4 (suppliers plan): auto-create an Expenses ledger entry from a supplier
+--   payment + trace it back. expense_list.supplier_id bigint nullable FK →
+--   suppliers(id) ON DELETE SET NULL (adjustments/advances need no supplier).
+--   Idempotent. Provenance: 20260919_expense_supplier_link.sql.
+
+alter table public.expense_list
+  add column if not exists supplier_id bigint;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'expense_list_supplier_fk'
+      and conrelid = 'public.expense_list'::regclass
+  ) then
+    alter table only public.expense_list
+      add constraint expense_list_supplier_fk
+      foreign key (supplier_id) references public.suppliers(id)
+      on delete set null;
+  end if;
+end $$;
+
+create index if not exists expense_list_supplier_idx
+  on public.expense_list(supplier_id);
+
+-- ── expense_list.supplier_payment_id ────────────────────────────────────────
+--   Payment → expense traceability + dedup ("Expense entry banao" button on
+--   old payments). Kehta hai kaunsi supplier_payments row ka bana hai.
+alter table public.expense_list
+  add column if not exists supplier_payment_id bigint;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'expense_list_supplier_payment_fk'
+      and conrelid = 'public.expense_list'::regclass
+  ) then
+    alter table only public.expense_list
+      add constraint expense_list_supplier_payment_fk
+      foreign key (supplier_payment_id) references public.supplier_payments(id)
+      on delete set null;
+  end if;
+end $$;
+
+create index if not exists expense_list_supplier_payment_idx
+  on public.expense_list(supplier_payment_id);
+-- ═══ end expense_list ↔ suppliers fold-in block ═══
+
 -- ═══════════════════════════════════════════════════════════════════════════
 -- PostgREST ke liye schema reload (Supabase SQL Editor me dabane ke baad
 -- API immediately updated hota hai).

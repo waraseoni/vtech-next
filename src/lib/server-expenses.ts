@@ -16,7 +16,10 @@ export type Expense = {
   amount: number;
   remarks: string | null;
   date_created: string;
+  supplier_id: number | null;
 };
+
+export type SupplierMap = Record<number, string>;
 
 export type Mechanic = {
   id: number;
@@ -43,12 +46,18 @@ export type ExpensesPageData = {
   mechanics: Mechanic[];
   staffPayments: AdvancePayment[];
   shopExpenses: Expense[];
+  supplierMap: SupplierMap;
 };
 
 export async function fetchExpensesPageData(): Promise<ExpensesPageData> {
   const supabase = await getServerSupabase();
 
-  const [{ data: mechanicData }, { data: staffData }, { data: expenseData }] = await Promise.all([
+  const [
+    { data: mechanicData },
+    { data: staffData },
+    { data: expenseData },
+    { data: supplierData },
+  ] = await Promise.all([
     supabase
       .from("mechanic_list")
       .select("id, firstname, middlename, lastname, designation, status, delete_flag, image_path")
@@ -63,9 +72,10 @@ export async function fetchExpensesPageData(): Promise<ExpensesPageData> {
       .limit(500),
     supabase
       .from("expense_list")
-      .select("id, category, amount, remarks, date_created")
+      .select("id, category, amount, remarks, date_created, supplier_id")
       .order("date_created", { ascending: false })
       .limit(500),
+    supabase.from("suppliers").select("id, name").eq("delete_flag", 0),
   ]);
 
   const mechanics = ((mechanicData as DbRow[] | null) || []).map((r) => ({
@@ -93,7 +103,13 @@ export async function fetchExpensesPageData(): Promise<ExpensesPageData> {
     amount: Number(r.amount) || 0,
     remarks: (r.remarks as string | null) ?? null,
     date_created: (r.date_created as string) ?? "",
+    supplier_id: r.supplier_id != null ? Number(r.supplier_id) : null,
   })) as Expense[];
 
-  return { mechanics, staffPayments, shopExpenses };
+  const supplierMap: SupplierMap = {};
+  ((supplierData as DbRow[] | null) || []).forEach((r) => {
+    supplierMap[Number(r.id)] = (r.name as string) ?? "";
+  });
+
+  return { mechanics, staffPayments, shopExpenses, supplierMap };
 }

@@ -111,6 +111,7 @@ export default function PurchaseOrdersPage() {
   const [receiveTarget, setReceiveTarget] = useState<PO | null>(null);
   const [editTarget, setEditTarget] = useState<PO | null>(null);
   const [initialDraft, setInitialDraft] = useState<DraftItem[] | null>(null);
+  const [initialSupplierId, setInitialSupplierId] = useState("");
 
   const fetchPos = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -207,6 +208,16 @@ export default function PurchaseOrdersPage() {
           }
         }
         window.sessionStorage.removeItem("po_draft");
+        const supplierRaw = window.sessionStorage.getItem("po_draft_supplier");
+        if (supplierRaw) {
+          try {
+            setInitialSupplierId(JSON.parse(supplierRaw));
+          } catch { /* ignore */ }
+          window.sessionStorage.removeItem("po_draft_supplier");
+        }
+        const sp = new URLSearchParams(qs);
+        const supId = sp.get("supplier");
+        if (supId) setInitialSupplierId(supId);
       }
     } catch (err) {
       console.error(err);
@@ -679,15 +690,18 @@ export default function PurchaseOrdersPage() {
         <CreatePOModal
           editing={editTarget}
           initialDraft={initialDraft}
+          initialSupplierId={initialSupplierId}
           onClose={() => {
             setModalOpen(false);
             setEditTarget(null);
             setInitialDraft(null);
+            setInitialSupplierId("");
           }}
           onSaved={() => {
             setModalOpen(false);
             setEditTarget(null);
             setInitialDraft(null);
+            setInitialSupplierId("");
             fetchPos();
           }}
         />
@@ -711,15 +725,17 @@ function CreatePOModal({
   onClose,
   onSaved,
   initialDraft,
+  initialSupplierId,
   editing,
 }: {
   onClose: () => void;
   onSaved: () => void;
   initialDraft?: DraftItem[] | null;
+  initialSupplierId?: string;
   editing?: PO | null;
 }) {
   const [supplierId, setSupplierId] = useState<string>(
-    editing?.supplier_id ? String(editing.supplier_id) : ""
+    editing?.supplier_id ? String(editing.supplier_id) : initialSupplierId || ""
   );
   const [products, setProducts] = useState<Array<{ id: number; name: string }>>([]);
   const [lines, setLines] = useState<DraftItem[]>(() =>

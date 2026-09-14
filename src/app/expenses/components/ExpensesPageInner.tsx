@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Expense, Mechanic, AdvancePayment } from "@/lib/server-expenses";
+import type { Expense, Mechanic, AdvancePayment, SupplierMap } from "@/lib/server-expenses";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
@@ -30,6 +30,7 @@ import {
   X,
   Calendar,
   FileText,
+  Truck,
 } from "lucide-react";
 
 type ExpenseForm = {
@@ -163,12 +164,14 @@ type ExpensesPageProps = {
   initialMechanics: Mechanic[];
   initialStaffPayments: AdvancePayment[];
   initialShopExpenses: Expense[];
+  initialSupplierMap: SupplierMap;
 };
 
 export default function ExpensesPageInner({
   initialMechanics,
   initialStaffPayments,
   initialShopExpenses,
+  initialSupplierMap,
 }: ExpensesPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -192,6 +195,7 @@ export default function ExpensesPageInner({
   const [mechanics, setMechanics] = useState<Mechanic[]>(initialMechanics);
   const [staffPayments, setStaffPayments] = useState<AdvancePayment[]>(initialStaffPayments);
   const [shopExpenses, setShopExpenses] = useState<Expense[]>(initialShopExpenses);
+  const [supplierMap, setSupplierMap] = useState<SupplierMap>(initialSupplierMap);
 
   const [staffModalOpen, setStaffModalOpen] = useState(false);
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
@@ -212,6 +216,7 @@ export default function ExpensesPageInner({
         { data: mechanicData, error: mechanicError },
         { data: staffData, error: staffError },
         { data: expenseData, error: expenseError },
+        { data: supplierData, error: supplierError },
       ] = await Promise.all([
         supabase
           .from("mechanic_list")
@@ -227,18 +232,25 @@ export default function ExpensesPageInner({
           .limit(500),
         supabase
           .from("expense_list")
-          .select("id, category, amount, remarks, date_created")
+          .select("id, category, amount, remarks, date_created, supplier_id")
           .order("date_created", { ascending: false })
           .limit(500),
+        supabase.from("suppliers").select("id, name").eq("delete_flag", 0),
       ]);
 
       if (mechanicError) throw mechanicError;
       if (staffError) throw staffError;
       if (expenseError) throw expenseError;
+      if (supplierError) throw supplierError;
 
       setMechanics((mechanicData || []) as Mechanic[]);
       setStaffPayments((staffData || []) as AdvancePayment[]);
       setShopExpenses((expenseData || []) as Expense[]);
+      const nextSupplierMap: SupplierMap = {};
+      ((supplierData || []) as Array<{ id: number; name: string }>).forEach((s) => {
+        nextSupplierMap[s.id] = s.name;
+      });
+      setSupplierMap(nextSupplierMap);
     } catch (error) {
       console.error("pay outs load error:", error);
       setErr(error instanceof Error ? error.message : "Pay out data load nahi hui.");
@@ -305,12 +317,17 @@ export default function ExpensesPageInner({
       if (toDate && dateKey > toDate) return false;
       if (catFilter && (expense.category || "").trim().toLowerCase() !== catFilter) return false;
       if (!term) return true;
-      const hay = [expense.category, expense.remarks || "", expense.date_created]
+      const hay = [
+        expense.category,
+        expense.remarks || "",
+        expense.date_created,
+        expense.supplier_id != null ? supplierMap[expense.supplier_id] || "" : "",
+      ]
         .join(" ")
         .toLowerCase();
       return hay.includes(term);
     });
-  }, [shopExpenses, search, fromDate, toDate, categoryFilter]);
+  }, [shopExpenses, search, fromDate, toDate, categoryFilter, supplierMap]);
 
   const staffTotal = useMemo(
     () => filteredStaffPayments.reduce((sum, row) => sum + Number(row.amount || 0), 0),
@@ -882,6 +899,7 @@ export default function ExpensesPageInner({
                       <th className="py-2.5 px-3 text-center w-10">#</th>
                       <th className="py-2.5 px-3">Category</th>
                       <th className="py-2.5 px-3">Date</th>
+                      <th className="py-2.5 px-3">Supplier</th>
                       <th className="py-2.5 px-3">Remarks</th>
                       <th className="py-2.5 px-3 text-right">Amount</th>
                       <th className="py-2.5 px-3 text-center">Action</th>
@@ -898,6 +916,11 @@ export default function ExpensesPageInner({
                           </span>
                         </td>
                         <td className="py-2.5 px-3 text-[11px] text-slate-300">{fmtDateTime(expense.date_created)}</td>
+                        <td className="py-2.5 px-3 text-[11px] text-slate-400">
+                          {expense.supplier_id != null && supplierMap[expense.supplier_id]
+                            ? supplierMap[expense.supplier_id]
+                            : "—"}
+                        </td>
                         <td className="py-2.5 px-3 text-[11px] text-slate-400 max-w-[200px] truncate">{expense.remarks || "—"}</td>
                         <td className="py-2.5 px-3 text-right font-black text-red-400 text-xs">{moneyFull(expense.amount)}</td>
                         <td className="py-2.5 px-3 text-center">
@@ -915,7 +938,7 @@ export default function ExpensesPageInner({
                   </tbody>
                   <tfoot>
                     <tr className="bg-[#0d1117] border-t border-[#21293d] font-bold text-xs">
-                      <td colSpan={4} className="py-2.5 px-3 text-right uppercase tracking-wider text-slate-400 text-[10px]">
+                      <td colSpan={5} className="py-2.5 px-3 text-right uppercase tracking-wider text-slate-400 text-[10px]">
                         Total ({filteredShopExpenses.length} entries):
                       </td>
                       <td className="py-2.5 px-3 text-right text-red-400 font-black">{moneyFull(expenseTotal)}</td>
@@ -955,6 +978,11 @@ export default function ExpensesPageInner({
                       <p className="text-[9px] font-bold text-slate-500 mt-1 flex items-center gap-1">
                         <Clock size={9} /> {fmtDateTime(expense.date_created)}
                       </p>
+                      {expense.supplier_id != null && supplierMap[expense.supplier_id] && (
+                        <p className="text-[9px] font-bold text-slate-500 mt-0.5 flex items-center gap-1">
+                          <Truck size={9} /> {supplierMap[expense.supplier_id]}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right flex-shrink-0">
                       <span className="inline-block px-2.5 py-1 rounded-lg font-black text-xs bg-red-500/10 text-red-400 border border-red-500/30">

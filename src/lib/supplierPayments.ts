@@ -103,6 +103,49 @@ export async function addSupplierPayment(input: AddPaymentInput): Promise<Suppli
   return data as SupplierPayment;
 }
 
+/**
+ * Payment → Expense ledger entry (P4).
+ * supplier_payment_id pe dedup — payment pehle se hi expenses me ho to
+ * duplicate NAHI banega. date_created aaj ki payment hi date (IST noon format).
+ */
+export async function addExpenseFromPayment(input: {
+  paymentId: number;
+  supplierId: number;
+  supplierName: string;
+  amount: number;
+  reference?: string | null;
+  paymentDate?: string; // YYYY-MM-DD (default: aaj)
+}): Promise<{ created: boolean; error?: string }> {
+  try {
+    const { count, error: countErr } = await supabase
+      .from("expense_list")
+      .select("id", { count: "exact", head: true })
+      .eq("supplier_payment_id", input.paymentId);
+    if (countErr) return { created: false, error: countErr.message };
+    if (count && count > 0) return { created: false, error: "Pehle se expense entry ban gayi hai." };
+
+    const date = input.paymentDate || new Date().toISOString().slice(0, 10);
+    const { error } = await supabase.from("expense_list").insert({
+      category: "Spare Parts Purchase",
+      amount: input.amount,
+      remarks: `Supplier payment - ${input.supplierName}${input.reference ? ` · ${input.reference}` : ""}`,
+      date_created: `${date}T12:00:00+05:30`,
+      supplier_id: input.supplierId,
+      supplier_payment_id: input.paymentId,
+    });
+    if (error) return { created: false, error: error.message };
+    void logActivity(
+      "Added Supplier Expense",
+      "Expenses",
+      input.supplierId,
+      `₹${input.amount} (payment #${input.paymentId} from ${input.supplierName})`
+    );
+    return { created: true };
+  } catch (e) {
+    return { created: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 export async function removeSupplierPayment(id: number, supplierId: number): Promise<void> {
   const { error } = await supabase.from("supplier_payments").delete().eq("id", id);
   if (error) throw error;

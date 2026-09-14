@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import AdminPage from "@/app/components/AdminPage";
@@ -12,6 +12,7 @@ import Lightbox from "@/components/Lightbox";
 import {
   listSupplierPayments,
   addSupplierPayment,
+  addExpenseFromPayment,
   updateSupplierPayment,
   removeSupplierPayment,
   SupplierPayment,
@@ -30,6 +31,7 @@ import {
   Eye,
   MessageCircle,
   Star,
+  ShoppingCart,
   ImageIcon,
   Wallet,
   Landmark,
@@ -41,6 +43,8 @@ import {
   Trash2,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
+import { fetchStockByProducts } from "@/lib/inventoryStock";
+import { alertThreshold } from "@/lib/inventory";
 
 const fmtCurrency = (v: number) =>
   `₹${v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -128,6 +132,15 @@ type POItem = {
 
 type POStatus = "pending" | "ordered" | "partially_received" | "received" | "cancelled";
 
+type RecItem = {
+  id: number;
+  name: string;
+  price: number;
+  alert_qty: number;
+  current_stock: number;
+  need_to_order: number;
+};
+
 const PO_STATUS_META: Record<POStatus, { label: string; cls: string }> = {
   pending: { label: "Pending", cls: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
   ordered: { label: "Ordered", cls: "bg-sky-500/10 text-sky-400 border-sky-500/20" },
@@ -166,7 +179,12 @@ export default function SupplierDetailPage() {
   const [payPerson, setPayPerson] = useState("");
   const [savingPay, setSavingPay] = useState(false);
   const [payErr, setPayErr] = useState("");
+  const [makeExpense, setMakeExpense] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  const router = useRouter();
+  const [recItems, setRecItems] = useState<RecItem[]>([]);
+  const [recLoading, setRecLoading] = useState(true);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
@@ -287,6 +305,76 @@ export default function SupplierDetailPage() {
     fetchData();
   }, [fetchData]);
 
+  const fetchRecommended = useCallback(async () => {
+    if (!id || isNaN(id)) {
+      setRecLoading(false);
+      return;
+    }
+    try {
+      const { data: links } = await supabase
+        .from("spare_supplier")
+        .select("spare_id")
+        .eq("supplier_id", id);
+      const ids = [...new Set((links || []).map((l) => l.spare_id as number))]
+        .filter((x): x is number => !!x);
+      if (ids.length === 0) {
+        setRecItems([]);
+        setRecLoading(false);
+        return;
+      }
+      const { data: prods } = await supabase
+        .from("product_list")
+        .select("id, name, price, alert_quantity")
+        .in("id", ids)
+        .eq("delete_flag", 0)
+        .eq("status", 1);
+      const stockMap = await fetchStockByProducts(ids);
+      const items = ((prods || []) as Array<{
+        id: number;
+        name: string;
+        price: number | null;
+        alert_quantity: number | null;
+      }>)
+        .map((p) => {
+          const current = stockMap.get(p.id)?.available ?? 0;
+          const threshold = alertThreshold(p.alert_quantity);
+          return {
+            id: p.id,
+            name: p.name,
+            price: Number(p.price) || 0,
+            alert_qty: threshold,
+            current_stock: current,
+            need_to_order: Math.max(0, threshold - current),
+          } satisfies RecItem;
+        })
+        .filter((i) => i.need_to_order > 0)
+        .sort((a, b) => b.need_to_order - a.need_to_order);
+      setRecItems(items);
+    } catch (e) {
+      console.error("fetchRecommended:", e);
+      setRecItems([]);
+    } finally {
+      setRecLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchRecommended();
+  }, [fetchRecommended]);
+
+  const createPOFromRec = () => {
+    if (recItems.length === 0) return;
+    const draft = recItems.map((i) => ({
+      product_id: i.id,
+      product_name: i.name,
+      qty: i.need_to_order,
+      unit_cost: i.price,
+    }));
+    window.sessionStorage.setItem("po_draft", JSON.stringify(draft));
+    window.sessionStorage.setItem("po_draft_supplier", JSON.stringify(id));
+    router.push(`/inventory/purchase-orders?create=draft&supplier=${id}`);
+  };
+
   const totalPOs = purchaseOrders.length;
   const totalAmount = purchaseOrders.reduce((s, p) => s + (p.total_amount || 0), 0);
   const receivedValue = purchaseOrders
@@ -309,6 +397,7 @@ export default function SupplierDetailPage() {
     setPayDate("");
     setPayPerson("");
     setPayErr("");
+    setMakeExpense(false);
     setShowPayModal(true);
   };
 
@@ -320,7 +409,7 @@ export default function SupplierDetailPage() {
     }
     setSavingPay(true);
     try {
-      await addSupplierPayment({
+      const inserted = await addSupplierPayment({
         supplier_id: id,
         amount: amt,
         payment_mode: payMode,
@@ -329,6 +418,19 @@ export default function SupplierDetailPage() {
         payment_date: payDate || undefined,
         contact_person_id: payPerson ? Number(payPerson) : undefined,
       });
+      if (makeExpense && inserted) {
+        const expRes = await addExpenseFromPayment({
+          paymentId: inserted.id,
+          supplierId: id,
+          supplierName: supplier?.name ?? "supplier",
+          amount: amt,
+          reference: payRef,
+          paymentDate: payDate,
+        });
+        if (!expRes.created && expRes.error) {
+          alert("Payment save ho gaya, par expense entry nahi bani:\n" + expRes.error);
+        }
+      }
       setShowPayModal(false);
       const fresh = await listSupplierPayments(id);
       setPayments(fresh);
@@ -673,6 +775,85 @@ export default function SupplierDetailPage() {
               {fmtCurrency(outstanding)}
             </p>
           </div>
+        </div>
+
+        {/* Recommended Orders */}
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <ShoppingCart size={14} className="text-amber-400" />
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                Recommended Orders
+              </h3>
+            </div>
+            <span className="text-[10px] text-slate-600">
+              Low stock linked products from this supplier
+            </span>
+          </div>
+
+          {recLoading ? (
+            <div className="px-5 py-10 flex items-center justify-center gap-2 text-slate-500 text-sm">
+              <Loader2 size={14} className="animate-spin" /> Loading stock...
+            </div>
+          ) : recItems.length === 0 ? (
+            <div className="px-5 py-10 text-center text-slate-600 text-sm">
+              Koi low-stock product nahi (ya is supplier se koi product link nahi).
+            </div>
+          ) : (
+            <div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-[#111520]">
+                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                      <th className="text-left px-4 py-3">Product</th>
+                      <th className="text-center px-4 py-3">In Stock</th>
+                      <th className="text-center px-4 py-3">Min Stock</th>
+                      <th className="text-center px-4 py-3">To Order</th>
+                      <th className="text-right px-4 py-3">Unit Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1a2234]">
+                    {recItems.map((item) => (
+                      <tr key={item.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="px-4 py-3">
+                          <Link
+                            href={`/inventory/${item.id}`}
+                            className="text-slate-200 font-semibold hover:text-blue-400 transition-colors"
+                          >
+                            {item.name}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="inline-flex px-2 py-0.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold">
+                            {item.current_stock}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center text-slate-400">
+                          {item.alert_qty}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="inline-flex px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">
+                            +{item.need_to_order}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right text-slate-300">
+                          {fmtCurrency(item.price)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-5 py-3.5 border-t border-[#21293d] flex items-center justify-end gap-2 flex-wrap">
+                <button
+                  onClick={createPOFromRec}
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-500/15 border border-amber-500/25 text-amber-400 hover:bg-amber-500/25 rounded-xl text-xs font-black transition-all"
+                >
+                  <Plus size={13} /> Create PO from Suggestions
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Purchase Order History */}
@@ -1274,6 +1455,26 @@ export default function SupplierDetailPage() {
                   className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-emerald-500"
                 />
               </div>
+              {/* Expense ledger toggle */}
+              <div
+                className="flex items-start gap-2.5 rounded-xl border border-[#21293d] bg-[#0d1117] px-3 py-2.5 cursor-pointer select-none"
+                onClick={() => setMakeExpense(!makeExpense)}
+              >
+                <input
+                  type="checkbox"
+                  checked={makeExpense}
+                  onChange={(e) => setMakeExpense(e.target.checked)}
+                  className="mt-0.5 accent-emerald-500 cursor-pointer"
+                />
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-200 leading-snug">
+                    Expense entry bhi banao
+                  </p>
+                  <p className="text-[10px] text-slate-500 leading-snug mt-0.5">
+                    Expenses ledger me &quot;Spare Parts Purchase&quot; ke roop me yah payment dikhegi.
+                  </p>
+                </div>
+              </div>
               {/* Summary strip */}
               {payAmount && parseFloat(payAmount) > 0 && (
                 <PaymentSummary amount={parseFloat(payAmount) || 0} baseDue={outstanding} />
@@ -1302,6 +1503,7 @@ export default function SupplierDetailPage() {
           readOnly={payTargetReadOnly}
           outstanding={outstanding}
           persons={persons}
+          supplierName={supplier?.name ?? ""}
           onClose={() => setPayTarget(null)}
           onSaved={() => {
             setPayTarget(null);
@@ -1333,6 +1535,7 @@ function SupplierPaymentModal({
   readOnly,
   outstanding,
   persons,
+  supplierName,
   onClose,
   onSaved,
   onSwitchToEdit,
@@ -1342,6 +1545,7 @@ function SupplierPaymentModal({
   readOnly: boolean;
   outstanding: number;
   persons: ContactPerson[];
+  supplierName: string;
   onClose: () => void;
   onSaved: () => void;
   onSwitchToEdit: () => void;
@@ -1357,6 +1561,35 @@ function SupplierPaymentModal({
   const [notes, setNotes] = useState(payment.notes || "");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [expenseStatus, setExpenseStatus] = useState<"loading" | "none" | "exists" | "creating" | "created">("loading");
+
+  useEffect(() => {
+    let cancel = false;
+    (async () => {
+      if (!payment.id) { setExpenseStatus("none"); return; }
+      const { count } = await supabase
+        .from("expense_list")
+        .select("id", { count: "exact", head: true })
+        .eq("supplier_payment_id", payment.id);
+      if (!cancel) setExpenseStatus(count && count > 0 ? "exists" : "none");
+    })();
+    return () => { cancel = true; };
+  }, [payment.id]);
+
+  const handleExpense = async () => {
+    if (expenseStatus === "creating" || expenseStatus === "created" || expenseStatus === "exists") return;
+    setExpenseStatus("creating");
+    const res = await addExpenseFromPayment({
+      paymentId: payment.id,
+      supplierId: payment.supplier_id,
+      supplierName: supplierName || "supplier",
+      amount: payment.amount,
+      reference: payment.reference,
+      paymentDate: payment.payment_date?.slice(0, 10),
+    });
+    setExpenseStatus(res.created ? "created" : "none");
+    if (!res.created && res.error) alert(res.error);
+  };
 
   const amt = parseFloat(amount) || 0;
   const baseDue = outstanding + (payment.amount || 0);
@@ -1391,8 +1624,8 @@ function SupplierPaymentModal({
 
   return (
     <div className="fixed inset-0 z-[201] bg-black/70 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-[#111520] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl">
-        <div className="px-5 py-4 border-b border-[#21293d] flex items-center justify-between">
+      <div className="w-full max-w-md bg-[#111520] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="px-5 py-4 border-b border-[#21293d] flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <Wallet size={16} className="text-emerald-400" />
             <h3 className="text-sm font-black text-slate-200">
@@ -1407,7 +1640,7 @@ function SupplierPaymentModal({
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 overflow-y-auto flex-1 min-h-0">
           {err && (
             <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-lg">
               {err}
@@ -1553,6 +1786,63 @@ function SupplierPaymentModal({
             />
           </div>
 
+          {/* Add to Expenses */}
+          <div
+            className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 ${
+              expenseStatus === "exists" || expenseStatus === "created"
+                ? "border-emerald-500/25 bg-emerald-500/[0.04]"
+                : "border-[#21293d] bg-[#0d1117]"
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={
+                expenseStatus === "exists" ||
+                expenseStatus === "created" ||
+                expenseStatus === "creating"
+              }
+              disabled={
+                expenseStatus === "loading" ||
+                expenseStatus === "creating" ||
+                expenseStatus === "exists" ||
+                expenseStatus === "created"
+              }
+              onChange={(e) => {
+                if (e.target.checked) void handleExpense();
+              }}
+              className="mt-0.5 accent-emerald-500 cursor-pointer disabled:cursor-not-allowed"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-slate-200 leading-snug">
+                Expenses me add karein
+              </p>
+              {expenseStatus === "loading" ? (
+                <p className="text-[10px] text-slate-500 leading-snug mt-0.5 flex items-center gap-1">
+                  <Loader2 size={9} className="animate-spin" /> Checking...
+                </p>
+              ) : expenseStatus === "exists" ? (
+                <p className="text-[10px] text-emerald-400 leading-snug mt-0.5">
+                  Yeh payment pehle se Expenses me jud chuki hai.
+                </p>
+              ) : expenseStatus === "created" ? (
+                <p className="text-[10px] text-emerald-400 leading-snug mt-0.5">
+                  Expense entry ban gayi — /expenses me dikhegi.
+                </p>
+              ) : expenseStatus === "creating" ? (
+                <p className="text-[10px] text-slate-400 leading-snug mt-0.5 flex items-center gap-1">
+                  <Loader2 size={9} className="animate-spin" /> Adding...
+                </p>
+              ) : (
+                <p className="text-[10px] text-slate-500 leading-snug mt-0.5">
+                  Expenses me add karne ke liye select karo.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Sticky footer — hamesha visible, Save/Edit hamesha screen ke andar */}
+        <div className="px-5 py-3.5 border-t border-[#21293d] bg-[#111520] flex-shrink-0">
           {readOnly ? (
             <div className="flex items-center gap-2">
               <button
