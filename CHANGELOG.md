@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.19.0](https://github.com/waraseoni/vtech-next/compare/v1.18.0...v1.19.0) (2026-09-14)
+
+### Features
+
+* **suppliers:** P4/P5 hardening - expense sync, On Order, product linker, delete warning ([36966ed](https://github.com/waraseoni/vtech-next/commit/36966ed98d122fb05ade2a056ebce0e27574a0d8))
+
 ## [1.18.0](https://github.com/waraseoni/vtech-next/compare/v1.17.1...v1.18.0) (2026-09-14)
 
 ### Features
