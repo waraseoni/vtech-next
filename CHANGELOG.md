@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.18.0](https://github.com/waraseoni/vtech-next/compare/v1.17.1...v1.18.0) (2026-09-14)
+
+### Features
+
+* **suppliers:** P4 expense-supplier link + P5 recommended orders ([7bc0e28](https://github.com/waraseoni/vtech-next/commit/7bc0e286b9abcb6fcd679755531699c47d451d56))
+
 ## [1.17.1](https://github.com/waraseoni/vtech-next/compare/v1.17.0...v1.17.1) (2026-09-14)
 
 ### Bug Fixes
