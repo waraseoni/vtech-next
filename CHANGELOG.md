@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.16.0](https://github.com/waraseoni/vtech-next/compare/v1.15.2...v1.16.0) (2026-09-14)
+
+### Features
+
+* **suppliers:** contact persons model + person-linked POs/payments & PO detail page ([411cc77](https://github.com/waraseoni/vtech-next/commit/411cc77f4f54d71e613b18b488058e0701661466))
+
 ## [1.15.2](https://github.com/waraseoni/vtech-next/compare/v1.15.1...v1.15.2) (2026-09-13)
 
 ### Bug Fixes
