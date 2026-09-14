@@ -39,6 +39,7 @@ const eslintConfig = defineConfig([
     "scratch/**",
     "backups/**",
     "mariadb dump/**",
+    "comm-restore.cjs",
   ]),
 ]);
 
