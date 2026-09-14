@@ -9,6 +9,7 @@
  *
  *   due = opening_balance
  *       + SUM(transaction_list.amount)              WHERE status = 5            → Delivered jobs ONLY
+ *       + SUM(transaction_list.amount)              WHERE status = 2            → Done jobs (repairDone, informational only — NOT billed)
  *       + SUM(direct_sales.total_amount)
  *       - SUM(client_payments.amount + discount)    WHERE loan_id IS NULL OR 0  → service payments only
  *       + SUM(client_loans.total_payable)           WHERE status = 1            → ACTIVE loans only
@@ -16,11 +17,14 @@
  */
 
 export const JOB_STATUS_DELIVERED = 5;
+export const JOB_STATUS_DONE = 2;
 export const LOAN_STATUS_ACTIVE = 1;
 
 export type ClientDueBreakdown = {
   openingBalance: number;
   repairBilled: number;
+  /** SUM of status=2 (Done, pending delivery) job amounts — informational, NOT part of netBalance */
+  repairDone: number;
   directSalesBilled: number;
   servicePaid: number;
   activeLoanGiven: number;
@@ -38,6 +42,7 @@ export const toNum = (v: unknown): number => {
 export function computeClientDue(p: {
   openingBalance?: unknown;
   repairBilled?: unknown;
+  repairDone?: unknown;
   directSalesBilled?: unknown;
   servicePaid?: unknown;
   activeLoanGiven?: unknown;
@@ -45,6 +50,7 @@ export function computeClientDue(p: {
 }): ClientDueBreakdown {
   const openingBalance = toNum(p.openingBalance);
   const repairBilled = toNum(p.repairBilled);
+  const repairDone = toNum(p.repairDone);
   const directSalesBilled = toNum(p.directSalesBilled);
   const servicePaid = toNum(p.servicePaid);
   const activeLoanGiven = toNum(p.activeLoanGiven);
@@ -52,6 +58,7 @@ export function computeClientDue(p: {
   return {
     openingBalance,
     repairBilled,
+    repairDone,
     directSalesBilled,
     servicePaid,
     activeLoanGiven,
@@ -80,6 +87,8 @@ export const paymentCredit = (p: { amount?: unknown; discount?: unknown }): numb
 export type DueRowSets = {
   /** transaction_list rows (status = 5 filtered at query time) */
   repairs?: { client_name?: unknown; amount?: unknown }[] | null;
+  /** transaction_list rows (status = 2 filtered at query time) */
+  repairsDone?: { client_name?: unknown; amount?: unknown }[] | null;
   /** direct_sales rows */
   directSales?: { client_id?: unknown; total_amount?: unknown }[] | null;
   /** ALL client_payments rows (service + loan-linked; we partition here) */
@@ -91,6 +100,7 @@ export type DueRowSets = {
 
 export type ClientDueMaps = {
   repairBilled: Record<number, number>;
+  repairDone: Record<number, number>;
   directSalesBilled: Record<number, number>;
   servicePaid: Record<number, number>;
   activeLoanGiven: Record<number, number>;
@@ -108,6 +118,7 @@ const bump = (map: Record<number, number>, id: number, v: number) => {
 export function buildDueMaps(rows: DueRowSets): ClientDueMaps {
   const maps: ClientDueMaps = {
     repairBilled: {},
+    repairDone: {},
     directSalesBilled: {},
     servicePaid: {},
     activeLoanGiven: {},
@@ -117,6 +128,11 @@ export function buildDueMaps(rows: DueRowSets): ClientDueMaps {
   (rows.repairs || []).forEach((r) => {
     const cid = parseInt(String(r.client_name ?? ""), 10);
     if (!Number.isNaN(cid)) bump(maps.repairBilled, cid, toNum(r.amount));
+  });
+
+  (rows.repairsDone || []).forEach((r) => {
+    const cid = parseInt(String(r.client_name ?? ""), 10);
+    if (!Number.isNaN(cid)) bump(maps.repairDone, cid, toNum(r.amount));
   });
 
   (rows.directSales || []).forEach((d) => {
@@ -156,6 +172,7 @@ export function balanceFromMaps(
   return computeClientDue({
     openingBalance,
     repairBilled: maps.repairBilled[clientId],
+    repairDone: maps.repairDone[clientId],
     directSalesBilled: maps.directSalesBilled[clientId],
     servicePaid: maps.servicePaid[clientId],
     activeLoanGiven: maps.activeLoanGiven[clientId],

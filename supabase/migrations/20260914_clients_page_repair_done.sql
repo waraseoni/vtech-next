@@ -1,11 +1,10 @@
 -- ══════════════════════════════════════════════════════════════════════════════
--- CLIENTS PAGE PERFORMANCE RPC — 5 full-table scans → 1 server-side aggregate
+-- CLIENTS PAGE FINANCIALS RPC — add repair_done (status=2 "Done" jobs total)
 -- ══════════════════════════════════════════════════════════════════════════════
--- Matches PHP client list formula (see src/lib/client-due.ts):
---   balance = opening + repair_billed + direct_sales − service_paid
---             + active_loan_given − loan_repaid
---   repair_done = SUM(status=2 job amounts) — informational, NOT part of balance
--- Run in your client Supabase project (same as dashboard RPCs).
+-- Adds 'repair_done' to the existing get_clients_page_financials() output:
+--   SUM(transaction_list.amount) WHERE status = 2 → pending-delivery total
+-- repair_done is INFORMATIONAL ONLY — it is NOT part of the client balance.
+-- Idempotent (create or replace + grant).
 
 create or replace function public.get_clients_page_financials()
 returns jsonb

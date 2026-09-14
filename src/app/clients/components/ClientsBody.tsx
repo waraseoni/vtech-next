@@ -707,6 +707,16 @@ export default function ClientsBody({
                         {inr(client.balance)}
                       </span>
                     </div>
+                    {client.repair_done > 0 && (
+                      <div className="flex justify-between items-center bg-[#0d1117]/70 rounded-xl px-4 py-2 border border-[#21293d]">
+                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                          Done pending
+                        </span>
+                        <span className="text-xs font-extrabold text-cyan-400/90">
+                          {inr(client.repair_done)}
+                        </span>
+                      </div>
+                    )}
                     {userRole === "admin" && (
                       <button
                         onClick={() => handleToggleLogin(client)}
@@ -1025,6 +1035,11 @@ export default function ClientsBody({
                         ) : (
                           <span className="text-[9px] text-emerald-600 font-bold mt-1 block">
                             Cleared ✓
+                          </span>
+                        )}
+                        {client.repair_done > 0 && (
+                          <span className="text-[9px] text-cyan-500/90 font-extrabold mt-1 block">
+                            Done pending: {inr(client.repair_done)}
                           </span>
                         )}
                       </td>

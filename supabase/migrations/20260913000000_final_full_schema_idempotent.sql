@@ -3408,6 +3408,123 @@ grant all on table public.supplier_contact_phones to service_role;
 grant usage on sequence public.supplier_contact_phones_id_seq to anon, authenticated, service_role;
 -- ═══ end supplier contact persons fold-in block ═══
 
+-- ═══ FOLD-IN (2026-09-14) - clients page financials RPC + repair_done ═══
+--   get_clients_page_financials(): per-client aggregates for the /clients list.
+--   'repair_done' = SUM(status=2 "Done" job amounts) — INFORMATIONAL, NOT part
+--   of the client balance (balance formula unchanged). create or replace +
+--   grant are idempotent, so this is re-run safe.
+
+create or replace function public.get_clients_page_financials()
+returns jsonb
+language sql
+security definer
+stable
+as $$
+  with active_loans as (
+    select id, client_id, total_payable
+    from public.client_loans
+    where status = 1
+  ),
+  repair_agg as (
+    select
+      case when client_name ~ '^\d+$' then client_name::int else null end as client_id,
+      coalesce(sum(amount), 0) as repair_billed
+    from public.transaction_list
+    where status = 5
+    group by 1
+    having case when client_name ~ '^\d+$' then client_name::int else null end is not null
+  ),
+  done_agg as (
+    select
+      case when client_name ~ '^\d+$' then client_name::int else null end as client_id,
+      coalesce(sum(amount), 0) as repair_done
+    from public.transaction_list
+    where status = 2
+    group by 1
+    having case when client_name ~ '^\d+$' then client_name::int else null end is not null
+  ),
+  direct_agg as (
+    select
+      client_id,
+      coalesce(sum(total_amount), 0) as direct_sales_billed
+    from public.direct_sales
+    group by client_id
+  ),
+  service_pay_agg as (
+    select
+      client_id,
+      coalesce(sum(amount + coalesce(discount, 0)), 0) as service_paid
+    from public.client_payments
+    where loan_id is null or loan_id = 0
+    group by client_id
+  ),
+  loan_given_agg as (
+    select
+      client_id,
+      coalesce(sum(total_payable), 0) as active_loan_given
+    from active_loans
+    group by client_id
+  ),
+  loan_repaid_agg as (
+    select
+      cp.client_id,
+      coalesce(sum(cp.amount + coalesce(cp.discount, 0)), 0) as loan_repaid
+    from public.client_payments cp
+    inner join active_loans al on al.id = cp.loan_id
+    group by cp.client_id
+  ),
+  last_txn_agg as (
+    select
+      case when client_name ~ '^\d+$' then client_name::int else null end as client_id,
+      max(date_created) as last_txn_date
+    from public.transaction_list
+    group by 1
+    having case when client_name ~ '^\d+$' then client_name::int else null end is not null
+  ),
+  all_ids as (
+    select client_id from repair_agg
+    union
+    select client_id from done_agg
+    union
+    select client_id from direct_agg
+    union
+    select client_id from service_pay_agg
+    union
+    select client_id from loan_given_agg
+    union
+    select client_id from loan_repaid_agg
+    union
+    select client_id from last_txn_agg
+  )
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'client_id', i.client_id,
+        'repair_billed', coalesce(r.repair_billed, 0),
+        'repair_done', coalesce(dn.repair_done, 0),
+        'direct_sales_billed', coalesce(d.direct_sales_billed, 0),
+        'service_paid', coalesce(sp.service_paid, 0),
+        'active_loan_given', coalesce(lg.active_loan_given, 0),
+        'loan_repaid', coalesce(lr.loan_repaid, 0),
+        'last_txn_date', lt.last_txn_date
+      )
+      order by i.client_id
+    ),
+    '[]'::jsonb
+  )
+  from all_ids i
+  left join repair_agg r on r.client_id = i.client_id
+  left join done_agg dn on dn.client_id = i.client_id
+  left join direct_agg d on d.client_id = i.client_id
+  left join service_pay_agg sp on sp.client_id = i.client_id
+  left join loan_given_agg lg on lg.client_id = i.client_id
+  left join loan_repaid_agg lr on lr.client_id = i.client_id
+  left join last_txn_agg lt on lt.client_id = i.client_id;
+$$;
+
+grant execute on function public.get_clients_page_financials() to authenticated;
+-- ═══ end clients page financials RPC fold-in block ═══
+
 -- ═══════════════════════════════════════════════════════════════════════════
 -- PostgREST ke liye schema reload (Supabase SQL Editor me dabane ke baad
 -- API immediately updated hota hai).

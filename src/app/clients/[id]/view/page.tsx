@@ -445,6 +445,7 @@ export default function ViewClientProfile() {
   };
 
   const [repairBilled, setRepairBilled] = useState(0);
+  const [repairDone, setRepairDone] = useState(0);
   const [directBilled, setDirectBilled] = useState(0);
   const [servicePaid, setServicePaid] = useState(0);
   const [loanGiven, setLoanGiven] = useState(0);
@@ -589,6 +590,7 @@ export default function ViewClientProfile() {
     // PHP view_client.php: WHERE status = 5 (Delivered only)
     // Only Delivered jobs are billed — matches list page calculation
     setRepairBilled(jobs.filter((j) => j.status === 5).reduce((s, j) => s + (j.amount || 0), 0));
+    setRepairDone(jobs.filter((j) => j.status === 2).reduce((s, j) => s + (j.amount || 0), 0));
     setDirectBilled(directSales.reduce((s, d) => s + (d.total_amount || 0), 0));
     // Paid = Amount + Discount (credit) — matches client_api.php
     setServicePaid(
@@ -1312,7 +1314,7 @@ export default function ViewClientProfile() {
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">
             Service Summary
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
             <StatCard
               label="Opening Balance"
               value={`₹${fmt(openingBal)}`}
@@ -1325,6 +1327,13 @@ export default function ViewClientProfile() {
               sub="Repairs + Direct Sales"
               color="violet"
               icon={<Receipt size={18} />}
+            />
+            <StatCard
+              label="Done (To Deliver)"
+              value={`₹${fmt(repairDone)}`}
+              sub="Status Done — billing me nahi"
+              color="cyan"
+              icon={<Wrench size={18} />}
             />
             <StatCard
               label="Total Received"

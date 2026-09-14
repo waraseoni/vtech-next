@@ -10,6 +10,7 @@ export type Client = {
   date_created: string;
   opening_balance: number;
   repair_billed: number;
+  repair_done: number;
   direct_sales_billed: number;
   total_loan_given: number;
   total_paid: number;

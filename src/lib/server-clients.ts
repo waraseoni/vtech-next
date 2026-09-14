@@ -3,6 +3,7 @@ import {
   buildDueMaps,
   computeClientDue,
   JOB_STATUS_DELIVERED,
+  JOB_STATUS_DONE,
   LOAN_STATUS_ACTIVE,
 } from "@/lib/client-due";
 
@@ -25,6 +26,7 @@ export type Client = {
   date_created: string;
   opening_balance: number;
   repair_billed: number;
+  repair_done: number;
   direct_sales_billed: number;
   total_loan_given: number;
   total_paid: number;
@@ -52,6 +54,7 @@ type ClientRow = {
 type RpcFinancialRow = {
   client_id: number;
   repair_billed: number;
+  repair_done: number;
   direct_sales_billed: number;
   service_paid: number;
   active_loan_given: number;
@@ -78,6 +81,7 @@ export type FetchClientsPageOptions = {
 function buildClientRow(c: ClientRow, fin: RpcFinancialRow | undefined): Client {
   const ob = toNum(c.opening_balance);
   const rep = fin ? toNum(fin.repair_billed) : 0;
+  const repDone = fin ? toNum(fin.repair_done) : 0;
   const dir = fin ? toNum(fin.direct_sales_billed) : 0;
   const svcPaid = fin ? toNum(fin.service_paid) : 0;
   const loan = fin ? toNum(fin.active_loan_given) : 0;
@@ -85,6 +89,7 @@ function buildClientRow(c: ClientRow, fin: RpcFinancialRow | undefined): Client 
   const due = computeClientDue({
     openingBalance: ob,
     repairBilled: rep,
+    repairDone: repDone,
     directSalesBilled: dir,
     servicePaid: svcPaid,
     activeLoanGiven: loan,
@@ -99,6 +104,7 @@ function buildClientRow(c: ClientRow, fin: RpcFinancialRow | undefined): Client 
     date_created: c.date_created || "",
     opening_balance: ob,
     repair_billed: rep,
+    repair_done: repDone,
     direct_sales_billed: dir,
     total_loan_given: loan,
     total_paid: svcPaid + loanPaid,
@@ -158,13 +164,20 @@ async function fetchFinancialsLegacy(
   };
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
-  const [repairs, dirSales, payments, loans, lastTxns] = await Promise.all([
+  const [repairs, repairsDone, dirSales, payments, loans, lastTxns] = await Promise.all([
     selectIn(
       "transaction_list",
       "client_name, amount",
       "client_name",
       ids.map(String),
       (q) => q.eq("status", JOB_STATUS_DELIVERED)
+    ),
+    selectIn(
+      "transaction_list",
+      "client_name, amount",
+      "client_name",
+      ids.map(String),
+      (q) => q.eq("status", JOB_STATUS_DONE)
     ),
     selectIn("direct_sales", "client_id, total_amount", "client_id", ids),
     selectIn("client_payments", "client_id, amount, discount, loan_id", "client_id", ids),
@@ -178,7 +191,7 @@ async function fetchFinancialsLegacy(
     selectIn("transaction_list", "client_name, date_created", "client_name", ids.map(String)),
   ]);
 
-  const m = buildDueMaps({ repairs, directSales: dirSales, payments, loans });
+  const m = buildDueMaps({ repairs, repairsDone, directSales: dirSales, payments, loans });
 
   const lastTxnMap: Record<number, string> = {};
   lastTxns.forEach((t) => {
@@ -196,6 +209,7 @@ async function fetchFinancialsLegacy(
     map.set(id, {
       client_id: id,
       repair_billed: m.repairBilled[id] ?? 0,
+      repair_done: m.repairDone[id] ?? 0,
       direct_sales_billed: m.directSalesBilled[id] ?? 0,
       service_paid: m.servicePaid[id] ?? 0,
       active_loan_given: m.activeLoanGiven[id] ?? 0,

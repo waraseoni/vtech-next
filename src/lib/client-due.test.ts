@@ -51,6 +51,18 @@ describe("computeClientDue", () => {
     expect(r.repairBilled).toBe(0);
   });
 
+  it("returns repairDone but it never changes netBalance", () => {
+    const r = computeClientDue({
+      openingBalance: 100,
+      repairBilled: 500,
+      repairDone: 900,
+      directSalesBilled: 0,
+      servicePaid: 0,
+    });
+    expect(r.repairDone).toBe(900);
+    expect(r.netBalance).toBe(100 + 500);
+  });
+
   it("handles undefined individual fields as 0", () => {
     const r = computeClientDue({ openingBalance: 50, servicePaid: undefined });
     expect(r.netBalance).toBe(50);
@@ -84,6 +96,7 @@ describe("paymentCredit", () => {
 
 const baseMaps = () => ({
   repairBilled: {},
+  repairDone: {},
   directSalesBilled: {},
   servicePaid: {},
   activeLoanGiven: {},
@@ -104,6 +117,18 @@ describe("buildDueMaps", () => {
       ],
     });
     expect(m.repairBilled[7]).toBe(150); // non-numeric "abc" row ignored
+  });
+
+  it("aggregates repair done (status=2) separately from billed", () => {
+    const m = buildDueMaps({
+      repairsDone: [
+        { client_name: "7", amount: 200 },
+        { client_name: "8", amount: 75 },
+      ],
+    });
+    expect(m.repairDone[7]).toBe(200);
+    expect(m.repairDone[8]).toBe(75);
+    expect(m.repairBilled[7]).toBeUndefined();
   });
 
   it("aggregates direct sales by client_id", () => {
@@ -148,6 +173,7 @@ describe("balanceFromMaps", () => {
   it("combines maps into a net balance for one client", () => {
     const maps = {
       repairBilled: { 4: 1000 },
+      repairDone: { 4: 900 },
       directSalesBilled: { 4: 200 },
       servicePaid: { 4: 300 },
       activeLoanGiven: { 4: 500 },
