@@ -88,35 +88,75 @@ export async function GET(req: NextRequest) {
         force || !lastChecked || Date.now() - lastChecked > effectiveInterval || localExpired;
 
       if (isLicenseConfigured() && due) {
+        // Central transport errors (cold-start/network/RPC hiccup) kabhi license
+        // ko invalid NAHI banate — sirf central ka sacha business verdict
+        // (NOT_ACTIVATED / LICENSE_DISABLED / LICENSE_EXPIRED / ...) downgrade
+        // kar sakta hai. Warna deployment ke baad cold function par central RPC
+        // ka transient timeout/LICENSE_SERVICE_ERROR remoteValid=false persist
+        // kar deta tha → Refresh tak gate dikhta tha.
+        const BUSINESS_DOWNGRADE = [
+          "NOT_ACTIVATED",
+          "LICENSE_NOT_FOUND",
+          "LICENSE_DISABLED",
+          "LICENSE_EXPIRED",
+          "INVALID_KEY",
+          "MAX_ACTIVATIONS",
+        ];
         try {
           const res = await checkRemoteLicense(activationId);
           const checkedAt = new Date().toISOString();
 
-          parsed.remoteValid = res.ok;
-          parsed.remoteError = res.error;
-          parsed.remoteCheckedAt = checkedAt;
-          if (res.plan) {
-            parsed.plan = res.plan;
-            plan = res.plan;
-          }
-          if (res.shopName) {
-            parsed.shopName = res.shopName;
-            shopName = res.shopName;
-          }
-          if (res.expiresAt !== undefined) {
-            expiresAt = res.expiresAt ?? null;
-            parsed.expiresAt = res.expiresAt ?? null;
-          }
-          if (res.enabledModules !== undefined) {
-            parsed.enabledModules = res.enabledModules;
-          }
-          valid = res.ok;
-          error = res.ok ? undefined : res.error;
+          if (res.ok) {
+            parsed.remoteValid = true;
+            parsed.remoteError = undefined;
+            parsed.remoteCheckedAt = checkedAt;
+            if (res.plan) {
+              parsed.plan = res.plan;
+              plan = res.plan;
+            }
+            if (res.shopName) {
+              parsed.shopName = res.shopName;
+              shopName = res.shopName;
+            }
+            if (res.expiresAt !== undefined) {
+              expiresAt = res.expiresAt ?? null;
+              parsed.expiresAt = res.expiresAt ?? null;
+            }
+            if (res.enabledModules !== undefined) {
+              parsed.enabledModules = res.enabledModules;
+            }
+            valid = true;
+            error = undefined;
 
-          await Promise.all([
-            upsertField("license_last_checked", checkedAt),
-            upsertField("license_status", JSON.stringify(parsed)),
-          ]);
+            await Promise.all([
+              upsertField("license_last_checked", checkedAt),
+              upsertField("license_status", JSON.stringify(parsed)),
+            ]);
+          } else if (
+            res.error &&
+            BUSINESS_DOWNGRADE.some((tag) => res.error?.includes(tag))
+          ) {
+            // Asli central rejection → persist karo + block.
+            parsed.remoteValid = false;
+            parsed.remoteError = res.error;
+            parsed.remoteCheckedAt = checkedAt;
+            if (res.expiresAt !== undefined) {
+              parsed.expiresAt = res.expiresAt ?? null;
+            }
+            valid = false;
+            error = res.error;
+
+            await Promise.all([
+              upsertField("license_last_checked", checkedAt),
+              upsertField("license_status", JSON.stringify(parsed)),
+            ]);
+          } else {
+            // Transport/RPC hiccup — verdict unreliable hai. Last-known-good par
+            // chalo, cache DOWNGRADE NAHI karte aur last_checked bump nahi →
+            // agli call turant dobara central se verify karegi.
+            error = res.error;
+            valid = localExpired ? false : parsed.remoteValid !== false;
+          }
         } catch {
           valid = !localExpired && parsed.remoteValid !== false;
           error = "LICENSE_CHECK_UNREACHABLE";

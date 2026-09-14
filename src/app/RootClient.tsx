@@ -1619,7 +1619,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       <LicenseGate
         status={license}
         isAdmin={isAdmin}
-        onActivated={refreshLicense}
+        onActivated={() => refreshLicense(true)}
         onLogout={handleLogout}
       />
     );
