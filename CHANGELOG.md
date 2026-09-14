@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.17.0](https://github.com/waraseoni/vtech-next/compare/v1.16.1...v1.17.0) (2026-09-14)
+
+### Features
+
+* **clients:** show pending 'Done' (status 2) repair totals on view + list ([f6d1e80](https://github.com/waraseoni/vtech-next/commit/f6d1e803c1241e2554407957a5d0bd1e4a4adece))
+
 ## [1.16.1](https://github.com/waraseoni/vtech-next/compare/v1.16.0...v1.16.1) (2026-09-14)
 
 ### Bug Fixes
