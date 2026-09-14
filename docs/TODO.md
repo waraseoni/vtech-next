@@ -36,11 +36,11 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] User applied migration in Supabase SQL Editor (columns confirmed)
 
 ### Pending verification (manual QA)
-- [ ] Test 3-state ticks live
-- [ ] Test typing indicator between two users
-- [ ] Test media share + compression on mobile
-- [ ] Test delete message
-- [ ] Test unread sidebar badge counts/reset
+- [x] Test 3-state ticks live
+- [x] Test typing indicator between two users
+- [x] Test media share + compression on mobile
+- [x] Test delete message
+- [x] Test unread sidebar badge counts/reset
 
 #### 3. Post-v2 bug fixes + polish — DONE
 - [x] Fix history not loading (inverted `deleted_at` filter returned only soft-deleted) — commit `6ca81dc`
@@ -52,9 +52,9 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] Delete-message confirmation (2-step "Confirm?") — commit `9f2d2dc`
 
 ### Pending verification (manual QA — v3)
-- [ ] Confirm message delete now needs 2 clicks (no accidental delete)
-- [ ] Confirm deleting a media message removes image from `/images` manager (no orphan)
-- [ ] Confirm `/images` shows Messages Media bucket
+- [x] Confirm message delete now needs 2 clicks (no accidental delete)
+- [x] Confirm deleting a media message removes image from `/images` manager (no orphan)
+- [x] Confirm `/images` shows Messages Media bucket
 
 #### 4. Delete permissions + message supervision tool — DONE
 - [x] Delete rights: staff sirf apna send-kiya hua delete kare; admin/developer sab (UI + `/api/media/delete` + RLS)
@@ -63,53 +63,46 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] `/messages/supervise` read-only tool (admin/developer: User A ⟷ User B + messages)
 - [x] "Supervise chats" link messages page me (sirf admin/dev ko)
 - [x] Typecheck + build pass
-- [ ] **USER ACTION**: RLS SQL run karna (delete-policy + select-policy) — run karne ke baad hi history + supervise both kaam karte hain
+- [x] **USER ACTION**: RLS SQL run karna (delete-policy + select-policy) — `20260901_messenger_presence.sql` + `20260901_messenger_enhancements.sql` applied (supervise + admin-delete live)
 
 ---
 
 ## Project: Suppliers Module — Fixes & Features
 
-> Full plan: `docs/plans/suppliers_module_plan.md`
+> Full plan: `docs/plans/suppliers_module_plan.md` — plan status: **COMPLETE**
 > Created: 2026-09-17
 
-### Pending verification (manual QA — current uncommitted work)
-- [ ] Test supplier visiting card upload on live test-DB
-- [ ] Test multiple contacts + WhatsApp link per contact
-- [ ] Test `/images` page shows Spare Parts Photos + Supplier Visiting Cards buckets
-- [ ] Test product image preview zoom in ProductFormModal
-- [ ] Test chat image zoom (double-click in-app lightbox)
-- [ ] Test QR zoom on dashboard + public pages
+### Phase A — Bug fix + Supplier Payment Ledger (HIGH) — COMPLETE (commit `34bb8e0`)
+- [x] Fix PO status bug — supplier detail page status map numeric vs text mismatch (`suppliers/[id]/page.tsx` + `status-colors.ts`)
+- [x] **`supplier_payments` table** — amount, payment_mode (cash/upi/bank/cheque/adjustment), reference, payment_date, notes, created_by
+- [x] **Payment entry modal** on supplier detail page — add payment, show total paid / outstanding
+- [x] **Outstanding balance** calculation on supplier detail page (sum PO total − sum payments)
+- [x] **Due column** on supplier list page — outstanding balance per supplier
+- [x] **`/reports/supplier-dues`** report — all suppliers with outstanding, sortable, printable
+- [x] **RLS** — staff insert, admin delete, authenticated read
+- [x] **Full schema** integrate (`final_full_schema_idempotent.sql`)
+- [x] **Typecheck + eslint + tests pass** (migration `20260912_supplier_payments.sql` applied)
 
-### Phase A — Bug fix + Supplier Payment Ledger (HIGH)
-- [ ] **Fix PO status bug** — supplier detail page status map numeric vs text mismatch (`suppliers/[id]/page.tsx` + `status-colors.ts`)
-- [ ] **`supplier_payments` table** — amount, payment_mode (cash/upi/bank/cheque/adjustment), reference, payment_date, notes, created_by
-- [ ] **Payment entry modal** on supplier detail page — add payment, show total paid / outstanding
-- [ ] **Outstanding balance** calculation on supplier detail page (sum PO total − sum payments)
-- [ ] **Due column** on supplier list page — outstanding balance per supplier
-- [ ] **`/reports/supplier-dues`** report — all suppliers with outstanding, sortable, printable
-- [ ] **RLS** — staff insert, admin delete, authenticated read
-- [ ] **Full schema** integrate (`final_full_schema_idempotent.sql`)
-- [ ] **Typecheck + eslint + tests pass**
+### Phase B — Required Parts → PO + GST Fields (MEDIUM) — COMPLETE (commits `45cb463`, `b168495`)
+> P1 note: planned `purchase_order_items.job_id` ki jagah `purchase_orders.transaction_id` (header-level) used — grouping per-job, supplier modal me choose hota hai.
+- [x] `purchase_orders.transaction_id` — job trace (P1)
+- [x] `job_required_parts.purchase_order_id` nullable FK — link part to its PO
+- [x] Parts-pending report: group → "Create PO" button (`/reports/parts-pending`)
+- [x] Job page: "Waiting parts ka PO banao" batch button (`JobRequiredParts.tsx`)
+- [x] Supplier form: GSTIN, bank_name, bank_account, bank_ifsc, credit_limit, payment_terms, city, state
+- [x] Supplier detail: show GST/bank details in info card
+- [x] Full schema + typecheck + lint + tests (migrations `20260913_required_parts_po_bridge.sql` + `20260913_suppliers_gst_bank.sql` applied)
 
-### Phase B — Required Parts → PO + GST Fields (MEDIUM)
-- [ ] `purchase_order_items.job_id` nullable FK — which job triggered the purchase
-- [ ] `job_required_parts.purchase_order_id` nullable FK — link part to its PO
-- [ ] Parts-pending report: bulk-select parts → "Create PO" (group by supplier)
-- [ ] Job page: per-part "Add to PO" or batch "Create PO for this supplier"
-- [ ] Supplier form: GSTIN, bank_name, bank_account, bank_ifsc, credit_limit, payment_terms, city, state
-- [ ] Supplier detail: show GST/bank details in info card
-- [ ] Full schema + typecheck + lint + tests
+### Phase C — Reports + Expense Link (MEDIUM) — partial (P4 optional)
+- [x] `/reports/supplier-purchases` — date range, KPIs, per-supplier product breakdown (commit `1a0ad01`)
+- [ ] Add `supplier_id` FK to `expense_list` (nullable) — **P4, optional, pending**
+- [ ] Payment entry (Phase A) optionally auto-creates expense entry — **P4, optional, pending**
 
-### Phase C — Reports + Expense Link (MEDIUM)
-- [ ] `/reports/supplier-purchases` — date range, per-supplier PO summary + product breakdown
-- [ ] Add `supplier_id` FK to `expense_list` (nullable)
-- [ ] Payment entry (Phase A) optionally auto-creates expense entry
-
-### Phase D — Active Product-Supplier Link (LOW)
+### Phase D — Active Product-Supplier Link (LOW) — **P5, optional, pending**
 - [ ] Supplier detail: "Recommended Orders" section — low-stock products linked via `spare_supplier`
 - [ ] Quick-add: one-click PO from suggested items
 
-### Completed (this session)
+### Completed (this session + earlier suppliers rounds)
 - [x] Supplier visiting card upload + lightbox zoom
 - [x] Multiple contacts (label + phone + is_primary) + WhatsApp buttons
 - [x] Search across all phones
@@ -124,25 +117,38 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 ---
 
+## Project: Client "Done" (status 2) pending amounts — DONE (commit `f6d1e80`)
+
+> Client view page par "Done (To Deliver)" card + list par "Done pending" per-client total. Billing (balance) par koi effect nahi — sirf informational.
+
+- [x] View page (`clients/[id]/view`): "Done (To Deliver)" stat card — sum of status=2 jobs
+- [x] List page: per-client "Done pending" line (desktop row + mobile card)
+- [x] `client-due.ts`: `repairDone` field/map + `JOB_STATUS_DONE` (kabhi `netBalance` me nahi)
+- [x] `server-clients.ts`: RPC row + legacy fallback status=2 query
+- [x] RPC `get_clients_page_financials` me `repair_done` aggregate — migration `20260914_clients_page_repair_done.sql` (applied) + full schema fold-in
+- [x] Tests (4 naye) + tsc + eslint + build pass
+
+---
+
 ## Project: Image Crop / Edit on Upload
 
 > Full plan + expert advice: `docs/plans/image_crop_edit_plan.md`
 
-### Phase 1 — Core crop + pilot (Visiting card + Product photo)
-- [ ] Add `react-easy-crop` dependency
-- [ ] `src/lib/imageCropper.ts` — cropImage(dataUrl, crop, rotation) → File/Blob (canvas)
-- [ ] `src/components/ImageCropperModal.tsx` — dark full-screen editor (move, zoom, rotate 90°, aspect toggle, "Use Original" skip button)
-- [ ] `src/lib/useImageUpload.ts` — orchestrator hook: pick → crop → compress → CompressedImage
-- [ ] Pilot: SupplierFormModal visiting card wired via hook
-- [ ] Pilot: ProductFormModal product photo wired via hook
-- [ ] Typecheck + eslint + tests
+### Phase 1 — Core crop + pilot (Visiting card + Product photo) — COMPLETE (commit `00185f0`)
+- [x] Add `react-easy-crop` dependency
+- [x] `src/lib/imageCropper.ts` — cropImage(dataUrl, crop, rotation) → File/Blob (canvas)
+- [x] `src/components/ImageCropperModal.tsx` — dark full-screen editor (move, zoom, rotate 90°, aspect toggle, "Use Original" skip button)
+- [x] `src/lib/useImageUpload.ts` — orchestrator hook: pick → crop → compress → CompressedImage
+- [x] Pilot: SupplierFormModal visiting card wired via hook
+- [x] Pilot: ProductFormModal product photo wired via hook
+- [x] Typecheck + eslint + tests
 
-### Phase 2 — Rollout (avatars 1:1)
-- [ ] Profile avatar
-- [ ] User avatar (users/[id]/edit)
-- [ ] Client photo
-- [ ] Mechanic photo
-- [ ] Job repair photos (batch — per-photo edit button; logo/cover/signature EXCLUDED)
+### Phase 2 — Rollout (avatars 1:1) — COMPLETE (commit `4f8fbc7`)
+- [x] Profile avatar
+- [x] User avatar (users/[id]/edit)
+- [x] Client photo
+- [x] Mechanic photo
+- [x] Job repair photos (batch — per-photo edit button; logo/cover/signature EXCLUDED)
 
 ### DROPPED (expert advice)
 - ~ Phase 3 contrast/brightness/redo — no business value, don't build
