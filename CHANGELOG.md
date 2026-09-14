@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.17.1](https://github.com/waraseoni/vtech-next/compare/v1.17.0...v1.17.1) (2026-09-14)
+
+### Bug Fixes
+
+* **build:** resolve npm peer + install-script warnings (eslint 9 pin + allowScripts) ([2b7e7cd](https://github.com/waraseoni/vtech-next/commit/2b7e7cd8d22ba89716b21a1a4b21c82bc62bca9b))
+
 ## [1.17.0](https://github.com/waraseoni/vtech-next/compare/v1.16.1...v1.17.0) (2026-09-14)
 
 ### Features
