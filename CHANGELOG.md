@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.16.1](https://github.com/waraseoni/vtech-next/compare/v1.16.0...v1.16.1) (2026-09-14)
+
+### Bug Fixes
+
+* **license:** transient central RPC errors must not invalidate license; gate Refresh forces live recheck ([387af0b](https://github.com/waraseoni/vtech-next/commit/387af0b5e9fc055a21d3034e6d0de8c1b77e7d16))
+
 ## [1.16.0](https://github.com/waraseoni/vtech-next/compare/v1.15.2...v1.16.0) (2026-09-14)
 
 ### Features
