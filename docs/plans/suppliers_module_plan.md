@@ -208,6 +208,8 @@ ALTER TABLE public.suppliers
 | **Phase D** | P5 spare_supplier active usage | 1 session |
 
 > **Execution status (2026-09-13):** Phase A ✅ (commits `34bb8e0`), P1 ✅ (`45cb463`, migration apply ✅), P2 ✅ (`b168495`, migration apply ✅), P3 ✅ (`1a0ad01`). Phase C ka P3 ho chuka; P4/P5 optional (batao to karenge).
+>
+> **2026-09-19:** P4 ✅ (expense↔supplier link migration `20260919_expense_supplier_link.sql`, payment toggle + backfill checkbox, expenses page supplier column) + P5 ✅ (Recommended Orders + one-click PO prefill) shipped — P4/P5 folded into full schema + verification green (tsc/eslint/vitest). Follow-up hardening ✅: (A) payment edit syncs linked expense, (B) Recommended Orders subtract open PO quantities (On Order column), (C) supplier-side Linked Products manager (`spare_supplier` add/remove), (D) delete-payment warning when expense linked. Commit/push pending on repo-side whenever.
 
 ---
 

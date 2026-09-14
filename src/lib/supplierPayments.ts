@@ -104,6 +104,44 @@ export async function addSupplierPayment(input: AddPaymentInput): Promise<Suppli
 }
 
 /**
+ * Payment edit → linked expense sync (P4 integrity).
+ * Agar is payment ki expense entry already hai (supplier_payment_id), amount /
+ * remarks / date usi ke mutabik update karo — ledger mismatch na rahe.
+ * Sirf tab chalta hai jab expense entry exist karti hai; nahi to no-op.
+ */
+export async function syncExpenseForPayment(input: {
+  paymentId: number;
+  amount: number;
+  supplierName: string;
+  reference?: string | null;
+  paymentDate?: string; // YYYY-MM-DD
+}): Promise<{ synced: boolean; error?: string }> {
+  try {
+    const { data: expRow, error: findErr } = await supabase
+      .from("expense_list")
+      .select("id")
+      .eq("supplier_payment_id", input.paymentId)
+      .maybeSingle();
+    if (findErr) return { synced: false, error: findErr.message };
+    if (!expRow) return { synced: false };
+
+    const date = input.paymentDate || new Date().toISOString().slice(0, 10);
+    const { error: updErr } = await supabase
+      .from("expense_list")
+      .update({
+        amount: input.amount,
+        remarks: `Supplier payment - ${input.supplierName}${input.reference ? ` · ${input.reference}` : ""}`,
+        date_created: `${date}T12:00:00+05:30`,
+      })
+      .eq("id", expRow.id);
+    if (updErr) return { synced: false, error: updErr.message };
+    return { synced: true };
+  } catch (e) {
+    return { synced: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/**
  * Payment → Expense ledger entry (P4).
  * supplier_payment_id pe dedup — payment pehle se hi expenses me ho to
  * duplicate NAHI banega. date_created aaj ki payment hi date (IST noon format).

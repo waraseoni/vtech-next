@@ -13,6 +13,7 @@ import {
   listSupplierPayments,
   addSupplierPayment,
   addExpenseFromPayment,
+  syncExpenseForPayment,
   updateSupplierPayment,
   removeSupplierPayment,
   SupplierPayment,
@@ -41,8 +42,10 @@ import {
   X,
   Pencil,
   Trash2,
+  Link2,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
+import SearchableSelect, { SearchableOption } from "@/components/SearchableSelect";
 import { fetchStockByProducts } from "@/lib/inventoryStock";
 import { alertThreshold } from "@/lib/inventory";
 
@@ -138,7 +141,14 @@ type RecItem = {
   price: number;
   alert_qty: number;
   current_stock: number;
+  on_po: number;
   need_to_order: number;
+};
+
+type LinkedProduct = {
+  id: number;
+  name: string;
+  price: number | null;
 };
 
 const PO_STATUS_META: Record<POStatus, { label: string; cls: string }> = {
@@ -185,6 +195,11 @@ export default function SupplierDetailPage() {
   const router = useRouter();
   const [recItems, setRecItems] = useState<RecItem[]>([]);
   const [recLoading, setRecLoading] = useState(true);
+  const [linkedProducts, setLinkedProducts] = useState<LinkedProduct[]>([]);
+  const [linkLoading, setLinkLoading] = useState(true);
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [productOptions, setProductOptions] = useState<SearchableOption[]>([]);
+  const [showLinkPicker, setShowLinkPicker] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
@@ -329,6 +344,31 @@ export default function SupplierDetailPage() {
         .eq("delete_flag", 0)
         .eq("status", 1);
       const stockMap = await fetchStockByProducts(ids);
+      const { data: poRows } = await supabase
+        .from("purchase_orders")
+        .select("id")
+        .eq("supplier_id", id)
+        .in("status", ["pending", "ordered", "partially_received"]);
+      const openPoIds = (poRows || []).map((p) => p.id);
+      const onPoByProduct: Record<number, number> = {};
+      if (openPoIds.length > 0) {
+        const { data: itemRows } = await supabase
+          .from("purchase_order_items")
+          .select("product_id, qty_ordered, qty_received")
+          .in("purchase_order_id", openPoIds)
+          .in("product_id", ids);
+        for (const it of (itemRows || []) as Array<{
+          product_id: number;
+          qty_ordered: number;
+          qty_received: number;
+        }>) {
+          const open = Math.max(
+            0,
+            (Number(it.qty_ordered) || 0) - (Number(it.qty_received) || 0)
+          );
+          if (open > 0) onPoByProduct[it.product_id] = (onPoByProduct[it.product_id] || 0) + open;
+        }
+      }
       const items = ((prods || []) as Array<{
         id: number;
         name: string;
@@ -338,13 +378,15 @@ export default function SupplierDetailPage() {
         .map((p) => {
           const current = stockMap.get(p.id)?.available ?? 0;
           const threshold = alertThreshold(p.alert_quantity);
+          const onPo = onPoByProduct[p.id] || 0;
           return {
             id: p.id,
             name: p.name,
             price: Number(p.price) || 0,
             alert_qty: threshold,
             current_stock: current,
-            need_to_order: Math.max(0, threshold - current),
+            on_po: onPo,
+            need_to_order: Math.max(0, threshold - current - onPo),
           } satisfies RecItem;
         })
         .filter((i) => i.need_to_order > 0)
@@ -361,6 +403,89 @@ export default function SupplierDetailPage() {
   useEffect(() => {
     fetchRecommended();
   }, [fetchRecommended]);
+
+  const fetchLinkedProducts = useCallback(async () => {
+    if (!id || isNaN(id)) {
+      setLinkLoading(false);
+      return;
+    }
+    try {
+      const { data: links } = await supabase
+        .from("spare_supplier")
+        .select("spare_id")
+        .eq("supplier_id", id);
+      const linkedIds = new Set(
+        (links || []).map((l) => l.spare_id as number).filter((x): x is number => !!x)
+      );
+      const { data: prods } = await supabase
+        .from("product_list")
+        .select("id, name, price")
+        .eq("delete_flag", 0)
+        .eq("status", 1)
+        .order("name");
+      const all = (prods || []) as Array<{
+        id: number;
+        name: string;
+        price: number | null;
+      }>;
+      setLinkedProducts(all.filter((p) => linkedIds.has(p.id)));
+      setProductOptions(
+        all
+          .filter((p) => !linkedIds.has(p.id))
+          .map((p) => ({
+            id: p.id,
+            label: p.name,
+            sub: p.price != null ? fmtCurrency(Number(p.price)) : undefined,
+          }))
+      );
+    } catch (e) {
+      console.error("fetchLinkedProducts:", e);
+      setLinkedProducts([]);
+    } finally {
+      setLinkLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchLinkedProducts();
+  }, [fetchLinkedProducts]);
+
+  const handleAddProductLink = async (productId: string) => {
+    if (!productId) return;
+    setLinkBusy(true);
+    try {
+      const { error } = await supabase
+        .from("spare_supplier")
+        .insert({ spare_id: Number(productId), supplier_id: id });
+      if (error) throw new Error(error.message);
+      await fetchLinkedProducts();
+      await fetchRecommended();
+    } catch (e) {
+      alert("Link add fail: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setLinkBusy(false);
+      setShowLinkPicker(false);
+    }
+  };
+
+  const handleRemoveProductLink = async (productId: number) => {
+    if (!confirm("Is product ko is supplier se unlink karein?")) return;
+    setLinkBusy(true);
+    try {
+      const { error } = await supabase
+        .from("spare_supplier")
+        .delete()
+        .eq("spare_id", productId)
+        .eq("supplier_id", id);
+      if (error) throw new Error(error.message);
+      await fetchLinkedProducts();
+      await fetchRecommended();
+    } catch (e) {
+      alert("Unlink fail: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setLinkBusy(false);
+    }
+  };
 
   const createPOFromRec = () => {
     if (recItems.length === 0) return;
@@ -442,7 +567,15 @@ export default function SupplierDetailPage() {
   };
 
   const deletePayment = async (p: SupplierPayment): Promise<boolean> => {
-    if (!confirm(`Payment ₹${p.amount} (${p.payment_mode}) delete karein?`)) return false;
+    const { count } = await supabase
+      .from("expense_list")
+      .select("id", { count: "exact", head: true })
+      .eq("supplier_payment_id", p.id);
+    const hasExpense = (count ?? 0) > 0;
+    const msg = hasExpense
+      ? `Payment ₹${p.amount} (${p.payment_mode}) delete karein?\n\nNOTE: Is payment ki expense entry Expenses me judi hui hai. Payment delete karne se expense entry DELETE nahi hogi (ledger integrity). Kya delete karein?`
+      : `Payment ₹${p.amount} (${p.payment_mode}) delete karein?`;
+    if (!confirm(msg)) return false;
     try {
       await removeSupplierPayment(p.id, id);
       const fresh = await listSupplierPayments(id);
@@ -807,6 +940,7 @@ export default function SupplierDetailPage() {
                     <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
                       <th className="text-left px-4 py-3">Product</th>
                       <th className="text-center px-4 py-3">In Stock</th>
+                      <th className="text-center px-4 py-3">On Order</th>
                       <th className="text-center px-4 py-3">Min Stock</th>
                       <th className="text-center px-4 py-3">To Order</th>
                       <th className="text-right px-4 py-3">Unit Cost</th>
@@ -827,6 +961,9 @@ export default function SupplierDetailPage() {
                           <span className="inline-flex px-2 py-0.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold">
                             {item.current_stock}
                           </span>
+                        </td>
+                        <td className="px-4 py-3 text-center text-slate-400 font-semibold">
+                          {item.on_po}
                         </td>
                         <td className="px-4 py-3 text-center text-slate-400">
                           {item.alert_qty}
@@ -854,6 +991,100 @@ export default function SupplierDetailPage() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Linked Products */}
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Link2 size={14} className="text-blue-400" />
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                Linked Products
+              </h3>
+            </div>
+            <span className="text-[10px] text-slate-600">
+              {linkedProducts.length} product{linkedProducts.length === 1 ? "" : "s"}
+            </span>
+          </div>
+
+          <div className="p-5">
+            {linkLoading ? (
+              <div className="py-6 flex items-center justify-center gap-2 text-slate-500 text-sm">
+                <Loader2 size={14} className="animate-spin" /> Loading products...
+              </div>
+            ) : (
+              <>
+                {linkedProducts.length === 0 && (
+                  <div className="pb-4 text-center text-slate-600 text-sm">
+                    Koi product link nahi. Recommended Orders ke liye products link karo.
+                  </div>
+                )}
+
+                {linkedProducts.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {linkedProducts.map((p) => (
+                      <span
+                        key={p.id}
+                        className="inline-flex items-center gap-2 bg-[#1a2234] border border-[#21293d] rounded-xl px-3 py-1.5 text-xs text-slate-300"
+                      >
+                        <Link
+                          href={`/inventory/${p.id}`}
+                          className="font-semibold hover:text-blue-400 transition-colors"
+                        >
+                          {p.name}
+                        </Link>
+                        {p.price != null && (
+                          <span className="text-slate-500">· {fmtCurrency(Number(p.price))}</span>
+                        )}
+                        <button
+                          onClick={() => handleRemoveProductLink(p.id)}
+                          disabled={linkBusy}
+                          className="p-0.5 rounded-md text-slate-500 hover:text-red-400 transition disabled:opacity-40"
+                          title="Unlink"
+                        >
+                          <X size={13} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {showLinkPicker ? (
+                  <div className="flex items-start gap-2 flex-wrap">
+                    <div className="min-w-[220px] flex-1">
+                      <SearchableSelect
+                        value={null}
+                        options={productOptions}
+                        onSelect={handleAddProductLink}
+                        placeholder="Product select karo…"
+                        searchPlaceholder="Product search karo…"
+                        emptyText="Koi aur product nahi bacha"
+                      />
+                    </div>
+                    <button
+                      onClick={() => setShowLinkPicker(false)}
+                      className="text-xs text-slate-500 hover:text-slate-300 transition py-2"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowLinkPicker(true)}
+                    disabled={linkBusy || productOptions.length === 0}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-500/15 border border-blue-500/25 text-blue-400 hover:bg-blue-500/25 rounded-xl text-xs font-black transition-all disabled:opacity-40"
+                  >
+                    <Plus size={13} /> Add Product
+                  </button>
+                )}
+                {!showLinkPicker && productOptions.length === 0 && linkedProducts.length > 0 && (
+                  <p className="mt-3 text-[10px] text-slate-600">
+                    Sab active products is supplier se linked hain.
+                  </p>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         {/* Purchase Order History */}
@@ -1615,6 +1846,16 @@ function SupplierPaymentModal({
         payment_date: date,
         contact_person_id: person ? Number(person) : null,
       });
+      const sync = await syncExpenseForPayment({
+        paymentId: payment.id,
+        amount: amt,
+        supplierName: supplierName || "supplier",
+        reference: ref,
+        paymentDate: date,
+      });
+      if (sync.error) {
+        alert("Payment save ho gaya, par expense sync nahi hua:\n" + sync.error);
+      }
       onSaved();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
