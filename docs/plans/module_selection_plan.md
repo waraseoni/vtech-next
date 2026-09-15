@@ -1,6 +1,6 @@
 # Module Selection System — Seller-Driven
 
-**Status:** IN PROGRESS
+**Status:** ✅ COMPLETE (2026-09-15)
 **Date:** 2026-08-21
 **Scope:** Seller chooses which modules each client gets. Client sees only enabled modules in sidebar.
 
@@ -152,3 +152,23 @@ ALTER TABLE public.licenses
 
 ## Implementation Order
 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12
+
+## PRERELEASE STATUS (2026-09-15) — all 12 steps verified in code ✅
+
+| # | Step | Location |
+|---|------|----------|
+| 1 | `src/lib/modules.ts` | `ALL_MODULES`, `MODULE_TO_ROUTE`, `PLAN_DEFAULTS`, `TOGGLEABLE_KEYS`, `isModuleEnabled`, `isRouteDisabled` — all present |
+| 2 | SQL (central project) | `docs/licensing/central-project.sql` L36 column + L104/119/168/175 RPC returns; L251-253 `ALTER ... ADD COLUMN IF NOT EXISTS` migration for existing central DBs |
+| 3 | `src/lib/license.ts` | `enabledModules` in `LicenseStatus` (58/74/98) + remote-call returns (112/131) |
+| 4 | `src/lib/license-admin.ts` | `LicenseRow`/`LicenseInput` + create/update pass-through |
+| 5 | `api/license/activate` | saves `enabledModules` in `license_status` JSON → `system_info` (L82) |
+| 6 | `api/license/status` | includes `enabledModules` in response + carry-forward (L125-126/187) |
+| 7 | `api/seller/licenses` POST | `VALID_MODULES` filter (L80-97 body map) |
+| 8 | `api/seller/licenses/[id]` PATCH | `VALID_MODULES` filter (L101-108) |
+| 9 | `src/app/seller/page.tsx` | `ModuleSelect` checkboxes + plan preset dropdown + Modules table column |
+| 10 | `src/app/seller/client/[id]` | Enabled Modules badges in License card (read-only, `always` dimmed) |
+| 11 | `src/app/RootClient.tsx` | sidebar gates via `isModuleEnabled` (jobs/sales/clients/inventory/finance/people/reports) |
+| 12 | `src/app/RootClient.tsx` guard | `isRouteDisabled` → "Module Not Available" inline (1654); LITE_MODE guard separate |
+
+Verified: `tsc --noEmit` clean, eslint clean. Backward-compat (null-enabled_modules = all enabled) intact.
+**Remaining deployment action (not code):** central-License DB par `ALTER TABLE licenses ADD COLUMN IF NOT EXISTS enabled_modules text[]` chala dena agar abhi tak nahi — `docs/licensing/central-project.sql` L251-253 (idempotent).
