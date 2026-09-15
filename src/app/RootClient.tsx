@@ -1378,7 +1378,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // Ye component sirf shell render karta hai — behavior bilkul unchanged.
   const {
     isMobile,
-    loading,
+    authReady,
     profile,
     userEmail,
     dropdownOpen,
@@ -1586,7 +1586,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     return <>{children}</>;
   }
 
-  if (loading) {
+  if (!authReady) {
     return (
       <PullToRefresh className="h-screen flex items-center justify-center bg-[#0d1117]">
         <div className="flex flex-col items-center gap-4">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useAppTheme } from "./useAppTheme";
 import { supabase, invalidateCachedUser } from "@/lib/supabase";
 import {
   IDLE_MS,
@@ -22,20 +23,26 @@ import { initPresence, cleanupPresence } from "@/lib/presence";
 /**
  * useAppBoot — RootClient (app shell) ka saara auth/boot state + effects.
  * G1 gate-split: ye hook auth/boot logic ko shell render se alag karta hai taaki
- * server-component migration ke liye clean seam bane. Behavior ko kisi bhi tarah
- * change NAHI karta — sirf mechanical extraction.
+ * server-component migration ke liye clean seam bane.
  *
  * IMPORTANT: raw supabase.auth.getUser() yahan preserved hai (6s timeout + retry)
  * — intentional, isse kabhi hatao nahi. Boot-guard/watchdog/idle-eviction bhi
  * preserve hain.
+ *
+ * 2026-09-15 G1: `loading` → `authReady` reframe. Splash gate ab positive
+ * semantics (`!authReady` = boot ho raha hai) — behavior unchanged, sirf
+ * naam/meaning alag. Boot-guard 6s auto-reload bhi reverse ho gaya: jab tak
+ * auth ready nahi, watchdog active.
  */
 export function useAppBoot() {
   const pathname = usePathname();
   const router = useRouter();
+  // THEME — alag hook (G1 split): useAppTheme.ts. Boot/auth se independent.
+  const { theme, themePref, setThemePref, toggleTheme } = useAppTheme();
 
   // BUG FIX 1: null prevents SSR↔client hydration mismatch.
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
   const [profile, setProfile] = useState<{
     full_name: string;
     role: string;
@@ -45,10 +52,7 @@ export function useAppBoot() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
-  // themePref: user ki choice — "system" (OS ke saath), "dark" ya "light".
-  // theme: USED/resolved theme (hamesha "dark" ya "light") jo CSS/UI ko milta hai.
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [themePref, setThemePrefState] = useState<"system" | "dark" | "light">("dark");
+  // THEME (theme/themePref/setThemePref/toggleTheme) — useAppTheme hook se.
   const [license, setLicense] = useState<LicenseStatus | null>(null);
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const [showIdleWarning, setShowIdleWarning] = useState(false);
@@ -162,11 +166,11 @@ export function useAppBoot() {
         if (cancelled) return;
         if (!session) {
           if (!isPublicPage) router.push("/login");
-          setLoading(false);
+          setAuthReady(true);
           return;
         }
         setUserEmail(session.user.email ?? null);
-        setLoading(false); // shell itni der me dikh jata hai — data background
+        setAuthReady(true); // shell itni der me dikh jata hai — data background
 
         // BUG FIX: getUser() kabhi-kabhi network par hang ho jata hai → "V-TECH
         // Secure Boot" loader hamesha ke liye atak jata tha. 6s timeout + EK
@@ -234,7 +238,7 @@ export function useAppBoot() {
       } catch (e) {
         logger.error("Auth error:", e);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setAuthReady(true);
       }
     })();
     return () => {
@@ -309,7 +313,7 @@ export function useAppBoot() {
   // `vtech_manual_refresh` flag (hardRefresh se) set ho to cooldown bypass karte hain —
   // user ne deliberately refresh kiya hai, isse roka nahi jaata.
   useEffect(() => {
-    if (!loading) return;
+    if (authReady) return;
     const t = setTimeout(() => {
       try {
         let manual = false;
@@ -334,7 +338,7 @@ export function useAppBoot() {
       window.location.reload();
     }, 6000);
     return () => clearTimeout(t);
-  }, [loading]);
+  }, [authReady]);
 
   // BUG FIX: Next.js kabhi-kabhi chunk load fail hone par router stuck chhod deta
   // hai. Chunk error → cooldown ke saath auto hard reload.
@@ -515,118 +519,9 @@ export function useAppBoot() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // ── THEME (3-way: system / dark / light) ─────────────────────────────────
-  // localStorage me "vtech_theme" = "system" | "dark" | "light".
-  // `resolveTheme(pref)` system ko OS (prefers-color-scheme) se resolve karta
-  // hai; data-theme hamesha "dark"/"light" hi hota hai. CSS (dark: variant,
-  // light overrides) isi binary attribute par depend karta hai.
-  const systemDark = useRef(false);
-  const isPublicRef = useRef(false);
-
-  const applyTheme = useCallback((pref: "system" | "dark" | "light") => {
-    try {
-      const system = systemDark.current;
-      const effective: "dark" | "light" = pref === "system" ? (system ? "dark" : "light") : pref;
-      // public page hamesha dark-only hota hai (hardcoded design)
-      const t = isPublicRef.current ? "dark" : effective;
-      document.documentElement.setAttribute("data-theme", t);
-      document.body.style.backgroundColor = isPublicRef.current
-        ? "#070714"
-        : t === "dark"
-          ? "#0d1117"
-          : "#f8f9fc";
-      document.body.style.color = t === "dark" ? "#e2e8f0" : "#0f172a";
-      setTheme(t);
-      return t;
-    } catch {
-      document.documentElement.setAttribute("data-theme", "dark");
-      return "dark";
-    }
-  }, []);
-
-  // setThemePref — user ki choice save + apply karo
-  const setThemePref = useCallback(
-    (pref: "system" | "dark" | "light") => {
-      setThemePrefState(pref);
-      try {
-        localStorage.setItem("vtech_theme", pref);
-      } catch {
-        // ignore
-      }
-      applyTheme(pref);
-    },
-    [applyTheme]
-  );
-
-  // toggleTheme — quick switch: current effective opposite (dark<->light).
-  // Agar pref "system" hai to OS ke current effective ke opposite set karo.
-  const toggleTheme = useCallback(() => {
-    let pref: "system" | "dark" | "light" = "light";
-    try {
-      const saved = localStorage.getItem("vtech_theme");
-      const effectiveNow =
-        (document.documentElement.getAttribute("data-theme") as "dark" | "light") || "dark";
-      const next = effectiveNow === "dark" ? "light" : "dark";
-      pref = next;
-      localStorage.setItem("vtech_theme", next);
-    } catch {
-      pref = "light";
-    }
-    setThemePrefState(pref);
-    applyTheme(pref);
-  }, [applyTheme]);
-
-  // Init: systemDark ref + OS theme listener + initial apply
-  useEffect(() => {
-    try {
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      systemDark.current = mq.matches;
-      const onChange = (e: MediaQueryListEvent) => {
-        systemDark.current = e.matches;
-        // agar pref "system" hai to OS change par turant re-apply
-        const saved = localStorage.getItem("vtech_theme");
-        if (saved === "system") applyTheme("system");
-      };
-      mq.addEventListener("change", onChange);
-      const saved =
-        (localStorage.getItem("vtech_theme") as "system" | "dark" | "light" | null) || "dark";
-      setThemePrefState(saved);
-      applyTheme(saved);
-      return () => {
-        try {
-          mq.removeEventListener("change", onChange);
-        } catch {
-          // ignore
-        }
-      };
-    } catch {
-      applyTheme("dark");
-    }
-  }, [applyTheme]);
-
-  // Pathname change: public-page flag update + re-apply
-  useEffect(() => {
-    const pub =
-      pathname === "/" ||
-      [
-        "/login",
-        "/setup",
-        "/about",
-        "/contact",
-        "/job-status",
-        "/stage-lighting",
-        "/industrial",
-        "/power-supply",
-      ].some((p) => pathname === p || pathname.startsWith(p + "/"));
-    isPublicRef.current = pub;
-    try {
-      const saved =
-        (localStorage.getItem("vtech_theme") as "system" | "dark" | "light" | null) || "dark";
-      applyTheme(saved);
-    } catch {
-      applyTheme("dark");
-    }
-  }, [pathname, applyTheme]);
+  // ── THEME ─────────────────────────────────────────────────────────────────
+  // G1 split (2026-09-15): theme state/effects ab `useAppTheme` me (top par
+  // composed). localStorage "vtech_theme" + data-theme apply etc. wahan.
 
   // Auto-close drawer on route change
   useEffect(() => {
@@ -635,7 +530,7 @@ export function useAppBoot() {
 
   return {
     isMobile,
-    loading,
+    authReady,
     profile,
     userEmail,
     dropdownOpen,

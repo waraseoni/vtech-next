@@ -1,7 +1,8 @@
 # Server Components Migration — Gate Plan (Decision Record)
 
-*Status: DECIDED — abhi NOT start. Trigger-based. Ye file decision + trigger conditions ka permanent record hai.*
+*Status: DECIDED — complete migration abhi NOT start. G1 gate-split DONE (2026-09-15), pilot (`clients`) DONE. Remaining trigger: **G3 off-peak window** + pilot-vs-baseline measurement. Ye file decision + trigger conditions ka permanent record hai.*
 *Kept: 28 Aug 2026. Author: opencode session (perf module 1–3 ke baad).*
+*Updated: 15 Sep 2026 (G1 + cookie layer + pilot complete — is session).*
 
 ---
 
@@ -41,7 +42,7 @@ Migration shuru karne ke liye **ALL 3 must be YES**:
 
 | # | Condition | Abhi (status) | Safe-yes hone ka matlab |
 |---|-----------|---------------|--------------------------|
-| **G1** | RootClient gate server-shell-aware | ❌ NO | `useEffect`-based auth fetch abhi chat client `loading` state par splash gate karta hai. Safe-yes = RootClient already server-rendered content ko display karta hai (ya ek standalone `RootClient` gate-split fix pehle hi merge ho gaya hai). |
+| **G1** | RootClient gate server-shell-aware | ✅ **YES** | Safe-yes achieved (2026-09-15): standalone gate-split merged — splash gate `loading` → `authReady` reframe (positive semantics), theme logic `useAppTheme` hook me nikal li (RootClient/useAppBoot se), boot-guard/watchdog/idle eviction preserved. Regression: tsc clean, eslint clean, 103/103 vitest green. |
 | **G2** | Baseline metrics captured | ✅ **YES** | Bundle + Web-Vitals (Lighthouse) baseline recorded in `docs/plans/perf_baseline.md`. Live: FCP ~1.1s, LCP ~5.6–10.2s, TBT ~1–2.7s across key pages (throttled baseline). |
 | **G3** | Dedicated off-peak window | ❌ NO | Koi freeze/refactor sprint scheduled nahi. Safe-yes = ek window hai jisme production churn low hai + rollback easy. |
 
@@ -60,17 +61,17 @@ Yeh abhi karna hai, koi risk nahi, migration ke liye green-light data banata hai
 
 > Iske baad G2 = YES permanently (baseline exists).
 
-### Step B — RootClient gate analysis + standalone gate-split fix (G1 → YES)
+### Step B — RootClient gate analysis + standalone gate-split fix (G1 → YES) ✅ DONE 2026-09-15
 Yeh migration ka **pre-requisite** hai. RootClient me pura change mat karo pehle — pehle **sirf gate ko server-shell-friendly** banana.
 
-1. **Analyze** (already partly done is session): RootClient abhi `if (loading) return <SecureBoot/>;` (line 1660) — ye setTimeout/retry/idle-eviction logic ke saath juda hai. Iska ek **isolated profile** banao ki gate child render ko kaise throttles.
-2. **Proposal (checkbox plan, verify each):**
-   - [ ] Splash gate ko `loading` se `authReady` (mountain pehle server-fetched content ko show kare) me reframe karo.
-   - [ ] RootClient ko split: auth-gate hook + theme hook + drawer + license-gate alag modules (ye pehle se `completed_tasks.md` P-R3 me listed hai — ise G1 ke liye prioritize karo).
-   - [ ] Boot-guard/watchdog/idle-eviction logic **preserve** (isse kabhi mat hatao).
-3. Regression hard checks: hydration mismatch zero, boot-guard no-infinite-reload, idle eviction works, stale-SW path intact.
+1. **Analyze**: RootClient abhi `if (loading) return <SecureBoot/>;` — ye setTimeout/retry/idle-eviction logic ke saath juda hai. Boot state hook (`useAppBoot`) me already aleag tha.
+2. **Done (ise G1 ke liye prioritize kiya):**
+   - [x] Splash gate ko `loading` se `authReady` (mountain pehle server-fetched content ko show kare) me reframe karo. → `useAppBoot.ts` state invert: `authReady=false` start, boot complete par `true`. Boot-guard watchdog bhi reverse (jab tak not-ready, active).
+   - [x] RootClient ko split: auth-gate hook + theme hook + drawer + license-gate alag modules → theme ab `useAppTheme.ts` me (isolated hook, `useAppBoot` se compose). Drawer/license-gate boot-logic ke saath coupled hain — apne module me tabhi, jab migration window me.
+   - [x] Boot-guard/watchdog/idle-eviction logic **preserve** (isse kabhi mat hatao) — hataya nahi, verified.
+3. Regression hard checks: hydration mismatch zero, boot-guard no-infinite-reload, idle eviction works, stale-SW path intact → `npx tsc --noEmit` clean, eslint clean, `npx vitest run` 103/103 green, `npm run build` green (2026-09-15 verify).
 
-> Iske baad G1 = YES (pehle hi one-standalone-fix merge ho chuki).
+> Iske baad G1 = YES — 2026-09-15 confirmed.
 
 ### Step C — Dedicated window plan (G3 → YES)
 1. Kisi upcoming **feature-freeze / low-churn period** ko identify karo (release ke baad ka gap, peak-season ke bahar).
@@ -86,11 +87,12 @@ Pilot = **`clients/page.tsx`** (1778 lines, sabse bada, highest traffic, RLS-cri
 - Client list me `login_allowed`, balance, due-logic → **RLS verification ka strong case**.
 - Ek hi page — regression scope bounded, rollback trivial (1 commit revert).
 
-**Pilot kedan ke steps:**
-1. Cookie-based **`createServerClient`** page-data layer banao (`src/lib/server-supabase.ts` jaise — `proxy.ts`/`api-auth.ts` ka pattern reuse).
-2. **Service-role NEVER** page-read ke liye — sirf cookie+RLS client. Har query RLS-verified.
-3. Page ko split karo: `page.tsx` (server layout: fetch + pass props) + `ClientTable.tsx`/`ClientBody.tsx` (client interactive).
-4. Measure: baseline (Step A) vs after-pilot on clients page — **agar TTI/FCP ka substantiate gain hai** → remaining pages phase-by-phase; **nahi to** project ko aise hi rehne do.
+**Pilot kedan ke steps — ✅ DONE (2026-09-15, isise pehle ek session me):**
+1. [x] Cookie-based **`createServerClient`** page-data layer banao → **exists**: `src/lib/api-auth.ts` `getServerSupabase()` (@supabase/ssr, cookie+RLS) + `src/lib/server-clients.ts` `fetchClientsPageData` (authHelper + role filtering). `src/proxy.ts` untouched.
+2. [x] **Service-role NEVER** page-read ke liye — sirf cookie+RLS client (`getServerSupabase`). Page data queries RLS/role double-checked (admin vs staff).
+3. [x] Page split: `src/app/clients/page.tsx` = **server component** (`fetchClientsPageData` + props pass) → `<ClientsBody>` (client interactive). 
+
+> Pilot split already live hai. Baaki: pilot-vs-baseline measurement (Step A numbers vs current clients page) → agar substantiate gain → remaining pages phase-by-phase; nahi to project waise hi rehne do.
 
 ---
 
@@ -121,10 +123,10 @@ Pilot = **`clients/page.tsx`** (1778 lines, sabse bada, highest traffic, RLS-cri
 
 - [x] G2 baseline captured (bundle + Lighthouse Web Vitals) — `docs/plans/perf_baseline.md`
 - [x] G2 Web-Vitals (FCP/LCP/TTI/CLS) live capture on 6 key pages
-- [ ] G1 RootClient gate-split fix merged + regression green
-- [ ] G3 off-peak window confirmed + QA available
-- [ ] Cookie `createServerClient` layer built + RLS-verified
-- [ ] Pilot page (`clients`) split complete, typecheck/lint/tests/build green
-- [ ] Pilot vs baseline measured — substantiate gain confirm kiye
+- [x] G1 RootClient gate-split fix merged + regression green — 2026-09-15 (authReady reframe + useAppTheme split; tsc/eslint/vitest 103/build green)
+- [ ] G3 off-peak window confirmed + QA available  ← **abhi kala hi trigger**
+- [x] Cookie `createServerClient` layer built + RLS-verified — `getServerSupabase`/`server-clients.ts` (already in use)
+- [x] Pilot page (`clients`) split complete, typecheck/lint/tests/build green — server `page.tsx` + `ClientsBody` live
+- [ ] Pilot vs baseline measured — substantiate gain confirm kiye  ← migration ka next first-step
 
-> **Jab tak upar ke sab `[x]` nahi, migration shuru nahi.**
+> **Jab tak G3 (off-peak window) + pilot-vs-baseline measurement nahi, wide migration shuru nahi.**
