@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [1.20.0](https://github.com/waraseoni/vtech-next/compare/v1.19.0...v1.20.0) (2026-09-15)
+
+### Features
+
+* **inventory:** I6 location cleanup Phase-1 + M8 JRP receive-sync ([363161b](https://github.com/waraseoni/vtech-next/commit/363161bafa84bd3d7894602febbc6bcd43d87ed2))
+* **rootclient:** G1 gate-split - authReady reframe + useAppTheme hook ([2245cc8](https://github.com/waraseoni/vtech-next/commit/2245cc8b78e837518cf52076f85fd35c0350713a))
+
+### Bug Fixes
+
+* **backup:** converter login_allowed boolean coercion (BOOL_F) ([397adda](https://github.com/waraseoni/vtech-next/commit/397adda231ff18fc27277a4fcacfdce20e427bb9))
+* **suppliers:** LCP priority on visiting card image ([fb853b8](https://github.com/waraseoni/vtech-next/commit/fb853b88f35618709a22cc414c45d457fe405113))
+
 ## [1.19.0](https://github.com/waraseoni/vtech-next/compare/v1.18.0...v1.19.0) (2026-09-14)
 
 ### Features
