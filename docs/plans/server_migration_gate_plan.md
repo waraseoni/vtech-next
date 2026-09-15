@@ -1,6 +1,6 @@
 # Server Components Migration — Gate Plan (Decision Record)
 
-*Status: DECIDED — complete migration abhi NOT start. G1 gate-split DONE (2026-09-15), pilot (`clients`) DONE. Remaining trigger: **G3 off-peak window** + pilot-vs-baseline measurement. Ye file decision + trigger conditions ka permanent record hai.*
+*Status: DECIDED — complete migration abhi NOT start. G1 gate-split DONE (2026-09-15), pilot (`clients`) DONE + measured (LCP −48%, TTI −8%, 28 Aug). Remaining trigger: sirf **G3 off-peak window**. Ye file decision + trigger conditions ka permanent record hai.*
 *Kept: 28 Aug 2026. Author: opencode session (perf module 1–3 ke baad).*
 *Updated: 15 Sep 2026 (G1 + cookie layer + pilot complete — is session).*
 
@@ -92,7 +92,7 @@ Pilot = **`clients/page.tsx`** (1778 lines, sabse bada, highest traffic, RLS-cri
 2. [x] **Service-role NEVER** page-read ke liye — sirf cookie+RLS client (`getServerSupabase`). Page data queries RLS/role double-checked (admin vs staff).
 3. [x] Page split: `src/app/clients/page.tsx` = **server component** (`fetchClientsPageData` + props pass) → `<ClientsBody>` (client interactive). 
 
-> Pilot split already live hai. Baaki: pilot-vs-baseline measurement (Step A numbers vs current clients page) → agar substantiate gain → remaining pages phase-by-phase; nahi to project waise hi rehne do.
+> Pilot split live + **measured** — verdict CLEAR-YES: `perf_baseline.md` Sessions 2–5 (28 Aug) me `/clients` LCP 10.13s→5.2–5.9s (−48%), TTI −8%; /mechanics, /expenses, /payments same cookie+RLS pattern, sab SSR-data-first-paint. Gain substantiated hai → sirf G3 window baaki.
 
 ---
 
@@ -127,6 +127,6 @@ Pilot = **`clients/page.tsx`** (1778 lines, sabse bada, highest traffic, RLS-cri
 - [ ] G3 off-peak window confirmed + QA available  ← **abhi kala hi trigger**
 - [x] Cookie `createServerClient` layer built + RLS-verified — `getServerSupabase`/`server-clients.ts` (already in use)
 - [x] Pilot page (`clients`) split complete, typecheck/lint/tests/build green — server `page.tsx` + `ClientsBody` live
-- [ ] Pilot vs baseline measured — substantiate gain confirm kiye  ← migration ka next first-step
+- [x] Pilot vs baseline measured — substantiate gain confirm — **verdict CLEAR-YES** (perf_baseline.md Sessions 2–5, 28 Aug): `/clients` **LCP 10.13s → 5.2–5.9s (−42–48%), TTI 10.40s → 9.6s (−8%)**; /mechanics LCP 5.4s/TTI 6.7s (well below /jobs /clients baselines), /expenses, /payments bhi SSR data first-paint me — cookie+RLS pattern proven on 4 pages.
 
-> **Jab tak G3 (off-peak window) + pilot-vs-baseline measurement nahi, wide migration shuru nahi.**
+> **Jab tak G3 (off-peak window) confirm nahi, wide migration shuru nahi.** Baaki sab (G1/G2/cookie/pilot/measurement) green hain.
