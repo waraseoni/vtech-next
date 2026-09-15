@@ -660,6 +660,7 @@ export default function SupplierDetailPage() {
                       alt="Visiting card"
                       width={200}
                       height={120}
+                      priority
                       className="h-36 sm:h-44 w-auto max-w-full rounded-xl object-contain border border-[#21293d] bg-black/30"
                     />
                   </button>
