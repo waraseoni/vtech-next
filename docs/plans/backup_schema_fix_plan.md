@@ -1,7 +1,7 @@
 # Backup / Restore / Converter — Schema Fix Plan
 
 Created: 2026-08-09
-Status: Backup/restore fix APPLIED + VERIFIED. Converter fix pending (plan below).
+Status: Backup/restore fix APPLIED + VERIFIED. Converter fix APPLIED (2026-09-20) — remaining optional polish tracked below.
 
 ## Test Results (2026-08-09)
 
@@ -112,6 +112,10 @@ Koi FK nahi (dono taraf), delete order se koi farak nahi.
   emit karega aur boolean column restore par **fail** ho jayega; boolean
   handling chahiye.
 
+> **E resolved (2026-09-20):** `payment_reminders` ab TABLES/INT_F/FLOAT_F me hai;
+> `hsn` → STR_F+EMPTY_STR; `payment_due_date` → DATE_ONLY; `purchase_cost`/`courier_charges`
+> → FLOAT_F; `login_allowed` → naya BOOL_F coercion (`castRow`).
+
 ## Plan (ordered)
 
 1. **`TABLE_COLUMNS` update** (page.tsx:66-94)
@@ -134,17 +138,15 @@ Koi FK nahi (dono taraf), delete order se koi farak nahi.
    - `login_allowed` → null → `false` (boolean default)
    - Clean approach: chhota per-column-default map.
 
-4. **Converter updates**
-   - `TABLES` += `payment_reminders`
-   - `STR_F` += `hsn` (product_list, service_list)
-   - `DATE_ONLY` += `payment_due_date`
-   - `FLOAT_F` += `purchase_cost`, `courier_charges` (inventory_list)
-   - Optional: boolean cast handling for `login_allowed`
+4. **Converter updates ✅ DONE (2026-09-20, `vtech_mysql_converter.html`)**
+   - [x] `TABLES` += `payment_reminders`
+   - [x] `STR_F` += `hsn` (product_list, service_list)
+   - [x] `DATE_ONLY` += `payment_due_date`
+   - [x] `FLOAT_F` += `purchase_cost`, `courier_charges` (inventory_list)
+   - [x] `FLOAT_F`/`INT_F` += payment_reminders (`amount_due`, `id`, `client_id`)
+   - [x] **Boolean cast handling** `login_allowed` — naya `BOOL_F` map (`client_list.login_allowed`) + `castRow` coercion (0/1/'0'/'1'/''/null → true/false). Bina iske MySQL tinyint 0/1 → PG boolean restore par fail hota.
 
-5. **Verify (SQL run karke)**
-   - Admin user ke paas `profiles` row `role='admin'`/`'staff'` hai
-   - `fix_rls.sql` policies applied hain
-   - Nahin to backup/restore RLS ki wajah se silent fail karega
+5. **Verify (SQL run karke)** — ⏳ remaining (apply-time check tak nahi hua): confirm `fix_rls.sql` policies applied + admin/staff `profiles` rows exist, warna backup/restore RLS se silent fail karega.
 
 6. **Optional: sequence-reset list** (page.tsx:483)
    - `suppliers`, `spare_supplier`, `loan_payments`, `transaction_products`,

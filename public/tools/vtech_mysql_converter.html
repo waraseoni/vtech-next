@@ -149,6 +149,12 @@ const STR_F={
   transaction_list:["code","job_id","client_name","remark","uniq_id","fault","item"],
 };
 
+// BOOLEAN fields — legacy MySQL tinyint (0/1) → PG boolean (true/false).
+// Bina iske number 0/1 emit ho kar boolean column restore par fail deta hai.
+const BOOL_F={
+  client_list:["login_allowed"],
+};
+
 // ALWAYS '' (empty string, never null) — verified from good backup
 const EMPTY_STR={
   advance_payments:["reason"],
@@ -396,6 +402,14 @@ function castRow(table,row){
     if(/^-?\d+$/.test(sv)){r[field]=parseInt(sv);continue;}
     if(/^-?\d+\.\d+$/.test(sv)){r[field]=parseFloat(sv);continue;}
     r[field]=sv;
+  }
+
+  // ── BOOLEAN coercion: 0/1/'0'/'1'/''/null → strict true/false ───────────
+  for(const bf of (BOOL_F[table]||[])){
+    if(bf in r){
+      const b=r[bf];
+      r[bf]=(b===true)||(b===1)||(typeof b==="string"&&b.trim()==="1")?true:false;
+    }
   }
 
   // ── client_payments special ─────────────────────────────────────────────
