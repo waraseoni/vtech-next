@@ -1,6 +1,6 @@
 # Inventory System — Master Improvement & BOM Plan
 
-> Status: **I1/I2/I3/I4/I5-tracker active — I6 valuation report DONE (2026-09-12); location data-model cleanup pending.**
+> Status: **I1/I2/I3/I4/I5-tracker active — I6 valuation report DONE (2026-09-12); location data-model cleanup Phase-1 DONE (2026-09-20), Phase-2 (place\* column retirement) gated-pending.**
 > This is a single, merged, ordered plan built from two prior design docs:
 >   1. `inventory_improvements_plan.md` (system-wide upgrades)
 >   2. `bom_checker_plan.md` (BOM auto-check feature)
@@ -180,7 +180,12 @@ Keep the allow-over-sell rule (`SaleForm.tsx:310-311, 376-377`) but:
   - Page: KPI cards (Total Stock Value / Units / In Stock / Out Of Stock), searchable product table (link → `/inventory/[id]`), location-wise table with expandable product breakdown (Zone ▸ Rack ▸ Bin ▸ Box), print header + print CSS. Card added to reports index (`Coins`, Job Reports, NEW badge).
   - Honest two-view note: product value (sales kat ke = available basis) vs location value (inbound kharid value — sales shelf-level split nahi hoti).
   - Verified: tsc clean · eslint clean · vitest 101/101 · build PASS (route `/reports/stock-valuation`).
-- **Data-model cleanup (place\* → product_locations/locations) — ⏳ PENDING** (alag session; risky blast-radius, stock base ab stable hai isliye kiya ja sakta hai).
+- **Data-model cleanup (place\* → product_locations/locations) — PHASE-1 ✅ DONE (2026-09-20), Phase-2 ⏳ gated:**
+  - **What was done (Phase-1, `20260920_inventory_location_cleanup.sql` + fold-in):**
+    - **Mapping completion:** har product (jiska koi `product_locations` mapping NAHI) ko ab canonical location mila — priority (1) `inventory_list.place_*` latest row, (2) `inventory_list.place` free-text → zone (legacy convention), (3) `product_list.place_*`. `locations` + `product_locations` dono fill; fully ON CONFLICT-safe (re-run sirf bache gaps bharta hai). Zero data loss.
+    - **Write symmetry trigger** `trig_inventory_place_sync` (BEFORE INSERT OR UPDATE on `inventory_list`): structured (zone/rack/bin/box) use par `place` = derived "▸" path auto-sync — old screens (list/history/dashboard/RPC reads `place`) bina change ke path paate hain; writers jo sirf `place` set karte hain (`record_stocktake`, `receive_po_receipt`) untouched. Drift ab impossible.
+  - **What remains (Phase-2, GATED):** `place_zone/place_rack/place_bin/place_box/place` columns ka DROP — wide blast radius (readers: `inventory.ts`, `inventoryStock.ts`+RPC, `stockValuation.ts`, `dashboard`, `inventory/page.tsx`, `inventory/[id]`, `backup/page.tsx` export; bakki dual-era. Per project decision-record discipline → dedicated window chahiye. **Column-drop checklist (jab window mile):** (a) `product_locations` coverage check query (unmapped active products must = 0), (b) backup (incl. `backup/page.tsx` column export lists se `place_zone/rack/bin/box` remove karna), (c) app read-points ko `locations.ts` helper par consolidate (`partsFromRow` already canonical), (d) `get_inventory_stock.place` derivation decide (canonical = product_locations; inventory_list.place sirf legacy fallback), (e) `ALTER TABLE ... DROP COLUMN` + regression.
+  - Note: `20260817_product_level_location.sql` ka pehla backfill sirf structured rows cover karta tha — free-text `place` wale legacy products map nahi the (yehi gap Phase-1 ne banda).
 
 ---
 
@@ -240,7 +245,8 @@ Keep the allow-over-sell rule (`SaleForm.tsx:310-311, 376-377`) but:
 | `supabase/migrations/20260903_inventory_single_stock_rpc.sql` | I1 RPC (live) |
 | `supabase/migrations/20260914_stocktake_stock_adjustment.sql` | I2 stocktake (isolated, live) |
 | `supabase/migrations/20260915_po_partial_receipt.sql` | I4 partial receipt (isolated, live) |
-| `supabase/migrations/20260913000000_final_full_schema_idempotent.sql` | Consolidated deliverable (I1 + I2 + I4 folded in) |
+| `supabase/migrations/20260920_inventory_location_cleanup.sql` | I6 Phase-1 location mapping completion + write-symmetry trigger (isolated, additive — apply) |
+| `supabase/migrations/20260913000000_final_full_schema_idempotent.sql` | Consolidated deliverable (I1 + I2 + I4 + I6 Phase-1 folded in) |
 
 **Delivery rule (recorded):** each initiative ships in a **new isolated additive
 migration file**; the user ALSO instructs the objects to be folded idempotently into

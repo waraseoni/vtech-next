@@ -2011,6 +2011,104 @@ CREATE TRIGGER prevent_role_escalation_trigger BEFORE INSERT OR UPDATE OF role O
 DROP TRIGGER IF EXISTS trig_inventory_update_timestamp ON public.inventory_list;
 CREATE TRIGGER trig_inventory_update_timestamp BEFORE UPDATE ON public.inventory_list FOR EACH ROW EXECUTE FUNCTION public.update_date_updated();
 
+-- ── I6 location cleanup (20260920 fold-in): place path write-symmetry trigger ─
+-- Structured (place_zone/rack/bin/box) use par `place` = derived path auto-sync;
+-- writers jo sirf `place` set karte hain untouched. Idempotent.
+CREATE OR REPLACE FUNCTION public.inventory_sync_place_path()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF COALESCE(NEW.place_zone, '') <> ''
+     OR COALESCE(NEW.place_rack, '') <> ''
+     OR COALESCE(NEW.place_bin, '') <> ''
+     OR COALESCE(NEW.place_box, '') <> '' THEN
+    NEW.place := CONCAT_WS(' ▸ ',
+      NULLIF(COALESCE(NEW.place_zone, ''), ''),
+      NULLIF(COALESCE(NEW.place_rack, ''), ''),
+      NULLIF(COALESCE(NEW.place_bin, ''), ''),
+      NULLIF(COALESCE(NEW.place_box, ''), ''));
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trig_inventory_place_sync ON public.inventory_list;
+CREATE TRIGGER trig_inventory_place_sync
+BEFORE INSERT OR UPDATE ON public.inventory_list
+FOR EACH ROW EXECUTE FUNCTION public.inventory_sync_place_path();
+
+GRANT EXECUTE ON FUNCTION public.inventory_sync_place_path() TO public;
+
+-- ── I6 location cleanup (20260920 fold-in): mapping-completion backfill ─────
+-- Unmapped products ko canonical location (inv_list structured → free-text →
+-- product_list). ON CONFLICT safe; re-run me pure old gaps hi bharte hain.
+DO $$
+DECLARE
+  p RECORD;
+  loc_id integer;
+  v_zone  text := '';
+  v_rack  text := '';
+  v_bin   text := '';
+  v_box   text := '';
+BEGIN
+  FOR p IN
+    SELECT pl.id AS product_id
+    FROM public.product_list pl
+    WHERE pl.delete_flag = 0
+      AND NOT EXISTS (
+        SELECT 1 FROM public.product_locations x WHERE x.product_id = pl.id
+      )
+  LOOP
+    v_zone := ''; v_rack := ''; v_bin := ''; v_box := '';
+    SELECT i.place_zone, i.place_rack, i.place_bin, i.place_box
+      INTO v_zone, v_rack, v_bin, v_box
+      FROM public.inventory_list i
+     WHERE i.product_id = p.product_id
+       AND i.place_zone IS NOT NULL AND i.place_zone <> ''
+     ORDER BY i.stock_date DESC NULLS LAST, i.id DESC
+     LIMIT 1;
+    IF v_zone IS NULL OR v_zone = '' THEN
+      SELECT i.place INTO v_zone
+        FROM public.inventory_list i
+       WHERE i.product_id = p.product_id
+         AND i.place IS NOT NULL AND i.place <> ''
+       ORDER BY i.stock_date DESC NULLS LAST, i.id DESC
+       LIMIT 1;
+      IF v_zone IS NOT NULL AND v_zone <> '' THEN
+        v_rack := ''; v_bin := ''; v_box := '';
+      END IF;
+    END IF;
+    IF v_zone IS NULL OR v_zone = '' THEN
+      SELECT pl2.place_zone, pl2.place_rack, pl2.place_bin, pl2.place_box
+        INTO v_zone, v_rack, v_bin, v_box
+        FROM public.product_list pl2
+       WHERE pl2.id = p.product_id;
+    END IF;
+    IF v_zone IS NOT NULL AND v_zone <> '' THEN
+      INSERT INTO public.locations (zone, rack, bin, box, label)
+      VALUES (
+        v_zone,
+        COALESCE(v_rack, ''),
+        COALESCE(v_bin, ''),
+        COALESCE(v_box, ''),
+        CONCAT_WS(' ▸ ', v_zone,
+          NULLIF(COALESCE(v_rack, ''), ''),
+          NULLIF(COALESCE(v_bin, ''), ''),
+          NULLIF(COALESCE(v_box, ''), ''))
+      )
+      ON CONFLICT (zone, rack, bin, box) DO UPDATE SET zone = EXCLUDED.zone
+      RETURNING id INTO loc_id;
+      INSERT INTO public.product_locations (product_id, location_id)
+      VALUES (p.product_id, loc_id)
+      ON CONFLICT (product_id, location_id) DO NOTHING;
+    END IF;
+  END LOOP;
+END $$;
+
+-- ── I6 location cleanup (20260920 fold-in): pgrst reload ────────────────────
+NOTIFY pgrst, 'reload schema';
+
 DROP TRIGGER IF EXISTS update_mechanic_timestamp ON public.mechanic_list;
 CREATE TRIGGER update_mechanic_timestamp BEFORE UPDATE ON public.mechanic_list FOR EACH ROW EXECUTE FUNCTION extensions.moddatetime('date_updated');
 
@@ -2992,6 +3090,10 @@ GRANT ALL ON TABLE public.stock_adjustments TO service_role;
 --   inventory_list stock-in rows, bumps purchase_order_items.qty_received, and
 --   sets PO status to partially_received/received. The touch_purchase_orders
 --   trigger keeps date_updated fresh.
+--   PLUS (2026-09-15, provenance 20260915_required_parts_receive_sync.sql):
+--   receive par is PO se linked job_required_parts rows auto-update hote hain —
+--   qty_received FIFO allocate (sabse purana open part pehle), fill hote hi
+--   status = 2 (Arrived) → parts-pending report se auto-out.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- Extend purchase_orders.status CHECK to allow 'partially_received'
@@ -3026,8 +3128,10 @@ SET search_path = public
 AS $$
 declare
     l record;
+    jrp record;
     v_outstanding integer;
     v_any_open boolean := false;
+    v_still integer;
 begin
     if not public.is_frontend_staff() then
         raise exception 'permission denied: staff only';
@@ -3075,6 +3179,42 @@ begin
            set qty_received = poi.qty_received + l.qty
          where poi.purchase_order_id = p_po_id
            and poi.product_id = l.product_id;
+
+        -- P1/M8 receive-sync: is PO se linked required parts ki qty_received
+        -- aur status bhardo. FIFO (date_created asc) — sabse purana open part
+        -- pehle. Part fill hote hi status = 2 (Arrived) → report se auto-out.
+        v_still := l.qty;
+        for jrp in
+            select j.id,
+                   (j.qty_needed - j.qty_received) as rem
+              from public.job_required_parts j
+             where j.purchase_order_id = p_po_id
+               and j.product_id = l.product_id
+               and j.status < 2
+               and j.qty_received < j.qty_needed
+             order by j.date_created asc, j.id asc
+             for update
+        loop
+            if v_still <= 0 then
+                exit;
+            end if;
+            if jrp.rem >= v_still then
+                update public.job_required_parts j
+                   set qty_received = j.qty_received + v_still,
+                       status = case
+                         when j.qty_received + v_still >= j.qty_needed then 2
+                         else j.status
+                       end
+                 where j.id = jrp.id;
+                v_still := 0;
+            else
+                update public.job_required_parts j
+                   set qty_received = j.qty_received + jrp.rem,
+                       status = 2
+                 where j.id = jrp.id;
+                v_still := v_still - jrp.rem;
+            end if;
+        end loop;
     end loop;
 
     select bool_or(poi.qty_ordered - poi.qty_received > 0) into v_any_open

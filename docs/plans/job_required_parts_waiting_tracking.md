@@ -1,6 +1,6 @@
 # Plan: Job "Required Parts / Waiting for Spare Purchase" Tracking
 
-> Status: **ACTIVE — Milestone 2 in progress**
+> Status: **COMPLETE (2026-09-15) — M1–M7 shipped (commit `a147034`); M8 receive-sync via `20260915_required_parts_receive_sync.sql`**
 > Created: 2026-09-05 · [docs/DATA_MIGRATION_NOTES.md](../../DATA_MIGRATION_NOTES.md) mandates ke saath compliant.
 
 ## 1. Goal (user brief, Hinglish → English)
@@ -137,8 +137,8 @@ create unique index if not exists transaction_products_inventory_uniq
 ### M7 — Auto-out verification + polish
 Delivered job (`status=5`) ke required parts **report me na aayen** (derived). Job status modal se delivered → UI par "waiting" badge hat jaye. eslint/tsc/build/prettier. Plan file update. Commit (feat).
 
-### M8 — (Optional later) PO integration
-`purchase_order_items.job_id bigint NULL` + required-parts→PO-draft builder + receive-sync (qty/status). **Abhi not in scope.**
+### M8 — PO integration — DONE (P1 header-level + receive-sync, 2026-09-15)
+`purchase_orders.transaction_id` (header-level job grouping — P1 documented deviation se `purchase_order_items.job_id` droppit). Required-parts→PO-draft builder (P1: job page + `parts-pending` report "PO banao"), PO create par linked parts `purchase_order_id` + `status=1` (Ordered). Receive par **qty/status auto-sync**: `receive_po_receipt` ab linked `job_required_parts` rows FIFO allocate karta hai — fill hote hi `status=2` (Arrived) → report se auto-out (migration `20260915_required_parts_receive_sync.sql`, fold-in full schema me).
 
 ## 6. File map (new/changed)
 
@@ -156,9 +156,9 @@ Delivered job (`status=5`) ke required parts **report me na aayen** (derived). J
 
 ## 8. Milestone Log
 ## 7. Open questions (for user)
-1. Photo per required part = **single** OK? (recommended: single, mobile-speed)
-2. "Waiting" badge job ke header par bhi chahiye (dashboard/sidebar count) — ya sirf report me?
-3. Custom spare ke saath inventory me **optional register** checkbox chahiye abhi ya baad?
+1. Photo per required part = **single** OK? → ✅ single (mobile-speed) — live.
+2. "Waiting" badge job ke header par bhi chahiye (dashboard/sidebar count) — ya sirf report me? → ✅ `WaitingPartsBadge` on job view page (`status<=3 && waitOpen>0`).
+3. Custom spare ke saath inventory me **optional register** checkbox → **NOT built** (billing-row custom spare ka stock-track nahi; kabhi requirement aaye to alag scope).
 
 ## 8. Milestone Log
 - **M1 — DONE (2026-09-05):** `supabase/migrations/20260905_job_required_parts.sql` ban gayi (table + product_id nullable + `spare-photos` bucket + RLS `is_frontend_staff()` gate + moddatetime trigger). **Saath-DB par apply baaki** (Supabase SQL Editor me chalani hai — repo me db:push script nahi; migration idempotent hai). ⚠️ **APPLY NOTE (2026-09-06):** pehli baar run par `42P16: column "product_id" is in a primary key` aaya — `product_id` composite PK `(transaction_id, product_id)` ka hissa hai. Migration **fix kiya** (PK → surrogate `id` identity; partial unique index; rerun-safe). **Bas dobara SQL Editor me run karo.** ✅ Applied (2026-09-06; verify output: `product_id=YES`, `id` column present). **Full-schema backport:** `20260913000000_final_full_schema_idempotent.sql` me bhi same feature+rework add kiya (BACKPORT block) — kisi bhi db (fresh ya purana) ko run karke is state tak la sakte hain.
@@ -168,3 +168,4 @@ Delivered job (`status=5`) ke required parts **report me na aayen** (derived). J
 - **M5 — DONE (2026-09-05):** Custom spare in billing — `jobs/[id]/edit/page.tsx` + `jobs/new/page.tsx`: "Custom spare add karo" toggle (naam+price, duplicate-check isse skip), `ProductRow.product_id: number | null`, overstock amber sirf inventory rows par. Save me `product_id: null` insert hota hai (migration se nullable). Verifiers: view page null-safe (already), `print-job-status` + `public/job-status` + `print-custom-sales` ab `product_name` snapshot prefer karte hain (`|| "Unknown"` se custom spare naam zinda rehta hai); `print-bill`/`print-combined-invoice`/`print-monthly-sales` already safe. Stock math product_id se key — NULL row kabhi subtract nahi hota (by design).
 - **M6 — DONE (2026-09-05):** `src/app/reports/parts-pending/page.tsx` — "Waiting for Parts" report (KPI cards: jobs/saman/ordered/sources; job-group cards + part rows with qty received/needed, status badge, source, phone, ETA, photo thumb; search; print header + `window.print()`; `fetchWaitingPartsReport()` se data). Nav: sidebar Reports → "Waiting for Parts" (RootClient.tsx, `<Boxes/>` icon) + `/reports` index card ("Job Reports" me, `isNew`). eslint + tsc + prettier clean (RootClient sirf +11 lines — koi churn nahi).
 - **M7 — DONE (2026-09-05):** Auto-out verified (derived, koi trigger nahi): report jo-jaan-boojh ke `transaction_list.status IN (0,1,2,3) AND del_status = 0` filter karta hai → Delivered(5)/Cancelled(4)/deleted automatically bahar. Part status (0/1/2) alag column hai, job status se collide nahi karta. `npm run build` PASS (Next 16.3.3, 167 pages static/dynamic — `/api/spare-photos` + `/reports/parts-pending` dono included). Commit: `a147034` `feat(jobs)`. **Push pending (user approval) — push par semantic-release minor bump karega (v1.6.0).** Baki: `supabase/migrations/20260905_job_required_parts.sql` user ko Supabase SQL Editor me apply karna hai.
+- **M8 — DONE (2026-09-15):** PO receive-sync shipped. `supabase/migrations/20260915_required_parts_receive_sync.sql` (CREATE OR REPLACE `receive_po_receipt`): linked `job_required_parts` (purchase_order_id = po, product_id match, status<2) ki `qty_received` FIFO allocate hoti hai, fill hote hi `status=2`; atomic (SECURITY DEFINER, same transaction). Fold-in `20260913000000_final_full_schema_idempotent.sql` me same body. **Apply pending:** SQL Editor me nayi migration run karo (idempotent).

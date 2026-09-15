@@ -118,7 +118,21 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 ---
 
-## Project: Client "Done" (status 2) pending amounts — DONE (commit `f6d1e80`)
+## Project: Job Required-Parts / Waiting for Spare Tracking — COMPLETE (M1–M8)
+
+> Full plan: `docs/plans/job_required_parts_waiting_tracking.md` — **COMPLETE (2026-09-15)**
+> Created: 2026-09-05 · Commit `a147034` (M1–M7) + M8 receive-sync (migration `20260915_required_parts_receive_sync.sql`)
+
+- [x] **M1** migration `20260905_job_required_parts.sql` — table + `transaction_products.product_id` nullable (surrogate id PK) + `spare-photos` bucket + RLS (`is_frontend_staff`) + moddatetime. Applied DB (2026-09-06). Folded into full schema.
+- [x] **M2** `src/lib/requiredParts.ts` — CRUD + `fetchWaitingPartsReport()` (derived auto-out) + `fetchOpenPartCounts`
+- [x] **M3** `/api/spare-photos` route — upload/delete (≤200KB, requireStaff, admin client)
+- [x] **M4** `JobRequiredParts` component + embed in job view page + `WaitingPartsBadge` (status<=3 && open)
+- [x] **M5** Custom spare in billing (jobs edit/new) — `product_id: null` rows; printers name-snapshot safe
+- [x] **M6** `/reports/parts-pending` report — KPIs + job groups + search + print + "PO banao" (P1)
+- [x] **M7** Delivered(5)/Cancelled(4)/deleted auto-out (derived) + build pass
+- [x] **M8** PO receive-sync — `receive_po_receipt` linked parts ki qty_received FIFO allocate + status=2 (Arrived). **USER ACTION:** `20260915_required_parts_receive_sync.sql` Supabase SQL Editor me run karo (idempotent)
+
+---
 
 > Client view page par "Done (To Deliver)" card + list par "Done pending" per-client total. Billing (balance) par koi effect nahi — sirf informational.
 
