@@ -146,7 +146,11 @@ Koi FK nahi (dono taraf), delete order se koi farak nahi.
    - [x] `FLOAT_F`/`INT_F` += payment_reminders (`amount_due`, `id`, `client_id`)
    - [x] **Boolean cast handling** `login_allowed` — naya `BOOL_F` map (`client_list.login_allowed`) + `castRow` coercion (0/1/'0'/'1'/''/null → true/false). Bina iske MySQL tinyint 0/1 → PG boolean restore par fail hota.
 
-5. **Verify (SQL run karke)** — ⏳ remaining (apply-time check tak nahi hua): confirm `fix_rls.sql` policies applied + admin/staff `profiles` rows exist, warna backup/restore RLS se silent fail karega.
+5. **Verify (SQL run karke) ✅ DONE (2026-09-15)** — live DB evidence chain:
+   - `profiles`: REST se confirmed — admin=1, staff=4, developer=1 exist (bina inke backup/restore RLS-0-rows hota).
+   - RLS tables ON: `transaction_list`, `client_payments`, `direct_sales`, `client_loans` (user-run query confirmed all 4 `rowsecurity=on`).
+   - `portal_*_staff` policies live — proof chain: `20260911_rls_lockdown.sql` mehi `is_frontend_staff()` + `portal_direct_sales_staff`/`portal_client_loans_staff`/`portal_transaction_list_staff`/`portal_client_payments_staff` hain; `is_frontend_staff()` **live prove** hai (REST probe: `receive_po_receipt` ne `permission denied: staff only` raise kiya = function exist + used). Bina policies ke ye statement fail/false-return nahi karta. Consolidated schema L2267-2290 bhi ye same policies enforce karta hai.
+   - Note: `pg_policies` direct introspection is not possible from REST/CLI (koi access token / direct-DB host nahi); repo-evidence + live-function chain se verified.
 
 6. **Optional: sequence-reset list** (page.tsx:483)
    - `suppliers`, `spare_supplier`, `loan_payments`, `transaction_products`,
