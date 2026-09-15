@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.21.0](https://github.com/waraseoni/vtech-next/compare/v1.20.0...v1.21.0) (2026-09-15)
+
+### Features
+
+* **clients:** multi-contact numbers with call/WhatsApp per number ([f2064c9](https://github.com/waraseoni/vtech-next/commit/f2064c982c44c680dcb014a33977eb93876ac8e0))
+
 ## [1.20.0](https://github.com/waraseoni/vtech-next/compare/v1.19.0...v1.20.0) (2026-09-15)
 
 ### Features
