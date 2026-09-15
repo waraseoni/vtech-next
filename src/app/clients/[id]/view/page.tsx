@@ -47,6 +47,7 @@ import {
   Loader,
   UserRound,
   ImageIcon,
+  Star,
 } from "lucide-react";
 
 import {
@@ -63,6 +64,8 @@ import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
 import { useImageUpload } from "@/lib/useImageUpload";
 import { JOB_STATUS } from "@/lib/status-colors";
+import { fetchClientContacts, telLink, smsLink, waChatLink } from "@/lib/clientContacts";
+import type { ClientContact } from "@/lib/clientContacts";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import PageLoader from "@/components/PageLoader";
 
@@ -327,6 +330,7 @@ export default function ViewClientProfile() {
   const clientId = parseInt(params.id as string);
 
   const [client, setClient] = useState<Client | null>(null);
+  const [contacts, setContacts] = useState<ClientContact[]>([]);
   const [reminders, setReminders] = useState<PaymentReminder[]>([]);
   const [dueModal, setDueModal] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
@@ -474,6 +478,7 @@ export default function ViewClientProfile() {
         { data: pd },
         { data: ld },
         { data: lpAll },
+        ccRows,
       ] = await Promise.all([
         supabase
           .from("client_list")
@@ -517,12 +522,16 @@ export default function ViewClientProfile() {
           .select("loan_id, amount, discount")
           .eq("client_id", clientId)
           .not("loan_id", "is", null),
+        fetchClientContacts(clientId).catch(() => []),
       ]);
 
       // 1. Client
       if (ce || !cd) throw ce || new Error("Client not found");
       const fullName = [cd.firstname, cd.middlename, cd.lastname].filter(Boolean).join(" ").trim();
       setClient({ ...cd, fullName });
+
+      // 1a. Multi-contacts
+      setContacts(ccRows || []);
 
       // 1b. Payment reminders (WhatsApp log)
       setReminders(remd || []);
@@ -1128,6 +1137,16 @@ export default function ViewClientProfile() {
                   <span className="flex items-center gap-1">
                     <Phone size={11} />
                     {client.contact}
+                    {contacts.filter((c) => c.phone.replace(/\D/g, "") !== client.contact.replace(/\D/g, "")).length > 0 && (
+                      <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-1.5 py-px">
+                        +
+                        {
+                          contacts.filter(
+                            (c) => c.phone.replace(/\D/g, "") !== client.contact.replace(/\D/g, "")
+                          ).length
+                        }
+                      </span>
+                    )}
                   </span>
                   {client.address && (
                     <span className="flex items-center gap-1">
@@ -1197,6 +1216,66 @@ export default function ViewClientProfile() {
                 </a>
               )}
             </div>
+
+            {/* Multi-contact numbers — har number par Call/WhatsApp/SMS */}
+            {contacts.length > 0 && (
+              <div className="mt-3 rounded-xl border border-[#21293d] bg-[#12161f] p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                    Contact Numbers
+                  </p>
+                  <span className="text-[9px] text-slate-600 font-semibold">
+                    {contacts.length} number
+                  </span>
+                </div>
+                {contacts.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center gap-2 rounded-lg bg-[#111520] border border-[#1d2536] px-2.5 py-2"
+                  >
+                    <Star
+                      size={12}
+                      className={c.is_primary ? "text-amber-400 flex-shrink-0" : "text-slate-600 flex-shrink-0"}
+                      fill={c.is_primary ? "currentColor" : "none"}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-200 truncate">
+                        {c.name || "Mobile"}
+                        <span className="ml-1.5 text-[9px] font-black uppercase text-slate-500">
+                          {c.label}
+                        </span>
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-mono truncate">{c.phone}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <a
+                        href={telLink(c.phone)}
+                        className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 hover:bg-blue-500/25 active:scale-95 transition-all"
+                        title="Call"
+                      >
+                        <Phone size={12} />
+                      </a>
+                      <a
+                        href={waChatLink(c.phone)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-300 hover:bg-green-500/25 active:scale-95 transition-all"
+                        title="WhatsApp"
+                      >
+                        <MessageCircle size={12} />
+                      </a>
+                      <a
+                        href={smsLink(c.phone)}
+                        className="p-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-300 hover:bg-violet-500/25 active:scale-95 transition-all"
+                        title="SMS"
+                      >
+                        <MessageSquare size={12} />
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             {photoErr && <p className="text-[11px] text-red-400 font-semibold">{photoErr}</p>}
           </div>
 

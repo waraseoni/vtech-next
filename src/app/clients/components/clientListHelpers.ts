@@ -18,6 +18,17 @@ export type Client = {
   last_txn_date: string | null;
   image_path?: string;
   login_allowed: boolean;
+  /** Multi-contact (client_contacts) — optional: undefined jab table nahi hai. */
+  contacts?: ClientContactLite[];
+};
+
+export type ClientContactLite = {
+  /** DB id — undefined jab client-side se synthesize karo (primary fallback). */
+  id?: number;
+  name: string | null;
+  label: string;
+  phone: string;
+  is_primary: boolean;
 };
 
 export const toNum = (v: unknown): number => {

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useParams } from "next/navigation";
 import {
@@ -11,10 +11,20 @@ import {
   Edit3,
   CheckCircle2,
   AlertCircle,
+  Plus,
+  Trash2,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import { safeBack } from "@/lib/utils";
 import PageLoader from "@/components/PageLoader";
+import {
+  CONTACT_LABELS,
+  normalizeContacts,
+  syncClientContacts,
+  fetchClientContacts,
+} from "@/lib/clientContacts";
+import type { ClientContactInput } from "@/lib/clientContacts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STYLE CONSTANTS (dark theme)
@@ -33,12 +43,14 @@ type FormState = {
   firstname: string;
   middlename: string;
   lastname: string;
-  contact: string;
   email: string;
   address: string;
   opening_balance: string;
 };
-type FieldErrors = Partial<Record<keyof FormState, string>>;
+
+/** Contacts editor row — `key` React-local, `id` DB (edit me load hone par). */
+type ContactRow = ClientContactInput & { key: number };
+type FieldErrors = Partial<Record<keyof FormState, string>> & { contact?: string };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VALIDATION
@@ -49,13 +61,6 @@ function validate(form: FormState): FieldErrors {
   if (!form.firstname.trim()) e.firstname = "First name is required";
   if (!form.lastname.trim()) e.lastname = "Last name is required";
 
-  if (!form.contact.trim()) {
-    e.contact = "Contact number is required";
-  } else if (!/^[0-9]{10}$/.test(form.contact.trim())) {
-    e.contact = "Enter valid 10-digit number";
-  }
-
-  // BUG FIX — Email optional: only validate if user actually typed something
   if (form.email.trim()) {
     const emailRe = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     const mobileRe = /^[0-9]{10}$/;
@@ -90,11 +95,23 @@ export default function ManageClientPage() {
     firstname: "",
     middlename: "",
     lastname: "",
-    contact: "",
     email: "",
     address: "",
     opening_balance: "0.00",
   });
+
+  const nextKey = useRef(1);
+  const mkRow = (p?: Partial<ContactRow>): ContactRow => ({
+    key: nextKey.current++,
+    name: "",
+    label: "Mobile",
+    phone: "",
+    is_primary: false,
+    ...p,
+  });
+  const [rows, setRows] = useState<ContactRow[]>(() => [
+    { key: 0, name: "", label: "Mobile", phone: "", is_primary: true },
+  ]);
 
   // Auto-dismiss toast
   useEffect(() => {
@@ -108,23 +125,41 @@ export default function ManageClientPage() {
     if (!isEdit || !clientId) return;
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from("client_list")
-          .select("firstname, middlename, lastname, contact, email, address, opening_balance")
-          .eq("id", clientId)
-          .eq("delete_flag", 0)
-          .single();
+        const [{ data, error }, contactRows] = await Promise.all([
+          supabase
+            .from("client_list")
+            .select("firstname, middlename, lastname, contact, email, address, opening_balance")
+            .eq("id", clientId)
+            .eq("delete_flag", 0)
+            .single(),
+          fetchClientContacts(clientId).catch(() => []),
+        ]);
         if (error) throw error;
         if (data)
           setForm({
             firstname: data.firstname || "",
             middlename: data.middlename || "",
             lastname: data.lastname || "",
-            contact: data.contact || "",
             email: data.email || "",
             address: data.address || "",
             opening_balance: data.opening_balance?.toString() || "0.00",
           });
+        // Contacts editor: DB rows already hain → unhe render (primary pehle).
+        // Nahin → legacy primary `contact` se single row banao.
+        if (contactRows.length > 0) {
+          setRows(
+            contactRows.map((c) => ({
+              key: nextKey.current++,
+              id: c.id,
+              name: c.name || "",
+              label: c.label || "Mobile",
+              phone: c.phone || "",
+              is_primary: !!c.is_primary,
+            }))
+          );
+        } else if ((data?.contact ?? "").trim()) {
+          setRows([mkRow({ is_primary: true, phone: (data?.contact ?? "").trim() })]);
+        }
       } catch (err) {
         console.error("fetch error:", err instanceof Error ? err.message : JSON.stringify(err));
         setToast({ type: "error", msg: "Client details load nahi ho paye!" });
@@ -142,6 +177,40 @@ export default function ManageClientPage() {
     if (submitted) setErrors(validate(updated));
   };
 
+  // ── CONTACTS EDITOR ─────────────────────────────────────────────────────
+  const updateRow = (key: number, patch: Partial<ClientContactInput>) => {
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.key !== key) return r;
+        return { ...r, ...patch };
+      })
+    );
+    if (patch.is_primary) {
+      setRows((prev) => prev.map((r) => ({ ...r, is_primary: r.key === key })));
+    }
+    if (submitted) setErrors((e) => ({ ...e, contact: undefined }));
+  };
+
+  const updatePhone = (key: number, value: string) => {
+    const digits = value.replace(/\D/g, "");
+    setRows((prev) => prev.map((r) => (r.key === key ? { ...r, phone: digits } : r)));
+    if (submitted) setErrors((e) => ({ ...e, contact: undefined }));
+  };
+
+  const addRow = () => setRows((prev) => [...prev, mkRow()]);
+
+  const removeRow = (key: number) => {
+    setRows((prev) => {
+      const next = prev.filter((r) => r.key !== key);
+      if (next.length === 0) return [mkRow()];
+      // Nikalte hi primary chali gayi → pehli row promote karo
+      if (!next.some((r) => r.is_primary)) {
+        next[0] = { ...next[0], is_primary: true };
+      }
+      return next;
+    });
+  };
+
   // ── SUBMIT ──────────────────────────────────────────────────────────────
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,9 +219,21 @@ export default function ManageClientPage() {
     if (loading) return;
 
     setSubmitted(true);
+
+    // Contacts first — normalize/dedup + primary enforcement (DB constraint mirror)
+    const { contacts, error: contactErr } = normalizeContacts(rows);
+    setErrors((prev) => ({ ...prev, contact: contactErr || undefined }));
+    if (contactErr) return;
+
     const fieldErrors = validate(form);
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
+      return;
+    }
+
+    const primary = contacts.find((c) => c.is_primary);
+    if (!primary) {
+      setErrors((prev) => ({ ...prev, contact: "Ek number primary (star) hona chahiye." }));
       return;
     }
 
@@ -164,7 +245,7 @@ export default function ManageClientPage() {
         firstname: form.firstname.trim(),
         middlename: form.middlename.trim() || null,
         lastname: form.lastname.trim(),
-        contact: form.contact.trim(),
+        contact: primary.phone,
         // BUG FIX — email NOT NULL in DB:
         // MySQL schema has `email text NOT NULL` — migrated to Supabase with same constraint.
         // Saving null crashes with NOT NULL violation.
@@ -180,7 +261,8 @@ export default function ManageClientPage() {
           .update({ ...payload, date_updated: new Date().toISOString() })
           .eq("id", clientId);
         if (error) throw error;
-        setToast({ type: "success", msg: "Client update ho gaya! ✅" });
+        await syncClientContacts(clientId, contacts);
+        setToast({ type: "success", msg: "Client + contacts update ho gaye! ✅" });
         setTimeout(() => router.replace("/clients"), 1000);
       } else {
         // BUG FIX — DUPLICATE KEY (client_list_pkey):
@@ -195,25 +277,37 @@ export default function ManageClientPage() {
         //
         // Code-level safeguard: we do NOT pass any id in the insert payload —
         // let Supabase auto-generate it from the sequence.
-        const { error } = await supabase.from("client_list").insert([
-          {
-            ...payload,
-            delete_flag: 0,
-            date_created: new Date().toISOString(),
-          },
-        ]);
-        if (error) {
-          // Give user a helpful message for the known sequence bug
-          if (error.message?.includes("duplicate key") || error.code === "23505") {
+        let newId: number;
+        try {
+          const res = await supabase
+            .from("client_list")
+            .insert([
+              {
+                ...payload,
+                delete_flag: 0,
+                date_created: new Date().toISOString(),
+              },
+            ])
+            .select("id")
+            .single();
+          if (res.error) throw res.error;
+          if (!res.data?.id) {
+            throw new Error("Client insert fail — dobara try karo.");
+          }
+          newId = res.data.id;
+        } catch (insErr) {
+          const e = insErr as { code?: string; message?: string };
+          if (e?.message?.includes("duplicate key") || e?.code === "23505") {
             throw new Error(
               "Database sequence error! Supabase SQL Editor mein yeh run karo:\n" +
                 "SELECT setval(pg_get_serial_sequence('client_list','id'), (SELECT MAX(id) FROM client_list));\n" +
                 "Phir dobara try karo."
             );
           }
-          throw error;
+          throw insErr;
         }
-        setToast({ type: "success", msg: "New client add ho gaya! ✅" });
+        await syncClientContacts(newId, contacts);
+        setToast({ type: "success", msg: "New client + contacts add ho gaye! ✅" });
         setTimeout(() => router.replace("/clients"), 1000);
       }
     } catch (err) {
@@ -354,33 +448,96 @@ export default function ManageClientPage() {
               </div>
             </div>
 
-            {/* Contact */}
-            <div>
-              <label className={labelCls}>
-                WhatsApp / Contact <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="tel"
-                placeholder="10-digit mobile number"
-                maxLength={10}
-                value={form.contact}
-                onChange={(e) => handleChange("contact", e.target.value.replace(/\D/g, ""))}
-                className={`${inputCls} ${errors.contact ? "border-red-500" : ""}`}
-              />
+            {/* Contact Numbers — multi-contact editor (client_contacts) */}
+            <div className="rounded-xl border border-[#21293d] bg-[#12161f] p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className={labelCls + " mb-0"}>
+                  Contact Numbers <span className="text-red-500">*</span>
+                </label>
+                <span className="text-[9px] text-slate-600 font-semibold">
+                  star = primary · name = kaun ka number
+                </span>
+              </div>
+
+              {rows.map((r, i) => (
+                <div key={r.key} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <button
+                    type="button"
+                    onClick={() => updateRow(r.key, { is_primary: true })}
+                    className={`flex-shrink-0 w-9 h-9 rounded-lg border flex items-center justify-center transition-all ${
+                      r.is_primary
+                        ? "bg-amber-500/15 border-amber-500/40 text-amber-400"
+                        : "bg-[#111520] border-[#21293d] text-slate-700 hover:text-slate-400"
+                    }`}
+                    title={r.is_primary ? "Primary" : "Primary banao"}
+                  >
+                    <Star size={14} fill={r.is_primary ? "currentColor" : "none"} />
+                  </button>
+
+                  <input
+                    type="text"
+                    placeholder={i === 0 ? "Naam (Papa/Bhai/...) optional" : "Naam (optional)"}
+                    value={r.name}
+                    onChange={(e) => updateRow(r.key, { name: e.target.value })}
+                    className={`${inputCls} sm:w-40`}
+                  />
+
+                  <select
+                    value={r.label}
+                    onChange={(e) => updateRow(r.key, { label: e.target.value })}
+                    className={`${inputCls} sm:w-32 text-slate-400`}
+                  >
+                    {CONTACT_LABELS.map((l) => (
+                      <option key={l} value={l}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+
+                  <input
+                    type="tel"
+                    placeholder="10-digit mobile"
+                    maxLength={12}
+                    value={r.phone}
+                    onChange={(e) => updatePhone(r.key, e.target.value)}
+                    className={`${inputCls} font-mono ${
+                      r.is_primary && errors.contact ? "border-red-500" : ""
+                    }`}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => removeRow(r.key)}
+                    className="flex-shrink-0 w-9 h-9 rounded-lg border border-[#21293d] bg-[#111520] text-slate-600 hover:text-red-400 hover:border-red-500/40 flex items-center justify-center transition-all"
+                    title="Number hatayein"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+
               {errors.contact && <p className={errCls}>{errors.contact}</p>}
+
+              <button
+                type="button"
+                onClick={addRow}
+                className="flex items-center gap-1.5 text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors mt-1"
+              >
+                <Plus size={14} /> Ek aur number add karo
+              </button>
             </div>
 
             {/* Email — OPTIONAL */}
             <div>
               <label className={labelCls}>
-                Email or Secondary Mobile{" "}
+                Email{" "}
                 <span className="text-slate-600 normal-case font-semibold text-[9px]">
                   (optional)
                 </span>
               </label>
               <input
                 type="text"
-                placeholder="example@gmail.com ya secondary mobile"
+                placeholder="example@gmail.com"
                 value={form.email}
                 onChange={(e) => handleChange("email", e.target.value)}
                 className={`${inputCls} ${errors.email ? "border-red-500" : ""}`}
@@ -389,7 +546,7 @@ export default function ManageClientPage() {
               {/* Hint that it's truly optional */}
               {!errors.email && (
                 <p className="text-[9px] text-slate-700 mt-1">
-                  Khali chhod sakte hain — zaruri nahi
+                  Secondary mobile upar contact numbers me add karo
                 </p>
               )}
             </div>

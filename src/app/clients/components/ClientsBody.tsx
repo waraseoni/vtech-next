@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 import { safeImageSrc } from "@/lib/image-utils";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
-import { getBalanceMeta, daysSince, inr, type Client } from "./clientListHelpers";
+import { getBalanceMeta, daysSince, inr, type Client, type ClientContactLite } from "./clientListHelpers";
 import dynamic from "next/dynamic";
 
 const ClientChart = dynamic(() => import("@/app/clients/components/ClientChart"), {
@@ -92,6 +92,7 @@ export default function ClientsBody({
     "welcome" | "reminder" | "followup" | "offer" | "greeting" | "custom"
   >("welcome");
   const [waText, setWaText] = useState("");
+  const [waSelectedPhone, setWaSelectedPhone] = useState<string>("");
 
   // Bulk WhatsApp
   const [selectedClients, setSelectedClients] = useState<Set<number>>(new Set());
@@ -172,6 +173,7 @@ export default function ClientsBody({
     const tpl = resolveTemplate(firmInfo, WA_TEMPLATE_KEY[at]);
     setWaClient(client);
     setWaMsgType(at);
+    setWaSelectedPhone(client.contacts?.find((c) => c.is_primary)?.phone || client.contacts?.[0]?.phone || client.contact);
     setWaText(
       substituteTemplate(tpl, {
         client_name: client.name,
@@ -194,12 +196,13 @@ export default function ClientsBody({
     );
   };
   const sendWhatsApp = () => {
-    if (!waClient?.contact) {
+    const phone = waSelectedPhone || waClient?.contact || "";
+    if (!phone) {
       alert("Phone number nahi hai!");
       return;
     }
     window.open(
-      `https://wa.me/91${waClient.contact.replace(/\D/g, "")}?text=${encodeURIComponent(waText)}`,
+      `https://wa.me/91${phone.replace(/\D/g, "")}?text=${encodeURIComponent(waText)}`,
       "_blank"
     );
     setWaModal(false);
@@ -1356,11 +1359,38 @@ export default function ClientsBody({
                                 : "Custom"}
                     </button>
                   ))}
-                </div>
+</div>
               </div>
               <div>
                 <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">
-                  Message
+                  Send To
+                </label>
+                <select
+                  value={waSelectedPhone}
+                  onChange={(e) => setWaSelectedPhone(e.target.value)}
+                  className="w-full theme-input rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:border-green-500 transition"
+                >
+                  {(() => {
+                    const opts: { label: string; phone: string }[] = (waClient?.contacts?.length
+                      ? waClient.contacts
+                      : waClient?.contact
+                        ? [({ name: null, label: "Mobile", phone: waClient.contact, is_primary: true } satisfies ClientContactLite)]
+                        : []
+                    ).map((c) => ({
+                      label: [c.name, c.label, c.is_primary ? "★" : ""].filter(Boolean).join(" · "),
+                      phone: c.phone,
+                    }));
+                    return opts.map((o) => (
+                      <option key={o.phone} value={o.phone}>
+                        {o.phone} — {o.label}
+                      </option>
+                    ));
+                  })()}
+                </select>
+              </div>
+              <div>
+                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">
+                  Message Type
                 </label>
                 <textarea
                   value={bulkWaText}

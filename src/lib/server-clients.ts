@@ -34,6 +34,16 @@ export type Client = {
   last_txn_date: string | null;
   image_path?: string;
   login_allowed: boolean;
+  /** Multi-contact (client_contacts) — optional: undefined jab table nahi hai. */
+  contacts?: ClientContactLite[];
+};
+
+export type ClientContactLite = {
+  id?: number;
+  name: string | null;
+  label: string;
+  phone: string;
+  is_primary: boolean;
 };
 
 type DbRow = { [key: string]: unknown };
@@ -113,6 +123,38 @@ function buildClientRow(c: ClientRow, fin: RpcFinancialRow | undefined): Client 
     image_path: c.image_path || undefined,
     login_allowed: !!c.login_allowed,
   };
+}
+
+/** Multi-contact bulk load. Migration nahi laga → graceful degrade (undefined). */
+async function fetchContacts(
+  supabase: Awaited<ReturnType<typeof getServerSupabase>>,
+  ids: number[]
+): Promise<Map<number, ClientContactLite[]> | undefined> {
+  if (ids.length === 0) return new Map();
+  try {
+    const { data, error } = await supabase
+      .from("client_contacts")
+      .select("id, client_id, name, label, phone, is_primary")
+      .in("client_id", ids)
+      .order("is_primary", { ascending: false })
+      .order("id", { ascending: true });
+    if (error) return undefined;
+    const map = new Map<number, ClientContactLite[]>();
+    for (const row of (data as (ClientContactLite & { client_id: number })[] | null) || []) {
+      const list = map.get(row.client_id) ?? [];
+      list.push({
+        id: row.id,
+        name: row.name,
+        label: row.label,
+        phone: row.phone,
+        is_primary: row.is_primary,
+      });
+      map.set(row.client_id, list);
+    }
+    return map;
+  } catch {
+    return undefined;
+  }
 }
 
 /** Fast path: one RPC aggregates all financial rows in PostgreSQL (see migration). */
@@ -246,24 +288,20 @@ export async function fetchClientsPageData(
   const finPromise = fetchFinancialsViaRpc(supabase).catch(() => null);
 
   const [userRole, sysResult, clsResult, finResult] = await Promise.all([
-    options.userRole
-      ? Promise.resolve(options.userRole)
-      : (async () => {
-          try {
-            const {
-              data: { user },
-            } = await supabase.auth.getUser();
-            if (!user) return "staff";
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("role")
-              .eq("id", user.id)
-              .maybeSingle();
-            return profile?.role ?? "staff";
-          } catch {
-            return "staff";
-          }
-        })(),
+    options.userRole ? Promise.resolve(options.userRole) : (async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return "staff";
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+          return profile?.role ?? "staff";
+        } catch {
+          return "staff";
+        }
+      })(),
 
     supabase
       .from("system_info")
@@ -294,8 +332,13 @@ export async function fetchClientsPageData(
   const ids = clientRows.map((c) => c.id);
 
   const finMap = finResult ?? (await fetchFinancialsLegacy(supabase, ids));
+  const contactsMap = await fetchContacts(supabase, ids);
 
-  const built = clientRows.map((c) => buildClientRow(c, finMap.get(c.id)));
+  const built = clientRows.map((c) => {
+    const row = buildClientRow(c, finMap.get(c.id));
+    if (contactsMap && contactsMap.has(c.id)) row.contacts = contactsMap.get(c.id);
+    return row;
+  });
   built.sort((a, b) => b.balance - a.balance);
 
   return { clients: built, firmInfo, userRole };

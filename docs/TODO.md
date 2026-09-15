@@ -171,6 +171,25 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 ---
 
+## Project: Client Multi-Contact (1+ numbers, Call/WhatsApp har number par)
+
+> Ek client ke 1+ mobile numbers — family/relative numbers kaun ka hai stays tracked.
+> Mirror of supplier contacts pattern, par flat (`client_contacts`) — suppliers ke
+> persons+phones ki zarurat nahi (client khud ek person hai).
+
+### Implemented — COMPLETE (local, not yet committed/pushed)
+- [x] Migration `supabase/migrations/20260921_client_contacts.sql` — table: id, client_id (FK→`client_list` CASCADE), name (rishta), label (Mobile/Office/WhatsApp/Shop/Other), phone, is_primary, date_created/updated. Unique(client_id, lower(trim(phone))), **partial unique index single-primary per client**. RLS staff-gate + grants + touch trigger. Folded into idempotent full schema.
+- [x] `src/lib/clientContacts.ts` — `ClientContact`/`ClientContactInput` types, `CONTACT_LABELS`, `normalizeContacts` (dedup + one-primary self-heal), `fetchClientContacts`, `fetchClientContactsBulk`, `syncClientContacts` (diff-by-phone: update/insert/delete), `telLink`/`smsLink`/`waChatLink`
+- [x] Client form (`clients/new` + `clients/[id]/edit` ManageClientPage): old single "WhatsApp / Contact" input replaced by **Contact Numbers editor** — star=primary, name+label per number, add/remove rows; primary phone auto-writes `client_list.contact` (legacy back-compat); save syncs via `syncClientContacts`
+- [x] Client view page (`clients/[id]/view`): header "+N" extra-count badge; **Contact Numbers card** under quick tiles — har number par Call/WhatsApp/SMS buttons (name/label/star)
+- [x] Client list (`ClientsBody` + `ClientCard`/`ClientTable`): list API ab `client.contacts` attach karta hai (server-side bulk `fetchContacts` in `server-clients.ts`); **WhatsApp modal ab "Send To" phone picker** — multi-contact client ke liye kisi bhi number par bhejo (primary default). Bulk WhatsApp primary hi use karta hai (intentional)
+- [x] Types: `Client.contacts?: ClientContactLite[]` (`clientListHelpers.ts` + `server-clients.ts`); migration nahi laga to graceful degrade (contacts → undefined)
+
+### USER ACTION — apply migration
+- [ ] `20260921_client_contacts.sql` Supabase SQL Editor me run karo (idempotent; full schema me folded hai)
+
+---
+
 ## Open Questions / Notes
 - Comments Hinglish me; no emojis in UI.
 - Sanitized: migration must be re-run if any part fails midway (idempotent file).
