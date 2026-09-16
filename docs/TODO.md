@@ -190,6 +190,24 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 ---
 
+## Project: BOM Checker — Phase 3 (Saved Templates)
+
+> BOM Checker (`/inventory/bom-check`) Phase 1 (core check) + Phase 2 (AI summary)
+> already live. Phase 3 = reusable component lists (bom_checker_plan.md §5 Phase 3).
+
+### Implemented — COMPLETE (Phase 3, committed 2026-09-16)
+- [x] Migration `supabase/migrations/20260922_bom_templates.sql` — table (id, name, description, items jsonb, created_by), FK `created_by → profiles.id ON DELETE SET NULL`, name/creator indexes, RLS `rlslock_bom_templates_staff` (is_frontend_staff), touch trigger, grants + sequence grants. Folded into idempotent full schema.
+- [x] `src/app/api/bom-templates/route.ts` — GET list (with items) + POST create; `requireStaffWithRole()` cookie+RLS, no service role; server-side items validation
+- [x] `src/app/api/bom-templates/[id]/route.ts` — GET single + PUT (name/desc/items partial) + DELETE
+- [x] `src/lib/bomTemplates.ts` — `BomTemplateItem`/`BomTemplate` types + `itemsToLines()`
+- [x] `src/app/inventory/bom-check/page.tsx` — "Save as Template" button + modal (name/desc); Saved Templates list (Load → textarea / Edit / Delete); save attaches best-match product_id from catalog; hooks before early-return guard. Phase 1 + 2 untouched.
+- [x] Verified: tsc clean, eslint clean, vitest 103/103 green
+
+### USER ACTION — apply migration
+- [ ] `20260922_bom_templates.sql` Supabase SQL Editor me run karo (idempotent; full schema me folded hai)
+
+---
+
 ## Open Questions / Notes
 - Comments Hinglish me; no emojis in UI.
 - Sanitized: migration must be re-run if any part fails midway (idempotent file).

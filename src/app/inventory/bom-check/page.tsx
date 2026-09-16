@@ -1,8 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { fetchStockByProducts } from "@/lib/inventoryStock";
+import { itemsToLines, type BomTemplate } from "@/lib/bomTemplates";
 import PageLoader from "@/components/PageLoader";
 import {
   ClipboardList,
@@ -15,6 +16,11 @@ import {
   XCircle,
   Layers,
   Search,
+  Save,
+  Bookmark,
+  Pencil,
+  Trash2,
+  X,
 } from "lucide-react";
 
 // ── BOM input parsing (spec §2.2) ───────────────────────────────────────────
@@ -188,6 +194,29 @@ export default function BomCheckPage() {
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // ── Saved templates (Phase 3) — states + load hook (hooks sab guard se pehle) ──
+  const [templates, setTemplates] = useState<BomTemplate[]>([]);
+  const [tmplModal, setTmplModal] = useState<{ mode: "save" | "edit"; id?: number } | null>(null);
+  const [tmplName, setTmplName] = useState("");
+  const [tmplDesc, setTmplDesc] = useState("");
+  const [tmplBusy, setTmplBusy] = useState(false);
+  const [tmplMsg, setTmplMsg] = useState<string | null>(null);
+
+  const loadTemplates = useCallback(async () => {
+    try {
+      const res = await fetch("/api/bom-templates", { cache: "no-store" });
+      const data = (await res.json().catch(() => ({}))) as { templates?: BomTemplate[] };
+      if (!res.ok) return;
+      setTemplates(data.templates ?? []);
+    } catch {
+      /* ignore — template section khali rehta hai */
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadTemplates();
+  }, [loadTemplates]);
+
   // ── Guard ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     getCachedUser().then(({ data: { user } }) => {
@@ -246,6 +275,94 @@ export default function BomCheckPage() {
       return prods;
     } finally {
       setLoadingCatalog(false);
+    }
+  };
+
+  // ── Saved templates (Phase 3) — handlers (guard ke baad, plain functions) ──
+  const openSaveModal = () => {
+    setTmplName("");
+    setTmplDesc("");
+    setTmplMsg(null);
+    setTmplModal({ mode: "save" });
+  };
+
+  const editTemplate = (t: BomTemplate) => {
+    setTmplName(t.name);
+    setTmplDesc(t.description || "");
+    setTmplMsg(null);
+    setTmplModal({ mode: "edit", id: t.id });
+  };
+
+  const loadTemplate = (t: BomTemplate) => {
+    if (!t.items || t.items.length === 0) return;
+    setInput(itemsToLines(t.items));
+    setLines(null);
+    setAnalysis(null);
+    setError(null);
+    setTmplMsg(null);
+  };
+
+  /** Current textarea ko items me convert karo (best product match attach). */
+  const buildSaveItems = async (): Promise<
+    { product_id: number | null; name: string; qty: number }[]
+  > => {
+    const prodCatalog: Product[] = catalog.length > 0 ? catalog : await loadCatalog();
+    const parsed = input
+      .split("\n")
+      .map(parseBOMLine)
+      .filter((x): x is { name: string; qty: number } => x !== null);
+    return parsed.map((p) => {
+      const best = bestMatch(p.name, prodCatalog);
+      return { product_id: best?.id ?? null, name: best?.name ?? p.name, qty: p.qty };
+    });
+  };
+
+  const submitTemplate = async () => {
+    if (!tmplName.trim()) {
+      setTmplMsg("Template ka naam chahiye.");
+      return;
+    }
+    const items = await buildSaveItems();
+    if (items.length === 0) {
+      setTmplMsg("Textarea me koi component line nahi hai.");
+      return;
+    }
+    setTmplBusy(true);
+    setTmplMsg(null);
+    try {
+      const editing = tmplModal?.mode === "edit" && tmplModal.id;
+      const res = await fetch(editing ? `/api/bom-templates/${editing}` : "/api/bom-templates", {
+        method: editing ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: tmplName, description: tmplDesc, items }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string; template?: BomTemplate };
+      if (!res.ok) {
+        setTmplMsg(data.error || "Template save nahi hua.");
+        return;
+      }
+      setTmplModal(null);
+      await loadTemplates();
+    } catch {
+      setTmplMsg("Server error — dobara try karo.");
+    } finally {
+      setTmplBusy(false);
+    }
+  };
+
+  const deleteTemplate = async (t: BomTemplate) => {
+    if (!confirm(`Template '${t.name}' delete karein?`)) return;
+    setTmplMsg(null);
+    try {
+      const res = await fetch(`/api/bom-templates/${t.id}`, { method: "DELETE" });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setTmplMsg(data.error || "Template delete nahi hua.");
+        return;
+      }
+      setTemplates((prev) => prev.filter((x) => x.id !== t.id));
+    } catch {
+      setTmplMsg("Server error — dobara try karo.");
     }
   };
 
@@ -467,6 +584,21 @@ export default function BomCheckPage() {
               rows={10}
               className="w-full bg-white dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/60 resize-y"
             />
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                onClick={openSaveModal}
+                disabled={!input.trim()}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#0d1117] dark:hover:bg-[#21293d] border border-slate-200 dark:border-[#21293d] text-xs font-bold text-slate-600 dark:text-slate-300 hover:border-cyan-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Abhi likha hua BOM template ke roop me save karo"
+              >
+                <Save size={13} /> Save as Template
+              </button>
+              {tmplMsg && (
+                <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400">
+                  {tmplMsg}
+                </span>
+              )}
+            </div>
             <button
               onClick={() => void runCheck()}
               disabled={loadingCatalog || !input.trim()}
@@ -491,6 +623,65 @@ export default function BomCheckPage() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="mt-5 pt-4 border-t border-slate-200 dark:border-[#21293d]">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-600">
+                  <Bookmark size={12} />
+                  Saved Templates
+                </div>
+                <button
+                  onClick={() => void loadTemplates()}
+                  title="Refresh"
+                  className="text-slate-400 dark:text-slate-600 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                >
+                  <RefreshCw size={12} />
+                </button>
+              </div>
+              {templates.length === 0 ? (
+                <p className="text-xs text-slate-500 dark:text-slate-600">
+                  Koi saved template nahi — save karke re-use karo.
+                </p>
+              ) : (
+                <div className="space-y-1.5">
+                  {templates.map((t) => (
+                    <div
+                      key={t.id}
+                      className="flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] px-2.5 py-1.5"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <button
+                          onClick={() => loadTemplate(t)}
+                          title="Textarea me load karo"
+                          className="block w-full text-left text-xs font-bold text-slate-800 dark:text-slate-200 truncate hover:text-cyan-700 dark:hover:text-cyan-400 transition-colors"
+                        >
+                          {t.name}
+                        </button>
+                        {t.description && (
+                          <p className="truncate text-[10px] text-slate-500 dark:text-slate-600">
+                            {t.description}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => editTemplate(t)}
+                        title="Edit"
+                        className="p-1.5 rounded-lg text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-[#21293d] transition-colors"
+                      >
+                        <Pencil size={12} />
+                      </button>
+                      <button
+                        onClick={() => void deleteTemplate(t)}
+                        title="Delete"
+                        className="p-1.5 rounded-lg text-slate-500 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-200 dark:hover:bg-[#21293d] transition-colors"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -687,6 +878,59 @@ export default function BomCheckPage() {
           )}
         </div>
       </div>
+
+      {/* ── Template save/edit modal (Phase 3) ── */}
+      {tmplModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm bg-white dark:bg-[#161b25] border border-slate-200 dark:border-[#21293d] rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
+                {tmplModal.mode === "edit" ? "Edit Template" : "Save as Template"}
+              </h3>
+              <button
+                onClick={() => setTmplModal(null)}
+                disabled={tmplBusy}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-[#21293d] transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <input
+              value={tmplName}
+              onChange={(e) => setTmplName(e.target.value)}
+              placeholder="Template naam (e.g. Motor Driver BOM)"
+              className="w-full bg-white dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/60"
+            />
+            <textarea
+              value={tmplDesc}
+              onChange={(e) => setTmplDesc(e.target.value)}
+              rows={2}
+              placeholder="Note (optional)"
+              className="w-full bg-white dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/60 resize-y"
+            />
+            {tmplMsg && (
+              <p className="text-xs font-semibold text-rose-600 dark:text-rose-400">{tmplMsg}</p>
+            )}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setTmplModal(null)}
+                disabled={tmplBusy}
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] text-xs font-bold text-slate-600 dark:text-slate-300 disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => void submitTemplate()}
+                disabled={tmplBusy || !tmplName.trim()}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white text-xs font-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {tmplBusy ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
