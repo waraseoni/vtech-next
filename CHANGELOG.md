@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.22.1](https://github.com/waraseoni/vtech-next/compare/v1.22.0...v1.22.1) (2026-09-16)
+
+### Bug Fixes
+
+* **bom-templates:** align API/lib columns to date_created/date_updated ([ad07084](https://github.com/waraseoni/vtech-next/commit/ad07084242ace67bfc8a688e8a3f24bd3375820f))
+
 ## [1.22.0](https://github.com/waraseoni/vtech-next/compare/v1.21.0...v1.22.0) (2026-09-16)
 
 ### Features
