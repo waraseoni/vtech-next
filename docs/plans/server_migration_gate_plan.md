@@ -1,6 +1,6 @@
 # Server Components Migration — Gate Plan (Decision Record)
 
-*Status: DECIDED — complete migration abhi NOT start. G1 gate-split DONE (2026-09-15), pilot (`clients`) DONE + measured (LCP −48%, TTI −8%, 28 Aug). Remaining trigger: sirf **G3 off-peak window**. Ye file decision + trigger conditions ka permanent record hai.*
+*Status: DECIDED — complete migration abhi NOT start. G1 gate-split DONE (2026-09-15), pilot (`clients`) DONE + measured (LCP −48%, TTI −8%, 28 Aug). G3 **DEFERRED (season started 2026-09-15)** — peak me freeze, post-season window milte hi execute. Ye file decision + trigger conditions ka permanent record hai.*
 *Kept: 28 Aug 2026. Author: opencode session (perf module 1–3 ke baad).*
 *Updated: 15 Sep 2026 (G1 + cookie layer + pilot complete — is session).*
 
@@ -44,7 +44,7 @@ Migration shuru karne ke liye **ALL 3 must be YES**:
 |---|-----------|---------------|--------------------------|
 | **G1** | RootClient gate server-shell-aware | ✅ **YES** | Safe-yes achieved (2026-09-15): standalone gate-split merged — splash gate `loading` → `authReady` reframe (positive semantics), theme logic `useAppTheme` hook me nikal li (RootClient/useAppBoot se), boot-guard/watchdog/idle eviction preserved. Regression: tsc clean, eslint clean, 103/103 vitest green. |
 | **G2** | Baseline metrics captured | ✅ **YES** | Bundle + Web-Vitals (Lighthouse) baseline recorded in `docs/plans/perf_baseline.md`. Live: FCP ~1.1s, LCP ~5.6–10.2s, TBT ~1–2.7s across key pages (throttled baseline). |
-| **G3** | Dedicated off-peak window | ❌ NO | Koi freeze/refactor sprint scheduled nahi. Safe-yes = ek window hai jisme production churn low hai + rollback easy. |
+| **G3** | Dedicated off-peak window | ⏳ **DEFERRED** | Season start (2026-09-15): work load high, koi calm period available nahi → **freeze** during peak. Wide migration + I6 Phase-2 dono isi window par wait karte hain. Post-season re-evaluate (window milte hi execute). |
 
 ---
 
@@ -129,4 +129,4 @@ Pilot = **`clients/page.tsx`** (1778 lines, sabse bada, highest traffic, RLS-cri
 - [x] Pilot page (`clients`) split complete, typecheck/lint/tests/build green — server `page.tsx` + `ClientsBody` live
 - [x] Pilot vs baseline measured — substantiate gain confirm — **verdict CLEAR-YES** (perf_baseline.md Sessions 2–5, 28 Aug): `/clients` **LCP 10.13s → 5.2–5.9s (−42–48%), TTI 10.40s → 9.6s (−8%)**; /mechanics LCP 5.4s/TTI 6.7s (well below /jobs /clients baselines), /expenses, /payments bhi SSR data first-paint me — cookie+RLS pattern proven on 4 pages.
 
-> **Jab tak G3 (off-peak window) confirm nahi, wide migration shuru nahi.** Baaki sab (G1/G2/cookie/pilot/measurement) green hain.
+> **Jab tak G3 (off-peak window) confirm nahi, wide migration shuru nahi.** Status 2026-09-15: **season start → G3 DEFERRED, peak me freeze** — wide migration, I6 Phase-2, aur bade refactors abhi NOT. Baaki sab (G1/G2/cookie/pilot/measurement) green hain.
