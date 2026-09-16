@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.22.0](https://github.com/waraseoni/vtech-next/compare/v1.21.0...v1.22.0) (2026-09-16)
+
+### Features
+
+* **bom-check:** Phase 3 saved templates - save/load/edit/delete ([578f3b8](https://github.com/waraseoni/vtech-next/commit/578f3b82155b3123caabb83dc3c2cea3da9602fd))
+
 ## [1.21.0](https://github.com/waraseoni/vtech-next/compare/v1.20.0...v1.21.0) (2026-09-15)
 
 ### Features
