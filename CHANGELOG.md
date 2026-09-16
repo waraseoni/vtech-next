@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.22.2](https://github.com/waraseoni/vtech-next/compare/v1.22.1...v1.22.2) (2026-09-16)
+
+### Bug Fixes
+
+* **sync:** rebuild tables from Supabase OpenAPI each run - drop legacy composite PK drift ([d58fb11](https://github.com/waraseoni/vtech-next/commit/d58fb1156bb6212b4c6d1a946a4b67e7d80f0a6b))
+
 ## [1.22.1](https://github.com/waraseoni/vtech-next/compare/v1.22.0...v1.22.1) (2026-09-16)
 
 ### Bug Fixes
