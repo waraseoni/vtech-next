@@ -48,7 +48,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("bom_templates")
-    .select("id, name, description, items, created_by, created_at, updated_at")
+    .select("id, name, description, items, created_by, date_created, date_updated")
     .order("name", { ascending: true })
     .order("id", { ascending: true });
 
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       items: items as unknown as Record<string, unknown>[],
       created_by: session.user.id,
     })
-    .select("id, name, description, items, created_by, created_at, updated_at")
+    .select("id, name, description, items, created_by, date_created, date_updated")
     .single();
 
   if (error) {

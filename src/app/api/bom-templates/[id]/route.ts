@@ -48,7 +48,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
   const { data, error } = await auth.supabase
     .from("bom_templates")
-    .select("id, name, description, items, created_by, created_at, updated_at")
+    .select("id, name, description, items, created_by, date_created, date_updated")
     .eq("id", id)
     .maybeSingle();
 
@@ -88,7 +88,7 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
     .from("bom_templates")
     .update(patch)
     .eq("id", id)
-    .select("id, name, description, items, created_by, created_at, updated_at")
+    .select("id, name, description, items, created_by, date_created, date_updated")
     .maybeSingle();
 
   if (error) {

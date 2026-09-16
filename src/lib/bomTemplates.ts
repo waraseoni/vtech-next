@@ -20,8 +20,8 @@ export type BomTemplate = {
   description: string;
   items: BomTemplateItem[];
   created_by?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
+  date_created?: string | null;
+  date_updated?: string | null;
 };
 
 /** items ko text lines me wapas: "NE555 Timer IC - 2" (Check Stock ke liye). */
