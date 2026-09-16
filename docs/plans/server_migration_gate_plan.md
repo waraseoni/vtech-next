@@ -3,6 +3,7 @@
 *Status: DECIDED — complete migration abhi NOT start. G1 gate-split DONE (2026-09-15), pilot (`clients`) DONE + measured (LCP −48%, TTI −8%, 28 Aug). G3 **DEFERRED (season started 2026-09-15)** — peak me freeze, post-season window milte hi execute. Ye file decision + trigger conditions ka permanent record hai.*
 *Kept: 28 Aug 2026. Author: opencode session (perf module 1–3 ke baad).*
 *Updated: 15 Sep 2026 (G1 + cookie layer + pilot complete — is session).*
+*Updated: 16 Sep 2026 (G3 DEFERRED — season; Step C2 window-prep runbook added docs-only).*
 
 ---
 
@@ -78,6 +79,56 @@ Yeh migration ka **pre-requisite** hai. RootClient me pura change mat karo pehle
 2. Window ko **1 sprint (2–3 hafta)** rakho — isse aage extend mat karo.
 3. Rollback easy rakhne ke liye: har page ek **independent commit** par, har ek after full regression.
 
+### Step C2 — Window-prep runbook package ✅ READY (docs only, 2026-09-16 — execution G3 par ruka hua)
+
+Season ke baad wale window me **sab kuch pre-decided** ho taaki zero-decision execution ho.
+Project ready nahi hai — bas sab plan + list ready hai; run tabhi jab G3 SAFE-yes.
+
+#### 5.1 Battle-order — page-by-page migration (bounded list pages only)
+
+Pattern catalog: jo pages already cookie+RLS SSR me hain they **identity-level** (mechanics,
+expenses, payments, clients) → wahi pattern copy. Har page = server `page.tsx`
+(`fetch<X>PageData`) + client body (interactive). **1 page = 1 independent commit.**
+Weak spot: pages with heavy joins (jobs/dashboards/seller) Tier-2 rakh liye.
+
+| Order | Page | Tier | Dependency / risk | Notes |
+|---|---|---|---|---|
+| 1–4 | mechanics, expenses, payments, clients | **T1 — proof pattern** | standalone, RLS-straight joins | Pilot pattern is in production; these are replicates. |
+| 5 | suppliers | T1 | supplier_contacts phones join | bulk-attach server ok; phone picker stays client |
+| 6 | lenders / loans | T1 | loan cals (client-side) → server precompute? No — precompute server, keep `useMemo` client | mid-commit logic review |
+| 7 | stock (inventory) | T1 | product_locations join + location select | preserve bin/rack cascade |
+| 8–11 | purchase (orders), direct-sales, cash-flow, monthly-profit | **T2** | aggregation-heavy; auth-critical | server-side aggregation risk — CAREFUL, keep computation client where formula changes frequently |
+| 12–15 | sellers, jobs (list), dashboard cards, expenses-report | **T2** | jobs = transaction_list kind filter | dashboard card data → server (SSR numbers) |
+| 16+ | remaining bounded lists | T3 | low traffic | window ke aage koi bhi pending? **No** — close window after sprint |
+
+Rules:
+- **Sirf bounded list pages** is window me. Form/detail multi-step pages + billing logic pages strictly out (except pilot/mechanics/expenses/payments already done).
+- **`fetch<X>PageData` naam convention** maintain karo (`server-clients.ts`, `server-mechanics.ts`, …) — har page apna server lib file.
+- Admin/staff role filter **server-side**, client par sirf view/UX.
+
+#### 5.2 Per-page QA gate (HAR page ke liye mandatory, 30 min budget)
+
+- [ ] `npx tsc --noEmit` + `npx eslint <changed>` + `npx vitest run` (103/103) + `npm run build` green
+- [ ] Waterfall: SSR HTML → data first-paint (NO second `useEffect` fetch round-trip for initial data)
+- [ ] Role matrix: admin ✓ / staff ✓ / mechanic-limited … page guard matches pre-migration behavior
+- [ ] RLS: SELECT returns same row-set as old client fetch (compare counts on 2 roles)
+- [ ] Sort / search / filter / pagination unchanged (client body owns these)
+- [ ] Add/Edit/Delete mutations + post-mutation list refresh work
+- [ ] Detail link nav, empty state, error state intact
+- [ ] Perf: LCP/TTI ≤ pilot threshold (clients pilot: LCP −42–48%). Tune here.
+- [ ] Rollback commit hash recorded in this table (after release)
+
+Any page failing QA → **revert usi commit** (independent), page stays client-side; move on.
+
+#### 5.3 Rollback guide (documented, drill-ready)
+
+1. **1 page = 1 commit** (sab independent) → rollback = `git revert <commit>` — no cross-deps.
+2. Revert **reverse order**: last-migrated first (newest pattern risk sabse zyada).
+3. After revert: `npm run build && npx vitest run`; page falls back to old client fetch automatically (server body removed).
+4. **Gate-shut condition:** 2+ pages stall QA in a row OR any RLS leak found → stop window, revert batch, re-evaluate post-season. No heroics.
+5. Keep a **public release tag** before window starts → instant diff reference for garnishment-free rollback scope.
+6. Never combine migrations with feature commits during window (churn = rollback ambiguity).
+
 ---
 
 ## 5. Pilot page selection
@@ -128,5 +179,6 @@ Pilot = **`clients/page.tsx`** (1778 lines, sabse bada, highest traffic, RLS-cri
 - [x] Cookie `createServerClient` layer built + RLS-verified — `getServerSupabase`/`server-clients.ts` (already in use)
 - [x] Pilot page (`clients`) split complete, typecheck/lint/tests/build green — server `page.tsx` + `ClientsBody` live
 - [x] Pilot vs baseline measured — substantiate gain confirm — **verdict CLEAR-YES** (perf_baseline.md Sessions 2–5, 28 Aug): `/clients` **LCP 10.13s → 5.2–5.9s (−42–48%), TTI 10.40s → 9.6s (−8%)**; /mechanics LCP 5.4s/TTI 6.7s (well below /jobs /clients baselines), /expenses, /payments bhi SSR data first-paint me — cookie+RLS pattern proven on 4 pages.
+- [x] Window-prep runbook ready (docs only) — battle-order table (§5.1), per-page QA gate (§5.2), rollback guide (§5.3) — 2026-09-16; execution G3 ruka hua
 
 > **Jab tak G3 (off-peak window) confirm nahi, wide migration shuru nahi.** Status 2026-09-15: **season start → G3 DEFERRED, peak me freeze** — wide migration, I6 Phase-2, aur bade refactors abhi NOT. Baaki sab (G1/G2/cookie/pilot/measurement) green hain.
