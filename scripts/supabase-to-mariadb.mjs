@@ -516,6 +516,13 @@ async function main() {
     log(`\n[2/4] Tables bana raha hoon (${tables.length})...`);
     await conn.query("SET FOREIGN_KEY_CHECKS = 0");
     for (const t of tables) {
+      // Har run par DROP + recreate: MariaDB ab Supabase ka fresh mirror hai.
+      // Legacy PHP-era PK/FK/column drift nahi bachta — e.g. transaction_products
+      // ke MariaDB composite PK (transaction_id, product_id) se Supabase ka
+      // nullable product_id insert nahi hota tha (PK columns hamesha NOT NULL
+      // hote hain). Neeche wale maintenance steps naye tables par no-op hain,
+      // par safety-net ke liye rehne dete hain.
+      await conn.query(`DROP TABLE IF EXISTS \`${t.name}\``);
       await conn.query(createTableSQL(t));
     }
     await dropLegacyUniqueIndexes(conn, tables);
