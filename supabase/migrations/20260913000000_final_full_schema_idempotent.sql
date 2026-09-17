@@ -1115,6 +1115,9 @@ do $$ begin
   alter table public.purchase_orders add column if not exists received_date date;
   alter table public.purchase_orders add column if not exists date_created timestamp with time zone DEFAULT now() NOT NULL;
   alter table public.purchase_orders add column if not exists date_updated timestamp with time zone DEFAULT now() NOT NULL;
+
+  -- PO pricing flow: expenses (freight/handling) total — received at receive time
+  alter table public.purchase_orders add column if not exists expenses numeric(12,2) default 0;
 exception when duplicate_column then null; end $$;
 
 do $$ begin
@@ -3082,18 +3085,16 @@ GRANT ALL ON TABLE public.stock_adjustments TO authenticated;
 GRANT ALL ON TABLE public.stock_adjustments TO service_role;
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- I4 — PO PARTIAL RECEIPT + AUTO-REORDER
---   Fold-in of 20260915_po_partial_receipt.sql (isolated). Self-contained +
---   idempotent. Adds 'partially_received' to purchase_orders.status CHECK and
---   an atomic SECURITY DEFINER writer RPC `receive_po_receipt` that validates
---   per-line received qty <= outstanding server-side (defensive), writes the
---   inventory_list stock-in rows, bumps purchase_order_items.qty_received, and
---   sets PO status to partially_received/received. The touch_purchase_orders
---   trigger keeps date_updated fresh.
---   PLUS (2026-09-15, provenance 20260915_required_parts_receive_sync.sql):
---   receive par is PO se linked job_required_parts rows auto-update hote hain —
---   qty_received FIFO allocate (sabse purana open part pehle), fill hote hi
---   status = 2 (Arrived) → parts-pending report se auto-out.
+-- I4 — PO PARTIAL RECEIPT + AUTO-REORDER + PRICING FLOW
+--   Fold-in of 20260915_po_partial_receipt.sql + 20260918_po_pricing_flow.sql
+--   Self-contained + idempotent. Adds 'partially_received' to
+--   purchase_orders.status CHECK and an atomic SECURITY DEFINER writer RPC
+--   `receive_po_receipt` that validates per-line received qty <= outstanding
+--   server-side, writes inventory_list stock-in rows with unit_cost + sell_price,
+--   bumps purchase_order_items.qty_received, distributes PO-level expenses into
+--   purchase_cost, updates product_list.cost_price (weighted average) and
+--   product_list.price (sell price, first receive only), and syncs
+--   job_required_parts (FIFO). Sets PO status to partially_received/received.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- Extend purchase_orders.status CHECK to allow 'partially_received'
@@ -3112,9 +3113,12 @@ begin
 end $$;
 
 -- Atomic writer RPC: receive_po_receipt (SECURITY DEFINER + staff check)
+-- p_lines: [{"product_id": <int>, "qty": <int>, "unit_cost": <num>, "sell_price": <num>}]
+-- p_expenses: total PO-level expenses (distributed per-unit across all lines)
 CREATE OR REPLACE FUNCTION public.receive_po_receipt(
     p_po_id bigint,
-    p_lines jsonb
+    p_lines jsonb,
+    p_expenses numeric DEFAULT 0
 )
 RETURNS TABLE(
     item_id bigint,
@@ -3132,6 +3136,14 @@ declare
     v_outstanding integer;
     v_any_open boolean := false;
     v_still integer;
+    v_po_supplier_id bigint;
+    v_total_received numeric := 0;
+    v_new_purchase_cost numeric;
+    v_old_qty integer;
+    v_old_cost numeric;
+    v_new_qty integer;
+    v_total_expenses_per_unit numeric;
+    v_existing_sell_price numeric;
 begin
     if not public.is_frontend_staff() then
         raise exception 'permission denied: staff only';
@@ -3143,15 +3155,33 @@ begin
         raise exception 'lines is required (non-empty array)';
     end if;
 
+    -- fetch supplier_id from PO
+    select po.supplier_id into v_po_supplier_id
+      from public.purchase_orders po where po.id = p_po_id;
+
+    -- total qty being received (to distribute expenses per-unit)
+    select coalesce(sum((e->>'qty')::numeric), 0) into v_total_received
+      from jsonb_array_elements(p_lines) e;
+
+    -- per-unit expense distribution
+    if v_total_received > 0 and p_expenses > 0 then
+        v_total_expenses_per_unit := p_expenses / v_total_received;
+    else
+        v_total_expenses_per_unit := 0;
+    end if;
+
     for l in
         select (e->>'product_id')::bigint as product_id,
-               (e->>'qty')::integer as qty
+               (e->>'qty')::integer as qty,
+               coalesce((e->>'unit_cost')::numeric, 0) as unit_cost,
+               coalesce((e->>'sell_price')::numeric, 0) as sell_price
           from jsonb_array_elements(p_lines) e
     loop
         if l.product_id is null or l.qty is null or l.qty <= 0 then
             raise exception 'invalid line: product_id/qty required and qty > 0';
         end if;
 
+        -- lock outstanding row
         select poi.qty_ordered - poi.qty_received into v_outstanding
           from public.purchase_order_items poi
          where poi.purchase_order_id = p_po_id
@@ -3165,20 +3195,57 @@ begin
             raise exception 'receiving % for product % exceeds outstanding %', l.qty, l.product_id, v_outstanding;
         end if;
 
-        insert into public.inventory_list
-            (product_id, quantity, stock_date, supplier_id, purchase_cost,
-             purchase_order_id, date_created, date_updated)
-        select l.product_id, l.qty, current_date, po.supplier_id, poi.unit_cost,
-               p_po_id, now(), now()
-          from public.purchase_orders po
-          join public.purchase_order_items poi
-            on poi.purchase_order_id = po.id and poi.product_id = l.product_id
-         where po.id = p_po_id;
+        -- calculate per-unit purchase cost including distributed expenses
+        v_new_purchase_cost := l.unit_cost + v_total_expenses_per_unit;
 
-        update public.purchase_order_items poi
-           set qty_received = poi.qty_received + l.qty
-         where poi.purchase_order_id = p_po_id
-           and poi.product_id = l.product_id;
+        -- stock-in row with calculated purchase cost
+        INSERT INTO public.inventory_list
+            (product_id, quantity, stock_date, supplier_id, purchase_cost,
+             courier_charges, purchase_order_id, date_created, date_updated)
+        VALUES (
+            l.product_id, l.qty, current_date, v_po_supplier_id,
+            v_new_purchase_cost,
+            v_total_expenses_per_unit * l.qty,
+            p_po_id, now(), now()
+        );
+
+        -- bump received counter + preserve supplier unit_cost
+        UPDATE public.purchase_order_items poi
+           SET qty_received = poi.qty_received + l.qty,
+               unit_cost = CASE
+                 WHEN poi.unit_cost = 0 OR poi.unit_cost IS NULL THEN l.unit_cost
+                 ELSE poi.unit_cost
+               END
+         WHERE poi.purchase_order_id = p_po_id
+           AND poi.product_id = l.product_id;
+
+        -- ── Weighted Average Cost Update on product_list ──
+        SELECT
+          COALESCE(SUM(il.quantity), 0),
+          COALESCE(
+            CASE WHEN SUM(il.quantity) > 0
+              THEN SUM(il.quantity * il.purchase_cost) / SUM(il.quantity)
+              ELSE 0
+            END, 0
+        ) INTO v_old_qty, v_old_cost
+        FROM public.inventory_list il
+        WHERE il.product_id = l.product_id;
+
+        if v_old_qty > 0 then
+            UPDATE public.product_list
+               SET cost_price = v_old_cost
+             WHERE id = l.product_id;
+        end if;
+
+        -- ── Sell Price: first receive pe set, baad me preserve ──
+        SELECT pl.price INTO v_existing_sell_price
+          FROM public.product_list pl WHERE pl.id = l.product_id;
+
+        if (v_existing_sell_price IS NULL OR v_existing_sell_price = 0) AND l.sell_price > 0 then
+            UPDATE public.product_list
+               SET price = l.sell_price
+             WHERE id = l.product_id;
+        end if;
 
         -- P1/M8 receive-sync: is PO se linked required parts ki qty_received
         -- aur status bhardo. FIFO (date_created asc) — sabse purana open part
@@ -3217,13 +3284,24 @@ begin
         end loop;
     end loop;
 
+    -- update PO expenses
+    UPDATE public.purchase_orders po
+       SET expenses = p_expenses
+     WHERE po.id = p_po_id;
+
+    -- status: any remaining outstanding => partially_received, else received
     select bool_or(poi.qty_ordered - poi.qty_received > 0) into v_any_open
       from public.purchase_order_items poi
      where poi.purchase_order_id = p_po_id;
 
     update public.purchase_orders po
        set status = case when coalesce(v_any_open, false) then 'partially_received' else 'received' end,
-           received_date = coalesce(po.received_date, current_date)
+           received_date = coalesce(po.received_date, current_date),
+           total_amount = (
+             SELECT COALESCE(SUM(poi2.qty_received * poi2.unit_cost), 0)
+             FROM public.purchase_order_items poi2
+             WHERE poi2.purchase_order_id = p_po_id
+           )
      where po.id = p_po_id;
 
     return query
@@ -3234,9 +3312,9 @@ begin
 end;
 $$;
 
-REVOKE ALL ON FUNCTION public.receive_po_receipt(bigint, jsonb) FROM public;
-GRANT EXECUTE ON FUNCTION public.receive_po_receipt(bigint, jsonb) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.receive_po_receipt(bigint, jsonb) TO service_role;
+REVOKE ALL ON FUNCTION public.receive_po_receipt(bigint, jsonb, numeric) FROM public;
+GRANT EXECUTE ON FUNCTION public.receive_po_receipt(bigint, jsonb, numeric) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.receive_po_receipt(bigint, jsonb, numeric) TO service_role;
 
 -- Atomic writer RPC: next_job_id (SECURITY DEFINER + RLS bypass).
 -- job_id_counter read-then-bump race (duplicate job rows) fix ki atomic scheme —

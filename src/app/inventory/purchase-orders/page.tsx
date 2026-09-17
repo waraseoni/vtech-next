@@ -26,6 +26,8 @@ import {
   ArrowLeft,
   Pencil,
   Eye,
+  Printer,
+  MessageCircle,
 } from "lucide-react";
 
 type POStatus = "pending" | "ordered" | "partially_received" | "received" | "cancelled";
@@ -37,6 +39,7 @@ interface PO {
   contact_person_id?: number | null;
   transaction_id: number | null;
   supplier_name: string;
+  supplier_phone: string;
   person_name?: string;
   status: POStatus;
   expected_date: string | null;
@@ -60,7 +63,6 @@ interface DraftItem {
   product_id: number;
   product_name: string;
   qty: number;
-  unit_cost: number;
 }
 
 const STATUS_META: Record<POStatus, { label: string; cls: string; dot: string }> = {
@@ -112,20 +114,30 @@ export default function PurchaseOrdersPage() {
   const [editTarget, setEditTarget] = useState<PO | null>(null);
   const [initialDraft, setInitialDraft] = useState<DraftItem[] | null>(null);
   const [initialSupplierId, setInitialSupplierId] = useState("");
+  const [firmName, setFirmName] = useState("");
+  const [firmMobile, setFirmMobile] = useState("");
+  const [firmAddress, setFirmAddress] = useState("");
+  const [ownerName, setOwnerName] = useState("");
+  // WhatsApp modal state
+  const [waModalOpen, setWaModalOpen] = useState(false);
+  const [waMessage, setWaMessage] = useState("");
+  const [waPhone, setWaPhone] = useState("");
+  const [waCopied, setWaCopied] = useState(false);
 
   const fetchPos = async (silent = false) => {
     if (!silent) setLoading(true);
     else setRefreshing(true);
     try {
-      const [poRes, supRes, personRes] = await Promise.all([
+      const [poRes, supRes, personRes, sysRes] = await Promise.all([
         supabase.from("purchase_orders").select("*").order("date_created", { ascending: false }),
-        supabase.from("suppliers").select("id, name").eq("delete_flag", 0),
+        supabase.from("suppliers").select("id, name, contact").eq("delete_flag", 0),
         supabase
           .from("supplier_contact_persons")
           .select("id, supplier_id, name")
           .order("is_primary", { ascending: false }),
+        supabase.from("system_info").select("meta_field, meta_value"),
       ]);
-      const supplierMap = new Map((supRes.data || []).map((s) => [s.id, s.name]));
+      const supplierMap = new Map((supRes.data || []).map((s: { id: number; name: string; contact: string | null }) => [s.id, { name: s.name, phone: s.contact || "" }]));
       const personById = new Map(
         (personRes.data || []).map((p) => [p.id, { supplier_id: p.supplier_id, name: p.name }])
       );
@@ -171,10 +183,33 @@ export default function PurchaseOrdersPage() {
         });
       }
 
+      // Extract firm info
+      const sysInfo: Record<string, string> = {};
+      (sysRes.data || []).forEach((r: { meta_field: string; meta_value: string }) => {
+        sysInfo[r.meta_field] = r.meta_value;
+      });
+      setFirmName(sysInfo.name || "V-Technologies");
+      setFirmMobile(sysInfo.contact || "");
+      setFirmAddress(sysInfo.address || "");
+
+      // Owner name (logged-in user)
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", user.id)
+            .maybeSingle();
+          setOwnerName(prof?.full_name || user.user_metadata?.full_name || "");
+        }
+      } catch { /* ignore */ }
+
       setPos(
         poRows.map((p) => ({
           ...p,
-          supplier_name: p.supplier_id ? supplierMap.get(p.supplier_id) || "Unknown" : "—",
+          supplier_name: p.supplier_id ? (supplierMap.get(p.supplier_id)?.name || "Unknown") : "—",
+          supplier_phone: p.supplier_id ? (supplierMap.get(p.supplier_id)?.phone || "") : "",
           person_name:
             p.contact_person_id && personById.get(p.contact_person_id)
               ? personById.get(p.contact_person_id)!.name
@@ -261,13 +296,22 @@ export default function PurchaseOrdersPage() {
     }
   };
 
-  const submitReceive = async (target: PO, lineQtys: Record<number, number>) => {
+  const submitReceive = async (
+    target: PO,
+    payload: { lineQtys: Record<number, number>; lineCosts: Record<number, { unit_cost: number; sell_price: number }>; expenses: number }
+  ) => {
     setActing(target.id);
     try {
       const lines = target.items
         .map((i) => {
-          const qty = lineQtys[i.product_id] || 0;
-          return { product_id: i.product_id, qty };
+          const qty = payload.lineQtys[i.product_id] || 0;
+          const cost = payload.lineCosts[i.product_id];
+          return {
+            product_id: i.product_id,
+            qty,
+            unit_cost: cost?.unit_cost || 0,
+            sell_price: cost?.sell_price || 0,
+          };
         })
         .filter((l) => l.qty > 0);
       if (lines.length === 0) throw new Error("Enter a quantity for at least one item");
@@ -275,6 +319,7 @@ export default function PurchaseOrdersPage() {
       const { data, error } = await supabase.rpc("receive_po_receipt", {
         p_po_id: target.id,
         p_lines: lines,
+        p_expenses: payload.expenses || 0,
       });
       if (error) throw new Error(error.message);
       const totalReceived = (data as Array<{ qty_total_received: number }> | null)?.reduce(
@@ -308,6 +353,65 @@ export default function PurchaseOrdersPage() {
       await logActivity("PO Deleted", "Inventory", po.id, `PO: ${po.po_code} deleted`);
       fetchPos();
     } else alert("Failed: " + error.message);
+  };
+
+  const buildWhatsAppMessage = (po: PO) => {
+    const itemsList = po.items
+      .map((item, idx) => `${idx + 1}. ${item.product_name} — Qty: ${item.qty_ordered}`)
+      .join("\n");
+    // Strip owner/firm name from address start to avoid repetition
+    const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const cleanAddress = firmAddress
+      .replace(new RegExp(`^\\s*(?:${[ownerName, firmName].filter(Boolean).map(esc).join("|")})\\s*[,\-–.]?\\s*`, "i"), "")
+      .trim();
+    return [
+      `Namaste ${po.supplier_name},`,
+      "",
+      `Purchase Order: *${po.po_code}*`,
+      `Date: ${fmtDate(po.date_created)}`,
+      "",
+      "Items:",
+      itemsList,
+      "",
+      `Total Items: ${po.items.length}`,
+      po.notes ? `Notes: ${po.notes}` : "",
+      "",
+      "—",
+      ownerName,
+      cleanAddress,
+      firmMobile,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  };
+
+  const openWhatsApp = (po: PO) => {
+    setWaMessage(buildWhatsAppMessage(po));
+    setWaPhone(po.supplier_phone.replace(/[^0-9]/g, ""));
+    setWaCopied(false);
+    setWaModalOpen(true);
+  };
+
+  const sendWhatsApp = () => {
+    window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(waMessage)}`, "_blank");
+  };
+
+  const copyWhatsApp = async () => {
+    try {
+      await navigator.clipboard.writeText(waMessage);
+      setWaCopied(true);
+      setTimeout(() => setWaCopied(false), 2000);
+    } catch {
+      // fallback
+      const ta = document.createElement("textarea");
+      ta.value = waMessage;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setWaCopied(true);
+      setTimeout(() => setWaCopied(false), 2000);
+    }
   };
 
   const filtered = useMemo(() => {
@@ -570,6 +674,22 @@ export default function PurchaseOrdersPage() {
                       >
                         <Eye size={13} />
                       </Link>
+                      <button
+                        title="Print / Download PDF"
+                        onClick={() => window.open(`/api/print-purchase-order?po_id=${po.id}`, "_blank")}
+                        className="p-2 bg-[#21293d] hover:bg-emerald-600/30 border border-[#21293d] hover:border-emerald-500/40 rounded-lg text-slate-500 hover:text-emerald-400 transition-all"
+                      >
+                        <Printer size={13} />
+                      </button>
+                      {po.supplier_phone && (
+                        <button
+                          title="Send WhatsApp to Supplier"
+                          onClick={() => openWhatsApp(po)}
+                          className="p-2 bg-[#21293d] hover:bg-green-600/30 border border-[#21293d] hover:border-green-500/40 rounded-lg text-slate-500 hover:text-green-400 transition-all"
+                        >
+                          <MessageCircle size={13} />
+                        </button>
+                      )}
                       {(po.status === "pending" || po.status === "cancelled") && (
                         <button
                           onClick={() => setEditTarget(po)}
@@ -580,7 +700,7 @@ export default function PurchaseOrdersPage() {
                         </button>
                       )}
                       <span className="text-xs text-slate-500 font-bold mr-2">
-                        ₹{po.total_amount.toLocaleString("en-IN")}
+                        {po.items.length} item{po.items.length === 1 ? "" : "s"}
                       </span>
                       {(po.status === "ordered" || po.status === "partially_received") &&
                         remaining > 0 && (
@@ -640,9 +760,6 @@ export default function PurchaseOrdersPage() {
                               >
                                 {item.product_name}
                               </Link>
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold border border-slate-500/20 text-slate-400">
-                                <Wallet size={8} /> ₹{item.unit_cost.toLocaleString("en-IN")}
-                              </span>
                             </div>
                             <div className="flex items-center justify-between mt-2.5">
                               <div className="flex items-center gap-2">
@@ -713,8 +830,74 @@ export default function PurchaseOrdersPage() {
           target={receiveTarget}
           busy={acting === receiveTarget.id}
           onClose={() => setReceiveTarget(null)}
-          onSubmit={(lineQtys) => submitReceive(receiveTarget, lineQtys)}
+          onSubmit={(payload) => submitReceive(receiveTarget, payload)}
         />
+      )}
+
+      {/* ── WHATSAPP MODAL ── */}
+      {waModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setWaModalOpen(false)} />
+          <div className="relative w-full max-w-lg bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl shadow-black/50 max-h-[85vh] flex flex-col">
+            <div className="h-0.5 w-full bg-gradient-to-r from-green-500 to-emerald-600" />
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d]">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center border bg-green-500/10 border-green-500/25">
+                  <MessageCircle size={16} className="text-green-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white leading-none">WhatsApp Message</h3>
+                  <p className="text-[10px] text-slate-600 font-bold mt-0.5 uppercase tracking-wider">
+                    Edit, copy or send directly
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setWaModalOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div className="px-5 py-4 flex-1 overflow-y-auto">
+              <textarea
+                value={waMessage}
+                onChange={(e) => setWaMessage(e.target.value)}
+                rows={14}
+                className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl outline-none focus:border-green-500/60 text-sm font-mono resize-none leading-relaxed"
+              />
+            </div>
+
+            <div className="px-5 py-4 border-t border-[#21293d] flex items-center gap-3">
+              <div className="flex-1 text-[10px] text-slate-600">
+                {waMessage.length} characters
+              </div>
+              <button
+                onClick={() => setWaModalOpen(false)}
+                className="px-4 py-2.5 bg-[#111520] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-slate-300 rounded-xl font-bold text-xs transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={copyWhatsApp}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 border ${
+                  waCopied
+                    ? "bg-emerald-600/20 border-emerald-500/40 text-emerald-400"
+                    : "bg-[#21293d] hover:bg-blue-600/30 border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-blue-400"
+                }`}
+              >
+                {waCopied ? <><CheckCircle2 size={13} /> Copied!</> : "Copy"}
+              </button>
+              <button
+                onClick={sendWhatsApp}
+                className="flex items-center gap-1.5 px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold text-xs transition-all active:scale-95 shadow-lg shadow-green-500/20"
+              >
+                <MessageCircle size={13} /> Send on WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -744,16 +927,14 @@ function CreatePOModal({
           product_id: l.product_id,
           product_name: l.product_name || "",
           qty: l.qty_ordered > 0 ? l.qty_ordered : 1,
-          unit_cost: l.unit_cost || 0,
         }))
       : initialDraft && initialDraft.length
         ? initialDraft.map((l) => ({
             product_id: l.product_id,
             product_name: l.product_name || "",
             qty: l.qty > 0 ? l.qty : 1,
-            unit_cost: l.unit_cost || 0,
           }))
-        : [{ product_id: 0, product_name: "", qty: 1, unit_cost: 0 }]
+        : [{ product_id: 0, product_name: "", qty: 1 }]
   );
   const [expectedDate, setExpectedDate] = useState(editing?.expected_date || "");
   const [notes, setNotes] = useState(editing?.notes || "");
@@ -825,7 +1006,7 @@ function CreatePOModal({
   const setLine = (idx: number, patch: Partial<DraftItem>) =>
     setLines((ls) => ls.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
 
-  const total = lines.reduce((s, l) => s + l.qty * l.unit_cost, 0);
+  const total = 0; // Price TBD — entered during receive
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -865,7 +1046,7 @@ function CreatePOModal({
             product_id: l.product_id,
             qty_ordered: l.qty,
             qty_received: 0,
-            unit_cost: l.unit_cost,
+            unit_cost: 0,
           }))
         );
         if (itErr) throw itErr;
@@ -874,7 +1055,7 @@ function CreatePOModal({
           "PO Updated",
           "Inventory",
           editing.id,
-          `PO: ${editing.po_code} | ${valid.length} item(s) | Total: ₹${total}`
+          `PO: ${editing.po_code} | ${valid.length} item(s)`
         );
         onSaved();
         return;
@@ -900,7 +1081,7 @@ function CreatePOModal({
           product_id: l.product_id,
           qty_ordered: l.qty,
           qty_received: 0,
-          unit_cost: l.unit_cost,
+          unit_cost: 0,
         }))
       );
       if (itErr) throw itErr;
@@ -919,7 +1100,7 @@ function CreatePOModal({
         "PO Created",
         "Inventory",
         po.id,
-        `PO: ${poCode} | ${valid.length} item(s) | Total: ₹${total}`
+        `PO: ${poCode} | ${valid.length} item(s)`
       );
       onSaved();
     } catch (err) {
@@ -929,7 +1110,7 @@ function CreatePOModal({
   };
 
   const addLine = () =>
-    setLines((ls) => [...ls, { product_id: 0, product_name: "", qty: 1, unit_cost: 0 }]);
+    setLines((ls) => [...ls, { product_id: 0, product_name: "", qty: 1 }]);
   const removeLine = (idx: number) =>
     setLines((ls) => (ls.length > 1 ? ls.filter((_, i) => i !== idx) : ls));
 
@@ -1074,7 +1255,7 @@ function CreatePOModal({
                         emptyText="No product found"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-1 gap-2.5">
                       <div>
                         <label className="block text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-1.5">
                           Qty
@@ -1085,21 +1266,6 @@ function CreatePOModal({
                           value={l.qty}
                           onChange={(e) =>
                             setLine(idx, { qty: Math.max(1, Number(e.target.value)) })
-                          }
-                          className="w-full px-3 py-2.5 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-xl outline-none focus:border-emerald-500/60 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-1.5">
-                          Unit Cost (₹)
-                        </label>
-                        <input
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          value={l.unit_cost}
-                          onChange={(e) =>
-                            setLine(idx, { unit_cost: Math.max(0, Number(e.target.value)) })
                           }
                           className="w-full px-3 py-2.5 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-xl outline-none focus:border-emerald-500/60 text-sm"
                         />
@@ -1136,10 +1302,10 @@ function CreatePOModal({
           <div className="px-5 py-4 border-t border-[#21293d] flex items-center gap-3">
             <div className="flex-1">
               <span className="text-[10px] text-slate-700 font-bold uppercase tracking-widest block">
-                Total
+                Price
               </span>
-              <span className="text-xl font-black text-emerald-400">
-                ₹{total.toLocaleString("en-IN")}
+              <span className="text-sm font-bold text-slate-500">
+                As per supplier invoice
               </span>
             </div>
             <button
@@ -1188,7 +1354,7 @@ function ReceiveStockModal({
   target: PO;
   busy: boolean;
   onClose: () => void;
-  onSubmit: (lineQtys: Record<number, number>) => void;
+  onSubmit: (payload: { lineQtys: Record<number, number>; lineCosts: Record<number, { unit_cost: number; sell_price: number }>; expenses: number }) => void;
 }) {
   const [qtys, setQtys] = useState<Record<number, number>>(() => {
     const init: Record<number, number> = {};
@@ -1197,16 +1363,23 @@ function ReceiveStockModal({
     });
     return init;
   });
+  const [costs, setCosts] = useState<Record<number, { unit_cost: number; sell_price: number }>>({});
+  const [expenses, setExpenses] = useState(0);
 
-  const total = target.items.reduce((s, i) => s + (qtys[i.product_id] || 0), 0);
+  const totalReceiving = target.items.reduce((s, i) => s + (qtys[i.product_id] || 0), 0);
+  const totalQty = target.items.reduce((s, i) => s + i.qty_ordered, 0);
   const allFull = target.items.every(
     (i) => (qtys[i.product_id] || 0) >= i.qty_ordered - i.qty_received
   );
 
+  const getCost = (pid: number) => costs[pid]?.unit_cost || 0;
+  const getSell = (pid: number) => costs[pid]?.sell_price || 0;
+  const getExpensePerUnit = totalReceiving > 0 ? expenses / totalReceiving : 0;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl shadow-black/50 max-h-[90vh] flex flex-col">
+      <div className="relative w-full max-w-2xl bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl shadow-black/50 max-h-[90vh] flex flex-col">
         <div className="h-0.5 w-full bg-gradient-to-r from-emerald-500 to-teal-600" />
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d]">
           <div className="flex items-center gap-3">
@@ -1218,7 +1391,7 @@ function ReceiveStockModal({
                 Receive Stock — {target.po_code}
               </h3>
               <p className="text-[10px] text-slate-600 font-bold mt-0.5 uppercase tracking-wider">
-                Enter quantity to receive per item
+                Enter qty, purchase price &amp; sell price per item
               </p>
             </div>
           </div>
@@ -1230,35 +1403,131 @@ function ReceiveStockModal({
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-2.5 overflow-y-auto">
-          {target.items.map((item) => {
-            const outstanding = Math.max(0, item.qty_ordered - item.qty_received);
-            if (outstanding <= 0) return null;
-            return (
-              <div
-                key={item.id}
-                className="bg-[#111520] border border-[#21293d] rounded-xl p-3 flex items-center justify-between gap-3"
-              >
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-300 truncate">
-                    {item.product_name}
-                  </div>
-                  <div className="text-[10px] text-slate-600 mt-0.5">
-                    Ordered {item.qty_ordered} · Recv {item.qty_received} ·{" "}
-                    <span className="text-emerald-400 font-bold">Open {outstanding}</span>
-                  </div>
-                </div>
+        <div className="px-5 py-4 space-y-3 overflow-y-auto">
+          {/* PO Expenses */}
+          <div className="bg-[#111520] border border-[#21293d] rounded-xl p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-xs font-bold text-slate-300">Total PO Expenses</div>
+                <div className="text-[10px] text-slate-600">Freight, handling, packing etc. (distributed per unit)</div>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-slate-500 text-sm font-bold">₹</span>
                 <input
                   type="number"
                   min={0}
-                  max={outstanding}
-                  value={qtys[item.product_id] ?? 0}
-                  onChange={(e) => {
-                    const v = Math.max(0, Math.min(outstanding, Number(e.target.value) || 0));
-                    setQtys((q) => ({ ...q, [item.product_id]: v }));
-                  }}
-                  className="w-24 px-3 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-lg outline-none focus:border-emerald-500/60 text-sm text-center"
+                  step="0.01"
+                  value={expenses || ""}
+                  onChange={(e) => setExpenses(Math.max(0, Number(e.target.value) || 0))}
+                  placeholder="0"
+                  className="w-28 px-3 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-lg outline-none focus:border-emerald-500/60 text-sm text-right"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Per-item receive */}
+          {target.items.map((item) => {
+            const outstanding = Math.max(0, item.qty_ordered - item.qty_received);
+            if (outstanding <= 0) return null;
+            const qty = qtys[item.product_id] || 0;
+            const uc = getCost(item.product_id);
+            const sp = getSell(item.product_id);
+            const costWithExpense = uc + getExpensePerUnit;
+            return (
+              <div
+                key={item.id}
+                className="bg-[#111520] border border-[#21293d] rounded-xl p-3 space-y-2.5"
+              >
+                {/* Header row */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-300 truncate">
+                      {item.product_name}
+                    </div>
+                    <div className="text-[10px] text-slate-600 mt-0.5">
+                      Ordered {item.qty_ordered} · Recv {item.qty_received} ·{" "}
+                      <span className="text-emerald-400 font-bold">Open {outstanding}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-slate-600 font-bold">Qty:</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={outstanding}
+                      value={qty}
+                      onChange={(e) => {
+                        const v = Math.max(0, Math.min(outstanding, Number(e.target.value) || 0));
+                        setQtys((q) => ({ ...q, [item.product_id]: v }));
+                      }}
+                      className="w-20 px-3 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-lg outline-none focus:border-emerald-500/60 text-sm text-center"
+                    />
+                  </div>
+                </div>
+                {/* Price fields */}
+                {qty > 0 && (
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-1">
+                        Purchase Price (₹ / unit)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={uc || ""}
+                        onChange={(e) =>
+                          setCosts((c) => ({
+                            ...c,
+                            [item.product_id]: {
+                              ...c[item.product_id],
+                              unit_cost: Math.max(0, Number(e.target.value) || 0),
+                            },
+                          }))
+                        }
+                        placeholder="Supplier price"
+                        className="w-full px-3 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-lg outline-none focus:border-emerald-500/60 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-1">
+                        Sell Price (₹ / unit)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={sp || ""}
+                        onChange={(e) =>
+                          setCosts((c) => ({
+                            ...c,
+                            [item.product_id]: {
+                              ...c[item.product_id],
+                              sell_price: Math.max(0, Number(e.target.value) || 0),
+                            },
+                          }))
+                        }
+                        placeholder="Our selling price"
+                        className="w-full px-3 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-lg outline-none focus:border-emerald-500/60 text-sm"
+                      />
+                    </div>
+                    {/* Calculated cost price */}
+                    {uc > 0 && (
+                      <div className="col-span-2 flex items-center gap-2 text-[10px] text-slate-500 border-t border-[#21293d] pt-2">
+                        <span>Cost Price = ₹{uc.toFixed(2)}</span>
+                        {getExpensePerUnit > 0 && (
+                          <> + ₹{getExpensePerUnit.toFixed(2)} expense = <span className="text-emerald-400 font-bold">₹{costWithExpense.toFixed(2)}</span></>
+                        )}
+                        {sp > 0 && costWithExpense > 0 && (
+                          <span className="ml-auto text-amber-400 font-bold">
+                            Margin: {(((sp - costWithExpense) / costWithExpense) * 100).toFixed(1)}%
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1274,9 +1543,14 @@ function ReceiveStockModal({
             <span className="text-[10px] text-slate-700 font-bold uppercase tracking-widest block">
               Receiving
             </span>
-            <span className="text-xl font-black text-emerald-400">{total} units</span>
+            <span className="text-xl font-black text-emerald-400">{totalReceiving} units</span>
+            {expenses > 0 && totalReceiving > 0 && (
+              <span className="block text-[10px] text-slate-600 font-bold mt-0.5">
+                + ₹{expenses.toLocaleString("en-IN")} expenses (₹{getExpensePerUnit.toFixed(2)}/unit)
+              </span>
+            )}
             <span className="block text-[10px] text-slate-700 font-bold mt-0.5">
-              {allFull && total > 0 ? "Will mark PO as Received" : "PO stays Partially Received"}
+              {allFull && totalReceiving > 0 ? "Will mark PO as Received" : "PO stays Partially Received"}
             </span>
           </div>
           <button
@@ -1288,8 +1562,10 @@ function ReceiveStockModal({
           </button>
           <button
             type="button"
-            disabled={busy || total <= 0}
-            onClick={() => onSubmit(qtys)}
+            disabled={busy || totalReceiving <= 0}
+            onClick={() =>
+              onSubmit({ lineQtys: qtys, lineCosts: costs, expenses })
+            }
             className="flex items-center gap-2 px-6 py-3 rounded-xl font-extrabold text-sm transition-all active:scale-[0.98] disabled:opacity-60 shadow-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20"
           >
             {busy ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
