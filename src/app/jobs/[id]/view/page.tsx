@@ -288,7 +288,7 @@ function Fieldset({
     danger: "text-red-400 border-red-500/30",
   };
   return (
-    <fieldset className={`border-2 ${colors[color].split(" ")[1]} rounded-lg bg-[#111520] mb-4`}>
+    <fieldset className={`border-2 min-w-0 ${colors[color].split(" ")[1]} rounded-lg bg-[#111520] mb-4`}>
       <legend
         className={`px-3 py-1 text-sm font-bold ${colors[color].split(" ")[0]} ml-3 flex items-center gap-1.5`}
       >
@@ -976,7 +976,7 @@ ${svcHtml}${prodHtml}
             <div className="p-4 text-slate-200">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 {/* ── LEFT COLUMN (7/12) ─────────────────────────────────── */}
-                <div className="lg:col-span-7 lg:border-r lg:border-[#21293d] lg:pr-4">
+                <div className="lg:col-span-7 lg:border-r lg:border-[#21293d] lg:pr-4 min-w-0">
                   {/* Client + Job Info row */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                     {/* Client Info */}
@@ -1184,7 +1184,7 @@ ${svcHtml}${prodHtml}
                 </div>
 
                 {/* ── RIGHT COLUMN (5/12) ────────────────────────────────── */}
-                <div className="lg:col-span-5">
+                <div className="lg:col-span-5 min-w-0">
                   {/* Current Status — PHP style big badge */}
                   <div className="text-center mb-5">
                     <p className="text-slate-400 font-semibold text-sm mb-2">Current Job Status</p>

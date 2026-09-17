@@ -2429,7 +2429,7 @@ export default function ViewClientProfile() {
       {/* ── BULK ACTION BAR (PHP parity: jobs page) ── */}
       {selectedIds.size > 0 && (
         <div
-          className="fixed bottom-5 left-1/2 z-[60] rounded-2xl px-3 py-2.5 flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-3 w-[calc(100%-2rem)] md:min-w-[300px] md:max-w-[95vw] glass border border-[var(--glass-border)] shadow-2xl theme-heading"
+          className="fixed bottom-5 left-1/2 z-[60] rounded-2xl px-3 py-2.5 flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-3 w-[calc(100%-2rem)] md:min-w-[300px] md:max-w-[95vw] bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] shadow-2xl text-slate-900 dark:text-white"
           style={{
             transform: "translateX(-50%)",
             animation: "bulkBarPop 0.35s cubic-bezier(0.34,1.56,0.64,1)",
@@ -2545,7 +2545,7 @@ export default function ViewClientProfile() {
       )}
 
       {/* ── FAB (mobile) — saare client actions ek menu me ── */}
-      <div className="md:hidden fixed bottom-4 right-4 z-30 flex flex-col gap-3 items-end">
+      <div className="md:hidden fixed bottom-4 right-4 z-[45] flex flex-col gap-3 items-end">
         <button
           onClick={() => setFabOpen(!fabOpen)}
           className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center !text-white border border-blue-500/30 transition-all active:scale-95"
@@ -2553,7 +2553,7 @@ export default function ViewClientProfile() {
           <Plus size={22} className={`transition-transform ${fabOpen ? "rotate-45" : ""}`} />
         </button>
         {fabOpen && (
-          <div className="absolute bottom-14 right-0 glass border border-[var(--glass-border)] rounded-2xl shadow-2xl py-1.5 w-44 text-sm overflow-hidden">
+          <div className="absolute bottom-14 right-0 bg-white dark:bg-[#161b27] border-2 border-blue-500/40 dark:border-blue-500/50 ring-1 ring-blue-500/30 dark:ring-blue-400/30 rounded-2xl shadow-2xl shadow-black/25 dark:shadow-blue-500/10 py-1.5 w-44 text-sm overflow-hidden">
             {[
               {
                 href: `/clients/${client.id}/add-payment`,
@@ -2623,7 +2623,7 @@ export default function ViewClientProfile() {
                 <Icon size={14} className={cls} /> {label}
               </Link>
             ))}
-            <hr className="my-1 border-white/10" />
+            <hr className="my-1 border-slate-200 dark:border-[#21293d]" />
             <button
               onClick={() => {
                 safeBack(router, "/clients");

@@ -584,16 +584,9 @@ ${el.innerHTML}
       style={{ minHeight: "100vh", fontFamily: "Arial,sans-serif", fontSize: 13 }}
     >
       {/* ── FILTER PANEL (screen only) ────────────────────────────────── */}
-      <div className="no-print glass border-b border-white/10" style={{ padding: "12px 20px" }}>
+      <div className="no-print glass border-b border-white/10 px-3 py-3 sm:px-5">
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-            }}
-          >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
             {/* Left: Title + back */}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <button
@@ -619,7 +612,7 @@ ${el.innerHTML}
             </div>
 
             {/* Right: Filter toggle + Print */}
-            <div style={{ display: "flex", gap: 8 }}>
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setFilterOpen((v) => !v)}
                 className={isFiltered ? "bg-blue-600 !text-white" : "theme-card theme-heading"}
@@ -664,7 +657,7 @@ ${el.innerHTML}
           {/* Filter Panel */}
           {filterOpen && (
             <div className="theme-panel-2" style={{ marginTop: 12, padding: 16, borderRadius: 8 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Date range */}
                 <div>
                   <div
@@ -674,14 +667,15 @@ ${el.innerHTML}
                     <Calendar size={13} style={{ verticalAlign: "middle", marginRight: 4 }} />
                     Date Range
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}>
                     <input
                       type="date"
                       value={localFrom}
                       onChange={(e) => setLocalFrom(e.target.value)}
                       className="theme-input"
                       style={{
-                        flex: 1,
+                        flex: "1 1 0",
+                        minWidth: 0,
                         padding: "6px 10px",
                         borderRadius: 6,
                         fontSize: 12,
@@ -698,7 +692,8 @@ ${el.innerHTML}
                       min={localFrom}
                       className="theme-input"
                       style={{
-                        flex: 1,
+                        flex: "1 1 0",
+                        minWidth: 0,
                         padding: "6px 10px",
                         borderRadius: 6,
                         fontSize: 12,
@@ -779,7 +774,7 @@ ${el.innerHTML}
               </div>
 
               {/* Buttons */}
-              <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" }}>
+              <div className="flex flex-wrap gap-2 mt-3 justify-end">
                 <button
                   onClick={clearFilter}
                   className="theme-card theme-heading"
@@ -822,7 +817,7 @@ ${el.innerHTML}
         style={{
           maxWidth: 1100,
           margin: "16px auto",
-          padding: 20,
+          padding: "12px",
           borderRadius: 6,
           boxShadow: "0 0 20px rgba(0,0,0,0.1)",
         }}
@@ -831,8 +826,10 @@ ${el.innerHTML}
         <div
           style={{
             display: "flex",
+            flexWrap: "wrap",
             justifyContent: "space-between",
             alignItems: "flex-start",
+            gap: 12,
             marginBottom: 12,
           }}
         >
@@ -888,8 +885,10 @@ ${el.innerHTML}
         <div
           style={{
             display: "flex",
+            flexWrap: "wrap",
             justifyContent: "space-between",
             alignItems: "flex-start",
+            gap: 12,
             marginBottom: 16,
           }}
         >
@@ -926,9 +925,10 @@ ${el.innerHTML}
           {/* Balance box */}
           <div
             style={{
-              padding: "12px 18px",
+              padding: "12px 14px",
               borderRadius: 8,
               minWidth: 200,
+              maxWidth: "100%",
               textAlign: "right",
               background:
                 balanceType === "debit"
@@ -996,7 +996,7 @@ ${el.innerHTML}
             >
               📅 Display Period Summary
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8 }}>
               {[
                 {
                   label: "Brought Forward",
@@ -1035,7 +1035,7 @@ ${el.innerHTML}
           <div className="theme-heading" style={{ fontWeight: 700, fontSize: 11, marginBottom: 6 }}>
             📊 Overall Account Summary (All Time)
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8 }}>
             {[
               { label: "Opening Balance", val: openingBal },
               { label: "Total Repairs", val: totals.repairs },
@@ -1351,12 +1351,14 @@ ${el.innerHTML}
         <div
           style={{
             display: "flex",
+            flexWrap: "wrap",
             justifyContent: "space-between",
+            gap: 16,
             marginTop: 36,
             paddingTop: 12,
           }}
         >
-          <div style={{ width: 200, textAlign: "center" }}>
+          <div style={{ width: "100%", maxWidth: 200, textAlign: "center" }}>
             <div
               style={{
                 borderTop: "1.5px solid #333",
@@ -1369,7 +1371,7 @@ ${el.innerHTML}
               Customer Signature
             </div>
           </div>
-          <div style={{ width: 200, textAlign: "center" }}>
+          <div style={{ width: "100%", maxWidth: 200, textAlign: "center" }}>
             <div
               style={{
                 borderTop: "1.5px solid #333",
@@ -1391,7 +1393,9 @@ ${el.innerHTML}
             borderTop: "1px solid #eee",
             paddingTop: 10,
             display: "flex",
+            flexWrap: "wrap",
             justifyContent: "space-between",
+            gap: 8,
             fontSize: 10,
             color: "#aaa",
           }}
