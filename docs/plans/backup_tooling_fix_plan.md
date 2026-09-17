@@ -1,8 +1,8 @@
 # Backup/Restore Tooling Fix Plan — Lossless Backups
 
 Created: 2026-09-17 · Status: **IMPLEMENTATION STARTED (code-only, no live-DB writes)** —
-Phase 1 done; Phase 2+3 (page: dynamic schema, count verify, v3.0) done; Phase 4 CLI pending;
-Phase 5 leftover/6 user tasks open. **Live DB par koi data change/loss allowed nahi.**
+Phase 1–4 done; Phase 5 leftover/6 user tasks open. **Live DB par koi data change/loss allowed nahi.**
+Phase 4 (CLI `supabase-json-backup.mjs`) live-validated 2026-09-17 (51 tables, 10253 rows, count verify PASS) + one bug fixed (CLI bucket-create 400-duplicate tolerance).
 
 ---
 

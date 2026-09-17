@@ -35,12 +35,21 @@ const UPLOAD_STORAGE = args.includes("--storage");
 // Supabase Storage 'backups' bucket (private) — cloud copy (Vercel/laptop memory)
 const STORAGE_BUCKET = "backups";
 async function uploadToStorage(file, key, Hdrs) {
-  const mk = await fetch(`${BASE}/storage/v1/bucket`, {
-    method: "POST",
-    headers: { ...Hdrs, "Content-Type": "application/json" },
-    body: JSON.stringify({ id: STORAGE_BUCKET, name: STORAGE_BUCKET, public: false }),
-  });
-  if (!mk.ok && mk.status !== 409) throw new Error(`bucket create failed (${mk.status})`);
+  // Bucket pehle check — already hai to create call hi mat karo (400 duplicate bhi tolerate).
+  const exists = await fetch(`${BASE}/storage/v1/bucket/${STORAGE_BUCKET}`, { headers: Hdrs });
+  if (!exists.ok) {
+    const mk = await fetch(`${BASE}/storage/v1/bucket`, {
+      method: "POST",
+      headers: { ...Hdrs, "Content-Type": "application/json" },
+      body: JSON.stringify({ id: STORAGE_BUCKET, name: STORAGE_BUCKET, public: false }),
+    });
+    if (!mk.ok && mk.status !== 409) {
+      const body = await mk.text();
+      if (!(mk.status === 400 && /already exists|duplicate/i.test(body))) {
+        throw new Error(`bucket create failed (${mk.status}) ${body.slice(0, 200)}`);
+      }
+    }
+  }
   const bytes = fs.readFileSync(file);
   const up = await fetch(`${BASE}/storage/v1/object/${STORAGE_BUCKET}/${path.basename(file)}`, {
     method: "POST",
