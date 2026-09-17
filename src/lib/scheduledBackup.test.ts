@@ -1,7 +1,27 @@
 import { describe, it, expect, afterEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { isBackupFileName, deleteLocalBackup, readLocalBackup, BACKUP_DIR } from "./scheduledBackup";
+import {
+  isBackupFileName,
+  isBucketExistsError,
+  deleteLocalBackup,
+  readLocalBackup,
+  BACKUP_DIR,
+} from "./scheduledBackup";
+
+describe("isBucketExistsError", () => {
+  it("duplicate bucket ko harmless maanta hai (400/409)", () => {
+    expect(isBucketExistsError(409, "")).toBe(true);
+    expect(isBucketExistsError(400, '{"error":"Duplicate","message":"The resource already exists"}')).toBe(true);
+    expect(isBucketExistsError(400, "Bucket already exists")).toBe(true);
+  });
+
+  it("asli errors ko reject karta hai", () => {
+    expect(isBucketExistsError(400, '{"error":"InvalidRequest"}')).toBe(false);
+    expect(isBucketExistsError(401, "Unauthorized")).toBe(false);
+    expect(isBucketExistsError(500, "")).toBe(false);
+  });
+});
 
 describe("isBackupFileName", () => {
   it("apni backup naming accept karta hai", () => {

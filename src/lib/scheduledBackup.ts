@@ -63,13 +63,29 @@ export interface ScheduledBackupResult {
 /** Supabase Storage REST helper (service-role) — bucket exists+private, upload kar. */
 export const STORAGE_BUCKET = "backups";
 
+/** Bucket pehle se hai? Supabase duplicate par 400/409 + "already exists" deta hai. */
+export function isBucketExistsError(status: number, body: string): boolean {
+  return status === 409 || /already exists|duplicate/i.test(body);
+}
+
 async function ensureBucket(url: string, key: string) {
+  const authHeaders = { apikey: key, Authorization: `Bearer ${key}` };
+
+  // Pehle check karo — bucket already bana hai to create call hi mat karo.
+  const head = await fetch(`${url}/storage/v1/bucket/${STORAGE_BUCKET}`, { headers: authHeaders });
+  if (head.ok) return;
+
   const res = await fetch(`${url}/storage/v1/bucket`, {
     method: "POST",
-    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    headers: { ...authHeaders, "Content-Type": "application/json" },
     body: JSON.stringify({ id: STORAGE_BUCKET, name: STORAGE_BUCKET, public: false }),
   });
-  if (!res.ok && res.status !== 409) throw new Error(`bucket create failed: ${res.status}`);
+  if (res.ok) return;
+
+  const body = (await res.text()).slice(0, 200);
+  // Duplicate (already exists) koi error nahi — bucket ready hai.
+  if (isBucketExistsError(res.status, body)) return;
+  throw new Error(`bucket create failed: ${res.status} ${body}`);
 }
 
 export async function uploadBackupToStorage(url: string, key: string, fileName: string, data: string) {
