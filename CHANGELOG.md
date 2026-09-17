@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.23.1](https://github.com/waraseoni/vtech-next/compare/v1.23.0...v1.23.1) (2026-09-17)
+
+### Bug Fixes
+
+* **backup:** tolerate existing Storage bucket on Vercel (400 duplicate) ([3f99bef](https://github.com/waraseoni/vtech-next/commit/3f99bef632bba7cab39f680ed9cfc7951fed7f4d))
+
 ## [1.23.0](https://github.com/waraseoni/vtech-next/compare/v1.22.2...v1.23.0) (2026-09-17)
 
 ### Features
