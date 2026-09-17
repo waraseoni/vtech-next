@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.23.3](https://github.com/waraseoni/vtech-next/compare/v1.23.2...v1.23.3) (2026-09-17)
+
+### Bug Fixes
+
+* **ui:** solid menu backgrounds, FAB z-order, mobile layout fixes + perf/i18n plan docs ([db6a3c7](https://github.com/waraseoni/vtech-next/commit/db6a3c7f4a37f075d60f1038e51fd8007550824e))
+
 ## [1.23.2](https://github.com/waraseoni/vtech-next/compare/v1.23.1...v1.23.2) (2026-09-17)
 
 ### Bug Fixes
