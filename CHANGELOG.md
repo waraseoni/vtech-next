@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.23.0](https://github.com/waraseoni/vtech-next/compare/v1.22.2...v1.23.0) (2026-09-17)
+
+### Features
+
+* **backup:** schema-driven lossless backup tooling + in-app guide ([a44d6e0](https://github.com/waraseoni/vtech-next/commit/a44d6e0681018ecabfc1f6ea20a118c36c53544b))
+
 ## [1.22.2](https://github.com/waraseoni/vtech-next/compare/v1.22.1...v1.22.2) (2026-09-16)
 
 ### Bug Fixes
