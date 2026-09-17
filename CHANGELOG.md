@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.23.2](https://github.com/waraseoni/vtech-next/compare/v1.23.1...v1.23.2) (2026-09-17)
+
+### Bug Fixes
+
+* **backup-cli:** tolerate existing backups bucket on --storage (400 duplicate) ([709349d](https://github.com/waraseoni/vtech-next/commit/709349d629a6e1fd46523de123ff9f4ec00ec935))
+
 ## [1.23.1](https://github.com/waraseoni/vtech-next/compare/v1.23.0...v1.23.1) (2026-09-17)
 
 ### Bug Fixes
