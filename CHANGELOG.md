@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.24.0](https://github.com/waraseoni/vtech-next/compare/v1.23.3...v1.24.0) (2026-09-17)
+
+### Features
+
+* **po:** supplier pricing flow, PO pricing RPC + WhatsApp send with owner info ([ab19c0a](https://github.com/waraseoni/vtech-next/commit/ab19c0aa85440d77eac12eb48a671f2db4ac5089))
+
 ## [1.23.3](https://github.com/waraseoni/vtech-next/compare/v1.23.2...v1.23.3) (2026-09-17)
 
 ### Bug Fixes
