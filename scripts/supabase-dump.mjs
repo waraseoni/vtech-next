@@ -24,6 +24,14 @@
  *
  * Connection (.env.local se auto-padhta hai):
  *   DATABASE_URL ya SUPABASE_DB_URL ya SUPABASE_DB_PASSWORD + project-ref
+ *
+ * ⚠️ SCOPE (important):
+ *   - `--schema=public` default → sirf `public` schema dump hota hai.
+ *   - `auth.users` (login accounts) is dump me NAHI aati (schema-limited).
+ *   - Storage bucket objects (images/photos) DB dump me kabhi nahi aate —
+ *     unke liye Supabase platform export / Storage GUI chalana padta hai.
+ *   - Complete disaster-recovery = Supabase Dashboard backups + PITR (DB) +
+ *     Storage export. Ye tool sirf public-schema ka convenience snapshot hai.
  */
 
 import { execSync } from "node:child_process";

@@ -119,6 +119,51 @@ async function main() {
     process.exit(1);
   }
 
+  // ── JSON page-backup (vtech_backup_*.json) ──────────────────────────────────
+  // psql/DB-URL required nahi — file ke pehle hi validate (+psql install hone ki
+  // zaroorat bhi nahi). Ye tool .sql dumps ke liye hai; JSON ka real restore
+  // /backup page ya scripts/force-restore.cjs use karo.
+  if (/\.json$/i.test(inputFile)) {
+    let content;
+    try {
+      content = fs.readFileSync(resolvedFile, "utf8");
+    } catch (err) {
+      console.error("❌ File padh nahi paya:", err.message);
+      process.exit(1);
+    }
+    if (!DRY_RUN) {
+      console.error();
+      console.error("❌ Ye page-backup (JSON) hai — is tool se seedha restore NAHI hota.");
+      console.error("   1) Browser me /backup par jaakar 'Restore Now' use karo, ya");
+      console.error("   2) node scripts/force-restore.cjs <file.json> [tables...]");
+      process.exit(1);
+    }
+    try {
+      const parsed = JSON.parse(content);
+      const meta = parsed._meta?.[0] || {};
+      const tables = Array.isArray(meta.tables)
+        ? meta.tables
+        : Object.keys(parsed).filter((k) => k !== "_meta");
+      let totalRows = 0;
+      for (const t of tables) {
+        const rows = parsed[t];
+        totalRows += Array.isArray(rows) ? rows.length : 0;
+      }
+      console.log();
+      console.log(`📦 JSON backup        : version ${meta.version || "?"}, created ${meta.created_at || "?"}`);
+      console.log(`📊 Tables             : ${tables.length}`);
+      console.log(`🔢 Total rows         : ${totalRows.toLocaleString()}`);
+      console.log();
+      console.log("✅ Dry run (JSON) PASSED — file parse hui, tables/rows valid.");
+      console.log("   (PK/columns/NOT NULL ka detailed check /backup page ke Dry Run me hai.)");
+      process.exit(0);
+    } catch (err) {
+      console.error();
+      console.error("❌ JSON parse fail hua:", err.message);
+      process.exit(1);
+    }
+  }
+
   // Check psql
   try {
     execSync("psql --version", { stdio: "pipe" });
@@ -167,32 +212,47 @@ async function main() {
     }
   }
 
-  // Build psql command
-  const cmd = DRY_RUN
-    ? `psql --dbname="${dbUrl}" --file="${resolvedFile}" --echo-all --set ON_ERROR_STOP=1`
-    : `psql --dbname="${dbUrl}" --file="${resolvedFile}" --set ON_ERROR_STOP=1`;
+  // ── True dry-run (SQL dump) — file + connection check ONLY ─────────────────
+  // Kabhi bhi dump ka SQL execute NAHI karta (pehle --echo-all se execute hota tha!)
+  if (DRY_RUN) {
+    console.log("🧪 Dry run: file analysis + connection check...");
+    console.log("   ⚠️  Dump ka SQL execute NAHI hogi — sirf read-only 'SELECT 1' ping.");
+    try {
+      execSync(`psql --dbname="${dbUrl}" -c "SELECT 1"`, { stdio: "pipe", timeout: 30000 });
+    } catch (e) {
+      console.error();
+      console.error("❌ Database connection fail:", (e.stderr || e.message || "").toString().split("\n")[0]);
+      process.exit(1);
+    }
+    console.log();
+    console.log("✅ Connection OK. File readable lagti hai.");
+    console.log("   Content check (schema/data/RLS/functions) upar report me dekh lo.");
+    console.log("   NOTE: Ye sirf pre-flight hai — dump ke andar ka SQL run NAHI hua.");
+    process.exit(0);
+  }
 
-  console.log(DRY_RUN ? "🧪 Dry run shuru..." : "⏳ Restore shuru...");
+  // ── Real restore (SQL dump only) ────────────────────────────────────────────
+  const cmd = `psql --dbname="${dbUrl}" --file="${resolvedFile}" --set ON_ERROR_STOP=1`;
+
+  console.log("⏳ Restore shuru...");
   const startTime = Date.now();
 
   try {
     execSync(cmd, {
       encoding: "utf8",
       maxBuffer: 500 * 1024 * 1024,
-      stdio: DRY_RUN ? "inherit" : ["pipe", "pipe", "pipe"],
+      stdio: ["pipe", "pipe", "pipe"],
     });
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
     console.log();
-    console.log(DRY_RUN ? "✅ Dry run complete — koi error nahi!" : "✅ Restore complete!");
+    console.log("✅ Restore complete!");
     console.log(`   ⏱  Time : ${elapsed}s`);
 
-    if (!DRY_RUN) {
-      console.log();
-      console.log("💡 Verify karo — SQL Editor me run karo:");
-      console.log("   SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';");
-    }
+    console.log();
+    console.log("💡 Verify karo — SQL Editor me run karo:");
+    console.log("   SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';");
   } catch (err) {
     console.error();
     console.error("❌ Restore fail hua!");

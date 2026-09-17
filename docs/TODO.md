@@ -208,6 +208,119 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 ---
 
+## Project: Staff Passkey / Biometric Login (WebAuthn)
+
+> Design locked — `docs/plans/passkey_biometric_login_plan.md`. PIN REJECTED (weak).
+> Password = hamesha primary; passkey = optional fast-login (Windows Hello / Touch ID / Face ID /
+> Android fingerprint). Client portal untouched. **Implement post-season** (G3 freeze active).
+> Total ≈ 12–16 h dev + migration apply/QA.
+
+### Phase 1 — Foundations (spike + deps)
+- [ ] Spike: `supabase.auth.admin.createSession` available? pinned supabase-js me (fallback §8 plan) — decision D8 confirm
+- [ ] `npm i @simplewebauthn/server @simplewebauthn/browser`
+- [ ] `src/lib/admin.ts` — `getServerSupabaseAdmin()` (service role, server-only)
+- [ ] `src/lib/passkeys.ts` — rpName/rpID config, challenge cookie helpers (httpOnly, signed, 5 min, one-time)
+
+### Phase 2 — Enrollment
+- [ ] Migration `supabase/migrations/YYYYMMDD_passkey_login.sql` (user_passkeys + RLS + grants + trigger) + full-schema fold-in
+- [ ] `POST /api/passkey/register-begin` (auth + password re-auth + challenge)
+- [ ] `POST /api/passkey/register-finish` (verify + INSERT service-role, dup reject)
+- [ ] Device mgmt `src/app/api/passkey/devices/route.ts` — list/rename/delete + admin revoke-all
+
+### Phase 3 — Login flow
+- [ ] `POST /api/auth/login` mode=`passkey-begin` + mode=`passkey-verify` (sign_count + admin.createSession + throttle)
+
+### Phase 4 — UI
+- [ ] Login page: "Fingerprint se login karein" button + email reuse + error states
+- [ ] Settings → "Devices (Passkey Login)": enroll, list, rename, remove, admin revoke-all
+
+### Phase 5 — Tests + QA
+- [ ] Unit: throttle path, challenge cookie one-time/expiry, sign_count reject
+- [ ] Manual matrix: Windows Hello / Android fingerprint / iOS Face ID / regression / lost-device / RLS probe
+- [ ] tsc + eslint + vitest + build green
+
+### Phase 6 — Deploy gate (post-season)
+- [ ] HTTPS + stable rpID note (domain change = passkeys invalid); migration apply (user); release tag + CHANGELOG
+
+---
+
+## Project: Frontend Performance — Loading Speed
+
+> Baseline measured 2026-09-17 (`docs/plans/frontend_performance_plan.md`): sab routes ~1.0–1.2MB JS
+> (shared floor), total static JS ~5.6MB uncompressed; fetch-heavy pages dashboard(35)/jobs(29)/
+> accounting-dashboard(28). Phase A pure frontend + season-safe.
+
+### Phase A — Season-safe quick wins
+- [ ] W1: `(public)/components/qr-share.tsx` dynamic import fix (public layout se qrcode nikaldo)
+- [ ] W2: Boot parallelize + `loading.tsx`/Suspense — LicenseGate/useAppBoot race, sidebar lazy
+- [ ] W4: sidebar `router.prefetch()` hover/touch par (Link prefetch verify)
+- [ ] W5: public pages static cache headers (Vercel)
+
+### Phase B — Season-safe data batching
+- [ ] W3a: dashboard `.from()` clusters parallel (`Promise.all`) + dedupe
+- [ ] W3b: jobs page batching
+- [ ] W3c: reports/accounting-dashboard batching
+- [ ] Har page: tsc + eslint + vitest + visual QA green
+
+### Phase C — Post-season (G3)
+- [ ] W6: RootClient split + icons per-page + shared chunk review + Sentry tuning
+- [ ] W7: RSC migration hot pages (dashboard/clients/inventory/jobs — streaming)
+- [ ] W8: React Query / SWR data layer
+
+### Phase D — Measure-repeat
+- [ ] `npm run analyze:output` baseline diff + production URL Lighthouse before/after
+
+---
+
+## Project: Backup/Restore Tooling Fix — Lossless Backups
+
+> Plan: `docs/plans/backup_tooling_fix_plan.md`. Audit (2026-09-17, read-only): page backup 17 live
+> tables MISSING + restore column-strip loss (transaction_products.id, suppliers*, purchase_orders*,
+> transaction_list, expense_list, locations) + restore.mjs dry-run executes SQL. **Code-only; live DB par
+> koi write nahi.** Implementation season-safe (backup = SELECT only).
+
+### Phase 1 — Schema import ✅ (2026-09-17)
+- [x] Admin client reuse: `src/lib/admin-supabase.ts` `getAdminSupabase()` already existed
+- [x] `src/app/api/backup/schema/route.ts` (GET, requireAdmin) — OpenAPI → table/col/pk map (+generated merge)
+- [x] Unit test `src/lib/backupSchema.test.ts` 7 tests ✅ + live E2E probe (51/51 tables, PKs exact)
+
+### Phase 2 — Backup page ✅ (2026-09-17)
+- [x] TABLE list dynamic (golden 51 ordered list + live-schema auto-append)
+- [x] TABLE_COLUMNS → runtime cols; transaction_products single-PK (id) mode; composite → runtime PK
+- [x] Backup Verify: fetched vs exact count per table; mismatch → `_meta.warnings` + HARD red toast
+- [x] `_meta.version → 3.0`; v2 files compatible (file's own `meta.tables`)
+- [x] Restore dry-run (page): PK presence+unique + unknown-col warning + NOT NULL coverage checks (schema `notNull` se), zero writes — toast FAIL on issues
+  - ✅ USER-CONFIRMED dry-run PASSED: 10,223 rows / 51 tables (v3 file); composite-PK false-positive bug fix included
+
+### Phase 3 — Restore safety ✅ (2026-09-17)
+- [x] Dynamic column strip (column-loss kill); `onConflict` explicit (single + composite)
+- [x] Restore-after count verify → HARD fail report + toast on mismatch
+- [x] resetSequences list + 17 naye tables; clear-step `not(pk[0],"is",null)` universal delete-all
+
+### Phase 4 — CLI scripts ✅ (2026-09-17)
+- [x] `supabase-restore.mjs --dry-run`: ab kabhi SQL execute nahi (file analysis + read-only `SELECT 1`); JSON guard (dry=parse, real=error+guidance)
+- [x] `force-restore.cjs`: arg/glob filename + LIVE schema columns/PK + `onConflict` + generated strip + confirm (`--yes`)
+- [x] `supabase-dump.mjs` auth/storage exclusion doc note
+
+### Phase 5 — Verify (no live writes) 🔶 user-verified
+- [x] schema API probe (live OpenAPI E2E: transaction_products/spare_supplier/user_presence/client_payments/messages/bom_templates) ✅
+- [x] Live "Download Backup" ✅ **USER-CONFIRMED 2026-09-17**: `vtech_backup_2026-09-17T07-02-58.json` — 51/51 tables, counts exact (file==DB rows), net change 0, 0 warnings
+- [x] v3 Diff panel (file vs DB) green — same run ✅
+- [x] tsc + eslint + vitest + build green (2026-09-17) ✅ (1 pre-existing exhaustive-deps warning)
+
+### Phase 6 — Free-tier backup strategy ✅ DONE (2026-09-17)
+- [x] RESOLVED (2026-09-17): Free tier par koi platform automatic backup / PITR nahi (Pro/Team/Enterprise hi; PITR ~$100/mo). Decision: hamara apna scheduled JSON backup = free-tier ka daily backup.
+  - `scripts/supabase-json-backup.mjs` (NEW): service-role, 51 tables count-verified, page-compatible v3.0 JSON → `backups/` (gitignored). Live-tested: 10,232 rows / 51 tables, net_amount skip verified.
+  - `/backup` page par chhota UI (2026-09-17): "Server Backup (Scheduled)" card — "Abhi Run Karo" button + recent local backups + **cloud copies** list. API: `GET/POST /api/backup/scheduled` (requireAdmin), logic shared `src/lib/scheduledBackup.ts`. Live-tested via lib: 51/51, 10,232 rows, cloud upload ok.
+  - ☁️ Cloud copy: Supabase Storage `backups` bucket (private, auto-create) — Vercel par bhi persistent. CLI `--storage` flag. Verified live (upload + list).
+  - Converter v5: `public/tools/vtech_mysql_converter.html` — 46 app tables + v3.0, saare naye tables/casts, real data par verified (46 tables/10,175 rows exact).
+  - Schedule: `schtasks /Create /TN "VTech Supabase Backup" /TR "node \"D:\next tech\vtech-next-frontend\scripts\supabase-json-backup.mjs\"" /SC DAILY /ST 02:00 /F`
+  - 📖 Full guide (Hindi/English/Hinglish): `docs/BACKUP_GUIDE.md`.
+- [x] Weekly off-site copy + "risky change se pehle fresh backup" = **ongoing routine** (guide §3 me documented, blocker nahi).
+- [x] Storage buckets: manual/Dashboard export cadence note = ongoing hygiene (guide §8 me documented).
+
+---
+
 ## Open Questions / Notes
 - Comments Hinglish me; no emojis in UI.
 - Sanitized: migration must be re-run if any part fails midway (idempotent file).

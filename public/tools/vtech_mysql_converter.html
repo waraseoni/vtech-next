@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>V-Tech MySQL → Supabase Converter v4</title>
+<title>V-Tech MariaDB → Supabase Converter v5</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;background:#0d1117;color:#e2e8f0;min-height:100vh;padding:24px}
@@ -37,16 +37,17 @@ h1{font-size:21px;font-weight:900;color:#fff;margin-bottom:4px}
 </head>
 <body>
 <div class="wrap">
-  <h1>🔄 V-Tech MySQL → Supabase Converter <span style="color:#3b82f6;font-size:13px">v4</span></h1>
-  <p class="sub">MariaDB SQL Dump → Exact Supabase Backup JSON (v2.0)</p>
+  <h1>🔄 V-Tech MariaDB → Supabase Converter <span style="color:#3b82f6;font-size:13px">v5</span></h1>
+  <p class="sub">MariaDB SQL Dump → Exact Supabase Backup JSON (v3.0 · latest 51-table schema)</p>
 
   <div class="card">
     <div class="card-hdr" style="background:linear-gradient(90deg,rgba(59,130,246,.08),transparent)">📖 Steps</div>
     <div class="card-body">
-      <div class="step"><div class="snum">1</div><span>phpMyAdmin → Export → SQL format → .sql download karo</span></div>
+      <div class="step"><div class="snum">1</div><span>phpMyAdmin (XAMPP mirror <strong style="color:#fff">vtech_db</strong>) → Export → SQL format → .sql download karo</span></div>
       <div class="step"><div class="snum">2</div><span><strong style="color:#fff">.sql file drop karo</strong> neeche</span></div>
-      <div class="step"><div class="snum">3</div><span><strong style="color:#fff">Convert &amp; Download</strong> — JSON ready hogi</span></div>
+      <div class="step"><div class="snum">3</div><span><strong style="color:#fff">Convert &amp; Download</strong> — v3.0 JSON ready hogi (46 app tables)</span></div>
       <div class="step"><div class="snum">4</div><span>V-Tech → Backup → Restore → JSON drop karo → Done ✅</span></div>
+      <div class="step"><div class="snum">5</div><span>Auth tables (users, profiles, login_throttle, user_presence, push_subscriptions) skip hote hain — wo platform/auth-managed hain, backup page restore nahi karta. Unhe restore karne ka alag pg_dump/auth flow chahiye (best-practice section dekho).</span></div>
     </div>
   </div>
 
@@ -81,13 +82,18 @@ h1{font-size:21px;font-weight:900;color:#fff;margin-bottom:4px}
 // ════════════════════════════════════════════════════════════
 // CONFIG — exact match with Supabase backup (verified field-by-field)
 // ════════════════════════════════════════════════════════════
-const TABLES=["system_info","job_id_counter","mechanic_list","client_list","product_list","service_list","suppliers","spare_supplier","inventory_list","lender_list","loan_payments","expense_list","transaction_list","transaction_products","transaction_services","transaction_images","client_loans","client_payments","direct_sales","direct_sale_items","attendance_list","advance_payments","mechanic_salary_history","mechanic_commission_history","message_list","wp_template_history","activity_logs","payment_reminders"];
+const TABLES=["system_info","job_id_counter","mechanic_list","client_list","product_list","service_list","suppliers","spare_supplier","inventory_list","lender_list","loan_payments","expense_list","transaction_list","transaction_products","transaction_services","transaction_images","client_loans","client_payments","direct_sales","direct_sale_items","attendance_list","advance_payments","mechanic_salary_history","mechanic_commission_history","message_list","messages","wp_template_history","activity_logs","payment_reminders","bom_templates","client_contacts","job_required_parts","location_zones","location_racks","location_bins","location_boxes","locations","product_locations","purchase_orders","purchase_order_items","stock_adjustments","stock_counts","supplier_contacts","supplier_contact_persons","supplier_contact_phones","supplier_payments"];
+
+// Auth/transient tables — convert me kabhi nahi aate (platform/auth-managed):
+// users, profiles, login_throttle, user_presence, push_subscriptions, sync_history (mirror-internal)
 
 // INT fields — exact from schema + good backup
 const INT_F={
   activity_logs:["id","user_id"],
   advance_payments:["id","mechanic_id"],
   attendance_list:["id","mechanic_id","status"],
+  bom_templates:["id"],
+  client_contacts:["id","client_id"],
   client_list:["id","delete_flag"],
   client_loans:["id","client_id","loan_period","status"],
   client_payments:["id","client_id","loan_id"],
@@ -96,21 +102,37 @@ const INT_F={
   expense_list:["id"],
   inventory_list:["id","product_id","quantity"],
   job_id_counter:["id","last_job_id"],
+  job_required_parts:["id","transaction_id","product_id","qty_needed","qty_received","status","supplier_id","created_by","purchase_order_id"],
   lender_list:["id","tenure_months","status"],
   loan_payments:["id","lender_id"],
+  location_bins:["id","rack_id","status","delete_flag"],
+  location_boxes:["id","bin_id","status","delete_flag"],
+  location_racks:["id","zone_id","status","delete_flag"],
+  location_zones:["id","status","delete_flag"],
+  locations:["id","delete_flag","status","zone_id","rack_id","bin_id","box_id"],
   mechanic_commission_history:["id","mechanic_id"],
   mechanic_list:["id","status","delete_flag"],
   mechanic_salary_history:["id","mechanic_id"],
   message_list:["id","status"],
+  messages:["id"],
   payment_reminders:["id","client_id"],
   product_list:["id","status","delete_flag","alert_quantity"],
+  product_locations:["product_id","location_id"],
+  purchase_order_items:["id","purchase_order_id","product_id","qty_ordered","qty_received"],
+  purchase_orders:["id","supplier_id","transaction_id","contact_person_id"],
   service_list:["id","status","delete_flag"],
-  suppliers:["id","status","delete_flag"],
   spare_supplier:["spare_id","supplier_id"],
+  stock_adjustments:["id","product_id","delta","inventory_list_id"],
+  stock_counts:["id","product_id","counted_qty"],
+  supplier_contact_persons:["id","supplier_id"],
+  supplier_contact_phones:["id","person_id"],
+  supplier_contacts:["id","supplier_id"],
+  supplier_payments:["id","supplier_id","created_by","contact_person_id"],
+  suppliers:["id","status","delete_flag"],
   system_info:["id"],
   transaction_images:["id","transaction_id"],
   transaction_list:["id","user_id","mechanic_id","del_status","status"],
-  transaction_products:["transaction_id","product_id","qty"],
+  transaction_products:["id","transaction_id","product_id","qty"],
   transaction_services:["transaction_id","service_id"],
   wp_template_history:["id"],
 };
@@ -132,7 +154,10 @@ const FLOAT_F={
   mechanic_salary_history:["salary"],
   payment_reminders:["amount_due"],
   product_list:["cost_price","price"],
+  purchase_order_items:["unit_cost"],
+  purchase_orders:["total_amount"],
   service_list:["price"],
+  supplier_payments:["amount"],
   transaction_list:["amount","mechanic_amount","mechanic_commission_amount"],
   transaction_products:["price"],
   transaction_services:["price"],
@@ -152,7 +177,11 @@ const STR_F={
 // BOOLEAN fields — legacy MySQL tinyint (0/1) → PG boolean (true/false).
 // Bina iske number 0/1 emit ho kar boolean column restore par fail deta hai.
 const BOOL_F={
+  client_contacts:["is_primary"],
   client_list:["login_allowed"],
+  supplier_contact_persons:["is_primary"],
+  supplier_contact_phones:["is_primary"],
+  supplier_contacts:["is_primary"],
 };
 
 // ALWAYS '' (empty string, never null) — verified from good backup
@@ -164,6 +193,7 @@ const EMPTY_STR={
   direct_sales:["remarks"],
   expense_list:["category","remarks"],
   inventory_list:["place"],
+  locations:["zone","rack","bin","box"],
   system_info:["meta_value"],
   loan_payments:["remarks"],
   mechanic_list:["contact","middlename"],
@@ -174,9 +204,9 @@ const EMPTY_STR={
 };
 
 // Datetime format — ALL tables use +05:30 (IST) since MariaDB stored IST local time
-const WITH_TZ=new Set(["mechanic_list","product_list","service_list","suppliers","lender_list","mechanic_commission_history","transaction_list","client_list","client_loans","client_payments","direct_sales","direct_sale_items","expense_list","inventory_list","loan_payments","mechanic_salary_history","attendance_list","advance_payments","message_list","transaction_products","transaction_services","transaction_images","wp_template_history","activity_logs","payment_reminders"]);
-const DATE_ONLY=new Set(["date_paid","payment_date","curr_date","stock_date","loan_date","start_date","effective_date","payment_due_date"]);
-const DT_FIELDS=new Set(["date_created","date_updated","date_completed","date_added","last_edited_date","created_at","changed_at","reminder_date"]);
+const WITH_TZ=new Set(["mechanic_list","product_list","service_list","suppliers","lender_list","mechanic_commission_history","transaction_list","client_list","client_loans","client_payments","direct_sales","direct_sale_items","expense_list","inventory_list","loan_payments","mechanic_salary_history","attendance_list","advance_payments","message_list","messages","transaction_products","transaction_services","transaction_images","wp_template_history","activity_logs","payment_reminders","bom_templates","client_contacts","job_required_parts","location_zones","location_racks","location_bins","location_boxes","locations","product_locations","purchase_orders","purchase_order_items","stock_adjustments","stock_counts","supplier_contacts","supplier_contact_persons","supplier_contact_phones","supplier_payments"]);
+const DATE_ONLY=new Set(["date_paid","payment_date","curr_date","stock_date","loan_date","start_date","effective_date","payment_due_date","eta","expected_date","received_date"]);
+const DT_FIELDS=new Set(["date_created","date_updated","date_completed","date_added","last_edited_date","created_at","changed_at","reminder_date","read_at","delivered_at","deleted_at","counted_at"]);
 
 // Valid enums
 const VALID_PM=new Set(["Cash","PhonePe/GPay","UPI","Bank Transfer","Credit Card","Credit to Client"]);
@@ -266,8 +296,8 @@ function parseSQL(sql){
     const tblEnd=sql.indexOf("`",tblStart);
     if(tblEnd===-1){i=insIdx+1;continue;}
     const t=sql.slice(tblStart,tblEnd);
-    // Skip users / profiles / login_throttle (intentionally excluded)
-    if(t==="users"||t==="profiles"||t==="login_throttle"){i=tblEnd+1;continue;}
+    // Skip auth/transient/mirror-internal tables (intentionally excluded)
+    if(t==="users"||t==="profiles"||t==="login_throttle"||t==="user_presence"||t==="push_subscriptions"||t==="sync_history"){i=tblEnd+1;continue;}
     // Extract column list (explicit list, or fall back to CREATE TABLE def)
     const colStart=sql.indexOf("(",tblEnd);
     if(colStart===-1){i=tblEnd+1;continue;}
@@ -466,7 +496,7 @@ async function doConvert(){
   const parsed=parseSQL(sqlContent);
   log(`✓ Parse done`,"ok");
 
-  const output={_meta:[{version:"2.0",created_at:new Date().toISOString(),tables:TABLES,app:"V-Tech Management System",table_order:TABLES.map((t,i)=>({table:t,order:i+1}))}]};
+  const output={_meta:[{version:"3.0",created_at:new Date().toISOString(),tables:TABLES,app:"V-Tech Management System",origin:"vtech_mysql_converter.html",table_order:TABLES.map((t,i)=>({table:t,order:i+1})),warnings:[]}]};
   let total=0,empty=0;
 
   for(const table of TABLES){
@@ -474,21 +504,17 @@ async function doConvert(){
     const rawRows=parsed[table]||[];
     let rows=rawRows.map(r=>castRow(table,r));
 
-    // ── transaction_services: dedup + service_name=null + skip price<0 ────
+    // ── transaction_services: composite PK (transaction_id,service_id) dedup ──
+    // (service_name ab real col hai — value WAHI rahne do, null mat karo)
     if(table==="transaction_services"){
       const seen=new Map();
       rows.forEach(r=>seen.set(`${r.transaction_id}_${r.service_id}`,r));
-      rows=Array.from(seen.values())
-        .map(r=>({...r,service_name:null}))
-        .filter(r=>r.price>=0);
+      rows=Array.from(seen.values()).filter(r=>r.price>=0);
     }
 
-    // ── transaction_products: dedup + product_name=null ────────────────────
-    if(table==="transaction_products"){
-      const seen=new Map();
-      rows.forEach(r=>seen.set(`${r.transaction_id}_${r.product_id}`,r));
-      rows=Array.from(seen.values()).map(r=>({...r,product_name:null}));
-    }
+    // ── transaction_products: ab SINGLE PK (id, AUTO_INCREMENT) hai — composite
+    //    dedup NAHI karte (ek hi transaction me same product 2 baar allowed hai),
+    //    id restore par insert hota hai. product_name real col hai — rahne do. ──
 
     output[table]=rows;
     total+=rows.length;
@@ -509,7 +535,7 @@ async function doConvert(){
 
   document.getElementById("cbtn").disabled=false;
   statsEl.style.display="grid";
-  statsEl.innerHTML=[{n:total.toLocaleString(),l:"Total Rows"},{n:TABLES.length-empty,l:"Tables"},{n:(json.length/1024/1024).toFixed(2)+" MB",l:"File Size"},{n:"v2.0",l:"Format"}].map(s=>`<div class="stat"><div class="sn">${s.n}</div><div class="sl">${s.l}</div></div>`).join("");
+  statsEl.innerHTML=[{n:total.toLocaleString(),l:"Total Rows"},{n:TABLES.length-empty,l:"Tables"},{n:(json.length/1024/1024).toFixed(2)+" MB",l:"File Size"},{n:"v3.0",l:"Format"}].map(s=>`<div class="stat"><div class="sn">${s.n}</div><div class="sl">${s.l}</div></div>`).join("");
 }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 </script>

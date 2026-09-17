@@ -1,9 +1,10 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { downloadBlob } from "@/lib/nativePrint";
+import { type SupabaseTableSchema, countPkViolations } from "@/lib/backupSchema";
 import {
   Download,
   Upload,
@@ -17,72 +18,82 @@ import {
   Table2,
   Rows3,
   Images,
+  Server,
+  Clock,
+  Cloud,
+  BookOpen,
+  Trash2,
 } from "lucide-react";
 
 // ─── Backup tables in RESTORE ORDER (FK dependencies matter!) ─────────────────
-// Parent tables phle restore honge, phir child tables
+// Parent tables phle restore honge, phir child tables. List = LIVE schema se
+// bnaya gya (51 tables); runtime me /api/backup/schema se koi nayi table ho to
+// usse auto-append kiya jata hai (FAIL-safe — naye tables kabhi miss nahi hote).
 const BACKUP_TABLES_ORDERED = [
   // Step 1: System & Counters (no FK)
   { table: "system_info", order: 1 },
   { table: "job_id_counter", order: 1 },
-  // Step 2: Master tables (no FK dependencies)
+  // Step 2: Master tables (parents phle; child contacts/location-zones FK inhe)
   { table: "mechanic_list", order: 2 },
   { table: "users", order: 2 },
+  { table: "profiles", order: 2 },
   { table: "client_list", order: 2 },
   { table: "product_list", order: 2 },
   { table: "service_list", order: 2 },
   { table: "suppliers", order: 2 },
   { table: "locations", order: 2 },
-  // Step 2b: Pivot tables (FK: product_list, suppliers, locations)
-  { table: "spare_supplier", order: 2 },
-  { table: "product_locations", order: 2 },
-  // Step 2c: Purchase Orders (FK: suppliers, product_list)
-  { table: "purchase_orders", order: 2 },
-  { table: "purchase_order_items", order: 2 },
-  // Step 3: Inventory (FK: product_list, suppliers, purchase_orders)
-  { table: "inventory_list", order: 3 },
-  // Step 4: Finance - Lenders first (parent of loan_payments)
+  // Step 2b: Location hierarchy (FK: locations) + contacts (FK: client_list/suppliers)
+  { table: "location_zones", order: 2 },
+  { table: "location_racks", order: 2 },
+  { table: "location_bins", order: 2 },
+  { table: "location_boxes", order: 2 },
+  { table: "client_contacts", order: 2 },
+  { table: "supplier_contacts", order: 2 },
+  { table: "supplier_contact_persons", order: 2 },
+  { table: "supplier_contact_phones", order: 2 },
+  // Step 3: Pivot + Purchase Orders (FK: product_list, suppliers, locations)
+  { table: "spare_supplier", order: 3 },
+  { table: "product_locations", order: 3 },
+  { table: "purchase_orders", order: 3 },
+  { table: "purchase_order_items", order: 3 },
+  // Step 4: Inventory + Stock + Finance (FK: product_list, locations, lenders)
+  { table: "inventory_list", order: 4 },
+  { table: "stock_counts", order: 4 },
+  { table: "stock_adjustments", order: 4 },
   { table: "lender_list", order: 4 },
-  { table: "loan_payments", order: 4 }, // FK: lender_list
+  { table: "loan_payments", order: 4 },
   { table: "expense_list", order: 4 },
-  // Step 5: Transactions (main job table, no FK from other backup tables)
+  { table: "supplier_payments", order: 4 },
+  // Step 5: Transactions (main job table — parent of transaction sub-tables)
   { table: "transaction_list", order: 5 },
-  // Step 6: Transaction sub-tables (FK: transaction_list, product_list, service_list)
-  { table: "transaction_products", order: 6 }, // Composite PK: (transaction_id, product_id)
-  { table: "transaction_services", order: 6 }, // Composite PK: (transaction_id, service_id)
+  // Step 6: Transaction sub-tables + required parts + client finance
+  { table: "transaction_products", order: 6 },
+  { table: "transaction_services", order: 6 },
   { table: "transaction_images", order: 6 },
-  // Step 7: Client loans & payments (FK: client_list, transaction_list)
-  { table: "client_loans", order: 7 },
-  { table: "client_payments", order: 7 },
-  // Step 8: Direct sales (FK: client_list, mechanic_list, product_list)
-  { table: "direct_sales", order: 8 },
-  { table: "direct_sale_items", order: 8 }, // FK: direct_sales, product_list
-  // Step 9: Attendance & Advances (FK: mechanic_list)
-  { table: "attendance_list", order: 9 },
-  { table: "advance_payments", order: 9 },
-  // Step 10: Salary & Commission history (FK: mechanic_list)
-  { table: "mechanic_salary_history", order: 10 },
-  { table: "mechanic_commission_history", order: 10 },
-  // Step 11: Messages
-  { table: "message_list", order: 11 },
-  // Step 12: WhatsApp Templates
-  { table: "wp_template_history", order: 12 },
-  // Step 13: Activity logs (no FK dependencies)
-  { table: "activity_logs", order: 13 },
-  // Step 14: Due-reminder logs (FK: client_list)
-  { table: "payment_reminders", order: 14 },
-  // Step 15: Push subscriptions
-  { table: "push_subscriptions", order: 15 },
+  { table: "job_required_parts", order: 6 },
+  { table: "client_loans", order: 6 },
+  { table: "client_payments", order: 6 },
+  // Step 7: Direct sales + Attendance/Advances/Salary
+  { table: "direct_sales", order: 7 },
+  { table: "direct_sale_items", order: 7 },
+  { table: "attendance_list", order: 7 },
+  { table: "advance_payments", order: 7 },
+  { table: "mechanic_salary_history", order: 7 },
+  { table: "mechanic_commission_history", order: 7 },
+  // Step 8: Messaging + templates + logs
+  { table: "message_list", order: 8 },
+  { table: "messages", order: 8 },
+  { table: "wp_template_history", order: 8 },
+  { table: "activity_logs", order: 8 },
+  { table: "payment_reminders", order: 8 },
+  { table: "push_subscriptions", order: 8 },
+  // Step 9: BoM + login/online tracking
+  { table: "bom_templates", order: 9 },
+  { table: "login_throttle", order: 9 },
+  { table: "user_presence", order: 9 },
 ];
 
 const BACKUP_TABLES = BACKUP_TABLES_ORDERED.map((t) => t.table);
-
-// ── GENERATED columns — DB automatically calculates these ────────────────────
-// These columns MUST be excluded from INSERT otherwise Postgres throws error:
-// "ERROR: cannot insert into column 'net_amount' (generated always)"
-const GENERATED_COLS: Record<string, string[]> = {
-  client_payments: ["net_amount"],
-};
 
 // ── Database Schema Columns — Used to strip extra columns from backup JSON ───
 const TABLE_COLUMNS: Record<string, string[]> = {
@@ -400,17 +411,88 @@ export default function BackupPage() {
   const [diffData, setDiffData] = useState<DiffRow[] | null>(null);
   const [diffLoading, setDiffLoading] = useState(false);
   const [repairing, setRepairing] = useState(false);
+  const [serverBusy, setServerBusy] = useState(false);
+  const [serverFiles, setServerFiles] = useState<
+    { name: string; size: number; modified: string }[]
+  >([]);
+  const [serverCloudFiles, setServerCloudFiles] = useState<{ name: string; modified: string }[]>([]);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [serverResult, setServerResult] = useState<{
+    fileName: string;
+    rows: number;
+    tables: number;
+    incomplete: boolean;
+    storage?: { uploaded: boolean; error?: string };
+    error?: string;
+  } | null>(null);
 
   const showToast = (type: Toast["type"], msg: string) => {
     setToast({ type, msg });
     setTimeout(() => setToast(null), 5000);
   };
 
+  // ── Live schema (admin API se) — backup/restore dynamic table+column use ──
+  // Static lists (BACKUP_TABLES_ORDERED / TABLE_COLUMNS) sirf fallback hain.
+  // Yahan se LIVE schema milta hai: saari tables, columns, PK aur generated.
+  const [schemaTables, setSchemaTables] = useState<SupabaseTableSchema[] | null>(null);
+  const [schemaError, setSchemaError] = useState("");
+
+  const schemaMap = useMemo(
+    () => new Map((schemaTables ?? []).map((t) => [t.name, t])),
+    [schemaTables]
+  );
+
+  // Golden order + jo nayi tables live me aa gayi hain wo end me append
+  const liveOrdered = useMemo<{ table: string; order: number }[]>(() => {
+    if (!schemaTables) return BACKUP_TABLES_ORDERED;
+    const seen = new Set<string>();
+    const base = BACKUP_TABLES_ORDERED.filter((b) => schemaMap.has(b.table)).map((b) => {
+      seen.add(b.table);
+      return b;
+    });
+    const maxOrder = base.reduce((m, b) => Math.max(m, b.order), 0);
+    const extras = Array.from(schemaMap.keys())
+      .filter((t) => !seen.has(t))
+      .sort()
+      .map((t) => ({ table: t, order: maxOrder + 1 }));
+    return [...base, ...extras];
+  }, [schemaTables, schemaMap]);
+
+  const tableNames = useMemo(() => liveOrdered.map((o) => o.table), [liveOrdered]);
+
+  // Runtime schema helpers (schema load hone se pehle sab empty/null return)
+  const schemaOf = (table: string) => schemaMap.get(table) ?? null;
+  const colsOf = (table: string) => schemaOf(table)?.cols ?? null;
+  const pkOf = (table: string) => schemaOf(table)?.pk ?? [];
+  const genOf = (table: string) => schemaOf(table)?.generated ?? [];
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/backup/schema", { cache: "no-store" });
+        const json = (await res.json()) as {
+          ok?: boolean;
+          tables?: SupabaseTableSchema[];
+          error?: string;
+        };
+        if (json.ok && Array.isArray(json.tables)) {
+          setSchemaTables(json.tables);
+          setSchemaError("");
+        } else {
+          setSchemaError(json.error || "Schema API failed");
+        }
+      } catch {
+        setSchemaError("Live schema load nahi ho paya");
+      }
+    })();
+  }, []);
+
   // ── Fetch live table counts ────────────────────────────────────────────────
   const fetchTableStats = async () => {
     setLoadingStats(true);
     const stats: TableStats[] = [];
-    for (const t of BACKUP_TABLES) {
+    for (const t of tableNames) {
       const { count } = await supabase.from(t).select("*", { count: "exact", head: true });
       stats.push({ table: t, count: count || 0 });
     }
@@ -420,7 +502,7 @@ export default function BackupPage() {
 
   useEffect(() => {
     fetchTableStats();
-  }, []);
+  }, [schemaTables]);
 
   // ── REPAIR IMAGES ──────────────────────────────────────────────────────────
   // Restore (MariaDB conversion) ke baad image_path/avatar_url me dead paths
@@ -457,33 +539,24 @@ export default function BackupPage() {
 
   // ── BACKUP ────────────────────────────────────────────────────────────────
   const handleBackup = async () => {
+    if (!schemaTables) {
+      showToast("error", schemaError || "Live schema load nahi hua — wait karke try karo.");
+      return;
+    }
     setTaking(true);
     setProgress("Supabase se data fetch ho raha hai...");
     try {
       const backup: BackupData = {
         _meta: [
           {
-            version: "2.0",
+            version: "3.0",
             created_at: new Date().toISOString(),
-            tables: BACKUP_TABLES,
+            tables: tableNames,
             app: "V-Tech Management System",
-            table_order: BACKUP_TABLES_ORDERED,
-          },
+            table_order: liveOrdered,
+            warnings: [],
+          } as Record<string, unknown>,
         ] as unknown[],
-      };
-
-      // Composite PK tables ka order field alag hai
-      const COMPOSITE_ORDER: Record<string, string> = {
-        transaction_products: "transaction_id",
-        transaction_services: "transaction_id",
-        spare_supplier: "spare_id",
-      };
-
-      // GENERATED ALWAYS columns ko backup se bahar rakho
-      // Restore ke waqt insert nahi ho sakta — DB auto-calculate karta hai
-      const EXCLUDE_FROM_BACKUP: Record<string, string> = {
-        client_payments:
-          "id,client_id,job_id,loan_id,bill_no,payment_date,amount,discount,payment_mode,payment_type,remarks,created_at",
       };
 
       // Helper function: Fetch all rows with pagination (Supabase default limit = 1000)
@@ -511,17 +584,37 @@ export default function BackupPage() {
         return allRows;
       };
 
-      for (const t of BACKUP_TABLES) {
-        setProgress(`Fetching: ${t}...`);
-        const orderField = COMPOSITE_ORDER[t] || "id";
-        const selectCols = EXCLUDE_FROM_BACKUP[t] || "*";
+      const mismatches: { table: string; expected: number; got: number }[] = [];
+
+      for (const { table } of liveOrdered) {
+        setProgress(`Fetching: ${table}...`);
+        // Live schema se order/PK + generated columns (hardcoded se nahi)
+        const pk = pkOf(table);
+        const orderField = pk.length ? pk[0] : "id";
+        const gens = new Set(genOf(table));
+        const allCols = colsOf(table);
+        // GENERATED columns backup me NAHI — restore par DB calculate karta hai.
+        // Ye v3.0 backup restore se pehle explicit-col select ki wajah bhi hai.
+        const selectCols =
+          gens.size > 0 && allCols ? allCols.filter((c) => !gens.has(c)).join(",") : "*";
 
         try {
-          const data = await fetchAllRows(t, selectCols, orderField);
-          backup[t] = data;
+          const data = await fetchAllRows(table, selectCols, orderField);
+          backup[table] = data;
+          // Exact count verify — silent data loss (fetch break) pakadne ke liye
+          const { count } = await supabase
+            .from(table)
+            .select("*", { count: "exact", head: true });
+          if (count !== null && count !== data.length) {
+            mismatches.push({ table, expected: count, got: data.length });
+            console.warn(
+              `${table} count mismatch: expected ${count}, got ${data.length} (backup INCOMPLETE)`
+            );
+          }
         } catch (error) {
-          console.warn(`${t} skip (${error instanceof Error ? error.message : "Unknown error"})`);
-          backup[t] = [];
+          console.warn(`${table} skip (${error instanceof Error ? error.message : "Unknown error"})`);
+          backup[table] = [];
+          mismatches.push({ table, expected: -1, got: 0 });
         }
       }
 
@@ -530,12 +623,21 @@ export default function BackupPage() {
       const now = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
       downloadBlob(blob, `vtech_backup_${now}.json`);
 
-      const totalRows = BACKUP_TABLES.reduce((s, t) => s + (backup[t]?.length || 0), 0);
+      const totalRows = liveOrdered.reduce((s, o) => s + (backup[o.table]?.length || 0), 0);
       setProgress("");
-      showToast(
-        "success",
-        `Backup ready! ${totalRows.toLocaleString()} rows, ${BACKUP_TABLES.length} tables`
-      );
+      if (mismatches.length > 0) {
+        // File save ho chuki hai, par mismatch hain — INCOMPLETE flag rkhna zaroori
+        (backup._meta as Record<string, unknown>[])[0].warnings = mismatches as unknown[];
+        showToast(
+          "error",
+          `⚠ Backup SAVED par RAWA wrong — ${mismatches.length} table(s) count mismatch (live schema se verify kiya hai).`
+        );
+      } else {
+        showToast(
+          "success",
+          `Backup ready! ${totalRows.toLocaleString()} rows, ${tableNames.length} tables (count verified)`
+        );
+      }
       fetchTableStats();
     } catch (err: unknown) {
       setProgress("");
@@ -545,13 +647,109 @@ export default function BackupPage() {
     }
   };
 
-  // ── Tables with composite primary keys (need special delete) ─────────────────
-  const COMPOSITE_KEY_CONFIG: Record<string, string> = {
-    transaction_products: "transaction_id",
-    transaction_services: "transaction_id",
-    spare_supplier: "spare_id",
+  // ── SERVER BACKUP (scheduled-style — server ke backups/ folder me) ─────────
+  const loadServerFiles = async () => {
+    try {
+      const res = await fetch("/api/backup/scheduled", { cache: "no-store" });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json?.ok) {
+        setServerFiles((json.files ?? []) as typeof serverFiles);
+        setServerCloudFiles((json.storageFiles ?? []) as typeof serverCloudFiles);
+      }
+    } catch {
+      /* ignore — sirf list, backup button phir bhi kaam karega */
+    }
   };
-  const COMPOSITE_KEY_TABLES = Object.keys(COMPOSITE_KEY_CONFIG);
+
+  const handleServerBackup = async () => {
+    if (serverBusy) return;
+    setServerBusy(true);
+    setServerResult(null);
+    try {
+      const res = await fetch("/api/backup/scheduled", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok || !json?.ok) throw new Error(json?.error || "Server backup fail hua.");
+      setServerResult({
+        fileName: json.fileName,
+        rows: json.rows ?? 0,
+        tables: json.tables ?? 0,
+        incomplete: !!json.incomplete,
+        storage: json.storage as { uploaded: boolean; error?: string } | undefined,
+      });
+      showToast(
+        json.incomplete ? "error" : "success",
+        json.incomplete
+          ? `⚠ Server backup INCOMPLETE — ${(json.mismatch?.length ?? 0)} table(s) count mismatch`
+          : `✅ Server backup done! ${(json.rows ?? 0).toLocaleString()} rows / ${json.tables} tables`
+      );
+      await loadServerFiles();
+    } catch (err) {
+      setServerResult({
+        fileName: "",
+        rows: 0,
+        tables: 0,
+        incomplete: false,
+        error: err instanceof Error ? err.message : "Fail",
+      });
+      showToast("error", err instanceof Error ? err.message : "Server backup fail!");
+    } finally {
+      setServerBusy(false);
+    }
+  };
+
+  // ── Backup file delete (local backups/ folder ya Storage 'backups' bucket) ──
+  const handleDeleteBackup = async (name: string, target: "local" | "cloud") => {
+    const where = target === "cloud" ? "Supabase Storage bucket" : "server ke backups/ folder";
+    if (!window.confirm(`Delete "${name}" — ${where} se?\n\nYe wapas nahi aayegi.`)) return;
+    setDeleting(`${target}:${name}`);
+    try {
+      const res = await fetch(
+        `/api/backup/scheduled?target=${target}&name=${encodeURIComponent(name)}`,
+        { method: "DELETE" }
+      );
+      const json = await res.json();
+      if (!res.ok || !json?.ok) throw new Error(json?.error || "Delete fail hua.");
+      showToast("success", `Deleted — ${name}`);
+      await loadServerFiles();
+    } catch (err) {
+      showToast("error", err instanceof Error ? err.message : "Delete fail!");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  // ── Backup file download (local backups/ folder ya Storage 'backups' bucket) ──
+  const handleDownloadBackup = async (name: string, target: "local" | "cloud") => {
+    setDownloading(`${target}:${name}`);
+    try {
+      const res = await fetch(
+        `/api/backup/download?target=${target}&name=${encodeURIComponent(name)}`
+      );
+      if (!res.ok) {
+        let msg = "Download fail hua.";
+        try {
+          const json = await res.json();
+          msg = json?.error || msg;
+        } catch {
+          /* non-JSON error body */
+        }
+        throw new Error(msg);
+      }
+      await downloadBlob(await res.blob(), name);
+      showToast("success", `Download — ${name}`);
+    } catch (err) {
+      showToast("error", err instanceof Error ? err.message : "Download fail!");
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  // Server backups folder ki recent files — mount par ek baar load
+  useEffect(() => {
+    loadServerFiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Tables that CANNOT be deleted (FK from other non-backup tables) ──────────
   // mechanic_list: "profiles" table ka FK constraint hai — delete nahi ho sakta
@@ -582,6 +780,11 @@ export default function BackupPage() {
   const handleRestore = async (file: File, dryRun = false, preloadedBackup?: BackupData) => {
     if (!file.name.endsWith(".json") && !preloadedBackup) {
       showToast("error", "Sirf .json backup file select karo!");
+      return;
+    }
+
+    if (!schemaTables) {
+      showToast("error", schemaError || "Live schema load nahi hua — wait karke try karo.");
       return;
     }
 
@@ -616,8 +819,8 @@ export default function BackupPage() {
         return;
       }
 
-      // Tables ko order ke hisab se group karo
-      const orderedTables = [...BACKUP_TABLES_ORDERED].sort((a, b) => a.order - b.order);
+      // Tables ko order ke hisab se group karo (live schema se)
+      const orderedTables = [...liveOrdered].sort((a, b) => a.order - b.order);
 
       let totalRestored = 0;
       const tableResults: TableResult[] = [];
@@ -626,16 +829,95 @@ export default function BackupPage() {
       setProgress("Validating backup data...");
       for (const { table } of orderedTables) {
         const rows = backup[table];
-        if (!Array.isArray(rows)) {
+        // Naye/old file me tables missing ho sakti hai → empty treat karo
+        if (rows !== undefined && !Array.isArray(rows)) {
           throw new Error(`Invalid data for table: ${table}`);
         }
       }
 
       if (dryRun) {
+        // ── Enhanced dry run: file structure + PK/uniqueness + NOT NULL cover ──
+        // Sirf file + live schema check hota hai — koi DB write nahi (D5/D6).
+        const issues: string[] = [];
+        let rowsChecked = 0;
+        for (const { table } of orderedTables) {
+          const rows = backup[table] as Record<string, unknown>[] | undefined;
+          if (!rows || rows.length === 0) continue;
+          rowsChecked += rows.length;
+
+          const liveCols = colsOf(table);
+          const pk = pkOf(table);
+          const gens = new Set(genOf(table));
+
+          // 1) PK value present + unique — missing/dup PK = upsert merge ya fail
+          if (pk.length > 0) {
+            const badPk = countPkViolations(rows, pk);
+            if (badPk > 0) {
+              issues.push(`${table}: ${badPk} rows me PK (${pk.join(",")}) missing/duplicate`);
+            }
+          }
+
+          // 2) File me aise columns jo live schema me nahi → restore par strip honge
+          if (liveCols) {
+            const liveSet = new Set(liveCols);
+            const unknown = new Set<string>();
+            for (const row of rows) {
+              for (const k of Object.keys(row)) {
+                if (!liveSet.has(k)) unknown.add(k);
+              }
+            }
+            if (unknown.size > 0) {
+              issues.push(
+                `${table}: ${Array.from(unknown).join(", ")} column(s) live schema me nahi — restore par strip honge`
+              );
+            }
+          }
+
+          // 3) NOT NULL columns jinki file me value missing hai → wo rows insert fail
+          const notNull = (schemaOf(table)?.notNull ?? []).filter(
+            (c) => !gens.has(c) // generated cols file me expected nahi
+          );
+          const notNullSet = new Set(notNull);
+          if (notNullSet.size > 0) {
+            let missingCells = 0;
+            let affectedRows = 0;
+            for (const row of rows) {
+              let rowMissing = 0;
+              for (const c of notNullSet) {
+                const v = row?.[c];
+                if (v === null || v === undefined) rowMissing++;
+              }
+              if (rowMissing > 0) {
+                missingCells += rowMissing;
+                affectedRows++;
+              }
+            }
+            if (affectedRows > 0) {
+              issues.push(
+                `${table}: ${affectedRows} rows me ${missingCells} NOT NULL value missing (${Array.from(notNullSet).join(",")}) — ye rows insert fail hongi`
+              );
+            }
+          }
+        }
+
+        if (issues.length > 0) {
+          setProgress("");
+          console.warn("Dry run issues:", issues);
+          showToast(
+            "error",
+            `❌ Dry run FAILED — ${issues.length} issue(s): ${issues.slice(0, 3).join("; ")}${
+              issues.length > 3 ? ` (+${issues.length - 3} aur)` : ""
+            }`
+          );
+          setRestoring(false);
+          return;
+        }
+
         const totalRows = orderedTables.reduce(
           (s, { table }) => s + (backup[table]?.length || 0),
           0
         );
+        console.debug(`Dry run ok: ${rowsChecked} rows checked across ${orderedTables.length} tables`);
         showToast(
           "success",
           `✅ Dry run PASSED! ${totalRows.toLocaleString()} rows in ${orderedTables.length} tables ready to restore.`
@@ -653,7 +935,9 @@ export default function BackupPage() {
       setProgress("Live image URLs snapshot ho rahi hain...");
       const liveImages: Record<string, Map<string, Record<string, unknown>>> = {};
       for (const { table } of orderedTables) {
-        const imgCols = (TABLE_COLUMNS[table] || []).filter((c) => IMAGE_COLUMNS.includes(c));
+        const imgCols = (colsOf(table) ?? TABLE_COLUMNS[table] ?? []).filter((c) =>
+          IMAGE_COLUMNS.includes(c)
+        );
         if (imgCols.length === 0) continue;
         const m = new Map<string, Record<string, unknown>>();
         try {
@@ -682,22 +966,15 @@ export default function BackupPage() {
         if (!NO_DELETE_TABLES.includes(table) && !RESTORE_FREE_TABLES.includes(table)) {
           setProgress(`Clearing table: ${table}...`);
           let delErr = null;
-          if (COMPOSITE_KEY_TABLES.includes(table)) {
-            const col = COMPOSITE_KEY_CONFIG[table] || "transaction_id";
+          const pk = pkOf(table);
+          // Live schema PK se delete-all (uuid/text PK pe bhi chalta hai):
+          // PK kabhi null nahi hota → "pk IS NOT NULL" sab rows match karta hai.
+          if (pk.length > 0) {
+            const col = pk[0];
             const { error } = await supabase.from(table).delete().not(col, "is", null);
             delErr = error;
           } else {
-            const { error } = await supabase.from(table).delete().neq("id", -999999);
-            delErr = error;
-            if (delErr) {
-              const { error: err2 } = await supabase.from(table).delete().gt("id", -1);
-              if (err2) {
-                const { error: err3 } = await supabase.from(table).delete().gte("id", 0);
-                delErr = err3;
-              } else {
-                delErr = null;
-              }
-            }
+            console.warn(`${table} no PK — clear skip`);
           }
           if (delErr) {
             console.warn(`${table} clear warning:`, delErr.message);
@@ -720,9 +997,14 @@ export default function BackupPage() {
         }
 
         // ── Strip GENERATED columns (DB auto-calculates these) ────────────────
-        const genCols = GENERATED_COLS[table] || [];
+        const genCols = genOf(table);
+        // ── Live schema PK (upsert onConflict + dedupe ke liye) ───────────────
+        const pk = pkOf(table);
+        const hasIdCol = pk.includes("id");
         // ── Image columns jo is table mein hain (protection ke liye) ───────────
-        const imgCols = (TABLE_COLUMNS[table] || []).filter((c) => IMAGE_COLUMNS.includes(c));
+        const imgCols = (colsOf(table) ?? TABLE_COLUMNS[table] ?? []).filter((c) =>
+          IMAGE_COLUMNS.includes(c)
+        );
         // ── Skip rows with invalid FK references ──────────────────────────────
         const fkRule = SKIP_INVALID_FK[table];
         const rows = (rawRows as Record<string, unknown>[])
@@ -734,7 +1016,8 @@ export default function BackupPage() {
           .map((row) => {
             const r: Record<string, unknown> = { ...row };
             // Filter properties to keep only columns that exist in the database table schema
-            const allowedCols = TABLE_COLUMNS[table];
+            // (live schema se — naye columns bhi cover hote hain, koi strip nahi hota)
+            const allowedCols = colsOf(table) ?? TABLE_COLUMNS[table];
             if (allowedCols) {
               Object.keys(r).forEach((key) => {
                 if (!allowedCols.includes(key)) {
@@ -811,7 +1094,9 @@ export default function BackupPage() {
 
         // Step 2: Insert in batches of 25 (rate limit se bachne ke liye smaller batches)
         const batchSize = 25;
-        const hasIdCol = TABLE_COLUMNS[table]?.includes("id");
+        // Live PK columns ka onConflict — nikala hua composite PK (jaise
+        // spare_supplier) bhi sahi se upsert (update/insert) ho sake
+        const onConflict = pk.length ? { onConflict: pk.join(",") } : undefined;
         for (let i = 0; i < rows.length; i += batchSize) {
           let batch = rows.slice(i, i + batchSize);
           // Dedup within batch to avoid "cannot affect row a second time"
@@ -836,7 +1121,7 @@ export default function BackupPage() {
 
           const { error: insErr } = await supabase
             .from(table)
-            .upsert(batch as Record<string, unknown>[]);
+            .upsert(batch as Record<string, unknown>[], onConflict);
 
           if (insErr) {
             console.warn(`${table} batch ${i}-${i + batchSize} error:`, insErr.message);
@@ -846,7 +1131,7 @@ export default function BackupPage() {
               try {
                 const { error: rowErr } = await supabase
                   .from(table)
-                  .upsert(row as Record<string, unknown>);
+                  .upsert(row as Record<string, unknown>, onConflict);
                 if (!rowErr) {
                   totalRestored++;
                 } else {
@@ -873,6 +1158,35 @@ export default function BackupPage() {
         });
       }
 
+      // ── Step 2b: Post-restore count verify (silent data loss pakdo) ────────
+      // Har table ka exact count file rows se compare — mismatch = restore
+      // PARTIAL (upsert errors report me agar skip ho gaye to ye pakdega).
+      setProgress("Post-restore verify (count compare) ho rahi hai...");
+      const verifyFails: { table: string; fileRows: number; dbRows: number }[] = [];
+      for (const { table } of orderedTables) {
+        // Restore-free tables live values preserve karte hain — count match nahi
+        // hoga, isliye verify se bahar
+        if (RESTORE_FREE_TABLES.includes(table)) continue;
+        const fileRows = Array.isArray(backup[table]) ? backup[table].length : 0;
+        if (fileRows === 0) continue;
+        const { count } = await supabase.from(table).select("*", { count: "exact", head: true });
+        const dbRows = count || 0;
+        if (dbRows !== fileRows) {
+          verifyFails.push({ table, fileRows, dbRows });
+          console.warn(`${table} post-restore verify FAILED: file=${fileRows}, db=${dbRows}`);
+        }
+      }
+      if (verifyFails.length > 0) {
+        for (const f of verifyFails) {
+          tableResults.push({
+            table: `${f.table} (count verify)`,
+            fileRows: f.fileRows,
+            restored: 0,
+            failed: Math.abs(f.fileRows - f.dbRows),
+          });
+        }
+      }
+
       // Step 3: Reset sequences (important for auto-increment IDs)
       setProgress("Sequences reset ho rahi hain (naye IDs ke liye)...");
       const seqResults = await resetSequences();
@@ -885,10 +1199,15 @@ export default function BackupPage() {
       if (failedCount > 0) {
         showToast(
           "error",
-          `⚠ ${totalRestored.toLocaleString()} restored, ${failedCount} failed — report dekhein`
+          `⚠ ${totalRestored.toLocaleString()} restored, ${failedCount} failed${
+            verifyFails.length ? ` (+${verifyFails.length} tables count mismatch)` : ""
+          } — report dekhein`
         );
       } else {
-        showToast("success", `✅ ${totalRestored.toLocaleString()} rows 100% restored!`);
+        showToast(
+          "success",
+          `✅ ${totalRestored.toLocaleString()} rows 100% restored + count verified!`
+        );
       }
       fetchTableStats();
     } catch (err: unknown) {
@@ -906,9 +1225,11 @@ export default function BackupPage() {
       "system_info",
       "job_id_counter",
       "mechanic_list",
+      "profiles",
       "client_list",
       "product_list",
       "service_list",
+      "suppliers",
       "inventory_list",
       "lender_list",
       "expense_list",
@@ -922,9 +1243,25 @@ export default function BackupPage() {
       "mechanic_salary_history",
       "mechanic_commission_history",
       "message_list",
+      "messages",
       "wp_template_history",
       "activity_logs",
       "payment_reminders",
+      "push_subscriptions",
+      "client_contacts",
+      "supplier_contacts",
+      "supplier_contact_persons",
+      "supplier_contact_phones",
+      "location_zones",
+      "location_racks",
+      "location_bins",
+      "location_boxes",
+      "stock_counts",
+      "stock_adjustments",
+      "supplier_payments",
+      "job_required_parts",
+      "bom_templates",
+      "login_throttle",
     ];
 
     const results: string[] = [];
@@ -977,10 +1314,16 @@ export default function BackupPage() {
         return;
       }
 
+      // v3.0+ files me file ki apni table list hoti hai (live schema se) —
+      // diff/preview usi se banao, static list se nahi
+      const fileTables: string[] = Array.isArray(meta.tables)
+        ? (meta.tables as string[])
+        : BACKUP_TABLES;
+
       // Build preview info
       const tables: { name: string; rows: number }[] = [];
       let totalRows = 0;
-      for (const t of BACKUP_TABLES) {
+      for (const t of fileTables) {
         const rows = backup[t];
         if (Array.isArray(rows)) {
           tables.push({ name: t, rows: rows.length });
@@ -998,7 +1341,7 @@ export default function BackupPage() {
 
       // Compute diff: file rows vs current DB rows
       const diff: DiffRow[] = [];
-      for (const t of BACKUP_TABLES) {
+      for (const t of fileTables) {
         const fileRows = Array.isArray(backup[t]) ? backup[t].length : 0;
         const { count } = await supabase.from(t).select("*", { count: "exact", head: true });
         const dbRows = count || 0;
@@ -1037,16 +1380,20 @@ export default function BackupPage() {
     return tableStats.find((s) => s.table === table)?.count || 0;
   };
 
-  const busy = taking || restoring;
+  const busy = taking || restoring || serverBusy;
 
-  // Group tables by order for display
-  const groupedTables = BACKUP_TABLES_ORDERED.reduce(
-    (acc, { table, order }) => {
-      if (!acc[order]) acc[order] = [];
-      acc[order].push(table);
-      return acc;
-    },
-    {} as Record<number, string[]>
+  // Group tables by order for display (live schema se nayi tables bhi aati hain)
+  const groupedTables = useMemo(
+    () =>
+      liveOrdered.reduce(
+        (acc, { table, order }) => {
+          if (!acc[order]) acc[order] = [];
+          acc[order].push(table);
+          return acc;
+        },
+        {} as Record<number, string[]>
+      ),
+    [liveOrdered]
   );
 
   return (
@@ -1129,11 +1476,17 @@ export default function BackupPage() {
               <div>
                 <h1 className="text-lg font-black text-white">Database Backup & Restore</h1>
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider">
-                  {BACKUP_TABLES.length} tables · Auto-restore order · Sequence safe
+                  {tableNames.length} tables · Auto-restore order · Sequence safe
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Link
+                href="/backup/guide"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-500/10 border border-sky-500/30 hover:bg-sky-500/20 text-sky-400 rounded-lg text-xs font-bold transition"
+              >
+                <BookOpen size={12} /> Guide
+              </Link>
               <button
                 onClick={handleRepairImages}
                 disabled={repairing || busy}
@@ -1264,6 +1617,189 @@ export default function BackupPage() {
                 </>
               )}
             </button>
+          </div>
+        </div>
+
+        {/* SERVER BACKUP (scheduled) card */}
+        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-sky-600/20 to-transparent border-b border-[#21293d]">
+            <Server size={14} className="text-sky-400" />
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              Server Backup (Scheduled)
+            </h3>
+          </div>
+          <div className="p-5 space-y-4">
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Download wale backup ki tarah hi, par file{" "}
+              <span className="text-sky-400 font-bold">server ke backups/ folder</span> me banti
+              hai. Isi ko daily schedule kar ke (Task Scheduler / cron){" "}
+              <span className="text-slate-200 font-bold">free-tier automatic backup</span> banta
+              hai — browser/kholne ki zaroorat nahi.
+            </p>
+
+            <button
+              onClick={handleServerBackup}
+              disabled={busy}
+              className="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-black text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-sky-900/30"
+            >
+              {serverBusy ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Server backup ho raha hai...
+                </>
+              ) : (
+                <>
+                  <Server size={16} /> Abhi Server Backup Run Karo
+                </>
+              )}
+            </button>
+
+            {serverResult && (
+              <div
+                className={`text-xs rounded-xl px-4 py-3 border ${
+                  serverResult.error
+                    ? "bg-red-500/8 border-red-500/20 text-red-400"
+                    : serverResult.incomplete
+                      ? "bg-red-500/8 border-red-500/20 text-red-400"
+                      : "bg-emerald-500/8 border-emerald-500/20 text-emerald-400"
+                }`}
+              >
+                {serverResult.error ? (
+                  <>❌ {serverResult.error}</>
+                ) : serverResult.incomplete ? (
+                  <>⚠ INCOMPLETE — count mismatch. Pehle wali file se mahfuz rahna.</>
+                ) : (
+                  <>
+                    ✅ {serverResult.rows.toLocaleString()} rows / {serverResult.tables} tables —
+                    count verified
+                  </>
+                )}
+                {serverResult.fileName && (
+                  <span className="block text-slate-500 mt-1 font-mono">{serverResult.fileName}</span>
+                )}
+                {serverResult.storage && (
+                  <span
+                    className={`block mt-1 text-[10px] ${
+                      serverResult.storage.uploaded ? "text-emerald-400/80" : "text-amber-400/80"
+                    }`}
+                  >
+                    {serverResult.storage.uploaded
+                      ? `☁️ Cloud copy upload hui (Storage 'backups' bucket)`
+                      : `☁️ Cloud copy FAIL — ${serverResult.storage.error ?? "unknown"}`}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Recent files */}
+            <div>
+              <p className="flex items-center gap-1.5 text-[9px] font-black uppercase text-slate-600 tracking-wider mb-1.5">
+                <Clock size={10} /> Recent backups (server)
+              </p>
+              {serverFiles.length === 0 ? (
+                <p className="text-slate-600 text-xs">Koi server backup nahi — upar se run karo.</p>
+              ) : (
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {serverFiles.slice(0, 5).map((f) => (
+                    <div
+                      key={f.name}
+                      className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-[#0d1117] rounded-lg border border-[#21293d] text-[10px]"
+                    >
+                      <span className="text-slate-400 font-mono truncate">{f.name}</span>
+                      <span className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-slate-600">
+                          {new Date(f.modified).toLocaleDateString("en-GB")} ·{" "}
+                          {(f.size / 1024).toFixed(0)} KB
+                        </span>
+                        <button
+                          onClick={() => handleDownloadBackup(f.name, "local")}
+                          disabled={downloading === `local:${f.name}`}
+                          title="Local backup download karo"
+                          className="text-sky-400 hover:text-sky-300 disabled:opacity-40 transition-colors"
+                        >
+                          {downloading === `local:${f.name}` ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Download size={12} />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBackup(f.name, "local")}
+                          disabled={deleting === `local:${f.name}`}
+                          title="Local backup delete karo"
+                          className="text-red-400 hover:text-red-300 disabled:opacity-40 transition-colors"
+                        >
+                          {deleting === `local:${f.name}` ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={12} />
+                          )}
+                        </button>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="flex items-center gap-1.5 text-[9px] font-black uppercase text-slate-600 tracking-wider mb-1.5 mt-3">
+                <Cloud size={10} /> Recent cloud copies (Storage bucket)
+              </p>
+              {serverCloudFiles.length === 0 ? (
+                <p className="text-slate-600 text-xs">
+                  Cloud copy nahi — run karne par &quot;backups&quot; bucket me private upload hoti hai
+                  (Vercel par bhi persistent).
+                </p>
+              ) : (
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {serverCloudFiles.map((f) => (
+                    <div
+                      key={f.name}
+                      className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-[#0d1117] rounded-lg border border-[#21293d] text-[10px]"
+                    >
+                      <span className="text-slate-400 font-mono truncate">{f.name}</span>
+                      <span className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-slate-600">
+                          {f.modified ? new Date(f.modified).toLocaleDateString("en-GB") : ""}
+                        </span>
+                        <button
+                          onClick={() => handleDownloadBackup(f.name, "cloud")}
+                          disabled={downloading === `cloud:${f.name}`}
+                          title="Cloud backup download karo"
+                          className="text-sky-400 hover:text-sky-300 disabled:opacity-40 transition-colors"
+                        >
+                          {downloading === `cloud:${f.name}` ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Download size={12} />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBackup(f.name, "cloud")}
+                          disabled={deleting === `cloud:${f.name}`}
+                          title="Cloud backup delete karo"
+                          className="text-red-400 hover:text-red-300 disabled:opacity-40 transition-colors"
+                        >
+                          {deleting === `cloud:${f.name}` ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={12} />
+                          )}
+                        </button>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <p className="text-[10px] text-slate-600 leading-relaxed">
+              💡 Daily schedule: Windows me Task Scheduler se{" "}
+              <code className="text-slate-500">
+                node scripts\supabase-json-backup.mjs --storage
+              </code>{" "}
+              chalate raho (local + cloud, exit 2 = incomplete). Download wala local copy weekly
+              off-site (Drive) rakho. Upar wali list me file ke aage download icon se file utaaro
+              aur trash icon se hatao (local + cloud dono), ya Dashboard → Storage → backups.
+            </p>
           </div>
         </div>
 

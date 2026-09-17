@@ -49,6 +49,9 @@ const nextConfig: NextConfig = {
     "192.168.29.*", // mobile hotspot (optional)
     "10.0.0.*", // kuch routers ye range use karte hain (optional)
   ],
+  outputFileTracingIncludes: {
+    "/backup/guide": ["./docs/BACKUP_GUIDE.md"],
+  },
   async redirects() {
     return [
       {
