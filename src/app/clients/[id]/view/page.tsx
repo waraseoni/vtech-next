@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
@@ -334,6 +334,25 @@ export default function ViewClientProfile() {
   const [reminders, setReminders] = useState<PaymentReminder[]>([]);
   const [dueModal, setDueModal] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
+  const fabRef = useRef<HTMLDivElement>(null);
+
+  // FAB menu bahar click / Escape par auto-close
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (fabRef.current && !fabRef.current.contains(e.target as Node)) setFabOpen(false);
+    };
+    const k = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFabOpen(false);
+    };
+    if (fabOpen) {
+      document.addEventListener("mousedown", h);
+      document.addEventListener("keydown", k);
+    }
+    return () => {
+      document.removeEventListener("mousedown", h);
+      document.removeEventListener("keydown", k);
+    };
+  }, [fabOpen]);
   const [dueForm, setDueForm] = useState({ due_date: "", due_remarks: "" });
   const [savingDue, setSavingDue] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -2545,7 +2564,7 @@ export default function ViewClientProfile() {
       )}
 
       {/* ── FAB (mobile) — saare client actions ek menu me ── */}
-      <div className="md:hidden fixed bottom-4 right-4 z-[45] flex flex-col gap-3 items-end">
+      <div ref={fabRef} className="md:hidden fixed bottom-4 right-4 z-[45] flex flex-col gap-3 items-end">
         <button
           onClick={() => setFabOpen(!fabOpen)}
           className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center !text-white border border-blue-500/30 transition-all active:scale-95"

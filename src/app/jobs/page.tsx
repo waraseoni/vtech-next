@@ -302,6 +302,25 @@ function JobsListContent() {
 
   // FAB (mobile)
   const [fabOpen, setFabOpen] = useState(false);
+  const fabRef = useRef<HTMLDivElement>(null);
+
+  // FAB menu bahar click / Escape par auto-close
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (fabRef.current && !fabRef.current.contains(e.target as Node)) setFabOpen(false);
+    };
+    const k = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFabOpen(false);
+    };
+    if (fabOpen) {
+      document.addEventListener("mousedown", h);
+      document.addEventListener("keydown", k);
+    }
+    return () => {
+      document.removeEventListener("mousedown", h);
+      document.removeEventListener("keydown", k);
+    };
+  }, [fabOpen]);
 
   // ── Mobile view toggle (PHP: transactions_view localStorage) ──
   const [mobileView, setMobileView] = useState<"card" | "table">("card");
@@ -2851,7 +2870,7 @@ function JobsListContent() {
       )}
 
       {/* ── FAB ── */}
-      <div className="fixed bottom-4 right-4 z-[45] flex flex-col gap-3 items-end">
+      <div ref={fabRef} className="fixed bottom-4 right-4 z-[45] flex flex-col gap-3 items-end">
         <button
           onClick={() => setFabOpen(!fabOpen)}
           className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center text-white border border-blue-500/30 transition-all active:scale-95"
