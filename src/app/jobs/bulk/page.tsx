@@ -83,7 +83,10 @@ interface BulkRow {
 
 const iCls =
   "w-full px-2.5 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-white outline-none focus:border-blue-500/60 transition-all";
+const iClsErr =
+  "w-full px-2.5 py-2 bg-[#0d1117] border border-red-500/60 rounded-lg text-xs text-white outline-none focus:border-red-400 transition-all";
 const lCls = "block text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-1";
+const fieldErr = (fields: string[] | undefined, key: string) => fields?.includes(key);
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function BulkJobPage() {
@@ -93,6 +96,9 @@ export default function BulkJobPage() {
   const [mechanics, setMechanics] = useState<Mechanic[]>([]);
   const [clientId, setClientId] = useState("");
   const [globalMech, setGlobalMech] = useState("");
+  // Global mechanic ka hamesha-fresh mirror — searchable dropdown se select ke
+  // baad addRow ko latest value mile (stale closure se bachne ke liye).
+  const globalMechRef = useRef("");
   const [baseJobId, setBaseJobId] = useState(0);
   const [rows, setRows] = useState<BulkRow[]>([]);
   const [rowKey, setRowKey] = useState(100); // unique key counter
@@ -101,6 +107,8 @@ export default function BulkJobPage() {
   // Re-entrancy guard — double click / slow network par bulk save do baar na
   // chale (har baar fresh getNextJobId aur duplicate rows ki possibility).
   const savingRef = useRef(false);
+  // Row-wise validation errors (missing fields) — save-block warning ke liye
+  const [rowErrs, setRowErrs] = useState<Record<number, string[]>>({});
   const [toast, setToast] = useState<{ type: "success" | "error" | "warn"; msg: string } | null>(
     null
   );
@@ -159,7 +167,7 @@ export default function BulkJobPage() {
         estJobId: newEstJobId,
         item: "",
         fault: "",
-        mechanic_id: globalMech,
+        mechanic_id: globalMechRef.current,
         uniq_id: "",
         remark: "",
       },
@@ -183,12 +191,45 @@ export default function BulkJobPage() {
   // ── Update row field ───────────────────────────────────────────────────────
   const updateRow = (id: number, field: keyof BulkRow, val: string) => {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: val } : r)));
+    // Live re-validate — field bharte hi us row ka error turant hat jaye
+    setRowErrs((prevErrs) => {
+      if (!prevErrs[id]) return prevErrs;
+      const updatedRows = rows.map((r) => (r.id === id ? { ...r, [field]: val } : r));
+      const single = buildRowValidation(updatedRows)[id];
+      const next = { ...prevErrs };
+      if (single) next[id] = single;
+      else delete next[id];
+      return next;
+    });
   };
 
   // ── Apply global mechanic to all empty rows ────────────────────────────────
   const applyGlobalMech = (mechId: string) => {
     setGlobalMech(mechId);
+    globalMechRef.current = mechId;
     setRows((prev) => prev.map((r) => (r.mechanic_id === "" ? { ...r, mechanic_id: mechId } : r)));
+    // Live re-validate — mechanic milte hi mechanic-less errors turant hat jaye
+    setRowErrs((prevErrs) => {
+      if (!Object.keys(prevErrs).length) return prevErrs;
+      const updatedRows = rows.map((r) =>
+        r.mechanic_id === "" ? { ...r, mechanic_id: mechId } : r
+      );
+      return buildRowValidation(updatedRows);
+    });
+  };
+
+  // ── Row validation — missing fields ka map banao (row id → field names) ──
+  const buildRowValidation = (list: BulkRow[]): Record<number, string[]> => {
+    const errs: Record<number, string[]> = {};
+    list.forEach((r) => {
+      const miss: string[] = [];
+      if (!r.item.trim()) miss.push("Item / Model");
+      if (!r.fault.trim()) miss.push("Fault Reported");
+      // Mechanic sirf unhi rows me mandatory hai jo save hongi (item+fault filled)
+      if (r.item.trim() && r.fault.trim() && !r.mechanic_id) miss.push("Mechanic");
+      if (miss.length) errs[r.id] = miss;
+    });
+    return errs;
   };
 
   // ── Save all ───────────────────────────────────────────────────────────────
@@ -199,10 +240,27 @@ export default function BulkJobPage() {
       return;
     }
 
-    // Filter non-empty rows
-    const validRows = rows.filter((r) => r.item.trim() && r.fault.trim());
+    // Pehle validation — koi bhi row adhuri/mechanic-less hai to save band, warning + highlight
+    const errs = buildRowValidation(rows);
+    const missingIds = Object.keys(errs).length > 0;
+    if (missingIds) {
+      setRowErrs(errs);
+      const labels = rows.map((r, i) => ({ r, i }))
+        .filter(({ r }) => errs[r.id])
+        .map(({ r, i }) => `Row ${i + 1} (#${r.estJobId}): ${errs[r.id].join(", ")}`);
+      const short = labels.slice(0, 2).join(" | ");
+      const countSuffix = labels.length > 2 ? ` ... aur ${labels.length - 2} rows` : "";
+      setToast({ type: "warn", msg: `${labels.length} rows adhuri hain — ${short}${countSuffix}` });
+      // Pehli adhuri row par smooth scroll + focus
+      requestAnimationFrame(() => scrollToRowError(errs));
+      return;
+    }
+    setRowErrs({});
+
+    // Filter valid rows
+    const validRows = rows.filter((r) => r.item.trim() && r.fault.trim() && r.mechanic_id);
     if (validRows.length === 0) {
-      setToast({ type: "error", msg: "Kam se kam ek row mein item aur fault fill karo!" });
+      setToast({ type: "error", msg: "Kam se kam ek row mein item, fault aur mechanic fill karo!" });
       return;
     }
 
@@ -268,6 +326,40 @@ export default function BulkJobPage() {
       savingRef.current = false;
       setSaving(false);
     }
+  };
+
+  // ── Save-block par pehli adhuri row par scroll + focus karo ─────────────
+  // Dhyan rahe: desktop table + mobile cards dono DOM me exist karte hain —
+  // isliye sirf VISIBLE row/field select karna zaroori hai (offsetParent check).
+  const visibleEls = (sel: string) =>
+    Array.from(document.querySelectorAll<HTMLElement>(sel)).filter((e) => e.offsetParent !== null);
+
+  const scrollToRowError = (errs: Record<number, string[]>) => {
+    const firstId = Number(Object.keys(errs)[0]);
+    if (!firstId) return;
+    const el = visibleEls(`[data-bulk-row="${firstId}"]`)[0];
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Pehla missing field focus karo (item → fault → mechanic)
+    const errFields = errs[firstId] || [];
+    setTimeout(() => {
+      const sel = errFields.includes("Item / Model")
+        ? `[data-bulk-input-item="${firstId}"]`
+        : errFields.includes("Fault Reported")
+          ? `[data-bulk-input-fault="${firstId}"]`
+          : errFields.includes("Mechanic")
+            ? `[data-bulk-mech="${firstId}"]`
+            : null;
+      if (!sel) return;
+      const host = visibleEls(sel)[0];
+      if (!host) return;
+      if (sel.includes("bulk-mech")) {
+        const btn = host.querySelector<HTMLElement>("button");
+        btn?.focus({ preventScroll: true });
+        btn?.click(); // SearchableSelect dropdown open
+      } else {
+        host.focus({ preventScroll: true });
+      }
+    }, 350);
   };
 
   // ── Loading ────────────────────────────────────────────────────────────────
@@ -367,9 +459,29 @@ export default function BulkJobPage() {
                 placeholder="Select Default Mechanic"
                 clearLabel="Select Default Mechanic"
               />
+              <p className="text-[9px] text-slate-600 mt-1.5">
+                Select karne par sabhi rows (purani aur nayi dono) me apply hota hai
+              </p>
             </div>
           </div>
         </div>
+
+        {/* ── Validation Warning Banner ── */}
+        {Object.keys(rowErrs).length > 0 && (
+          <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-2xl px-4 py-3">
+            <AlertTriangle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="text-xs text-red-300 font-medium">
+              Save nahi hoga — neeche red-marked fields check karo:
+              <span className="block mt-0.5 text-red-400 font-bold">
+                {rows
+                  .map((r, i) => ({ r, i }))
+                  .filter(({ r }) => rowErrs[r.id])
+                  .map(({ r, i }) => `Row ${i + 1} (#${r.estJobId}): ${rowErrs[r.id].join(", ")} missing`)
+                  .join("  |  ")}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* ── Desktop Table View ── */}
         <div className="hidden md:block bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
@@ -388,7 +500,7 @@ export default function BulkJobPage() {
                 <th className="px-3 py-3 text-left text-[9px] font-black text-emerald-300 uppercase">
                   Fault Reported <span className="text-red-400">*</span>
                 </th>
-                <th className="px-3 py-3 text-left text-[9px] font-black text-emerald-300 uppercase w-36">
+                <th className="px-3 py-3 text-left text-[9px] font-black text-emerald-300 uppercase w-40">
                   Assign To
                 </th>
                 <th className="px-3 py-3 text-left text-[9px] font-black text-emerald-300 uppercase w-28">
@@ -401,44 +513,71 @@ export default function BulkJobPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#21293d]">
-              {rows.map((row, i) => (
-                <tr key={row.id} className="hover:bg-white/[0.015] transition-colors">
-                  <td className="px-3 py-2.5 text-center text-slate-600 font-bold">{i + 1}</td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-1 bg-[#0d1117] border border-[#21293d] rounded-lg px-2.5 py-1.5 justify-center">
-                      <Hash size={10} className="text-slate-600" />
-                      <span className="text-amber-400 font-black text-xs">{row.estJobId}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <input
-                      type="text"
-                      value={row.item}
-                      onChange={(e) => updateRow(row.id, "item", e.target.value)}
-                      placeholder="Item / Model"
-                      className={iCls}
-                      required
-                    />
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <input
-                      type="text"
-                      value={row.fault}
-                      onChange={(e) => updateRow(row.id, "fault", e.target.value)}
-                      placeholder="Fault"
-                      className={iCls}
-                      required
-                    />
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <SearchableSelect
-                      value={row.mechanic_id}
-                      options={mechOptions.map((m) => ({ id: m.id, label: m.name }))}
-                      onSelect={(v) => updateRow(row.id, "mechanic_id", v)}
-                      placeholder="Select"
-                      clearLabel="Select"
-                    />
-                  </td>
+              {rows.map((row, i) => {
+                const rErrs = rowErrs[row.id];
+                return (
+                  <tr
+                    key={row.id}
+                    data-bulk-row={row.id}
+                    className={`transition-colors ${
+                      rErrs ? "bg-red-500/[0.05]" : "hover:bg-white/[0.015]"
+                    }`}
+                  >
+                    <td className="px-3 py-2.5 text-center text-slate-600 font-bold">
+                      {i + 1}
+                      {rErrs && (
+                        <span className="block text-[8px] text-red-400 font-black uppercase">
+                          missing
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-1 bg-[#0d1117] border border-[#21293d] rounded-lg px-2.5 py-1.5 justify-center">
+                        <Hash size={10} className="text-slate-600" />
+                        <span className="text-amber-400 font-black text-xs">{row.estJobId}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <input
+                        type="text"
+                        data-bulk-input-item={row.id}
+                        value={row.item}
+                        onChange={(e) => updateRow(row.id, "item", e.target.value)}
+                        placeholder="Item / Model"
+                        className={fieldErr(rErrs, "Item / Model") ? iClsErr : iCls}
+                        required
+                      />
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <input
+                        type="text"
+                        data-bulk-input-fault={row.id}
+                        value={row.fault}
+                        onChange={(e) => updateRow(row.id, "fault", e.target.value)}
+                        placeholder="Fault"
+                        className={fieldErr(rErrs, "Fault Reported") ? iClsErr : iCls}
+                        required
+                      />
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div
+                        data-bulk-mech={row.id}
+                        className={fieldErr(rErrs, "Mechanic") ? "rounded-xl ring-2 ring-red-500/60" : ""}
+                      >
+                        <SearchableSelect
+                          value={row.mechanic_id}
+                          options={mechOptions.map((m) => ({ id: m.id, label: m.name }))}
+                          onSelect={(v) => updateRow(row.id, "mechanic_id", v)}
+                          placeholder="Select"
+                          clearLabel="Select"
+                        />
+                      </div>
+                      {fieldErr(rErrs, "Mechanic") && (
+                        <span className="block text-[9px] text-red-400 font-bold mt-0.5">
+                          Mechanic select karo
+                        </span>
+                      )}
+                    </td>
                   <td className="px-3 py-2.5">
                     <input
                       type="text"
@@ -466,90 +605,116 @@ export default function BulkJobPage() {
                     </button>
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         </div>
 
         {/* ── Mobile Card View ── */}
         <div className="md:hidden space-y-3">
-          {rows.map((row, i) => (
-            <div
-              key={row.id}
-              className="bg-[#161b27] border border-[#21293d] border-l-4 border-l-emerald-500 rounded-2xl p-4 relative"
-            >
-              <span className="absolute top-3 right-4 text-slate-700 font-black text-lg">
-                #{i + 1}
-              </span>
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                  <label className={lCls}>Job ID (Est.)</label>
-                  <div className="flex items-center gap-1 bg-[#0d1117] border border-[#21293d] rounded-lg px-2.5 py-2">
-                    <Hash size={10} className="text-slate-600" />
-                    <span className="text-amber-400 font-black text-xs">{row.estJobId}</span>
+          {rows.map((row, i) => {
+            const rErrs = rowErrs[row.id];
+            return (
+              <div
+                key={row.id}
+                data-bulk-row={row.id}
+                className={`bg-[#161b27] border rounded-2xl p-4 relative ${
+                  rErrs
+                    ? "border-red-500/60 border-l-4 border-l-red-500"
+                    : "border-[#21293d] border-l-4 border-l-emerald-500"
+                }`}
+              >
+                <span className="absolute top-3 right-4 text-slate-700 font-black text-lg">
+                  #{i + 1}
+                </span>
+                {rErrs && (
+                  <span className="inline-block text-[9px] text-red-400 font-black uppercase bg-red-500/10 border border-red-500/30 rounded-md px-1.5 py-0.5 mb-2">
+                    {rErrs.join(", ")} missing
+                  </span>
+                )}
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className={lCls}>Job ID (Est.)</label>
+                    <div className="flex items-center gap-1 bg-[#0d1117] border border-[#21293d] rounded-lg px-2.5 py-2">
+                      <Hash size={10} className="text-slate-600" />
+                      <span className="text-amber-400 font-black text-xs">{row.estJobId}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={lCls}>Unique ID</label>
+                    <input
+                      type="text"
+                      value={row.uniq_id}
+                      onChange={(e) => updateRow(row.id, "uniq_id", e.target.value)}
+                      placeholder="Location/ID"
+                      className={iCls}
+                    />
                   </div>
                 </div>
-                <div>
-                  <label className={lCls}>Unique ID</label>
-                  <input
-                    type="text"
-                    value={row.uniq_id}
-                    onChange={(e) => updateRow(row.id, "uniq_id", e.target.value)}
-                    placeholder="Location/ID"
-                    className={iCls}
-                  />
+                <div className="space-y-2.5">
+                  <div>
+                    <label className={lCls}>Item / Model *</label>
+                    <input
+                      type="text"
+                      data-bulk-input-item={row.id}
+                      value={row.item}
+                      onChange={(e) => updateRow(row.id, "item", e.target.value)}
+                      placeholder="Item Name / Model"
+                      className={fieldErr(rErrs, "Item / Model") ? iClsErr : iCls}
+                    />
+                  </div>
+                  <div>
+                    <label className={lCls}>Fault Reported *</label>
+                    <input
+                      type="text"
+                      data-bulk-input-fault={row.id}
+                      value={row.fault}
+                      onChange={(e) => updateRow(row.id, "fault", e.target.value)}
+                      placeholder="Reported Fault"
+                      className={fieldErr(rErrs, "Fault Reported") ? iClsErr : iCls}
+                    />
+                  </div>
+                  <div>
+                    <label className={lCls}>Assign To</label>
+                    <div
+                      data-bulk-mech={row.id}
+                      className={fieldErr(rErrs, "Mechanic") ? "rounded-xl ring-2 ring-red-500/60" : ""}
+                    >
+                      <SearchableSelect
+                        value={row.mechanic_id}
+                        options={mechOptions.map((m) => ({ id: m.id, label: m.name }))}
+                        onSelect={(v) => updateRow(row.id, "mechanic_id", v)}
+                        placeholder="Select Mechanic"
+                        clearLabel="Select Mechanic"
+                      />
+                    </div>
+                    {fieldErr(rErrs, "Mechanic") && (
+                      <span className="block text-[9px] text-red-400 font-bold mt-0.5">
+                        Mechanic select karo
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <label className={lCls}>Remarks</label>
+                    <input
+                      type="text"
+                      value={row.remark}
+                      onChange={(e) => updateRow(row.id, "remark", e.target.value)}
+                      placeholder="Additional notes"
+                      className={iCls}
+                    />
+                  </div>
                 </div>
+                <button
+                  onClick={() => removeRow(row.id)}
+                  className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 border border-red-500/20 text-red-400 hover:bg-red-500/10 rounded-xl text-xs font-bold transition-colors"
+                >
+                  <Trash2 size={12} /> Remove This Item
+                </button>
               </div>
-              <div className="space-y-2.5">
-                <div>
-                  <label className={lCls}>Item / Model *</label>
-                  <input
-                    type="text"
-                    value={row.item}
-                    onChange={(e) => updateRow(row.id, "item", e.target.value)}
-                    placeholder="Item Name / Model"
-                    className={iCls}
-                  />
-                </div>
-                <div>
-                  <label className={lCls}>Fault Reported *</label>
-                  <input
-                    type="text"
-                    value={row.fault}
-                    onChange={(e) => updateRow(row.id, "fault", e.target.value)}
-                    placeholder="Reported Fault"
-                    className={iCls}
-                  />
-                </div>
-                <div>
-                  <label className={lCls}>Assign To</label>
-                  <SearchableSelect
-                    value={row.mechanic_id}
-                    options={mechOptions.map((m) => ({ id: m.id, label: m.name }))}
-                    onSelect={(v) => updateRow(row.id, "mechanic_id", v)}
-                    placeholder="Select Mechanic"
-                    clearLabel="Select Mechanic"
-                  />
-                </div>
-                <div>
-                  <label className={lCls}>Remarks</label>
-                  <input
-                    type="text"
-                    value={row.remark}
-                    onChange={(e) => updateRow(row.id, "remark", e.target.value)}
-                    placeholder="Additional notes"
-                    className={iCls}
-                  />
-                </div>
-              </div>
-              <button
-                onClick={() => removeRow(row.id)}
-                className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 border border-red-500/20 text-red-400 hover:bg-red-500/10 rounded-xl text-xs font-bold transition-colors"
-              >
-                <Trash2 size={12} /> Remove This Item
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* ── Bottom Actions ── */}
