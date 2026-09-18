@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.24.1](https://github.com/waraseoni/vtech-next/compare/v1.24.0...v1.24.1) (2026-09-18)
+
+### Bug Fixes
+
+* **fab:** outside-click/Escape close for FAB menus + attendance save FAB position/size ([2915d03](https://github.com/waraseoni/vtech-next/commit/2915d0318fea76e8420a83ce2819d2a8e1dbcc06))
+
 ## [1.24.0](https://github.com/waraseoni/vtech-next/compare/v1.23.3...v1.24.0) (2026-09-17)
 
 ### Features
