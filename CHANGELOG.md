@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.24.2](https://github.com/waraseoni/vtech-next/compare/v1.24.1...v1.24.2) (2026-09-18)
+
+### Bug Fixes
+
+* **jobs/bulk:** enforce mechanic on every row + field-level validation ([17a5f53](https://github.com/waraseoni/vtech-next/commit/17a5f53bc5803d1718ef568453f22c97d2a2dd58))
+
 ## [1.24.1](https://github.com/waraseoni/vtech-next/compare/v1.24.0...v1.24.1) (2026-09-18)
 
 ### Bug Fixes
