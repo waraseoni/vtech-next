@@ -32,6 +32,7 @@ import SearchableSelect from "@/components/SearchableSelect";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import { resolveTemplate, substituteTemplate, firmVars } from "@/lib/whatsapp";
+import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
 
 type Transaction = {
   id: number;
@@ -49,9 +50,7 @@ type Transaction = {
 };
 
 type ClientTotals = {
-  billed: number;
-  paid: number;
-  sales: number;
+  netBalance: number;
 };
 
 type Props = {
@@ -167,12 +166,9 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
     const total = transactions.reduce((s, t) => s + t.amount, 0);
     const unique = new Set(transactions.map((t) => t.client_id)).size;
     const avg = count > 0 ? total / count : 0;
-    const openings: Record<number, number> = {};
-    transactions.forEach((t) => { openings[t.client_id] = t.opening_balance; });
-    const totalBalance = Object.entries(clientTotals).reduce((s, [idStr, ct]) => {
-      const id = Number(idStr);
-      return s + (openings[id] || 0) + ct.billed + ct.sales - ct.paid;
-    }, 0);
+    // Canonical netBalance (opening + delivered + sales − paid + loans) —
+    // data migration doc ke golden rule ke mutabik kisi ad-hoc formula ka istemal nahi.
+    const totalBalance = Object.values(clientTotals).reduce((s, ct) => s + ct.netBalance, 0);
     return { count, total, unique, avg, totalBalance };
   }, [transactions, clientTotals]);
 
@@ -238,19 +234,29 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
           { data: billedData },
           { data: paymentsData },
           { data: salesData },
+          { data: loansData },
           { data: mechData },
         ] = await Promise.all([
           clientIds.length > 0
             ? supabase.from("client_list").select("id, firstname, middlename, lastname, contact, opening_balance, image_path").in("id", clientIds)
             : Promise.resolve({ data: [] }),
+          // Billed = sirf DELIVERED (status=5) jobs — canonical formula
+          // (client-due.ts). Pehle yahan status filter nahi tha, isliye client
+          // ke pending/in-progress jobs bhi due me ginte the. del_status=0
+          // page ki list ke consistent.
           clientIds.length > 0
-            ? supabase.from("transaction_list").select("client_name, amount").neq("del_status", 1).in("client_name", clientIds)
+            ? supabase.from("transaction_list").select("client_name, amount").eq("status", 5).eq("del_status", 0).in("client_name", clientIds)
             : Promise.resolve({ data: [] }),
+          // Saare payments (service + loan-linked) — partitioning helper karta hai
           clientIds.length > 0
-            ? supabase.from("client_payments").select("client_id, amount, discount").in("client_id", clientIds).or("loan_id.is.null,loan_id.eq.0")
+            ? supabase.from("client_payments").select("client_id, amount, discount, loan_id").in("client_id", clientIds)
             : Promise.resolve({ data: [] }),
           clientIds.length > 0
             ? supabase.from("direct_sales").select("client_id, total_amount").in("client_id", clientIds)
+            : Promise.resolve({ data: [] }),
+          // ACTIVE loans sirf — ye balance ko badhate hain (canonical ke mutabik)
+          clientIds.length > 0
+            ? supabase.from("client_loans").select("id, client_id, total_payable").eq("status", 1).in("client_id", clientIds)
             : Promise.resolve({ data: [] }),
           mechIds.length > 0
             ? supabase.from("mechanic_list").select("id, firstname, lastname, image_path").in("id", mechIds)
@@ -272,15 +278,17 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
             image_path: m.image_path || null,
           };
         });
-        const billedMap: Record<number, number> = {};
-        (billedData || []).forEach((b) => { billedMap[b.client_name] = (billedMap[b.client_name] || 0) + (b.amount || 0); });
-        const paidMap: Record<number, number> = {};
-        (paymentsData || []).forEach((p) => { paidMap[p.client_id] = (paidMap[p.client_id] || 0) + (p.amount || 0) + (p.discount || 0); });
-        const salesMap: Record<number, number> = {};
-        (salesData || []).forEach((s) => { salesMap[s.client_id] = (salesMap[s.client_id] || 0) + (s.total_amount || 0); });
         const totals: Record<number, ClientTotals> = {};
+        const dueMaps = buildDueMaps({
+          repairs: billedData,
+          directSales: salesData,
+          payments: paymentsData,
+          loans: loansData,
+        });
         clientIds.forEach((id) => {
-          totals[id] = { billed: billedMap[id] || 0, paid: paidMap[id] || 0, sales: salesMap[id] || 0 };
+          totals[id] = {
+            netBalance: balanceFromMaps(dueMaps, id, clientMap[id]?.opening_balance || 0),
+          };
         });
         setClientTotals(totals);
         setTransactions(
@@ -353,10 +361,12 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
     window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  const getBalanceInfo = (clientId: number, opening: number) => {
+  const getBalanceInfo = (clientId: number) => {
     const totals = clientTotals[clientId];
     if (!totals) return null;
-    const balance = opening + totals.billed + totals.sales - totals.paid;
+    // Canonical netBalance — opening + delivered + direct sales − service
+    // paid + active loans − loan repaid (client-due.ts ka single source).
+    const balance = totals.netBalance;
     if (balance > 0) return { type: "due", label: "Due", value: balance, color: "red" };
     else if (balance < 0) return { type: "adv", label: "Advance", value: Math.abs(balance), color: "emerald" };
     return { type: "clear", label: "Clear", value: 0, color: "slate" };
@@ -538,7 +548,7 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
                 </tr>
               ) : (
                 transactions.map((tx, idx) => {
-                  const balanceInfo = getBalanceInfo(tx.client_id, tx.opening_balance);
+                  const balanceInfo = getBalanceInfo(tx.client_id);
                   return (
                     <tr key={tx.id} className="hover:bg-blue-500/[0.02] transition-colors group">
                       <td className="py-2 px-3 text-center text-slate-500 font-bold text-[10px]">{idx + 1}</td>
@@ -627,7 +637,7 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
           </div>
         ) : (
           transactions.map((tx) => {
-            const balanceInfo = getBalanceInfo(tx.client_id, tx.opening_balance);
+            const balanceInfo = getBalanceInfo(tx.client_id);
             return (
               <div key={tx.id} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3.5 shadow-md space-y-3 hover:border-slate-600 transition-all">
                 {/* Top Row */}
@@ -758,7 +768,7 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
                 <p className="text-[11px] text-slate-300 mt-0.5">{showDetailModal.item}</p>
               </div>
               {(() => {
-                const balanceInfo = getBalanceInfo(showDetailModal.client_id, showDetailModal.opening_balance);
+                const balanceInfo = getBalanceInfo(showDetailModal.client_id);
                 return balanceInfo && (
                   <div className="bg-[#0d1117] p-2.5 rounded-xl border border-[#21293d]/80">
                     <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Client Balance</p>
