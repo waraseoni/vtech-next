@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [1.25.0](https://github.com/waraseoni/vtech-next/compare/v1.24.2...v1.25.0) (2026-09-19)
+
+### Features
+
+* **ui:** collapsible desktop sidebar + highlighted light-mode borders ([c242d2d](https://github.com/waraseoni/vtech-next/commit/c242d2dec8ae269f8ae65f844fa2ae616cf00767))
+
+### Bug Fixes
+
+* **reports/delivered:** canonical client due balance (delivered-only + active loans) ([41098d1](https://github.com/waraseoni/vtech-next/commit/41098d1bcf6a4fd2fb9a029b78cd2fc87cd46e1b))
+
 ## [1.24.2](https://github.com/waraseoni/vtech-next/compare/v1.24.1...v1.24.2) (2026-09-18)
 
 ### Bug Fixes
