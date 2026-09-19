@@ -52,6 +52,9 @@ export function useAppBoot() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+  // Desktop sidebar collapse (icons-only). Sirf >=1024px viewport me use hota
+  // hai; mobile drawer se independent. localStorage me persist ("1"/"0").
+  const [sidebarCollapsed, setSidebarCollapsedRaw] = useState(false);
   // THEME (theme/themePref/setThemePref/toggleTheme) — useAppTheme hook se.
   const [license, setLicense] = useState<LicenseStatus | null>(null);
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
@@ -519,6 +522,39 @@ export function useAppBoot() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
+  // Desktop sidebar collapse ke liye persistence (theme "vtech_theme" jaisa hi
+  // pattern). Init sirf mount par read karta hai; writes toggle/set ke through.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("vtech_sidebar_collapsed") === "1") {
+        setSidebarCollapsedRaw(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const setSidebarCollapsed = useCallback((v: boolean) => {
+    setSidebarCollapsedRaw(v);
+    try {
+      localStorage.setItem("vtech_sidebar_collapsed", v ? "1" : "0");
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const toggleSidebarCollapse = useCallback(() => {
+    setSidebarCollapsedRaw((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("vtech_sidebar_collapsed", next ? "1" : "0");
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }, []);
+
   // ── THEME ─────────────────────────────────────────────────────────────────
   // G1 split (2026-09-15): theme state/effects ab `useAppTheme` me (top par
   // composed). localStorage "vtech_theme" + data-theme apply etc. wahan.
@@ -539,6 +575,9 @@ export function useAppBoot() {
     setDrawerOpen,
     aiDrawerOpen,
     setAiDrawerOpen,
+    sidebarCollapsed,
+    setSidebarCollapsed,
+    toggleSidebarCollapse,
     theme,
     themePref,
     setThemePref,

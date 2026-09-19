@@ -63,6 +63,8 @@ import {
   PackageX,
   Boxes,
   Landmark,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
 import { LITE_MODE, LITE_MODULES, isLiteRouteAllowed } from "@/lib/lite";
@@ -462,12 +464,16 @@ function SubMenu({
   children,
   basePath,
   matchPaths,
+  collapsed,
+  onExpand,
 }: {
   title: string;
   icon: React.ReactNode;
   children: React.ReactNode;
   basePath?: string;
   matchPaths?: string[];
+  collapsed?: boolean;
+  onExpand?: () => void;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(() => {
@@ -477,20 +483,32 @@ function SubMenu({
   return (
     <li>
       <button
-        onClick={() => setOpen((p) => !p)}
+        onClick={() => {
+          // Collapsed (icons-only) me click karne par sidebar expand karo —
+          // pillay sub-items nahi dikhte, expand karna zyada natural UX hai.
+          if (collapsed && onExpand) {
+            onExpand();
+            return;
+          }
+          setOpen((p) => !p);
+        }}
         className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-white/[0.04] hover:text-slate-300 transition-all"
       >
         <div className="flex items-center gap-3">
           <span>{icon}</span>
+          {/* Title span hamesha render hota hai; collapsed mode me CSS
+              (`> div > span:last-child`) ise hide karta hai taaki icon span
+              pehla child rahe aur visible rahe. */}
           <span>{title}</span>
         </div>
-        {open ? (
-          <ChevronDown size={13} className="text-slate-600" />
-        ) : (
-          <ChevronRight size={13} className="text-slate-600" />
-        )}
+        {!collapsed &&
+          (open ? (
+            <ChevronDown size={13} className="text-slate-600" />
+          ) : (
+            <ChevronRight size={13} className="text-slate-600" />
+          ))}
       </button>
-      {open && <ul className="pl-3 mt-0.5 space-y-0.5">{children}</ul>}
+      {open && !collapsed && <ul className="pl-3 mt-0.5 space-y-0.5">{children}</ul>}
     </li>
   );
 }
@@ -521,6 +539,8 @@ function SidebarNav({
   devEnabled,
   enabledModules,
   unreadCount,
+  collapsed,
+  onExpand,
 }: {
   pathname: string;
   isAdmin: boolean;
@@ -531,6 +551,8 @@ function SidebarNav({
   devEnabled?: boolean;
   enabledModules?: string[] | null;
   unreadCount?: number;
+  collapsed?: boolean;
+  onExpand?: () => void;
 }) {
   const lk = (href: string, exact = false) =>
     exact ? pathname === href : pathname.startsWith(href);
@@ -657,6 +679,8 @@ function SidebarNav({
           Customer
         </li>
         <SubMenu
+          collapsed={collapsed}
+          onExpand={onExpand}
           title="Customer Report"
           icon={<Users size={15} />}
           matchPaths={["/reports/top-customers", "/reports/delivered", "/reports/due-reminders"]}
@@ -693,6 +717,8 @@ function SidebarNav({
           </li>
         </SubMenu>
         <SubMenu
+          collapsed={collapsed}
+          onExpand={onExpand}
           title="Jobs in Shop"
           icon={<Wrench size={15} />}
           matchPaths={[
@@ -750,6 +776,8 @@ function SidebarNav({
               Inventory
             </li>
             <SubMenu
+              collapsed={collapsed}
+              onExpand={onExpand}
               title="Inventory"
               icon={<Package size={15} />}
               basePath="/inventory"
@@ -887,6 +915,8 @@ function SidebarNav({
                   Finance
                 </li>
                 <SubMenu
+                  collapsed={collapsed}
+                  onExpand={onExpand}
                   title="Finance"
                   icon={<DollarSign size={15} />}
                   matchPaths={[
@@ -990,7 +1020,7 @@ function SidebarNav({
                 <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
                   People
                 </li>
-                <SubMenu title="People" icon={<UsersRound size={15} />} matchPaths={["/services"]}>
+                <SubMenu title="People" icon={<UsersRound size={15} />} matchPaths={["/services"]} collapsed={collapsed} onExpand={onExpand}>
                   <li>
                     <Link
                       href="/mechanics"
@@ -1036,6 +1066,8 @@ function SidebarNav({
                   Reports
                 </li>
                 <SubMenu
+                  collapsed={collapsed}
+                  onExpand={onExpand}
                   title="Reports"
                   icon={<PieChart size={15} />}
                   basePath="/reports"
@@ -1225,6 +1257,8 @@ function SidebarNav({
               System
             </li>
             <SubMenu
+              collapsed={collapsed}
+              onExpand={onExpand}
               title="System"
               icon={<Settings2 size={15} />}
               matchPaths={["/users", "/settings", "/backup", "/back-office/db-tools", "/images"]}
@@ -1294,6 +1328,8 @@ function SidebarNav({
             {/* ══ DEVELOPER ════════════════════════════════════════════════ */}
             {(sellerEnabled || devEnabled) && (
               <SubMenu
+                collapsed={collapsed}
+                onExpand={onExpand}
                 title="Developer"
                 icon={<Code2 size={15} />}
                 matchPaths={["/developer", "/sync", "/images", "/seller", "/back-office/db-tools"]}
@@ -1385,6 +1421,9 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     setDropdownOpen,
     drawerOpen,
     setDrawerOpen,
+    sidebarCollapsed,
+    setSidebarCollapsed,
+    toggleSidebarCollapse,
     aiDrawerOpen,
     setAiDrawerOpen,
     theme,
@@ -1694,14 +1733,24 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
       {/* ══════════════════════ DESKTOP SIDEBAR ══════════════════════ */}
       {isMobile === false && !isAiPage && (
-        <aside className="fixed top-0 left-0 h-full w-[260px] glass border-r flex flex-col z-50">
+        <aside
+          className={`fixed top-0 left-0 h-full ${
+            sidebarCollapsed ? "w-16" : "w-[260px]"
+          } glass border-r flex flex-col z-50 transition-[width] duration-200 ease-out ${
+            sidebarCollapsed ? "sidebar-collapsed" : ""
+          }`}
+        >
           {/* Brand — click karo → public website (logged-in user bhi) */}
-          <div className="relative overflow-hidden px-5 py-4 border-b border-[#1a2234]">
+          <div
+            className={`relative overflow-hidden ${
+              sidebarCollapsed ? "px-1" : "px-5"
+            } py-4 border-b border-[#1a2234]`}
+          >
             <div className="absolute inset-0 bg-gradient-to-br from-blue-700/15 to-transparent pointer-events-none" />
             <Link
               href="/"
               title="Public Website"
-              className="relative flex items-center gap-3 group"
+              className={`relative flex items-center ${sidebarCollapsed ? "justify-center" : "gap-3"} group`}
             >
               <div
                 className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-900/50 transition-all group-hover:scale-105 ${brandLogo ? "bg-white" : "bg-gradient-to-br from-blue-500 to-blue-700 group-hover:from-blue-500 group-hover:to-cyan-600"}`}
@@ -1719,15 +1768,17 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                   <Sparkles size={20} className="text-white" />
                 )}
               </div>
-              <div>
-                <div className="text-lg font-black tracking-tight leading-none">
-                  <span className="vtech-brand">V-TECH</span>{" "}
-                  <span className="vtech-pro font-light">PRO</span>
+              {!sidebarCollapsed && (
+                <div>
+                  <div className="text-lg font-black tracking-tight leading-none">
+                    <span className="vtech-brand">V-TECH</span>{" "}
+                    <span className="vtech-pro font-light">PRO</span>
+                  </div>
+                  <div className="text-[8px] text-slate-500 dark:text-slate-300 font-black uppercase tracking-widest mt-0.5">
+                    Management System · Click → Website
+                  </div>
                 </div>
-                <div className="text-[8px] text-slate-500 dark:text-slate-300 font-black uppercase tracking-widest mt-0.5">
-                  Management System · Click → Website
-                </div>
-              </div>
+              )}
             </Link>
           </div>
 
@@ -1740,15 +1791,23 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             devEnabled={license?.devEnabled}
             enabledModules={navEnabledModules}
             unreadCount={unreadCount}
+            collapsed={sidebarCollapsed}
+            onExpand={() => setSidebarCollapsed(false)}
           />
 
-          <div className="px-4 py-3 border-t border-[#1a2234] flex items-center justify-between">
-            <span
-              className="text-[9px] text-slate-500 dark:text-slate-300 font-black tracking-widest uppercase"
-              title={APP_COMMIT ? `Build ${APP_COMMIT.slice(0, 7)}` : undefined}
-            >
-              V-TECH PRO {APP_VERSION_LABEL}
-            </span>
+          <div
+            className={`${
+              sidebarCollapsed ? "px-0 justify-center" : "px-4 justify-between"
+            } py-3 border-t border-[#1a2234] flex items-center`}
+          >
+            {!sidebarCollapsed && (
+              <span
+                className="text-[9px] text-slate-500 dark:text-slate-300 font-black tracking-widest uppercase"
+                title={APP_COMMIT ? `Build ${APP_COMMIT.slice(0, 7)}` : undefined}
+              >
+                V-TECH PRO {APP_VERSION_LABEL}
+              </span>
+            )}
             <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
           </div>
         </aside>
@@ -1872,7 +1931,13 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
       {/* ══════════════════════ MAIN CONTENT ══════════════════════ */}
       <div
-        className={`${isMobile === false && !isAiPage ? "lg:ml-[260px]" : "ml-0"} flex-1 min-h-screen flex flex-col`}
+        className={`${
+          isMobile === false && !isAiPage
+            ? sidebarCollapsed
+              ? "lg:ml-16"
+              : "lg:ml-[260px]"
+            : "ml-0"
+        } flex-1 min-h-screen flex flex-col`}
       >
         {/* ── TOPBAR ── */}
         {!isAiPage && (
@@ -1887,13 +1952,14 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                   <Menu size={16} />
                 </button>
               )}
-              {/* Desktop: sidebar toggle */}
+              {/* Desktop: sidebar collapse/expand toggle */}
               {isMobile === false && (
                 <button
-                  onClick={() => setDrawerOpen(true)}
+                  onClick={toggleSidebarCollapse}
+                  title={sidebarCollapsed ? "Sidebar kholo" : "Sidebar collapse karo"}
                   className="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all hidden lg:flex"
                 >
-                  <Menu size={16} />
+                  {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
                 </button>
               )}
               <div className={isMobile === true ? "w-full px-2" : "flex-1 min-w-0"}>

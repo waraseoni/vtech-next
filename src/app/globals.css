@@ -38,8 +38,8 @@
   /* Glass Morphism — Light */
   --glass-bg: rgba(255, 255, 255, 0.72);
   --glass-bg-2: rgba(241, 245, 249, 0.65);
-  --glass-border: rgba(0, 0, 0, 0.06);
-  --glass-border-2: rgba(0, 0, 0, 0.03);
+  --glass-border: rgba(0, 0, 0, 0.16);
+  --glass-border-2: rgba(0, 0, 0, 0.1);
   --glass-blur: 16px;
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
@@ -89,7 +89,7 @@ html[data-theme="light"] {
   --app-panel-2: rgba(241, 245, 249, 0.75);
   --app-topbar: rgba(255, 255, 255, 0.85);
   --app-sidebar: #ffffff;
-  --app-border: rgba(0, 0, 0, 0.06);
+  --app-border: #cbd5e1; /* slate-300 — light mode me borders clearly visible */
   --app-border-2: rgba(0, 0, 0, 0.03);
   --app-text: #0f172a;
   --app-text-2: #1e293b;
@@ -104,8 +104,8 @@ html[data-theme="light"] {
   /* Glass Morphism — Light */
   --glass-bg: rgba(255, 255, 255, 0.72);
   --glass-bg-2: rgba(241, 245, 249, 0.65);
-  --glass-border: rgba(0, 0, 0, 0.06);
-  --glass-border-2: rgba(0, 0, 0, 0.03);
+  --glass-border: rgba(0, 0, 0, 0.16);
+  --glass-border-2: rgba(0, 0, 0, 0.1);
   --glass-blur: 16px;
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
@@ -440,6 +440,55 @@ html[data-theme="light"] {
   }
   .border-\[\#21293d\]\/50 {
     border-color: rgba(203, 213, 225, 0.5) !important;
+  }
+
+  /* Light Mode Border Highlight Boost — neutral Tailwind utilities me
+     hi borders itni faint hain ki white bg pe dikha he nahi jaate */
+  .border-slate-100 {
+    border-color: #cbd5e1 !important;
+  }
+  .border-slate-200 {
+    border-color: #94a3b8 !important;
+  }
+  .border-slate-300 {
+    border-color: #64748b !important;
+  }
+  .border-gray-200 {
+    border-color: #9ca3af !important;
+  }
+  .border-gray-300 {
+    border-color: #6b7280 !important;
+  }
+  .border-\[\#21293d\]\/50 {
+    border-color: #94a3b8 !important;
+  }
+  .border-\[\#1a2234\] {
+    border-color: #cbd5e1 !important;
+  }
+  .border-r.border-\[\#1a2234\] {
+    border-right-color: #cbd5e1 !important;
+  }
+  .border-b.border-\[\#1a2234\] {
+    border-bottom-color: #cbd5e1 !important;
+  }
+  .border-t.border-\[\#1a2234\] {
+    border-top-color: #cbd5e1 !important;
+  }
+  .border-x.border-\[\#1a2234\] {
+    border-right-color: #cbd5e1 !important;
+    border-left-color: #cbd5e1 !important;
+  }
+  .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #94a3b8 !important;
+  }
+  .divide-slate-300 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #64748b !important;
+  }
+  .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #9ca3af !important;
+  }
+  .divide-gray-300 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #6b7280 !important;
   }
 
   /* Text colors - ensure good contrast in light mode */
@@ -3060,7 +3109,7 @@ html[data-theme="light"] .backup-guide {
 }
 html[data-theme="light"] .backup-guide h1 {
   color: #0f172a;
-  border-bottom-color: #e2e8f0;
+  border-bottom-color: #cbd5e1;
 }
 html[data-theme="light"] .backup-guide h2 {
   color: #0f172a;
@@ -3073,24 +3122,54 @@ html[data-theme="light"] .backup-guide strong {
 }
 html[data-theme="light"] .backup-guide code {
   background: #f1f5f9;
-  border-color: #e2e8f0;
+  border-color: #cbd5e1;
   color: #0369a1;
 }
 html[data-theme="light"] .backup-guide pre {
   background: #f8fafc;
-  border-color: #e2e8f0;
+  border-color: #cbd5e1;
 }
 html[data-theme="light"] .backup-guide pre code {
   color: #4338ca;
 }
 html[data-theme="light"] .backup-guide th,
 html[data-theme="light"] .backup-guide td {
-  border-color: #e2e8f0;
+  border-color: #cbd5e1;
 }
 html[data-theme="light"] .backup-guide th {
   background: #f1f5f9;
   color: #0f172a;
 }
 html[data-theme="light"] .backup-guide hr {
-  border-top-color: #e2e8f0;
+  border-top-color: #cbd5e1;
+}
+
+/* ═══ Sidebar collapsible (desktop icons-only mode) ═══
+   Desktop sidebar par `sidebar-collapsed` class add hoti hai jab use collapse
+   kiya jaye. Labels/chevrons/section-headers hide karo, links icons-center.
+   Mobile drawer par ye class kabhi nahi lagti — isliye mobile unaffected. */
+.sidebar-collapsed nav a {
+  justify-content: center !important;
+  gap: 0.25rem !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+.sidebar-collapsed nav a > span {
+  display: none !important;
+}
+.sidebar-collapsed nav button {
+  justify-content: center !important;
+}
+.sidebar-collapsed nav button > div {
+  justify-content: center !important;
+  gap: 0 !important;
+}
+.sidebar-collapsed nav button > div > span:last-child {
+  display: none !important;
+}
+.sidebar-collapsed nav button > svg {
+  display: none !important;
+}
+.sidebar-collapsed nav li.text-\[9px\] {
+  display: none !important;
 }
