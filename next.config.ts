@@ -31,6 +31,11 @@ const APP_COMMIT: string = (() => {
 const nextConfig: NextConfig = {
   reactCompiler: true,
   turbopack: {},
+  experimental: {
+    // Dev me source maps off → compile ka kaam/memory kam, page load aur startup tez.
+    // (Sentry build-time upload pehle hi disabled hai; runtime error tracking unchanged.)
+    turbopackSourceMaps: false,
+  },
   env: {
     NEXT_PUBLIC_APP_VERSION: APP_VERSION,
     NEXT_PUBLIC_APP_COMMIT: APP_COMMIT,
