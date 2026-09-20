@@ -53,6 +53,20 @@ type Mechanic = {
   image: string | null;
 };
 
+// activity_logs se resolve hui transaction_list row (sirf jo fields use hote hain)
+type TxnRow = {
+  id: number | string;
+  job_id?: string | number | null;
+  client_name?: string | number | null;
+  mechanic_id?: number | string | null;
+  code?: string | null;
+  item?: string | null;
+  amount?: number | string | null;
+  remark?: string | null;
+  status: number;
+  date_completed?: string | null;
+};
+
 const mechInitials = (name: string) =>
   name
     .split(" ")
@@ -133,6 +147,25 @@ const statusMap: Record<number, { label: string; color: string }> = Object.fromE
   Object.entries(JOB_STATUS).map(([k, v]) => [Number(k), { label: v.label, color: v.cls }])
 );
 
+// ─── Dual-era status-log helpers ─────────────────────────────────────────────
+// Sanam ka "done" tab hota hai jab status-change log me transition "→ Done"
+// dikha — chahe us dinn kuch bhi ho. Dono yug ke log formats handle karte hain:
+//   legacy (PHP):  "Job #28957 | Pending → Done | ..."        (module Transactions)
+//   modern (Next): "Status changed to: Done"                   (module Jobs)
+// Date/Time Display Rule (DATA_MIGRATION_NOTES):
+//   - done-time log se derive karo (date_updated kabhi nahi)
+//   - legacy meta_id = transaction_list.id, modern = id (fallback job_id)
+const DONE_LABELS = new Set(["done", "ready"]);
+const STATUS_LABEL_RE = /(?:→|->)\s*(done|ready|on-progress|pending|paid|cancelled|delivered)/i;
+const parseDoneTransition = (details?: string | null): boolean => {
+  if (!details) return false;
+  const direct = details.match(/Status changed to:\s*([A-Za-z][A-Za-z\s-]*)/i);
+  if (direct) return DONE_LABELS.has(direct[1].trim().toLowerCase());
+  const arrowMatch = details.match(STATUS_LABEL_RE);
+  if (arrowMatch) return DONE_LABELS.has(arrowMatch[1].toLowerCase());
+  return false;
+};
+
 const STATUS_WA_KEY: Record<number, string> = {
   0: "whatsapp_status_pending",
   1: "whatsapp_status_repairing",
@@ -207,66 +240,123 @@ export default function DailyDoneReportPage() {
     setLoading(true);
     setErr("");
     try {
-      let txQuery = supabase
+      const dayStart = date + "T00:00:00+05:30";
+      const dayEnd = date + "T23:59:59+05:30";
+
+      // 1) Dono yug ke status-change logs is din ke — done = "→ Done" transition.
+      //    (meta_id: legacy → transaction_list.id, modern → id/job_id)
+      const eraConfigs = [
+        { module: "Transactions", action: "Transaction Status Changed" },
+        { module: "Jobs", action: "Updated Job Status" },
+      ];
+      const doneLogs: Array<{ meta_id: string; date_created: string }> = [];
+      for (const era of eraConfigs) {
+        const { data: logs, error } = await supabase
+          .from("activity_logs")
+          .select("meta_id, details, date_created")
+          .eq("module", era.module)
+          .eq("action", era.action)
+          .gte("date_created", dayStart)
+          .lte("date_created", dayEnd);
+        if (error) throw error;
+        for (const log of logs || []) {
+          if (parseDoneTransition(log.details) && log.meta_id) {
+            doneLogs.push({ meta_id: String(log.meta_id), date_created: log.date_created });
+          }
+        }
+      }
+      if (doneLogs.length === 0) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+
+      // meta_id → us din ka earliest done-log time
+      const doneTimeByMeta = new Map<string, string>();
+      for (const log of doneLogs) {
+        const cur = doneTimeByMeta.get(log.meta_id);
+        if (!cur || log.date_created < cur) doneTimeByMeta.set(log.meta_id, log.date_created);
+      }
+
+      // 2) Meta ids ko transaction_list par resolve karo — id pehla, job_id fallback.
+      const metaIds = [...doneTimeByMeta.keys()];
+      const txnById = await supabase
         .from("transaction_list")
         .select("*")
         .in("status", [2, 3, 5])
-        .gte("date_updated", date + "T00:00:00+05:30")
-        .lte("date_updated", date + "T23:59:59+05:30")
-        .order("date_updated", { ascending: true });
+        .in("id", metaIds);
+      if (txnById.error) throw txnById.error;
+      const txnByJob = await supabase
+        .from("transaction_list")
+        .select("*")
+        .in("status", [2, 3, 5])
+        .in("job_id", metaIds);
+      if (txnByJob.error) throw txnByJob.error;
 
-      if (selectedMechanic !== "all") {
-        txQuery = txQuery.eq("mechanic_id", selectedMechanic);
+      const seen = new Set<string>();
+      const doneMap = new Map<string, { txn: TxnRow; doneAt: string }>();
+      const rows = [...(txnById.data || []), ...(txnByJob.data || [])] as TxnRow[];
+      for (const row of rows) {
+        const key = String(row.id);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        // Lookup pehle txn.id (canonical), phir txn.job_id
+        const doneAt =
+          doneTimeByMeta.get(String(row.id)) || doneTimeByMeta.get(String(row.job_id));
+        if (!doneAt) continue;
+        doneMap.set(key, { txn: row, doneAt });
       }
 
-      const { data: txData, error: txErr } = await txQuery;
-      if (txErr) throw txErr;
+      let uniqueTransactions = [...doneMap.values()];
+      if (selectedMechanic !== "all") {
+        uniqueTransactions = uniqueTransactions.filter(
+          (e) => String(e.txn.mechanic_id) === selectedMechanic
+        );
+      }
+      uniqueTransactions.sort((a, b) => a.doneAt.localeCompare(b.doneAt));
 
-      const uniqueTransactions = txData || [];
       if (uniqueTransactions.length === 0) {
         setItems([]);
         setLoading(false);
         return;
       }
 
-      const clientIds = [...new Set(uniqueTransactions.map((t) => t.client_name).filter(Boolean))];
+      const clientIds = [...new Set(uniqueTransactions.map((e) => e.txn.client_name).filter(Boolean))];
       const { data: clientData } = await supabase
         .from("client_list")
         .select("id, firstname, lastname, image_path, contact")
         .in("id", clientIds);
       const clientMap = new Map(clientData?.map((c) => [c.id.toString(), c]) || []);
 
-      const mechIds = [...new Set(uniqueTransactions.map((t) => t.mechanic_id).filter(Boolean))];
+      const mechIds = [...new Set(uniqueTransactions.map((e) => e.txn.mechanic_id).filter(Boolean))];
       const { data: mechData } = await supabase
         .from("mechanic_list")
         .select("id, firstname, lastname, image_path")
         .in("id", mechIds);
       const mechMap = new Map(mechData?.map((m) => [m.id.toString(), m]) || []);
 
-      const mapped: DailyDoneItem[] = uniqueTransactions
-        .map((tx) => {
-          const client = clientMap.get(tx.client_name?.toString() || "");
-          const mech = mechMap.get(tx.mechanic_id?.toString() || "");
-          return {
-            id: tx.id.toString(),
-            done_at: tx.date_updated || tx.date_created,
-            transaction_id: tx.id.toString(),
-            job_id: tx.job_id || "-",
-            code: tx.code || "-",
-            item: tx.item || "-",
-            amount: Number(tx.amount) || 0,
-            remark: tx.remark || "",
-            status: tx.status,
-            delivered_at: tx.date_completed || null,
-            client_id: client?.id?.toString() || "",
-            client_name: client ? `${client.firstname} ${client.lastname}`.trim() : "Unknown",
-            client_contact: client?.contact || "",
-            client_image: client?.image_path || null,
-            mechanic_name: mech ? `${mech.firstname} ${mech.lastname}`.trim() : "Not Assigned",
-            mechanic_image: mech?.image_path || null,
-          };
-        })
-        .filter(Boolean) as DailyDoneItem[];
+      const mapped: DailyDoneItem[] = uniqueTransactions.map(({ txn: tx, doneAt }) => {
+        const client = clientMap.get(tx.client_name?.toString() || "");
+        const mech = mechMap.get(tx.mechanic_id?.toString() || "");
+        return {
+          id: tx.id.toString(),
+          done_at: doneAt,
+          transaction_id: tx.id.toString(),
+          job_id: tx.job_id ? String(tx.job_id) : "-",
+          code: tx.code || "-",
+          item: tx.item || "-",
+          amount: Number(tx.amount) || 0,
+          remark: tx.remark || "",
+          status: tx.status,
+          delivered_at: tx.date_completed || null,
+          client_id: client?.id?.toString() || "",
+          client_name: client ? `${client.firstname} ${client.lastname}`.trim() : "Unknown",
+          client_contact: client?.contact || "",
+          client_image: client?.image_path || null,
+          mechanic_name: mech ? `${mech.firstname} ${mech.lastname}`.trim() : "Not Assigned",
+          mechanic_image: mech?.image_path || null,
+        };
+      });
 
       setItems(mapped);
     } catch (e) {
@@ -339,7 +429,7 @@ export default function DailyDoneReportPage() {
                 </span>
               </div>
               <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium">
-                Jobs completed, paid & delivered on this day
+                Jobs marked Done on this day (delivery kabhi bhi ho sakti hai)
               </p>
             </div>
           </div>
