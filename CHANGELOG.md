@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.25.1](https://github.com/waraseoni/vtech-next/compare/v1.25.0...v1.25.1) (2026-09-20)
+
+### Bug Fixes
+
+* **reports/daily-done:** done-time from dual-era status logs, not date_updated ([0d5e9d4](https://github.com/waraseoni/vtech-next/commit/0d5e9d452f000df3273490d9c44189a8728b325f))
+
 ## [1.25.0](https://github.com/waraseoni/vtech-next/compare/v1.24.2...v1.25.0) (2026-09-19)
 
 ### Features
