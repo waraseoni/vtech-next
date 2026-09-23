@@ -302,7 +302,7 @@ export default function LocationPicker({
         <div className="flex items-center gap-1.5 min-w-0">
           <MapPin size={12} className="text-emerald-500 flex-shrink-0" />
           <span
-            className={`font-bold truncate ${locPath(value) ? "text-emerald-400" : "text-slate-600"}`}
+            className={`font-bold truncate ${locPath(value) ? "text-emerald-400" : "text-muted-2"}`}
           >
             {locPath(value) || "Location abhi set nahi hai"}
           </span>
@@ -344,7 +344,7 @@ export default function LocationPicker({
           return (
             <div key={key} className={`relative ${weight || ""}`}>
               <label
-                className={`block font-extrabold uppercase tracking-widest text-slate-600 ${compact ? "text-[8px] mb-1" : "text-[9px] mb-1.5"}`}
+                className={`block font-extrabold uppercase tracking-widest text-muted-2 ${compact ? "text-[8px] mb-1" : "text-[9px] mb-1.5"}`}
               >
                 {label}
               </label>
@@ -366,7 +366,7 @@ export default function LocationPicker({
                     setTimeout(() => setOpen((o) => (o === key ? null : o)), 120);
                   }}
                   placeholder={placeholder}
-                  className={`w-full bg-[#111520] border border-[#21293d] text-slate-200 placeholder-slate-700 rounded-xl outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm pr-9 ${
+                  className={`w-full bg-panel-2 border border-app text-app-2 placeholder-slate-700 rounded-xl outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm pr-9 ${
                     compact ? "px-3 py-2" : "px-3.5 py-2.5"
                   }`}
                 />
@@ -374,7 +374,7 @@ export default function LocationPicker({
                   type="button"
                   tabIndex={-1}
                   onClick={() => setOpen(isOpen ? null : key)}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-white/5 transition-colors"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-muted hover:text-emerald-400 hover:bg-white/5 transition-colors"
                   aria-label={`${label} options`}
                 >
                   <ChevronDown
@@ -388,7 +388,7 @@ export default function LocationPicker({
                     ref={(el) => {
                       menuRefs.current[key] = el;
                     }}
-                    className="absolute z-30 mt-1.5 w-full max-h-56 overflow-y-auto bg-[#161b27] border border-[#21293d] rounded-xl shadow-2xl shadow-black/60 p-1.5"
+                    className="absolute z-30 mt-1.5 w-full max-h-56 overflow-y-auto bg-panel border border-app rounded-xl shadow-2xl shadow-black/60 p-1.5"
                   >
                     {/* Clear option */}
                     <button
@@ -397,12 +397,12 @@ export default function LocationPicker({
                         e.preventDefault();
                         pick(key, "");
                       }}
-                      className="w-full flex items-center px-3 py-2 rounded-lg text-sm text-left text-slate-500 hover:bg-white/5 transition-all"
+                      className="w-full flex items-center px-3 py-2 rounded-lg text-sm text-left text-muted hover:bg-white/5 transition-all"
                     >
                       — Clear —
                     </button>
                     {options.length === 0 ? (
-                      <p className="px-3 py-3 text-center text-xs text-slate-600">
+                      <p className="px-3 py-3 text-center text-xs text-muted-2">
                         {q ? `"${q}" jaisa koi option nahi` : "Hierarchy me koi entry nahi hai"}
                       </p>
                     ) : (
@@ -419,7 +419,7 @@ export default function LocationPicker({
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-left transition-all ${
                               isSel
                                 ? "bg-emerald-500/10 text-emerald-400"
-                                : "text-slate-300 hover:bg-white/5"
+                                : "text-app-2 hover:bg-white/5"
                             }`}
                           >
                             <span className="truncate">{o}</span>
@@ -437,9 +437,9 @@ export default function LocationPicker({
       </div>
 
       {locPath(value) && (
-        <p className="flex items-center gap-1 text-[10px] text-slate-600 font-bold">
+        <p className="flex items-center gap-1 text-[10px] text-muted-2 font-bold">
           <ChevronDown size={11} className="text-emerald-500/60 rotate-180" />
-          Save hone par label: <span className="text-slate-400 font-mono">{locPath(value)}</span>
+          Save hone par label: <span className="text-muted font-mono">{locPath(value)}</span>
           {locationCode && (
             <> | Code: <span className="text-emerald-400 font-mono">{locationCode}</span></>
           )}
@@ -449,14 +449,14 @@ export default function LocationPicker({
       {/* ── Disambiguation Modal ── */}
       {disambiguate && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl shadow-black/80 overflow-hidden">
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-[#21293d]">
+          <div className="w-full max-w-md bg-panel border border-app rounded-2xl shadow-2xl shadow-black/80 overflow-hidden">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-app">
               <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-center justify-center flex-shrink-0">
                 <AlertTriangle size={14} className="text-amber-400" />
               </div>
               <div>
                 <h3 className="text-sm font-black text-white">Multiple locations found</h3>
-                <p className="text-[10px] text-slate-600 font-bold">
+                <p className="text-[10px] text-muted-2 font-bold">
                   &quot;{disambiguate.name}&quot; multiple jagah hai — sahi chuno:
                 </p>
               </div>
@@ -472,16 +472,16 @@ export default function LocationPicker({
                     <MapPin size={12} className="text-emerald-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm font-semibold text-slate-200">{locPath(opt)}</span>
+                    <span className="text-sm font-semibold text-app-2">{locPath(opt)}</span>
                   </div>
-                  <ChevronDown size={12} className="text-slate-700 rotate-[-90deg] flex-shrink-0" />
+                  <ChevronDown size={12} className="text-app rotate-[-90deg] flex-shrink-0" />
                 </button>
               ))}
             </div>
-            <div className="px-4 py-2.5 border-t border-[#21293d]">
+            <div className="px-4 py-2.5 border-t border-app">
               <button
                 onClick={() => setDisambiguate(null)}
-                className="w-full py-2 bg-[#111520] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-slate-300 rounded-xl font-bold text-xs transition-all"
+                className="w-full py-2 bg-panel-2 hover:bg-white/5 border border-app text-muted hover:text-app-2 rounded-xl font-bold text-xs transition-all"
               >
                 Cancel
               </button>

@@ -151,9 +151,9 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-8 flex flex-col items-center gap-3">
+        <div className="bg-panel border border-app rounded-2xl p-8 flex flex-col items-center gap-3">
           <Loader2 size={24} className="animate-spin text-blue-400" />
-          <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">
+          <p className="text-muted-2 text-xs font-extrabold uppercase tracking-widest">
             Loading...
           </p>
         </div>
@@ -169,21 +169,21 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
       onClick={onClose}
     >
       <div
-        className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
+        className="bg-panel border border-app rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Top accent bar by status ── */}
         <div className={`h-1 w-full ${isRead ? "bg-emerald-500" : "bg-blue-500"}`} />
 
         {/* ── Header ── */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d] bg-[#111520]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-app bg-panel-2">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center">
               <MessageSquare size={14} className="text-blue-400" />
             </div>
             <div>
               <h3 className="text-sm font-extrabold text-white">Inquiry Details</h3>
-              <p className="text-[9px] text-slate-600 font-bold uppercase tracking-wider">
+              <p className="text-[9px] text-muted-2 font-bold uppercase tracking-wider">
                 ID #{inquiry.id}
               </p>
             </div>
@@ -209,7 +209,7 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
             </span>
             <button
               onClick={onClose}
-              className="w-8 h-8 bg-[#21293d] hover:bg-white/10 border border-[#21293d] rounded-xl flex items-center justify-center text-slate-500 hover:text-white transition-all"
+              className="w-8 h-8 bg-panel-2 hover:bg-white/10 border border-app rounded-xl flex items-center justify-center text-muted hover:text-white transition-all"
             >
               <X size={14} />
             </button>
@@ -219,12 +219,12 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
         {/* ── Body ── */}
         <div className="p-5 space-y-3">
           {/* Name */}
-          <div className="flex items-center gap-3 bg-[#111520] border border-[#21293d] rounded-xl px-4 py-3">
+          <div className="flex items-center gap-3 bg-panel-2 border border-app rounded-xl px-4 py-3">
             <div className="w-8 h-8 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
               <User size={13} className="text-purple-400" />
             </div>
             <div>
-              <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">
+              <div className="text-[9px] font-extrabold uppercase tracking-widest text-muted-2 mb-0.5">
                 Name
               </div>
               <div className="text-sm font-extrabold text-white">{inquiry.fullname}</div>
@@ -233,12 +233,12 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
 
           {/* Contact + Email side by side */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-3 bg-[#111520] border border-[#21293d] rounded-xl px-4 py-3">
+            <div className="flex items-center gap-3 bg-panel-2 border border-app rounded-xl px-4 py-3">
               <div className="w-8 h-8 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Phone size={12} className="text-emerald-400" />
               </div>
               <div className="min-w-0">
-                <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">
+                <div className="text-[9px] font-extrabold uppercase tracking-widest text-muted-2 mb-0.5">
                   Phone
                 </div>
                 <a
@@ -250,12 +250,12 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
                 </a>
               </div>
             </div>
-            <div className="flex items-center gap-3 bg-[#111520] border border-[#21293d] rounded-xl px-4 py-3">
+            <div className="flex items-center gap-3 bg-panel-2 border border-app rounded-xl px-4 py-3">
               <div className="w-8 h-8 bg-cyan-500/10 border border-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Mail size={12} className="text-cyan-400" />
               </div>
               <div className="min-w-0">
-                <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">
+                <div className="text-[9px] font-extrabold uppercase tracking-widest text-muted-2 mb-0.5">
                   Email
                 </div>
                 <a
@@ -269,45 +269,45 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
           </div>
 
           {/* Date */}
-          <div className="flex items-center gap-3 bg-[#111520] border border-[#21293d] rounded-xl px-4 py-3">
+          <div className="flex items-center gap-3 bg-panel-2 border border-app rounded-xl px-4 py-3">
             <div className="w-8 h-8 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
               <Calendar size={12} className="text-amber-400" />
             </div>
             <div>
-              <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-0.5">
+              <div className="text-[9px] font-extrabold uppercase tracking-widest text-muted-2 mb-0.5">
                 Received
               </div>
-              <div className="text-xs font-semibold text-slate-300">
+              <div className="text-xs font-semibold text-app-2">
                 {fmtIST(inquiry.date_created)}
               </div>
             </div>
-            <div className="ml-auto flex items-center gap-1 text-[10px] text-slate-700">
+            <div className="ml-auto flex items-center gap-1 text-[10px] text-app">
               <Clock size={9} />
               {receivedAgo}
             </div>
           </div>
 
           {/* Message */}
-          <div className="bg-[#111520] border border-[#21293d] rounded-xl overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#21293d]">
+          <div className="bg-panel-2 border border-app rounded-xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-app">
               <MessageSquare size={11} className="text-blue-400" />
-              <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600">
+              <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted-2">
                 Message
               </span>
-              <span className="ml-auto text-[9px] text-slate-700 font-bold">
+              <span className="ml-auto text-[9px] text-app font-bold">
                 {inquiry.message.length} chars
               </span>
             </div>
-            <div className="px-4 py-3.5 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">
+            <div className="px-4 py-3.5 text-sm text-app-2 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">
               {inquiry.message}
             </div>
           </div>
 
           {/* ── AI Reply (WhatsApp) ── */}
-          <div className="bg-[#111520] border border-[#21293d] rounded-xl overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#21293d]">
+          <div className="bg-panel-2 border border-app rounded-xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-app">
               <Sparkles size={11} className="text-purple-400" />
-              <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600">
+              <span className="text-[9px] font-extrabold uppercase tracking-widest text-muted-2">
                 AI Reply
               </span>
               {!aiReply && !aiLoading && !aiError && (
@@ -323,7 +323,7 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
             {aiLoading ? (
               <div className="px-4 py-6 flex flex-col items-center gap-2">
                 <Loader2 size={18} className="animate-spin text-purple-400" />
-                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">
+                <p className="text-[10px] text-muted-2 font-bold uppercase tracking-widest">
                   AI reply likh raha hai...
                 </p>
               </div>
@@ -343,19 +343,19 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
                   value={aiReply}
                   onChange={(e) => setAiReply(e.target.value)}
                   rows={4}
-                  className="w-full bg-[#0d1117] border border-[#21293d] focus:border-purple-500/40 text-slate-200 rounded-lg px-3 py-2.5 text-xs leading-relaxed outline-none resize-y"
+                  className="w-full bg-app border border-app focus:border-purple-500/40 text-app-2 rounded-lg px-3 py-2.5 text-xs leading-relaxed outline-none resize-y"
                 />
                 <div className="flex items-center justify-between gap-2">
                   <button
                     onClick={generateReply}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#161b27] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-purple-300 rounded-lg text-[10px] font-extrabold transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-panel hover:bg-white/5 border border-app text-muted hover:text-purple-300 rounded-lg text-[10px] font-extrabold transition-all"
                   >
                     <RefreshCw size={10} /> Regenerate
                   </button>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={copyReply}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#161b27] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-white rounded-lg text-[10px] font-extrabold transition-all"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-panel hover:bg-white/5 border border-app text-muted hover:text-white rounded-lg text-[10px] font-extrabold transition-all"
                     >
                       <Copy size={10} /> Copy
                     </button>
@@ -375,10 +375,10 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
         </div>
 
         {/* ── Footer ── */}
-        <div className="flex items-center justify-between px-5 py-4 border-t border-[#21293d] bg-[#111520]">
+        <div className="flex items-center justify-between px-5 py-4 border-t border-app bg-panel-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-[#161b27] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-extrabold transition-all"
+            className="px-4 py-2 bg-panel hover:bg-white/5 border border-app text-muted hover:text-white rounded-xl text-xs font-extrabold transition-all"
           >
             Close
           </button>

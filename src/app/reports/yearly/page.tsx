@@ -250,40 +250,40 @@ export default function YearlyReportPage() {
     }
   );
 
-  const cellCls = "px-3 py-3 text-right font-bold text-slate-300";
+  const cellCls = "px-3 py-3 text-right font-bold text-app-2";
 
   return (
-    <div className="min-h-screen bg-[#161b27] text-slate-200 p-4 md:p-6 space-y-4">
+    <div className="min-h-screen bg-panel text-app-2 p-4 md:p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-black text-white">Monthly Profit/Loss Report</h1>
-          <p className="text-sm text-slate-400 mt-1">Month-wise financial summary for {year}</p>
+          <p className="text-sm text-muted mt-1">Month-wise financial summary for {year}</p>
         </div>
       </div>
 
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-app flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center flex-wrap gap-2">
             <button
               onClick={() => shiftYear(-1)}
-              className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition"
+              className="p-2 rounded-lg bg-app border border-app hover:bg-panel-2 text-muted transition"
             >
               <ChevronLeft size={18} />
             </button>
-            <div className="flex items-center gap-2 bg-[#0d1117] border border-[#21293d] rounded-xl px-4 py-2">
-              <Calendar size={16} className="text-slate-500" />
+            <div className="flex items-center gap-2 bg-app border border-app rounded-xl px-4 py-2">
+              <Calendar size={16} className="text-muted" />
               <span className="text-sm font-bold text-white">{year}</span>
             </div>
             <button
               onClick={() => shiftYear(1)}
               disabled={year >= currentYear}
-              className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-2 rounded-lg bg-app border border-app hover:bg-panel-2 text-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <ChevronRight size={18} />
             </button>
             <button
               onClick={() => setYear(currentYear)}
-              className="px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:bg-[#1a2234] transition"
+              className="px-3 py-2 bg-app border border-app rounded-xl text-xs font-bold text-muted hover:bg-panel-2 transition"
             >
               This Year
             </button>
@@ -291,7 +291,7 @@ export default function YearlyReportPage() {
           <button
             onClick={() => window.print()}
             disabled={!stats}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:bg-[#1a2234] transition disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-app border border-app rounded-xl text-xs font-bold text-muted hover:bg-panel-2 transition disabled:opacity-50"
           >
             <Printer size={14} /> Print
           </button>
@@ -306,7 +306,7 @@ export default function YearlyReportPage() {
         {loading ? (
           <div className="px-5 py-16 text-center">
             <Loader2 size={32} className="animate-spin text-blue-500 mx-auto mb-3" />
-            <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Loading...</p>
+            <p className="text-muted text-sm font-bold uppercase tracking-wider">Loading...</p>
           </div>
         ) : stats ? (
           <>
@@ -352,9 +352,9 @@ export default function YearlyReportPage() {
             <div className="px-5 pb-5">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-[#111520]">
-                    <tr className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                      <th className="text-left px-3 py-3 sticky left-0 bg-[#111520]">Month</th>
+                  <thead className="bg-panel-2">
+                    <tr className="text-xs font-bold uppercase tracking-wider text-muted">
+                      <th className="text-left px-3 py-3 sticky left-0 bg-panel-2">Month</th>
                       <th
                         className="text-right px-3 py-3"
                         title="Income from delivered repair jobs"
@@ -403,7 +403,7 @@ export default function YearlyReportPage() {
                   <tbody className="divide-y divide-[#1a2234]">
                     {stats.monthly.map((row) => (
                       <tr key={row.month} className="hover:bg-white/[0.02]">
-                        <td className="px-3 py-3 font-bold text-slate-300 sticky left-0 bg-[#161b27]">
+                        <td className="px-3 py-3 font-bold text-app-2 sticky left-0 bg-panel">
                           {row.month} {year}
                         </td>
                         <td className={`${cellCls} text-blue-400`}>{inr(row.repair)}</td>
@@ -414,8 +414,8 @@ export default function YearlyReportPage() {
                         </td>
                         <td className={`${cellCls} text-amber-400`}>{inr(row.salary)}</td>
                         <td className={`${cellCls} text-amber-400`}>{inr(row.commission)}</td>
-                        <td className={`${cellCls} text-slate-400`}>{inr(row.expenses)}</td>
-                        <td className={`${cellCls} text-slate-400`}>{inr(row.emi)}</td>
+                        <td className={`${cellCls} text-muted`}>{inr(row.expenses)}</td>
+                        <td className={`${cellCls} text-muted`}>{inr(row.emi)}</td>
                         <td className={`${cellCls} text-rose-400`}>{inr(row.discount)}</td>
                         <td className="px-3 py-3 text-right font-black text-rose-400">
                           {inr(row.totalExp)}
@@ -441,9 +441,9 @@ export default function YearlyReportPage() {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-[#111520]">
-                    <tr className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                      <td className="px-3 py-3 sticky left-0 bg-[#111520]">Grand Total</td>
+                  <tfoot className="bg-panel-2">
+                    <tr className="text-xs font-bold uppercase tracking-wider text-app-2">
+                      <td className="px-3 py-3 sticky left-0 bg-panel-2">Grand Total</td>
                       <td className="px-3 py-3 text-right text-blue-400">{inr(totals.repair)}</td>
                       <td className="px-3 py-3 text-right text-purple-400">{inr(totals.walkin)}</td>
                       <td className="px-3 py-3 text-right text-purple-400">
@@ -456,10 +456,10 @@ export default function YearlyReportPage() {
                       <td className="px-3 py-3 text-right text-amber-400">
                         {inr(totals.commission)}
                       </td>
-                      <td className="px-3 py-3 text-right text-slate-400">
+                      <td className="px-3 py-3 text-right text-muted">
                         {inr(totals.expenses)}
                       </td>
-                      <td className="px-3 py-3 text-right text-slate-400">{inr(totals.emi)}</td>
+                      <td className="px-3 py-3 text-right text-muted">{inr(totals.emi)}</td>
                       <td className="px-3 py-3 text-right text-rose-400">{inr(totals.discount)}</td>
                       <td className="px-3 py-3 text-right font-black text-rose-400">
                         {inr(totals.totalExp)}
@@ -482,7 +482,7 @@ export default function YearlyReportPage() {
             </div>
           </>
         ) : (
-          <div className="px-5 py-16 text-center text-slate-500 text-sm">No data available.</div>
+          <div className="px-5 py-16 text-center text-muted text-sm">No data available.</div>
         )}
       </div>
     </div>
@@ -514,7 +514,7 @@ function StatCard({
     rose: "text-rose-400",
   };
   return (
-    <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+    <div className="bg-panel border border-app rounded-2xl p-4">
       <div
         className={`inline-flex rounded-xl border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${colors[color]}`}
       >

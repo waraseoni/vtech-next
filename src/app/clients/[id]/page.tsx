@@ -396,22 +396,22 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
   const phone = client.contact?.replace(/\D/g, "") || "";
 
   return (
-    <div className="min-h-screen theme-body text-slate-200 font-sans">
+    <div className="min-h-screen theme-body text-app-2 font-sans">
       {/* ── HEADER ── */}
-      <div className="sticky top-0 z-20 theme-topbar backdrop-blur border-b border-[#21293d] px-4 py-3">
+      <div className="sticky top-0 z-20 theme-topbar backdrop-blur border-b border-app px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <Link
               href="/clients"
-              className="w-10 h-10 flex items-center justify-center theme-panel border border-[#21293d] rounded-xl text-slate-500 hover:text-white transition-all"
+              className="w-10 h-10 flex items-center justify-center theme-panel border border-app rounded-xl text-muted hover:text-white transition-all"
             >
               <ArrowLeft size={17} />
             </Link>
             <div>
-              <h1 className="font-black text-white dark:text-slate-100 text-lg leading-none">
+              <h1 className="font-black text-white dark:text-app-2 text-lg leading-none">
                 {clientName}
               </h1>
-              <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">
+              <p className="text-[10px] text-muted-2 font-bold uppercase tracking-widest mt-0.5">
                 Client #{clientId}
               </p>
             </div>
@@ -419,7 +419,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={printFullLedger}
-              className="flex items-center gap-1.5 px-3 py-2 theme-panel border border-[#21293d] hover:border-slate-500 text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 theme-panel border border-app hover:border-muted text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
             >
               <Printer size={13} /> Print Ledger
             </button>
@@ -447,15 +447,15 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
         {/* ── PROFILE + QUICK ACTIONS ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           {/* Profile Card */}
-          <div className="lg:col-span-4 theme-card border border-[#21293d] rounded-2xl p-5">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-4">
+          <div className="lg:col-span-4 theme-card border border-app rounded-2xl p-5">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-4">
               Contact Information
             </h3>
             <div className="space-y-3">
               {client.contact && (
                 <a
                   href={`tel:${client.contact}`}
-                  className="flex items-center gap-3 text-slate-300 hover:text-blue-400 transition-colors"
+                  className="flex items-center gap-3 text-app-2 hover:text-blue-400 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
                     <Phone size={14} className="text-blue-400" />
@@ -466,7 +466,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
               {client.email && (
                 <a
                   href={`mailto:${client.email}`}
-                  className="flex items-center gap-3 text-slate-300 hover:text-red-400 transition-colors"
+                  className="flex items-center gap-3 text-app-2 hover:text-red-400 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
                     <Mail size={14} className="text-red-400" />
@@ -475,7 +475,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                 </a>
               )}
               {client.address && (
-                <div className="flex items-start gap-3 text-slate-300">
+                <div className="flex items-start gap-3 text-app-2">
                   <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <MapPin size={14} className="text-amber-400" />
                   </div>
@@ -483,8 +483,8 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                 </div>
               )}
             </div>
-            <hr className="border-[#21293d] my-4" />
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-4">
+            <hr className="border-app my-4" />
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-4">
               Quick Actions
             </h3>
             <div className="grid grid-cols-2 gap-2">
@@ -538,22 +538,22 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
           <div className="lg:col-span-8 space-y-3">
             {/* Main Balance Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="theme-card border border-[#21293d] rounded-xl p-4 text-center">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+              <div className="theme-card border border-app rounded-xl p-4 text-center">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
                   Opening
                 </p>
                 <p className="text-lg font-black text-blue-400">
                   {inr(toNum(client.opening_balance))}
                 </p>
               </div>
-              <div className="theme-card border border-[#21293d] rounded-xl p-4 text-center">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+              <div className="theme-card border border-app rounded-xl p-4 text-center">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
                   Total Billed
                 </p>
-                <p className="text-lg font-black text-slate-200">{inr(totalBilled)}</p>
+                <p className="text-lg font-black text-app-2">{inr(totalBilled)}</p>
               </div>
-              <div className="theme-card border border-[#21293d] rounded-xl p-4 text-center">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+              <div className="theme-card border border-app rounded-xl p-4 text-center">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
                   Total Paid
                 </p>
                 <p className="text-lg font-black text-emerald-400">{inr(totalPaid)}</p>
@@ -561,7 +561,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
               <div
                 className={`theme-card border rounded-xl p-4 text-center ${netBalance > 0 ? "border-red-500/30" : "border-emerald-500/30"}`}
               >
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
                   Net Balance
                 </p>
                 <p
@@ -574,20 +574,20 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
             {/* Loan Cards */}
             {loanGiven > 0 && (
               <div className="grid grid-cols-3 gap-3">
-                <div className="theme-card border border-[#21293d] rounded-xl p-4 text-center">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+                <div className="theme-card border border-app rounded-xl p-4 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
                     Loan Given
                   </p>
                   <p className="text-lg font-black text-amber-400">{inr(loanGiven)}</p>
                 </div>
-                <div className="theme-card border border-[#21293d] rounded-xl p-4 text-center">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+                <div className="theme-card border border-app rounded-xl p-4 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
                     EMI Due/Month
                   </p>
                   <p className="text-lg font-black text-purple-400">{inr(monthlyEmi)}</p>
                 </div>
-                <div className="theme-card border border-[#21293d] rounded-xl p-4 text-center">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+                <div className="theme-card border border-app rounded-xl p-4 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
                     Loan Balance
                   </p>
                   <p
@@ -603,16 +603,16 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
 
         {/* ── ACTIVE LOANS TABLE ── */}
         {loans.filter((l) => l.status === 1).length > 0 && (
-          <div className="theme-card border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-[#21293d]">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600 flex items-center gap-2">
+          <div className="theme-card border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-app">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-2 flex items-center gap-2">
                 <TrendingUp size={13} className="text-amber-400" /> Active Loans
               </h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="theme-panel-2">
-                  <tr className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                  <tr className="text-[10px] font-black uppercase tracking-wider text-muted-2">
                     <th className="px-4 py-2 text-left">Date</th>
                     <th className="px-4 py-2 text-right">Principal</th>
                     <th className="px-4 py-2 text-right">Rate</th>
@@ -632,11 +632,11 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                       const bal = toNum(loan.total_payable) - paid;
                       return (
                         <tr key={loan.id} className="hover:bg-white/[0.02]">
-                          <td className="px-4 py-2.5 text-slate-300">{fmtDate(loan.loan_date)}</td>
-                          <td className="px-4 py-2.5 text-right text-slate-300">
+                          <td className="px-4 py-2.5 text-app-2">{fmtDate(loan.loan_date)}</td>
+                          <td className="px-4 py-2.5 text-right text-app-2">
                             {inr(toNum(loan.principal_amount))}
                           </td>
-                          <td className="px-4 py-2.5 text-right text-slate-400">
+                          <td className="px-4 py-2.5 text-right text-muted">
                             {loan.interest_rate}%
                           </td>
                           <td className="px-4 py-2.5 text-right font-bold text-white">
@@ -659,7 +659,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                                 Close Loan
                               </button>
                             ) : (
-                              <span className="text-[10px] text-slate-600">{inr(bal)} due</span>
+                              <span className="text-[10px] text-muted-2">{inr(bal)} due</span>
                             )}
                           </td>
                         </tr>
@@ -672,9 +672,9 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
         )}
 
         {/* ── TABS SECTION ── */}
-        <div className="theme-card border border-[#21293d] rounded-2xl overflow-hidden">
+        <div className="theme-card border border-app rounded-2xl overflow-hidden">
           {/* Tab Headers */}
-          <div className="flex border-b border-[#21293d] overflow-x-auto">
+          <div className="flex border-b border-app overflow-x-auto">
             {(
               [
                 { id: "repairs", label: "Repair History", icon: Wrench, count: repairs.length },
@@ -689,11 +689,11 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                 className={`flex items-center gap-1.5 px-5 py-3 text-xs font-bold border-b-2 transition-all whitespace-nowrap ${
                   activeTab === id
                     ? "border-blue-500 text-blue-400 bg-blue-500/5"
-                    : "border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/[0.02]"
+                    : "border-transparent text-muted hover:text-app-2 hover:bg-white/[0.02]"
                 }`}
               >
                 <Icon size={13} /> {label}
-                <span className="px-1.5 py-0.5 bg-[#21293d] rounded text-[9px] font-black">
+                <span className="px-1.5 py-0.5 bg-panel-2 rounded text-[9px] font-black">
                   {count}
                 </span>
               </button>
@@ -701,22 +701,22 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
           </div>
 
           {/* Date Filter */}
-          <div className="flex items-center gap-3 px-5 py-3 border-b border-[#21293d] theme-panel-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+          <div className="flex items-center gap-3 px-5 py-3 border-b border-app theme-panel-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-2">
               Filter:
             </span>
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="px-2 py-1 bg-[#161b27] border border-[#21293d] rounded text-xs text-slate-300 outline-none"
+              className="px-2 py-1 bg-panel border border-app rounded text-xs text-app-2 outline-none"
             />
-            <span className="text-slate-700">—</span>
+            <span className="text-app">—</span>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="px-2 py-1 bg-[#161b27] border border-[#21293d] rounded text-xs text-slate-300 outline-none"
+              className="px-2 py-1 bg-panel border border-app rounded text-xs text-app-2 outline-none"
             />
             {(dateFrom || dateTo) && (
               <button
@@ -738,7 +738,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="theme-panel-2">
-                    <tr className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                    <tr className="text-[10px] font-black uppercase tracking-wider text-muted-2">
                       <th className="px-3 py-2 text-left">Date</th>
                       <th className="px-3 py-2 text-left">Job ID</th>
                       <th className="px-3 py-2 text-left">Code</th>
@@ -751,21 +751,21 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                   <tbody className="divide-y divide-[#21293d]">
                     {filteredRepairs.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-3 py-8 text-center text-slate-600 text-sm">
+                        <td colSpan={7} className="px-3 py-8 text-center text-muted-2 text-sm">
                           No repairs found
                         </td>
                       </tr>
                     ) : (
                       filteredRepairs.map((r) => (
                         <tr key={r.id} className="hover:bg-white/[0.02]">
-                          <td className="px-3 py-2.5 text-slate-400 text-xs">
+                          <td className="px-3 py-2.5 text-muted text-xs">
                             {fmtDate(r.date_created)}
                           </td>
                           <td className="px-3 py-2.5 text-blue-400 font-bold">{r.job_id}</td>
-                          <td className="px-3 py-2.5 text-slate-400 font-mono text-xs">
+                          <td className="px-3 py-2.5 text-muted font-mono text-xs">
                             {r.code || "—"}
                           </td>
-                          <td className="px-3 py-2.5 text-slate-200">{r.item}</td>
+                          <td className="px-3 py-2.5 text-app-2">{r.item}</td>
                           <td className="px-3 py-2.5">
                             <span
                               className={`px-2 py-0.5 ${STATUS_COLORS[r.status]} text-white rounded text-[10px] font-bold`}
@@ -773,7 +773,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                               {STATUS_MAP[r.status]}
                             </span>
                           </td>
-                          <td className="px-3 py-2.5 text-right font-bold text-slate-200">
+                          <td className="px-3 py-2.5 text-right font-bold text-app-2">
                             {inr(toNum(r.amount))}
                           </td>
                           <td className="px-3 py-2.5 text-center">
@@ -797,7 +797,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="theme-panel-2">
-                    <tr className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                    <tr className="text-[10px] font-black uppercase tracking-wider text-muted-2">
                       <th className="px-3 py-2 text-left">Date</th>
                       <th className="px-3 py-2 text-left">Sale Code</th>
                       <th className="px-3 py-2 text-left">Mode</th>
@@ -807,18 +807,18 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                   <tbody className="divide-y divide-[#21293d]">
                     {directSales.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-3 py-8 text-center text-slate-600 text-sm">
+                        <td colSpan={4} className="px-3 py-8 text-center text-muted-2 text-sm">
                           No direct sales
                         </td>
                       </tr>
                     ) : (
                       directSales.map((s) => (
                         <tr key={s.id} className="hover:bg-white/[0.02]">
-                          <td className="px-3 py-2.5 text-slate-400 text-xs">
+                          <td className="px-3 py-2.5 text-muted text-xs">
                             {fmtDate(s.date_created)}
                           </td>
-                          <td className="px-3 py-2.5 text-slate-200 font-mono">{s.sale_code}</td>
-                          <td className="px-3 py-2.5 text-slate-400">{s.payment_mode}</td>
+                          <td className="px-3 py-2.5 text-app-2 font-mono">{s.sale_code}</td>
+                          <td className="px-3 py-2.5 text-muted">{s.payment_mode}</td>
                           <td className="px-3 py-2.5 text-right font-bold text-emerald-400">
                             {inr(toNum(s.total_amount))}
                           </td>
@@ -835,7 +835,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="theme-panel-2">
-                    <tr className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                    <tr className="text-[10px] font-black uppercase tracking-wider text-muted-2">
                       <th className="px-3 py-2 text-left">Date</th>
                       <th className="px-3 py-2 text-left">Ref</th>
                       <th className="px-3 py-2 text-left">Type</th>
@@ -851,7 +851,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                       <tr>
                         <td
                           colSpan={userRole === "admin" ? 8 : 7}
-                          className="px-3 py-8 text-center text-slate-600 text-sm"
+                          className="px-3 py-8 text-center text-muted-2 text-sm"
                         >
                           No payments found
                         </td>
@@ -859,10 +859,10 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                     ) : (
                       payments.map((p) => (
                         <tr key={p.id} className="hover:bg-white/[0.02]">
-                          <td className="px-3 py-2.5 text-slate-400 text-xs">
+                          <td className="px-3 py-2.5 text-muted text-xs">
                             {fmtDate(p.payment_date)}
                           </td>
-                          <td className="px-3 py-2.5 text-slate-300 text-xs">
+                          <td className="px-3 py-2.5 text-app-2 text-xs">
                             {p.job_id || "Direct"}
                           </td>
                           <td className="px-3 py-2.5">
@@ -871,7 +871,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                                 EMI
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 bg-slate-500/15 border border-slate-500/30 text-slate-400 rounded text-[10px] font-bold">
+                              <span className="px-2 py-0.5 bg-muted/15 border border-muted/30 text-muted rounded text-[10px] font-bold">
                                 Service
                               </span>
                             )}
@@ -879,13 +879,13 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                           <td className="px-3 py-2.5 text-right text-emerald-400 font-medium">
                             {inr(toNum(p.amount))}
                           </td>
-                          <td className="px-3 py-2.5 text-right text-slate-500">
+                          <td className="px-3 py-2.5 text-right text-muted">
                             {inr(toNum(p.discount))}
                           </td>
                           <td className="px-3 py-2.5 text-right font-bold text-emerald-400">
                             {inr(toNum(p.amount) + toNum(p.discount))}
                           </td>
-                          <td className="px-3 py-2.5 text-slate-400">{p.payment_mode}</td>
+                          <td className="px-3 py-2.5 text-muted">{p.payment_mode}</td>
                           {userRole === "admin" && (
                             <td className="px-3 py-2.5 text-center">
                               <button
@@ -909,7 +909,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="theme-panel-2">
-                    <tr className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                    <tr className="text-[10px] font-black uppercase tracking-wider text-muted-2">
                       <th className="px-3 py-2 text-left">Date</th>
                       <th className="px-3 py-2 text-right">Principal</th>
                       <th className="px-3 py-2 text-right">Rate</th>
@@ -921,20 +921,20 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                   <tbody className="divide-y divide-[#21293d]">
                     {loans.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-3 py-8 text-center text-slate-600 text-sm">
+                        <td colSpan={6} className="px-3 py-8 text-center text-muted-2 text-sm">
                           No loans found
                         </td>
                       </tr>
                     ) : (
                       loans.map((l) => (
                         <tr key={l.id} className="hover:bg-white/[0.02]">
-                          <td className="px-3 py-2.5 text-slate-400 text-xs">
+                          <td className="px-3 py-2.5 text-muted text-xs">
                             {fmtDate(l.loan_date)}
                           </td>
-                          <td className="px-3 py-2.5 text-right text-slate-300">
+                          <td className="px-3 py-2.5 text-right text-app-2">
                             {inr(toNum(l.principal_amount))}
                           </td>
-                          <td className="px-3 py-2.5 text-right text-slate-400">
+                          <td className="px-3 py-2.5 text-right text-muted">
                             {l.interest_rate}%
                           </td>
                           <td className="px-3 py-2.5 text-right font-bold text-white">
@@ -945,7 +945,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                           </td>
                           <td className="px-3 py-2.5 text-center">
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${l.status === 1 ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400" : "bg-slate-500/15 border border-slate-500/30 text-slate-400"}`}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${l.status === 1 ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400" : "bg-muted/15 border border-muted/30 text-muted"}`}
                             >
                               {l.status === 1 ? "Active" : "Closed"}
                             </span>
@@ -964,21 +964,21 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
       {/* ── ADD PAYMENT MODAL ── */}
       {showPayModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="theme-card border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
-              <h3 className="font-bold text-white dark:text-slate-100 flex items-center gap-2">
+          <div className="theme-card border border-app rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-app">
+              <h3 className="font-bold text-white dark:text-app-2 flex items-center gap-2">
                 <Plus size={16} className="text-emerald-400" /> Add Payment
               </h3>
               <button
                 onClick={() => setShowPayModal(false)}
-                className="w-8 h-8 flex items-center justify-center theme-panel-2 rounded-lg text-slate-500 hover:text-white"
+                className="w-8 h-8 flex items-center justify-center theme-panel-2 rounded-lg text-muted hover:text-white"
               >
                 <X size={16} />
               </button>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1.5">
                   Amount <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -986,11 +986,11 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                   value={payAmount}
                   onChange={(e) => setPayAmount(e.target.value)}
                   placeholder="0.00"
-                  className="w-full px-3 py-2.5 theme-panel-2 border border-[#21293d] rounded-xl text-white dark:text-slate-100 text-sm outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2.5 theme-panel-2 border border-app rounded-xl text-white dark:text-app-2 text-sm outline-none focus:border-emerald-500"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1.5">
                   Discount
                 </label>
                 <input
@@ -998,17 +998,17 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                   value={payDiscount}
                   onChange={(e) => setPayDiscount(e.target.value)}
                   placeholder="0.00"
-                  className="w-full px-3 py-2.5 theme-panel-2 border border-[#21293d] rounded-xl text-white dark:text-slate-100 text-sm outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2.5 theme-panel-2 border border-app rounded-xl text-white dark:text-app-2 text-sm outline-none focus:border-emerald-500"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1.5">
                   Payment Mode
                 </label>
                 <select
                   value={payMode}
                   onChange={(e) => setPayMode(e.target.value)}
-                  className="w-full px-3 py-2.5 theme-panel-2 border border-[#21293d] rounded-xl text-white dark:text-slate-100 text-sm outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2.5 theme-panel-2 border border-app rounded-xl text-white dark:text-app-2 text-sm outline-none focus:border-emerald-500"
                 >
                   <option value="Cash">Cash</option>
                   <option value="UPI">UPI</option>
@@ -1018,7 +1018,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1.5">
                   Remarks
                 </label>
                 <textarea
@@ -1026,11 +1026,11 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                   onChange={(e) => setPayRemarks(e.target.value)}
                   rows={2}
                   placeholder="Optional notes..."
-                  className="w-full px-3 py-2.5 theme-panel-2 border border-[#21293d] rounded-xl text-white dark:text-slate-100 text-sm outline-none focus:border-emerald-500 resize-none"
+                  className="w-full px-3 py-2.5 theme-panel-2 border border-app rounded-xl text-white dark:text-app-2 text-sm outline-none focus:border-emerald-500 resize-none"
                 />
               </div>
             </div>
-            <div className="flex gap-3 p-5 border-t border-[#21293d]">
+            <div className="flex gap-3 p-5 border-t border-app">
               <button
                 onClick={handleAddPayment}
                 disabled={savingPay}
@@ -1050,7 +1050,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
               </button>
               <button
                 onClick={() => setShowPayModal(false)}
-                className="px-6 py-2.5 theme-panel-2 border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm"
+                className="px-6 py-2.5 theme-panel-2 border border-app text-muted rounded-xl font-bold text-sm"
               >
                 Cancel
               </button>
@@ -1062,21 +1062,21 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
       {/* ── GIVE LOAN MODAL ── */}
       {showLoanModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="theme-card border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
-              <h3 className="font-bold text-white dark:text-slate-100 flex items-center gap-2">
+          <div className="theme-card border border-app rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-app">
+              <h3 className="font-bold text-white dark:text-app-2 flex items-center gap-2">
                 <Wallet size={16} className="text-amber-400" /> Give Loan
               </h3>
               <button
                 onClick={() => setShowLoanModal(false)}
-                className="w-8 h-8 flex items-center justify-center theme-panel-2 rounded-lg text-slate-500 hover:text-white"
+                className="w-8 h-8 flex items-center justify-center theme-panel-2 rounded-lg text-muted hover:text-white"
               >
                 <X size={16} />
               </button>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1.5">
                   Amount <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -1084,12 +1084,12 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                   value={loanAmount}
                   onChange={(e) => setLoanAmount(e.target.value)}
                   placeholder="Loan amount"
-                  className="w-full px-3 py-2.5 theme-panel-2 border border-[#21293d] rounded-xl text-white dark:text-slate-100 text-sm outline-none focus:border-amber-500"
+                  className="w-full px-3 py-2.5 theme-panel-2 border border-app rounded-xl text-white dark:text-app-2 text-sm outline-none focus:border-amber-500"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1.5">
                     Interest Rate (%)
                   </label>
                   <input
@@ -1097,11 +1097,11 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                     value={loanRate}
                     onChange={(e) => setLoanRate(e.target.value)}
                     placeholder="0"
-                    className="w-full px-3 py-2.5 theme-panel-2 border border-[#21293d] rounded-xl text-white dark:text-slate-100 text-sm outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2.5 theme-panel-2 border border-app rounded-xl text-white dark:text-app-2 text-sm outline-none focus:border-amber-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1.5">
                     Period (months)
                   </label>
                   <input
@@ -1109,19 +1109,19 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                     value={loanPeriod}
                     onChange={(e) => setLoanPeriod(e.target.value)}
                     placeholder="12"
-                    className="w-full px-3 py-2.5 theme-panel-2 border border-[#21293d] rounded-xl text-white dark:text-slate-100 text-sm outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2.5 theme-panel-2 border border-app rounded-xl text-white dark:text-app-2 text-sm outline-none focus:border-amber-500"
                   />
                 </div>
               </div>
               {loanAmount && (
-                <div className="theme-panel-2 border border-[#21293d] rounded-xl p-4 space-y-2">
-                  <div className="flex justify-between text-xs text-slate-500">
+                <div className="theme-panel-2 border border-app rounded-xl p-4 space-y-2">
+                  <div className="flex justify-between text-xs text-muted">
                     <span>Total Payable:</span>
-                    <span className="font-bold text-white dark:text-slate-100">
+                    <span className="font-bold text-white dark:text-app-2">
                       {inr(parseFloat(loanAmount || "0") * (1 + parseFloat(loanRate || "0") / 100))}
                     </span>
                   </div>
-                  <div className="flex justify-between text-xs text-slate-500">
+                  <div className="flex justify-between text-xs text-muted">
                     <span>Monthly EMI:</span>
                     <span className="font-bold text-amber-400">
                       {inr(
@@ -1133,7 +1133,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                 </div>
               )}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1.5">
                   Remarks
                 </label>
                 <textarea
@@ -1141,11 +1141,11 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                   onChange={(e) => setLoanRemarks(e.target.value)}
                   rows={2}
                   placeholder="Optional notes..."
-                  className="w-full px-3 py-2.5 theme-panel-2 border border-[#21293d] rounded-xl text-white dark:text-slate-100 text-sm outline-none focus:border-amber-500 resize-none"
+                  className="w-full px-3 py-2.5 theme-panel-2 border border-app rounded-xl text-white dark:text-app-2 text-sm outline-none focus:border-amber-500 resize-none"
                 />
               </div>
             </div>
-            <div className="flex gap-3 p-5 border-t border-[#21293d]">
+            <div className="flex gap-3 p-5 border-t border-app">
               <button
                 onClick={handleGiveLoan}
                 disabled={savingLoan}
@@ -1165,7 +1165,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
               </button>
               <button
                 onClick={() => setShowLoanModal(false)}
-                className="px-6 py-2.5 theme-panel-2 border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm"
+                className="px-6 py-2.5 theme-panel-2 border border-app text-muted rounded-xl font-bold text-sm"
               >
                 Cancel
               </button>
@@ -1177,21 +1177,21 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
       {/* ── COLLECT EMI MODAL ── */}
       {showEmiModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="theme-card border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
-              <h3 className="font-bold text-white dark:text-slate-100 flex items-center gap-2">
+          <div className="theme-card border border-app rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-app">
+              <h3 className="font-bold text-white dark:text-app-2 flex items-center gap-2">
                 <CreditCard size={16} className="text-purple-400" /> Collect EMI
               </h3>
               <button
                 onClick={() => setShowEmiModal(false)}
-                className="w-8 h-8 flex items-center justify-center theme-panel-2 rounded-lg text-slate-500 hover:text-white"
+                className="w-8 h-8 flex items-center justify-center theme-panel-2 rounded-lg text-muted hover:text-white"
               >
                 <X size={16} />
               </button>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1.5">
                   Select Loan
                 </label>
                 <SearchableSelect
@@ -1208,7 +1208,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1.5">
                   Amount
                 </label>
                 <input
@@ -1216,11 +1216,11 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                   value={emiAmount}
                   onChange={(e) => setEmiAmount(e.target.value)}
                   placeholder="EMI amount"
-                  className="w-full px-3 py-2.5 theme-panel-2 border border-[#21293d] rounded-xl text-white dark:text-slate-100 text-sm outline-none focus:border-purple-500"
+                  className="w-full px-3 py-2.5 theme-panel-2 border border-app rounded-xl text-white dark:text-app-2 text-sm outline-none focus:border-purple-500"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1.5">
                   Remarks
                 </label>
                 <textarea
@@ -1228,11 +1228,11 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                   onChange={(e) => setEmiRemarks(e.target.value)}
                   rows={2}
                   placeholder="Optional notes..."
-                  className="w-full px-3 py-2.5 theme-panel-2 border border-[#21293d] rounded-xl text-white dark:text-slate-100 text-sm outline-none focus:border-purple-500 resize-none"
+                  className="w-full px-3 py-2.5 theme-panel-2 border border-app rounded-xl text-white dark:text-app-2 text-sm outline-none focus:border-purple-500 resize-none"
                 />
               </div>
             </div>
-            <div className="flex gap-3 p-5 border-t border-[#21293d]">
+            <div className="flex gap-3 p-5 border-t border-app">
               <button
                 onClick={handleCollectEmi}
                 disabled={savingEmi}
@@ -1252,7 +1252,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
               </button>
               <button
                 onClick={() => setShowEmiModal(false)}
-                className="px-6 py-2.5 theme-panel-2 border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm"
+                className="px-6 py-2.5 theme-panel-2 border border-app text-muted rounded-xl font-bold text-sm"
               >
                 Cancel
               </button>

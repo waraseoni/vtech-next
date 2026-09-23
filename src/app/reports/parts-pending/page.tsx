@@ -21,7 +21,7 @@ import Link from "next/link";
 import { openImageLightbox } from "@/components/ImageLightbox";
 
 const JOB_STATUS: Record<number, { label: string; cls: string }> = {
-  0: { label: "Pending", cls: "bg-slate-500/15 text-slate-300 border-slate-500/30" },
+  0: { label: "Pending", cls: "bg-muted/15 text-app-2 border-muted/30" },
   1: { label: "In Progress", cls: "bg-sky-500/15 text-sky-300 border-sky-500/30" },
   2: { label: "Done", cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" },
   3: { label: "Paid", cls: "bg-violet-500/15 text-violet-300 border-violet-500/30" },
@@ -125,13 +125,13 @@ export default function PartsPendingReport() {
       </div>
 
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-[2rem] p-6 shadow-2xl relative overflow-hidden no-print">
+      <div className="bg-panel border border-app rounded-[2rem] p-6 shadow-2xl relative overflow-hidden no-print">
         <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-3xl rounded-full -mr-20 -mt-20 pointer-events-none" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative">
           <div className="flex items-center gap-5">
             <Link
               href="/reports"
-              className="w-12 h-12 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-2xl text-slate-500 hover:text-white hover:bg-amber-600/10 hover:border-amber-500/40 transition-all group"
+              className="w-12 h-12 flex items-center justify-center bg-app border border-app rounded-2xl text-muted hover:text-white hover:bg-amber-600/10 hover:border-amber-500/40 transition-all group"
             >
               <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
             </Link>
@@ -140,7 +140,7 @@ export default function PartsPendingReport() {
             </div>
             <div>
               <h1 className="text-3xl font-black text-white tracking-tight">Waiting for Parts</h1>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-[0.3em]">
+              <p className="text-xs text-muted font-bold uppercase tracking-[0.3em]">
                 Jobs stuck on spare purchase
               </p>
             </div>
@@ -148,7 +148,7 @@ export default function PartsPendingReport() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setRefreshKey((k) => k + 1)}
-              className="flex items-center gap-2 px-5 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all"
+              className="flex items-center gap-2 px-5 py-3 bg-app border border-app rounded-2xl text-xs font-black uppercase tracking-widest text-muted hover:text-white transition-all"
             >
               <RefreshCw size={14} /> Refresh
             </button>
@@ -162,12 +162,12 @@ export default function PartsPendingReport() {
         </div>
         <div className="mt-5 relative">
           <div className="relative max-w-md">
-            <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" />
+            <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-2" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Job #, client, item ya part dhoondo…"
-              className="w-full bg-[#0d1117] border border-[#21293d] rounded-2xl py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 outline-none focus:border-sky-500/40 transition-colors"
+              className="w-full bg-app border border-app rounded-2xl py-3 pl-11 pr-4 text-sm text-white placeholder:text-muted-2 outline-none focus:border-sky-500/40 transition-colors"
             />
           </div>
         </div>
@@ -218,9 +218,9 @@ export default function PartsPendingReport() {
           <Loader2 size={28} className="animate-spin text-sky-400" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-[#161b27] border border-[#21293d] rounded-[2rem] p-14 text-center">
-          <PackageSearch size={40} className="mx-auto text-slate-700 mb-3" />
-          <p className="text-slate-500 font-bold">
+        <div className="bg-panel border border-app rounded-[2rem] p-14 text-center">
+          <PackageSearch size={40} className="mx-auto text-app mb-3" />
+          <p className="text-muted font-bold">
             {groups.length === 0
               ? "Koi job spare ke wait me nahi hai 🎉"
               : "Kuch bhi search me nahi mila"}
@@ -233,10 +233,10 @@ export default function PartsPendingReport() {
             return (
               <div
                 key={g.transaction_id}
-                className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden break-inside-avoid"
+                className="bg-panel border border-app rounded-2xl overflow-hidden break-inside-avoid"
               >
                 {/* Group header */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 border-b border-[#21293d] bg-[#111520]/60">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 border-b border-app bg-panel-2/60">
                   <Link
                     href={`/jobs/${g.transaction_id}/view`}
                     className="flex items-center gap-3 group"
@@ -248,7 +248,7 @@ export default function PartsPendingReport() {
                       <div className="text-white font-black group-hover:text-sky-300 transition-colors">
                         {g.clientLabel}
                       </div>
-                      <div className="text-xs text-slate-500 font-bold truncate max-w-[50vw]">
+                      <div className="text-xs text-muted font-bold truncate max-w-[50vw]">
                         {g.item || "—"}
                       </div>
                     </div>
@@ -266,7 +266,7 @@ export default function PartsPendingReport() {
                       <Truck size={11} /> PO banao
                     </button>
                   )}
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-bold ml-auto">
+                  <div className="flex items-center gap-1.5 text-[11px] text-muted font-bold ml-auto">
                     <Clock size={12} />
                     Waiting since {fmtDay.format(new Date(g.oldestWait))}
                   </div>
@@ -288,24 +288,24 @@ export default function PartsPendingReport() {
                             <img
                               src={p.photo_url}
                               alt={p.product_name}
-                              className="w-9 h-9 rounded-lg object-cover border border-[#21293d] flex-shrink-0 cursor-zoom-in"
+                              className="w-9 h-9 rounded-lg object-cover border border-app flex-shrink-0 cursor-zoom-in"
                               onDoubleClick={() =>
                                 openImageLightbox(p.photo_url, `Spare: ${p.product_name}`)
                               }
                             />
                           ) : (
-                            <div className="w-9 h-9 rounded-lg bg-[#0d1117] border border-[#21293d] flex items-center justify-center flex-shrink-0">
-                              <Truck size={14} className="text-slate-600" />
+                            <div className="w-9 h-9 rounded-lg bg-app border border-app flex items-center justify-center flex-shrink-0">
+                              <Truck size={14} className="text-muted-2" />
                             </div>
                           )}
                           <div className="min-w-0">
                             <div className="text-sm font-bold text-white truncate">
                               {p.product_name}
                             </div>
-                            <div className="text-[11px] text-slate-500 font-bold flex items-center gap-2 flex-wrap">
+                            <div className="text-[11px] text-muted font-bold flex items-center gap-2 flex-wrap">
                               <span>
                                 Qty:{" "}
-                                <span className={partial ? "text-amber-300" : "text-slate-300"}>
+                                <span className={partial ? "text-amber-300" : "text-app-2"}>
                                   {p.qty_received}
                                 </span>{" "}
                                 / {p.qty_needed}
@@ -322,12 +322,12 @@ export default function PartsPendingReport() {
                             {pBadge.label}
                           </span>
                           {(p.supplier_id || p.source_name) && (
-                            <span className="text-[11px] text-slate-400 font-bold">
+                            <span className="text-[11px] text-muted font-bold">
                               {p.supplier_id ? g.supplierName || p.source_name : p.source_name}
                             </span>
                           )}
                           {p.phone && (
-                            <span className="text-[11px] text-slate-500 font-bold flex items-center gap-1">
+                            <span className="text-[11px] text-muted font-bold flex items-center gap-1">
                               <Phone size={11} /> {p.phone}
                             </span>
                           )}

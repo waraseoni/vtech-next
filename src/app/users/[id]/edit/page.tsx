@@ -31,8 +31,8 @@ import PageLoader from "@/components/PageLoader";
 import { toast } from "@/lib/toast";
 
 const inputCls =
-  "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all";
-const labelCls = "block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5";
+  "w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all";
+const labelCls = "block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5";
 
 interface Mechanic {
   id: number;
@@ -242,10 +242,10 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   if (loading) return <PageLoader icon={UserCog} label="loading user..." tone="blue" />;
 
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
+    <div className="min-h-screen bg-app font-sans pb-12">
       <div className="max-w-md mx-auto px-4 pt-6 space-y-4">
         {/* Header */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative flex-shrink-0">
               {avatarUrl ? (
@@ -274,7 +274,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               <button
                 onClick={() => setPhotoPopup(!photoPopup)}
                 disabled={photoSaving}
-                className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors disabled:opacity-60"
+                className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-app-2 transition-colors disabled:opacity-60"
                 title="Photo upload"
               >
                 {photoSaving ? (
@@ -284,7 +284,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 )}
               </button>
               {photoPopup && (
-                <div className="absolute -bottom-20 -right-2 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                <div className="absolute -bottom-20 -right-2 z-50 bg-panel border border-app-2 rounded-xl shadow-2xl p-1.5 min-w-[120px]">
                   <button
                     onClick={() => {
                       setPhotoPopup(false);
@@ -330,7 +330,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
             <div>
               <h1 className="text-base font-black text-white">Edit User</h1>
               <div className="flex items-center gap-2">
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider truncate max-w-[160px]">
+                <p className="text-[10px] text-muted uppercase tracking-wider truncate max-w-[160px]">
                   {fullName || "Loading..."}
                 </p>
                 {avatarUrl && (
@@ -351,14 +351,14 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           </div>
           <Link
             href="/users"
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 rounded-xl text-xs font-bold no-underline transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted rounded-xl text-xs font-bold no-underline transition-all"
           >
             <ArrowLeft size={13} /> Back
           </Link>
         </div>
 
         {/* Form */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
+        <div className="bg-panel border border-app rounded-2xl p-5">
           <form onSubmit={handleSave} className="space-y-4">
             {/* Full Name */}
             <div>
@@ -366,7 +366,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               <div className="relative">
                 <User
                   size={14}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                 />
                 <input
                   type="text"
@@ -385,7 +385,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               <div className="relative">
                 <Mail
                   size={14}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                 />
                 <input
                   type="email"
@@ -439,7 +439,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                           : color === "amber"
                             ? "bg-amber-500/10 border-amber-500/50 text-amber-400"
                             : "bg-indigo-500/10 border-indigo-500/50 text-indigo-400"
-                        : "bg-[#0d1117] border-[#21293d] text-slate-500 hover:border-slate-500"
+                        : "bg-app border-app text-muted hover:border-muted"
                     }`}
                   >
                     <Icon size={18} className="flex-shrink-0" />
@@ -465,7 +465,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   placeholder="— Select Mechanic —"
                   clearLabel="— Select Mechanic —"
                 />
-                <p className="text-[10px] text-slate-700 mt-1">
+                <p className="text-[10px] text-app mt-1">
                   Attendance lagane ke liye staff/admin ko uski profile se link karna zaroori hai।
                 </p>
               </div>
@@ -487,7 +487,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 <button
                   type="button"
                   onClick={() => setShowPass((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-2 hover:text-muted transition-colors"
                 >
                   {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
@@ -520,7 +520,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   </span>
                 </div>
               )}
-              <p className="text-[10px] text-slate-700 mt-1 italic">
+              <p className="text-[10px] text-app mt-1 italic">
                 PHP ki tarah: blank chhodo toh password nahi badlega।
               </p>
             </div>
@@ -529,7 +529,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
             <div className="flex gap-3 pt-2">
               <Link
                 href="/users"
-                className="flex-1 py-3 rounded-xl border border-[#21293d] text-slate-400 hover:bg-white/5 font-bold text-sm text-center no-underline transition-all"
+                className="flex-1 py-3 rounded-xl border border-app text-muted hover:bg-white/5 font-bold text-sm text-center no-underline transition-all"
               >
                 Cancel
               </Link>

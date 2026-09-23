@@ -46,7 +46,7 @@ import dynamic from "next/dynamic";
 const ClientChart = dynamic(() => import("@/app/clients/components/ClientChart"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-48 flex items-center justify-center text-slate-500 text-xs font-bold">
+    <div className="w-full h-48 flex items-center justify-center text-muted text-xs font-bold">
       Load chart…
     </div>
   ),
@@ -371,7 +371,7 @@ export default function ClientsBody({
   }, [filteredSortedClients, pageSize, currentPage]);
 
   const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return <ArrowUpDown size={11} className="text-slate-600 ml-1" />;
+    if (sortField !== field) return <ArrowUpDown size={11} className="text-muted-2 ml-1" />;
     return sortDir === "asc" ? (
       <ArrowUp size={11} className="text-blue-400 ml-1" />
     ) : (
@@ -419,7 +419,7 @@ export default function ClientsBody({
 
   // ══════════════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#0d1117] text-slate-100 font-sans">
+    <div className="min-h-screen bg-app text-app-2 font-sans">
       <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-6 space-y-5">
         {/* ━━━━━━ HEADER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <div
@@ -457,19 +457,19 @@ export default function ClientsBody({
             )}
             <button
               onClick={printReport}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-300 rounded-xl font-bold text-xs transition cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 bg-panel-2 border border-app-2 hover:bg-panel-2 text-app-2 rounded-xl font-bold text-xs transition cursor-pointer"
             >
               <Printer size={13} /> Print
             </button>
             <button
               onClick={exportPDF}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-red-900/30 text-red-400 rounded-xl font-bold text-xs transition cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 bg-panel-2 border border-app-2 hover:bg-red-900/30 text-red-400 rounded-xl font-bold text-xs transition cursor-pointer"
             >
               <FileText size={13} /> PDF
             </button>
             <button
               onClick={exportExcel}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-emerald-900/30 text-emerald-400 rounded-xl font-bold text-xs transition cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 bg-panel-2 border border-app-2 hover:bg-emerald-900/30 text-emerald-400 rounded-xl font-bold text-xs transition cursor-pointer"
             >
               <FileSpreadsheet size={13} /> Excel
             </button>
@@ -521,7 +521,7 @@ export default function ClientsBody({
         <ClientChart clients={clients} />
 
         {/* ━━━━━━ FILTER BAR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 space-y-3">
+        <div className="bg-panel border border-app rounded-2xl p-4 space-y-3">
           {/* Tabs */}
           <div className="flex flex-wrap gap-2">
             {TABS.map((tab) => (
@@ -531,12 +531,12 @@ export default function ClientsBody({
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wide border transition cursor-pointer ${
                   tabFilter === tab.id
                     ? tab.ac
-                    : "border-[#21293d] text-slate-600 hover:bg-[#1e2637] hover:text-slate-400"
+                    : "border-app text-muted-2 hover:bg-panel-2 hover:text-muted"
                 }`}
               >
                 {tab.label}
                 <span
-                  className={`px-1.5 py-0.5 rounded text-[9px] font-black ${tabFilter === tab.id ? "bg-white/10" : "bg-[#1e2637] text-slate-600"}`}
+                  className={`px-1.5 py-0.5 rounded text-[9px] font-black ${tabFilter === tab.id ? "bg-white/10" : "bg-panel-2 text-muted-2"}`}
                 >
                   {tab.count}
                 </span>
@@ -548,18 +548,18 @@ export default function ClientsBody({
             <div className="relative flex-1 min-w-[180px]">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
               />
               <input
                 placeholder="Search name, mobile, email…"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl outline-none focus:border-blue-500 transition text-sm text-slate-200 placeholder:text-slate-700 font-medium"
+                className="w-full pl-9 pr-4 py-2.5 bg-app border border-app rounded-xl outline-none focus:border-blue-500 transition text-sm text-app-2 placeholder:text-app font-medium"
               />
             </div>
             <button
               onClick={() => setShowFilter(!showFilter)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs border transition cursor-pointer ${showFilter ? "bg-blue-600 border-blue-600 text-white" : "bg-[#0d1117] border-[#21293d] text-slate-500 hover:bg-[#1e2637]"}`}
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs border transition cursor-pointer ${showFilter ? "bg-blue-600 border-blue-600 text-white" : "bg-app border-app text-muted hover:bg-panel-2"}`}
             >
               <SlidersHorizontal size={13} /> Filters
             </button>
@@ -571,7 +571,7 @@ export default function ClientsBody({
                   setMaxBal("");
                   setTabFilter("all");
                 }}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl font-bold text-xs border border-[#21293d] text-slate-600 hover:bg-[#1e2637] transition cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl font-bold text-xs border border-app text-muted-2 hover:bg-panel-2 transition cursor-pointer"
               >
                 <RotateCcw size={11} /> Reset
               </button>
@@ -584,8 +584,8 @@ export default function ClientsBody({
           </div>
           {/* Extended filters */}
           {showFilter && (
-            <div className="flex flex-wrap gap-3 items-center pt-3 border-t border-[#21293d]">
-              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+            <div className="flex flex-wrap gap-3 items-center pt-3 border-t border-app">
+              <span className="text-[10px] font-bold text-muted-2 uppercase tracking-wider">
                 Balance:
               </span>
               <input
@@ -593,24 +593,24 @@ export default function ClientsBody({
                 placeholder="Min ₹"
                 value={minBal}
                 onChange={(e) => setMinBal(e.target.value)}
-                className="w-24 px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-300"
+                className="w-24 px-3 py-2 bg-app border border-app rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-app-2"
               />
-              <span className="text-slate-700">—</span>
+              <span className="text-app">—</span>
               <input
                 type="number"
                 placeholder="Max ₹"
                 value={maxBal}
                 onChange={(e) => setMaxBal(e.target.value)}
-                className="w-24 px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-300"
+                className="w-24 px-3 py-2 bg-app border border-app rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-app-2"
               />
-              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider ml-2">
+              <span className="text-[10px] font-bold text-muted-2 uppercase tracking-wider ml-2">
                 Sort:
               </span>
               {(["balance", "name", "total_paid", "date_created"] as SortField[]).map((f) => (
                 <button
                   key={f}
                   onClick={() => toggleSort(f)}
-                  className={`flex items-center gap-1 px-3 py-2 rounded-xl text-[11px] font-bold border transition cursor-pointer ${sortField === f ? "bg-blue-600 border-blue-600 text-white" : "border-[#21293d] text-slate-500 hover:bg-[#1e2637]"}`}
+                  className={`flex items-center gap-1 px-3 py-2 rounded-xl text-[11px] font-bold border transition cursor-pointer ${sortField === f ? "bg-blue-600 border-blue-600 text-white" : "border-app text-muted hover:bg-panel-2"}`}
                 >
                   {f === "balance"
                     ? "Balance"
@@ -629,9 +629,9 @@ export default function ClientsBody({
 
         {/* ━━━━━━ CONTENT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         {filteredSortedClients.length === 0 ? (
-          <div className="text-center py-20 bg-[#161b27] rounded-2xl border border-dashed border-[#21293d]">
-            <Search className="mx-auto mb-3 text-slate-700" size={36} />
-            <p className="text-slate-600 font-bold text-sm uppercase tracking-wider">
+          <div className="text-center py-20 bg-panel rounded-2xl border border-dashed border-app">
+            <Search className="mx-auto mb-3 text-app" size={36} />
+            <p className="text-muted-2 font-bold text-sm uppercase tracking-wider">
               No clients found
             </p>
           </div>
@@ -643,7 +643,7 @@ export default function ClientsBody({
               return (
                 <div
                   key={client.id}
-                  className={`bg-[#161b27] rounded-2xl border border-[#21293d] overflow-hidden ${meta.rowCls}`}
+                  className={`bg-panel rounded-2xl border border-app overflow-hidden ${meta.rowCls}`}
                 >
                   <div className="p-4 space-y-3">
                     <div className="flex items-start justify-between gap-2">
@@ -654,7 +654,7 @@ export default function ClientsBody({
                             alt={client.name}
                             width={56}
                             height={56}
-                            className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+                            className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-app cursor-zoom-in"
                             onDoubleClick={(e) => {
                               e.stopPropagation();
                               openImageLightbox(client.image_path, client.name);
@@ -664,23 +664,23 @@ export default function ClientsBody({
                             }}
                           />
                         ) : (
-                          <div className="w-14 h-14 rounded-xl bg-[#1e2637] border border-[#2a3550] flex items-center justify-center flex-shrink-0">
-                            <User size={20} className="text-slate-500" />
+                          <div className="w-14 h-14 rounded-xl bg-panel-2 border border-app-2 flex items-center justify-center flex-shrink-0">
+                            <User size={20} className="text-muted" />
                           </div>
                         )}
                         <div>
                           <Link
                             href={`/clients/${client.id}/view`}
-                            className="font-black text-slate-100 text-base no-underline hover:text-blue-400 transition leading-tight block"
+                            className="font-black text-app-2 text-base no-underline hover:text-blue-400 transition leading-tight block"
                           >
                             {client.name}
                           </Link>
                           <div className="flex items-center gap-3 mt-1">
-                            <span className="text-slate-600 text-[10px] font-bold">
+                            <span className="text-muted-2 text-[10px] font-bold">
                               #{client.id}
                             </span>
                             {client.contact && (
-                              <span className="text-slate-400 text-[10px] font-bold flex items-center gap-0.5">
+                              <span className="text-muted text-[10px] font-bold flex items-center gap-0.5">
                                 <Phone size={9} />
                                 {client.contact}
                               </span>
@@ -694,9 +694,9 @@ export default function ClientsBody({
                         {meta.label}
                       </span>
                     </div>
-                    {client.address && <p className="text-slate-500 text-xs">{client.address}</p>}
-                    <div className="flex justify-between items-center bg-[#0d1117] rounded-xl px-4 py-3 border border-[#21293d]">
-                      <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    {client.address && <p className="text-muted text-xs">{client.address}</p>}
+                    <div className="flex justify-between items-center bg-app rounded-xl px-4 py-3 border border-app">
+                      <span className="text-[11px] font-bold text-muted-2 uppercase tracking-wider">
                         Balance
                       </span>
                       <span
@@ -707,8 +707,8 @@ export default function ClientsBody({
                       </span>
                     </div>
                     {client.repair_done > 0 && (
-                      <div className="flex justify-between items-center bg-[#0d1117]/70 rounded-xl px-4 py-2 border border-[#21293d]">
-                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                      <div className="flex justify-between items-center bg-app/70 rounded-xl px-4 py-2 border border-app">
+                        <span className="text-[10px] font-bold text-muted-2 uppercase tracking-wider">
                           Done pending
                         </span>
                         <span className="text-xs font-extrabold text-cyan-400/90">
@@ -719,12 +719,12 @@ export default function ClientsBody({
                     {userRole === "admin" && (
                       <button
                         onClick={() => handleToggleLogin(client)}
-                        className={`w-full flex items-center justify-between bg-[#0d1117] rounded-xl px-4 py-3 border cursor-pointer transition ${client.login_allowed ? "border-emerald-500/30" : "border-[#21293d]"}`}
+                        className={`w-full flex items-center justify-between bg-app rounded-xl px-4 py-3 border cursor-pointer transition ${client.login_allowed ? "border-emerald-500/30" : "border-app"}`}
                       >
-                        <span className="flex items-center gap-2 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                        <span className="flex items-center gap-2 text-[11px] font-bold text-muted-2 uppercase tracking-wider">
                           <ShieldCheck
                             size={13}
-                            className={client.login_allowed ? "text-emerald-400" : "text-slate-600"}
+                            className={client.login_allowed ? "text-emerald-400" : "text-muted-2"}
                           />
                           Portal Access
                         </span>
@@ -733,7 +733,7 @@ export default function ClientsBody({
                             <span className="text-[9px] font-bold text-amber-400/80">No email</span>
                           )}
                           <span
-                            className={`relative w-11 h-6 rounded-full transition-colors ${client.login_allowed ? "bg-emerald-500" : "bg-[#21293d]"}`}
+                            className={`relative w-11 h-6 rounded-full transition-colors ${client.login_allowed ? "bg-emerald-500" : "bg-panel-2"}`}
                           >
                             <span
                               className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${client.login_allowed ? "left-[22px]" : "left-0.5"}`}
@@ -743,7 +743,7 @@ export default function ClientsBody({
                       </button>
                     )}
                     {client.balance > 0 && (
-                      <div className="h-1.5 bg-[#1e2637] rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-panel-2 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-red-500 to-orange-400 rounded-full"
                           style={{ width: `${Math.min(100, (client.balance / 100_000) * 100)}%` }}
@@ -753,7 +753,7 @@ export default function ClientsBody({
                     <div className="flex gap-2">
                       <Link
                         href={`/clients/${client.id}/view`}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#1e2637] border border-[#2a3550] rounded-xl text-slate-300 text-xs font-bold no-underline hover:bg-[#253048] transition"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-panel-2 border border-app-2 rounded-xl text-app-2 text-xs font-bold no-underline hover:bg-panel-2 transition"
                       >
                         <Eye size={13} /> View
                       </Link>
@@ -777,22 +777,22 @@ export default function ClientsBody({
               );
             })}
             {pageSize !== 0 && totalPages > 1 && (
-              <div className="flex items-center justify-between bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex-wrap gap-3">
+              <div className="flex items-center justify-between bg-panel border border-app rounded-2xl p-4 flex-wrap gap-3">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-2 rounded-xl text-xs font-extrabold border border-[#21293d] text-slate-400 disabled:opacity-30 cursor-pointer hover:bg-[#1e2637]"
+                    className="px-3 py-2 rounded-xl text-xs font-extrabold border border-app text-muted disabled:opacity-30 cursor-pointer hover:bg-panel-2"
                   >
                     ‹ Prev
                   </button>
-                  <span className="text-xs font-bold text-slate-400 px-1">
+                  <span className="text-xs font-bold text-muted px-1">
                     {currentPage} / {totalPages}
                   </span>
                   <button
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-2 rounded-xl text-xs font-extrabold border border-[#21293d] text-slate-400 disabled:opacity-30 cursor-pointer hover:bg-[#1e2637]"
+                    className="px-3 py-2 rounded-xl text-xs font-extrabold border border-app text-muted disabled:opacity-30 cursor-pointer hover:bg-panel-2"
                   >
                     Next ›
                   </button>
@@ -805,7 +805,7 @@ export default function ClientsBody({
                         setPageSize(n);
                         setCurrentPage(1);
                       }}
-                      className={`px-2.5 py-1.5 rounded-lg text-[10px] font-extrabold border cursor-pointer transition ${pageSize === n ? "bg-blue-600 border-blue-600 text-white" : "border-[#21293d] text-slate-600 hover:bg-[#1e2637]"}`}
+                      className={`px-2.5 py-1.5 rounded-lg text-[10px] font-extrabold border cursor-pointer transition ${pageSize === n ? "bg-blue-600 border-blue-600 text-white" : "border-app text-muted-2 hover:bg-panel-2"}`}
                     >
                       {n === 0 ? "All" : n}
                     </button>
@@ -816,11 +816,11 @@ export default function ClientsBody({
           </div>
         ) : (
           /* ─── DESKTOP TABLE ─────────────────────────────────────────── */
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl">
+          <div className="bg-panel border border-app rounded-2xl">
             {/* Page-size bar */}
-            <div className="flex items-center justify-between px-5 py-3 bg-[#111520] border-b border-[#21293d] flex-wrap gap-2">
+            <div className="flex items-center justify-between px-5 py-3 bg-panel-2 border-b border-app flex-wrap gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-muted-2 uppercase tracking-wider">
                   Show
                 </span>
                 {[10, 25, 50, 100, 0].map((n) => (
@@ -830,16 +830,16 @@ export default function ClientsBody({
                       setPageSize(n);
                       setCurrentPage(1);
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-extrabold border transition cursor-pointer ${pageSize === n ? "bg-blue-600 border-blue-600 text-white" : "border-[#21293d] text-slate-600 hover:bg-[#1e2637] hover:text-slate-300"}`}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-extrabold border transition cursor-pointer ${pageSize === n ? "bg-blue-600 border-blue-600 text-white" : "border-app text-muted-2 hover:bg-panel-2 hover:text-app-2"}`}
                   >
                     {n === 0 ? "All" : n}
                   </button>
                 ))}
-                <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-muted-2 uppercase tracking-wider">
                   entries
                 </span>
               </div>
-              <span className="text-[11px] font-bold text-slate-600">
+              <span className="text-[11px] font-bold text-muted-2">
                 {pageSize === 0
                   ? `All ${filteredSortedClients.length}`
                   : `${Math.min((currentPage - 1) * pageSize + 1, filteredSortedClients.length)}–${Math.min(currentPage * pageSize, filteredSortedClients.length)} of ${filteredSortedClients.length}`}
@@ -858,7 +858,7 @@ export default function ClientsBody({
                 <col style={{ width: "120px" }} />
               </colgroup>
               <thead>
-                <tr className="bg-[#111520] border-b border-[#21293d]">
+                <tr className="bg-panel-2 border-b border-app">
                   <th className="px-2 py-3.5 text-left">
                     <button
                       onClick={toggleSelectAll}
@@ -869,36 +869,36 @@ export default function ClientsBody({
                       paginatedClients.length > 0 ? (
                         <CheckSquare size={14} className="text-blue-400" />
                       ) : (
-                        <Square size={14} className="text-slate-600" />
+                        <Square size={14} className="text-muted-2" />
                       )}
                     </button>
                   </th>
-                  <th className="px-3 py-3.5 text-left text-[10px] font-extrabold text-slate-600 uppercase tracking-widest">
+                  <th className="px-3 py-3.5 text-left text-[10px] font-extrabold text-muted-2 uppercase tracking-widest">
                     #
                   </th>
                   <th
                     onClick={() => toggleSort("name")}
-                    className="px-3 py-3.5 text-left text-[10px] font-extrabold text-slate-600 uppercase tracking-widest cursor-pointer hover:text-blue-400 transition select-none"
+                    className="px-3 py-3.5 text-left text-[10px] font-extrabold text-muted-2 uppercase tracking-widest cursor-pointer hover:text-blue-400 transition select-none"
                   >
                     <div className="flex items-center">
                       Client <SortIcon field="name" />
                     </div>
                   </th>
-                  <th className="px-3 py-3.5 text-left text-[10px] font-extrabold text-slate-600 uppercase tracking-widest">
+                  <th className="px-3 py-3.5 text-left text-[10px] font-extrabold text-muted-2 uppercase tracking-widest">
                     Address
                   </th>
                   <th
                     onClick={() => toggleSort("balance")}
-                    className="px-3 py-3.5 text-left text-[10px] font-extrabold text-slate-600 uppercase tracking-widest cursor-pointer hover:text-blue-400 transition select-none"
+                    className="px-3 py-3.5 text-left text-[10px] font-extrabold text-muted-2 uppercase tracking-widest cursor-pointer hover:text-blue-400 transition select-none"
                   >
                     <div className="flex items-center">
                       Balance <SortIcon field="balance" />
                     </div>
                   </th>
-                  <th className="px-3 py-3.5 text-left text-[10px] font-extrabold text-slate-600 uppercase tracking-widest">
+                  <th className="px-3 py-3.5 text-left text-[10px] font-extrabold text-muted-2 uppercase tracking-widest">
                     Last Txn
                   </th>
-                  <th className="px-3 py-3.5 text-left text-[10px] font-extrabold text-slate-600 uppercase tracking-widest">
+                  <th className="px-3 py-3.5 text-left text-[10px] font-extrabold text-muted-2 uppercase tracking-widest">
                     Actions
                   </th>
                 </tr>
@@ -911,7 +911,7 @@ export default function ClientsBody({
                   return (
                     <tr
                       key={client.id}
-                      className={`border-b border-[#1a2030] hover:bg-white/[0.02] transition-colors ${meta.rowCls} ${isSelected ? "bg-blue-500/5" : ""}`}
+                      className={`border-b border-app-2 hover:bg-white/[0.02] transition-colors ${meta.rowCls} ${isSelected ? "bg-blue-500/5" : ""}`}
                     >
                       {/* Checkbox */}
                       <td className="px-2 py-3.5 align-middle">
@@ -922,13 +922,13 @@ export default function ClientsBody({
                           {isSelected ? (
                             <CheckSquare size={14} className="text-blue-400" />
                           ) : (
-                            <Square size={14} className="text-slate-600" />
+                            <Square size={14} className="text-muted-2" />
                           )}
                         </button>
                       </td>
 
                       {/* # */}
-                      <td className="px-3 py-3.5 text-slate-700 text-xs font-bold align-middle">
+                      <td className="px-3 py-3.5 text-app text-xs font-bold align-middle">
                         {rowNum}
                       </td>
 
@@ -941,7 +941,7 @@ export default function ClientsBody({
                               alt={client.name}
                               width={48}
                               height={48}
-                              className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+                              className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-app cursor-zoom-in"
                               onDoubleClick={(e) => {
                                 e.stopPropagation();
                                 openImageLightbox(client.image_path, client.name);
@@ -956,16 +956,16 @@ export default function ClientsBody({
                           <div className="min-w-0 flex-1">
                             <Link
                               href={`/clients/${client.id}/view`}
-                              className="font-extrabold text-slate-100 hover:text-blue-400 no-underline transition text-[13px] block truncate leading-snug"
+                              className="font-extrabold text-app-2 hover:text-blue-400 no-underline transition text-[13px] block truncate leading-snug"
                             >
                               {client.name}
                             </Link>
                             <div className="flex items-center gap-3 mt-0.5">
-                              <span className="text-slate-600 text-[10px] font-bold">
+                              <span className="text-muted-2 text-[10px] font-bold">
                                 #{client.id}
                               </span>
                               {client.contact && (
-                                <span className="text-slate-400 text-[10px] font-bold flex items-center gap-0.5">
+                                <span className="text-muted text-[10px] font-bold flex items-center gap-0.5">
                                   <Phone size={9} className="text-blue-500 flex-shrink-0" />
                                   {client.contact}
                                 </span>
@@ -998,14 +998,14 @@ export default function ClientsBody({
                       {/* Address + email */}
                       <td className="px-3 py-3.5 align-middle">
                         <p
-                          className="text-slate-400 text-[12px] font-medium truncate leading-snug"
+                          className="text-muted text-[12px] font-medium truncate leading-snug"
                           title={client.address || ""}
                         >
-                          {client.address || <span className="text-slate-700">—</span>}
+                          {client.address || <span className="text-app">—</span>}
                         </p>
                         {client.email && (
                           <p
-                            className="text-slate-700 text-[10px] mt-0.5 truncate flex items-center gap-1"
+                            className="text-app text-[10px] mt-0.5 truncate flex items-center gap-1"
                             title={client.email}
                           >
                             <Mail size={9} className="flex-shrink-0" />
@@ -1023,7 +1023,7 @@ export default function ClientsBody({
                           {inr(client.balance)}
                         </div>
                         {client.balance > 0 ? (
-                          <div className="mt-2 h-1.5 bg-[#1e2637] rounded-full overflow-hidden">
+                          <div className="mt-2 h-1.5 bg-panel-2 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-gradient-to-r from-red-500 to-orange-400 rounded-full"
                               style={{
@@ -1047,7 +1047,7 @@ export default function ClientsBody({
                       <td className="px-3 py-3.5 align-middle whitespace-nowrap">
                         {client.last_txn_date ? (
                           <>
-                            <div className="text-slate-300 text-xs font-bold">
+                            <div className="text-app-2 text-xs font-bold">
                               {new Date(client.last_txn_date).toLocaleDateString("en-IN", {
                                 day: "2-digit",
                                 month: "short",
@@ -1055,13 +1055,13 @@ export default function ClientsBody({
                               })}
                             </div>
                             <div
-                              className={`text-[10px] font-bold mt-0.5 ${daysSince(client.last_txn_date) > 30 ? "text-teal-400" : "text-slate-700"}`}
+                              className={`text-[10px] font-bold mt-0.5 ${daysSince(client.last_txn_date) > 30 ? "text-teal-400" : "text-app"}`}
                             >
                               {daysSince(client.last_txn_date)}d ago
                             </div>
                           </>
                         ) : (
-                          <span className="text-slate-700 text-sm">—</span>
+                          <span className="text-app text-sm">—</span>
                         )}
                       </td>
 
@@ -1083,10 +1083,10 @@ export default function ClientsBody({
                 })}
               </tbody>
               <tfoot>
-                <tr className="bg-[#111520] border-t border-[#21293d]">
+                <tr className="bg-panel-2 border-t border-app">
                   <td
                     colSpan={3}
-                    className="px-3 py-3 text-right text-[10px] font-extrabold text-slate-600 uppercase tracking-wide"
+                    className="px-3 py-3 text-right text-[10px] font-extrabold text-muted-2 uppercase tracking-wide"
                   >
                     This page due:
                   </td>
@@ -1097,7 +1097,7 @@ export default function ClientsBody({
                       )}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-right text-[10px] font-extrabold text-slate-600 uppercase tracking-wide">
+                  <td className="px-3 py-3 text-right text-[10px] font-extrabold text-muted-2 uppercase tracking-wide">
                     Total:
                   </td>
                   <td className="px-3 py-3">
@@ -1109,19 +1109,19 @@ export default function ClientsBody({
 
             {/* Pagination */}
             {pageSize !== 0 && totalPages > 1 && (
-              <div className="flex items-center justify-between px-5 py-3 bg-[#111520] border-t border-[#21293d] flex-wrap gap-3">
+              <div className="flex items-center justify-between px-5 py-3 bg-panel-2 border-t border-app flex-wrap gap-3">
                 <div className="flex items-center flex-wrap gap-1.5">
                   <button
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
-                    className="px-2.5 py-1.5 rounded-lg text-xs font-extrabold border border-[#21293d] text-slate-600 disabled:opacity-30 cursor-pointer hover:bg-[#1e2637]"
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-extrabold border border-app text-muted-2 disabled:opacity-30 cursor-pointer hover:bg-panel-2"
                   >
                     «
                   </button>
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-1.5 rounded-lg text-xs font-extrabold border border-[#21293d] text-slate-500 disabled:opacity-30 cursor-pointer hover:bg-[#1e2637]"
+                    className="px-3 py-1.5 rounded-lg text-xs font-extrabold border border-app text-muted disabled:opacity-30 cursor-pointer hover:bg-panel-2"
                   >
                     ‹ Prev
                   </button>
@@ -1143,14 +1143,14 @@ export default function ClientsBody({
                     }
                     return pages.map((p, idx) =>
                       p === "..." ? (
-                        <span key={`e${idx}`} className="px-1.5 text-slate-700 text-xs">
+                        <span key={`e${idx}`} className="px-1.5 text-app text-xs">
                           …
                         </span>
                       ) : (
                         <button
                           key={p}
                           onClick={() => setCurrentPage(p as number)}
-                          className={`w-8 h-8 rounded-lg text-xs font-extrabold border transition cursor-pointer ${currentPage === p ? "bg-blue-600 border-blue-600 text-white" : "border-[#21293d] text-slate-500 hover:bg-[#1e2637]"}`}
+                          className={`w-8 h-8 rounded-lg text-xs font-extrabold border transition cursor-pointer ${currentPage === p ? "bg-blue-600 border-blue-600 text-white" : "border-app text-muted hover:bg-panel-2"}`}
                         >
                           {p}
                         </button>
@@ -1160,20 +1160,20 @@ export default function ClientsBody({
                   <button
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-1.5 rounded-lg text-xs font-extrabold border border-[#21293d] text-slate-500 disabled:opacity-30 cursor-pointer hover:bg-[#1e2637]"
+                    className="px-3 py-1.5 rounded-lg text-xs font-extrabold border border-app text-muted disabled:opacity-30 cursor-pointer hover:bg-panel-2"
                   >
                     Next ›
                   </button>
                   <button
                     onClick={() => setCurrentPage(totalPages)}
                     disabled={currentPage === totalPages}
-                    className="px-2.5 py-1.5 rounded-lg text-xs font-extrabold border border-[#21293d] text-slate-600 disabled:opacity-30 cursor-pointer hover:bg-[#1e2637]"
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-extrabold border border-app text-muted-2 disabled:opacity-30 cursor-pointer hover:bg-panel-2"
                   >
                     »
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-slate-600">Go to:</span>
+                  <span className="text-[10px] font-bold text-muted-2">Go to:</span>
                   <input
                     type="number"
                     min={1}
@@ -1186,9 +1186,9 @@ export default function ClientsBody({
                         if (v >= 1 && v <= totalPages) setCurrentPage(v);
                       }
                     }}
-                    className="w-12 px-2 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs font-bold text-center text-slate-300 outline-none focus:border-blue-500"
+                    className="w-12 px-2 py-1.5 bg-app border border-app rounded-lg text-xs font-bold text-center text-app-2 outline-none focus:border-blue-500"
                   />
-                  <span className="text-[10px] font-bold text-slate-600">of {totalPages}</span>
+                  <span className="text-[10px] font-bold text-muted-2">of {totalPages}</span>
                 </div>
               </div>
             )}
@@ -1215,13 +1215,13 @@ export default function ClientsBody({
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-3 theme-card p-3.5 rounded-xl">
                 <div>
-                  <p className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                  <p className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest">
                     Client
                   </p>
                   <p className="font-extrabold theme-heading text-sm mt-0.5">{waClient.name}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                  <p className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest">
                     Balance
                   </p>
                   <p
@@ -1232,7 +1232,7 @@ export default function ClientsBody({
                 </div>
               </div>
               <div>
-                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">
+                <label className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest block mb-1.5">
                   Message Type
                 </label>
                 <select
@@ -1249,7 +1249,7 @@ export default function ClientsBody({
                 </select>
               </div>
               <div>
-                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">
+                <label className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest block mb-1.5">
                   Message
                 </label>
                 <textarea
@@ -1298,7 +1298,7 @@ export default function ClientsBody({
             </div>
             <div className="p-5 space-y-4">
               <div className="theme-card rounded-xl p-3.5">
-                <p className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">
+                <p className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest mb-1">
                   Selected Clients
                 </p>
                 <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
@@ -1316,7 +1316,7 @@ export default function ClientsBody({
                 </div>
               </div>
               <div>
-                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">
+                <label className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest block mb-1.5">
                   Message Type
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -1338,8 +1338,8 @@ export default function ClientsBody({
                                   ? "bg-purple-600 border-purple-600 !text-white"
                                   : type === "greeting"
                                     ? "bg-amber-600 border-amber-600 !text-white"
-                                    : "bg-slate-600 border-slate-600 !text-white"
-                          : "theme-card text-slate-600 dark:text-slate-400 hover:opacity-80"
+                                    : "bg-slate-600 border-muted !text-white"
+                          : "theme-card text-muted-2 dark:text-muted hover:opacity-80"
                       }`}
                     >
                       {type === "reminder"
@@ -1358,7 +1358,7 @@ export default function ClientsBody({
 </div>
               </div>
               <div>
-                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">
+                <label className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest block mb-1.5">
                   Send To
                 </label>
                 <select
@@ -1385,7 +1385,7 @@ export default function ClientsBody({
                 </select>
               </div>
               <div>
-                <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">
+                <label className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest block mb-1.5">
                   Message Type
                 </label>
                 <textarea
@@ -1393,7 +1393,7 @@ export default function ClientsBody({
                   onChange={(e) => setBulkWaText(e.target.value)}
                   rows={6}
                   placeholder="Type your message or select a template above..."
-                  className="w-full theme-input rounded-xl px-3 py-3 text-sm font-mono focus:outline-none focus:border-green-500 transition resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  className="w-full theme-input rounded-xl px-3 py-3 text-sm font-mono focus:outline-none focus:border-green-500 transition resize-none placeholder:text-muted dark:placeholder:text-muted"
                 />
               </div>
               <div className="flex gap-2">
@@ -1410,7 +1410,7 @@ export default function ClientsBody({
                   <Send size={14} className="!text-white" /> Send to All ({selectedClients.size})
                 </button>
               </div>
-              <p className="text-[10px] text-slate-500 text-center">
+              <p className="text-[10px] text-muted text-center">
                 WhatsApp windows will open for each client. Allow popups if asked.
               </p>
             </div>
@@ -1470,7 +1470,7 @@ function ActionDropdown({
       icon: <Eye size={12} />,
       label: "View Details",
       href: `/clients/${clientId}/view`,
-      color: "text-slate-300",
+      color: "text-app-2",
     },
     {
       icon: <Edit3 size={12} />,
@@ -1501,7 +1501,7 @@ function ActionDropdown({
             icon: <ShieldCheck size={12} />,
             label: loginAllowed ? "Portal Access ON" : "Portal Access OFF",
             href: null,
-            color: loginAllowed ? "text-emerald-400" : "text-slate-400",
+            color: loginAllowed ? "text-emerald-400" : "text-muted",
             action: onToggleLogin,
           },
         ]
@@ -1527,7 +1527,7 @@ function ActionDropdown({
         className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold border transition cursor-pointer select-none ${
           open
             ? "bg-blue-600 border-blue-600 text-white"
-            : "bg-[#1e2637] border-[#2a3550] text-slate-300 hover:bg-[#253048]"
+            : "bg-panel-2 border-app-2 text-app-2 hover:bg-panel-2"
         }`}
       >
         Actions{" "}
@@ -1538,7 +1538,7 @@ function ActionDropdown({
       </button>
       {open && (
         <div
-          className="absolute right-0 z-[999] w-44 bg-[#161b27] border border-[#21293d] rounded-xl shadow-2xl overflow-hidden"
+          className="absolute right-0 z-[999] w-44 bg-panel border border-app rounded-xl shadow-2xl overflow-hidden"
           style={openUp ? { bottom: "calc(100% + 4px)" } : { top: "calc(100% + 4px)" }}
         >
           {items.map((item, idx) =>
@@ -1547,7 +1547,7 @@ function ActionDropdown({
                 key={idx}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold ${item.color} hover:bg-[#1e2637] no-underline transition border-b border-[#1a2030] last:border-0`}
+                className={`flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold ${item.color} hover:bg-panel-2 no-underline transition border-b border-app-2 last:border-0`}
               >
                 {item.icon}
                 {item.label}
@@ -1559,7 +1559,7 @@ function ActionDropdown({
                   setOpen(false);
                   item.action?.();
                 }}
-                className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold ${item.color} hover:bg-[#1e2637] transition border-b border-[#1a2030] last:border-0 cursor-pointer`}
+                className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold ${item.color} hover:bg-panel-2 transition border-b border-app-2 last:border-0 cursor-pointer`}
               >
                 {item.icon}
                 {item.label}
@@ -1595,12 +1595,12 @@ function StatCard({
 }) {
   const c = DCLR[color] ?? DCLR.blue;
   return (
-    <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center gap-3.5 hover:-translate-y-0.5 transition-transform duration-200 overflow-hidden">
+    <div className="bg-panel border border-app rounded-2xl p-4 flex items-center gap-3.5 hover:-translate-y-0.5 transition-transform duration-200 overflow-hidden">
       <div className={`p-2.5 rounded-xl ${c.bg} border ${c.border} flex-shrink-0`}>
         <div className={c.icon}>{icon}</div>
       </div>
       <div className="min-w-0 flex-1 overflow-hidden">
-        <p className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-slate-600 leading-none mb-1.5 truncate">
+        <p className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-muted-2 leading-none mb-1.5 truncate">
           {label}
         </p>
         <div

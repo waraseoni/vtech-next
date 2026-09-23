@@ -116,7 +116,7 @@ function StockRing({
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className={`text-xl font-black ${st.color}`}>{Math.max(0, available)}</span>
-        <span className="text-[8px] text-slate-700 font-bold uppercase tracking-widest">avail</span>
+        <span className="text-[8px] text-app font-bold uppercase tracking-widest">avail</span>
       </div>
     </div>
   );
@@ -484,11 +484,11 @@ export default function ProductDetailPage() {
 
   if (userRole !== "admin" && userRole !== "developer") {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-6">
+      <div className="min-h-screen bg-app flex items-center justify-center px-6">
         <div className="text-center">
-          <ShieldCheck size={40} className="text-slate-700 mx-auto mb-3" />
+          <ShieldCheck size={40} className="text-app mx-auto mb-3" />
           <h1 className="text-lg font-black text-white tracking-tight">Admin only</h1>
-          <p className="text-slate-600 text-sm mt-1">Product detail sirf admin dekh sakta hai.</p>
+          <p className="text-muted-2 text-sm mt-1">Product detail sirf admin dekh sakta hai.</p>
         </div>
       </div>
     );
@@ -496,9 +496,9 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center">
-        <div className="text-center bg-[#161b27] border border-[#21293d] rounded-2xl p-10">
-          <Package size={40} className="mx-auto text-slate-700 mb-3" />
+      <div className="min-h-screen bg-app flex items-center justify-center">
+        <div className="text-center bg-panel border border-app rounded-2xl p-10">
+          <Package size={40} className="mx-auto text-app mb-3" />
           <h2 className="text-xl font-black text-white">Product not found</h2>
           <Link
             href="/inventory"
@@ -513,9 +513,9 @@ export default function ProductDetailPage() {
 
   // ══════════════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
+    <div className="min-h-screen bg-app font-sans pb-16">
       {/* ── HERO HEADER ── */}
-      <div className="relative overflow-hidden bg-[#0d1117] border-b border-[#21293d]">
+      <div className="relative overflow-hidden bg-app border-b border-app">
         <div
           className="absolute inset-0 opacity-[0.025]"
           style={{
@@ -527,12 +527,12 @@ export default function ProductDetailPage() {
 
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
           {/* Breadcrumb */}
-          <div className="flex items-center gap-1.5 text-[10px] text-slate-700 mb-4 font-bold uppercase tracking-wider">
-            <Link href="/inventory" className="hover:text-slate-500 transition-colors">
+          <div className="flex items-center gap-1.5 text-[10px] text-app mb-4 font-bold uppercase tracking-wider">
+            <Link href="/inventory" className="hover:text-muted transition-colors">
               Inventory
             </Link>
             <ChevronRight size={10} />
-            <span className="text-slate-500 truncate max-w-[200px]">{product.name}</span>
+            <span className="text-muted truncate max-w-[200px]">{product.name}</span>
           </div>
 
           <div className="flex flex-wrap items-start justify-between gap-5">
@@ -540,7 +540,7 @@ export default function ProductDetailPage() {
             <div className="flex items-start gap-4">
               <Link
                 href="/inventory"
-                className="mt-1 p-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] rounded-xl text-slate-500 hover:text-slate-300 transition-all flex-shrink-0"
+                className="mt-1 p-2 bg-panel hover:bg-panel-2 border border-app rounded-xl text-muted hover:text-app-2 transition-all flex-shrink-0"
               >
                 <ArrowLeft size={16} />
               </Link>
@@ -553,11 +553,11 @@ export default function ProductDetailPage() {
                       alt={product.name}
                       width={64}
                       height={64}
-                      className="w-16 h-16 rounded-2xl object-cover border border-[#21293d] cursor-zoom-in"
+                      className="w-16 h-16 rounded-2xl object-cover border border-app cursor-zoom-in"
                       onDoubleClick={() => openImageLightbox(product.image_path, product.name)}
                     />
                     <span
-                      className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-[#0d1117] ${st.bar}`}
+                      className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-app ${st.bar}`}
                     />
                   </div>
                 ) : (
@@ -567,7 +567,7 @@ export default function ProductDetailPage() {
                     <Package size={24} className={st.color} />
                     {/* Status dot */}
                     <span
-                      className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-[#0d1117] ${st.bar}`}
+                      className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-app ${st.bar}`}
                     />
                   </div>
                 )}
@@ -575,11 +575,11 @@ export default function ProductDetailPage() {
                   <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
                     {product.name}
                   </h1>
-                  <p className="text-slate-600 text-xs mt-0.5 max-w-sm leading-relaxed">
+                  <p className="text-muted-2 text-xs mt-0.5 max-w-sm leading-relaxed">
                     {product.description}
                   </p>
                   <div className="flex items-center gap-3 mt-2 flex-wrap">
-                    <span className="flex items-center gap-1 text-[10px] font-bold text-slate-700">
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-app">
                       <Hash size={9} /> ID: {product.id}
                     </span>
                     {product.price > 0 && (
@@ -588,7 +588,7 @@ export default function ProductDetailPage() {
                       </span>
                     )}
                     {product.cost_price > 0 && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500">
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-muted">
                         Cost: ₹{product.cost_price.toLocaleString("en-IN")}
                       </span>
                     )}
@@ -608,13 +608,13 @@ export default function ProductDetailPage() {
                     )}
                     <Link
                       href={`/products?edit=${productId}&from=${encodeURIComponent(`/inventory/${productId}`)}`}
-                      className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-white border border-[#21293d] rounded-md px-2 py-0.5 transition-colors"
+                      className="flex items-center gap-1 text-[10px] font-bold text-muted hover:text-white border border-app rounded-md px-2 py-0.5 transition-colors"
                     >
                       <Boxes size={9} /> Edit in Products
                     </Link>
                     <Link
                       href="/inventory/purchase-orders"
-                      className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-white border border-[#21293d] rounded-md px-2 py-0.5 transition-colors"
+                      className="flex items-center gap-1 text-[10px] font-bold text-muted hover:text-white border border-app rounded-md px-2 py-0.5 transition-colors"
                     >
                       <FileText size={9} /> Purchase Orders
                     </Link>
@@ -646,7 +646,7 @@ export default function ProductDetailPage() {
                   }
                   printBarcodeLabels([{ value: bc, name: product.name }]);
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-300 hover:text-white rounded-xl text-sm font-bold transition-all active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 bg-panel hover:bg-panel-2 border border-app text-app-2 hover:text-white rounded-xl text-sm font-bold transition-all active:scale-95"
               >
                 <Printer size={15} /> Print Label
               </button>
@@ -712,9 +712,9 @@ export default function ProductDetailPage() {
               label: "Cost Value",
               value: `₹${(costVal / 1000).toFixed(1)}K`,
               icon: IndianRupee,
-              color: "text-slate-400",
+              color: "text-muted",
               bg: "from-slate-600/15 to-slate-700/5",
-              border: "border-slate-500/20",
+              border: "border-muted/20",
             },
           ].map(({ label, value, icon: Icon, color, bg, border }) => (
             <div
@@ -724,7 +724,7 @@ export default function ProductDetailPage() {
               <Icon size={18} className={`${color} flex-shrink-0`} />
               <div className="min-w-0">
                 <div className={`text-xl font-black ${color} truncate`}>{value}</div>
-                <div className="text-[9px] text-slate-700 font-bold uppercase tracking-widest mt-0.5">
+                <div className="text-[9px] text-app font-bold uppercase tracking-widest mt-0.5">
                   {label}
                 </div>
               </div>
@@ -733,15 +733,15 @@ export default function ProductDetailPage() {
         </div>
 
         {/* ── STOCK LOCATION (Spare Finder) ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl">
-          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#21293d] rounded-t-2xl overflow-hidden">
+        <div className="bg-panel border border-app rounded-2xl">
+          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-app rounded-t-2xl overflow-hidden">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center">
                 <MapPin size={14} className="text-emerald-400" />
               </div>
               <div>
                 <h3 className="text-sm font-black text-white">Stock Location</h3>
-                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">
+                <p className="text-[10px] text-muted-2 font-bold uppercase tracking-wider">
                   Zone ▸ Rack ▸ Bin ▸ Box
                 </p>
               </div>
@@ -762,14 +762,14 @@ export default function ProductDetailPage() {
                     );
                     setLocEditing(true);
                   }}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-[#111520] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-lg text-[11px] font-bold transition-all"
+                  className="flex items-center gap-1 px-3 py-1.5 bg-panel-2 hover:bg-panel-2 border border-app text-muted hover:text-white rounded-lg text-[11px] font-bold transition-all"
                 >
                   <Edit3 size={11} /> Edit Location
                 </button>
               )}
               <Link
                 href="/inventory/locate"
-                className="flex items-center gap-1 px-3 py-1.5 bg-[#111520] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-lg text-[11px] font-bold transition-all"
+                className="flex items-center gap-1 px-3 py-1.5 bg-panel-2 hover:bg-panel-2 border border-app text-muted hover:text-white rounded-lg text-[11px] font-bold transition-all"
               >
                 <Search size={11} /> Spare Finder
               </Link>
@@ -823,7 +823,7 @@ export default function ProductDetailPage() {
                   </button>
                   <button
                     onClick={() => setLocEditing(false)}
-                    className="py-2.5 px-4 bg-[#111520] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-slate-300 rounded-xl font-bold text-xs transition-all"
+                    className="py-2.5 px-4 bg-panel-2 hover:bg-white/5 border border-app text-muted hover:text-app-2 rounded-xl font-bold text-xs transition-all"
                   >
                     Cancel
                   </button>
@@ -845,14 +845,14 @@ export default function ProductDetailPage() {
                   return (
                   <div
                     key={loc.id}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#111520] border border-[#21293d] hover:border-emerald-500/30 transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-panel-2 border border-app hover:border-emerald-500/30 transition-colors"
                   >
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
                       <MapPin size={13} className="text-emerald-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-slate-200 truncate">
+                        <span className="text-xs font-black text-app-2 truncate">
                           {locPath(loc)}
                         </span>
                         {code && (
@@ -861,7 +861,7 @@ export default function ProductDetailPage() {
                           </span>
                         )}
                       </div>
-                      <div className="text-[9px] text-slate-600 font-bold mt-0.5">
+                      <div className="text-[9px] text-muted-2 font-bold mt-0.5">
                         Product location
                       </div>
                     </div>
@@ -876,8 +876,8 @@ export default function ProductDetailPage() {
               </div>
             ) : (
               <div className="px-3 py-4 text-center">
-                <MapPin size={22} className="mx-auto text-slate-800 mb-2" />
-                <p className="text-slate-600 text-xs font-bold">
+                <MapPin size={22} className="mx-auto text-app mb-2" />
+                <p className="text-muted-2 text-xs font-bold">
                   Location set nahi hai — Edit Location click karke assign karein
                 </p>
               </div>
@@ -888,10 +888,10 @@ export default function ProductDetailPage() {
         {/* ── STOCK VISUAL + MONTHLY CHART ── */}
         <div className="grid sm:grid-cols-2 gap-4">
           {/* Stock gauge */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
+          <div className="bg-panel border border-app rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-4">
               <Zap size={13} className="text-blue-400" />
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-2">
                 Stock Level
               </span>
             </div>
@@ -911,8 +911,8 @@ export default function ProductDetailPage() {
                   return (
                     <div key={label}>
                       <div className="flex justify-between items-center mb-0.5">
-                        <span className="text-[10px] text-slate-600 font-bold">{label}</span>
-                        <span className="text-[11px] font-black text-slate-300">{value}</span>
+                        <span className="text-[10px] text-muted-2 font-bold">{label}</span>
+                        <span className="text-[11px] font-black text-app-2">{value}</span>
                       </div>
                       <div className="w-full h-1 bg-white/[0.04] rounded-full overflow-hidden">
                         <div
@@ -928,17 +928,17 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Monthly usage chart */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
+          <div className="bg-panel border border-app rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-4">
               <BarChart3 size={13} className="text-purple-400" />
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-2">
                 Monthly Usage (6 mo.)
               </span>
             </div>
             <div className="flex items-end gap-2 h-20">
               {monthlyOut.map((m, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-[9px] text-slate-600 font-bold">{m.qty || ""}</span>
+                  <span className="text-[9px] text-muted-2 font-bold">{m.qty || ""}</span>
                   <div
                     className="w-full rounded-t-md transition-all duration-700 overflow-hidden"
                     style={{
@@ -950,20 +950,20 @@ export default function ProductDetailPage() {
                           : "rgba(255,255,255,0.04)",
                     }}
                   />
-                  <span className="text-[9px] text-slate-700 font-bold">{m.label}</span>
+                  <span className="text-[9px] text-app font-bold">{m.label}</span>
                 </div>
               ))}
             </div>
             {stockOut.length === 0 && (
-              <p className="text-center text-slate-700 text-xs mt-2">No usage data yet</p>
+              <p className="text-center text-app text-xs mt-2">No usage data yet</p>
             )}
           </div>
         </div>
 
         {/* ── TABS: STOCK IN / STOCK OUT ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
           {/* Tab header */}
-          <div className="flex border-b border-[#21293d] bg-[#111520]">
+          <div className="flex border-b border-app bg-panel-2">
             {[
               {
                 key: "in",
@@ -991,13 +991,13 @@ export default function ProductDetailPage() {
               const colors: Record<string, string> = {
                 blue: active
                   ? "border-b-2 border-blue-500 text-blue-400"
-                  : "text-slate-600 hover:text-slate-400",
+                  : "text-muted-2 hover:text-muted",
                 purple: active
                   ? "border-b-2 border-purple-500 text-purple-400"
-                  : "text-slate-600 hover:text-slate-400",
+                  : "text-muted-2 hover:text-muted",
                 teal: active
                   ? "border-b-2 border-teal-500 text-teal-400"
-                  : "text-slate-600 hover:text-slate-400",
+                  : "text-muted-2 hover:text-muted",
               };
               return (
                 <button
@@ -1008,7 +1008,7 @@ export default function ProductDetailPage() {
                   <Icon size={13} />
                   {label}
                   <span
-                    className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${active ? "bg-white/10" : "bg-white/5 text-slate-700"}`}
+                    className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${active ? "bg-white/10" : "bg-white/5 text-app"}`}
                   >
                     {count}
                   </span>
@@ -1022,11 +1022,11 @@ export default function ProductDetailPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#21293d]">
+                  <tr className="border-b border-app">
                     {["#", "Date", "Quantity", "Place", "Actions"].map((h, i) => (
                       <th
                         key={h}
-                        className={`px-5 py-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 ${
+                        className={`px-5 py-3 text-[10px] font-extrabold uppercase tracking-wider text-muted-2 ${
                           i === 2 ? "text-right" : i === 4 ? "text-center" : "text-left"
                         }`}
                       >
@@ -1038,30 +1038,30 @@ export default function ProductDetailPage() {
                 <tbody className="divide-y divide-[#21293d]">
                   {stockIn.map((s, idx) => (
                     <tr key={s.id} className="hover:bg-white/[0.02] transition-colors group">
-                      <td className="px-5 py-3 text-slate-700 text-xs">{idx + 1}</td>
+                      <td className="px-5 py-3 text-app text-xs">{idx + 1}</td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
                             <Calendar size={11} className="text-blue-400" />
                           </div>
-                          <span className="text-slate-300 text-xs font-medium">
+                          <span className="text-app-2 text-xs font-medium">
                             {fmtDate(s.stock_date)}
                           </span>
                         </div>
                       </td>
                       <td className="px-5 py-3 text-right">
                         <span className="text-xl font-black text-blue-400">{s.quantity}</span>
-                        <span className="text-slate-600 text-xs ml-1">units</span>
+                        <span className="text-muted-2 text-xs ml-1">units</span>
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex flex-col gap-1">
                           {locPath(productLoc) ? (
-                            <span className="flex items-center gap-1 text-xs text-slate-500">
+                            <span className="flex items-center gap-1 text-xs text-muted">
                               <MapPin size={10} className="text-emerald-500/70" />{" "}
                               {locPath(productLoc)}
                             </span>
                           ) : (
-                            <span className="text-slate-700 text-xs">—</span>
+                            <span className="text-app text-xs">—</span>
                           )}
                           {s.purchase_order_id && poCodes.has(s.purchase_order_id) && (
                             <span className="inline-flex items-center gap-1 text-[10px] text-blue-400 font-bold border border-blue-500/20 bg-blue-500/5 rounded-md px-1.5 py-0.5 w-fit">
@@ -1077,13 +1077,13 @@ export default function ProductDetailPage() {
                               setEditingStock(s);
                               setModalOpen(true);
                             }}
-                            className="p-1.5 bg-[#21293d] hover:bg-blue-600 border border-[#21293d] hover:border-blue-500 rounded-lg text-slate-500 hover:text-white transition-all"
+                            className="p-1.5 bg-panel-2 hover:bg-blue-600 border border-app hover:border-blue-500 rounded-lg text-muted hover:text-white transition-all"
                           >
                             <Edit3 size={13} />
                           </button>
                           <button
                             onClick={() => handleDeleteStock(s.id)}
-                            className="p-1.5 bg-[#21293d] hover:bg-red-600/30 border border-[#21293d] hover:border-red-500/40 rounded-lg text-slate-500 hover:text-red-400 transition-all"
+                            className="p-1.5 bg-panel-2 hover:bg-red-600/30 border border-app hover:border-red-500/40 rounded-lg text-muted hover:text-red-400 transition-all"
                           >
                             <Trash2 size={13} />
                           </button>
@@ -1094,8 +1094,8 @@ export default function ProductDetailPage() {
                   {stockIn.length === 0 && (
                     <tr>
                       <td colSpan={5} className="py-16 text-center">
-                        <ArrowDownToLine size={28} className="mx-auto text-slate-800 mb-2" />
-                        <p className="text-slate-600 text-sm font-bold">No stock entries yet</p>
+                        <ArrowDownToLine size={28} className="mx-auto text-app mb-2" />
+                        <p className="text-muted-2 text-sm font-bold">No stock entries yet</p>
                         <button
                           onClick={() => {
                             setEditingStock(null);
@@ -1111,16 +1111,16 @@ export default function ProductDetailPage() {
                 </tbody>
                 {stockIn.length > 0 && (
                   <tfoot>
-                    <tr className="bg-[#111520] border-t border-[#21293d]">
+                    <tr className="bg-panel-2 border-t border-app">
                       <td
                         colSpan={2}
-                        className="px-5 py-2.5 text-[10px] font-extrabold text-slate-600 uppercase tracking-wider"
+                        className="px-5 py-2.5 text-[10px] font-extrabold text-muted-2 uppercase tracking-wider"
                       >
                         {stockIn.length} entries
                       </td>
                       <td className="px-5 py-2.5 text-right font-black text-blue-400">
                         {stats.totalIn}{" "}
-                        <span className="text-slate-600 font-bold text-xs">total units</span>
+                        <span className="text-muted-2 font-bold text-xs">total units</span>
                       </td>
                       <td colSpan={2} />
                     </tr>
@@ -1135,12 +1135,12 @@ export default function ProductDetailPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#21293d]">
+                  <tr className="border-b border-app">
                     {["#", "Date", "Reference", "Type", "Client", "Rate", "Qty", "Total"].map(
                       (h, i) => (
                         <th
                           key={h}
-                          className={`px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 ${
+                          className={`px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-muted-2 ${
                             [5, 6, 7].includes(i) ? "text-right" : "text-left"
                           }`}
                         >
@@ -1156,8 +1156,8 @@ export default function ProductDetailPage() {
                       key={`${s.type}-${s.id}`}
                       className="hover:bg-white/[0.02] transition-colors"
                     >
-                      <td className="px-4 py-3 text-slate-700 text-xs">{idx + 1}</td>
-                      <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">
+                      <td className="px-4 py-3 text-app text-xs">{idx + 1}</td>
+                      <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
                         {fmtDate(s.date)}
                       </td>
                       <td className="px-4 py-3">
@@ -1189,12 +1189,12 @@ export default function ProductDetailPage() {
                         </span>
                       </td>
                       <td
-                        className="px-4 py-3 text-xs text-slate-400 max-w-[120px] truncate"
+                        className="px-4 py-3 text-xs text-muted max-w-[120px] truncate"
                         title={s.client_name}
                       >
                         {s.client_name}
                       </td>
-                      <td className="px-4 py-3 text-right text-xs text-slate-500">
+                      <td className="px-4 py-3 text-right text-xs text-muted">
                         ₹{s.price.toLocaleString("en-IN")}
                       </td>
                       <td className="px-4 py-3 text-right font-black text-purple-400">{s.qty}</td>
@@ -1206,9 +1206,9 @@ export default function ProductDetailPage() {
                   {stockOut.length === 0 && (
                     <tr>
                       <td colSpan={8} className="py-16 text-center">
-                        <ArrowUpFromLine size={28} className="mx-auto text-slate-800 mb-2" />
-                        <p className="text-slate-600 text-sm font-bold">No usage records yet</p>
-                        <p className="text-slate-700 text-xs mt-1">
+                        <ArrowUpFromLine size={28} className="mx-auto text-app mb-2" />
+                        <p className="text-muted-2 text-sm font-bold">No usage records yet</p>
+                        <p className="text-app text-xs mt-1">
                           Records appear when this product is used in repair jobs or direct sales
                         </p>
                       </td>
@@ -1217,14 +1217,14 @@ export default function ProductDetailPage() {
                 </tbody>
                 {stockOut.length > 0 && (
                   <tfoot>
-                    <tr className="bg-[#111520] border-t border-[#21293d]">
+                    <tr className="bg-panel-2 border-t border-app">
                       <td
                         colSpan={5}
-                        className="px-4 py-2.5 text-[10px] font-extrabold text-slate-600 uppercase tracking-wider"
+                        className="px-4 py-2.5 text-[10px] font-extrabold text-muted-2 uppercase tracking-wider"
                       >
                         {stockOut.length} transactions
                       </td>
-                      <td className="px-4 py-2.5 text-right text-slate-600 text-xs font-bold">
+                      <td className="px-4 py-2.5 text-right text-muted-2 text-xs font-bold">
                         Total
                       </td>
                       <td className="px-4 py-2.5 text-right font-black text-purple-400">
@@ -1245,11 +1245,11 @@ export default function ProductDetailPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#21293d]">
+                  <tr className="border-b border-app">
                     {["#", "Date", "Type", "Detail", "Qty", "Balance"].map((h, i) => (
                       <th
                         key={h}
-                        className={`px-5 py-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 ${
+                        className={`px-5 py-3 text-[10px] font-extrabold uppercase tracking-wider text-muted-2 ${
                           i >= 4 ? "text-right" : "text-left"
                         }`}
                       >
@@ -1261,8 +1261,8 @@ export default function ProductDetailPage() {
                 <tbody className="divide-y divide-[#21293d]">
                   {ledger.map((l, idx) => (
                     <tr key={l.key} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-5 py-3 text-slate-700 text-xs">{idx + 1}</td>
-                      <td className="px-5 py-3 text-xs text-slate-400 whitespace-nowrap">
+                      <td className="px-5 py-3 text-app text-xs">{idx + 1}</td>
+                      <td className="px-5 py-3 text-xs text-muted whitespace-nowrap">
                         {fmtDate(l.date)}
                       </td>
                       <td className="px-5 py-3">
@@ -1283,8 +1283,8 @@ export default function ProductDetailPage() {
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex flex-col">
-                          <span className="text-slate-300 text-xs font-semibold">{l.label}</span>
-                          <span className="text-slate-600 text-[10px] truncate max-w-[160px]">
+                          <span className="text-app-2 text-xs font-semibold">{l.label}</span>
+                          <span className="text-muted-2 text-[10px] truncate max-w-[160px]">
                             {l.sub}
                           </span>
                         </div>
@@ -1315,9 +1315,9 @@ export default function ProductDetailPage() {
                   {ledger.length === 0 && (
                     <tr>
                       <td colSpan={6} className="py-16 text-center">
-                        <Hash size={28} className="mx-auto text-slate-800 mb-2" />
-                        <p className="text-slate-600 text-sm font-bold">No movement yet</p>
-                        <p className="text-slate-700 text-xs mt-1">
+                        <Hash size={28} className="mx-auto text-app mb-2" />
+                        <p className="text-muted-2 text-sm font-bold">No movement yet</p>
+                        <p className="text-app text-xs mt-1">
                           Chronological stock-in and usage ledger appears here
                         </p>
                       </td>
@@ -1326,14 +1326,14 @@ export default function ProductDetailPage() {
                 </tbody>
                 {ledger.length > 0 && (
                   <tfoot>
-                    <tr className="bg-[#111520] border-t border-[#21293d]">
+                    <tr className="bg-panel-2 border-t border-app">
                       <td
                         colSpan={4}
-                        className="px-5 py-2.5 text-[10px] font-extrabold text-slate-600 uppercase tracking-wider"
+                        className="px-5 py-2.5 text-[10px] font-extrabold text-muted-2 uppercase tracking-wider"
                       >
                         {ledger.length} movements
                       </td>
-                      <td className="px-5 py-2.5 text-right text-slate-600 text-xs font-bold">
+                      <td className="px-5 py-2.5 text-right text-muted-2 text-xs font-bold">
                         Net
                       </td>
                       <td className="px-5 py-2.5 text-right font-black text-emerald-400">
@@ -1348,9 +1348,9 @@ export default function ProductDetailPage() {
         </div>
 
         {/* ── INFO FOOTER ── */}
-        <div className="flex items-start gap-3 bg-[#111520] border border-[#21293d] rounded-xl px-4 py-3">
-          <Info size={13} className="text-slate-700 flex-shrink-0 mt-0.5" />
-          <p className="text-[11px] text-slate-700 leading-relaxed">
+        <div className="flex items-start gap-3 bg-panel-2 border border-app rounded-xl px-4 py-3">
+          <Info size={13} className="text-app flex-shrink-0 mt-0.5" />
+          <p className="text-[11px] text-app leading-relaxed">
             Stock-out records are auto-generated from repair jobs and direct sales. Only
             non-cancelled transactions are counted. Edit or delete stock-in entries to adjust
             quantity manually.

@@ -95,13 +95,13 @@ export default function SupplierPurchasesReport() {
       </div>
 
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-[2rem] p-6 shadow-2xl relative overflow-hidden no-print">
+      <div className="bg-panel border border-app rounded-[2rem] p-6 shadow-2xl relative overflow-hidden no-print">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-3xl rounded-full -mr-20 -mt-20 pointer-events-none" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative">
           <div className="flex items-center gap-5">
             <Link
               href="/reports"
-              className="w-12 h-12 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-2xl text-slate-500 hover:text-white hover:bg-emerald-600/10 hover:border-emerald-500/40 transition-all group"
+              className="w-12 h-12 flex items-center justify-center bg-app border border-app rounded-2xl text-muted hover:text-white hover:bg-emerald-600/10 hover:border-emerald-500/40 transition-all group"
             >
               <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
             </Link>
@@ -110,7 +110,7 @@ export default function SupplierPurchasesReport() {
             </div>
             <div>
               <h1 className="text-3xl font-black text-white tracking-tight">Supplier Purchases</h1>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-[0.3em]">
+              <p className="text-xs text-muted font-bold uppercase tracking-[0.3em]">
                 Kharidari summary per supplier
               </p>
             </div>
@@ -118,7 +118,7 @@ export default function SupplierPurchasesReport() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setRefreshKey((k) => k + 1)}
-              className="flex items-center gap-2 px-5 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all"
+              className="flex items-center gap-2 px-5 py-3 bg-app border border-app rounded-2xl text-xs font-black uppercase tracking-widest text-muted hover:text-white transition-all"
             >
               <RefreshCw size={14} /> Refresh
             </button>
@@ -135,25 +135,25 @@ export default function SupplierPurchasesReport() {
         <div className="mt-5 flex flex-col lg:flex-row lg:items-end gap-4 relative">
           <div className="flex flex-wrap items-end gap-2.5">
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1">
+              <label className="block text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5 flex items-center gap-1">
                 <CalendarDays size={11} /> From
               </label>
               <input
                 type="date"
                 value={from}
                 onChange={(e) => e.target.value && setFrom(e.target.value)}
-                className="bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-500/50 [color-scheme:dark]"
+                className="bg-app border border-app rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-500/50 [color-scheme:dark]"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1">
+              <label className="block text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5 flex items-center gap-1">
                 <CalendarDays size={11} /> To
               </label>
               <input
                 type="date"
                 value={to}
                 onChange={(e) => e.target.value && setTo(e.target.value)}
-                className="bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-500/50 [color-scheme:dark]"
+                className="bg-app border border-app rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-500/50 [color-scheme:dark]"
               />
             </div>
             <div className="flex items-center gap-1.5 pb-1">
@@ -165,7 +165,7 @@ export default function SupplierPurchasesReport() {
                 className={`px-3 py-2 rounded-lg text-[11px] font-black border transition-all ${
                   from === to && to === today
                     ? "bg-emerald-600/20 text-emerald-300 border-emerald-500/40"
-                    : "bg-[#0d1117] text-slate-500 border-[#21293d] hover:text-white"
+                    : "bg-app text-muted border-app hover:text-white"
                 }`}
               >
                 Today
@@ -184,7 +184,7 @@ export default function SupplierPurchasesReport() {
                   );
                   setTo(today);
                 }}
-                className="px-3 py-2 rounded-lg text-[11px] font-black border bg-[#0d1117] text-slate-500 border-[#21293d] hover:text-white transition-all"
+                className="px-3 py-2 rounded-lg text-[11px] font-black border bg-app text-muted border-app hover:text-white transition-all"
               >
                 7 Din
               </button>
@@ -202,7 +202,7 @@ export default function SupplierPurchasesReport() {
                   );
                   setTo(today);
                 }}
-                className="px-3 py-2 rounded-lg text-[11px] font-black border bg-[#0d1117] text-slate-500 border-[#21293d] hover:text-white transition-all"
+                className="px-3 py-2 rounded-lg text-[11px] font-black border bg-app text-muted border-app hover:text-white transition-all"
               >
                 30 Din
               </button>
@@ -214,7 +214,7 @@ export default function SupplierPurchasesReport() {
                 className={`px-3 py-2 rounded-lg text-[11px] font-black border transition-all ${
                   from === startOfMonthIST() && to === today
                     ? "bg-emerald-600/20 text-emerald-300 border-emerald-500/40"
-                    : "bg-[#0d1117] text-slate-500 border-[#21293d] hover:text-white"
+                    : "bg-app text-muted border-app hover:text-white"
                 }`}
               >
                 This Month
@@ -222,12 +222,12 @@ export default function SupplierPurchasesReport() {
             </div>
           </div>
           <div className="relative lg:ml-auto lg:w-64">
-            <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" />
+            <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-2" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Supplier dhoondo…"
-              className="w-full bg-[#0d1117] border border-[#21293d] rounded-2xl py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 outline-none focus:border-emerald-500/40 transition-colors"
+              className="w-full bg-app border border-app rounded-2xl py-3 pl-11 pr-4 text-sm text-white placeholder:text-muted-2 outline-none focus:border-emerald-500/40 transition-colors"
             />
           </div>
         </div>
@@ -277,12 +277,12 @@ export default function SupplierPurchasesReport() {
 
       {/* Monthly trend */}
       {trend.length > 0 && (
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5 no-print">
+        <div className="bg-panel border border-app rounded-2xl p-5 no-print">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-2">
               Monthly Spend
             </h3>
-            <span className="text-[10px] text-slate-600 font-bold">
+            <span className="text-[10px] text-muted-2 font-bold">
               {fmtDay.format(new Date(from))} → {fmtDay.format(new Date(to))}
             </span>
           </div>
@@ -301,7 +301,7 @@ export default function SupplierPurchasesReport() {
                     style={{ height: `${h}%` }}
                     title={`${fmtMonth(t.month)} — ${inr(t.amount)}`}
                   />
-                  <div className="text-[9px] text-slate-500 font-bold truncate w-full text-center">
+                  <div className="text-[9px] text-muted font-bold truncate w-full text-center">
                     {fmtMonth(t.month)}
                   </div>
                 </div>
@@ -312,17 +312,17 @@ export default function SupplierPurchasesReport() {
       )}
 
       {/* Table */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-[2rem] overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#21293d] flex items-center justify-between">
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+      <div className="bg-panel border border-app rounded-[2rem] overflow-hidden">
+        <div className="px-6 py-4 border-b border-app flex items-center justify-between">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-2">
             Supplier breakdown
           </h3>
-          <span className="text-[10px] text-slate-600 font-bold">{filtered.length} suppliers</span>
+          <span className="text-[10px] text-muted-2 font-bold">{filtered.length} suppliers</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-[#111520]">
-              <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+            <thead className="bg-panel-2">
+              <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                 <th className="text-left px-5 py-3"></th>
                 <th className="text-left px-4 py-3">Supplier</th>
                 <th className="text-center px-4 py-3">POs</th>
@@ -341,7 +341,7 @@ export default function SupplierPurchasesReport() {
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center text-slate-600 font-bold">
+                  <td colSpan={7} className="py-16 text-center text-muted-2 font-bold">
                     Is period me koi purchase nahi.
                   </td>
                 </tr>
@@ -352,13 +352,13 @@ export default function SupplierPurchasesReport() {
                     <Fragment key={r.supplierId}>
                       <tr
                         onDoubleClick={() => setExpanded(open ? null : String(r.supplierId))}
-                        className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors"
+                        className="border-t border-app/50 hover:bg-white/[0.02] transition-colors"
                       >
                         <td className="px-5 py-3">
                           {r.products.length > 0 && (
                             <button
                               onClick={() => setExpanded(open ? null : String(r.supplierId))}
-                              className="p-1 rounded-lg bg-white/5 text-slate-500 hover:text-emerald-300 hover:bg-emerald-600/10 transition-colors"
+                              className="p-1 rounded-lg bg-white/5 text-muted hover:text-emerald-300 hover:bg-emerald-600/10 transition-colors"
                             >
                               {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                             </button>
@@ -372,13 +372,13 @@ export default function SupplierPurchasesReport() {
                             {r.name}
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-center text-sm text-slate-300 font-bold">
+                        <td className="px-4 py-3 text-center text-sm text-app-2 font-bold">
                           {r.poCount}
                         </td>
-                        <td className="px-4 py-3 text-right text-sm text-slate-300">
+                        <td className="px-4 py-3 text-right text-sm text-app-2">
                           {r.qtyOrdered.toLocaleString("en-IN")}
                         </td>
-                        <td className="px-4 py-3 text-right text-sm text-slate-500">
+                        <td className="px-4 py-3 text-right text-sm text-muted">
                           {r.qtyReceived.toLocaleString("en-IN")}
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-violet-300 font-bold">
@@ -390,14 +390,14 @@ export default function SupplierPurchasesReport() {
                       </tr>
                       {open && r.products.length > 0 && (
                         <tr key={`${r.supplierId}-breakdown`}>
-                          <td colSpan={7} className="px-5 pb-4 bg-[#111520]/60">
-                            <div className="flex items-center gap-2 mb-2 text-[10px] font-black uppercase tracking-widest text-slate-600">
+                          <td colSpan={7} className="px-5 pb-4 bg-panel-2/60">
+                            <div className="flex items-center gap-2 mb-2 text-[10px] font-black uppercase tracking-widest text-muted-2">
                               <Package size={11} /> Inhone kya-kya supply kiya
                             </div>
-                            <div className="overflow-x-auto rounded-xl border border-[#21293d]">
+                            <div className="overflow-x-auto rounded-xl border border-app">
                               <table className="w-full">
-                                <thead className="bg-[#0d1117]">
-                                  <tr className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                                <thead className="bg-app">
+                                  <tr className="text-[9px] font-black uppercase tracking-widest text-muted-2">
                                     <th className="text-left px-4 py-2">Product</th>
                                     <th className="text-right px-4 py-2">Qty Ordered</th>
                                     <th className="text-right px-4 py-2">Qty Received</th>
@@ -408,15 +408,15 @@ export default function SupplierPurchasesReport() {
                                   {r.products.map((p) => (
                                     <tr
                                       key={p.productName}
-                                      className="border-t border-[#21293d]/40"
+                                      className="border-t border-app/40"
                                     >
-                                      <td className="px-4 py-2 text-sm font-bold text-slate-200">
+                                      <td className="px-4 py-2 text-sm font-bold text-app-2">
                                         {p.productName}
                                       </td>
-                                      <td className="px-4 py-2 text-right text-sm text-slate-400">
+                                      <td className="px-4 py-2 text-right text-sm text-muted">
                                         {p.qtyOrdered.toLocaleString("en-IN")}
                                       </td>
-                                      <td className="px-4 py-2 text-right text-sm text-slate-500">
+                                      <td className="px-4 py-2 text-right text-sm text-muted">
                                         {p.qtyReceived.toLocaleString("en-IN")}
                                       </td>
                                       <td className="px-4 py-2 text-right text-sm text-emerald-300 font-bold">

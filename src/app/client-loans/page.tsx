@@ -283,22 +283,22 @@ export default function ClientLoansPage() {
 
   return (
     <AdminPage title="Client Loans" subtitle="Loans diye hue clients ko">
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-app flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
               />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by client, loan ID..."
-                className="pl-9 pr-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-blue-500 w-64"
+                className="pl-9 pr-4 py-2 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-app outline-none focus:border-blue-500 w-64"
               />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-2">
               {filtered.length} of {rows.length}
             </span>
           </div>
@@ -316,10 +316,10 @@ export default function ClientLoansPage() {
           </div>
         )}
 
-        <div className="px-5 py-2 border-b border-[#1a2234] bg-[#0d1117]/50 grid grid-cols-4 gap-4 text-[10px] font-black uppercase tracking-widest text-slate-600">
+        <div className="px-5 py-2 border-b border-app-2 bg-app/50 grid grid-cols-4 gap-4 text-[10px] font-black uppercase tracking-widest text-muted-2">
           <div>
             Total Principal:{" "}
-            <span className="text-slate-300 font-bold">{inr(totals.principal)}</span>
+            <span className="text-app-2 font-bold">{inr(totals.principal)}</span>
           </div>
           <div>
             Total Paid: <span className="text-amber-400 font-bold">{inr(totals.paid)}</span>
@@ -334,18 +334,18 @@ export default function ClientLoansPage() {
 
         {loading ? (
           <div className="px-5 py-12 text-center">
-            <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">
+            <Loader2 size={24} className="animate-spin text-muted-2 mx-auto mb-2" />
+            <p className="text-muted-2 text-xs font-extrabold uppercase tracking-widest">
               Loading...
             </p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="px-5 py-12 text-center text-slate-600 text-sm">No loans found.</div>
+          <div className="px-5 py-12 text-center text-muted-2 text-sm">No loans found.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[#111520]">
-                <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+              <thead className="bg-panel-2">
+                <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                   <th className="text-left px-4 py-3">Loan ID</th>
                   <th className="text-left px-4 py-3">Client</th>
                   <th className="text-left px-4 py-3">Date</th>
@@ -369,15 +369,15 @@ export default function ClientLoansPage() {
                           CL-{String(loan.id).padStart(5, "0")}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 font-bold text-slate-200">{clientName(client)}</td>
-                      <td className="px-4 py-3.5 text-slate-400">{fmtDate(loan.loan_date)}</td>
-                      <td className="px-4 py-3.5 text-right font-black text-slate-200">
+                      <td className="px-4 py-3.5 font-bold text-app-2">{clientName(client)}</td>
+                      <td className="px-4 py-3.5 text-muted">{fmtDate(loan.loan_date)}</td>
+                      <td className="px-4 py-3.5 text-right font-black text-app-2">
                         {inr(loan.principal)}
                       </td>
                       <td className="px-4 py-3.5 text-right text-blue-400">
                         {Number(loan.interest_rate || 0).toFixed(1)}%
                       </td>
-                      <td className="px-4 py-3.5 text-right text-slate-500">
+                      <td className="px-4 py-3.5 text-right text-muted">
                         {loan.loan_period} mo
                       </td>
                       <td className="px-4 py-3.5 text-right font-black text-emerald-400">
@@ -395,7 +395,7 @@ export default function ClientLoansPage() {
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
                             loan.status === 1
                               ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-                              : "bg-slate-500/10 border-slate-500/20 text-slate-500 hover:bg-slate-500/20"
+                              : "bg-muted/10 border-muted/20 text-muted hover:bg-muted/20"
                           }`}
                         >
                           {loan.status === 1 ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
@@ -437,8 +437,8 @@ export default function ClientLoansPage() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-app">
               <h3 className="font-bold text-white flex items-center gap-2">
                 {editing ? (
                   <>
@@ -452,7 +452,7 @@ export default function ClientLoansPage() {
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+                className="p-1.5 rounded-lg hover:bg-white/10 text-muted transition"
               >
                 <X size={16} />
               </button>
@@ -465,7 +465,7 @@ export default function ClientLoansPage() {
               )}
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Client <span className="text-red-400">*</span>
                 </label>
                 <SearchableSelect
@@ -481,7 +481,7 @@ export default function ClientLoansPage() {
                     <div className="min-w-0">
                       <div className="font-bold text-white text-sm truncate">{opt.label}</div>
                       {opt.sub && (
-                        <div className="text-[10px] text-slate-500 truncate">{opt.sub}</div>
+                        <div className="text-[10px] text-muted truncate">{opt.sub}</div>
                       )}
                     </div>
                   )}
@@ -489,20 +489,20 @@ export default function ClientLoansPage() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Loan Date
                 </label>
                 <input
                   type="date"
                   value={form.loan_date}
                   onChange={(e) => setForm((p) => ({ ...p, loan_date: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Principal (₹) <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -511,11 +511,11 @@ export default function ClientLoansPage() {
                     value={form.principal}
                     onChange={(e) => setForm((p) => ({ ...p, principal: e.target.value }))}
                     placeholder="Loan amount"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Tenure (Months) <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -523,14 +523,14 @@ export default function ClientLoansPage() {
                     value={form.loan_period}
                     onChange={(e) => setForm((p) => ({ ...p, loan_period: e.target.value }))}
                     placeholder="e.g. 12"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Interest Rate (%)
                   </label>
                   <input
@@ -539,11 +539,11 @@ export default function ClientLoansPage() {
                     value={form.interest_rate}
                     onChange={(e) => setForm((p) => ({ ...p, interest_rate: e.target.value }))}
                     placeholder="e.g. 12"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Total Payable (₹)
                     <button
                       type="button"
@@ -559,13 +559,13 @@ export default function ClientLoansPage() {
                     value={form.total_payable}
                     onChange={(e) => setForm((p) => ({ ...p, total_payable: e.target.value }))}
                     placeholder="Auto or manual"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   EMI Amount (₹)
                 </label>
                 <input
@@ -574,7 +574,7 @@ export default function ClientLoansPage() {
                   value={form.emi_amount}
                   onChange={(e) => setForm((p) => ({ ...p, emi_amount: e.target.value }))}
                   placeholder="Monthly EMI"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -597,7 +597,7 @@ export default function ClientLoansPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
+                  className="px-6 py-2.5 bg-panel-2 border border-app text-muted rounded-xl font-bold text-sm hover:bg-panel-2 transition"
                 >
                   Cancel
                 </button>
@@ -609,14 +609,14 @@ export default function ClientLoansPage() {
 
       {showViewModal && viewing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-app">
               <h3 className="font-bold text-white flex items-center gap-2">
                 <CreditCard size={16} className="text-emerald-400" /> Client Loan Details
               </h3>
               <button
                 onClick={() => setShowViewModal(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+                className="p-1.5 rounded-lg hover:bg-white/10 text-muted transition"
               >
                 <X size={16} />
               </button>
@@ -629,12 +629,12 @@ export default function ClientLoansPage() {
                 <DetailItem
                   label="Status"
                   value={viewing.status === 1 ? "Active" : "Closed"}
-                  valueClass={viewing.status === 1 ? "text-emerald-400" : "text-slate-500"}
+                  valueClass={viewing.status === 1 ? "text-emerald-400" : "text-muted"}
                 />
                 <DetailItem
                   label="Principal"
                   value={inr(viewing.principal)}
-                  valueClass="text-slate-200 font-bold"
+                  valueClass="text-app-2 font-bold"
                 />
                 <DetailItem
                   label="Interest Rate"
@@ -674,7 +674,7 @@ export default function ClientLoansPage() {
                 </button>
                 <button
                   onClick={() => setShowViewModal(false)}
-                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
+                  className="px-6 py-2.5 bg-panel-2 border border-app text-muted rounded-xl font-bold text-sm hover:bg-panel-2 transition"
                 >
                   Close
                 </button>
@@ -697,11 +697,11 @@ function DetailItem({
   valueClass?: string;
 }) {
   return (
-    <div className="rounded-xl border border-[#21293d] bg-[#0d1117] p-3">
-      <div className="text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1">
+    <div className="rounded-xl border border-app bg-app p-3">
+      <div className="text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1">
         {label}
       </div>
-      <div className={`text-sm font-bold text-slate-200 ${valueClass || ""}`}>{value}</div>
+      <div className={`text-sm font-bold text-app-2 ${valueClass || ""}`}>{value}</div>
     </div>
   );
 }

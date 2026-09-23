@@ -150,22 +150,22 @@ export default function ServicesPage() {
   return (
     <AdminPage title="Services" subtitle="Service catalog management">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-app flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
               />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search services..."
-                className="pl-9 pr-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-blue-500 w-64"
+                className="pl-9 pr-4 py-2 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-app outline-none focus:border-blue-500 w-64"
               />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-2">
               {filtered.length} of {rows.length}
             </span>
           </div>
@@ -185,18 +185,18 @@ export default function ServicesPage() {
 
         {loading ? (
           <div className="px-5 py-12 text-center">
-            <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">
+            <Loader2 size={24} className="animate-spin text-muted-2 mx-auto mb-2" />
+            <p className="text-muted-2 text-xs font-extrabold uppercase tracking-widest">
               Loading...
             </p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="px-5 py-12 text-center text-slate-600 text-sm">No services found.</div>
+          <div className="px-5 py-12 text-center text-muted-2 text-sm">No services found.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[#111520]">
-                <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+              <thead className="bg-panel-2">
+                <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                   <th className="text-left px-4 py-3">Name</th>
                   <th className="text-left px-4 py-3">Description</th>
                   <th className="text-center px-4 py-3">HSN/SAC</th>
@@ -209,10 +209,10 @@ export default function ServicesPage() {
                 {filtered.map((s) => (
                   <tr key={s.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-4 py-3.5">
-                      <span className="font-bold text-slate-200">{s.name}</span>
+                      <span className="font-bold text-app-2">{s.name}</span>
                     </td>
                     <td
-                      className="px-4 py-3.5 text-slate-500 text-xs max-w-[200px] truncate"
+                      className="px-4 py-3.5 text-muted text-xs max-w-[200px] truncate"
                       title={s.description || ""}
                     >
                       {s.description || "—"}
@@ -223,7 +223,7 @@ export default function ServicesPage() {
                           {s.hsn}
                         </span>
                       ) : (
-                        <span className="text-slate-700 text-xs">—</span>
+                        <span className="text-app text-xs">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3.5 text-right">
@@ -235,7 +235,7 @@ export default function ServicesPage() {
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
                           s.status === 1
                             ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-                            : "bg-slate-500/10 border-slate-500/20 text-slate-500 hover:bg-slate-500/20"
+                            : "bg-muted/10 border-muted/20 text-muted hover:bg-muted/20"
                         }`}
                       >
                         {s.status === 1 ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
@@ -271,8 +271,8 @@ export default function ServicesPage() {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-app">
               <h3 className="font-bold text-white flex items-center gap-2">
                 {editing ? (
                   <>
@@ -286,7 +286,7 @@ export default function ServicesPage() {
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+                className="p-1.5 rounded-lg hover:bg-white/10 text-muted transition"
               >
                 <X size={16} />
               </button>
@@ -298,18 +298,18 @@ export default function ServicesPage() {
                 </div>
               )}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Service Name <span className="text-red-400">*</span>
                 </label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                   placeholder="e.g. SMPS Repair, Screen Replacement"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Description
                 </label>
                 <textarea
@@ -317,11 +317,11 @@ export default function ServicesPage() {
                   onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                   placeholder="Optional description..."
                   rows={3}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 resize-none"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500 resize-none"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Price (₹) <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -330,11 +330,11 @@ export default function ServicesPage() {
                   value={form.price}
                   onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))}
                   placeholder="0.00"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   HSN/SAC Code
                 </label>
                 <input
@@ -342,7 +342,7 @@ export default function ServicesPage() {
                   onChange={(e) => setForm((p) => ({ ...p, hsn: e.target.value }))}
                   placeholder="e.g. 998714"
                   maxLength={20}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                 />
               </div>
               <div className="flex gap-3 pt-2">
@@ -364,7 +364,7 @@ export default function ServicesPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
+                  className="px-6 py-2.5 bg-panel-2 border border-app text-muted rounded-xl font-bold text-sm hover:bg-panel-2 transition"
                 >
                   Cancel
                 </button>

@@ -90,14 +90,14 @@ export default function PowerSupplyPage() {
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex items-center justify-between mb-5 sm:mb-7">
             <h2 className="font-display text-xl sm:text-2xl font-black">What We Repair</h2>
-            <span className="text-[11px] font-bold text-slate-500">Green = Available Now</span>
+            <span className="text-[11px] font-bold text-muted">Green = Available Now</span>
           </div>
           <EquipmentGrid items={EQUIPMENT} />
         </div>
       </section>
 
       {/* EV Charger highlight */}
-      <section className="py-10 sm:py-14 bg-[#0a0a18]/60 border-y border-white/[0.05]">
+      <section className="py-10 sm:py-14 bg-app/60 border-y border-white/[0.05]">
         <div className="mx-auto max-w-7xl px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
             <div>
@@ -110,7 +110,7 @@ export default function PowerSupplyPage() {
                   Repair &amp; Service
                 </span>
               </h2>
-              <p className="mt-3 text-[14px] text-slate-400 leading-relaxed">
+              <p className="mt-3 text-[14px] text-muted leading-relaxed">
                 Ab hum Electric Vehicle chargers bhi repair karte hain — Komaki, Ola, Hero Electric,
                 Ampere aur doosre brands. 48V, 60V, 72V fast chargers ka PCB-level repair, warranty
                 ke saath.
@@ -118,19 +118,19 @@ export default function PowerSupplyPage() {
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <div className="flex items-center gap-2.5 rounded-xl p-3.5 bg-white/[0.03] border border-white/[0.06]">
                   <CircuitBoard size={17} className="text-emerald-400 shrink-0" />
-                  <span className="text-[12px] font-bold text-slate-300">PCB-Level Repair</span>
+                  <span className="text-[12px] font-bold text-app-2">PCB-Level Repair</span>
                 </div>
                 <div className="flex items-center gap-2.5 rounded-xl p-3.5 bg-white/[0.03] border border-white/[0.06]">
                   <Gauge size={17} className="text-emerald-400 shrink-0" />
-                  <span className="text-[12px] font-bold text-slate-300">Load Tested</span>
+                  <span className="text-[12px] font-bold text-app-2">Load Tested</span>
                 </div>
                 <div className="flex items-center gap-2.5 rounded-xl p-3.5 bg-white/[0.03] border border-white/[0.06]">
                   <ShieldCheck size={17} className="text-emerald-400 shrink-0" />
-                  <span className="text-[12px] font-bold text-slate-300">Service Warranty</span>
+                  <span className="text-[12px] font-bold text-app-2">Service Warranty</span>
                 </div>
                 <div className="flex items-center gap-2.5 rounded-xl p-3.5 bg-white/[0.03] border border-white/[0.06]">
                   <Zap size={17} className="text-emerald-400 shrink-0" />
-                  <span className="text-[12px] font-bold text-slate-300">Fast Turnaround</span>
+                  <span className="text-[12px] font-bold text-app-2">Fast Turnaround</span>
                 </div>
               </div>
             </div>
@@ -166,7 +166,7 @@ export default function PowerSupplyPage() {
                       >
                         <Phone size={14} /> Apna charger dikhao
                       </a>
-                      <p className="text-[11px] text-slate-500 mt-1">
+                      <p className="text-[11px] text-muted mt-1">
                         Photo bhejo — turant estimate
                       </p>
                     </div>
@@ -187,7 +187,7 @@ export default function PowerSupplyPage() {
         </div>
       </section>
 
-      <section className="py-10 sm:py-14 bg-[#0a0a18]/60 border-y border-white/[0.05]">
+      <section className="py-10 sm:py-14 bg-app/60 border-y border-white/[0.05]">
         <div className="mx-auto max-w-7xl px-4">
           <h2 className="font-display text-xl sm:text-2xl font-black mb-5 sm:mb-7">
             Why Power Supply Repair Beats Replacement

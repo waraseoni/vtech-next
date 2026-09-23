@@ -31,14 +31,14 @@ type SalaryHist = { id: number; salary: number; effective_date: string };
 type TxnComm = { mechanic_commission_amount: number | null; date_created: string };
 type Advance = { amount: number; date_paid: string };
 
-const card = "bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden";
+const card = "bg-panel border border-app rounded-2xl overflow-hidden";
 const btn =
   "px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]";
 const btnNavy = `${btn} bg-blue-600 hover:bg-blue-500 text-white`;
-const btnGhost = `${btn} bg-white/[0.04] hover:bg-white/[0.07] text-slate-300 border border-[#21293d]`;
+const btnGhost = `${btn} bg-white/[0.04] hover:bg-white/[0.07] text-app-2 border border-app`;
 const input =
-  "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
-const label = "block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5";
+  "w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-app";
+const label = "block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5";
 
 function money(n: number) {
   return `Rs.${Number(n || 0).toFixed(2)}`;
@@ -246,7 +246,7 @@ export default function MechanicLedgerPage() {
       const st = attByDate.get(ds);
       let earned = 0;
       let statusLabel = "-";
-      let statusTone = "text-slate-600";
+      let statusTone = "text-muted-2";
       if (st === 1) {
         statusLabel = "Present";
         statusTone = "text-emerald-300";
@@ -316,7 +316,7 @@ export default function MechanicLedgerPage() {
         </div>
 
         <div className={card}>
-          <div className="p-4 border-b border-[#21293d]">
+          <div className="p-4 border-b border-app">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <div className={label}>From</div>
@@ -347,16 +347,16 @@ export default function MechanicLedgerPage() {
             </div>
           </div>
 
-          {err && <div className="p-4 text-red-400 text-sm border-b border-[#21293d]">{err}</div>}
+          {err && <div className="p-4 text-red-400 text-sm border-b border-app">{err}</div>}
 
           {loading ? (
-            <div className="p-10 flex items-center justify-center gap-2 text-slate-600 text-xs font-extrabold uppercase tracking-[0.3em]">
+            <div className="p-10 flex items-center justify-center gap-2 text-muted-2 text-xs font-extrabold uppercase tracking-[0.3em]">
               <Loader2 size={16} className="animate-spin" /> Loading...
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table id="ledger-table" className="w-full text-sm">
-                <thead className="bg-[#111520] text-slate-600 text-[10px] font-black uppercase tracking-widest">
+                <thead className="bg-panel-2 text-muted-2 text-[10px] font-black uppercase tracking-widest">
                   <tr>
                     <th className="text-left px-4 py-3">Date</th>
                     <th className="text-left px-4 py-3">Status</th>
@@ -368,18 +368,18 @@ export default function MechanicLedgerPage() {
                 </thead>
                 <tbody className="divide-y divide-[#1a2234]">
                   <tr className="bg-amber-500/10">
-                    <td className="px-4 py-3 text-slate-500" colSpan={5}>
+                    <td className="px-4 py-3 text-muted" colSpan={5}>
                       Opening Balance (Old Balance)
                     </td>
-                    <td className="px-4 py-3 text-right text-slate-200 font-black">
+                    <td className="px-4 py-3 text-right text-app-2 font-black">
                       {money(openingBalance)}
                     </td>
                   </tr>
                   {dailyRows.map((r) => (
                     <tr key={r.date} className="hover:bg-white/[0.03]">
-                      <td className="px-4 py-3 text-slate-300">{r.date}</td>
+                      <td className="px-4 py-3 text-app-2">{r.date}</td>
                       <td className={`px-4 py-3 font-black ${r.statusTone}`}>{r.statusLabel}</td>
-                      <td className="px-4 py-3 text-right text-slate-200 font-bold">
+                      <td className="px-4 py-3 text-right text-app-2 font-bold">
                         {money(r.earned)}
                       </td>
                       <td className="px-4 py-3 text-right text-blue-300 font-black">
@@ -388,7 +388,7 @@ export default function MechanicLedgerPage() {
                       <td className="px-4 py-3 text-right text-red-300 font-black">
                         {money(r.advance)}
                       </td>
-                      <td className="px-4 py-3 text-right text-slate-200 font-black">
+                      <td className="px-4 py-3 text-right text-app-2 font-black">
                         {money(r.running)}
                       </td>
                     </tr>
@@ -396,7 +396,7 @@ export default function MechanicLedgerPage() {
                 </tbody>
                 <tfoot>
                   <tr className="bg-white/[0.03]">
-                    <td className="px-4 py-3 text-slate-500" colSpan={5}>
+                    <td className="px-4 py-3 text-muted" colSpan={5}>
                       Closing Balance (Net Total)
                     </td>
                     <td className="px-4 py-3 text-right text-emerald-300 font-black">

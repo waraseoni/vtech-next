@@ -114,16 +114,16 @@ export default function ThrottlePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
+    <div className="min-h-screen bg-app font-sans pb-12">
       <div className="max-w-4xl mx-auto px-4 pt-6 space-y-4">
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-700 rounded-xl flex items-center justify-center">
               <ShieldAlert size={18} className="text-white" />
             </div>
             <div>
               <h1 className="text-lg font-black text-white">Login Throttle</h1>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+              <p className="text-[10px] text-muted uppercase tracking-wider">
                 Admin Panel · {stats.locked} locked
               </p>
             </div>
@@ -131,18 +131,18 @@ export default function ThrottlePage() {
           <div className="flex items-center gap-2">
             <button
               onClick={fetchRows}
-              className="w-9 h-9 flex items-center justify-center bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 hover:text-white rounded-xl transition-all"
+              className="w-9 h-9 flex items-center justify-center bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted hover:text-white rounded-xl transition-all"
             >
               <RefreshCw size={14} />
             </button>
           </div>
         </div>
 
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+        <div className="bg-panel border border-app rounded-2xl p-4">
           <div className="relative">
             <Search
               size={15}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2"
             />
             <input
               value={q}
@@ -151,24 +151,24 @@ export default function ThrottlePage() {
                 if (e.key === "Enter") fetchRows();
               }}
               placeholder="Email se search karein..."
-              className="w-full pl-10 pr-4 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-app border border-app rounded-xl text-sm text-white font-medium placeholder:text-app outline-none focus:border-blue-500/60 transition-all"
             />
           </div>
         </div>
 
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
           {loading ? (
             <div className="py-16 flex flex-col items-center gap-3">
               <Loader2 className="animate-spin text-blue-500" size={32} />
-              <p className="text-slate-600 text-xs font-black uppercase tracking-widest">
+              <p className="text-muted-2 text-xs font-black uppercase tracking-widest">
                 Loading...
               </p>
             </div>
           ) : rows.length === 0 ? (
             <div className="py-16 text-center space-y-2">
-              <ShieldAlert size={36} className="mx-auto text-slate-700" />
-              <p className="text-slate-500 text-sm font-bold">Koi locked account nahi</p>
-              <p className="text-slate-700 text-xs">
+              <ShieldAlert size={36} className="mx-auto text-app" />
+              <p className="text-muted text-sm font-bold">Koi locked account nahi</p>
+              <p className="text-app text-xs">
                 Login attempts ka throttle yahan dikhega jab koi account lock hoga.
               </p>
             </div>
@@ -176,12 +176,12 @@ export default function ThrottlePage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-[#111520] border-b border-[#21293d]">
+                  <tr className="bg-panel-2 border-b border-app">
                     {["Email", "IP", "Attempts", "Locked Till", "Last Attempt", "Action"].map(
                       (h) => (
                         <th
                           key={h}
-                          className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-600"
+                          className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-wider text-muted-2"
                         >
                           {h}
                         </th>
@@ -194,8 +194,8 @@ export default function ThrottlePage() {
                     const active = r.lockout_until && new Date(r.lockout_until) > new Date();
                     return (
                       <tr key={r.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="px-4 py-3 font-bold text-slate-200 text-sm">{r.email}</td>
-                        <td className="px-4 py-3 text-slate-500 text-xs">{r.ip_address}</td>
+                        <td className="px-4 py-3 font-bold text-app-2 text-sm">{r.email}</td>
+                        <td className="px-4 py-3 text-muted text-xs">{r.ip_address}</td>
                         <td className="px-4 py-3">
                           <span
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black ${
@@ -214,16 +214,16 @@ export default function ThrottlePage() {
                               {remaining(r.lockout_until)} baaki)
                             </span>
                           ) : (
-                            <span className="text-slate-700 text-xs">—</span>
+                            <span className="text-app text-xs">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">
+                        <td className="px-4 py-3 text-muted text-xs whitespace-nowrap">
                           {fmtDate(r.last_attempt_at)}
                         </td>
                         <td className="px-4 py-3">
                           <button
                             onClick={() => setUnlock(r)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#1e2637] border border-[#2a3550] hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 text-slate-400 rounded-lg text-xs font-bold transition-all"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-panel-2 border border-app-2 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 text-muted rounded-lg text-xs font-bold transition-all"
                           >
                             <Unlock size={11} /> Unlock
                           </button>
@@ -237,11 +237,11 @@ export default function ThrottlePage() {
           )}
         </div>
 
-        <div className="bg-[#111520] border border-[#21293d] rounded-xl px-4 py-3">
-          <p className="text-[10px] font-black text-slate-600 uppercase tracking-wider mb-2">
+        <div className="bg-panel-2 border border-app rounded-xl px-4 py-3">
+          <p className="text-[10px] font-black text-muted-2 uppercase tracking-wider mb-2">
             ℹ Ye kya hai
           </p>
-          <p className="text-xs text-slate-700 leading-relaxed">
+          <p className="text-xs text-app leading-relaxed">
             5 galat attempts → 15 min lock. Baar-baar fail karne par lock time badhta hai (15m → 30m
             → 1h ... max 24h). Ek IP se 30+ alag emails par fail → IP 15 min ke liye block. Ye table
             browser client se closed hai — sirf server-side API ise use karti hai.
@@ -256,21 +256,21 @@ export default function ThrottlePage() {
             if (e.target === e.currentTarget) setUnlock(null);
           }}
         >
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl w-full max-w-sm p-5">
+          <div className="bg-panel border border-app rounded-2xl shadow-2xl w-full max-w-sm p-5">
             <div className="text-center space-y-3">
               <div className="w-12 h-12 bg-emerald-500/15 rounded-2xl flex items-center justify-center mx-auto">
                 <Unlock size={20} className="text-emerald-400" />
               </div>
               <h3 className="text-base font-black text-white">Unlock Karein?</h3>
-              <p className="text-sm text-slate-500">
-                <strong className="text-slate-300">{unlock.email}</strong> ka login lock hata dein?
+              <p className="text-sm text-muted">
+                <strong className="text-app-2">{unlock.email}</strong> ka login lock hata dein?
                 Fail counter bhi clear ho jayega.
               </p>
             </div>
             <div className="flex gap-3 mt-5">
               <button
                 onClick={() => setUnlock(null)}
-                className="flex-1 py-2.5 rounded-xl border border-[#21293d] text-slate-400 hover:bg-white/5 font-bold text-sm transition-all"
+                className="flex-1 py-2.5 rounded-xl border border-app text-muted hover:bg-white/5 font-bold text-sm transition-all"
               >
                 Cancel
               </button>

@@ -351,7 +351,7 @@ function DailyIncomeContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5 relative overflow-hidden shadow-2xl">
+      <div className="bg-panel border border-app rounded-2xl p-5 relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-3xl rounded-full -mr-20 -mt-20 pointer-events-none" />
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -360,14 +360,14 @@ function DailyIncomeContent() {
             </div>
             <div>
               <h1 className="text-xl font-black text-white">Daily Income & Cash Flow Report</h1>
-              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+              <p className="text-[10px] text-muted uppercase tracking-widest font-bold">
                 Revenue, Expenses &amp; Actual Money Movement
               </p>
             </div>
           </div>
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
           >
             <Printer size={14} /> Print Report
           </button>
@@ -375,39 +375,39 @@ function DailyIncomeContent() {
       </div>
 
       {/* Date Filter */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 no-print shadow-lg">
+      <div className="bg-panel border border-app rounded-2xl p-4 no-print shadow-lg">
         <form onSubmit={handleFilter} className="flex flex-wrap items-end gap-4">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">
+            <label className="text-[10px] font-black uppercase text-muted tracking-widest ml-1">
               From Date
             </label>
             <div className="relative">
               <Calendar
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
                 size={14}
               />
               <input
                 type="date"
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
-                className="pl-9 pr-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500 transition-all [color-scheme:dark]"
+                className="pl-9 pr-4 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-blue-500 transition-all [color-scheme:dark]"
               />
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">
+            <label className="text-[10px] font-black uppercase text-muted tracking-widest ml-1">
               To Date
             </label>
             <div className="relative">
               <Calendar
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
                 size={14}
               />
               <input
                 type="date"
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
-                className="pl-9 pr-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500 transition-all [color-scheme:dark]"
+                className="pl-9 pr-4 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-blue-500 transition-all [color-scheme:dark]"
               />
             </div>
           </div>
@@ -421,7 +421,7 @@ function DailyIncomeContent() {
             <button
               type="button"
               onClick={() => shiftDay(-1)}
-              className="p-2 rounded-xl bg-[#1e2637] text-slate-400 hover:text-white transition-all"
+              className="p-2 rounded-xl bg-panel-2 text-muted hover:text-white transition-all"
               title="Previous Day"
             >
               <ChevronLeft size={16} />
@@ -429,7 +429,7 @@ function DailyIncomeContent() {
             <button
               type="button"
               onClick={() => shiftDay(1)}
-              className="p-2 rounded-xl bg-[#1e2637] text-slate-400 hover:text-white transition-all"
+              className="p-2 rounded-xl bg-panel-2 text-muted hover:text-white transition-all"
               title="Next Day"
             >
               <ChevronRight size={16} />
@@ -441,7 +441,7 @@ function DailyIncomeContent() {
                 setTo(todayIST);
                 router.replace("/reports/daily-income");
               }}
-              className="px-4 py-2 bg-[#1e2637] text-slate-400 hover:text-white rounded-xl text-sm font-bold transition-all"
+              className="px-4 py-2 bg-panel-2 text-muted hover:text-white rounded-xl text-sm font-bold transition-all"
             >
               Reset
             </button>
@@ -452,7 +452,7 @@ function DailyIncomeContent() {
       {loading ? (
         <div className="py-24 text-center">
           <Loader2 size={32} className="animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-slate-500 text-xs font-black uppercase tracking-[0.2em]">
+          <p className="text-muted text-xs font-black uppercase tracking-[0.2em]">
             Calculating...
           </p>
         </div>
@@ -524,8 +524,8 @@ function DailyIncomeContent() {
           {/* Detailed Tables */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Cash Flow */}
-            <div className="bg-[#161b27] border border-[#21293d] rounded-3xl overflow-hidden shadow-xl">
-              <div className="px-6 py-4 border-b border-[#21293d] bg-[#111520]/50 flex items-center gap-3">
+            <div className="bg-panel border border-app rounded-3xl overflow-hidden shadow-xl">
+              <div className="px-6 py-4 border-b border-app bg-panel-2/50 flex items-center gap-3">
                 <Wallet size={18} className="text-emerald-400" />
                 <h3 className="text-sm font-black text-white uppercase tracking-wider">
                   Cash Flow (Actual)
@@ -536,7 +536,7 @@ function DailyIncomeContent() {
                   <tr>
                     <td
                       colSpan={2}
-                      className="px-6 py-2 bg-[#111520] text-[10px] font-black uppercase tracking-widest text-slate-600"
+                      className="px-6 py-2 bg-panel-2 text-[10px] font-black uppercase tracking-widest text-muted-2"
                     >
                       Inflow (Paisa Aaya)
                     </td>
@@ -545,7 +545,7 @@ function DailyIncomeContent() {
                     className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                     onClick={() => setModal("payments")}
                   >
-                    <td className="px-6 py-3.5 text-slate-400 font-medium">Client Payments</td>
+                    <td className="px-6 py-3.5 text-muted font-medium">Client Payments</td>
                     <td className="px-6 py-3.5 text-right font-black text-white">
                       {inr(data.cash_payments)}
                     </td>
@@ -554,7 +554,7 @@ function DailyIncomeContent() {
                     className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                     onClick={() => setModal("spot")}
                   >
-                    <td className="px-6 py-3.5 text-slate-400 font-medium">Spot Sales (Cash)</td>
+                    <td className="px-6 py-3.5 text-muted font-medium">Spot Sales (Cash)</td>
                     <td className="px-6 py-3.5 text-right font-black text-white">
                       {inr(data.cash_spot_sales)}
                     </td>
@@ -562,7 +562,7 @@ function DailyIncomeContent() {
                   <tr>
                     <td
                       colSpan={2}
-                      className="px-6 py-2 bg-[#111520] text-[10px] font-black uppercase tracking-widest text-slate-600"
+                      className="px-6 py-2 bg-panel-2 text-[10px] font-black uppercase tracking-widest text-muted-2"
                     >
                       Outflow (Paisa Gaya)
                     </td>
@@ -571,7 +571,7 @@ function DailyIncomeContent() {
                     className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                     onClick={() => setModal("advances")}
                   >
-                    <td className="px-6 py-3.5 text-slate-400 font-medium">Staff Advances Paid</td>
+                    <td className="px-6 py-3.5 text-muted font-medium">Staff Advances Paid</td>
                     <td className="px-6 py-3.5 text-right font-black text-rose-400">
                       {inr(data.staff_advances)}
                     </td>
@@ -580,7 +580,7 @@ function DailyIncomeContent() {
                     className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                     onClick={() => setModal("expenses")}
                   >
-                    <td className="px-6 py-3.5 text-slate-400 font-medium">Shop Expenses Paid</td>
+                    <td className="px-6 py-3.5 text-muted font-medium">Shop Expenses Paid</td>
                     <td className="px-6 py-3.5 text-right font-black text-rose-400">
                       {inr(data.expenses)}
                     </td>
@@ -589,7 +589,7 @@ function DailyIncomeContent() {
                     className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                     onClick={() => setModal("loan")}
                   >
-                    <td className="px-6 py-3.5 text-slate-400 font-medium">Loan EMI Paid</td>
+                    <td className="px-6 py-3.5 text-muted font-medium">Loan EMI Paid</td>
                     <td className="px-6 py-3.5 text-right font-black text-rose-400">
                       {inr(data.loan_emi)}
                     </td>
@@ -607,8 +607,8 @@ function DailyIncomeContent() {
             </div>
 
             {/* Business Expenses (P&L) */}
-            <div className="bg-[#161b27] border border-[#21293d] rounded-3xl overflow-hidden shadow-xl">
-              <div className="px-6 py-4 border-b border-[#21293d] bg-[#111520]/50 flex items-center gap-3">
+            <div className="bg-panel border border-app rounded-3xl overflow-hidden shadow-xl">
+              <div className="px-6 py-4 border-b border-app bg-panel-2/50 flex items-center gap-3">
                 <TrendingDown size={18} className="text-rose-400" />
                 <h3 className="text-sm font-black text-white uppercase tracking-wider">
                   Business Expenses (P&amp;L)
@@ -620,10 +620,10 @@ function DailyIncomeContent() {
                     className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                     onClick={() => setModal("salary")}
                   >
-                    <td className="px-6 py-3.5 text-slate-400 font-medium">
+                    <td className="px-6 py-3.5 text-muted font-medium">
                       Staff Salary
                       <br />
-                      <span className="text-[10px] text-slate-600">Attendance Based</span>
+                      <span className="text-[10px] text-muted-2">Attendance Based</span>
                     </td>
                     <td className="px-6 py-3.5 text-right font-black text-white">
                       {inr(data.salary_earned)}
@@ -633,7 +633,7 @@ function DailyIncomeContent() {
                     className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                     onClick={() => setModal("commission")}
                   >
-                    <td className="px-6 py-3.5 text-slate-400 font-medium">Mechanic Commission</td>
+                    <td className="px-6 py-3.5 text-muted font-medium">Mechanic Commission</td>
                     <td className="px-6 py-3.5 text-right font-black text-white">
                       {inr(data.commission)}
                     </td>
@@ -642,7 +642,7 @@ function DailyIncomeContent() {
                     className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                     onClick={() => setModal("discount")}
                   >
-                    <td className="px-6 py-3.5 text-slate-400 font-medium">Customer Discounts</td>
+                    <td className="px-6 py-3.5 text-muted font-medium">Customer Discounts</td>
                     <td className="px-6 py-3.5 text-right font-black text-white">
                       {inr(data.discounts)}
                     </td>
@@ -651,7 +651,7 @@ function DailyIncomeContent() {
                     className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                     onClick={() => setModal("expenses")}
                   >
-                    <td className="px-6 py-3.5 text-slate-400 font-medium">General Expenses</td>
+                    <td className="px-6 py-3.5 text-muted font-medium">General Expenses</td>
                     <td className="px-6 py-3.5 text-right font-black text-white">
                       {inr(data.expenses)}
                     </td>
@@ -660,7 +660,7 @@ function DailyIncomeContent() {
                     className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                     onClick={() => setModal("loan")}
                   >
-                    <td className="px-6 py-3.5 text-slate-400 font-medium">Loan EMI Payments</td>
+                    <td className="px-6 py-3.5 text-muted font-medium">Loan EMI Payments</td>
                     <td className="px-6 py-3.5 text-right font-black text-white">
                       {inr(data.loan_emi)}
                     </td>
@@ -678,8 +678,8 @@ function DailyIncomeContent() {
             </div>
 
             {/* Sales & Revenue */}
-            <div className="bg-[#161b27] border border-[#21293d] rounded-3xl overflow-hidden shadow-xl">
-              <div className="px-6 py-4 border-b border-[#21293d] bg-[#111520]/50 flex items-center gap-3">
+            <div className="bg-panel border border-app rounded-3xl overflow-hidden shadow-xl">
+              <div className="px-6 py-4 border-b border-app bg-panel-2/50 flex items-center gap-3">
                 <TrendingUp size={18} className="text-blue-400" />
                 <h3 className="text-sm font-black text-white uppercase tracking-wider">
                   Sales &amp; Revenue
@@ -691,7 +691,7 @@ function DailyIncomeContent() {
                     className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                     onClick={() => setModal("repairs")}
                   >
-                    <td className="px-6 py-3.5 text-slate-400 font-medium">Repair Jobs Billed</td>
+                    <td className="px-6 py-3.5 text-muted font-medium">Repair Jobs Billed</td>
                     <td className="px-6 py-3.5 text-right font-black text-white">
                       {inr(data.revenue_repair)}
                     </td>
@@ -700,7 +700,7 @@ function DailyIncomeContent() {
                     className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                     onClick={() => setModal("sales")}
                   >
-                    <td className="px-6 py-3.5 text-slate-400 font-medium">Direct Sales Billed</td>
+                    <td className="px-6 py-3.5 text-muted font-medium">Direct Sales Billed</td>
                     <td className="px-6 py-3.5 text-right font-black text-white">
                       {inr(data.revenue_sales)}
                     </td>
@@ -715,7 +715,7 @@ function DailyIncomeContent() {
                   </tr>
                   <tr>
                     <td colSpan={2} className="px-6 py-5 text-center">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted mb-1">
                         Estimated Profit
                       </p>
                       <p
@@ -723,7 +723,7 @@ function DailyIncomeContent() {
                       >
                         {inr(data.net_profit)}
                       </p>
-                      <p className="text-[10px] text-slate-600 mt-1">
+                      <p className="text-[10px] text-muted-2 mt-1">
                         (Revenue - Business Expenses)
                       </p>
                     </td>
@@ -736,25 +736,25 @@ function DailyIncomeContent() {
           {/* Drill-down Modal */}
           {modal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-              <div className="bg-[#161b27] border border-[#21293d] rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl">
-                <div className="flex items-center justify-between p-6 border-b border-[#21293d]">
+              <div className="bg-panel border border-app rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl">
+                <div className="flex items-center justify-between p-6 border-b border-app">
                   <h2 className="text-lg font-black text-white">{modalTitle[modal]}</h2>
                   <button
                     onClick={() => setModal(null)}
-                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-rose-500 transition-colors"
+                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 text-muted hover:text-white hover:bg-rose-500 transition-colors"
                   >
                     <X size={18} />
                   </button>
                 </div>
                 <div className="p-6 overflow-y-auto">
                   {details[modal]?.length === 0 ? (
-                    <div className="text-center py-10 text-slate-500 font-bold">
+                    <div className="text-center py-10 text-muted font-bold">
                       No data found for this period.
                     </div>
                   ) : (
-                    <div className="overflow-x-auto rounded-xl border border-[#21293d]">
+                    <div className="overflow-x-auto rounded-xl border border-app">
                       <table className="w-full text-sm text-left">
-                        <thead className="bg-[#0d1117] text-slate-400 text-[10px] uppercase tracking-widest">
+                        <thead className="bg-app text-muted text-[10px] uppercase tracking-widest">
                           {modal === "payments" && (
                             <tr>
                               <th className="px-4 py-3">Date</th>
@@ -856,10 +856,10 @@ function DailyIncomeContent() {
                                   <td className="px-4 py-3 text-indigo-300 font-bold">
                                     {row.client_name}
                                   </td>
-                                  <td className="px-4 py-3 text-slate-400">
+                                  <td className="px-4 py-3 text-muted">
                                     {row.payment_mode || "Cash"}
                                   </td>
-                                  <td className="px-4 py-3 text-slate-400">{row.remarks || "-"}</td>
+                                  <td className="px-4 py-3 text-muted">{row.remarks || "-"}</td>
                                   <td className="px-4 py-3 text-right text-emerald-400 font-bold">
                                     {inr(row.amount)}
                                   </td>
@@ -869,13 +869,13 @@ function DailyIncomeContent() {
                               return (
                                 <tr key={i} className="hover:bg-white/[0.02]">
                                   <td className="px-4 py-3 text-white">{d(row.date_created)}</td>
-                                  <td className="px-4 py-3 text-slate-300">
+                                  <td className="px-4 py-3 text-app-2">
                                     <code>{row.sale_code}</code>
                                   </td>
-                                  <td className="px-4 py-3 text-slate-400">
+                                  <td className="px-4 py-3 text-muted">
                                     {row.payment_mode || "Cash"}
                                   </td>
-                                  <td className="px-4 py-3 text-slate-400">{row.remarks || "-"}</td>
+                                  <td className="px-4 py-3 text-muted">{row.remarks || "-"}</td>
                                   <td className="px-4 py-3 text-right text-emerald-400 font-bold">
                                     {inr(row.total_amount)}
                                   </td>
@@ -888,8 +888,8 @@ function DailyIncomeContent() {
                                   <td className="px-4 py-3 text-indigo-300 font-bold">
                                     {row.staff_name}
                                   </td>
-                                  <td className="px-4 py-3 text-slate-400">{row.reason || "-"}</td>
-                                  <td className="px-4 py-3 text-slate-400">Cash</td>
+                                  <td className="px-4 py-3 text-muted">{row.reason || "-"}</td>
+                                  <td className="px-4 py-3 text-muted">Cash</td>
                                   <td className="px-4 py-3 text-right text-rose-400 font-bold">
                                     {inr(row.amount)}
                                   </td>
@@ -899,13 +899,13 @@ function DailyIncomeContent() {
                               return (
                                 <tr key={i} className="hover:bg-white/[0.02]">
                                   <td className="px-4 py-3 text-white">{d(row.date_created)}</td>
-                                  <td className="px-4 py-3 text-slate-300">
+                                  <td className="px-4 py-3 text-app-2">
                                     <span className="px-2 py-1 bg-slate-800 rounded-md text-xs">
                                       {row.category}
                                     </span>
                                   </td>
-                                  <td className="px-4 py-3 text-slate-400">{row.remarks || "-"}</td>
-                                  <td className="px-4 py-3 text-slate-400">
+                                  <td className="px-4 py-3 text-muted">{row.remarks || "-"}</td>
+                                  <td className="px-4 py-3 text-muted">
                                     {row.payment_mode || "Cash"}
                                   </td>
                                   <td className="px-4 py-3 text-right text-rose-400 font-bold">
@@ -920,7 +920,7 @@ function DailyIncomeContent() {
                                   <td className="px-4 py-3 text-indigo-300 font-bold">
                                     {row.lender_name}
                                   </td>
-                                  <td className="px-4 py-3 text-slate-400">{row.remarks || "-"}</td>
+                                  <td className="px-4 py-3 text-muted">{row.remarks || "-"}</td>
                                   <td className="px-4 py-3 text-right text-rose-400 font-bold">
                                     {inr(row.amount_paid)}
                                   </td>
@@ -933,7 +933,7 @@ function DailyIncomeContent() {
                                   <td className="px-4 py-3 text-indigo-300 font-bold">
                                     {row.name}
                                   </td>
-                                  <td className="px-4 py-3 text-slate-400">
+                                  <td className="px-4 py-3 text-muted">
                                     {row.status === 3 ? (
                                       <span className="px-2 py-1 bg-amber-500/10 text-amber-400 rounded-md text-xs font-bold">
                                         Half Day
@@ -944,7 +944,7 @@ function DailyIncomeContent() {
                                       </span>
                                     )}
                                   </td>
-                                  <td className="px-4 py-3 text-right text-slate-300">
+                                  <td className="px-4 py-3 text-right text-app-2">
                                     {inr(row.rate)}
                                   </td>
                                   <td className="px-4 py-3 text-right text-emerald-400 font-bold">
@@ -956,13 +956,13 @@ function DailyIncomeContent() {
                               return (
                                 <tr key={i} className="hover:bg-white/[0.02]">
                                   <td className="px-4 py-3 text-white">{d(row.date_completed)}</td>
-                                  <td className="px-4 py-3 text-slate-300">
+                                  <td className="px-4 py-3 text-app-2">
                                     <code>{row.job_id}</code>
                                   </td>
                                   <td className="px-4 py-3 text-indigo-300 font-bold">
                                     {row.mechanic_name}
                                   </td>
-                                  <td className="px-4 py-3 text-right text-slate-300">
+                                  <td className="px-4 py-3 text-right text-app-2">
                                     {inr(row.amount)}
                                   </td>
                                   <td className="px-4 py-3 text-right text-amber-400 font-bold">
@@ -977,7 +977,7 @@ function DailyIncomeContent() {
                                   <td className="px-4 py-3 text-indigo-300 font-bold">
                                     {row.client_name}
                                   </td>
-                                  <td className="px-4 py-3 text-right text-slate-300">
+                                  <td className="px-4 py-3 text-right text-app-2">
                                     {inr((row.amount || 0) + (row.discount || 0))}
                                   </td>
                                   <td className="px-4 py-3 text-right text-rose-400 font-bold">
@@ -989,14 +989,14 @@ function DailyIncomeContent() {
                               return (
                                 <tr key={i} className="hover:bg-white/[0.02]">
                                   <td className="px-4 py-3 text-white">{d(row.date_completed)}</td>
-                                  <td className="px-4 py-3 text-slate-300">
+                                  <td className="px-4 py-3 text-app-2">
                                     <code>{row.job_id}</code>
                                   </td>
                                   <td className="px-4 py-3 text-indigo-300 font-bold">
                                     {row.client_name}
                                   </td>
-                                  <td className="px-4 py-3 text-slate-400">{row.mechanic_name}</td>
-                                  <td className="px-4 py-3 text-slate-400">{row.item}</td>
+                                  <td className="px-4 py-3 text-muted">{row.mechanic_name}</td>
+                                  <td className="px-4 py-3 text-muted">{row.item}</td>
                                   <td className="px-4 py-3 text-right text-emerald-400 font-bold">
                                     {inr(row.amount)}
                                   </td>
@@ -1006,13 +1006,13 @@ function DailyIncomeContent() {
                               return (
                                 <tr key={i} className="hover:bg-white/[0.02]">
                                   <td className="px-4 py-3 text-white">{d(row.date_created)}</td>
-                                  <td className="px-4 py-3 text-slate-300">
+                                  <td className="px-4 py-3 text-app-2">
                                     <code>{row.sale_code}</code>
                                   </td>
                                   <td className="px-4 py-3 text-indigo-300 font-bold">
                                     {row.client_name}
                                   </td>
-                                  <td className="px-4 py-3 text-slate-400">
+                                  <td className="px-4 py-3 text-muted">
                                     {row.payment_mode || "Cash"}
                                   </td>
                                   <td className="px-4 py-3 text-right text-emerald-400 font-bold">
@@ -1023,16 +1023,16 @@ function DailyIncomeContent() {
                             return null;
                           })}
                         </tbody>
-                        <tfoot className="bg-[#0d1117] border-t border-[#21293d]">
+                        <tfoot className="bg-app border-t border-app">
                           {modal === "commission" ? (
                             <tr>
                               <td
                                 colSpan={3}
-                                className="px-4 py-4 text-right text-[10px] uppercase tracking-widest text-slate-500 font-black"
+                                className="px-4 py-4 text-right text-[10px] uppercase tracking-widest text-muted font-black"
                               >
                                 Totals
                               </td>
-                              <td className="px-4 py-4 text-right font-black text-slate-200">
+                              <td className="px-4 py-4 text-right font-black text-app-2">
                                 {inr(
                                   (modalTotal("commission") as { job: number; comm: number }).job
                                 )}
@@ -1056,7 +1056,7 @@ function DailyIncomeContent() {
                                       ? 4
                                       : 3
                                 }
-                                className="px-4 py-4 text-right text-[10px] uppercase tracking-widest text-slate-500 font-black"
+                                className="px-4 py-4 text-right text-[10px] uppercase tracking-widest text-muted font-black"
                               >
                                 Grand Total
                               </td>
@@ -1091,7 +1091,7 @@ function DailyIncomeContent() {
 
 export default function DailyIncomeReport() {
   return (
-    <div className="min-h-screen bg-[#0d1117] p-4 md:p-8">
+    <div className="min-h-screen bg-app p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <Suspense
           fallback={

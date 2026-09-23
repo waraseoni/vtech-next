@@ -144,8 +144,8 @@ export default function SupervisePage() {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-center px-6">
         <ShieldAlert size={40} className="text-rose-500/70" />
-        <h1 className="text-lg font-bold text-slate-700">Access Denied</h1>
-        <p className="text-sm text-slate-500 max-w-xs">
+        <h1 className="text-lg font-bold text-app">Access Denied</h1>
+        <p className="text-sm text-muted max-w-xs">
           Ye tool sirf admin ya developer use kar sakta hai. Staff messages
           kaise dekhega yahan allowed nahi.
         </p>
@@ -167,8 +167,8 @@ export default function SupervisePage() {
           <Eye size={20} className="text-cyan-500/80" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-slate-800">Message Supervision</h1>
-          <p className="text-xs text-slate-500">
+          <h1 className="text-lg font-bold text-app">Message Supervision</h1>
+          <p className="text-xs text-muted">
             Admin/Developer — kisi bhi do users ke beech private chat dekhne ka read-only tool.
           </p>
         </div>
@@ -177,17 +177,17 @@ export default function SupervisePage() {
       {/* user pickers */}
       <div className="grid sm:grid-cols-2 gap-4 mb-4">
         <div>
-          <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">User A</label>
+          <label className="text-xs font-bold text-muted-2 uppercase tracking-wide">User A</label>
           <div className="relative mt-1">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input
               value={searchA}
               onChange={(e) => setSearchA(e.target.value)}
               placeholder="Search user A..."
-              className="w-full rounded-xl bg-white border border-slate-200 pl-9 pr-3 py-2.5 text-sm outline-none focus:border-cyan-400"
+              className="w-full rounded-xl bg-white border border-app-2 pl-9 pr-3 py-2.5 text-sm outline-none focus:border-cyan-400"
             />
           </div>
-          <div className="mt-2 bg-white border border-slate-200 rounded-xl max-h-56 overflow-y-auto divide-y divide-slate-100">
+          <div className="mt-2 bg-white border border-app-2 rounded-xl max-h-56 overflow-y-auto divide-y divide-slate-100">
             {shownProfiles(searchA).map((p) => (
               <button
                 key={p.id}
@@ -201,28 +201,28 @@ export default function SupervisePage() {
               >
                 <Avatar name={p.full_name} url={p.avatar_url} size={30} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-700 truncate">{p.full_name}</p>
-                  <p className="text-[11px] text-slate-400 capitalize">{p.role}</p>
+                  <p className="text-sm font-medium text-app truncate">{p.full_name}</p>
+                  <p className="text-[11px] text-muted capitalize">{p.role}</p>
                 </div>
               </button>
             ))}
             {shownProfiles(searchA).length === 0 && (
-              <p className="px-3 py-3 text-xs text-slate-400">Koi user nahi mila</p>
+              <p className="px-3 py-3 text-xs text-muted">Koi user nahi mila</p>
             )}
           </div>
         </div>
         <div>
-          <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">User B</label>
+          <label className="text-xs font-bold text-muted-2 uppercase tracking-wide">User B</label>
           <div className="relative mt-1">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input
               value={searchB}
               onChange={(e) => setSearchB(e.target.value)}
               placeholder="Search user B..."
-              className="w-full rounded-xl bg-white border border-slate-200 pl-9 pr-3 py-2.5 text-sm outline-none focus:border-cyan-400"
+              className="w-full rounded-xl bg-white border border-app-2 pl-9 pr-3 py-2.5 text-sm outline-none focus:border-cyan-400"
             />
           </div>
-          <div className="mt-2 bg-white border border-slate-200 rounded-xl max-h-56 overflow-y-auto divide-y divide-slate-100">
+          <div className="mt-2 bg-white border border-app-2 rounded-xl max-h-56 overflow-y-auto divide-y divide-slate-100">
             {shownProfiles(searchB).map((p) => (
               <button
                 key={p.id}
@@ -236,13 +236,13 @@ export default function SupervisePage() {
               >
                 <Avatar name={p.full_name} url={p.avatar_url} size={30} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-700 truncate">{p.full_name}</p>
-                  <p className="text-[11px] text-slate-400 capitalize">{p.role}</p>
+                  <p className="text-sm font-medium text-app truncate">{p.full_name}</p>
+                  <p className="text-[11px] text-muted capitalize">{p.role}</p>
                 </div>
               </button>
             ))}
             {shownProfiles(searchB).length === 0 && (
-              <p className="px-3 py-3 text-xs text-slate-400">Koi user nahi mila</p>
+              <p className="px-3 py-3 text-xs text-muted">Koi user nahi mila</p>
             )}
           </div>
         </div>
@@ -251,17 +251,17 @@ export default function SupervisePage() {
       {/* conversation */}
       <div className="bg-slate-800/60 border border-white/10 rounded-2xl overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
-          <div className="flex items-center gap-2 text-sm text-slate-200">
+          <div className="flex items-center gap-2 text-sm text-app-2">
             <RefreshCw
               size={14}
-              className={fetching ? "animate-spin text-cyan-400" : "text-slate-400"}
+              className={fetching ? "animate-spin text-cyan-400" : "text-muted"}
             />
             {selA && selB && selA !== selB ? (
               <span>
-                {nameOf(selA)} <span className="text-slate-500">⟷</span> {nameOf(selB)}
+                {nameOf(selA)} <span className="text-muted">⟷</span> {nameOf(selB)}
               </span>
             ) : (
-              <span className="text-slate-400">Dono users chunke chat dekho</span>
+              <span className="text-muted">Dono users chunke chat dekho</span>
             )}
           </div>
           {selA && selB && selA !== selB && (
@@ -275,7 +275,7 @@ export default function SupervisePage() {
         </div>
         <div className="max-h-[50vh] overflow-y-auto p-4 space-y-3">
           {msgs.length === 0 && !fetching ? (
-            <p className="text-center text-slate-400 text-xs py-6">
+            <p className="text-center text-muted text-xs py-6">
               {selA && selB && selA !== selB
                 ? "In dono ke beech koi message nahi mila"
                 : "Dono users select karo"}
@@ -291,7 +291,7 @@ export default function SupervisePage() {
                       className={`px-3 py-2 rounded-2xl text-sm leading-snug ${
                         mine
                           ? "bg-cyan-600 text-white rounded-br-md"
-                          : "bg-white/10 text-slate-100 rounded-bl-md"
+                          : "bg-white/10 text-app-2 rounded-bl-md"
                       }`}
                     >
                       {isMedia && (
@@ -325,7 +325,7 @@ export default function SupervisePage() {
                       {m.content !== m.media_name && <span>{m.content}</span>}
                     </div>
                     <span
-                      className={`text-[10px] text-slate-500 ${mine ? "text-right" : ""}`}
+                      className={`text-[10px] text-muted ${mine ? "text-right" : ""}`}
                     >
                       {fmtDay(m.created_at)}
                     </span>
@@ -337,7 +337,7 @@ export default function SupervisePage() {
         </div>
       </div>
 
-      <p className="mt-4 flex items-start gap-1.5 text-xs text-slate-400">
+      <p className="mt-4 flex items-start gap-1.5 text-xs text-muted">
         <ShieldAlert size={14} className="shrink-0 mt-0.5" />
         Ye read-only supervision hai — messages ko edit/delete nahi kar sakte. RLS ki wajah se
         sirf admin/developer ke account ko database me sab chats dikhti hain.

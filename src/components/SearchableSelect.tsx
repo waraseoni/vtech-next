@@ -172,7 +172,7 @@ export default function SearchableSelect({
         <div
           onClick={() => pick("")}
           className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group cursor-pointer hover:bg-white/5 active:bg-white/10 ${
-            value === null || value === "" ? "text-blue-300" : "text-slate-400"
+            value === null || value === "" ? "text-blue-300" : "text-muted"
           }`}
         >
           <span className="text-sm font-bold group-hover:text-blue-300 transition-colors">
@@ -181,12 +181,12 @@ export default function SearchableSelect({
           {value === null || value === "" ? (
             <Check size={15} className="text-emerald-400 flex-shrink-0" />
           ) : (
-            <X size={14} className="text-slate-600 flex-shrink-0" />
+            <X size={14} className="text-muted-2 flex-shrink-0" />
           )}
         </div>
       )}
       {filtered.length === 0 ? (
-        <p className="text-slate-600 text-xs text-center py-6">{emptyText}</p>
+        <p className="text-muted-2 text-xs text-center py-6">{emptyText}</p>
       ) : (
         filtered.map((o) => {
           const isSel = String(o.id) === String(value ?? "");
@@ -211,7 +211,7 @@ export default function SearchableSelect({
                 >
                   {o.label}
                 </div>
-                {o.sub && <div className="text-xs text-slate-600 mt-0.5">{o.sub}</div>}
+                {o.sub && <div className="text-xs text-muted-2 mt-0.5">{o.sub}</div>}
               </div>
               {isSel && <Check size={15} className="text-emerald-400 flex-shrink-0 ml-2" />}
             </div>
@@ -224,7 +224,7 @@ export default function SearchableSelect({
   const searchBox = (
     <div className="relative mb-2">
       <Search
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
         size={15}
       />
       <input
@@ -236,7 +236,7 @@ export default function SearchableSelect({
         enterKeyHint="search"
         autoComplete="off"
         placeholder={searchPlaceholder}
-        className="w-full pl-9 pr-9 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-white text-sm outline-none focus:border-blue-500/60 placeholder:text-slate-700"
+        className="w-full pl-9 pr-9 py-2.5 bg-panel-2 border border-app rounded-xl text-white text-sm outline-none focus:border-blue-500/60 placeholder:text-app"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
@@ -247,7 +247,7 @@ export default function SearchableSelect({
             setSearch("");
             searchRef.current?.focus();
           }}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-[#21293d] text-slate-400 hover:text-white transition-colors"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-panel-2 text-muted hover:text-white transition-colors"
         >
           <X size={12} />
         </button>
@@ -262,10 +262,10 @@ export default function SearchableSelect({
         type="button"
         onClick={toggle}
         aria-expanded={open}
-        className={`w-full min-h-[42px] flex items-center justify-between gap-2 px-3 py-2.5 bg-[#111520] border rounded-xl text-sm transition-all outline-none text-left ${
+        className={`w-full min-h-[42px] flex items-center justify-between gap-2 px-3 py-2.5 bg-panel-2 border rounded-xl text-sm transition-all outline-none text-left ${
           open
             ? "border-blue-500/60 ring-1 ring-blue-500/20"
-            : "border-[#21293d] hover:border-slate-600"
+            : "border-app hover:border-muted"
         }`}
       >
         <span className="min-w-0 flex-1">
@@ -276,12 +276,12 @@ export default function SearchableSelect({
               <span className="block font-bold text-white text-sm truncate">{selected.label}</span>
             )
           ) : (
-            <span className="text-slate-600 font-medium">{placeholder}</span>
+            <span className="text-muted-2 font-medium">{placeholder}</span>
           )}
         </span>
         <ChevronDown
           size={16}
-          className={`text-slate-500 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`text-muted flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -299,7 +299,7 @@ export default function SearchableSelect({
             {/* Sheet */}
             <div
               ref={menuRef}
-              className="relative w-full max-w-md bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl flex flex-col max-h-[82vh] animate-[sheet-up_220ms_cubic-bezier(0.22,1,0.36,1)]"
+              className="relative w-full max-w-md bg-panel border border-app rounded-2xl shadow-2xl flex flex-col max-h-[82vh] animate-[sheet-up_220ms_cubic-bezier(0.22,1,0.36,1)]"
             >
               {/* Drag handle */}
               <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0" onClick={close}>
@@ -307,7 +307,7 @@ export default function SearchableSelect({
               </div>
 
               <div className="px-4 pb-2 flex-shrink-0">
-                <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2">
+                <p className="text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2">
                   {placeholder.replace(/[—-]/g, "").trim()}
                 </p>
                 {searchBox}
@@ -330,7 +330,7 @@ export default function SearchableSelect({
           <div
             ref={menuRef}
             style={{ top: pos.top, left: pos.left, width: pos.width }}
-            className="fixed z-[100] bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl p-3 animate-[fade-in_120ms_ease-out]"
+            className="fixed z-[100] bg-panel border border-app rounded-2xl shadow-2xl p-3 animate-[fade-in_120ms_ease-out]"
           >
             {searchBox}
             <div className="overflow-y-auto space-y-0.5" style={{ maxHeight: pos.maxListH }}>

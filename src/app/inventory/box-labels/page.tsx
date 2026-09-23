@@ -375,13 +375,13 @@ export default function BoxLabelsPage() {
   /* ── render ───────────────────────────────────────────────────────────── */
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-slate-200">
+    <div className="min-h-screen bg-app text-app-2">
       {/* Top sticky header */}
-      <div className="sticky top-0 z-30 bg-[#161b27] border-b border-[#21293d] px-4 py-3 flex items-center justify-between gap-2">
+      <div className="sticky top-0 z-30 bg-panel border-b border-app px-4 py-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <Link
             href="/inventory"
-            className="bg-[#21293d] hover:bg-[#2a3550] text-slate-300 rounded-lg p-2 transition-colors no-underline"
+            className="bg-panel-2 hover:bg-[#2a3550] text-app-2 rounded-lg p-2 transition-colors no-underline"
           >
             <ArrowLeft size={16} />
           </Link>
@@ -389,7 +389,7 @@ export default function BoxLabelsPage() {
             <Package size={18} className="text-blue-400" />
             <div>
               <h1 className="text-sm font-black text-white leading-tight">Box Labels Printing</h1>
-              <div className="flex items-center gap-2 text-[11px] text-slate-400">
+              <div className="flex items-center gap-2 text-[11px] text-muted">
                 <span>Total {boxes.length} box(es)</span>
                 <span>•</span>
                 <span className="text-blue-400 font-bold">
@@ -404,7 +404,7 @@ export default function BoxLabelsPage() {
           <button
             onClick={loadExistingBoxes}
             disabled={loadingBoxes}
-            className="border-none rounded-lg px-3 py-2 font-bold text-xs cursor-pointer hover:bg-[#2a3550] disabled:opacity-60 flex items-center gap-1.5 bg-[#21293d] text-slate-300"
+            className="border-none rounded-lg px-3 py-2 font-bold text-xs cursor-pointer hover:bg-[#2a3550] disabled:opacity-60 flex items-center gap-1.5 bg-panel-2 text-app-2"
             title="Refresh boxes list"
           >
             <RefreshCw size={13} className={loadingBoxes ? "animate-spin" : ""} />
@@ -420,7 +420,7 @@ export default function BoxLabelsPage() {
           <button
             onClick={() => setShowSettings((v) => !v)}
             className={`border-none rounded-lg px-3 py-2 font-bold text-xs cursor-pointer hover:bg-[#2a3550] flex items-center gap-1.5 ${
-              showSettings ? "bg-blue-600 !text-white" : "bg-[#21293d] text-slate-300"
+              showSettings ? "bg-blue-600 !text-white" : "bg-panel-2 text-app-2"
             }`}
           >
             <Settings2 size={13} />
@@ -431,7 +431,7 @@ export default function BoxLabelsPage() {
             className={`border-none rounded-lg px-3 py-2 font-bold text-xs cursor-pointer flex items-center gap-1.5 ${
               showPreviewDrawer
                 ? "bg-purple-600 hover:bg-purple-500 !text-white"
-                : "bg-[#21293d] hover:bg-[#2a3550] text-purple-300"
+                : "bg-panel-2 hover:bg-[#2a3550] text-purple-300"
             }`}
             title="Toggle Live Preview Drawer"
           >
@@ -455,8 +455,8 @@ export default function BoxLabelsPage() {
         <div className="flex-1 min-w-0 w-full space-y-4">
           {/* Settings Panel (collapsible) */}
           {showSettings && (
-            <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 shadow-xl">
-              <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-[#21293d]">
+            <div className="bg-panel border border-app rounded-2xl p-4 shadow-xl">
+              <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-app">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal size={14} className="text-blue-400" />
                   <h2 className="text-xs font-black text-white uppercase tracking-wider">
@@ -465,14 +465,14 @@ export default function BoxLabelsPage() {
                 </div>
                 <button
                   onClick={() => setShowSettings(false)}
-                  className="text-slate-400 hover:text-white p-1"
+                  className="text-muted hover:text-white p-1"
                 >
                   <X size={14} />
                 </button>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1 block">
                     Label W (mm)
                   </label>
                   <input
@@ -481,11 +481,11 @@ export default function BoxLabelsPage() {
                     onChange={(e) =>
                       setOptions((o) => ({ ...o, widthMm: Number(e.target.value) || 80 }))
                     }
-                    className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1 block">
                     Label H (mm)
                   </label>
                   <input
@@ -494,11 +494,11 @@ export default function BoxLabelsPage() {
                     onChange={(e) =>
                       setOptions((o) => ({ ...o, heightMm: Number(e.target.value) || 40 }))
                     }
-                    className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1 block">
                     Sheet Cols
                   </label>
                   <input
@@ -511,11 +511,11 @@ export default function BoxLabelsPage() {
                         cols: Math.max(1, Number(e.target.value) || 1),
                       }))
                     }
-                    className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1 block">
                     Sheet Rows
                   </label>
                   <input
@@ -528,11 +528,11 @@ export default function BoxLabelsPage() {
                         rows: Math.max(1, Number(e.target.value) || 1),
                       }))
                     }
-                    className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1 block">
                     Max Font (pt)
                   </label>
                   <input
@@ -546,15 +546,15 @@ export default function BoxLabelsPage() {
                         maxFont: Math.max(5, Math.min(20, Number(e.target.value) || 11)),
                       }))
                     }
-                    className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
 
               {/* Contents area settings */}
-              <div className="mt-4 pt-3 border-t border-[#21293d] grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="mt-4 pt-3 border-t border-app grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1 block">
                     Content Columns (0 = 2)
                   </label>
                   <input
@@ -568,11 +568,11 @@ export default function BoxLabelsPage() {
                         contentCols: Math.max(0, Number(e.target.value) || 0),
                       }))
                     }
-                    className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1 block">
                     Content Rows (0 = auto)
                   </label>
                   <input
@@ -586,11 +586,11 @@ export default function BoxLabelsPage() {
                         contentRows: Math.max(0, Number(e.target.value) || 0),
                       }))
                     }
-                    className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1 block">
                     Content Font (pt, 0 = auto)
                   </label>
                   <input
@@ -604,7 +604,7 @@ export default function BoxLabelsPage() {
                         fontSizePt: Math.max(0, Math.min(20, Number(e.target.value) || 0)),
                       }))
                     }
-                    className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -612,16 +612,16 @@ export default function BoxLabelsPage() {
           )}
 
           {/* Existing Box Quick Jump & Search / Selection toolbar */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 shadow-sm space-y-3">
+          <div className="bg-panel border border-app rounded-2xl p-4 shadow-sm space-y-3">
             <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
               <div className="w-full sm:flex-1 relative">
-                <Search size={14} className="absolute left-3 top-3 text-slate-500" />
+                <Search size={14} className="absolute left-3 top-3 text-muted" />
                 <input
                   type="text"
                   placeholder="Filter boxes by name, location, or item..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs text-slate-200 placeholder-slate-500 outline-none focus:border-blue-500"
+                  className="w-full pl-9 pr-3 py-2 bg-app border border-app rounded-xl text-xs text-app-2 placeholder-slate-500 outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -630,7 +630,7 @@ export default function BoxLabelsPage() {
                   value={selectedBoxId}
                   onChange={(e) => handleSelectBox(e.target.value)}
                   disabled={loadingBoxes}
-                  className="flex-1 sm:w-64 bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-blue-500 disabled:opacity-50"
+                  className="flex-1 sm:w-64 bg-app border border-app rounded-xl px-3 py-2 text-xs text-app-2 outline-none focus:border-blue-500 disabled:opacity-50"
                 >
                   <option value="">
                     {loadingBoxes ? "Loading boxes..." : "— Jump & select existing box —"}
@@ -645,17 +645,17 @@ export default function BoxLabelsPage() {
             </div>
 
             {/* Quick action bar for selecting boxes */}
-            <div className="flex items-center justify-between text-xs pt-2 border-t border-[#21293d] text-slate-400">
+            <div className="flex items-center justify-between text-xs pt-2 border-t border-app text-muted">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => toggleSelectAll(true)}
-                  className="hover:text-white flex items-center gap-1 text-[11px] font-semibold bg-[#21293d] px-2 py-1 rounded"
+                  className="hover:text-white flex items-center gap-1 text-[11px] font-semibold bg-panel-2 px-2 py-1 rounded"
                 >
                   <CheckSquare size={12} className="text-blue-400" /> Select All
                 </button>
                 <button
                   onClick={() => toggleSelectAll(false)}
-                  className="hover:text-white flex items-center gap-1 text-[11px] font-semibold bg-[#21293d] px-2 py-1 rounded"
+                  className="hover:text-white flex items-center gap-1 text-[11px] font-semibold bg-panel-2 px-2 py-1 rounded"
                 >
                   <Square size={12} /> Deselect All
                 </button>
@@ -669,14 +669,14 @@ export default function BoxLabelsPage() {
           {/* Box List Cards */}
           <div className="space-y-3">
             {loadingBoxes && (
-              <div className="p-8 text-center text-slate-500 text-xs flex items-center justify-center gap-2">
+              <div className="p-8 text-center text-muted text-xs flex items-center justify-center gap-2">
                 <Loader2 size={16} className="animate-spin text-blue-400" />
                 Boxes load ho rahe hain...
               </div>
             )}
 
             {!loadingBoxes && filteredBoxes.length === 0 && (
-              <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-8 text-center text-slate-400 text-xs">
+              <div className="bg-panel border border-app rounded-xl p-8 text-center text-muted text-xs">
                 Koi box match nahi hua. Aap upar &quot;Add Custom Box&quot; se naya bana sakte hain.
               </div>
             )}
@@ -690,10 +690,10 @@ export default function BoxLabelsPage() {
               return (
                 <div
                   key={originalIdx}
-                  className={`bg-[#161b27] border transition-all rounded-xl overflow-hidden ${
+                  className={`bg-panel border transition-all rounded-xl overflow-hidden ${
                     isSelected
-                      ? "border-blue-500/60 bg-[#161f33]/70 shadow-md shadow-blue-500/5"
-                      : "border-[#21293d] hover:border-slate-700"
+                      ? "border-blue-500/60 bg-panel-2/70 shadow-md shadow-blue-500/5"
+                      : "border-app hover:border-slate-700"
                   }`}
                 >
                   {/* Card Header: Info row + action bar */}
@@ -705,18 +705,18 @@ export default function BoxLabelsPage() {
                         <button
                           type="button"
                           onClick={() => toggleSelectBox(originalIdx)}
-                          className="cursor-pointer text-slate-400 hover:text-white p-0.5 shrink-0"
+                          className="cursor-pointer text-muted hover:text-white p-0.5 shrink-0"
                           title={isSelected ? "Deselect box" : "Select box for printing"}
                         >
                           {isSelected ? (
                             <CheckSquare size={18} className="text-blue-400 fill-blue-500/20" />
                           ) : (
-                            <Square size={18} className="text-slate-500" />
+                            <Square size={18} className="text-muted" />
                           )}
                         </button>
                         {/* Box ID — sundar heading, borderless (custom boxes editable) */}
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <Box size={15} className="shrink-0 text-slate-500" />
+                          <Box size={15} className="shrink-0 text-muted" />
                           <input
                             type="text"
                             value={box.boxId}
@@ -738,9 +738,9 @@ export default function BoxLabelsPage() {
                       {/* Location — top right with map pin */}
                       <div
                         title="Location"
-                        className="ml-auto max-w-full sm:max-w-[45%] min-w-0 flex items-start gap-1.5 text-[12px] leading-snug font-semibold text-slate-400 text-right break-words overflow-wrap-anywhere"
+                        className="ml-auto max-w-full sm:max-w-[45%] min-w-0 flex items-start gap-1.5 text-[12px] leading-snug font-semibold text-muted text-right break-words overflow-wrap-anywhere"
                       >
-                        <MapPin size={12} className="mt-0.5 shrink-0 text-slate-500" />
+                        <MapPin size={12} className="mt-0.5 shrink-0 text-muted" />
                         <span className="min-w-0">
                           {box.locationPath || (
                             <span className="italic font-normal text-amber-400/80">
@@ -752,7 +752,7 @@ export default function BoxLabelsPage() {
                     </div>
 
                     {/* BOTTOM ACTION BAR — Items / Copies / Delete */}
-                    <div className="mt-3 pt-2.5 border-t border-[#21293d] flex flex-wrap items-center justify-between gap-2.5">
+                    <div className="mt-3 pt-2.5 border-t border-app flex flex-wrap items-center justify-between gap-2.5">
                       <div className="flex items-center gap-2">
                         {/* Expand/Collapse Items Dropdown Button — bottom left */}
                         <button
@@ -761,7 +761,7 @@ export default function BoxLabelsPage() {
                           className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
                             isOpen
                               ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
-                              : "bg-[#21293d] hover:bg-[#2a3550] text-slate-300"
+                              : "bg-panel-2 hover:bg-[#2a3550] text-app-2"
                           }`}
                         >
                           <Package size={13} />
@@ -770,8 +770,8 @@ export default function BoxLabelsPage() {
                         </button>
 
                         {/* Print Copies Control — bottom center */}
-                        <div className="shrink-0 flex items-center gap-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg px-2 py-1 whitespace-nowrap">
-                          <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                        <div className="shrink-0 flex items-center gap-1.5 bg-app border border-app rounded-lg px-2 py-1 whitespace-nowrap">
+                          <span className="text-[10px] uppercase font-bold text-muted tracking-wider">
                             Copies:
                           </span>
                           <input
@@ -790,7 +790,7 @@ export default function BoxLabelsPage() {
                       {/* Delete Box button — bottom right */}
                       <button
                         onClick={() => removeBox(originalIdx)}
-                        className="shrink-0 ml-auto p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        className="shrink-0 ml-auto p-1.5 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                         title="Remove this box"
                       >
                         <Trash2 size={15} />
@@ -800,19 +800,19 @@ export default function BoxLabelsPage() {
 
                   {/* COLLAPSIBLE / DROPDOWN ITEMS SECTION */}
                   {isOpen && (
-                    <div className="border-t border-[#21293d] bg-[#0d1117]/60 p-4 space-y-3">
+                    <div className="border-t border-app bg-app/60 p-4 space-y-3">
                       <div className="flex items-center justify-between gap-2">
-                        <div className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-wider">
+                        <div className="text-[11px] font-bold text-muted flex items-center gap-1.5 uppercase tracking-wider">
                           <Package size={13} className="text-blue-400" />
                           Contents / Items List in {box.boxId || "this box"}
                         </div>
                         {/* Optional link to existing box selector */}
                         <div className="flex items-center gap-2">
-                          <label className="text-[10px] text-slate-500">Sync with:</label>
+                          <label className="text-[10px] text-muted">Sync with:</label>
                           <select
                             value=""
                             onChange={(e) => linkBoxToExisting(originalIdx, e.target.value)}
-                            className="bg-[#161b27] border border-[#21293d] rounded px-2 py-1 text-[11px] text-slate-300 outline-none focus:border-blue-500"
+                            className="bg-panel border border-app rounded px-2 py-1 text-[11px] text-app-2 outline-none focus:border-blue-500"
                           >
                             <option value="">— Link existing box —</option>
                             {boxOptions.map((o) => (
@@ -827,13 +827,13 @@ export default function BoxLabelsPage() {
                       {/* Items Grid/List */}
                       <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
                         {box.items.length === 0 ? (
-                          <div className="text-xs text-slate-500 italic py-2">
+                          <div className="text-xs text-muted italic py-2">
                             Is box me abhi koi item nahi hai. Niche &quot;+ Add Item&quot; dabayein.
                           </div>
                         ) : (
                           box.items.map((item, itemIdx) => (
                             <div key={itemIdx} className="flex items-center gap-2">
-                              <span className="shrink-0 text-[10px] text-slate-500 w-5 text-right font-mono">
+                              <span className="shrink-0 text-[10px] text-muted w-5 text-right font-mono">
                                 {itemIdx + 1}.
                               </span>
                               <input
@@ -843,11 +843,11 @@ export default function BoxLabelsPage() {
                                   updateItem(originalIdx, itemIdx, e.target.value)
                                 }
                                 placeholder="Item / Product Name"
-                                className="min-w-0 flex-1 bg-[#161b27] border border-[#21293d] rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 outline-none focus:border-blue-500"
+                                className="min-w-0 flex-1 bg-panel border border-app rounded-lg px-2.5 py-1.5 text-xs text-app-2 placeholder-slate-600 outline-none focus:border-blue-500"
                               />
                               <button
                                 onClick={() => removeItem(originalIdx, itemIdx)}
-                                className="shrink-0 p-1 text-slate-500 hover:text-red-400 transition-colors"
+                                className="shrink-0 p-1 text-muted hover:text-red-400 transition-colors"
                                 title="Delete item"
                               >
                                 <Trash2 size={13} />
@@ -874,9 +874,9 @@ export default function BoxLabelsPage() {
         {/* RIGHT COLUMN: STICKY LIVE PREVIEW AREA */}
         {showPreviewDrawer && (
           <div className="w-full lg:w-[460px] lg:sticky lg:top-20 shrink-0 space-y-3">
-            <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 shadow-2xl">
+            <div className="bg-panel border border-app rounded-2xl p-4 shadow-2xl">
               {/* Header */}
-              <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-[#21293d]">
+              <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-app">
                 <div className="flex items-center gap-2">
                   <Eye size={15} className="text-purple-400" />
                   <h2 className="text-xs font-black text-white uppercase tracking-wider">
@@ -884,13 +884,13 @@ export default function BoxLabelsPage() {
                   </h2>
                 </div>
                 {/* Switch between A4 Sheet Grid & Single Label preview */}
-                <div className="flex items-center bg-[#0d1117] p-0.5 rounded-lg border border-[#21293d]">
+                <div className="flex items-center bg-app p-0.5 rounded-lg border border-app">
                   <button
                     onClick={() => setPreviewTab("sheet")}
                     className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
                       previewTab === "sheet"
                         ? "bg-purple-600 text-white"
-                        : "text-slate-400 hover:text-white"
+                        : "text-muted hover:text-white"
                     }`}
                   >
                     A4 Sheet ({options.cols}×{options.rows})
@@ -900,7 +900,7 @@ export default function BoxLabelsPage() {
                     className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
                       previewTab === "single"
                         ? "bg-purple-600 text-white"
-                        : "text-slate-400 hover:text-white"
+                        : "text-muted hover:text-white"
                     }`}
                   >
                     Label Detail
@@ -909,7 +909,7 @@ export default function BoxLabelsPage() {
               </div>
 
               {/* Status summary */}
-              <div className="text-[11px] text-slate-400 mb-3 flex items-center justify-between">
+              <div className="text-[11px] text-muted mb-3 flex items-center justify-between">
                 <span>
                   Showing {printItemsList.length} total label(s)
                 </span>
@@ -919,11 +919,11 @@ export default function BoxLabelsPage() {
               </div>
 
               {/* Preview Canvas */}
-              <div className="flex justify-center bg-[#0d1117] p-3 rounded-xl border border-[#21293d] overflow-x-auto max-h-[72vh] overflow-y-auto">
+              <div className="flex justify-center bg-app p-3 rounded-xl border border-app overflow-x-auto max-h-[72vh] overflow-y-auto">
                 {previewTab === "sheet" ? (
                   <SheetPreview options={options} boxesToPrint={printItemsList} />
                 ) : (
-                  <div className="bg-white rounded-xl p-3 inline-block border border-slate-300 shadow-sm">
+                  <div className="bg-white rounded-xl p-3 inline-block border border-app-2 shadow-sm">
                     <TemplatePreviewCard
                       box={
                         selectedBoxes[0] ||
@@ -939,8 +939,8 @@ export default function BoxLabelsPage() {
                 )}
               </div>
 
-              <div className="mt-3 pt-2 border-t border-[#21293d] flex items-center justify-between">
-                <span className="text-[10px] text-slate-500">
+              <div className="mt-3 pt-2 border-t border-app flex items-center justify-between">
+                <span className="text-[10px] text-muted">
                   {selectedBoxes.length} box(es) selected for print
                 </span>
                 <button

@@ -199,15 +199,15 @@ export default function CombinedInvoicePage() {
   // RENDER
   // ═══════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white p-4 font-sans">
+    <div className="min-h-screen bg-app text-white p-4 font-sans">
       <div className="max-w-4xl mx-auto space-y-4">
         {/* ── Header ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-4 flex items-center gap-4">
+        <div className="bg-panel border border-app rounded-xl p-4 flex items-center gap-4">
           <Link
             href="/jobs"
-            className="p-2 bg-[#21293d] hover:bg-[#2a3550] rounded-lg transition-all"
+            className="p-2 bg-panel-2 hover:bg-[#2a3550] rounded-lg transition-all"
           >
-            <ArrowLeft size={18} className="text-slate-400" />
+            <ArrowLeft size={18} className="text-muted" />
           </Link>
           <div className="flex items-center gap-3 flex-1">
             <div className="p-2.5 bg-gradient-to-br from-violet-600 to-violet-700 rounded-lg shadow-lg shadow-violet-500/20">
@@ -215,7 +215,7 @@ export default function CombinedInvoicePage() {
             </div>
             <div>
               <h1 className="text-base font-bold text-white">Combined Invoice</h1>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted">
                 Ek client ke multiple jobs ka combined bill print karo
               </p>
             </div>
@@ -228,9 +228,9 @@ export default function CombinedInvoicePage() {
             >
               1. Client
             </span>
-            <ChevronRight size={14} className="text-slate-600" />
+            <ChevronRight size={14} className="text-muted-2" />
             <span
-              className={`px-3 py-1.5 rounded-lg border ${step === 2 ? "bg-violet-600 border-violet-500 text-white" : "bg-[#21293d] border-[#21293d] text-slate-600"}`}
+              className={`px-3 py-1.5 rounded-lg border ${step === 2 ? "bg-violet-600 border-violet-500 text-white" : "bg-panel-2 border-app text-muted-2"}`}
             >
               2. Jobs
             </span>
@@ -241,12 +241,12 @@ export default function CombinedInvoicePage() {
             STEP 1 — Select Client
         ══════════════════════════════════════════════════════════ */}
         {step === 1 && (
-          <div className="bg-[#161b27] border border-[#21293d] rounded-xl overflow-hidden">
+          <div className="bg-panel border border-app rounded-xl overflow-hidden">
             {/* Search bar */}
-            <div className="p-4 border-b border-[#21293d]">
+            <div className="p-4 border-b border-app">
               <div className="relative">
                 <Search
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2"
                   size={16}
                 />
                 <input
@@ -254,13 +254,13 @@ export default function CombinedInvoicePage() {
                   placeholder="Client ka naam ya phone number search karo..."
                   value={clientSearch}
                   onChange={(e) => setClientSearch(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 bg-[#0d1117] border border-[#21293d] text-white placeholder-slate-600 rounded-xl text-sm focus:border-violet-500 focus:ring-1 focus:ring-violet-500/20 outline-none transition-all"
+                  className="w-full pl-10 pr-10 py-2.5 bg-app border border-app text-white placeholder-slate-600 rounded-xl text-sm focus:border-violet-500 focus:ring-1 focus:ring-violet-500/20 outline-none transition-all"
                   autoFocus
                 />
                 {clientSearch && (
                   <button
                     onClick={() => setClientSearch("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-2 hover:text-muted"
                   >
                     <X size={15} />
                   </button>
@@ -275,7 +275,7 @@ export default function CombinedInvoicePage() {
                   <Loader2 className="animate-spin text-violet-500" size={32} />
                 </div>
               ) : clients.length === 0 ? (
-                <div className="text-center py-16 text-slate-600">
+                <div className="text-center py-16 text-muted-2">
                   <Users size={40} className="mx-auto mb-3 opacity-30" />
                   <p className="font-bold">Koi client nahi mila</p>
                   <p className="text-xs mt-1">Naam ya phone number se search karo</p>
@@ -297,7 +297,7 @@ export default function CombinedInvoicePage() {
                       <div className="font-bold text-white text-sm group-hover:text-violet-300 transition-colors">
                         {getClientName(client)}
                       </div>
-                      <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-3">
+                      <div className="text-xs text-muted mt-0.5 flex items-center gap-3">
                         {client.contact && <span>📞 {client.contact}</span>}
                         {client.address && (
                           <span className="truncate max-w-[200px]">📍 {client.address}</span>
@@ -306,7 +306,7 @@ export default function CombinedInvoicePage() {
                     </div>
                     <ChevronRight
                       size={16}
-                      className="text-slate-600 group-hover:text-violet-400 transition-colors flex-shrink-0"
+                      className="text-muted-2 group-hover:text-violet-400 transition-colors flex-shrink-0"
                     />
                   </button>
                 ))
@@ -340,34 +340,34 @@ export default function CombinedInvoicePage() {
                   setJobs([]);
                   setSelectedIds(new Set());
                 }}
-                className="px-4 py-2 bg-[#21293d] hover:bg-[#2a3550] text-slate-400 hover:text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                className="px-4 py-2 bg-panel-2 hover:bg-[#2a3550] text-muted hover:text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
               >
                 <X size={13} /> Change Client
               </button>
             </div>
 
             {/* Controls Bar */}
-            <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-4 flex flex-wrap items-center gap-3">
+            <div className="bg-panel border border-app rounded-xl p-4 flex flex-wrap items-center gap-3">
               {/* Select all */}
               <button
                 onClick={toggleAll}
-                className="flex items-center gap-2 text-sm font-bold text-slate-300 hover:text-white transition-colors"
+                className="flex items-center gap-2 text-sm font-bold text-app-2 hover:text-white transition-colors"
               >
                 {selectedIds.size === filteredJobs.length && filteredJobs.length > 0 ? (
                   <CheckSquare size={18} className="text-violet-400" />
                 ) : (
-                  <Square size={18} className="text-slate-600" />
+                  <Square size={18} className="text-muted-2" />
                 )}
                 {selectedIds.size === filteredJobs.length && filteredJobs.length > 0
                   ? "Deselect All"
                   : "Select All"}
               </button>
 
-              <div className="h-6 w-px bg-[#21293d]" />
+              <div className="h-6 w-px bg-panel-2" />
 
               {/* Status filter */}
               <div className="flex items-center gap-2">
-                <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                <label className="text-[10px] font-bold text-muted-2 uppercase tracking-wider">
                   Filter:
                 </label>
                 <select
@@ -375,7 +375,7 @@ export default function CombinedInvoicePage() {
                   onChange={(e) =>
                     setStatusFilter(e.target.value === "" ? "" : parseInt(e.target.value))
                   }
-                  className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:border-violet-500 outline-none"
+                  className="bg-app border border-app text-app-2 rounded-lg px-2.5 py-1.5 text-xs focus:border-violet-500 outline-none"
                 >
                   <option value="">All Status</option>
                   {Object.entries(STATUS_MAP).map(([k, v]) => (
@@ -386,23 +386,23 @@ export default function CombinedInvoicePage() {
                 </select>
               </div>
 
-              <div className="h-6 w-px bg-[#21293d]" />
+              <div className="h-6 w-px bg-panel-2" />
 
               {/* Bill type */}
               <div className="flex items-center gap-2">
-                <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                <label className="text-[10px] font-bold text-muted-2 uppercase tracking-wider">
                   Bill:
                 </label>
-                <div className="flex rounded-lg overflow-hidden border border-[#21293d]">
+                <div className="flex rounded-lg overflow-hidden border border-app">
                   <button
                     onClick={() => setBillType("non_gst")}
-                    className={`px-3 py-1.5 text-xs font-bold transition-all ${billType === "non_gst" ? "bg-cyan-600 text-white" : "bg-[#0d1117] text-slate-500 hover:text-slate-300"}`}
+                    className={`px-3 py-1.5 text-xs font-bold transition-all ${billType === "non_gst" ? "bg-cyan-600 text-white" : "bg-app text-muted hover:text-app-2"}`}
                   >
                     Retail
                   </button>
                   <button
                     onClick={() => setBillType("gst")}
-                    className={`px-3 py-1.5 text-xs font-bold transition-all ${billType === "gst" ? "bg-red-600 text-white" : "bg-[#0d1117] text-slate-500 hover:text-slate-300"}`}
+                    className={`px-3 py-1.5 text-xs font-bold transition-all ${billType === "gst" ? "bg-red-600 text-white" : "bg-app text-muted hover:text-app-2"}`}
                   >
                     GST
                   </button>
@@ -416,7 +416,7 @@ export default function CombinedInvoicePage() {
               {selectedIds.size > 0 && (
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <div className="text-xs text-slate-500 font-bold">
+                    <div className="text-xs text-muted font-bold">
                       {selectedIds.size} job{selectedIds.size > 1 ? "s" : ""} selected
                     </div>
                     <div className="text-sm font-black text-emerald-400">{inr(selectedTotal)}</div>
@@ -433,13 +433,13 @@ export default function CombinedInvoicePage() {
             </div>
 
             {/* Jobs List */}
-            <div className="bg-[#161b27] border border-[#21293d] rounded-xl overflow-hidden">
+            <div className="bg-panel border border-app rounded-xl overflow-hidden">
               {jobLoading ? (
                 <div className="flex items-center justify-center py-16">
                   <Loader2 className="animate-spin text-violet-500" size={32} />
                 </div>
               ) : filteredJobs.length === 0 ? (
-                <div className="text-center py-16 text-slate-600">
+                <div className="text-center py-16 text-muted-2">
                   <FileText size={40} className="mx-auto mb-3 opacity-30" />
                   <p className="font-bold">Is client ke liye koi job nahi mili</p>
                   <p className="text-xs mt-1">Filter change karke dekho ya naya job create karo</p>
@@ -460,7 +460,7 @@ export default function CombinedInvoicePage() {
                           {isSelected ? (
                             <CheckSquare size={20} className="text-violet-400" />
                           ) : (
-                            <Square size={20} className="text-slate-700" />
+                            <Square size={20} className="text-app" />
                           )}
                         </div>
 
@@ -468,7 +468,7 @@ export default function CombinedInvoicePage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-black text-blue-400 text-sm">#{job.job_id}</span>
-                            {job.code && <span className="text-slate-600 text-xs">{job.code}</span>}
+                            {job.code && <span className="text-muted-2 text-xs">{job.code}</span>}
                             <span
                               className="px-2 py-0.5 rounded-full text-[10px] font-bold"
                               style={{ backgroundColor: sc.bg, color: sc.color }}
@@ -476,7 +476,7 @@ export default function CombinedInvoicePage() {
                               {sc.label}
                             </span>
                           </div>
-                          <div className="text-sm text-slate-300 font-semibold mt-0.5 truncate">
+                          <div className="text-sm text-app-2 font-semibold mt-0.5 truncate">
                             {job.item}
                           </div>
                           <div className="text-xs text-red-400 mt-0.5 truncate">{job.fault}</div>
@@ -487,7 +487,7 @@ export default function CombinedInvoicePage() {
                           <div className="font-black text-white text-base">
                             {inr(job.amount || 0)}
                           </div>
-                          <div className="text-[10px] text-slate-600 mt-0.5">
+                          <div className="text-[10px] text-muted-2 mt-0.5">
                             {fmtDate(job.date_created)}
                           </div>
                         </div>
@@ -500,7 +500,7 @@ export default function CombinedInvoicePage() {
 
             {/* Summary footer (sticky) */}
             {selectedIds.size > 0 && (
-              <div className="sticky bottom-4 bg-[#0d1117]/90 backdrop-blur-xl border border-violet-500/40 rounded-2xl p-4 flex items-center gap-4 shadow-2xl shadow-violet-900/30">
+              <div className="sticky bottom-4 bg-app/90 backdrop-blur-xl border border-violet-500/40 rounded-2xl p-4 flex items-center gap-4 shadow-2xl shadow-violet-900/30">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
                     {[...selectedIds].map((id) => {
@@ -509,7 +509,7 @@ export default function CombinedInvoicePage() {
                       return (
                         <div
                           key={id}
-                          className="flex items-center gap-1.5 bg-[#161b27] border border-[#21293d] rounded-lg px-2.5 py-1.5"
+                          className="flex items-center gap-1.5 bg-panel border border-app rounded-lg px-2.5 py-1.5"
                         >
                           <span className="text-blue-400 font-black text-xs">#{j.job_id}</span>
                           <span className="text-white font-bold text-xs">{inr(j.amount)}</span>
@@ -518,7 +518,7 @@ export default function CombinedInvoicePage() {
                               e.stopPropagation();
                               toggleJob(id);
                             }}
-                            className="text-slate-600 hover:text-red-400 transition-colors ml-0.5"
+                            className="text-muted-2 hover:text-red-400 transition-colors ml-0.5"
                           >
                             <X size={12} />
                           </button>
@@ -528,7 +528,7 @@ export default function CombinedInvoicePage() {
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                  <div className="text-xs text-muted font-bold uppercase tracking-wider">
                     Total Selected
                   </div>
                   <div className="text-2xl font-black text-emerald-400">{inr(selectedTotal)}</div>

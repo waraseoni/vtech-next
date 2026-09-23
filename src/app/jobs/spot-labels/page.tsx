@@ -355,7 +355,7 @@ html,body{width:100%;height:100%}
       className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
         active
           ? "bg-blue-600/20 border-blue-500/40 text-blue-400"
-          : "bg-transparent border-[#21293d] text-slate-500 hover:text-slate-300 hover:border-slate-500"
+          : "bg-transparent border-app text-muted hover:text-app-2 hover:border-muted"
       }`}
     >
       {children}
@@ -453,17 +453,17 @@ html,body{width:100%;height:100%}
 
   // ────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0d1117]">
-      <div className="sticky top-0 z-10 bg-[#161b27] border-b border-[#21293d] px-4 py-3 flex items-center justify-between gap-2">
+    <div className="min-h-screen bg-app">
+      <div className="sticky top-0 z-10 bg-panel border-b border-app px-4 py-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Link
             href="/jobs"
-            className="bg-[#21293d] hover:bg-[#2a3550] text-slate-300 rounded-lg p-2 transition-colors no-underline"
+            className="bg-panel-2 hover:bg-[#2a3550] text-app-2 rounded-lg p-2 transition-colors no-underline"
           >
             <ArrowLeft size={16} />
           </Link>
           <h1 className="text-sm font-black text-white">Spot QR Labels</h1>
-          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+          <span className="text-[10px] font-bold text-muted-2 uppercase tracking-wider">
             {spots.length} spots
           </span>
         </div>
@@ -491,12 +491,12 @@ html,body{width:100%;height:100%}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-24 gap-3">
           <Loader2 className="animate-spin text-blue-500" size={36} />
-          <p className="text-slate-600 text-xs font-bold uppercase tracking-widest">
+          <p className="text-muted-2 text-xs font-bold uppercase tracking-widest">
             QR bana rahe hain…
           </p>
         </div>
       ) : spots.length === 0 ? (
-        <p className="text-center text-slate-600 text-sm py-24">
+        <p className="text-center text-muted-2 text-sm py-24">
           Koi spot nahi — pehle jobs form me &quot;+&quot; se spots banao.
         </p>
       ) : (
@@ -519,7 +519,7 @@ html,body{width:100%;height:100%}
                 <div
                   key={s.id}
                   onClick={() => setJobsSpot(s)}
-                  className="relative bg-white rounded-xl p-4 flex flex-col items-center text-center border border-slate-200 shadow-sm break-inside-avoid cursor-pointer hover:border-blue-500 hover:shadow-md transition-all"
+                  className="relative bg-white rounded-xl p-4 flex flex-col items-center text-center border border-app-2 shadow-sm break-inside-avoid cursor-pointer hover:border-blue-500 hover:shadow-md transition-all"
                 >
                   <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
                     {used > 0 && (
@@ -533,7 +533,7 @@ html,body{width:100%;height:100%}
                         handleDeleteSpot(s);
                       }}
                       disabled={deleting === s.id}
-                      className={`p-1 rounded-md transition-colors ${used > 0 ? "text-slate-300 cursor-not-allowed" : "text-red-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"}`}
+                      className={`p-1 rounded-md transition-colors ${used > 0 ? "text-app-2 cursor-not-allowed" : "text-red-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"}`}
                     >
                       {deleting === s.id ? (
                         <Loader2 size={13} className="animate-spin" />
@@ -542,7 +542,7 @@ html,body{width:100%;height:100%}
                       )}
                     </button>
                   </div>
-                  <p className="font-black text-[#0d1117] text-sm leading-tight break-words w-full line-clamp-2">
+                  <p className="font-black text-app text-sm leading-tight break-words w-full line-clamp-2">
                     {s.name}
                   </p>
                   <p
@@ -550,7 +550,7 @@ html,body{width:100%;height:100%}
                   >
                     {used > 0 ? `${used} item(s) · busy` : "khali"}
                   </p>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  <p className="text-[9px] font-bold text-muted uppercase tracking-widest mb-2">
                     V-TECH · Job Spot
                   </p>
                   {urls[s.id] ? (
@@ -563,9 +563,9 @@ html,body{width:100%;height:100%}
                       onDoubleClick={() => openImageLightbox(urls[s.id], `Spot QR: ${s.name}`)}
                     />
                   ) : (
-                    <div className="mx-auto w-full aspect-square bg-slate-100 animate-pulse rounded" />
+                    <div className="mx-auto w-full aspect-square bg-panel-2 animate-pulse rounded" />
                   )}
-                  <p className="text-[9px] text-slate-400 mt-2 break-all leading-tight">
+                  <p className="text-[9px] text-muted mt-2 break-all leading-tight">
                     Scan → Jobs @ {s.name}
                   </p>
                 </div>
@@ -578,38 +578,38 @@ html,body{width:100%;height:100%}
       <SpotJobsModal spot={jobsSpot} onClose={() => setJobsSpot(null)} />
 
       {previewOpen && (
-        <div className="fixed inset-0 z-[200] flex flex-col bg-[#0d1117]">
-          <div className="flex items-center justify-between px-4 py-2.5 bg-[#161b27] border-b border-[#21293d] flex-shrink-0">
+        <div className="fixed inset-0 z-[200] flex flex-col bg-app">
+          <div className="flex items-center justify-between px-4 py-2.5 bg-panel border-b border-app flex-shrink-0">
             <div className="flex items-center gap-3">
               <Eye size={16} className="text-blue-400" />
               <h2 className="text-sm font-black text-white">Print Preview</h2>
-              <span className="text-[10px] font-bold text-slate-500 hidden sm:inline">
+              <span className="text-[10px] font-bold text-muted hidden sm:inline">
                 {spots.length} labels · {totalPages} page{totalPages > 1 ? "s" : ""} · {gridCols}×
                 {gridRows} · {labelsPerPage}/page
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-1 bg-[#111520] border border-[#21293d] rounded-lg px-1 py-0.5">
+              <div className="flex items-center gap-1 bg-panel-2 border border-app rounded-lg px-1 py-0.5">
                 <button
                   onClick={zoomOut}
-                  className="p-1 text-slate-500 hover:text-white transition-colors rounded"
+                  className="p-1 text-muted hover:text-white transition-colors rounded"
                 >
                   <ZoomOut size={14} />
                 </button>
                 <button
                   onClick={zoomFit}
-                  className="px-1.5 py-0.5 text-[10px] font-bold text-slate-400 hover:text-white transition-colors tabular-nums min-w-[40px] text-center"
+                  className="px-1.5 py-0.5 text-[10px] font-bold text-muted hover:text-white transition-colors tabular-nums min-w-[40px] text-center"
                 >
                   {zoom}%
                 </button>
                 <button
                   onClick={zoomIn}
-                  className="p-1 text-slate-500 hover:text-white transition-colors rounded"
+                  className="p-1 text-muted hover:text-white transition-colors rounded"
                 >
                   <ZoomIn size={14} />
                 </button>
               </div>
-              <div className="w-px h-5 bg-[#21293d] mx-1" />
+              <div className="w-px h-5 bg-panel-2 mx-1" />
               <button
                 onClick={handlePopupPrint}
                 className="!text-white border-none rounded-lg px-4 py-2 font-bold text-xs cursor-pointer hover:opacity-90 flex items-center gap-1.5 bg-blue-600"
@@ -618,7 +618,7 @@ html,body{width:100%;height:100%}
               </button>
               <button
                 onClick={() => setPreviewOpen(false)}
-                className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-white/5 transition-all"
+                className="text-muted hover:text-white p-2 rounded-lg hover:bg-white/5 transition-all"
               >
                 <X size={18} />
               </button>
@@ -627,13 +627,13 @@ html,body{width:100%;height:100%}
 
           <div className="flex flex-1 overflow-hidden">
             {/* ── SETTINGS SIDEBAR ── */}
-            <div className="w-56 flex-shrink-0 bg-[#111520] border-r border-[#21293d] overflow-y-auto p-3 space-y-4">
-              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-slate-400">
+            <div className="w-56 flex-shrink-0 bg-panel-2 border-r border-app overflow-y-auto p-3 space-y-4">
+              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-muted">
                 <Settings size={13} /> Settings
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                <label className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1 block">
                   Paper
                 </label>
                 <div className="flex gap-1">
@@ -646,7 +646,7 @@ html,body{width:100%;height:100%}
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                <label className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1 block">
                   Layout
                 </label>
                 <div className="flex gap-1">
@@ -667,7 +667,7 @@ html,body{width:100%;height:100%}
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block flex items-center gap-1">
+                <label className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1 block flex items-center gap-1">
                   <Grid3X3 size={11} /> Grid (Cols × Rows)
                 </label>
                 <div className="grid grid-cols-3 gap-1 mb-2">
@@ -681,7 +681,7 @@ html,body{width:100%;height:100%}
                       className={`py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
                         gridCols === g.cols && gridRows === g.rows
                           ? "bg-blue-600/20 border-blue-500/40 text-blue-400"
-                          : "bg-transparent border-[#21293d] text-slate-500 hover:text-slate-300 hover:border-slate-500"
+                          : "bg-transparent border-app text-muted hover:text-app-2 hover:border-muted"
                       }`}
                     >
                       {g.label}
@@ -690,7 +690,7 @@ html,body{width:100%;height:100%}
                 </div>
                 <div className="flex gap-1 items-center">
                   <div className="flex-1">
-                    <label className="text-[9px] text-slate-600 block mb-0.5">Cols</label>
+                    <label className="text-[9px] text-muted-2 block mb-0.5">Cols</label>
                     <div className="flex gap-0.5">
                       {[2, 3, 4, 5, 6].map((c) => (
                         <button
@@ -699,7 +699,7 @@ html,body{width:100%;height:100%}
                           className={`flex-1 py-1 rounded text-[10px] font-bold border transition-all ${
                             gridCols === c
                               ? "bg-blue-600/20 border-blue-500/40 text-blue-400"
-                              : "bg-transparent border-[#21293d] text-slate-500 hover:text-slate-300"
+                              : "bg-transparent border-app text-muted hover:text-app-2"
                           }`}
                         >
                           {c}
@@ -707,9 +707,9 @@ html,body{width:100%;height:100%}
                       ))}
                     </div>
                   </div>
-                  <span className="text-slate-600 font-bold mt-4">×</span>
+                  <span className="text-muted-2 font-bold mt-4">×</span>
                   <div className="flex-1">
-                    <label className="text-[9px] text-slate-600 block mb-0.5">Rows</label>
+                    <label className="text-[9px] text-muted-2 block mb-0.5">Rows</label>
                     <div className="flex gap-0.5">
                       {[2, 3, 4, 5, 6].map((r) => (
                         <button
@@ -718,7 +718,7 @@ html,body{width:100%;height:100%}
                           className={`flex-1 py-1 rounded text-[10px] font-bold border transition-all ${
                             gridRows === r
                               ? "bg-blue-600/20 border-blue-500/40 text-blue-400"
-                              : "bg-transparent border-[#21293d] text-slate-500 hover:text-slate-300"
+                              : "bg-transparent border-app text-muted hover:text-app-2"
                           }`}
                         >
                           {r}
@@ -730,7 +730,7 @@ html,body{width:100%;height:100%}
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                <label className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1 block">
                   Gap
                 </label>
                 <div className="flex gap-1">
@@ -742,37 +742,37 @@ html,body{width:100%;height:100%}
                 </div>
               </div>
 
-              <div className="h-px bg-[#21293d]" />
+              <div className="h-px bg-panel-2" />
 
-              <div className="rounded-xl bg-[#161b27] border border-[#21293d] p-3 space-y-1.5 text-[11px]">
+              <div className="rounded-xl bg-panel border border-app p-3 space-y-1.5 text-[11px]">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Paper</span>
+                  <span className="text-muted">Paper</span>
                   <span className="text-white font-bold">
                     {paperSize.toUpperCase()} {orientation}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Grid</span>
+                  <span className="text-muted">Grid</span>
                   <span className="text-blue-400 font-black">
                     {gridCols} × {gridRows}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Per Page</span>
+                  <span className="text-muted">Per Page</span>
                   <span className="text-white font-bold">{labelsPerPage}</span>
                 </div>
-                <div className="h-px bg-[#21293d]" />
+                <div className="h-px bg-panel-2" />
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Total Pages</span>
+                  <span className="text-muted">Total Pages</span>
                   <span className="text-blue-400 font-black text-sm">{totalPages}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Labels</span>
+                  <span className="text-muted">Labels</span>
                   <span className="text-white font-bold">{spots.length}</span>
                 </div>
               </div>
 
-              <p className="text-[9px] text-slate-600 leading-relaxed">
+              <p className="text-[9px] text-muted-2 leading-relaxed">
                 Ctrl+P se print. Escape se close.
               </p>
             </div>
@@ -805,12 +805,12 @@ html,body{width:100%;height:100%}
                                 block: "start",
                               });
                             }}
-                            className="text-slate-600 hover:text-white transition-colors p-1 rounded"
+                            className="text-muted-2 hover:text-white transition-colors p-1 rounded"
                           >
                             <ChevronLeft size={14} />
                           </button>
                         )}
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider tabular-nums">
+                        <span className="text-[10px] font-bold text-muted uppercase tracking-wider tabular-nums">
                           Page {pi + 1} / {totalPages}
                         </span>
                         {pi < totalPages - 1 && (
@@ -823,7 +823,7 @@ html,body{width:100%;height:100%}
                                 block: "start",
                               });
                             }}
-                            className="text-slate-600 hover:text-white transition-colors p-1 rounded"
+                            className="text-muted-2 hover:text-white transition-colors p-1 rounded"
                           >
                             <ChevronRight size={14} />
                           </button>

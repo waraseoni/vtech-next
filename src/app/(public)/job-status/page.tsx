@@ -174,7 +174,7 @@ export default function JobStatusPage() {
               bina login ke dekhein
             </span>
           </h1>
-          <p className="mt-4 text-[14px] sm:text-base text-slate-400 max-w-2xl">
+          <p className="mt-4 text-[14px] sm:text-base text-muted max-w-2xl">
             Apna Job ID ya Repair Code daalkar turant status, amount aur timeline check karein.
           </p>
         </div>
@@ -198,7 +198,7 @@ export default function JobStatusPage() {
                     className={`py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
                       searchType === t
                         ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
-                        : "bg-white/[0.04] text-slate-500 hover:text-slate-300"
+                        : "bg-white/[0.04] text-muted hover:text-app-2"
                     }`}
                   >
                     {t === "job_id" ? "Job ID" : "Repair Code"}
@@ -222,7 +222,7 @@ export default function JobStatusPage() {
                       ? "Enter Job ID (e.g. 27950)"
                       : "Enter Repair Code (e.g. 2026032001)"
                   }
-                  className="flex-1 min-w-0 px-4 py-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-sm text-white font-medium placeholder:text-slate-600 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                  className="flex-1 min-w-0 px-4 py-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-sm text-white font-medium placeholder:text-muted-2 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                 />
                 <button
                   type="submit"
@@ -234,7 +234,7 @@ export default function JobStatusPage() {
                 </button>
               </form>
 
-              <p className="text-[11px] text-slate-600 mt-4">
+              <p className="text-[11px] text-muted-2 mt-4">
                 E.g. Job ID{" "}
                 <button
                   onClick={() => {
@@ -267,17 +267,17 @@ export default function JobStatusPage() {
                     <h3 className="font-bold text-emerald-300 text-sm mb-2">
                       WhatsApp Message se Job Status Check Karein
                     </h3>
-                    <p className="text-[13px] text-slate-400 leading-relaxed">
+                    <p className="text-[13px] text-muted leading-relaxed">
                       Aapke WhatsApp par job status ke message me aapko apna{" "}
                       <span className="text-white font-semibold">Job ID</span> aur{" "}
                       <span className="text-white font-semibold">Code</span> dono diya gaya hai.
                       Dono me se kisi bhi ek use karke apne job ki details search kar sakte hain.
                     </p>
                     <div className="mt-3 p-3 rounded-xl bg-black/30 border border-white/5">
-                      <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mb-2">
+                      <p className="text-[11px] text-muted font-semibold uppercase tracking-wider mb-2">
                         WhatsApp Message Example:
                       </p>
-                      <div className="text-[12px] text-slate-300 font-mono leading-relaxed">
+                      <div className="text-[12px] text-app-2 font-mono leading-relaxed">
                         <p>
                           Job ID: <span className="text-emerald-400">#27950</span>
                         </p>
@@ -294,7 +294,7 @@ export default function JobStatusPage() {
             {/* Recent Jobs for reference */}
             {!recentLoading && recentJobs.length > 0 && (
               <div className="mt-8">
-                <h3 className="text-sm font-bold mb-3 text-slate-400">
+                <h3 className="text-sm font-bold mb-3 text-muted">
                   Recent Jobs (for reference)
                 </h3>
                 <div className="rounded-3xl overflow-hidden bg-white/[0.03] border border-white/[0.08]">
@@ -310,7 +310,7 @@ export default function JobStatusPage() {
                     >
                       <div className="min-w-0">
                         <span className="font-bold text-blue-400">#{j.job_id}</span>
-                        <span className="text-xs ml-2 text-slate-500 truncate">{j.item}</span>
+                        <span className="text-xs ml-2 text-muted truncate">{j.item}</span>
                       </div>
                       <span
                         className="text-xs px-2.5 py-1 rounded-full font-bold shrink-0"
@@ -362,7 +362,7 @@ export default function JobStatusPage() {
               <div className="flex items-center justify-between p-5 sm:p-6 bg-gradient-to-br from-blue-600/10 to-cyan-600/5">
                 <div>
                   <h2 className="font-display text-lg sm:text-xl font-black">Job Status Tracker</h2>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-muted mt-1">
                     Job #{job.job_id} | Code: {job.code} | {job.date_created}
                   </p>
                 </div>
@@ -388,7 +388,7 @@ export default function JobStatusPage() {
                     className={`py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
                       view === tab
                         ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
-                        : "bg-white/[0.03] text-slate-500 hover:text-slate-300"
+                        : "bg-white/[0.03] text-muted hover:text-app-2"
                     }`}
                   >
                     {tab === "detailed" ? "Detailed" : tab === "compact" ? "Compact" : "Timeline"}
@@ -412,7 +412,7 @@ export default function JobStatusPage() {
                           key={info.label}
                           className="rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06]"
                         >
-                          <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">
+                          <p className="text-[10px] font-black uppercase tracking-wider text-muted mb-1">
                             {info.label}
                           </p>
                           <p className="font-bold text-sm break-words">{info.value}</p>
@@ -462,13 +462,13 @@ export default function JobStatusPage() {
                             >
                               <div>
                                 <span className="text-sm font-bold">{p.product_name}</span>
-                                <span className="text-xs ml-2 text-slate-500">Qty: {p.qty}</span>
+                                <span className="text-xs ml-2 text-muted">Qty: {p.qty}</span>
                               </div>
                               <div className="text-right shrink-0">
                                 <span className="font-bold text-emerald-400">
                                   ₹{p.total.toLocaleString("en-IN")}
                                 </span>
-                                <span className="text-xs block text-slate-500">
+                                <span className="text-xs block text-muted">
                                   ₹{p.price.toLocaleString("en-IN")} each
                                 </span>
                               </div>
@@ -486,13 +486,13 @@ export default function JobStatusPage() {
 
                     {/* Amount */}
                     <div className="text-center p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-2 border-emerald-500/40">
-                      <p className="text-xs font-black uppercase tracking-wider text-slate-400 mb-2">
+                      <p className="text-xs font-black uppercase tracking-wider text-muted mb-2">
                         Total Payable Amount
                       </p>
                       <p className="font-display text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
                         ₹{job.amount.toLocaleString("en-IN")}
                       </p>
-                      <p className="text-xs mt-2 text-slate-500">
+                      <p className="text-xs mt-2 text-muted">
                         Includes all services and products
                       </p>
                     </div>
@@ -500,10 +500,10 @@ export default function JobStatusPage() {
                     {/* Remarks */}
                     {job.remark && (
                       <div className="rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06]">
-                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-muted mb-2">
                           Additional Remarks
                         </p>
-                        <p className="text-sm text-slate-300 whitespace-pre-wrap">{job.remark}</p>
+                        <p className="text-sm text-app-2 whitespace-pre-wrap">{job.remark}</p>
                       </div>
                     )}
                   </div>
@@ -524,7 +524,7 @@ export default function JobStatusPage() {
                             key={info.label}
                             className="rounded-xl p-3.5 bg-white/[0.03] border border-white/[0.06]"
                           >
-                            <p className="text-[10px] font-black uppercase text-slate-500">
+                            <p className="text-[10px] font-black uppercase text-muted">
                               {info.label}
                             </p>
                             <p className="font-bold text-sm mt-0.5 break-words">{info.value}</p>
@@ -564,7 +564,7 @@ export default function JobStatusPage() {
                         {statusInfo.desc}
                       </p>
                       <div className="mt-4 pt-4 border-t border-white/10">
-                        <p className="text-xs text-slate-400">Total Amount</p>
+                        <p className="text-xs text-muted">Total Amount</p>
                         <p className="text-xl font-black text-emerald-400 mt-0.5">
                           ₹{job.amount.toLocaleString("en-IN")}
                         </p>
@@ -622,7 +622,7 @@ export default function JobStatusPage() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-500">{info.desc}</p>
+                          <p className="text-xs text-muted">{info.desc}</p>
                         </div>
                       );
                     })}

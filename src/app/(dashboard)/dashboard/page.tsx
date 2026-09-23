@@ -9,7 +9,7 @@ import dynamic from "next/dynamic";
 const DashboardCharts = dynamic(() => import("./DashboardCharts"), {
   ssr: false,
   loading: () => (
-    <div className="h-[250px] flex items-center justify-center text-slate-500 text-xs font-bold">
+    <div className="h-[250px] flex items-center justify-center text-muted text-xs font-bold">
       Load charts…
     </div>
   ),
@@ -18,7 +18,7 @@ const DashboardCharts = dynamic(() => import("./DashboardCharts"), {
 const AIAlertsWidget = dynamic(() => import("@/app/components/AIAlertsWidget"), {
   ssr: false,
   loading: () => (
-    <div className="h-[120px] flex items-center justify-center text-slate-500 text-xs font-bold">
+    <div className="h-[120px] flex items-center justify-center text-muted text-xs font-bold">
       Loading alerts…
     </div>
   ),
@@ -873,7 +873,7 @@ export default function Dashboard() {
   if (authChecked && !isLoggedIn) {
     return (
       <div className="min-h-screen theme-body flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-slate-600" />
+        <Loader2 size={24} className="animate-spin text-muted-2" />
       </div>
     );
   }
@@ -907,15 +907,15 @@ export default function Dashboard() {
           <div className="flex items-center gap-4">
             <div className="relative flex-shrink-0">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-600/30">
-                <Wrench className="text-slate-900 dark:text-white" size={24} />
+                <Wrench className="text-app dark:text-white" size={24} />
               </div>
-              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-white dark:border-[#0d1117] animate-pulse" />
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-white dark:border-app animate-pulse" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-slate-900 dark:text-white leading-none">
+              <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-app dark:text-white leading-none">
                 V-TECH <span className="text-blue-400">COMMAND</span>
               </h1>
-              <p className="text-slate-600 text-[10px] font-black mt-1.5 tracking-[0.2em] uppercase">
+              <p className="text-muted-2 text-[10px] font-black mt-1.5 tracking-[0.2em] uppercase">
                 Swaagat hai, {displayName} ji!
               </p>
             </div>
@@ -924,7 +924,7 @@ export default function Dashboard() {
             <button
               onClick={() => setQrOpen(true)}
               title="Phone pe site kholo"
-              className="flex items-center gap-2 theme-panel-2 border theme-border hover:border-blue-500/50 text-slate-300 hover:text-slate-900 dark:hover:text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs transition-all active:scale-95"
+              className="flex items-center gap-2 theme-panel-2 border theme-border hover:border-blue-500/50 text-app-2 hover:text-app dark:hover:text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs transition-all active:scale-95"
             >
               <QrCode size={15} strokeWidth={2.5} /> <span className="hidden sm:inline">QR</span>
             </button>
@@ -936,7 +936,7 @@ export default function Dashboard() {
                   if (outcome === "accepted") setIsInstalled(true);
                   setInstallPrompt(null);
                 }}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-slate-900 dark:text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs shadow-lg shadow-emerald-600/25 transition-all"
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-app dark:text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs shadow-lg shadow-emerald-600/25 transition-all"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -988,14 +988,14 @@ export default function Dashboard() {
             { label: "To", val: to, fn: setTo },
           ].map(({ label, val, fn }) => (
             <div key={label} className="flex flex-col gap-1.5">
-              <label className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">
+              <label className="text-[9px] font-black text-muted-2 uppercase tracking-[0.2em]">
                 {label}
               </label>
               <input
                 type="date"
                 value={val}
                 onChange={(e) => fn(e.target.value)}
-                className="bg-slate-100 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                className="bg-panel-2 dark:bg-panel-2 border border-app-2 dark:border-app text-app dark:text-white rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
                 style={{ colorScheme: isDark ? "dark" : "light" }}
               />
             </div>
@@ -1003,14 +1003,14 @@ export default function Dashboard() {
           <button
             onClick={fetchFinancial}
             disabled={finLoading}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-slate-900 dark:text-white px-4 py-2 rounded-xl font-bold text-sm transition h-[38px] shadow-lg shadow-blue-600/20"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-app dark:text-white px-4 py-2 rounded-xl font-bold text-sm transition h-[38px] shadow-lg shadow-blue-600/20"
           >
             {finLoading ? <Loader2 size={14} className="animate-spin" /> : <Filter size={14} />}{" "}
             Apply
           </button>
           <button
             onClick={resetDates}
-            className="flex items-center gap-2 bg-slate-100 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] hover:border-slate-600 text-slate-400 hover:text-slate-900 dark:hover:text-white px-4 py-2 rounded-xl font-bold text-sm transition h-[38px]"
+            className="flex items-center gap-2 bg-panel-2 dark:bg-panel-2 border border-app-2 dark:border-app hover:border-muted text-muted hover:text-app dark:hover:text-white px-4 py-2 rounded-xl font-bold text-sm transition h-[38px]"
           >
             <RotateCcw size={14} /> Reset
           </button>
@@ -1111,10 +1111,10 @@ export default function Dashboard() {
                 <Hourglass size={18} />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-600 dark:text-slate-400">
+                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-2 dark:text-muted">
                   Waiting for Parts · {waitingSummary.waitingJobs} jobs
                 </p>
-                <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
+                <p className="text-sm font-bold text-app dark:text-app-2 mt-0.5 truncate">
                   {waitingSummary.waitingParts} spares (
                   {waitingSummary.waitingCount} waiting · {waitingSummary.orderedCount} ordered)
                   {" "}· oldest: {waitingSummary.oldestDays}d
@@ -1124,7 +1124,7 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-            <ChevronRight size={15} className="text-slate-500 flex-shrink-0" />
+            <ChevronRight size={15} className="text-muted flex-shrink-0" />
           </div>
         </Link>
       )}
@@ -1142,11 +1142,11 @@ export default function Dashboard() {
         <section className="glass rounded-3xl border theme-border p-5 md:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
             <div>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white">
+              <h3 className="text-sm font-black text-app dark:text-white">
                 Financial Summary
               </h3>
               {/* BUG FIX 4 applied: fmtDate now parses local, not UTC */}
-              <p className="text-slate-600 text-[10px] mt-0.5 font-bold uppercase tracking-wider">
+              <p className="text-muted-2 text-[10px] mt-0.5 font-bold uppercase tracking-wider">
                 {fmtDate(from)} — {fmtDate(to)}
               </p>
             </div>
@@ -1236,7 +1236,7 @@ export default function Dashboard() {
                     )}
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">
+                    <p className="text-[9px] font-black text-muted-2 uppercase tracking-widest">
                       Net Profit / Loss
                     </p>
                     <p
@@ -1250,11 +1250,11 @@ export default function Dashboard() {
 
               {/* Progress bar */}
               <div className="mt-4 glass-2 rounded-2xl p-4 border theme-border">
-                <div className="flex justify-between text-[10px] text-slate-600 font-bold mb-2">
+                <div className="flex justify-between text-[10px] text-muted-2 font-bold mb-2">
                   <span>Revenue vs Outflow</span>
                   <span>Total Sales {inr(financial.totalSales)}</span>
                 </div>
-                <div className="h-2 bg-slate-200 dark:bg-[#21293d] rounded-full overflow-hidden">
+                <div className="h-2 bg-panel-2 dark:bg-panel-2 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-700 ${
                       financial.netProfit >= 0
@@ -1278,11 +1278,11 @@ export default function Dashboard() {
               </div>
 
               {/* Calculation Note */}
-              <div className="mt-3 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3">
-                <p className="text-[9px] font-black text-slate-500 uppercase tracking-wider mb-2">
+              <div className="mt-3 bg-panel-2 dark:bg-slate-900/50 border border-app-2 dark:border-slate-800 rounded-xl p-3">
+                <p className="text-[9px] font-black text-muted uppercase tracking-wider mb-2">
                   Calculation Summary
                 </p>
-                <div className="space-y-1 text-[10px] text-slate-500 font-mono">
+                <div className="space-y-1 text-[10px] text-muted font-mono">
                   <div>
                     <span className="text-emerald-400">Total Sales</span> = Repair Jobs Income +
                     Direct Sales Income
@@ -1309,10 +1309,10 @@ export default function Dashboard() {
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Recent Jobs */}
         <div className="glass rounded-3xl border theme-border overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-[#21293d]">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-app-2 dark:border-app">
             <div>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white">Recent Jobs</h3>
-              <p className="text-slate-600 text-[10px] font-bold uppercase tracking-wider">
+              <h3 className="text-sm font-black text-app dark:text-white">Recent Jobs</h3>
+              <p className="text-muted-2 text-[10px] font-bold uppercase tracking-wider">
                 Latest 5 transactions
               </p>
             </div>
@@ -1323,7 +1323,7 @@ export default function Dashboard() {
               View All <ChevronRight size={12} />
             </Link>
           </div>
-          <div className="divide-y divide-slate-200 dark:divide-[#1a2234]">
+          <div className="divide-y divide-app-2 dark:divide-[#1a2234]">
             {recentJobs.length === 0 ? (
               <EmptyRow icon={<Wrench size={26} />} label="Koi job nahi mili" />
             ) : (
@@ -1332,7 +1332,7 @@ export default function Dashboard() {
                 return (
                   <div
                     key={job.id}
-                    className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-100 dark:hover:bg-white/[0.02] transition"
+                    className="flex items-center gap-3 px-5 py-3.5 hover:bg-panel-2 dark:hover:bg-white/[0.02] transition"
                   >
                     <span
                       className="w-2 h-2 rounded-full flex-shrink-0"
@@ -1346,12 +1346,12 @@ export default function Dashboard() {
                         >
                           {job.job_id ?? "N/A"}
                         </Link>
-                        <span className="text-slate-500 text-xs truncate">{job.client_name}</span>
+                        <span className="text-muted text-xs truncate">{job.client_name}</span>
                       </div>
-                      <p className="text-slate-600 text-xs truncate mt-0.5">{job.item}</p>
+                      <p className="text-muted-2 text-xs truncate mt-0.5">{job.item}</p>
                     </div>
                     <div className="text-right flex-shrink-0 ml-2">
-                      <p className="text-slate-900 dark:text-white font-black text-sm">
+                      <p className="text-app dark:text-white font-black text-sm">
                         {inr(job.amount)}
                       </p>
                       <span
@@ -1370,10 +1370,10 @@ export default function Dashboard() {
 
         {/* Recent Payments */}
         <div className="glass rounded-3xl border theme-border overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-[#21293d]">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-app-2 dark:border-app">
             <div>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white">Recent Payments</h3>
-              <p className="text-slate-600 text-[10px] font-bold uppercase tracking-wider">
+              <h3 className="text-sm font-black text-app dark:text-white">Recent Payments</h3>
+              <p className="text-muted-2 text-[10px] font-bold uppercase tracking-wider">
                 Latest client payments
               </p>
             </div>
@@ -1384,27 +1384,27 @@ export default function Dashboard() {
               View All <ChevronRight size={12} />
             </Link>
           </div>
-          <div className="divide-y divide-slate-200 dark:divide-[#1a2234]">
+          <div className="divide-y divide-app-2 dark:divide-[#1a2234]">
             {recentPayments.length === 0 ? (
               <EmptyRow icon={<CreditCard size={26} />} label="Koi payment nahi mili" />
             ) : (
               recentPayments.map((pay) => (
                 <div
                   key={pay.id}
-                  className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-100 dark:hover:bg-white/[0.02] transition"
+                  className="flex items-center gap-3 px-5 py-3.5 hover:bg-panel-2 dark:hover:bg-white/[0.02] transition"
                 >
                   <div className="w-9 h-9 rounded-xl bg-emerald-500/8 border border-emerald-500/15 flex items-center justify-center flex-shrink-0">
                     <IndianRupee size={13} className="text-emerald-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-slate-900 dark:text-white text-sm font-bold truncate">
+                    <p className="text-app dark:text-white text-sm font-bold truncate">
                       {pay.client_name}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="bg-slate-100 dark:bg-[#111520] text-slate-500 text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider">
+                      <span className="bg-panel-2 dark:bg-panel-2 text-muted text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider">
                         {pay.payment_mode}
                       </span>
-                      <span className="text-slate-600 text-[10px] font-bold">
+                      <span className="text-muted-2 text-[10px] font-bold">
                         {/* BUG FIX 4 applied to payment date too */}
                         {formatIST(pay.payment_date, { day: "2-digit", month: "short" })}
                       </span>
@@ -1422,12 +1422,12 @@ export default function Dashboard() {
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ LOW STOCK */}
       <section className="glass rounded-3xl border theme-border overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-[#21293d]">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-app-2 dark:border-app">
           <div>
-            <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <h3 className="text-sm font-black text-app dark:text-white flex items-center gap-2">
               <AlertCircle size={13} className="text-red-400" /> Low Stock Alert
             </h3>
-            <p className="text-slate-600 text-[10px] font-bold uppercase tracking-wider">
+            <p className="text-muted-2 text-[10px] font-bold uppercase tracking-wider">
               Items below their alert level
             </p>
           </div>
@@ -1472,10 +1472,10 @@ export default function Dashboard() {
                     {item.quantity}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-slate-900 dark:text-white text-sm font-bold truncate">
+                    <p className="text-app dark:text-white text-sm font-bold truncate">
                       {item.name}
                     </p>
-                    <p className="text-slate-600 text-xs truncate">
+                    <p className="text-muted-2 text-xs truncate">
                       {item.place} · alert {item.alert}
                     </p>
                   </div>
@@ -1488,12 +1488,12 @@ export default function Dashboard() {
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ DUE REMINDERS */}
       <section className="glass rounded-3xl border theme-border overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-[#21293d]">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-app-2 dark:border-app">
           <div>
-            <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <h3 className="text-sm font-black text-app dark:text-white flex items-center gap-2">
               <CalendarClock size={13} className="text-red-400" /> Payment Due Reminders
             </h3>
-            <p className="text-slate-600 text-[10px] font-bold uppercase tracking-wider">
+            <p className="text-muted-2 text-[10px] font-bold uppercase tracking-wider">
               Promised due dates · Overdue &amp; upcoming
             </p>
           </div>
@@ -1509,7 +1509,7 @@ export default function Dashboard() {
             <p className="text-[10px] font-black uppercase tracking-wider text-red-400 flex items-center gap-1.5">
               <AlertCircle size={12} /> Overdue
             </p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+            <p className="text-2xl font-black text-app dark:text-white mt-1">
               {dueStats.overdue}
             </p>
           </div>
@@ -1517,7 +1517,7 @@ export default function Dashboard() {
             <p className="text-[10px] font-black uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
               <Clock size={12} /> Due Today
             </p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+            <p className="text-2xl font-black text-app dark:text-white mt-1">
               {dueStats.today}
             </p>
           </div>
@@ -1525,7 +1525,7 @@ export default function Dashboard() {
             <p className="text-[10px] font-black uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
               <CalendarClock size={12} /> Upcoming 7d
             </p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+            <p className="text-2xl font-black text-app dark:text-white mt-1">
               {dueStats.upcoming}
             </p>
           </div>
@@ -1533,7 +1533,7 @@ export default function Dashboard() {
             <p className="text-[10px] font-black uppercase tracking-wider text-violet-400 flex items-center gap-1.5">
               <IndianRupee size={12} /> Total Due
             </p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+            <p className="text-2xl font-black text-app dark:text-white mt-1">
               {inr(dueStats.amount)}
             </p>
           </div>
@@ -1565,12 +1565,12 @@ export default function Dashboard() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+              <h3 className="font-bold text-app dark:text-white text-sm flex items-center gap-2">
                 <QrCode size={15} className="text-blue-400" /> Site QR
               </h3>
               <button
                 onClick={() => setQrOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition"
+                className="p-1.5 rounded-lg text-muted hover:text-app dark:hover:text-white hover:bg-panel-2 dark:hover:bg-white/10 transition"
               >
                 <X size={16} />
               </button>
@@ -1586,13 +1586,13 @@ export default function Dashboard() {
               />
             ) : (
               <div className="h-[220px] flex items-center justify-center">
-                <Loader2 className="animate-spin text-slate-600" />
+                <Loader2 className="animate-spin text-muted-2" />
               </div>
             )}
-            <p className="text-slate-400 text-xs font-bold mt-3">
+            <p className="text-muted text-xs font-bold mt-3">
               Mobile camera se scan karke site kholo
             </p>
-            <p className="text-slate-600 text-[10px] mt-1 break-all font-bold">{qrUrl || "…"}</p>
+            <p className="text-muted-2 text-[10px] mt-1 break-all font-bold">{qrUrl || "…"}</p>
           </div>
         </div>
       )}
@@ -1608,10 +1608,10 @@ export default function Dashboard() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-5 py-4 border-b theme-border">
-              <h3 className="font-black text-slate-900 dark:text-white text-sm flex items-center gap-2">
+              <h3 className="font-black text-app dark:text-white text-sm flex items-center gap-2">
                 <Zap size={15} className="text-blue-400" /> Job Type Chuno
               </h3>
-              <p className="text-slate-500 text-[10px] mt-0.5 font-bold uppercase tracking-wider">
+              <p className="text-muted text-[10px] mt-0.5 font-bold uppercase tracking-wider">
                 Kaunsa job banana hai?
               </p>
             </div>
@@ -1626,7 +1626,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-blue-600 dark:text-blue-400 font-black text-base">New Job</p>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs font-bold">
+                  <p className="text-muted dark:text-muted text-xs font-bold">
                     Single repair job — client, item, services
                   </p>
                 </div>
@@ -1647,7 +1647,7 @@ export default function Dashboard() {
                   <p className="text-emerald-600 dark:text-emerald-400 font-black text-base">
                     Bulk Job
                   </p>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs font-bold">
+                  <p className="text-muted dark:text-muted text-xs font-bold">
                     Sheet entry — ek saath kai jobs add karo
                   </p>
                 </div>
@@ -1661,7 +1661,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <p className="text-center text-slate-400 dark:text-slate-800 text-xs font-bold pb-2">
+      <p className="text-center text-muted dark:text-app text-xs font-bold pb-2">
         V-TECH Management System &mdash; {new Date().getFullYear()}
       </p>
     </div>
@@ -1671,7 +1671,7 @@ export default function Dashboard() {
 // ─── Helper UI Components ─────────────────────────────────────────────────────
 function EmptyRow({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="py-10 flex flex-col items-center justify-center gap-2 text-slate-700">
+    <div className="py-10 flex flex-col items-center justify-center gap-2 text-app">
       <div className="opacity-20">{icon}</div>
       <p className="text-xs font-bold">{label}</p>
     </div>
@@ -1728,10 +1728,10 @@ const STAT_C: Record<string, { border: string; icon: string; bg: string; value: 
     value: "text-indigo-400",
   },
   slate: {
-    border: "border-slate-500/30",
-    icon: "text-slate-400    bg-slate-500/15",
-    bg: "bg-slate-500/10",
-    value: "text-slate-600 dark:text-slate-300",
+    border: "border-muted/30",
+    icon: "text-muted    bg-muted/15",
+    bg: "bg-muted/10",
+    value: "text-muted-2 dark:text-app-2",
   },
 };
 
@@ -1755,7 +1755,7 @@ function StatCard({
     >
       <div className={`p-2.5 rounded-xl ${c.icon} flex-shrink-0`}>{icon}</div>
       <div className="min-w-0 flex-1">
-        <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.15em] truncate">
+        <p className="text-[9px] font-black text-muted uppercase tracking-[0.15em] truncate">
           {label}
         </p>
         <p className={`text-xl font-black ${c.value} tracking-tight leading-none mt-0.5`}>
@@ -1765,7 +1765,7 @@ function StatCard({
       {href && (
         <ChevronRight
           size={13}
-          className="text-slate-600 group-hover:text-slate-400 flex-shrink-0 transition"
+          className="text-muted-2 group-hover:text-muted flex-shrink-0 transition"
         />
       )}
     </div>
@@ -1784,7 +1784,7 @@ const FIN_C: Record<string, { bg: string; icon: string }> = {
   amber: { bg: "bg-amber-500/10", icon: "text-amber-400" },
   cyan: { bg: "bg-cyan-500/10", icon: "text-cyan-400" },
   red: { bg: "bg-red-500/10", icon: "text-red-400" },
-  slate: { bg: "bg-slate-200 dark:bg-slate-700/30", icon: "text-slate-500 dark:text-slate-400" },
+  slate: { bg: "bg-panel-2 dark:bg-slate-700/30", icon: "text-muted dark:text-muted" },
   violet: { bg: "bg-violet-500/10", icon: "text-violet-400" },
   rose: { bg: "bg-rose-500/10", icon: "text-rose-400" },
 };
@@ -1809,11 +1809,11 @@ function FinCard({
         <div className={c.icon}>{icon}</div>
       </div>
       <div className="min-w-0">
-        <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.12em] truncate">
+        <p className="text-[9px] font-black text-muted-2 uppercase tracking-[0.12em] truncate">
           {label}
         </p>
         <p
-          className={`text-lg font-black truncate ${isExpense ? "text-red-400" : "text-slate-900 dark:text-white"}`}
+          className={`text-lg font-black truncate ${isExpense ? "text-red-400" : "text-app dark:text-white"}`}
         >
           {inr(value, 0)}
         </p>

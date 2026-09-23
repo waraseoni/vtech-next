@@ -374,20 +374,20 @@ export default function ManageLocationsPage() {
           return (
             <div
               key={t.key}
-              className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center gap-3"
+              className="bg-panel border border-app rounded-2xl p-4 flex items-center gap-3"
             >
               <div
-                className={`p-2.5 rounded-xl bg-[#0d1117] ${activeTab === t.key ? "text-blue-400" : "text-slate-600"}`}
+                className={`p-2.5 rounded-xl bg-app ${activeTab === t.key ? "text-blue-400" : "text-muted-2"}`}
               >
                 <t.icon size={18} />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                   {t.label}
                 </p>
                 <p className="text-xl font-black text-white">
                   {count}
-                  <span className="text-xs text-slate-600 ml-1">({active} active)</span>
+                  <span className="text-xs text-muted-2 ml-1">({active} active)</span>
                 </p>
               </div>
             </div>
@@ -395,9 +395,9 @@ export default function ManageLocationsPage() {
         })}
       </div>
 
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
         {/* Tabs */}
-        <div className="flex border-b border-[#21293d] overflow-x-auto">
+        <div className="flex border-b border-app overflow-x-auto">
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -409,12 +409,12 @@ export default function ManageLocationsPage() {
               className={`flex items-center gap-2 px-5 py-3.5 text-xs font-bold border-b-2 transition whitespace-nowrap ${
                 activeTab === t.key
                   ? "border-blue-500 text-blue-400 bg-blue-500/5"
-                  : "border-transparent text-slate-600 hover:text-slate-400"
+                  : "border-transparent text-muted-2 hover:text-muted"
               }`}
             >
               <t.icon size={14} />
               {t.label}
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#0d1117] text-slate-600">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-app text-muted-2">
                 {(allData[t.key] || []).length}
               </span>
             </button>
@@ -422,25 +422,25 @@ export default function ManageLocationsPage() {
         </div>
 
         {/* Toolbar */}
-        <div className="px-5 py-3 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
+        <div className="px-5 py-3 border-b border-app flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
               />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={`Search ${tabInfo.label.toLowerCase()}...`}
-                className="pl-9 pr-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-blue-500 w-56"
+                className="pl-9 pr-4 py-2 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-app outline-none focus:border-blue-500 w-56"
               />
             </div>
             {tabInfo.parent && (
               <select
                 value={parentId ?? ""}
                 onChange={(e) => setParentId(e.target.value ? Number(e.target.value) : null)}
-                className="px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500"
+                className="px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-blue-500"
               >
                 <option value="">All {tabInfo.parent}</option>
                 {parentOptions.map((p) => {
@@ -454,7 +454,7 @@ export default function ManageLocationsPage() {
                 })}
               </select>
             )}
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-2">
               {filtered.length} of {(allData[activeTab] || []).length}
             </span>
           </div>
@@ -469,13 +469,13 @@ export default function ManageLocationsPage() {
         {/* Table */}
         {loading ? (
           <div className="px-5 py-12 text-center">
-            <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">
+            <Loader2 size={24} className="animate-spin text-muted-2 mx-auto mb-2" />
+            <p className="text-muted-2 text-xs font-extrabold uppercase tracking-widest">
               Loading...
             </p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="px-5 py-12 text-center text-slate-600 text-sm">
+          <div className="px-5 py-12 text-center text-muted-2 text-sm">
             {search
               ? "No results found."
               : `No ${tabInfo.label.toLowerCase()} yet. Add one to get started.`}
@@ -483,8 +483,8 @@ export default function ManageLocationsPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[#111520]">
-                <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+              <thead className="bg-panel-2">
+                <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                   {PARENT_COLS[activeTab].map((c) => (
                     <th key={c.header} className="text-left px-4 py-3">
                       {c.header}
@@ -502,11 +502,11 @@ export default function ManageLocationsPage() {
                     <tr key={row.id} className="hover:bg-white/[0.02] transition-colors">
                       {PARENT_COLS[activeTab].map((c) => (
                         <td key={c.header} className="px-4 py-3.5">
-                          <span className="text-xs text-slate-400">{c.get(row) || "—"}</span>
+                          <span className="text-xs text-muted">{c.get(row) || "—"}</span>
                         </td>
                       ))}
                       <td className="px-4 py-3.5">
-                        <span className="font-bold text-slate-200 text-xs">{row.name}</span>
+                        <span className="font-bold text-app-2 text-xs">{row.name}</span>
                       </td>
                       <td className="px-4 py-3.5 text-center">
                         <button
@@ -529,7 +529,7 @@ export default function ManageLocationsPage() {
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
                             row.status === 1
                               ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                              : "bg-slate-500/10 border-slate-500/20 text-slate-500"
+                              : "bg-muted/10 border-muted/20 text-muted"
                           }`}
                         >
                           {row.status === 1 ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
@@ -564,8 +564,8 @@ export default function ManageLocationsPage() {
       {/* Add / Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-app">
               <h3 className="font-bold text-white flex items-center gap-2">
                 {editing ? (
                   <>
@@ -581,7 +581,7 @@ export default function ManageLocationsPage() {
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+                className="p-1.5 rounded-lg hover:bg-white/10 text-muted transition"
               >
                 <X size={16} />
               </button>
@@ -593,14 +593,14 @@ export default function ManageLocationsPage() {
                 </div>
               )}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   {tabInfo.label.replace(/s$/, "")} Name <span className="text-red-400">*</span>
                 </label>
                 <input
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder={`e.g. ${activeTab === "zones" ? "Main Shop" : activeTab === "racks" ? "Rack 1" : activeTab === "bins" ? "Bin A" : "Box 01"}`}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   autoFocus
                 />
               </div>
@@ -612,7 +612,7 @@ export default function ManageLocationsPage() {
                       Parent Tree
                     </p>
                   </div>
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                  <p className="text-[11px] text-muted leading-relaxed">
                     {activeTab === "boxes"
                       ? "Zone ▸ Rack ▸ Bin chuno — same naam wale bins alag racks me honge to tree se pehchane jayenge."
                       : activeTab === "bins"
@@ -628,7 +628,7 @@ export default function ManageLocationsPage() {
                     const isDeepest = i === treeChain.length - 1;
                     return (
                       <div key={level}>
-                        <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">
+                        <label className="block text-[9px] font-black uppercase tracking-wider text-muted mb-1">
                           Step {i + 1} · {SINGULAR[level]}{" "}
                           {isDeepest && <span className="text-red-400">*</span>}
                         </label>
@@ -637,7 +637,7 @@ export default function ManageLocationsPage() {
                           onChange={(e) =>
                             setTreeLevel(level, e.target.value ? Number(e.target.value) : null)
                           }
-                          className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                          className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                         >
                           <option value="">— {SINGULAR[level]} chuno —</option>
                           {constrained.map((p) => {
@@ -674,7 +674,7 @@ export default function ManageLocationsPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
+                  className="px-6 py-2.5 bg-panel-2 border border-app text-muted rounded-xl font-bold text-sm hover:bg-panel-2 transition"
                 >
                   Cancel
                 </button>

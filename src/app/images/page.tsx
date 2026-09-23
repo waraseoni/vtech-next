@@ -172,10 +172,10 @@ export default function ImagesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
+    <div className="min-h-screen bg-app font-sans pb-12">
       <div className="max-w-5xl mx-auto px-4 pt-6 space-y-4">
         {/* Header */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center">
@@ -183,14 +183,14 @@ export default function ImagesPage() {
               </div>
               <div>
                 <h1 className="text-lg font-black text-white">Image Manager</h1>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+                <p className="text-[10px] text-muted uppercase tracking-wider">
                   Storage buckets · orphan check · download / delete
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <div className="text-right mr-1">
-                <p className="text-[10px] text-slate-500 font-bold">
+                <p className="text-[10px] text-muted font-bold">
                   {totalFiles.toLocaleString()} images ·{" "}
                   <span className="text-amber-400">{totalOrphans} orphan</span>
                 </p>
@@ -198,7 +198,7 @@ export default function ImagesPage() {
               <button
                 onClick={load}
                 disabled={loading}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 rounded-lg text-xs font-bold transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted rounded-lg text-xs font-bold transition"
               >
                 <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Refresh
               </button>
@@ -207,10 +207,10 @@ export default function ImagesPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-3 flex items-center flex-wrap gap-2">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-3 flex items-center flex-wrap gap-2">
           <button
             onClick={() => setActiveBucket("all")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${activeBucket === "all" ? "bg-blue-500/20 border border-blue-500/40 text-blue-400" : "bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-slate-300"}`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${activeBucket === "all" ? "bg-blue-500/20 border border-blue-500/40 text-blue-400" : "bg-app border border-app text-muted hover:text-app-2"}`}
           >
             All Buckets
           </button>
@@ -218,7 +218,7 @@ export default function ImagesPage() {
             <button
               key={b.bucket}
               onClick={() => setActiveBucket(b.bucket)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${activeBucket === b.bucket ? "bg-blue-500/20 border border-blue-500/40 text-blue-400" : "bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-slate-300"}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${activeBucket === b.bucket ? "bg-blue-500/20 border border-blue-500/40 text-blue-400" : "bg-app border border-app text-muted hover:text-app-2"}`}
             >
               {b.label} <span className="opacity-60">({b.total})</span>
             </button>
@@ -233,7 +233,7 @@ export default function ImagesPage() {
                     ? st === "orphan"
                       ? "bg-amber-500/20 border border-amber-500/40 text-amber-400"
                       : "bg-blue-500/20 border border-blue-500/40 text-blue-400"
-                    : "bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-slate-300"
+                    : "bg-app border border-app text-muted hover:text-app-2"
                 }`}
               >
                 {st}
@@ -243,8 +243,8 @@ export default function ImagesPage() {
         </div>
 
         {/* Bulk bar */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-2.5 flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-bold text-slate-400">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-2.5 flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-bold text-muted">
             {selected.size > 0 ? `${selected.size} selected` : "Select images"}
           </span>
           <button
@@ -256,7 +256,7 @@ export default function ImagesPage() {
           <button
             onClick={() => setSelected(new Set())}
             disabled={selected.size === 0}
-            className="px-3 py-1.5 bg-[#0d1117] border border-[#21293d] text-slate-500 rounded-lg text-xs font-bold transition disabled:opacity-40"
+            className="px-3 py-1.5 bg-app border border-app text-muted rounded-lg text-xs font-bold transition disabled:opacity-40"
           >
             Clear
           </button>
@@ -282,12 +282,12 @@ export default function ImagesPage() {
             {error}
           </div>
         ) : loading ? (
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-10 flex items-center justify-center gap-3">
+          <div className="bg-panel border border-app rounded-2xl px-5 py-10 flex items-center justify-center gap-3">
             <Loader2 size={18} className="animate-spin text-blue-400" />
-            <span className="text-slate-400 text-sm font-bold">Images load ho rahi hain...</span>
+            <span className="text-muted text-sm font-bold">Images load ho rahi hain...</span>
           </div>
         ) : visibleFiles.length === 0 ? (
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-10 text-center text-slate-500 text-sm font-bold">
+          <div className="bg-panel border border-app rounded-2xl px-5 py-10 text-center text-muted text-sm font-bold">
             Koi image nahi mili — filter badal kar dekhein.
           </div>
         ) : (
@@ -299,10 +299,10 @@ export default function ImagesPage() {
               return (
                 <div
                   key={k}
-                  className={`bg-[#161b27] border rounded-2xl overflow-hidden flex flex-col ${checked ? "border-blue-500/60" : f.referenced ? "border-[#21293d]" : "border-amber-500/40"}`}
+                  className={`bg-panel border rounded-2xl overflow-hidden flex flex-col ${checked ? "border-blue-500/60" : f.referenced ? "border-app" : "border-amber-500/40"}`}
                 >
                   {/* Thumb */}
-                  <div className="relative aspect-square bg-[#0d1117] flex items-center justify-center overflow-hidden">
+                  <div className="relative aspect-square bg-app flex items-center justify-center overflow-hidden">
                     {f.referenced ? null : (
                       <span className="absolute top-2 left-2 z-10 bg-amber-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wide shadow-lg">
                         Orphan
@@ -326,7 +326,7 @@ export default function ImagesPage() {
 
                   {/* Info */}
                   <div className="p-2.5 flex flex-col gap-1 flex-1">
-                    <p className="text-[10px] font-mono text-slate-400 truncate" title={f.name}>
+                    <p className="text-[10px] font-mono text-muted truncate" title={f.name}>
                       {f.name}
                     </p>
                     <div className="flex items-center justify-between gap-1">
@@ -335,7 +335,7 @@ export default function ImagesPage() {
                       >
                         {f.referenced ? "✓ Connected" : "✗ Orphan"}
                       </span>
-                      <span className="text-[9px] text-slate-600">
+                      <span className="text-[9px] text-muted-2">
                         {fmtSize(f.size)} · {fmtDate(f.created_at)}
                       </span>
                     </div>
@@ -362,7 +362,7 @@ export default function ImagesPage() {
                           )
                         )}
                         {f.refs.length > 2 && (
-                          <span className="text-[9px] text-slate-600 font-bold">
+                          <span className="text-[9px] text-muted-2 font-bold">
                             +{f.refs.length - 2}
                           </span>
                         )}
@@ -370,7 +370,7 @@ export default function ImagesPage() {
                     )}
 
                     {/* Link */}
-                    <div className="flex items-center gap-1 bg-[#0d1117] border border-[#21293d] rounded-lg px-2 py-1">
+                    <div className="flex items-center gap-1 bg-app border border-app rounded-lg px-2 py-1">
                       <Link2 size={10} className="text-blue-500 flex-shrink-0" />
                       <span
                         className="text-[9px] font-mono text-blue-300 truncate flex-1"
@@ -381,7 +381,7 @@ export default function ImagesPage() {
                       <button
                         onClick={() => copy(k, f.url)}
                         title="Copy link"
-                        className="text-slate-500 hover:text-blue-400 transition flex-shrink-0"
+                        className="text-muted hover:text-blue-400 transition flex-shrink-0"
                       >
                         {isCopied ? (
                           <Check size={11} className="text-emerald-400" />

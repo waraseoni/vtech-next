@@ -199,7 +199,7 @@ export default function SupplierPicker({
 
   const searchBox = (
     <div className="relative mb-2">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" size={15} />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none" size={15} />
       <input
         ref={searchRef}
         autoFocus={typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches}
@@ -207,7 +207,7 @@ export default function SupplierPicker({
         enterKeyHint="search"
         autoComplete="off"
         placeholder="Supplier dhoondein..."
-        className="w-full pl-9 pr-9 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-white text-sm outline-none focus:border-blue-500/60 placeholder:text-slate-700"
+        className="w-full pl-9 pr-9 py-2.5 bg-panel-2 border border-app rounded-xl text-white text-sm outline-none focus:border-blue-500/60 placeholder:text-app"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
@@ -215,7 +215,7 @@ export default function SupplierPicker({
         <button
           type="button"
           onClick={() => { setSearch(""); searchRef.current?.focus(); }}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-[#21293d] text-slate-400 hover:text-white transition-colors"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-panel-2 text-muted hover:text-white transition-colors"
         >
           <X size={12} />
         </button>
@@ -224,15 +224,15 @@ export default function SupplierPicker({
   );
 
   const createForm = showCreate && (
-    <div className="border-t border-[#21293d] p-3 space-y-2">
+    <div className="border-t border-app p-3 space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">
+        <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted">
           Naya Supplier
         </span>
         <button
           type="button"
           onClick={() => { setShowCreate(false); setNewName(""); setNewContact(""); setCreateErr(""); }}
-          className="text-slate-600 hover:text-slate-400"
+          className="text-muted-2 hover:text-muted"
         >
           <X size={14} />
         </button>
@@ -242,14 +242,14 @@ export default function SupplierPicker({
         value={newName}
         onChange={(e) => setNewName(e.target.value)}
         placeholder="Supplier name *"
-        className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+        className="w-full px-3 py-2 bg-app border border-app rounded-lg text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreate(); } }}
       />
       <input
         value={newContact}
         onChange={(e) => setNewContact(e.target.value)}
         placeholder="Contact (optional)"
-        className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+        className="w-full px-3 py-2 bg-app border border-app rounded-lg text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreate(); } }}
       />
       {createErr && <p className="text-red-400 text-xs">{createErr}</p>}
@@ -295,21 +295,21 @@ export default function SupplierPicker({
         <div
           onClick={() => { onSelect?.(null); close(); }}
           className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group cursor-pointer hover:bg-white/5 active:bg-white/10 ${
-            value === null || value === "" ? "text-blue-300" : "text-slate-400"
+            value === null || value === "" ? "text-blue-300" : "text-muted"
           }`}
         >
           <span className="text-sm font-bold group-hover:text-blue-300 transition-colors">{clearLabel}</span>
           {value === null || value === "" ? (
             <Check size={15} className="text-emerald-400 flex-shrink-0" />
           ) : (
-            <X size={14} className="text-slate-600 flex-shrink-0" />
+            <X size={14} className="text-muted-2 flex-shrink-0" />
           )}
         </div>
       )}
 
       {/* Supplier list */}
       {filtered.length === 0 ? (
-        <p className="text-slate-600 text-xs text-center py-4">Koi supplier nahi mila</p>
+        <p className="text-muted-2 text-xs text-center py-4">Koi supplier nahi mila</p>
       ) : (
         filtered.map((s) => {
           const isSel = multi ? selected.includes(s.id) : String(s.id) === String(value ?? "");
@@ -330,7 +330,7 @@ export default function SupplierPicker({
               </div>
               {multi ? (
                 <span className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border ${
-                  isSel ? "bg-emerald-500 border-emerald-500 text-white" : "border-[#2a3550]"
+                  isSel ? "bg-emerald-500 border-emerald-500 text-white" : "border-app-2"
                 }`}>
                   {isSel && <Check size={11} />}
                 </span>
@@ -344,7 +344,7 @@ export default function SupplierPicker({
 
       {/* Inline create button */}
       {!disableCreate && (
-        <div className="border-t border-[#21293d] mt-1 pt-1">
+        <div className="border-t border-app mt-1 pt-1">
           {showCreate ? (
             createForm
           ) : (
@@ -372,14 +372,14 @@ export default function SupplierPicker({
         type="button"
         onClick={toggle}
         aria-expanded={open}
-        className={`w-full min-h-[42px] flex items-center justify-between gap-2 px-3 py-2.5 bg-[#111520] border rounded-xl text-sm transition-all outline-none text-left ${
-          open ? "border-blue-500/60 ring-1 ring-blue-500/20" : "border-[#21293d] hover:border-slate-600"
+        className={`w-full min-h-[42px] flex items-center justify-between gap-2 px-3 py-2.5 bg-panel-2 border rounded-xl text-sm transition-all outline-none text-left ${
+          open ? "border-blue-500/60 ring-1 ring-blue-500/20" : "border-app hover:border-muted"
         }`}
       >
         <span className="min-w-0 flex-1">
           {multi ? (
             selectedOpts.length === 0 ? (
-              <span className="text-slate-600 font-medium">{placeholder}</span>
+              <span className="text-muted-2 font-medium">{placeholder}</span>
             ) : (
               <span className="flex items-center gap-1.5 flex-wrap">
                 {selectedOpts.slice(0, 3).map((s) => (
@@ -397,17 +397,17 @@ export default function SupplierPicker({
                   </span>
                 ))}
                 {selectedOpts.length > 3 && (
-                  <span className="text-[10px] font-bold text-slate-500">+{selectedOpts.length - 3} aur</span>
+                  <span className="text-[10px] font-bold text-muted">+{selectedOpts.length - 3} aur</span>
                 )}
               </span>
             )
           ) : triggerLabel ? (
             <span className="block font-bold text-white text-sm truncate">{triggerLabel.name}</span>
           ) : (
-            <span className="text-slate-600 font-medium">{placeholder}</span>
+            <span className="text-muted-2 font-medium">{placeholder}</span>
           )}
         </span>
-        <ChevronDown size={16} className={`text-slate-500 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={16} className={`text-muted flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {/* Mobile: centered bottom sheet */}
@@ -416,13 +416,13 @@ export default function SupplierPicker({
           <div className="absolute inset-0 bg-black/70 animate-[fade-in_150ms_ease-out]" onClick={close} />
           <div
             ref={menuRef}
-            className="relative w-full max-w-md bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl flex flex-col max-h-[82vh] animate-[sheet-up_220ms_cubic-bezier(0.22,1,0.36,1)]"
+            className="relative w-full max-w-md bg-panel border border-app rounded-2xl shadow-2xl flex flex-col max-h-[82vh] animate-[sheet-up_220ms_cubic-bezier(0.22,1,0.36,1)]"
           >
             <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0" onClick={close}>
               <div className="w-10 h-1 rounded-full bg-slate-600" />
             </div>
             <div className="px-4 pb-2 flex-shrink-0">
-              <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2">
+              <p className="text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2">
                 {placeholder.replace(/[—-]/g, "").trim()}
               </p>
               {searchBox}
@@ -440,7 +440,7 @@ export default function SupplierPicker({
         <div
           ref={menuRef}
           style={{ top: pos.top, left: pos.left, width: pos.width }}
-          className="fixed z-[100] bg-[#161b27] border border-[#21293d] rounded-2xl shadow-2xl p-3 animate-[fade-in_120ms_ease-out]"
+          className="fixed z-[100] bg-panel border border-app rounded-2xl shadow-2xl p-3 animate-[fade-in_120ms_ease-out]"
         >
           {searchBox}
           <div className="overflow-y-auto space-y-0.5" style={{ maxHeight: pos.maxListH }}>

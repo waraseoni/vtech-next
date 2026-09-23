@@ -292,8 +292,8 @@ export default function PurchaseOrderDetailPage() {
     return (
       <AdminPage title="Purchase Order" subtitle="Not found">
         <div className="p-6 text-center space-y-4">
-          <PackageX size={32} className="mx-auto text-slate-600" />
-          <p className="text-sm text-slate-500">This purchase order does not exist.</p>
+          <PackageX size={32} className="mx-auto text-muted-2" />
+          <p className="text-sm text-muted">This purchase order does not exist.</p>
           <Link
             href="/inventory/purchase-orders"
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all"
@@ -387,7 +387,7 @@ export default function PurchaseOrderDetailPage() {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <Link
             href="/inventory/purchase-orders"
-            className="text-sm text-slate-500 hover:text-white flex items-center gap-1 transition-colors"
+            className="text-sm text-muted hover:text-white flex items-center gap-1 transition-colors"
           >
             <ArrowLeft size={14} /> Back to Purchase Orders
           </Link>
@@ -414,7 +414,7 @@ export default function PurchaseOrderDetailPage() {
         </div>
 
         {/* ── STATUS STEPPER ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+        <div className="bg-panel border border-app rounded-2xl p-4">
           <div className="flex items-center justify-between gap-1">
             {STATUS_FLOW.map((s, idx) => {
               const meta = STATUS_META[s];
@@ -427,17 +427,17 @@ export default function PurchaseOrderDetailPage() {
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
                         isActive
                           ? "border-emerald-500 bg-emerald-500/20 text-emerald-400"
-                          : "border-[#21293d] bg-[#111520] text-slate-700"
+                          : "border-app bg-panel-2 text-app"
                       } ${isCurrent ? "ring-2 ring-emerald-500/30" : ""}`}
                     >
                       {idx + 1}
                     </div>
-                    <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? "text-slate-400" : "text-slate-700"}`}>
+                    <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? "text-muted" : "text-app"}`}>
                       {s === "partially_received" ? "Partial" : s.charAt(0).toUpperCase() + s.slice(1)}
                     </span>
                   </div>
                   {idx < STATUS_FLOW.length - 1 && (
-                    <div className={`h-0.5 flex-1 mt-[-14px] rounded ${idx < currentStep ? "bg-emerald-500" : "bg-[#21293d]"}`} />
+                    <div className={`h-0.5 flex-1 mt-[-14px] rounded ${idx < currentStep ? "bg-emerald-500" : "bg-panel-2"}`} />
                   )}
                 </React.Fragment>
               );
@@ -446,12 +446,12 @@ export default function PurchaseOrderDetailPage() {
         </div>
 
         {/* ── PROGRESS BAR ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+        <div className="bg-panel border border-app rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Receive Progress</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-2">Receive Progress</span>
             <span className="text-sm font-black text-emerald-400">{progressPct}%</span>
           </div>
-          <div className="w-full h-3 bg-[#111520] rounded-full overflow-hidden">
+          <div className="w-full h-3 bg-panel-2 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
@@ -462,14 +462,14 @@ export default function PurchaseOrderDetailPage() {
               }}
             />
           </div>
-          <div className="flex items-center justify-between mt-2 text-[11px] text-slate-500">
+          <div className="flex items-center justify-between mt-2 text-[11px] text-muted">
             <span>{totalReceived} received of {totalOrdered} ordered</span>
             <span>{outstanding} outstanding</span>
           </div>
         </div>
 
         {/* ── ACTION BAR ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center gap-2 flex-wrap">
+        <div className="bg-panel border border-app rounded-2xl p-4 flex items-center gap-2 flex-wrap">
           {canMarkOrdered && (
             <button
               onClick={() => updateStatus("ordered")}
@@ -491,7 +491,7 @@ export default function PurchaseOrderDetailPage() {
           {canEdit && (
             <Link
               href="/inventory/purchase-orders"
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#21293d] hover:bg-amber-600/30 border border-[#21293d] hover:border-amber-500/40 text-slate-400 hover:text-amber-400 rounded-xl text-xs font-bold transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 bg-panel-2 hover:bg-amber-600/30 border border-app hover:border-amber-500/40 text-muted hover:text-amber-400 rounded-xl text-xs font-bold transition-all"
             >
               <Pencil size={13} /> Edit PO
             </Link>
@@ -500,7 +500,7 @@ export default function PurchaseOrderDetailPage() {
             <button
               onClick={() => updateStatus("cancelled")}
               disabled={acting}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#21293d] hover:bg-red-600/30 border border-[#21293d] hover:border-red-500/40 text-slate-400 hover:text-red-400 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-2 bg-panel-2 hover:bg-red-600/30 border border-app hover:border-red-500/40 text-muted hover:text-red-400 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
             >
               <XCircle size={13} /> Cancel
             </button>
@@ -509,19 +509,19 @@ export default function PurchaseOrderDetailPage() {
             <button
               onClick={deletePo}
               disabled={acting}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#21293d] hover:bg-red-600/30 border border-[#21293d] hover:border-red-500/40 text-slate-400 hover:text-red-400 rounded-xl text-xs font-bold transition-all ml-auto disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-2 bg-panel-2 hover:bg-red-600/30 border border-app hover:border-red-500/40 text-muted hover:text-red-400 rounded-xl text-xs font-bold transition-all ml-auto disabled:opacity-50"
             >
               <Trash2 size={13} /> Delete
             </button>
           )}
-          {acting && <Loader2 size={14} className="animate-spin text-slate-500" />}
+          {acting && <Loader2 size={14} className="animate-spin text-muted" />}
         </div>
 
         {/* ── Order Details ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center gap-2">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-app flex items-center gap-2">
             <ClipboardList size={13} className="text-violet-400" />
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600">Order Details</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-2">Order Details</h3>
           </div>
           <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex items-center gap-3">
@@ -529,13 +529,13 @@ export default function PurchaseOrderDetailPage() {
                 <Truck size={14} className="text-violet-400" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Supplier</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">Supplier</p>
                 {po.supplier_id ? (
-                  <Link href={`/suppliers/${po.supplier_id}`} className="text-sm font-bold text-slate-200 hover:text-blue-400 transition-colors">
+                  <Link href={`/suppliers/${po.supplier_id}`} className="text-sm font-bold text-app-2 hover:text-blue-400 transition-colors">
                     {supplierName || `#${po.supplier_id}`}
                   </Link>
                 ) : (
-                  <p className="text-sm font-bold text-slate-200">—</p>
+                  <p className="text-sm font-bold text-app-2">—</p>
                 )}
               </div>
             </div>
@@ -544,8 +544,8 @@ export default function PurchaseOrderDetailPage() {
                 <User size={14} className="text-blue-400" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Contact Person</p>
-                <p className="text-sm font-bold text-slate-200">{personName || "—"}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">Contact Person</p>
+                <p className="text-sm font-bold text-app-2">{personName || "—"}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -553,8 +553,8 @@ export default function PurchaseOrderDetailPage() {
                 <CalendarDays size={14} className="text-sky-400" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Expected Date</p>
-                <p className="text-sm font-bold text-slate-200">{fmtDate(po.expected_date)}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">Expected Date</p>
+                <p className="text-sm font-bold text-app-2">{fmtDate(po.expected_date)}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -562,8 +562,8 @@ export default function PurchaseOrderDetailPage() {
                 <CalendarDays size={14} className="text-sky-400" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Created / Received</p>
-                <p className="text-sm font-bold text-slate-200">{fmtDate(po.date_created)} · {fmtDate(po.received_date)}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">Created / Received</p>
+                <p className="text-sm font-bold text-app-2">{fmtDate(po.date_created)} · {fmtDate(po.received_date)}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -571,8 +571,8 @@ export default function PurchaseOrderDetailPage() {
                 <ClipboardList size={14} className="text-amber-400" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Total Amount</p>
-                <p className="text-sm font-bold text-slate-500 italic">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">Total Amount</p>
+                <p className="text-sm font-bold text-muted italic">
                   {po.total_amount > 0 ? `₹${po.total_amount.toLocaleString("en-IN")}` : "As per supplier invoice"}
                 </p>
               </div>
@@ -583,7 +583,7 @@ export default function PurchaseOrderDetailPage() {
                   <Truck size={14} className="text-rose-400" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Expenses</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">Expenses</p>
                   <p className="text-sm font-bold text-rose-400">₹{(po.expenses || 0).toLocaleString("en-IN")}</p>
                 </div>
               </div>
@@ -593,28 +593,28 @@ export default function PurchaseOrderDetailPage() {
 
         {/* ── Notes ── */}
         {po.notes && (
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
+          <div className="bg-panel border border-app rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-2.5">
-              <StickyNote size={13} className="text-slate-500" />
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600">Notes</h3>
+              <StickyNote size={13} className="text-muted" />
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-2">Notes</h3>
             </div>
-            <p className="text-sm text-slate-400 whitespace-pre-wrap">{po.notes}</p>
+            <p className="text-sm text-muted whitespace-pre-wrap">{po.notes}</p>
           </div>
         )}
 
         {/* ── Items ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between gap-3">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600">Items</h3>
-            <span className="text-[11px] text-slate-500">{items.length} line{items.length === 1 ? "" : "s"}</span>
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-app flex items-center justify-between gap-3">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-2">Items</h3>
+            <span className="text-[11px] text-muted">{items.length} line{items.length === 1 ? "" : "s"}</span>
           </div>
           {items.length === 0 ? (
-            <p className="text-xs text-slate-600 text-center py-8">No items found for this PO.</p>
+            <p className="text-xs text-muted-2 text-center py-8">No items found for this PO.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600 border-b border-[#21293d]">
+                  <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2 border-b border-app">
                     <th className="text-left px-4 py-3">Product</th>
                     <th className="text-center px-4 py-3">Ordered</th>
                     <th className="text-center px-4 py-3">Received</th>
@@ -628,16 +628,16 @@ export default function PurchaseOrderDetailPage() {
                     const itemPct = item.qty_ordered > 0 ? Math.round((item.qty_received / item.qty_ordered) * 100) : 0;
                     return (
                       <tr key={item.id} className="hover:bg-white/[0.02]">
-                        <td className="px-4 py-3 text-slate-300">
+                        <td className="px-4 py-3 text-app-2">
                           <Link href={`/inventory/${item.product_id}`} className="text-blue-400 hover:underline">
                             {item.product_name}
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-center text-slate-400">{item.qty_ordered}</td>
+                        <td className="px-4 py-3 text-center text-muted">{item.qty_ordered}</td>
                         <td className="px-4 py-3 text-center text-emerald-400 font-bold">{item.qty_received}</td>
                         <td className="px-4 py-3 text-center text-amber-400 font-bold">{itemOutstanding}</td>
                         <td className="px-4 py-3">
-                          <div className="w-full h-1.5 bg-[#111520] rounded-full overflow-hidden">
+                          <div className="w-full h-1.5 bg-panel-2 rounded-full overflow-hidden">
                             <div
                               className="h-full rounded-full transition-all"
                               style={{
@@ -661,16 +661,16 @@ export default function PurchaseOrderDetailPage() {
       {showReceive && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !acting && setShowReceive(false)} />
-          <div className="relative w-full max-w-2xl bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl shadow-black/50 max-h-[90vh] flex flex-col">
+          <div className="relative w-full max-w-2xl bg-panel border border-app rounded-2xl overflow-hidden shadow-2xl shadow-black/50 max-h-[90vh] flex flex-col">
             <div className="h-0.5 w-full bg-gradient-to-r from-emerald-500 to-teal-600" />
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-app">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center border bg-emerald-500/10 border-emerald-500/25">
                   <Truck size={16} className="text-emerald-400" />
                 </div>
                 <div>
                   <h3 className="text-base font-extrabold text-white leading-none">Receive Stock</h3>
-                  <p className="text-[10px] text-slate-600 font-bold mt-0.5 uppercase tracking-wider">
+                  <p className="text-[10px] text-muted-2 font-bold mt-0.5 uppercase tracking-wider">
                     Enter qty, purchase price &amp; sell price
                   </p>
                 </div>
@@ -678,7 +678,7 @@ export default function PurchaseOrderDetailPage() {
               <button
                 onClick={() => setShowReceive(false)}
                 disabled={acting}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-panel-2 hover:bg-white/5 text-muted hover:text-app-2 border border-app transition-all"
               >
                 <X size={15} />
               </button>
@@ -686,14 +686,14 @@ export default function PurchaseOrderDetailPage() {
 
             <div className="px-5 py-4 space-y-3 overflow-y-auto">
               {/* Expenses */}
-              <div className="bg-[#111520] border border-[#21293d] rounded-xl p-3">
+              <div className="bg-panel-2 border border-app rounded-xl p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <div className="text-xs font-bold text-slate-300">Total PO Expenses</div>
-                    <div className="text-[10px] text-slate-600">Freight, handling, packing (distributed per unit)</div>
+                    <div className="text-xs font-bold text-app-2">Total PO Expenses</div>
+                    <div className="text-[10px] text-muted-2">Freight, handling, packing (distributed per unit)</div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-slate-500 text-sm font-bold">₹</span>
+                    <span className="text-muted text-sm font-bold">₹</span>
                     <input
                       type="number"
                       min={0}
@@ -701,7 +701,7 @@ export default function PurchaseOrderDetailPage() {
                       value={receiveExpenses || ""}
                       onChange={(e) => setReceiveExpenses(Math.max(0, Number(e.target.value) || 0))}
                       placeholder="0"
-                      className="w-28 px-3 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-lg outline-none focus:border-emerald-500/60 text-sm text-right"
+                      className="w-28 px-3 py-2 bg-panel border border-app text-app-2 rounded-lg outline-none focus:border-emerald-500/60 text-sm text-right"
                     />
                   </div>
                 </div>
@@ -716,16 +716,16 @@ export default function PurchaseOrderDetailPage() {
                 const sp = receiveSell(item.product_id);
                 const costWithExpense = uc + expensePerUnit;
                 return (
-                  <div key={item.id} className="bg-[#111520] border border-[#21293d] rounded-xl p-3 space-y-2.5">
+                  <div key={item.id} className="bg-panel-2 border border-app rounded-xl p-3 space-y-2.5">
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="text-xs font-bold text-slate-300 truncate">{item.product_name}</div>
-                        <div className="text-[10px] text-slate-600 mt-0.5">
+                        <div className="text-xs font-bold text-app-2 truncate">{item.product_name}</div>
+                        <div className="text-[10px] text-muted-2 mt-0.5">
                           Open: <span className="text-emerald-400 font-bold">{outstanding}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-slate-600 font-bold">Qty:</span>
+                        <span className="text-[10px] text-muted-2 font-bold">Qty:</span>
                         <input
                           type="number"
                           min={0}
@@ -735,14 +735,14 @@ export default function PurchaseOrderDetailPage() {
                             const v = Math.max(0, Math.min(outstanding, Number(e.target.value) || 0));
                             setReceiveQtys((q) => ({ ...q, [item.product_id]: v }));
                           }}
-                          className="w-20 px-3 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-lg outline-none focus:border-emerald-500/60 text-sm text-center"
+                          className="w-20 px-3 py-2 bg-panel border border-app text-app-2 rounded-lg outline-none focus:border-emerald-500/60 text-sm text-center"
                         />
                       </div>
                     </div>
                     {qty > 0 && (
                       <div className="grid grid-cols-2 gap-2.5">
                         <div>
-                          <label className="block text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-1">Purchase Price (₹)</label>
+                          <label className="block text-[9px] font-extrabold uppercase tracking-widest text-muted-2 mb-1">Purchase Price (₹)</label>
                           <input
                             type="number"
                             min={0}
@@ -755,11 +755,11 @@ export default function PurchaseOrderDetailPage() {
                               }))
                             }
                             placeholder="Supplier price"
-                            className="w-full px-3 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-lg outline-none focus:border-emerald-500/60 text-sm"
+                            className="w-full px-3 py-2 bg-panel border border-app text-app-2 rounded-lg outline-none focus:border-emerald-500/60 text-sm"
                           />
                         </div>
                         <div>
-                          <label className="block text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-1">Sell Price (₹)</label>
+                          <label className="block text-[9px] font-extrabold uppercase tracking-widest text-muted-2 mb-1">Sell Price (₹)</label>
                           <input
                             type="number"
                             min={0}
@@ -772,11 +772,11 @@ export default function PurchaseOrderDetailPage() {
                               }))
                             }
                             placeholder="Our selling price"
-                            className="w-full px-3 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-lg outline-none focus:border-emerald-500/60 text-sm"
+                            className="w-full px-3 py-2 bg-panel border border-app text-app-2 rounded-lg outline-none focus:border-emerald-500/60 text-sm"
                           />
                         </div>
                         {uc > 0 && (
-                          <div className="col-span-2 flex items-center gap-2 text-[10px] text-slate-500 border-t border-[#21293d] pt-2">
+                          <div className="col-span-2 flex items-center gap-2 text-[10px] text-muted border-t border-app pt-2">
                             <span>Cost: ₹{uc.toFixed(2)}</span>
                             {expensePerUnit > 0 && <> + ₹{expensePerUnit.toFixed(2)} exp = <span className="text-emerald-400 font-bold">₹{costWithExpense.toFixed(2)}</span></>}
                             {sp > 0 && costWithExpense > 0 && (
@@ -791,15 +791,15 @@ export default function PurchaseOrderDetailPage() {
               })}
             </div>
 
-            <div className="px-5 py-4 border-t border-[#21293d] flex items-center gap-3">
+            <div className="px-5 py-4 border-t border-app flex items-center gap-3">
               <div className="flex-1">
-                <span className="text-[10px] text-slate-700 font-bold uppercase tracking-widest block">Receiving</span>
+                <span className="text-[10px] text-app font-bold uppercase tracking-widest block">Receiving</span>
                 <span className="text-xl font-black text-emerald-400">{receiveTotalQty} units</span>
               </div>
               <button
                 onClick={() => setShowReceive(false)}
                 disabled={acting}
-                className="px-5 py-3 bg-[#111520] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-slate-300 rounded-xl font-bold text-sm transition-all"
+                className="px-5 py-3 bg-panel-2 hover:bg-white/5 border border-app text-muted hover:text-app-2 rounded-xl font-bold text-sm transition-all"
               >
                 Cancel
               </button>
@@ -823,23 +823,23 @@ export default function PurchaseOrderDetailPage() {
       {waModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setWaModalOpen(false)} />
-          <div className="relative w-full max-w-lg bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl shadow-black/50 max-h-[85vh] flex flex-col">
+          <div className="relative w-full max-w-lg bg-panel border border-app rounded-2xl overflow-hidden shadow-2xl shadow-black/50 max-h-[85vh] flex flex-col">
             <div className="h-0.5 w-full bg-gradient-to-r from-green-500 to-emerald-600" />
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-app">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center border bg-green-500/10 border-green-500/25">
                   <MessageCircle size={16} className="text-green-400" />
                 </div>
                 <div>
                   <h3 className="text-base font-extrabold text-white leading-none">WhatsApp Message</h3>
-                  <p className="text-[10px] text-slate-600 font-bold mt-0.5 uppercase tracking-wider">
+                  <p className="text-[10px] text-muted-2 font-bold mt-0.5 uppercase tracking-wider">
                     Edit, copy or send directly
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setWaModalOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-panel-2 hover:bg-white/5 text-muted hover:text-app-2 border border-app transition-all"
               >
                 <X size={15} />
               </button>
@@ -850,17 +850,17 @@ export default function PurchaseOrderDetailPage() {
                 value={waMessage}
                 onChange={(e) => setWaMessage(e.target.value)}
                 rows={14}
-                className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl outline-none focus:border-green-500/60 text-sm font-mono resize-none leading-relaxed"
+                className="w-full px-4 py-3 bg-panel-2 border border-app text-app-2 rounded-xl outline-none focus:border-green-500/60 text-sm font-mono resize-none leading-relaxed"
               />
             </div>
 
-            <div className="px-5 py-4 border-t border-[#21293d] flex items-center gap-3">
-              <div className="flex-1 text-[10px] text-slate-600">
+            <div className="px-5 py-4 border-t border-app flex items-center gap-3">
+              <div className="flex-1 text-[10px] text-muted-2">
                 {waMessage.length} characters
               </div>
               <button
                 onClick={() => setWaModalOpen(false)}
-                className="px-4 py-2.5 bg-[#111520] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-slate-300 rounded-xl font-bold text-xs transition-all"
+                className="px-4 py-2.5 bg-panel-2 hover:bg-white/5 border border-app text-muted hover:text-app-2 rounded-xl font-bold text-xs transition-all"
               >
                 Cancel
               </button>
@@ -869,7 +869,7 @@ export default function PurchaseOrderDetailPage() {
                 className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 border ${
                   waCopied
                     ? "bg-emerald-600/20 border-emerald-500/40 text-emerald-400"
-                    : "bg-[#21293d] hover:bg-blue-600/30 border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-blue-400"
+                    : "bg-panel-2 hover:bg-blue-600/30 border-app hover:border-blue-500/40 text-muted hover:text-blue-400"
                 }`}
               >
                 {waCopied ? <><CheckCircle2 size={13} /> Copied!</> : "Copy"}

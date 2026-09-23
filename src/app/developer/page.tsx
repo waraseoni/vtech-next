@@ -69,9 +69,9 @@ type KitPrefill = {
 };
 
 const inputCls =
-  "w-full px-3.5 py-2.5 bg-white dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono [color-scheme:light] dark:[color-scheme:dark]";
+  "w-full px-3.5 py-2.5 bg-white dark:bg-app border border-app-2 dark:border-app rounded-xl text-sm text-app dark:text-app-2 placeholder:text-muted dark:placeholder:text-muted-2 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono [color-scheme:light] dark:[color-scheme:dark]";
 const labelCls =
-  "block text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-500 mb-1.5";
+  "block text-[10px] font-black uppercase tracking-widest text-muted-2 dark:text-muted mb-1.5";
 
 function SecretField({
   label,
@@ -103,7 +103,7 @@ function SecretField({
           type="button"
           onClick={() => setShow((s) => !s)}
           title={show ? "Hide" : "Show"}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 dark:text-slate-600 hover:text-slate-800 dark:hover:text-slate-300 transition-colors"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted dark:text-muted-2 hover:text-app dark:hover:text-app-2 transition-colors"
         >
           {show ? <EyeOff size={13} /> : <Eye size={13} />}
         </button>
@@ -326,7 +326,7 @@ export default function DeveloperPage() {
         : k === "expiringSoon"
           ? "text-amber-400 bg-amber-500/10"
           : k === "disabled"
-            ? "text-slate-400 bg-slate-500/10"
+            ? "text-muted bg-muted/10"
             : "text-blue-400 bg-blue-500/10";
 
   return (
@@ -343,13 +343,13 @@ export default function DeveloperPage() {
             <h1 className="text-lg font-black text-white tracking-tight">
               Developer — Licensing & Setup Kit
             </h1>
-            <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
+            <p className="text-[11px] text-muted font-semibold mt-0.5">
               Double-password protected · koi command line nahi — sab clicks se
             </p>
           </div>
           <button
             onClick={load}
-            className="w-9 h-9 flex items-center justify-center bg-[#161b27] border border-[#21293d] hover:border-indigo-500/40 rounded-xl text-slate-400 hover:text-white transition-all"
+            className="w-9 h-9 flex items-center justify-center bg-panel border border-app hover:border-indigo-500/40 rounded-xl text-muted hover:text-white transition-all"
             title="Refresh"
           >
             <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
@@ -377,14 +377,14 @@ export default function DeveloperPage() {
               },
               { label: "Disabled", value: stats.disabled, icon: Ban, k: "disabled" },
             ].map(({ label, value, icon: Icon, k }) => (
-              <div key={k} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+              <div key={k} className="bg-panel border border-app rounded-2xl p-4">
                 <div
                   className={`w-8 h-8 rounded-lg flex items-center justify-center ${statColor(k)}`}
                 >
                   <Icon size={15} />
                 </div>
                 <p className="text-2xl font-black text-white mt-3">{value}</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-0.5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted mt-0.5">
                   {label}
                 </p>
               </div>
@@ -393,14 +393,14 @@ export default function DeveloperPage() {
         )}
 
         {/* Setup Kit Generator */}
-        <div className="bg-[#161b27] border border-indigo-500/20 rounded-2xl p-5">
+        <div className="bg-panel border border-indigo-500/20 rounded-2xl p-5">
           <div className="flex items-center gap-2">
             <span className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
               <Package size={15} />
             </span>
             <div>
               <h2 className="text-[13px] font-black text-white">Setup Kit Generator</h2>
-              <p className="text-[11px] text-slate-500 font-semibold">
+              <p className="text-[11px] text-muted font-semibold">
                 Neeche kisi client par <span className="text-indigo-400">Create Package</span> dabao
                 → Supabase keys bharo (pehle se save hain to khud aa jayenge) →{" "}
                 <span className="text-indigo-400">Generate & Download</span> → client ko zip bhejo.
@@ -412,16 +412,16 @@ export default function DeveloperPage() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search shop, owner, email ya key..."
-            className="w-full px-4 py-2.5 mt-4 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:border-indigo-500/50 transition-all"
+            className="w-full px-4 py-2.5 mt-4 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-muted-2 outline-none focus:border-indigo-500/50 transition-all"
           />
 
-          <div className="mt-3 bg-[#161b27] border border-[#21293d] rounded-xl overflow-hidden">
+          <div className="mt-3 bg-panel border border-app rounded-xl overflow-hidden">
             {loading ? (
-              <div className="h-40 flex items-center justify-center text-slate-500 gap-2 text-xs font-bold uppercase tracking-widest">
+              <div className="h-40 flex items-center justify-center text-muted gap-2 text-xs font-bold uppercase tracking-widest">
                 <Loader2 size={16} className="animate-spin" /> Loading...
               </div>
             ) : rows.length === 0 ? (
-              <div className="h-40 flex flex-col items-center justify-center gap-2 text-slate-600">
+              <div className="h-40 flex flex-col items-center justify-center gap-2 text-muted-2">
                 <Users size={22} />
                 <p className="text-xs font-bold uppercase tracking-widest">
                   {stats ? "Koi match nahi mila" : "Koi data nahi"}
@@ -431,7 +431,7 @@ export default function DeveloperPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="text-[9px] font-black uppercase tracking-widest text-slate-600 border-b border-[#1a2234]">
+                    <tr className="text-[9px] font-black uppercase tracking-widest text-muted-2 border-b border-app-2">
                       <th className="px-4 py-3">Shop / Owner</th>
                       <th className="px-4 py-3">Key</th>
                       <th className="px-4 py-3">Plan</th>
@@ -445,13 +445,13 @@ export default function DeveloperPage() {
                     {rows.map((r) => (
                       <tr key={r.id} className="hover:bg-white/[0.02] transition-colors">
                         <td className="px-4 py-3">
-                          <p className="text-xs font-bold text-slate-200">{r.shop_name || "—"}</p>
-                          <p className="text-[10px] text-slate-500">
+                          <p className="text-xs font-bold text-app-2">{r.shop_name || "—"}</p>
+                          <p className="text-[10px] text-muted">
                             {r.owner_name || ""}
                             {r.owner_email ? ` · ${r.owner_email}` : ""}
                           </p>
                         </td>
-                        <td className="px-4 py-3 font-mono text-[11px] text-slate-400">
+                        <td className="px-4 py-3 font-mono text-[11px] text-muted">
                           {r.license_key}
                         </td>
                         <td className="px-4 py-3">
@@ -459,14 +459,14 @@ export default function DeveloperPage() {
                             {r.plan}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-xs font-bold text-slate-300">
+                        <td className="px-4 py-3 text-xs font-bold text-app-2">
                           {r.activated_instances}
                         </td>
                         <td className="px-4 py-3">
                           {r.expires_at ? (
                             <div>
                               <span
-                                className={`text-[11px] font-bold ${r.expired ? "text-red-400" : r.days_left !== null && r.days_left <= 30 ? "text-amber-400" : "text-slate-300"}`}
+                                className={`text-[11px] font-bold ${r.expired ? "text-red-400" : r.days_left !== null && r.days_left <= 30 ? "text-amber-400" : "text-app-2"}`}
                               >
                                 {new Date(r.expires_at).toLocaleDateString("en-IN", {
                                   day: "numeric",
@@ -474,7 +474,7 @@ export default function DeveloperPage() {
                                   year: "numeric",
                                 })}
                               </span>
-                              <span className="block text-[9px] text-slate-500">
+                              <span className="block text-[9px] text-muted">
                                 {r.expired
                                   ? "EXPIRED"
                                   : r.days_left !== null
@@ -516,7 +516,7 @@ export default function DeveloperPage() {
           </div>
         </div>
 
-        <p className="text-[10px] text-slate-600 font-semibold">
+        <p className="text-[10px] text-muted-2 font-semibold">
           Har package mein <span className="font-mono">.env.production</span>,{" "}
           <span className="font-mono">SETUP.md</span>, <span className="font-mono">DEPLOY.md</span>,{" "}
           <span className="font-mono">LICENSE_KEY.txt</span> aur{" "}
@@ -529,10 +529,10 @@ export default function DeveloperPage() {
       {/* ── Setup Kit modal ── */}
       {kitFor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-white dark:bg-[#12161f] border border-slate-200 dark:border-[#21293d] rounded-2xl p-5 max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="w-full max-w-lg bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5 max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <h2 className="text-sm font-black text-app dark:text-white flex items-center gap-2">
                   <Package size={15} className="text-indigo-500 dark:text-indigo-400" /> Setup Kit —{" "}
                   {prefill?.shopName || kitFor.shop_name || "Client"}
                 </h2>
@@ -542,7 +542,7 @@ export default function DeveloperPage() {
               </div>
               <button
                 onClick={() => setKitFor(null)}
-                className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] hover:border-red-500/40 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all"
+                className="w-8 h-8 flex items-center justify-center bg-panel-2 dark:bg-panel border border-app-2 dark:border-app hover:border-red-500/40 rounded-xl text-muted dark:text-muted hover:text-app dark:hover:text-white transition-all"
               >
                 <X size={14} />
               </button>
@@ -557,7 +557,7 @@ export default function DeveloperPage() {
             )}
 
             {prefillLoading ? (
-              <div className="h-32 flex items-center justify-center text-slate-500 gap-2 text-xs font-bold uppercase tracking-widest">
+              <div className="h-32 flex items-center justify-center text-muted gap-2 text-xs font-bold uppercase tracking-widest">
                 <Loader2 size={16} className="animate-spin" /> Loading...
               </div>
             ) : (
@@ -602,7 +602,7 @@ export default function DeveloperPage() {
                     onChange={(e) => setSetupToken(e.target.value)}
                     placeholder="auto-derived"
                   />
-                  <p className="text-[10px] text-slate-500 dark:text-slate-600 mt-1">
+                  <p className="text-[10px] text-muted dark:text-muted-2 mt-1">
                     Pehli baar /setup par admin banana is token se lock rahega. Blank → seller
                     secret se auto derive.
                   </p>
@@ -614,20 +614,20 @@ export default function DeveloperPage() {
                     onChange={(e) => setSaveCreds(e.target.checked)}
                     className="w-4 h-4 accent-indigo-500"
                   />
-                  <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                  <span className="text-[11px] font-bold text-muted-2 dark:text-muted">
                     Credentials ko portal mein save karo (encrypted at rest) — dobara package banane
                     ke liye ready
                   </span>
                 </label>
 
-                <div className="pt-2 border-t border-slate-200 dark:border-[#1a2234]">
+                <div className="pt-2 border-t border-app-2 dark:border-app-2">
                   <div className="flex items-center gap-2 mb-3">
                     <Globe size={13} className="text-blue-600 dark:text-blue-400" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
                       Public Site Branding (optional)
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-600 mb-3">
+                  <p className="text-[10px] text-muted dark:text-muted-2 mb-3">
                     Khali chhorne par default seller branding (V-Technologies) dikhegi. Bhare to
                     client ko apni alag public site milegi — push par ye env vars client ke Vercel
                     project par set hote hain.
@@ -697,7 +697,7 @@ export default function DeveloperPage() {
                       />
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-600 mt-2">
+                  <p className="text-[10px] text-muted dark:text-muted-2 mt-2">
                     Services allowed: <span className="font-mono">stage-lighting</span>,{" "}
                     <span className="font-mono">industrial</span>,{" "}
                     <span className="font-mono">power-supply</span>. Khali/unknown values skip ho
@@ -705,7 +705,7 @@ export default function DeveloperPage() {
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-slate-200 dark:border-[#1a2234]">
+                <div className="pt-2 border-t border-app-2 dark:border-app-2">
                   <div className="flex items-center gap-2 mb-3">
                     <Rocket size={13} className="text-emerald-600 dark:text-emerald-400" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
@@ -747,14 +747,14 @@ export default function DeveloperPage() {
                         onChange={(e) => setCustomDomain(e.target.value)}
                         placeholder="shop1.vtechshop.com"
                       />
-                      <p className="text-[10px] text-slate-500 dark:text-slate-600 mt-1">
+                      <p className="text-[10px] text-muted dark:text-muted-2 mt-1">
                         Bina URL scheme ke sirf domain (e.g.{" "}
                         <span className="font-mono">kamal.vtechshop.com</span>). Wildcard ke andar
                         ka subdomain auto-verified; naya domain ho to Vercel DNS/TXT verify karna
                         hoga.
                       </p>
                     </div>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-600">
+                    <p className="text-[10px] text-muted dark:text-muted-2">
                       Token client ke apne Vercel account (Account → Settings → Tokens) ka ho.
                       Project ID: Project → Settings → General → Project ID.
                     </p>
@@ -786,7 +786,7 @@ export default function DeveloperPage() {
                 <div className="flex items-center justify-end gap-2 pt-1">
                   <button
                     onClick={() => setKitFor(null)}
-                    className="px-4 py-2.5 bg-slate-100 dark:bg-[#1a2234] hover:bg-slate-200 dark:hover:bg-[#232c42] rounded-xl text-[11px] font-black text-slate-600 dark:text-slate-300 transition-all"
+                    className="px-4 py-2.5 bg-panel-2 dark:bg-panel-2 hover:bg-panel-2 dark:hover:bg-panel-2 rounded-xl text-[11px] font-black text-muted-2 dark:text-app-2 transition-all"
                   >
                     Cancel
                   </button>

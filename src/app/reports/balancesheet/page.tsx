@@ -285,13 +285,13 @@ function BalanceSheetContent() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-black text-white">व्यापार बैलेंस शीट</h1>
-          <p className="text-xs text-slate-500 mt-0.5">{filterLabel}</p>
+          <p className="text-xs text-muted mt-0.5">{filterLabel}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => fetchData(true)}
             disabled={refreshing}
-            className="flex items-center gap-2 px-3 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all"
+            className="flex items-center gap-2 px-3 py-2 bg-panel border border-app rounded-xl text-xs font-bold text-muted hover:text-white hover:border-blue-500/40 transition-all"
           >
             <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} /> Refresh
           </button>
@@ -299,7 +299,7 @@ function BalanceSheetContent() {
             onClick={() =>
               window.open(`/api/print-balancesheet?from=${startDate}&to=${endDate}`, "_blank")
             }
-            className="flex items-center gap-2 px-4 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-panel border border-app rounded-xl text-xs font-bold text-muted hover:text-white hover:border-blue-500/40 transition-all"
           >
             <Printer size={13} /> Print
           </button>
@@ -345,16 +345,16 @@ function BalanceSheetContent() {
         />
       </div>
 
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+      <div className="bg-panel border border-app rounded-2xl p-4">
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+            <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
               फिल्टर
             </label>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as FilterType)}
-              className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+              className="px-3 py-2 bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-blue-500/50"
             >
               <option value="monthly">मासिक</option>
               <option value="yearly">वार्षिक</option>
@@ -365,7 +365,7 @@ function BalanceSheetContent() {
           {filterType !== "custom" && (
             <>
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+                <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
                   वर्ष
                 </label>
                 <input
@@ -374,18 +374,18 @@ function BalanceSheetContent() {
                   onChange={(e) => setSelYear(parseInt(e.target.value))}
                   min={2020}
                   max={currentYear + 1}
-                  className="w-24 px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+                  className="w-24 px-3 py-2 bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-blue-500/50"
                 />
               </div>
               {filterType === "monthly" && (
                 <div>
-                  <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+                  <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
                     महीना
                   </label>
                   <select
                     value={selMonth}
                     onChange={(e) => setSelMonth(parseInt(e.target.value))}
-                    className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+                    className="px-3 py-2 bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-blue-500/50"
                   >
                     {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                       <option key={m} value={m}>
@@ -401,25 +401,25 @@ function BalanceSheetContent() {
           {filterType === "custom" && (
             <>
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+                <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
                   शुरू
                 </label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+                  className="px-3 py-2 bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-blue-500/50"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+                <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
                   अंत
                 </label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+                  className="px-3 py-2 bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-blue-500/50"
                 />
               </div>
             </>
@@ -434,21 +434,21 @@ function BalanceSheetContent() {
 
           <button
             onClick={() => navigate("prev")}
-            className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-slate-400 hover:text-white hover:border-blue-500/40 transition-all"
+            className="px-3 py-2 bg-panel-2 border border-app rounded-xl text-muted hover:text-white hover:border-blue-500/40 transition-all"
           >
             <ChevronLeft size={14} />
           </button>
           <button
             onClick={() => navigate("next")}
-            className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-slate-400 hover:text-white hover:border-blue-500/40 transition-all"
+            className="px-3 py-2 bg-panel-2 border border-app rounded-xl text-muted hover:text-white hover:border-blue-500/40 transition-all"
           >
             <ChevronRight size={14} />
           </button>
         </div>
       </div>
 
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-        <div className="flex flex-wrap gap-1 p-2 border-b border-[#21293d]">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+        <div className="flex flex-wrap gap-1 p-2 border-b border-app">
           {[
             { id: "customer", label: "ग्राहक लेजर", icon: <Users size={13} /> },
             { id: "mechanic", label: "मैकेनिक लेजर", icon: <Wrench size={13} /> },
@@ -464,7 +464,7 @@ function BalanceSheetContent() {
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                 activeTab === t.id
                   ? "bg-blue-600 text-white"
-                  : "text-slate-500 hover:text-slate-200 hover:bg-white/[0.04]"
+                  : "text-muted hover:text-app-2 hover:bg-white/[0.04]"
               }`}
             >
               {t.icon} {t.label}
@@ -493,7 +493,7 @@ function BalanceSheetContent() {
         </div>
 
         {/* ═══════════════════════════════════════════ CALCULATION SUMMARY */}
-        <div className="bg-[#161b27] border border-blue-500/15 rounded-2xl p-4 mt-4">
+        <div className="bg-panel border border-blue-500/15 rounded-2xl p-4 mt-4">
           <div className="flex items-center gap-2 mb-2">
             <Info size={12} className="text-blue-400" />
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-400">
@@ -503,7 +503,7 @@ function BalanceSheetContent() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[10px] font-mono">
             <div className="bg-slate-900/50 rounded-lg p-2">
               <p className="text-blue-400 font-bold mb-1">Income</p>
-              <div className="text-slate-500 space-y-0.5">
+              <div className="text-muted space-y-0.5">
                 <div>
                   <span className="text-emerald-400">Total Income</span> = Repair Income + Walk-in
                   Sales + Client Sales
@@ -512,7 +512,7 @@ function BalanceSheetContent() {
             </div>
             <div className="bg-slate-900/50 rounded-lg p-2">
               <p className="text-blue-400 font-bold mb-1">Expenses</p>
-              <div className="text-slate-500 space-y-0.5">
+              <div className="text-muted space-y-0.5">
                 <div>
                   <span className="text-red-400">Total Expenses</span> = Salary + Commission + Shop
                   + EMI + Discount
@@ -524,7 +524,7 @@ function BalanceSheetContent() {
             </div>
             <div className="bg-slate-900/50 rounded-lg p-2">
               <p className="text-blue-400 font-bold mb-1">Balance Sheet</p>
-              <div className="text-slate-500 space-y-0.5">
+              <div className="text-muted space-y-0.5">
                 <div>
                   <span className="text-blue-400">Total Assets</span> = Stock Value + Cash Balance
                 </div>
@@ -573,12 +573,12 @@ function MetricCard({
     purple: "text-purple-400",
   };
   return (
-    <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+    <div className="bg-panel border border-app rounded-2xl p-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-black uppercase text-slate-600 tracking-widest">
+        <span className="text-[10px] font-black uppercase text-muted-2 tracking-widest">
           {label}
         </span>
-        <div className="w-7 h-7 rounded-lg bg-[#111520] flex items-center justify-center text-slate-500">
+        <div className="w-7 h-7 rounded-lg bg-panel-2 flex items-center justify-center text-muted">
           {icon}
         </div>
       </div>
@@ -598,7 +598,7 @@ function CustomerTab({
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="bg-[#111520]">
+          <tr className="bg-panel-2">
             {[
               "ग्राहक नाम",
               "संपर्क",
@@ -610,7 +610,7 @@ function CustomerTab({
             ].map((c) => (
               <th
                 key={c}
-                className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left whitespace-nowrap"
+                className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left whitespace-nowrap"
               >
                 {c}
               </th>
@@ -620,7 +620,7 @@ function CustomerTab({
         <tbody>
           {data.length === 0 ? (
             <tr>
-              <td colSpan={7} className="text-center py-12 text-slate-600 text-xs font-bold">
+              <td colSpan={7} className="text-center py-12 text-muted-2 text-xs font-bold">
                 कोई ग्राहक लेनदेन नहीं
               </td>
             </tr>
@@ -629,7 +629,7 @@ function CustomerTab({
               {data.map((c) => (
                 <tr
                   key={c.client_id}
-                  className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors"
+                  className="border-t border-app/50 hover:bg-white/[0.02] transition-colors"
                 >
                   <td className="px-3 py-2.5">
                     <a
@@ -639,9 +639,9 @@ function CustomerTab({
                     >
                       {c.customer_name}
                     </a>
-                    <div className="text-[10px] text-slate-600 mt-0.5">{c.total_jobs} job(s)</div>
+                    <div className="text-[10px] text-muted-2 mt-0.5">{c.total_jobs} job(s)</div>
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-slate-400">{c.contact || "—"}</td>
+                  <td className="px-3 py-2.5 text-xs text-muted">{c.contact || "—"}</td>
                   <td
                     className={`px-3 py-2.5 text-xs text-right font-bold ${c.opening_balance >= 0 ? "text-blue-400" : "text-red-400"}`}
                   >
@@ -705,11 +705,11 @@ function MechanicTab({ data }: { data: MLRow[] }) {
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="bg-[#111520]">
+          <tr className="bg-panel-2">
             {["मैकेनिक नाम", "दिन काम", "कुल वेतन", "कुल अग्रिम", "बैलेंस"].map((c) => (
               <th
                 key={c}
-                className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left whitespace-nowrap"
+                className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left whitespace-nowrap"
               >
                 {c}
               </th>
@@ -719,7 +719,7 @@ function MechanicTab({ data }: { data: MLRow[] }) {
         <tbody>
           {data.length === 0 ? (
             <tr>
-              <td colSpan={5} className="text-center py-12 text-slate-600 text-xs font-bold">
+              <td colSpan={5} className="text-center py-12 text-muted-2 text-xs font-bold">
                 कोई डेटा नहीं
               </td>
             </tr>
@@ -727,10 +727,10 @@ function MechanicTab({ data }: { data: MLRow[] }) {
             data.map((m) => (
               <tr
                 key={m.mechanic_id}
-                className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors"
+                className="border-t border-app/50 hover:bg-white/[0.02] transition-colors"
               >
-                <td className="px-3 py-2.5 text-sm font-bold text-slate-200">{m.mechanic_name}</td>
-                <td className="px-3 py-2.5 text-xs text-slate-400 text-center">
+                <td className="px-3 py-2.5 text-sm font-bold text-app-2">{m.mechanic_name}</td>
+                <td className="px-3 py-2.5 text-xs text-muted text-center">
                   <span className="text-emerald-400">{m.days_worked_in_period}</span> दिन
                 </td>
                 <td className="px-3 py-2.5 text-xs text-right font-bold text-emerald-400">
@@ -759,11 +759,11 @@ function InventoryTab({ data }: { data: StockRow[] }) {
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="bg-[#111520]">
+          <tr className="bg-panel-2">
             {["प्रोडक्ट", "स्टॉक इन", "बिका", "शेष", "वैल्यू"].map((c) => (
               <th
                 key={c}
-                className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left whitespace-nowrap"
+                className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left whitespace-nowrap"
               >
                 {c}
               </th>
@@ -773,7 +773,7 @@ function InventoryTab({ data }: { data: StockRow[] }) {
         <tbody>
           {data.length === 0 ? (
             <tr>
-              <td colSpan={5} className="text-center py-12 text-slate-600 text-xs font-bold">
+              <td colSpan={5} className="text-center py-12 text-muted-2 text-xs font-bold">
                 कोई स्टॉक डेटा नहीं
               </td>
             </tr>
@@ -782,16 +782,16 @@ function InventoryTab({ data }: { data: StockRow[] }) {
               {data.map((s) => (
                 <tr
                   key={s.product_id}
-                  className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors"
+                  className="border-t border-app/50 hover:bg-white/[0.02] transition-colors"
                 >
                   <td className="px-3 py-2.5">
-                    <span className="text-sm font-bold text-slate-200">{s.product_name}</span>
-                    <div className="text-[10px] text-slate-600">{s.description}</div>
+                    <span className="text-sm font-bold text-app-2">{s.product_name}</span>
+                    <div className="text-[10px] text-muted-2">{s.description}</div>
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-right text-slate-400">
+                  <td className="px-3 py-2.5 text-xs text-right text-muted">
                     {s.total_stock_in}
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-right text-slate-400">
+                  <td className="px-3 py-2.5 text-xs text-right text-muted">
                     {s.sold_quantity}
                   </td>
                   <td
@@ -828,11 +828,11 @@ function IncomeTab({ data, summary }: { data: IncomeRow[]; summary: Summary | nu
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="bg-[#111520]">
+          <tr className="bg-panel-2">
             {["विवरण", "राशि"].map((c) => (
               <th
                 key={c}
-                className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left whitespace-nowrap"
+                className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left whitespace-nowrap"
               >
                 {c}
               </th>
@@ -841,14 +841,14 @@ function IncomeTab({ data, summary }: { data: IncomeRow[]; summary: Summary | nu
         </thead>
         <tbody>
           {data.map((i) => (
-            <tr key={i.description} className="border-t border-[#21293d]/50">
-              <td className="px-3 py-3 text-sm font-bold text-slate-200">{i.description}</td>
+            <tr key={i.description} className="border-t border-app/50">
+              <td className="px-3 py-3 text-sm font-bold text-app-2">{i.description}</td>
               <td className="px-3 py-3 text-sm text-right font-black text-emerald-400">
                 {inr(i.amount)}
               </td>
             </tr>
           ))}
-          <tr className="border-t-2 border-[#21293d]">
+          <tr className="border-t-2 border-app">
             <td className="px-3 py-3 text-sm font-black text-white">कुल आय</td>
             <td className="px-3 py-3 text-sm text-right font-black text-emerald-400">
               {inr(summary?.totalIncome || 0)}
@@ -866,11 +866,11 @@ function ExpenseTab({ data }: { data: ExpenseRow[] }) {
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="bg-[#111520]">
+          <tr className="bg-panel-2">
             {["श्रेणी", "राशि"].map((c) => (
               <th
                 key={c}
-                className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left whitespace-nowrap"
+                className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left whitespace-nowrap"
               >
                 {c}
               </th>
@@ -880,15 +880,15 @@ function ExpenseTab({ data }: { data: ExpenseRow[] }) {
         <tbody>
           {data.length === 0 ? (
             <tr>
-              <td colSpan={2} className="text-center py-12 text-slate-600 text-xs font-bold">
+              <td colSpan={2} className="text-center py-12 text-muted-2 text-xs font-bold">
                 कोई खर्च नहीं
               </td>
             </tr>
           ) : (
             <>
               {data.map((e) => (
-                <tr key={e.expense_category} className="border-t border-[#21293d]/50">
-                  <td className="px-3 py-3 text-sm font-bold text-slate-200">
+                <tr key={e.expense_category} className="border-t border-app/50">
+                  <td className="px-3 py-3 text-sm font-bold text-app-2">
                     {e.expense_category}
                   </td>
                   <td className="px-3 py-3 text-sm text-right font-black text-red-400">
@@ -896,7 +896,7 @@ function ExpenseTab({ data }: { data: ExpenseRow[] }) {
                   </td>
                 </tr>
               ))}
-              <tr className="border-t-2 border-[#21293d]">
+              <tr className="border-t-2 border-app">
                 <td className="px-3 py-3 text-sm font-black text-white">कुल व्यय</td>
                 <td className="px-3 py-3 text-sm text-right font-black text-red-400">
                   {inr(total)}
@@ -915,11 +915,11 @@ function TopCustomersTab({ data }: { data: TopCustomer[] }) {
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="bg-[#111520]">
+          <tr className="bg-panel-2">
             {["ग्राहक", "संपर्क", "जॉब्स", "कुल राशि", "भुगतान", "बैलेंस"].map((c) => (
               <th
                 key={c}
-                className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left whitespace-nowrap"
+                className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left whitespace-nowrap"
               >
                 {c}
               </th>
@@ -929,7 +929,7 @@ function TopCustomersTab({ data }: { data: TopCustomer[] }) {
         <tbody>
           {data.length === 0 ? (
             <tr>
-              <td colSpan={6} className="text-center py-12 text-slate-600 text-xs font-bold">
+              <td colSpan={6} className="text-center py-12 text-muted-2 text-xs font-bold">
                 कोई डेटा नहीं
               </td>
             </tr>
@@ -937,11 +937,11 @@ function TopCustomersTab({ data }: { data: TopCustomer[] }) {
             data.map((c) => (
               <tr
                 key={c.client_id}
-                className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors"
+                className="border-t border-app/50 hover:bg-white/[0.02] transition-colors"
               >
-                <td className="px-3 py-2.5 text-sm font-bold text-slate-200">{c.customer_name}</td>
-                <td className="px-3 py-2.5 text-xs text-slate-400">{c.contact || "—"}</td>
-                <td className="px-3 py-2.5 text-xs text-center text-slate-400">{c.total_jobs}</td>
+                <td className="px-3 py-2.5 text-sm font-bold text-app-2">{c.customer_name}</td>
+                <td className="px-3 py-2.5 text-xs text-muted">{c.contact || "—"}</td>
+                <td className="px-3 py-2.5 text-xs text-center text-muted">{c.total_jobs}</td>
                 <td className="px-3 py-2.5 text-xs text-right font-bold text-emerald-400">
                   {inr(c.total_amount)}
                 </td>
@@ -967,11 +967,11 @@ function LoanTab({ data }: { data: LoanRow[] }) {
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="bg-[#111520]">
+          <tr className="bg-panel-2">
             {["लेंडर", "कुल लोन", "इस अवधि में भुगतान", "बकाया", "स्थिति"].map((c) => (
               <th
                 key={c}
-                className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left whitespace-nowrap"
+                className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left whitespace-nowrap"
               >
                 {c}
               </th>
@@ -981,7 +981,7 @@ function LoanTab({ data }: { data: LoanRow[] }) {
         <tbody>
           {data.length === 0 ? (
             <tr>
-              <td colSpan={5} className="text-center py-12 text-slate-600 text-xs font-bold">
+              <td colSpan={5} className="text-center py-12 text-muted-2 text-xs font-bold">
                 कोई लोन डेटा नहीं
               </td>
             </tr>
@@ -989,10 +989,10 @@ function LoanTab({ data }: { data: LoanRow[] }) {
             data.map((l) => (
               <tr
                 key={l.lender_id}
-                className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors"
+                className="border-t border-app/50 hover:bg-white/[0.02] transition-colors"
               >
-                <td className="px-3 py-2.5 text-sm font-bold text-slate-200">{l.lender_name}</td>
-                <td className="px-3 py-2.5 text-xs text-right text-slate-400">
+                <td className="px-3 py-2.5 text-sm font-bold text-app-2">{l.lender_name}</td>
+                <td className="px-3 py-2.5 text-xs text-right text-muted">
                   {inr(l.loan_amount)}
                 </td>
                 <td className="px-3 py-2.5 text-xs text-right font-bold text-emerald-400">
@@ -1005,7 +1005,7 @@ function LoanTab({ data }: { data: LoanRow[] }) {
                 </td>
                 <td className="px-3 py-2.5">
                   <span
-                    className={`text-[10px] font-bold px-2 py-1 rounded-lg ${l.status === "सक्रिय" ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-500/20 text-slate-400"}`}
+                    className={`text-[10px] font-bold px-2 py-1 rounded-lg ${l.status === "सक्रिय" ? "bg-emerald-500/20 text-emerald-400" : "bg-muted/20 text-muted"}`}
                   >
                     {l.status}
                   </span>
@@ -1035,15 +1035,15 @@ function ClientLedgerModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-2xl shadow-2xl max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-[#21293d]">
+      <div className="bg-panel border border-app rounded-2xl w-full max-w-2xl shadow-2xl max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-app">
           <div>
             <h3 className="font-black text-white text-sm">{client.name} — Ledger</h3>
-            <p className="text-[10px] text-slate-500">Opening: {inr(client.opening_balance)}</p>
+            <p className="text-[10px] text-muted">Opening: {inr(client.opening_balance)}</p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center bg-[#111520] hover:bg-[#21293d] rounded-lg text-slate-500 hover:text-white transition-all"
+            className="w-8 h-8 flex items-center justify-center bg-panel-2 hover:bg-panel-2 rounded-lg text-muted hover:text-white transition-all"
           >
             <X size={14} />
           </button>
@@ -1051,11 +1051,11 @@ function ClientLedgerModal({
         <div className="flex-1 overflow-y-auto p-4">
           <table className="w-full">
             <thead>
-              <tr className="bg-[#111520]">
+              <tr className="bg-panel-2">
                 {["तारीख", "विवरण", "डेबिट", "क्रेडिट", "बैलेंस"].map((c) => (
                   <th
                     key={c}
-                    className="px-3 py-2 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left"
+                    className="px-3 py-2 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left"
                   >
                     {c}
                   </th>
@@ -1071,15 +1071,15 @@ function ClientLedgerModal({
                 </tr>
               ) : entries.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-12 text-slate-600 text-xs font-bold">
+                  <td colSpan={5} className="text-center py-12 text-muted-2 text-xs font-bold">
                     कोई एंट्री नहीं
                   </td>
                 </tr>
               ) : (
                 entries.map((e, i) => (
-                  <tr key={i} className="border-t border-[#21293d]/50">
-                    <td className="px-3 py-2 text-xs text-slate-400">{e.event_date}</td>
-                    <td className="px-3 py-2 text-xs text-slate-200">{e.description}</td>
+                  <tr key={i} className="border-t border-app/50">
+                    <td className="px-3 py-2 text-xs text-muted">{e.event_date}</td>
+                    <td className="px-3 py-2 text-xs text-app-2">{e.description}</td>
                     <td className="px-3 py-2 text-xs text-right text-emerald-400">
                       {e.debit > 0 ? inr(e.debit) : ""}
                     </td>

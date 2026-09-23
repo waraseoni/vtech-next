@@ -615,7 +615,7 @@ export default function SalaryPageInner({
       )}
 
       {/* Top Header Card */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3 sm:p-3.5 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+      <div className="bg-panel border border-app rounded-2xl p-3 sm:p-3.5 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-600/20 border border-white/10 flex-shrink-0">
             <Calculator size={18} className="text-white" />
@@ -629,7 +629,7 @@ export default function SalaryPageInner({
                 {activeTab === "report" ? monthLabel : "Rate Master"}
               </span>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium">
+            <p className="text-[10px] sm:text-[11px] text-muted font-medium">
               Attendance wages, job commissions, advance adjustments & net payroll
             </p>
           </div>
@@ -637,7 +637,7 @@ export default function SalaryPageInner({
 
         {/* Top Controls: Tabs & Refresh */}
         <div className="flex items-center gap-2 self-end sm:self-auto">
-          <div className="flex bg-[#0d1117] p-1 rounded-xl border border-[#21293d]">
+          <div className="flex bg-app p-1 rounded-xl border border-app">
             <button
               onClick={() => {
                 setActiveTab("report");
@@ -646,14 +646,14 @@ export default function SalaryPageInner({
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                 activeTab === "report"
                   ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
-                  : "text-slate-400 hover:text-slate-200"
+                  : "text-muted hover:text-app-2"
               }`}
             >
               <Layers size={12} />
               <span>Report</span>
               <span
                 className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
-                  activeTab === "report" ? "bg-white/20 text-white" : "bg-slate-800 text-slate-400"
+                  activeTab === "report" ? "bg-white/20 text-white" : "bg-slate-800 text-muted"
                 }`}
               >
                 {reportData.length}
@@ -668,14 +668,14 @@ export default function SalaryPageInner({
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                 activeTab === "master"
                   ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
-                  : "text-slate-400 hover:text-slate-200"
+                  : "text-muted hover:text-app-2"
               }`}
             >
               <Coins size={12} />
               <span>Rates</span>
               <span
                 className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
-                  activeTab === "master" ? "bg-white/20 text-white" : "bg-slate-800 text-slate-400"
+                  activeTab === "master" ? "bg-white/20 text-white" : "bg-slate-800 text-muted"
                 }`}
               >
                 {mechanics.length}
@@ -687,7 +687,7 @@ export default function SalaryPageInner({
             onClick={() => loadData()}
             disabled={loading}
             title="Refresh Data"
-            className="p-1.5 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] rounded-xl text-slate-400 hover:text-white transition-all disabled:opacity-50 flex-shrink-0"
+            className="p-1.5 bg-app hover:bg-panel-2 border border-app rounded-xl text-muted hover:text-white transition-all disabled:opacity-50 flex-shrink-0"
           >
             <RefreshCw size={13} className={loading ? "animate-spin text-blue-400" : ""} />
           </button>
@@ -701,29 +701,29 @@ export default function SalaryPageInner({
           {/* ========================================================================= */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-2.5">
             {/* 1. Staff Count */}
-            <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
-              <div className="flex items-center justify-between text-slate-400 mb-0.5">
+            <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
+              <div className="flex items-center justify-between text-muted mb-0.5">
                 <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Staff Count</span>
                 <Users size={13} className="text-blue-400" />
               </div>
               <p className="text-base sm:text-lg font-black text-white tracking-tight">{stats.totalStaff}</p>
-              <p className="text-[9px] text-slate-500">{stats.totalPresentDays} present days</p>
+              <p className="text-[9px] text-muted">{stats.totalPresentDays} present days</p>
             </div>
 
             {/* 2. Wages Earned */}
-            <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
-              <div className="flex items-center justify-between text-slate-400 mb-0.5">
+            <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
+              <div className="flex items-center justify-between text-muted mb-0.5">
                 <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Wages Earned</span>
                 <IndianRupee size={13} className="text-indigo-400" />
               </div>
-              <p className="text-base sm:text-lg font-black text-slate-200 tracking-tight">
+              <p className="text-base sm:text-lg font-black text-app-2 tracking-tight">
                 {inrShort(stats.totalEarned)}
               </p>
-              <p className="text-[9px] text-slate-500">Fixed attendance</p>
+              <p className="text-[9px] text-muted">Fixed attendance</p>
             </div>
 
             {/* 3. Commissions */}
-            <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
+            <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
               <div className="flex items-center justify-between text-amber-400/90 mb-0.5">
                 <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Commissions</span>
                 <TrendingUp size={13} className="text-amber-400" />
@@ -731,11 +731,11 @@ export default function SalaryPageInner({
               <p className="text-base sm:text-lg font-black text-amber-300 tracking-tight">
                 {inrShort(stats.totalComm)}
               </p>
-              <p className="text-[9px] text-slate-500">Job incentives</p>
+              <p className="text-[9px] text-muted">Job incentives</p>
             </div>
 
             {/* 4. Advance Deductions */}
-            <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
+            <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
               <div className="flex items-center justify-between text-rose-400/90 mb-0.5">
                 <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Advances</span>
                 <CreditCard size={13} className="text-rose-400" />
@@ -743,11 +743,11 @@ export default function SalaryPageInner({
               <p className="text-base sm:text-lg font-black text-rose-400 tracking-tight">
                 {inrShort(stats.totalAdv)}
               </p>
-              <p className="text-[9px] text-slate-500">Deducted this month</p>
+              <p className="text-[9px] text-muted">Deducted this month</p>
             </div>
 
             {/* 5. Net Payable */}
-            <div className="col-span-2 sm:col-span-1 bg-[#161b27] border border-emerald-500/30 rounded-xl p-2.5 sm:p-3 shadow-sm bg-gradient-to-br from-emerald-950/20 to-transparent">
+            <div className="col-span-2 sm:col-span-1 bg-panel border border-emerald-500/30 rounded-xl p-2.5 sm:p-3 shadow-sm bg-gradient-to-br from-emerald-950/20 to-transparent">
               <div className="flex items-center justify-between text-emerald-400 mb-0.5">
                 <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Net Payable</span>
                 <Sparkles size={13} className="text-emerald-400" />
@@ -760,12 +760,12 @@ export default function SalaryPageInner({
           </div>
 
           {/* Month Selector & Controls Toolbar */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-2.5 sm:p-3 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
+          <div className="bg-panel border border-app rounded-2xl p-2.5 sm:p-3 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
             {/* Left: Month Switcher & Jump Button */}
-            <div className="flex items-center justify-between sm:justify-start gap-1 bg-[#0d1117] p-1 rounded-xl border border-[#21293d]">
+            <div className="flex items-center justify-between sm:justify-start gap-1 bg-app p-1 rounded-xl border border-app">
               <button
                 onClick={() => changeMonth(-1)}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-white/5 transition-all"
                 title="Previous Month"
               >
                 <ChevronLeft size={15} />
@@ -789,7 +789,7 @@ export default function SalaryPageInner({
 
               <button
                 onClick={() => changeMonth(1)}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-white/5 transition-all"
                 title="Next Month"
               >
                 <ChevronRight size={15} />
@@ -811,19 +811,19 @@ export default function SalaryPageInner({
               <div className="relative flex-1 sm:w-48 sm:flex-initial">
                 <Search
                   size={12}
-                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
                 />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search mechanic..."
-                  className="w-full pl-7 pr-6 py-1 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-medium text-white placeholder:text-slate-500 outline-none focus:border-blue-500/60 transition-all"
+                  className="w-full pl-7 pr-6 py-1 bg-app border border-app rounded-xl text-xs font-medium text-white placeholder:text-muted outline-none focus:border-blue-500/60 transition-all"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-white"
                   >
                     <X size={11} />
                   </button>
@@ -831,11 +831,11 @@ export default function SalaryPageInner({
               </div>
 
               {/* Status Filter Chips */}
-              <div className="flex items-center bg-[#0d1117] p-0.5 rounded-xl border border-[#21293d] text-xs">
+              <div className="flex items-center bg-app p-0.5 rounded-xl border border-app text-xs">
                 <button
                   onClick={() => setStatusFilter("all")}
                   className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
-                    statusFilter === "all" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-slate-200"
+                    statusFilter === "all" ? "bg-blue-600 text-white" : "text-muted hover:text-app-2"
                   }`}
                 >
                   All ({reportData.length})
@@ -845,7 +845,7 @@ export default function SalaryPageInner({
                   className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
                     statusFilter === "payable"
                       ? "bg-emerald-600 text-white"
-                      : "text-slate-400 hover:text-emerald-400"
+                      : "text-muted hover:text-emerald-400"
                   }`}
                 >
                   Payable ({stats.payableCount})
@@ -853,7 +853,7 @@ export default function SalaryPageInner({
                 <button
                   onClick={() => setStatusFilter("settled")}
                   className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
-                    statusFilter === "settled" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"
+                    statusFilter === "settled" ? "bg-slate-700 text-white" : "text-muted hover:text-app-2"
                   }`}
                 >
                   Settled ({stats.settledCount})
@@ -866,7 +866,7 @@ export default function SalaryPageInner({
                   href={`/api/print-salary?month=${month}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 hover:text-white transition-all shadow-sm"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 hover:text-white transition-all shadow-sm"
                   title="Print Salary Sheet"
                 >
                   <Printer size={12} className="text-blue-400" />
@@ -875,7 +875,7 @@ export default function SalaryPageInner({
 
                 <button
                   onClick={exportToCSV}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 hover:text-white transition-all shadow-sm"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 hover:text-white transition-all shadow-sm"
                   title="Export to CSV"
                 >
                   <FileSpreadsheet size={12} className="text-emerald-400" />
@@ -888,7 +888,7 @@ export default function SalaryPageInner({
           {/* ========================================================================= */}
           {/* DESKTOP (PC) VIEW: ZERO-OVERFLOW FRAME TABLE (100% IN FRAME)              */}
           {/* ========================================================================= */}
-          <div className="hidden md:block bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-lg w-full">
+          <div className="hidden md:block bg-panel border border-app rounded-2xl overflow-hidden shadow-lg w-full">
             <div className="w-full overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse table-fixed">
                 <colgroup>
@@ -903,7 +903,7 @@ export default function SalaryPageInner({
                   <col style={{ width: "10%" }} />
                 </colgroup>
                 <thead>
-                  <tr className="bg-[#0d1117] border-b border-[#21293d] text-[10px] font-bold uppercase text-slate-400 tracking-wider select-none">
+                  <tr className="bg-app border-b border-app text-[10px] font-bold uppercase text-muted tracking-wider select-none">
                     <th className="py-2.5 px-2 text-center">#</th>
 
                     {/* Staff Member (Sortable) */}
@@ -952,7 +952,7 @@ export default function SalaryPageInner({
 
                     {/* Old Balance (Sortable) */}
                     <th
-                      className="py-2.5 px-1.5 text-right text-slate-400 cursor-pointer group hover:text-slate-200 transition-colors"
+                      className="py-2.5 px-1.5 text-right text-muted cursor-pointer group hover:text-app-2 transition-colors"
                       onClick={() => handleSort("oldBalance")}
                     >
                       <div className="flex items-center justify-end gap-0.5 truncate">
@@ -1002,11 +1002,11 @@ export default function SalaryPageInner({
                     <tr>
                       <td colSpan={9} className="py-8 px-2 text-center">
                         <div className="max-w-xs mx-auto text-center space-y-1.5">
-                          <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
+                          <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-muted">
                             <Search size={15} />
                           </div>
                           <p className="text-white font-bold text-xs">No records found</p>
-                          <p className="text-slate-500 text-[10px]">Try adjusting your search or filters.</p>
+                          <p className="text-muted text-[10px]">Try adjusting your search or filters.</p>
                         </div>
                       </td>
                     </tr>
@@ -1017,7 +1017,7 @@ export default function SalaryPageInner({
                         className="hover:bg-blue-500/[0.02] transition-colors group"
                       >
                         {/* Index */}
-                        <td className="py-2 px-2 text-center text-slate-500 font-bold text-[10px]">
+                        <td className="py-2 px-2 text-center text-muted font-bold text-[10px]">
                           {idx + 1}
                         </td>
 
@@ -1033,7 +1033,7 @@ export default function SalaryPageInner({
                               >
                                 {row.name}
                               </Link>
-                              <span className="text-[10px] text-slate-500 font-medium flex-shrink-0">
+                              <span className="text-[10px] text-muted font-medium flex-shrink-0">
                                 ({inr(row.daily_salary)}/d)
                               </span>
                             </div>
@@ -1042,11 +1042,11 @@ export default function SalaryPageInner({
 
                         {/* Attendance Badge */}
                         <td className="py-2 px-1.5 text-center overflow-hidden">
-                          <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-[10px] font-bold">
+                          <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-app border border-app rounded-lg text-[10px] font-bold">
                             <span className="text-emerald-400 font-bold" title="Present">
                               {row.present}P
                             </span>
-                            <span className="text-slate-600 font-light">/</span>
+                            <span className="text-muted-2 font-light">/</span>
                             <span className="text-amber-400 font-bold" title="Half-day">
                               {row.halfDays}HD
                             </span>
@@ -1054,13 +1054,13 @@ export default function SalaryPageInner({
                         </td>
 
                         {/* Earned Wage */}
-                        <td className="py-2 px-2 text-right font-bold text-slate-200 text-xs truncate">
+                        <td className="py-2 px-2 text-right font-bold text-app-2 text-xs truncate">
                           {inr(row.earnedSalary)}
                         </td>
 
                         {/* Commission */}
                         <td className="py-2 px-2 text-right font-bold text-amber-300 text-xs truncate">
-                          {row.commission > 0 ? inr(row.commission) : <span className="text-slate-600 font-normal">—</span>}
+                          {row.commission > 0 ? inr(row.commission) : <span className="text-muted-2 font-normal">—</span>}
                         </td>
 
                         {/* Old Balance */}
@@ -1070,7 +1070,7 @@ export default function SalaryPageInner({
                               ? "text-blue-400"
                               : row.oldBalance < 0
                               ? "text-rose-400"
-                              : "text-slate-500 font-normal"
+                              : "text-muted font-normal"
                           }`}
                         >
                           {row.oldBalance !== 0 ? inr(row.oldBalance) : "—"}
@@ -1078,7 +1078,7 @@ export default function SalaryPageInner({
 
                         {/* Advance Deductions */}
                         <td className="py-2 px-1.5 text-right font-bold text-rose-400 text-xs truncate">
-                          {row.advance > 0 ? `-${inr(row.advance)}` : <span className="text-slate-600 font-normal">—</span>}
+                          {row.advance > 0 ? `-${inr(row.advance)}` : <span className="text-muted-2 font-normal">—</span>}
                         </td>
 
                         {/* Net Payable Badge */}
@@ -1089,7 +1089,7 @@ export default function SalaryPageInner({
                                 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
                                 : row.netTotal < 0
                                 ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
-                                : "bg-slate-800/60 text-slate-400 border border-slate-700/50"
+                                : "bg-slate-800/60 text-muted border border-slate-700/50"
                             }`}
                           >
                             {inr(Math.abs(row.netTotal))}
@@ -1113,13 +1113,13 @@ export default function SalaryPageInner({
                                 <CreditCard size={10} /> Pay
                               </button>
                             ) : (
-                              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                              <span className="text-[9px] font-bold text-muted uppercase tracking-wider">
                                 {row.netTotal === 0 ? "Settled" : "Excess"}
                               </span>
                             )}
                             <Link
                               href={`/mechanics/ledger/${row.id}?month=${month}`}
-                              className="p-1 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all"
+                              className="p-1 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all"
                               title="Ledger"
                             >
                               <ExternalLink size={11} />
@@ -1134,17 +1134,17 @@ export default function SalaryPageInner({
                 {/* Table Footer Summary Totals */}
                 {filteredReportData.length > 0 && !loading && (
                   <tfoot>
-                    <tr className="bg-[#0d1117] border-t border-[#21293d] font-bold text-xs">
-                      <td colSpan={3} className="py-2 px-2 text-right uppercase tracking-wider text-slate-400 text-[10px]">
+                    <tr className="bg-app border-t border-app font-bold text-xs">
+                      <td colSpan={3} className="py-2 px-2 text-right uppercase tracking-wider text-muted text-[10px]">
                         Total ({filteredReportData.length}):
                       </td>
-                      <td className="py-2 px-2 text-right text-slate-200 truncate">
+                      <td className="py-2 px-2 text-right text-app-2 truncate">
                         {inr(filteredReportData.reduce((s, r) => s + r.earnedSalary, 0))}
                       </td>
                       <td className="py-2 px-2 text-right text-amber-400 truncate">
                         {inr(filteredReportData.reduce((s, r) => s + r.commission, 0))}
                       </td>
-                      <td className="py-2 px-1.5 text-right text-slate-300 text-[10px] truncate">
+                      <td className="py-2 px-1.5 text-right text-app-2 text-[10px] truncate">
                         {inr(filteredReportData.reduce((s, r) => s + r.oldBalance, 0))}
                       </td>
                       <td className="py-2 px-1.5 text-right text-rose-400 truncate">
@@ -1171,16 +1171,16 @@ export default function SalaryPageInner({
               Array(4)
                 .fill(0)
                 .map((_, i) => (
-                  <div key={i} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 animate-pulse space-y-3">
+                  <div key={i} className="bg-panel border border-app rounded-2xl p-4 animate-pulse space-y-3">
                     <div className="h-5 bg-slate-800/60 rounded-full w-1/2"></div>
                     <div className="h-14 bg-slate-800/40 rounded-xl w-full"></div>
                   </div>
                 ))
             ) : filteredReportData.length === 0 ? (
-              <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-8 text-center space-y-2">
-                <Search size={20} className="text-slate-500 mx-auto" />
+              <div className="bg-panel border border-app rounded-2xl p-8 text-center space-y-2">
+                <Search size={20} className="text-muted mx-auto" />
                 <p className="text-white font-bold text-xs">No records found</p>
-                <p className="text-slate-500 text-[11px]">Try adjusting your search or filters.</p>
+                <p className="text-muted text-[11px]">Try adjusting your search or filters.</p>
               </div>
             ) : (
               filteredReportData.map((row) => {
@@ -1188,7 +1188,7 @@ export default function SalaryPageInner({
                 return (
                   <div
                     key={row.id}
-                    className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3.5 shadow-md space-y-3 hover:border-slate-600 transition-all"
+                    className="bg-panel border border-app rounded-2xl p-3.5 shadow-md space-y-3 hover:border-muted transition-all"
                   >
                     {/* Top Row: Avatar, Name & Net Payable */}
                     <div className="flex items-center justify-between gap-2.5">
@@ -1201,7 +1201,7 @@ export default function SalaryPageInner({
                           >
                             {row.name}
                           </Link>
-                          <p className="text-[10px] text-slate-400 font-medium">
+                          <p className="text-[10px] text-muted font-medium">
                             Daily: {inr(row.daily_salary)}
                           </p>
                         </div>
@@ -1215,37 +1215,37 @@ export default function SalaryPageInner({
                               ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
                               : row.netTotal < 0
                               ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
-                              : "bg-slate-800 text-slate-400"
+                              : "bg-slate-800 text-muted"
                           }`}
                         >
                           {inr(Math.abs(row.netTotal))}
                         </span>
-                        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mt-0.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-muted mt-0.5">
                           {row.netTotal > 0 ? "Payable" : row.netTotal < 0 ? "Advance" : "Settled"}
                         </p>
                       </div>
                     </div>
 
                     {/* 2x2 Quick Metrics Grid */}
-                    <div className="grid grid-cols-2 gap-2 bg-[#0d1117] p-2.5 rounded-xl border border-[#21293d]/80 text-xs">
+                    <div className="grid grid-cols-2 gap-2 bg-app p-2.5 rounded-xl border border-app/80 text-xs">
                       {/* Attendance */}
                       <div className="space-y-0.5">
-                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span className="text-[9px] font-bold text-muted uppercase tracking-wider">
                           Attendance
                         </span>
                         <p className="font-black text-white text-xs">
                           <span className="text-emerald-400">{row.present}P</span>
-                          <span className="text-slate-600 mx-1">|</span>
+                          <span className="text-muted-2 mx-1">|</span>
                           <span className="text-amber-400">{row.halfDays}HD</span>
                         </p>
                       </div>
 
                       {/* Earned Wage */}
                       <div className="space-y-0.5 text-right">
-                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                        <span className="text-[9px] font-bold text-muted uppercase tracking-wider">
                           Earned Wage
                         </span>
-                        <p className="font-black text-slate-200 text-xs">{inr(row.earnedSalary)}</p>
+                        <p className="font-black text-app-2 text-xs">{inr(row.earnedSalary)}</p>
                       </div>
 
                       {/* Commission */}
@@ -1271,8 +1271,8 @@ export default function SalaryPageInner({
 
                     {/* Expandable Breakdown Drawer */}
                     {isExpanded && (
-                      <div className="bg-[#0d1117]/60 p-3 rounded-xl border border-[#21293d] space-y-1.5 text-xs animate-in fade-in duration-200">
-                        <div className="flex justify-between items-center text-slate-400">
+                      <div className="bg-app/60 p-3 rounded-xl border border-app space-y-1.5 text-xs animate-in fade-in duration-200">
+                        <div className="flex justify-between items-center text-muted">
                           <span>Previous Balance:</span>
                           <span
                             className={`font-bold ${
@@ -1282,13 +1282,13 @@ export default function SalaryPageInner({
                             {inr(row.oldBalance)}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center text-slate-400">
+                        <div className="flex justify-between items-center text-muted">
                           <span>Calculation:</span>
-                          <span className="font-mono text-[10px] text-slate-500">
+                          <span className="font-mono text-[10px] text-muted">
                             (Old + Wage + Comm) - Adv
                           </span>
                         </div>
-                        <div className="pt-1.5 border-t border-[#21293d] flex justify-between items-center font-bold text-white">
+                        <div className="pt-1.5 border-t border-app flex justify-between items-center font-bold text-white">
                           <span>Final Balance:</span>
                           <span
                             className={row.netTotal >= 0 ? "text-emerald-400" : "text-rose-400"}
@@ -1303,7 +1303,7 @@ export default function SalaryPageInner({
                     <div className="flex items-center gap-2 pt-0.5">
                       <button
                         onClick={() => toggleCardExpand(row.id)}
-                        className="flex-1 inline-flex items-center justify-center gap-1 py-2 bg-[#0d1117] hover:bg-[#1a2133] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all active:scale-95"
+                        className="flex-1 inline-flex items-center justify-center gap-1 py-2 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-muted hover:text-white transition-all active:scale-95"
                       >
                         {isExpanded ? (
                           <>
@@ -1350,30 +1350,30 @@ export default function SalaryPageInner({
         <div className="space-y-3.5">
           {/* Rate Master KPI Overview */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
-            <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
-              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted">
                 Active Staff
               </span>
               <p className="text-base sm:text-lg font-black text-white mt-0.5">{rateStats.count}</p>
             </div>
-            <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
-              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted">
                 Average Daily Wage
               </span>
               <p className="text-base sm:text-lg font-black text-blue-400 mt-0.5">
                 {inr(rateStats.avgRate)}
               </p>
             </div>
-            <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
-              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted">
                 Highest Daily Wage
               </span>
               <p className="text-base sm:text-lg font-black text-emerald-400 mt-0.5">
                 {inr(rateStats.maxRate)}
               </p>
             </div>
-            <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
-              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted">
                 Lowest Daily Wage
               </span>
               <p className="text-base sm:text-lg font-black text-amber-400 mt-0.5">
@@ -1386,19 +1386,19 @@ export default function SalaryPageInner({
           <div className="relative max-w-xs">
             <Search
               size={12}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
             />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search staff in rate master..."
-              className="w-full pl-7 pr-6 py-1 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-medium text-white placeholder:text-slate-500 outline-none focus:border-blue-500/60 transition-all"
+              className="w-full pl-7 pr-6 py-1 bg-panel border border-app rounded-xl text-xs font-medium text-white placeholder:text-muted outline-none focus:border-blue-500/60 transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-white"
               >
                 <X size={11} />
               </button>
@@ -1406,7 +1406,7 @@ export default function SalaryPageInner({
           </div>
 
           {/* Rate Master Desktop Table */}
-          <div className="hidden md:block bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-lg w-full">
+          <div className="hidden md:block bg-panel border border-app rounded-2xl overflow-hidden shadow-lg w-full">
             <div className="w-full overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse table-fixed">
                 <colgroup>
@@ -1417,7 +1417,7 @@ export default function SalaryPageInner({
                   <col style={{ width: "13%" }} />
                 </colgroup>
                 <thead>
-                  <tr className="bg-[#0d1117] border-b border-[#21293d] text-[10px] font-bold uppercase text-slate-400 tracking-wider select-none">
+                  <tr className="bg-app border-b border-app text-[10px] font-bold uppercase text-muted tracking-wider select-none">
                     <th className="py-2.5 px-3">Staff Member</th>
                     <th className="py-2.5 px-3 text-right">Daily Wage</th>
                     <th className="py-2.5 px-3 text-right">Estimated 30-Day Monthly</th>
@@ -1438,7 +1438,7 @@ export default function SalaryPageInner({
                       ))
                   ) : filteredMechanics.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-6 px-3 text-center text-slate-400 text-xs">
+                      <td colSpan={5} className="py-6 px-3 text-center text-muted text-xs">
                         No staff members found matching &quot;{searchQuery}&quot;
                       </td>
                     </tr>
@@ -1456,7 +1456,7 @@ export default function SalaryPageInner({
                               <span className="text-white font-bold text-xs">
                                 {m.firstname} {m.lastname}
                               </span>
-                              <span className="text-[10px] text-slate-500 font-medium ml-1.5">
+                              <span className="text-[10px] text-muted font-medium ml-1.5">
                                 ({m.designation || "Mechanic"})
                               </span>
                             </div>
@@ -1466,12 +1466,12 @@ export default function SalaryPageInner({
                           <span className="text-xs font-black text-emerald-400">
                             {inr(m.daily_salary)}
                           </span>
-                          <span className="text-[9px] text-slate-500 font-medium ml-1">/day</span>
+                          <span className="text-[9px] text-muted font-medium ml-1">/day</span>
                         </td>
-                        <td className="py-2 px-3 text-right text-slate-300 font-bold truncate text-xs">
+                        <td className="py-2 px-3 text-right text-app-2 font-bold truncate text-xs">
                           ≈ {inr(m.daily_salary * 30)}
                         </td>
-                        <td className="py-2 px-3 text-center text-slate-400 text-[10px] font-medium truncate">
+                        <td className="py-2 px-3 text-center text-muted text-[10px] font-medium truncate">
                           {m.last_updated
                             ? format(new Date(m.last_updated), "dd MMM, yyyy")
                             : "Initial Setup"}
@@ -1491,7 +1491,7 @@ export default function SalaryPageInner({
                             </button>
                             <Link
                               href="/mechanics/commission"
-                              className="p-1 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] text-slate-300 hover:text-white rounded-md text-xs font-bold transition-all"
+                              className="p-1 bg-app hover:bg-panel-2 border border-app text-app-2 hover:text-white rounded-md text-xs font-bold transition-all"
                               title="Commission Settings"
                             >
                               <History size={11} />
@@ -1511,7 +1511,7 @@ export default function SalaryPageInner({
             {filteredMechanics.map((m) => (
               <div
                 key={m.id}
-                className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3.5 shadow-md space-y-3"
+                className="bg-panel border border-app rounded-2xl p-3.5 shadow-md space-y-3"
               >
                 <div className="flex items-center justify-between gap-2.5">
                   <div className="flex items-center gap-2.5">
@@ -1524,7 +1524,7 @@ export default function SalaryPageInner({
                       <p className="text-white font-bold text-xs">
                         {m.firstname} {m.lastname}
                       </p>
-                      <p className="text-[10px] text-slate-400 font-medium">
+                      <p className="text-[10px] text-muted font-medium">
                         {m.designation || "Mechanic"}
                       </p>
                     </div>
@@ -1534,13 +1534,13 @@ export default function SalaryPageInner({
                     <span className="text-sm font-black text-emerald-400">
                       {inr(m.daily_salary)}
                     </span>
-                    <p className="text-[8px] font-bold text-slate-500 uppercase">per day</p>
+                    <p className="text-[8px] font-bold text-muted uppercase">per day</p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between bg-[#0d1117] p-2.5 rounded-xl border border-[#21293d] text-[11px]">
-                  <span className="text-slate-400">30-Day Monthly Projection:</span>
-                  <span className="font-bold text-slate-200">≈ {inr(m.daily_salary * 30)}</span>
+                <div className="flex items-center justify-between bg-app p-2.5 rounded-xl border border-app text-[11px]">
+                  <span className="text-muted">30-Day Monthly Projection:</span>
+                  <span className="font-bold text-app-2">≈ {inr(m.daily_salary * 30)}</span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
@@ -1557,7 +1557,7 @@ export default function SalaryPageInner({
                   </button>
                   <Link
                     href="/mechanics/commission"
-                    className="p-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-400 hover:text-white"
+                    className="p-2 bg-app border border-app rounded-xl text-muted hover:text-white"
                   >
                     <History size={14} />
                   </Link>
@@ -1578,21 +1578,21 @@ export default function SalaryPageInner({
             if (e.target === e.currentTarget) setShowRateModal(false);
           }}
         >
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
             {/* Modal Header */}
-            <div className="px-4 py-3.5 bg-[#0d1117] border-b border-[#21293d] flex items-center justify-between">
+            <div className="px-4 py-3.5 bg-app border-b border-app flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
                   <Coins size={16} />
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-white">Update Salary Rate</h3>
-                  <p className="text-[10px] text-slate-400">Set daily wage</p>
+                  <p className="text-[10px] text-muted">Set daily wage</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowRateModal(false)}
-                className="w-7 h-7 rounded-lg bg-[#161b27] border border-[#21293d] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+                className="w-7 h-7 rounded-lg bg-panel border border-app text-muted hover:text-white flex items-center justify-center transition-colors"
               >
                 <X size={14} />
               </button>
@@ -1601,7 +1601,7 @@ export default function SalaryPageInner({
             {/* Modal Form */}
             <form onSubmit={updateSalaryRate} className="p-4 space-y-4">
               {/* Mechanic Info Card */}
-              <div className="bg-[#0d1117] p-3 rounded-xl border border-[#21293d] flex items-center justify-between">
+              <div className="bg-app p-3 rounded-xl border border-app flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <MechAvatar
                     image={editingMech.image_path}
@@ -1612,11 +1612,11 @@ export default function SalaryPageInner({
                     <p className="text-xs font-black text-white">
                       {editingMech.firstname} {editingMech.lastname}
                     </p>
-                    <p className="text-[10px] text-slate-400">{editingMech.designation || "Mechanic"}</p>
+                    <p className="text-[10px] text-muted">{editingMech.designation || "Mechanic"}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-[9px] text-slate-500 block font-bold">Current</span>
+                  <span className="text-[9px] text-muted block font-bold">Current</span>
                   <span className="text-xs font-black text-blue-400">
                     {inr(editingMech.daily_salary)}/d
                   </span>
@@ -1625,7 +1625,7 @@ export default function SalaryPageInner({
 
               {/* New Daily Wage Input */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-0.5">
+                <label className="text-[10px] font-black text-muted uppercase tracking-wider ml-0.5">
                   New Daily Wage (₹)
                 </label>
                 <div className="relative">
@@ -1640,13 +1640,13 @@ export default function SalaryPageInner({
                     onChange={(e) => setNewRate(e.target.value)}
                     required
                     placeholder="0.00"
-                    className="w-full pl-9 pr-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-base font-black text-white outline-none focus:border-blue-500 transition-all"
+                    className="w-full pl-9 pr-3 py-2 bg-app border border-app rounded-xl text-base font-black text-white outline-none focus:border-blue-500 transition-all"
                   />
                 </div>
 
                 {/* Quick Increment Preset Chips */}
                 <div className="flex items-center gap-1.5 pt-1">
-                  <span className="text-[9px] text-slate-500 font-bold uppercase">Quick Add:</span>
+                  <span className="text-[9px] text-muted font-bold uppercase">Quick Add:</span>
                   {[50, 100, 200, 500].map((inc) => (
                     <button
                       key={inc}
@@ -1655,7 +1655,7 @@ export default function SalaryPageInner({
                         const base = parseFloat(newRate) || editingMech.daily_salary || 0;
                         setNewRate(String(base + inc));
                       }}
-                      className="px-2 py-0.5 bg-[#0d1117] hover:bg-[#1a2133] border border-[#21293d] rounded-md text-[11px] font-bold text-slate-300 hover:text-white transition-all"
+                      className="px-2 py-0.5 bg-app hover:bg-panel-2 border border-app rounded-md text-[11px] font-bold text-app-2 hover:text-white transition-all"
                     >
                       +{inc}
                     </button>
@@ -1664,7 +1664,7 @@ export default function SalaryPageInner({
 
                 {/* Calculation Preview */}
                 {parseFloat(newRate) > 0 && (
-                  <div className="p-2 bg-blue-500/[0.04] border border-blue-500/20 rounded-lg text-[11px] text-slate-300 flex items-center justify-between mt-1">
+                  <div className="p-2 bg-blue-500/[0.04] border border-blue-500/20 rounded-lg text-[11px] text-app-2 flex items-center justify-between mt-1">
                     <span>Estimated 30-Day Monthly:</span>
                     <span className="font-black text-emerald-400">
                       {inr(parseFloat(newRate) * 30)}
@@ -1675,7 +1675,7 @@ export default function SalaryPageInner({
 
               {/* Effective Date */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-0.5">
+                <label className="text-[10px] font-black text-muted uppercase tracking-wider ml-0.5">
                   Effective From
                 </label>
                 <input
@@ -1683,7 +1683,7 @@ export default function SalaryPageInner({
                   value={effectiveDate}
                   onChange={(e) => setEffectiveDate(e.target.value)}
                   required
-                  className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-white outline-none focus:border-blue-500 transition-all [color-scheme:dark]"
+                  className="w-full px-3 py-2 bg-app border border-app rounded-xl text-xs font-bold text-white outline-none focus:border-blue-500 transition-all [color-scheme:dark]"
                 />
               </div>
 
@@ -1720,7 +1720,7 @@ export default function SalaryPageInner({
             if (e.target === e.currentTarget) setShowPayoutModal(false);
           }}
         >
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
             {/* Modal Header */}
             <div className="px-4 py-3.5 bg-emerald-950/30 border-b border-emerald-500/20 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1734,7 +1734,7 @@ export default function SalaryPageInner({
               </div>
               <button
                 onClick={() => setShowPayoutModal(false)}
-                className="w-7 h-7 rounded-lg bg-[#161b27] border border-[#21293d] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+                className="w-7 h-7 rounded-lg bg-panel border border-app text-muted hover:text-white flex items-center justify-center transition-colors"
               >
                 <X size={14} />
               </button>
@@ -1743,7 +1743,7 @@ export default function SalaryPageInner({
             {/* Modal Form */}
             <form onSubmit={handlePayout} className="p-4 space-y-4">
               {/* Employee Summary Card */}
-              <div className="bg-[#0d1117] p-3 rounded-xl border border-[#21293d] space-y-2">
+              <div className="bg-app p-3 rounded-xl border border-app space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <MechAvatar
@@ -1753,11 +1753,11 @@ export default function SalaryPageInner({
                     />
                     <div>
                       <p className="text-xs font-black text-white">{payoutData.name}</p>
-                      <p className="text-[10px] text-slate-400">{monthLabel}</p>
+                      <p className="text-[10px] text-muted">{monthLabel}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] font-bold uppercase text-slate-500 block">
+                    <span className="text-[9px] font-bold uppercase text-muted block">
                       Net Balance
                     </span>
                     <span className="text-sm font-black text-emerald-400">
@@ -1767,17 +1767,17 @@ export default function SalaryPageInner({
                 </div>
 
                 {/* Mini breakdown */}
-                <div className="pt-1.5 border-t border-[#21293d] grid grid-cols-3 gap-1 text-[10px] text-center text-slate-400">
+                <div className="pt-1.5 border-t border-app grid grid-cols-3 gap-1 text-[10px] text-center text-muted">
                   <div>
-                    <span className="block text-[8px] uppercase font-bold text-slate-500">Earned</span>
-                    <span className="font-bold text-slate-200">{inrShort(payoutData.earnedSalary)}</span>
+                    <span className="block text-[8px] uppercase font-bold text-muted">Earned</span>
+                    <span className="font-bold text-app-2">{inrShort(payoutData.earnedSalary)}</span>
                   </div>
                   <div>
-                    <span className="block text-[8px] uppercase font-bold text-slate-500">Comm</span>
+                    <span className="block text-[8px] uppercase font-bold text-muted">Comm</span>
                     <span className="font-bold text-amber-300">{inrShort(payoutData.commission)}</span>
                   </div>
                   <div>
-                    <span className="block text-[8px] uppercase font-bold text-slate-500">Advance</span>
+                    <span className="block text-[8px] uppercase font-bold text-muted">Advance</span>
                     <span className="font-bold text-rose-400">{inrShort(payoutData.advance)}</span>
                   </div>
                 </div>
@@ -1785,7 +1785,7 @@ export default function SalaryPageInner({
 
               {/* Amount Input & Quick Chips */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-0.5">
+                <label className="text-[10px] font-black text-muted uppercase tracking-wider ml-0.5">
                   Payout Amount (₹)
                 </label>
                 <div className="relative">
@@ -1800,7 +1800,7 @@ export default function SalaryPageInner({
                     onChange={(e) => setPayoutAmount(e.target.value)}
                     required
                     placeholder="0"
-                    className="w-full pl-9 pr-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-base font-black text-white outline-none focus:border-emerald-500 transition-all"
+                    className="w-full pl-9 pr-3 py-2 bg-app border border-app rounded-xl text-base font-black text-white outline-none focus:border-emerald-500 transition-all"
                   />
                 </div>
 
@@ -1817,7 +1817,7 @@ export default function SalaryPageInner({
                     <button
                       type="button"
                       onClick={() => setPayoutAmount(Math.round(payoutData.netTotal / 2).toFixed(0))}
-                      className="px-2.5 py-0.5 bg-[#0d1117] hover:bg-[#1a2133] border border-[#21293d] rounded-md text-[11px] font-bold text-slate-300 transition-all"
+                      className="px-2.5 py-0.5 bg-app hover:bg-panel-2 border border-app rounded-md text-[11px] font-bold text-app-2 transition-all"
                     >
                       50%: {inrShort(payoutData.netTotal / 2)}
                     </button>
@@ -1829,7 +1829,7 @@ export default function SalaryPageInner({
                           key={v}
                           type="button"
                           onClick={() => setPayoutAmount(String(v))}
-                          className="px-2 py-0.5 bg-[#0d1117] hover:bg-[#1a2133] border border-[#21293d] rounded-md text-[11px] font-bold text-slate-400 hover:text-white transition-all"
+                          className="px-2 py-0.5 bg-app hover:bg-panel-2 border border-app rounded-md text-[11px] font-bold text-muted hover:text-white transition-all"
                         >
                           ₹{v}
                         </button>
@@ -1840,7 +1840,7 @@ export default function SalaryPageInner({
 
               {/* Remarks */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-0.5">
+                <label className="text-[10px] font-black text-muted uppercase tracking-wider ml-0.5">
                   Payment Remarks
                 </label>
                 <input
@@ -1848,7 +1848,7 @@ export default function SalaryPageInner({
                   value={payoutReason}
                   onChange={(e) => setPayoutReason(e.target.value)}
                   placeholder="e.g. Salary for August 2026"
-                  className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs text-white outline-none focus:border-emerald-500 transition-all"
+                  className="w-full px-3 py-2 bg-app border border-app rounded-xl text-xs text-white outline-none focus:border-emerald-500 transition-all"
                 />
               </div>
 

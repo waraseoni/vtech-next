@@ -40,7 +40,7 @@ function FormattedMessage({ content }: { content: string }) {
   const parts = content.split(/(```[\s\S]*?```)/g);
 
   return (
-    <div className="space-y-3 leading-relaxed text-[15px] sm:text-[16px] text-slate-300">
+    <div className="space-y-3 leading-relaxed text-[15px] sm:text-[16px] text-app-2">
       {parts.map((part, index) => {
         if (part.startsWith("```") && part.endsWith("```")) {
           const match = part.match(/```([a-z0-9]*)\n([\s\S]*?)```/);
@@ -50,15 +50,15 @@ function FormattedMessage({ content }: { content: string }) {
           return (
             <div
               key={index}
-              className="my-5 bg-[#090b10] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl"
+              className="my-5 bg-app border border-app rounded-2xl overflow-hidden shadow-2xl"
             >
-              <div className="flex items-center px-4 py-3 bg-[#10141d] border-b border-[#21293d]/50">
+              <div className="flex items-center px-4 py-3 bg-panel-2 border-b border-app/50">
                 <div className="flex gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.2)]"></div>
                   <div className="w-3 h-3 rounded-full bg-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.2)]"></div>
                   <div className="w-3 h-3 rounded-full bg-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]"></div>
                 </div>
-                <span className="ml-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                <span className="ml-4 text-[10px] font-black text-muted uppercase tracking-widest">
                   {lang}
                 </span>
               </div>
@@ -94,8 +94,8 @@ function FormattedMessage({ content }: { content: string }) {
             const Tag = `h${level}` as React.ElementType;
             const sizes = {
               1: "text-2xl font-black mt-8 mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500",
-              2: "text-xl font-bold mt-6 mb-3 text-slate-200",
-              3: "text-lg font-bold mt-5 mb-2 text-slate-200",
+              2: "text-xl font-bold mt-6 mb-3 text-app-2",
+              3: "text-lg font-bold mt-5 mb-2 text-app-2",
             };
             result.push(
               <Tag
@@ -173,14 +173,14 @@ function parseInline(text: string) {
     }
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong key={i} className="font-extrabold text-slate-200">
+        <strong key={i} className="font-extrabold text-app-2">
           {part.slice(2, -2)}
         </strong>
       );
     }
     if (part.startsWith("*") && part.endsWith("*")) {
       return (
-        <em key={i} className="text-slate-400 not-italic font-medium">
+        <em key={i} className="text-muted not-italic font-medium">
           {part.slice(1, -1)}
         </em>
       );
@@ -189,7 +189,7 @@ function parseInline(text: string) {
       return (
         <code
           key={i}
-          className="bg-[#1c2231] text-blue-500 px-1.5 py-0.5 rounded leading-none font-mono text-[13px] border border-[#2d3748] mx-0.5"
+          className="bg-panel-2 text-blue-500 px-1.5 py-0.5 rounded leading-none font-mono text-[13px] border border-app-2 mx-0.5"
         >
           {part.slice(1, -1)}
         </code>
@@ -363,7 +363,7 @@ export default function AIChatPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#090b10] flex flex-col font-sans overflow-hidden pattern-bg">
+    <div className="min-h-screen bg-app flex flex-col font-sans overflow-hidden pattern-bg">
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -403,7 +403,7 @@ export default function AIChatPage() {
       />
 
       {/* Header */}
-      <div className="glass-panel border-b border-[#21293d]/50 px-6 py-4 sticky top-0 z-20">
+      <div className="glass-panel border-b border-app/50 px-6 py-4 sticky top-0 z-20">
         <div className="flex items-center justify-between max-w-5xl mx-auto">
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -417,12 +417,12 @@ export default function AIChatPage() {
                 V-Tech Copilot
               </h1>
               <div className="flex items-center mt-0.5 gap-2">
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#0d1117]/80 border border-[#21293d] shadow-inner">
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-app/80 border border-app shadow-inner">
                   <Cpu size={10} className="text-purple-400" />
                   <select
                     value={aiProvider}
                     onChange={(e) => setAiProvider(e.target.value)}
-                    className="text-[10px] font-bold uppercase tracking-widest text-slate-300 bg-transparent outline-none appearance-none cursor-pointer"
+                    className="text-[10px] font-bold uppercase tracking-widest text-app-2 bg-transparent outline-none appearance-none cursor-pointer"
                     title="Select AI Engine"
                   >
                     <option value="groq">Groq Engine</option>
@@ -438,7 +438,7 @@ export default function AIChatPage() {
                     </span>
                   )}
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <span className="text-[10px] font-bold text-muted uppercase tracking-widest">
                     Online
                   </span>
                 </div>
@@ -447,7 +447,7 @@ export default function AIChatPage() {
           </div>
           <button
             onClick={clearChat}
-            className="p-2.5 rounded-xl bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] hover:border-red-500/30 text-slate-400 hover:text-red-400 transition-all shadow-sm group"
+            className="p-2.5 rounded-xl bg-app border border-app hover:bg-panel-2 hover:border-red-500/30 text-muted hover:text-red-400 transition-all shadow-sm group"
             title="Clear Conversation"
           >
             <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
@@ -472,14 +472,14 @@ export default function AIChatPage() {
                     {notifs.alerts.reduce((a, g) => a + (g.items?.length || 0), 0)}
                   </span>
                 </div>
-                <span className="text-sm font-black text-slate-200">Notifications & Alerts</span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <span className="text-sm font-black text-app-2">Notifications & Alerts</span>
+                <span className="text-[10px] font-bold text-muted uppercase tracking-widest">
                   {notifs.count} groups
                 </span>
               </div>
               <ChevronDown
                 size={16}
-                className={`text-slate-400 transition-transform ${showNotifs ? "rotate-180" : ""}`}
+                className={`text-muted transition-transform ${showNotifs ? "rotate-180" : ""}`}
               />
             </button>
 
@@ -500,12 +500,12 @@ export default function AIChatPage() {
                   return (
                     <div
                       key={gi}
-                      className="rounded-xl bg-[#0d1117]/80 border border-[#21293d] p-3"
+                      className="rounded-xl bg-app/80 border border-app p-3"
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <Icon size={14} className={isWarn ? "text-amber-400" : "text-sky-400"} />
-                        <span className="text-xs font-bold text-slate-200">{group.title}</span>
-                        <span className="ml-auto text-[10px] font-black text-slate-500">
+                        <span className="text-xs font-bold text-app-2">{group.title}</span>
+                        <span className="ml-auto text-[10px] font-black text-muted">
                           {group.items.length}
                         </span>
                       </div>
@@ -534,17 +534,17 @@ export default function AIChatPage() {
                           return (
                             <div
                               key={ii}
-                              className="flex items-center justify-between gap-2 text-xs text-slate-400"
+                              className="flex items-center justify-between gap-2 text-xs text-muted"
                             >
                               <span className="truncate">{label}</span>
                               {sub && (
-                                <span className="shrink-0 font-bold text-slate-500">{sub}</span>
+                                <span className="shrink-0 font-bold text-muted">{sub}</span>
                               )}
                             </div>
                           );
                         })}
                         {group.items.length > 4 && (
-                          <div className="text-[10px] font-bold text-slate-500">
+                          <div className="text-[10px] font-bold text-muted">
                             +{group.items.length - 4} more...
                           </div>
                         )}
@@ -553,7 +553,7 @@ export default function AIChatPage() {
                   );
                 })}
                 {notifs.note && (
-                  <div className="text-[10px] text-slate-500 italic">{notifs.note}</div>
+                  <div className="text-[10px] text-muted italic">{notifs.note}</div>
                 )}
               </div>
             )}
@@ -582,7 +582,7 @@ export default function AIChatPage() {
                 className={`max-w-[85%] sm:max-w-[75%] rounded-3xl px-6 py-4 shadow-xl ${
                   msg.role === "user"
                     ? "bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-tr-sm border border-blue-500/50"
-                    : "glass-panel text-slate-200 rounded-tl-sm"
+                    : "glass-panel text-app-2 rounded-tl-sm"
                 }`}
               >
                 {msg.role === "user" ? (
@@ -593,7 +593,7 @@ export default function AIChatPage() {
                   <FormattedMessage content={msg.content} />
                 )}
                 <div
-                  className={`flex items-center gap-2 mt-3 pt-2 border-t text-[10px] uppercase font-bold tracking-widest ${msg.role === "user" ? "text-blue-300/80 border-blue-500/30 font-medium" : "text-slate-500 border-white/5"}`}
+                  className={`flex items-center gap-2 mt-3 pt-2 border-t text-[10px] uppercase font-bold tracking-widest ${msg.role === "user" ? "text-blue-300/80 border-blue-500/30 font-medium" : "text-muted border-white/5"}`}
                 >
                   <span>
                     {msg.timestamp.toLocaleTimeString("en-IN", {
@@ -631,13 +631,13 @@ export default function AIChatPage() {
                   <Bot className="text-white" size={20} />
                 </div>
               </div>
-              <div className="glass-panel border border-[#21293d]/50 rounded-3xl rounded-tl-sm px-6 py-5 shadow-xl flex items-center gap-2">
+              <div className="glass-panel border border-app/50 rounded-3xl rounded-tl-sm px-6 py-5 shadow-xl flex items-center gap-2">
                 <div className="flex gap-1.5 pt-1">
                   <div className="w-2.5 h-2.5 bg-purple-500 rounded-full typing-dot"></div>
                   <div className="w-2.5 h-2.5 bg-blue-500 rounded-full typing-dot"></div>
                   <div className="w-2.5 h-2.5 bg-cyan-500 rounded-full typing-dot"></div>
                 </div>
-                <span className="ml-3 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                <span className="ml-3 text-xs font-bold text-muted uppercase tracking-widest">
                   Analysing Data...
                 </span>
               </div>
@@ -648,7 +648,7 @@ export default function AIChatPage() {
       </div>
 
       {/* Input Area */}
-      <div className="glass-panel border-t border-[#21293d]/50 p-4 shrink-0 relative z-20">
+      <div className="glass-panel border-t border-app/50 p-4 shrink-0 relative z-20">
         <div className="max-w-4xl mx-auto">
           {/* Quick Questions Chips */}
           {messages.length <= 1 && (
@@ -660,10 +660,10 @@ export default function AIChatPage() {
                     setInput(q.q);
                     textareaRef.current?.focus();
                   }}
-                  className="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#090b10]/80 border border-[#21293d] hover:border-purple-500/50 transition-all shadow-sm hover:shadow-[0_0_15px_rgba(168,85,247,0.15)]"
+                  className="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-app/80 border border-app hover:border-purple-500/50 transition-all shadow-sm hover:shadow-[0_0_15px_rgba(168,85,247,0.15)]"
                 >
                   <span className="text-purple-400 group-hover:text-purple-300">{q.icon}</span>
-                  <span className="text-xs font-bold text-slate-300 group-hover:text-slate-200">
+                  <span className="text-xs font-bold text-app-2 group-hover:text-app-2">
                     {q.title}
                   </span>
                 </button>
@@ -673,7 +673,7 @@ export default function AIChatPage() {
 
           <div className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/30 to-blue-500/30 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition duration-500"></div>
-            <div className="relative flex items-end gap-2 bg-[#090b10] border border-[#21293d] rounded-2xl p-2 shadow-inner">
+            <div className="relative flex items-end gap-2 bg-app border border-app rounded-2xl p-2 shadow-inner">
               <textarea
                 ref={textareaRef}
                 value={input}
@@ -685,7 +685,7 @@ export default function AIChatPage() {
                   }
                 }}
                 placeholder="Ask your AI Assistant anything about the business..."
-                className="flex-1 max-h-48 px-4 py-3 bg-transparent text-slate-200 placeholder-slate-500 outline-none resize-none overflow-y-auto scrollbar-thin scrollbar-thumb-[#21293d] text-[15px] sm:text-[16px] leading-relaxed"
+                className="flex-1 max-h-48 px-4 py-3 bg-transparent text-app-2 placeholder-slate-500 outline-none resize-none overflow-y-auto scrollbar-thin scrollbar-thumb-[#21293d] text-[15px] sm:text-[16px] leading-relaxed"
                 rows={1}
                 disabled={loading}
               />
@@ -705,7 +705,7 @@ export default function AIChatPage() {
               </button>
             </div>
           </div>
-          <div className="text-center mt-3 text-[10px] font-bold uppercase tracking-widest text-slate-600">
+          <div className="text-center mt-3 text-[10px] font-bold uppercase tracking-widest text-muted-2">
             AI can make mistakes. Always verify critical business metrics.
           </div>
         </div>

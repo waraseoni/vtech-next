@@ -265,8 +265,8 @@ export default function ProductFormModal({
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
-          <div className="flex items-center justify-between p-5 border-b border-[#21293d] flex-shrink-0">
+        <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
+          <div className="flex items-center justify-between p-5 border-b border-app flex-shrink-0">
             <h3 className="font-bold text-white flex items-center gap-2">
               {editing ? (
                 <>
@@ -284,7 +284,7 @@ export default function ProductFormModal({
                 setDupWarn(null);
                 onClose();
               }}
-              className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+              className="p-1.5 rounded-lg hover:bg-white/10 text-muted transition"
             >
               <X size={16} />
             </button>
@@ -299,10 +299,10 @@ export default function ProductFormModal({
 
               {/* Product Image */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Product Image
                 </label>
-                <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4">
+                <div className="bg-app rounded-xl border border-app p-4">
                   <div className="flex items-center gap-4 flex-wrap">
                     {safeImageSrc(imgPreview) ? (
                       <Image
@@ -310,14 +310,14 @@ export default function ProductFormModal({
                         alt="Product"
                         width={112}
                         height={112}
-                        className="w-28 h-28 rounded-xl object-cover border border-[#21293d] cursor-zoom-in"
+                        className="w-28 h-28 rounded-xl object-cover border border-app cursor-zoom-in"
                         onDoubleClick={() =>
                           openImageLightbox(safeImageSrc(imgPreview), "Product Image")
                         }
                       />
                     ) : (
-                      <div className="w-28 h-28 rounded-xl bg-white/5 border border-dashed border-[#2a3450] flex items-center justify-center">
-                        <Package size={28} className="text-slate-600" />
+                      <div className="w-28 h-28 rounded-xl bg-white/5 border border-dashed border-app-2 flex items-center justify-center">
+                        <Package size={28} className="text-muted-2" />
                       </div>
                     )}
                     <div className="flex-1 min-w-[160px]">
@@ -349,7 +349,7 @@ export default function ProductFormModal({
                         </button>
                         {imgPopup && (
                           <div className="relative">
-                            <div className="absolute top-full left-0 mt-1 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                            <div className="absolute top-full left-0 mt-1 z-50 bg-panel border border-app-2 rounded-xl shadow-2xl p-1.5 min-w-[120px]">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -393,7 +393,7 @@ export default function ProductFormModal({
                         )}
                       </div>
                       {imgFile && (
-                        <p className="text-[10px] text-slate-600 mt-1.5 flex items-center gap-1">
+                        <p className="text-[10px] text-muted-2 mt-1.5 flex items-center gap-1">
                           {imgSaving ? (
                             <>
                               <Loader2 size={10} className="animate-spin" />
@@ -410,18 +410,18 @@ export default function ProductFormModal({
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Product Name <span className="text-red-400">*</span>
                 </label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                   placeholder="e.g. SMPS Board, LED Strip"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Description
                 </label>
                 <textarea
@@ -429,12 +429,12 @@ export default function ProductFormModal({
                   onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                   placeholder="Optional description..."
                   rows={2}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 resize-none"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500 resize-none"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Cost Price (₹)
                   </label>
                   <input
@@ -443,11 +443,11 @@ export default function ProductFormModal({
                     value={form.cost_price}
                     onChange={(e) => setForm((p) => ({ ...p, cost_price: e.target.value }))}
                     placeholder="0.00"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Selling Price (₹) <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -456,13 +456,13 @@ export default function ProductFormModal({
                     value={form.price}
                     onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))}
                     placeholder="0.00"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     HSN Code
                   </label>
                   <input
@@ -470,13 +470,13 @@ export default function ProductFormModal({
                     onChange={(e) => setForm((p) => ({ ...p, hsn: e.target.value }))}
                     placeholder="e.g. 8504"
                     maxLength={20}
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Barcode{" "}
-                    <span className="normal-case font-semibold text-slate-600">
+                    <span className="normal-case font-semibold text-muted-2">
                       (sticker scan karke link karein)
                     </span>
                   </label>
@@ -490,7 +490,7 @@ export default function ProductFormModal({
                       onBlur={() => checkBarcodeDuplicate(form.barcode)}
                       placeholder="Optional barcode"
                       maxLength={100}
-                      className="flex-1 min-w-0 px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                      className="flex-1 min-w-0 px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                     />
                     <button
                       type="button"
@@ -523,7 +523,7 @@ export default function ProductFormModal({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Alert Quantity
                   </label>
                   <input
@@ -532,14 +532,14 @@ export default function ProductFormModal({
                     value={form.alert_quantity}
                     onChange={(e) => setForm((p) => ({ ...p, alert_quantity: e.target.value }))}
                     placeholder="0"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Linked Suppliers{" "}
-                  <span className="normal-case font-semibold text-slate-600">
+                  <span className="normal-case font-semibold text-muted-2">
                     (order karne ke liye)
                   </span>
                 </label>
@@ -550,13 +550,13 @@ export default function ProductFormModal({
                   placeholder="Suppliers select karein..."
                 />
                 {selectedSuppliers.length > 0 && (
-                  <p className="text-[10px] text-slate-700 mt-1.5">
+                  <p className="text-[10px] text-app mt-1.5">
                     {selectedSuppliers.length} supplier linked
                   </p>
                 )}
               </div>
             </div>
-            <div className="flex-shrink-0 flex gap-3 p-5 pt-4 border-t border-[#21293d]">
+            <div className="flex-shrink-0 flex gap-3 p-5 pt-4 border-t border-app">
               <button
                 type="submit"
                 disabled={saving}
@@ -575,7 +575,7 @@ export default function ProductFormModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
+                className="px-6 py-2.5 bg-panel-2 border border-app text-muted rounded-xl font-bold text-sm hover:bg-panel-2 transition"
               >
                 Cancel
               </button>
@@ -591,17 +591,17 @@ export default function ProductFormModal({
           onClick={() => setBarcodeScanning(false)}
         >
           <div
-            className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b border-[#21293d] flex-shrink-0">
+            <div className="flex items-center justify-between p-4 border-b border-app flex-shrink-0">
               <h3 className="font-bold text-white flex items-center gap-2 text-sm">
                 <ScanLine size={16} className="text-blue-400" /> Barcode Scan
               </h3>
               <button
                 type="button"
                 onClick={() => setBarcodeScanning(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+                className="p-1.5 rounded-lg hover:bg-white/10 text-muted transition"
               >
                 <X size={16} />
               </button>
@@ -614,7 +614,7 @@ export default function ProductFormModal({
                   void checkBarcodeDuplicate(text);
                 }}
               />
-              <p className="text-[10px] text-slate-600 text-center mt-3">
+              <p className="text-[10px] text-muted-2 text-center mt-3">
                 Barcode / QR sticker ko camera ke samne rakhein — auto detect hoke barcode fill
                 hoga.
               </p>

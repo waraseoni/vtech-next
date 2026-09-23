@@ -61,7 +61,7 @@ export default function PageLoader({ icon: Icon, label, tone = "blue" }: PageLoa
         </div>
         <div className={`absolute inset-0 rounded-2xl border ${c.ring} animate-ping`} />
       </div>
-      <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.3em]">{label}</p>
+      <p className="text-muted-2 text-xs font-bold uppercase tracking-[0.3em]">{label}</p>
     </div>
   );
 }

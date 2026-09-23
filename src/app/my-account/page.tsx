@@ -97,7 +97,7 @@ export default function MyAccountPage() {
       className={`px-3 py-1.5 rounded-lg text-[11px] font-extrabold transition-all ${
         filter === value
           ? "bg-blue-600 text-white"
-          : "bg-[#111520] text-slate-500 hover:text-slate-300 border border-[#21293d]"
+          : "bg-panel-2 text-muted hover:text-app-2 border border-app"
       }`}
     >
       {label}
@@ -107,13 +107,13 @@ export default function MyAccountPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="bg-panel border border-app rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center flex-shrink-0">
           <Wrench size={22} className="text-white" />
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-xl font-black text-white">{client?.name || "Meri Repairs"}</h1>
-          <p className="text-slate-500 text-xs mt-1 flex flex-wrap gap-x-4 gap-y-1">
+          <p className="text-muted text-xs mt-1 flex flex-wrap gap-x-4 gap-y-1">
             <span className="flex items-center gap-1.5">
               <Phone size={12} />
               {client?.contact || "—"}
@@ -130,7 +130,7 @@ export default function MyAccountPage() {
           </p>
         </div>
         <div className="text-right">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">
             Total Repairs
           </p>
           <p className="text-3xl font-black text-white">{jobs.length}</p>
@@ -142,14 +142,14 @@ export default function MyAccountPage() {
         <div
           className={`rounded-2xl p-5 border ${
             !client || client.due === 0
-              ? "bg-[#161b27] border-[#21293d]"
+              ? "bg-panel border-app"
               : client.due > 0
                 ? "bg-red-500/10 border-red-500/30"
                 : "bg-emerald-500/10 border-emerald-500/30"
           }`}
         >
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted">
               {client && client.due > 0
                 ? "Due Amount"
                 : client && client.due < 0
@@ -173,20 +173,20 @@ export default function MyAccountPage() {
               {inr(client?.due ?? 0)}
             </p>
           )}
-          <p className="text-[11px] text-slate-600 mt-1.5">
+          <p className="text-[11px] text-muted-2 mt-1.5">
             Opening + Repairs + Sales + Loans − Payments
           </p>
         </div>
 
         <Link href="/my-account/ledger" className="group">
-          <div className="rounded-2xl p-5 border border-[#21293d] bg-[#161b27] hover:border-blue-500/40 hover:bg-[#1a2234] transition-all h-full flex flex-col justify-center">
+          <div className="rounded-2xl p-5 border border-app bg-panel hover:border-blue-500/40 hover:bg-panel-2 transition-all h-full flex flex-col justify-center">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center">
                 <BookOpen size={18} className="text-white" />
               </div>
               <div>
                 <p className="font-black text-white">Meri Ledger</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-[11px] text-muted mt-0.5">
                   Apna pura hisaab-kitaab dekhein / print karein
                 </p>
               </div>
@@ -214,25 +214,25 @@ export default function MyAccountPage() {
 
       {/* Jobs */}
       {loading ? (
-        <div className="h-40 flex items-center justify-center text-slate-600">
+        <div className="h-40 flex items-center justify-center text-muted-2">
           <Loader2 size={22} className="animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-[#161b27] border border-dashed border-[#21293d] rounded-2xl p-10 text-center">
-          <Inbox size={28} className="mx-auto text-slate-700" />
-          <p className="text-slate-500 font-bold text-sm mt-3">Koi repair nahi mili</p>
+        <div className="bg-panel border border-dashed border-app rounded-2xl p-10 text-center">
+          <Inbox size={28} className="mx-auto text-app" />
+          <p className="text-muted font-bold text-sm mt-3">Koi repair nahi mili</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((j) => {
             const st = STATUS[j.status] || STATUS[0];
             return (
-              <div key={j.id} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
+              <div key={j.id} className="bg-panel border border-app rounded-2xl p-5">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2.5">
                     <span className="text-lg font-black text-white">#{j.job_id}</span>
                     {j.code && (
-                      <span className="text-[11px] font-bold text-slate-500">Code: {j.code}</span>
+                      <span className="text-[11px] font-bold text-muted">Code: {j.code}</span>
                     )}
                   </div>
                   <span className={`text-[10px] font-extrabold px-2 py-1 rounded border ${st.cls}`}>
@@ -240,14 +240,14 @@ export default function MyAccountPage() {
                   </span>
                 </div>
 
-                <p className="text-slate-200 font-bold text-sm mt-3">
+                <p className="text-app-2 font-bold text-sm mt-3">
                   {j.item || "Item nahi likha"}
                 </p>
-                {j.fault && <p className="text-slate-500 text-xs mt-1">{j.fault}</p>}
-                {j.remark && <p className="text-slate-600 text-xs mt-1 italic">{j.remark}</p>}
+                {j.fault && <p className="text-muted text-xs mt-1">{j.fault}</p>}
+                {j.remark && <p className="text-muted-2 text-xs mt-1 italic">{j.remark}</p>}
 
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#1a2234]">
-                  <div className="text-[11px] text-slate-600 flex items-center gap-1.5">
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-app-2">
+                  <div className="text-[11px] text-muted-2 flex items-center gap-1.5">
                     <Clock size={12} />
                     <span className="block">
                       Received: {fmtDate(j.date_created)}

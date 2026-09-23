@@ -99,32 +99,32 @@ export default function TechnicianPerformancePage() {
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <button
           onClick={() => shiftMonth(-1)}
-          className="p-2 bg-[#111520] border border-[#21293d] rounded-lg hover:border-blue-500/30 transition-all"
+          className="p-2 bg-panel-2 border border-app rounded-lg hover:border-blue-500/30 transition-all"
         >
-          <ChevronLeft size={16} className="text-slate-400" />
+          <ChevronLeft size={16} className="text-muted" />
         </button>
-        <div className="flex items-center gap-2 text-sm font-bold text-slate-300">
+        <div className="flex items-center gap-2 text-sm font-bold text-app-2">
           <Calendar size={14} className="text-blue-400" />
           {formatIST(from + "T00:00:00+05:30", { month: "long", year: "numeric" })}
         </div>
         <button
           onClick={() => shiftMonth(1)}
-          className="p-2 bg-[#111520] border border-[#21293d] rounded-lg hover:border-blue-500/30 transition-all"
+          className="p-2 bg-panel-2 border border-app rounded-lg hover:border-blue-500/30 transition-all"
         >
-          <ChevronRight size={16} className="text-slate-400" />
+          <ChevronRight size={16} className="text-muted" />
         </button>
         <div className="ml-auto flex gap-2">
           <input
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
-            className="text-xs bg-[#111520] border border-[#21293d] rounded-lg px-3 py-1.5 text-slate-300 focus:border-blue-500/50 focus:outline-none"
+            className="text-xs bg-panel-2 border border-app rounded-lg px-3 py-1.5 text-app-2 focus:border-blue-500/50 focus:outline-none"
           />
           <input
             type="date"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            className="text-xs bg-[#111520] border border-[#21293d] rounded-lg px-3 py-1.5 text-slate-300 focus:border-blue-500/50 focus:outline-none"
+            className="text-xs bg-panel-2 border border-app rounded-lg px-3 py-1.5 text-app-2 focus:border-blue-500/50 focus:outline-none"
           />
         </div>
       </div>
@@ -132,11 +132,11 @@ export default function TechnicianPerformancePage() {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 size={24} className="animate-spin text-blue-400" />
-          <span className="ml-3 text-sm text-slate-400">Loading metrics...</span>
+          <span className="ml-3 text-sm text-muted">Loading metrics...</span>
         </div>
       ) : metrics.length === 0 ? (
-        <div className="text-center py-20 text-slate-500 text-sm">
-          <AlertCircle size={24} className="mx-auto mb-3 text-slate-600" />
+        <div className="text-center py-20 text-muted text-sm">
+          <AlertCircle size={24} className="mx-auto mb-3 text-muted-2" />
           Koi mechanic data nahi mila is date range mein.
         </div>
       ) : (
@@ -169,10 +169,10 @@ export default function TechnicianPerformancePage() {
                 color: "cyan",
               },
             ].map((card, i) => (
-              <div key={i} className="bg-[#111520] border border-[#21293d] rounded-xl p-4">
+              <div key={i} className="bg-panel-2 border border-app rounded-xl p-4">
                 <div className={`text-${card.color}-400 mb-2`}>{card.icon}</div>
                 <div className="text-lg font-black text-white">{card.value}</div>
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <div className="text-[10px] font-bold text-muted uppercase tracking-wider">
                   {card.label}
                 </div>
               </div>
@@ -187,7 +187,7 @@ export default function TechnicianPerformancePage() {
               return (
                 <div
                   key={m.id}
-                  className="bg-[#111520] border border-[#21293d] rounded-xl p-4 hover:border-blue-500/20 transition-all"
+                  className="bg-panel-2 border border-app rounded-xl p-4 hover:border-blue-500/20 transition-all"
                 >
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
@@ -213,7 +213,7 @@ export default function TechnicianPerformancePage() {
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="text-sm font-black text-white truncate">{m.name}</h3>
                         {m.designation && (
-                          <span className="text-[9px] font-bold text-slate-500 bg-slate-500/10 px-2 py-0.5 rounded-full">
+                          <span className="text-[9px] font-bold text-muted bg-muted/10 px-2 py-0.5 rounded-full">
                             {m.designation}
                           </span>
                         )}
@@ -225,7 +225,7 @@ export default function TechnicianPerformancePage() {
                           <div className="text-base font-black text-blue-400">
                             {m.jobs_completed}
                           </div>
-                          <div className="text-[9px] font-bold text-slate-500 uppercase">
+                          <div className="text-[9px] font-bold text-muted uppercase">
                             Jobs Done
                           </div>
                         </div>
@@ -233,7 +233,7 @@ export default function TechnicianPerformancePage() {
                           <div className="text-base font-black text-emerald-400">
                             {inr(m.jobs_revenue)}
                           </div>
-                          <div className="text-[9px] font-bold text-slate-500 uppercase">
+                          <div className="text-[9px] font-bold text-muted uppercase">
                             Revenue
                           </div>
                         </div>
@@ -241,7 +241,7 @@ export default function TechnicianPerformancePage() {
                           <div className="text-base font-black text-amber-400">
                             {inr(m.jobs_commission)}
                           </div>
-                          <div className="text-[9px] font-bold text-slate-500 uppercase">
+                          <div className="text-[9px] font-bold text-muted uppercase">
                             Commission
                           </div>
                         </div>
@@ -249,7 +249,7 @@ export default function TechnicianPerformancePage() {
                           <div className="text-base font-black text-cyan-400">
                             {m.avg_repair_hours != null ? `${m.avg_repair_hours}h` : "—"}
                           </div>
-                          <div className="text-[9px] font-bold text-slate-500 uppercase">
+                          <div className="text-[9px] font-bold text-muted uppercase">
                             Avg Repair
                           </div>
                         </div>
@@ -273,22 +273,22 @@ export default function TechnicianPerformancePage() {
                             )}
                           </div>
                         </div>
-                        <div className="text-[10px] font-bold text-slate-400 whitespace-nowrap">
+                        <div className="text-[10px] font-bold text-muted whitespace-nowrap">
                           <span className="text-emerald-400">{m.full_days}F</span>
                           {" / "}
                           <span className="text-amber-400">{m.half_days}H</span>
                           {" / "}
                           <span className="text-red-400">{m.absent_days}A</span>
                           {" · "}
-                          <span className="text-slate-300">{attendanceRate}%</span>
+                          <span className="text-app-2">{attendanceRate}%</span>
                         </div>
                       </div>
 
                       {/* Salary */}
                       {m.salary_earned > 0 && (
-                        <div className="mt-2 text-[10px] font-bold text-slate-500">
+                        <div className="mt-2 text-[10px] font-bold text-muted">
                           Salary earned:{" "}
-                          <span className="text-slate-300">{inr(m.salary_earned)}</span>
+                          <span className="text-app-2">{inr(m.salary_earned)}</span>
                         </div>
                       )}
                     </div>

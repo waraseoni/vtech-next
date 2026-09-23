@@ -27,8 +27,8 @@ import PageLoader from "@/components/PageLoader";
 import { toast } from "@/lib/toast";
 
 const inputCls =
-  "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
-const labelCls = "block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5";
+  "w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-app";
+const labelCls = "block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -239,10 +239,10 @@ export default function ProfilePage() {
   if (loading) return <PageLoader icon={User} label="loading profile..." tone="blue" />;
 
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
+    <div className="min-h-screen bg-app font-sans pb-12">
       <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
         {/* Profile header card */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-6 flex items-center gap-5">
+        <div className="bg-panel border border-app rounded-2xl p-6 flex items-center gap-5">
           {/* Avatar circle */}
           <div className="relative flex-shrink-0">
             {avatarUrl ? (
@@ -271,13 +271,13 @@ export default function ProfilePage() {
             <button
               onClick={() => setPhotoPopup(!photoPopup)}
               disabled={photoSaving}
-              className="absolute -bottom-1.5 -right-1.5 w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors disabled:opacity-60"
+              className="absolute -bottom-1.5 -right-1.5 w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-app-2 transition-colors disabled:opacity-60"
               title="Photo upload"
             >
               {photoSaving ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
             </button>
             {photoPopup && (
-              <div className="absolute -bottom-20 right-0 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+              <div className="absolute -bottom-20 right-0 z-50 bg-panel border border-app-2 rounded-xl shadow-2xl p-1.5 min-w-[120px]">
                 <button
                   onClick={() => {
                     setPhotoPopup(false);
@@ -322,7 +322,7 @@ export default function ProfilePage() {
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-black text-white truncate">{fullName || "—"}</h1>
-            <p className="text-slate-500 text-sm mt-0.5 truncate">{email}</p>
+            <p className="text-muted text-sm mt-0.5 truncate">{email}</p>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               {role === "admin" ? (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-500/15 text-amber-400 border border-amber-500/25">
@@ -356,10 +356,10 @@ export default function ProfilePage() {
         </div>
 
         {/* ── Profile Info Form ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-blue-600/20 to-transparent border-b border-[#21293d]">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-blue-600/20 to-transparent border-b border-app">
             <User size={14} className="text-blue-400" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
               Profile Information
             </h3>
           </div>
@@ -369,7 +369,7 @@ export default function ProfilePage() {
               <div className="relative">
                 <User
                   size={14}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                 />
                 <input
                   type="text"
@@ -386,7 +386,7 @@ export default function ProfilePage() {
               <div className="relative">
                 <Mail
                   size={14}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                 />
                 <input
                   type="email"
@@ -395,7 +395,7 @@ export default function ProfilePage() {
                   className={`${inputCls} pl-9 opacity-50 cursor-not-allowed`}
                 />
               </div>
-              <p className="text-[10px] text-slate-700 mt-1">Email change nahi ho sakta</p>
+              <p className="text-[10px] text-app mt-1">Email change nahi ho sakta</p>
             </div>
 
             {/* Mechanic Link (attendance ke liye — staff/admin khud ko mechanic se link kare) */}
@@ -411,7 +411,7 @@ export default function ProfilePage() {
                   placeholder="— Select Mechanic —"
                   clearLabel="— Select Mechanic —"
                 />
-                <p className="text-[10px] text-slate-700 mt-1">
+                <p className="text-[10px] text-app mt-1">
                   Attendance lagane ke liye apni profile ko mechanic se link karna zaroori hai।
                 </p>
               </div>
@@ -436,10 +436,10 @@ export default function ProfilePage() {
         </div>
 
         {/* ── Change Password Form ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-amber-600/20 to-transparent border-b border-[#21293d]">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-amber-600/20 to-transparent border-b border-app">
             <KeyRound size={14} className="text-amber-400" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
               Change Password
             </h3>
           </div>
@@ -458,7 +458,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => setShowCurrent((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-2 hover:text-muted transition-colors"
                 >
                   {showCurrent ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
@@ -479,7 +479,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => setShowNew((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-2 hover:text-muted transition-colors"
                 >
                   {showNew ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>

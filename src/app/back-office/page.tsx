@@ -171,7 +171,7 @@ export default function BackOfficeDashboard() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-20">
       {/* Hero Section */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden shadow-2xl">
+      <div className="bg-panel border border-app rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 blur-[120px] rounded-full -mr-40 -mt-40 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-600/10 blur-[100px] rounded-full -ml-20 -mb-20 pointer-events-none" />
 
@@ -186,7 +186,7 @@ export default function BackOfficeDashboard() {
                 Dashboard
               </span>
             </h1>
-            <p className="text-slate-500 max-w-lg font-medium leading-relaxed">
+            <p className="text-muted max-w-lg font-medium leading-relaxed">
               Efficiently manage your system masters, financial accounts, and technical
               configurations from a unified interface.
             </p>
@@ -194,7 +194,7 @@ export default function BackOfficeDashboard() {
           <div className="w-full md:w-80 group">
             <div className="relative">
               <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-blue-400 transition-colors"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-2 group-focus-within:text-blue-400 transition-colors"
                 size={20}
               />
               <input
@@ -202,7 +202,7 @@ export default function BackOfficeDashboard() {
                 placeholder="Search masters (e.g. Salary, Backup)..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full pl-12 pr-6 py-4 bg-[#0d1117] border border-[#21293d] rounded-2xl text-white placeholder:text-slate-600 outline-none focus:border-blue-500 transition-all shadow-2xl"
+                className="w-full pl-12 pr-6 py-4 bg-app border border-app rounded-2xl text-white placeholder:text-muted-2 outline-none focus:border-blue-500 transition-all shadow-2xl"
               />
             </div>
           </div>
@@ -217,7 +217,7 @@ export default function BackOfficeDashboard() {
               <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center text-blue-400 border border-blue-500/20">
                 {section.icon}
               </div>
-              <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.3em]">
+              <h2 className="text-sm font-black text-muted uppercase tracking-[0.3em]">
                 {section.title}
               </h2>
             </div>
@@ -233,10 +233,10 @@ export default function BackOfficeDashboard() {
 
       {query && filteredSections.length === 0 && (
         <div className="py-20 text-center space-y-4">
-          <div className="w-16 h-16 bg-[#161b27] border border-[#21293d] rounded-2xl flex items-center justify-center text-slate-700 mx-auto">
+          <div className="w-16 h-16 bg-panel border border-app rounded-2xl flex items-center justify-center text-app mx-auto">
             <Search size={32} />
           </div>
-          <h3 className="text-lg font-black text-slate-400">
+          <h3 className="text-lg font-black text-muted">
             No masters found for &quot;{query}&quot;
           </h3>
           <button onClick={() => setQuery("")} className="text-blue-500 font-bold hover:underline">
@@ -263,7 +263,7 @@ function ModuleCard({ item }: { item: OfficeItem }) {
       "from-orange-500 to-orange-700 shadow-orange-500/20 text-orange-400 border-orange-500/20",
     indigo:
       "from-indigo-500 to-indigo-700 shadow-indigo-500/20 text-indigo-400 border-indigo-500/20",
-    slate: "from-slate-500 to-slate-700 shadow-slate-500/20 text-slate-400 border-slate-500/20",
+    slate: "from-slate-500 to-slate-700 shadow-slate-500/20 text-muted border-muted/20",
     sky: "from-sky-500 to-sky-700 shadow-sky-500/20 text-sky-400 border-sky-500/20",
     cyan: "from-cyan-500 to-cyan-700 shadow-cyan-500/20 text-cyan-400 border-cyan-500/20",
   };
@@ -271,7 +271,7 @@ function ModuleCard({ item }: { item: OfficeItem }) {
   return (
     <Link
       href={item.href}
-      className="group block bg-[#161b27] border border-[#21293d] rounded-[2rem] p-6 hover:border-blue-500/30 hover:bg-white/[0.02] transition-all duration-300 shadow-lg no-underline"
+      className="group block bg-panel border border-app rounded-[2rem] p-6 hover:border-blue-500/30 hover:bg-white/[0.02] transition-all duration-300 shadow-lg no-underline"
     >
       <div className="flex items-start justify-between mb-4">
         <div
@@ -281,14 +281,14 @@ function ModuleCard({ item }: { item: OfficeItem }) {
         </div>
         <ArrowRight
           size={18}
-          className="text-slate-700 group-hover:text-blue-400 transition-colors group-hover:translate-x-1"
+          className="text-app group-hover:text-blue-400 transition-colors group-hover:translate-x-1"
         />
       </div>
       <h3 className="text-white font-black text-lg mb-1">{item.name}</h3>
-      <p className="text-slate-500 text-xs font-medium leading-relaxed line-clamp-2">{item.desc}</p>
+      <p className="text-muted text-xs font-medium leading-relaxed line-clamp-2">{item.desc}</p>
 
       <div className="mt-6 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="h-1 flex-1 bg-[#21293d] rounded-full overflow-hidden">
+        <div className="h-1 flex-1 bg-panel-2 rounded-full overflow-hidden">
           <div className="h-full bg-blue-500 w-1/3 group-hover:w-full transition-all duration-700 ease-out" />
         </div>
         <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">

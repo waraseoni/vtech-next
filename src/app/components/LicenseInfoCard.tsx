@@ -76,7 +76,7 @@ export default function LicenseInfoCard() {
 
   return (
     <section
-      className={`rounded-3xl border p-4 md:p-5 ${expired ? "border-red-500/25 bg-red-500/[0.03]" : soon ? "border-amber-500/25 bg-amber-500/[0.03]" : "border-slate-200 dark:border-[#21293d] bg-slate-50 dark:bg-[#161b27]"}`}
+      className={`rounded-3xl border p-4 md:p-5 ${expired ? "border-red-500/25 bg-red-500/[0.03]" : soon ? "border-amber-500/25 bg-amber-500/[0.03]" : "border-app-2 dark:border-app bg-slate-50 dark:bg-panel"}`}
     >
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -97,7 +97,7 @@ export default function LicenseInfoCard() {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm font-black text-slate-900 dark:text-white">License</p>
+              <p className="text-sm font-black text-app dark:text-white">License</p>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-500/10 border border-purple-500/25 text-purple-400 text-[9px] font-black uppercase tracking-wider">
                 {license.plan || "standard"}
               </span>
@@ -107,22 +107,22 @@ export default function LicenseInfoCard() {
                 </span>
               )}
             </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted">
               <span className="inline-flex items-center gap-1.5 min-w-0">
-                <Store size={11} className="shrink-0 text-slate-600" />
-                <span className="truncate font-bold text-slate-700 dark:text-slate-300">
+                <Store size={11} className="shrink-0 text-muted-2" />
+                <span className="truncate font-bold text-app dark:text-app-2">
                   {license.shopName || "—"}
                 </span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <KeyRound size={11} className="shrink-0 text-slate-600" />
-                <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
+                <KeyRound size={11} className="shrink-0 text-muted-2" />
+                <span className="font-mono font-bold text-app dark:text-app-2">
                   {license.keyMasked || "—"}
                 </span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <CalendarClock size={11} className="shrink-0 text-slate-600" />
-                <span className="font-bold text-slate-700 dark:text-slate-300">
+                <CalendarClock size={11} className="shrink-0 text-muted-2" />
+                <span className="font-bold text-app dark:text-app-2">
                   {license.expiresAt ? fmtExpiry(license.expiresAt) : "Lifetime"}
                 </span>
               </span>
@@ -157,33 +157,33 @@ export default function LicenseInfoCard() {
       >
         <div className="flex items-center gap-2 min-w-0">
           <Phone size={11} className="text-blue-400 shrink-0" />
-          <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">
+          <span className="text-[11px] font-bold text-app dark:text-app-2 truncate">
             {SELLER_INFO.name}
           </span>
-          <span className="text-[10px] text-slate-500 hidden sm:inline">·</span>
-          <span className="text-[10px] text-slate-500 hidden sm:inline">{SELLER_INFO.phone}</span>
+          <span className="text-[10px] text-muted hidden sm:inline">·</span>
+          <span className="text-[10px] text-muted hidden sm:inline">{SELLER_INFO.phone}</span>
         </div>
         <ChevronDown
           size={13}
-          className={`text-slate-500 shrink-0 transition-transform ${contactOpen ? "rotate-180" : ""}`}
+          className={`text-muted shrink-0 transition-transform ${contactOpen ? "rotate-180" : ""}`}
         />
       </button>
       {contactOpen && (
-        <div className="mt-1.5 bg-slate-100 dark:bg-[#0f1a2e] border border-blue-500/10 rounded-xl px-3.5 py-2.5 space-y-1.5">
+        <div className="mt-1.5 bg-panel-2 dark:bg-panel-2 border border-blue-500/10 rounded-xl px-3.5 py-2.5 space-y-1.5">
           <div className="flex items-center gap-2">
-            <User size={11} className="text-slate-500" />
-            <span className="text-[11px] text-slate-700 dark:text-slate-300">
+            <User size={11} className="text-muted" />
+            <span className="text-[11px] text-app dark:text-app-2">
               {SELLER_INFO.name}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <MapPin size={11} className="text-slate-500" />
-            <span className="text-[11px] text-slate-700 dark:text-slate-300 leading-snug">
+            <MapPin size={11} className="text-muted" />
+            <span className="text-[11px] text-app dark:text-app-2 leading-snug">
               {SELLER_INFO.address}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Phone size={11} className="text-slate-500" />
+            <Phone size={11} className="text-muted" />
             <a
               href={`tel:${SELLER_INFO.phone}`}
               className="text-[11px] text-blue-400 hover:text-blue-300"
@@ -203,7 +203,7 @@ export default function LicenseInfoCard() {
             </a>
           </div>
           <div className="flex items-center gap-2">
-            <Mail size={11} className="text-slate-500" />
+            <Mail size={11} className="text-muted" />
             <a
               href={`mailto:${SELLER_INFO.email}`}
               className="text-[11px] text-blue-400 hover:text-blue-300"

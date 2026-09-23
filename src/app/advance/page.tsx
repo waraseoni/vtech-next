@@ -144,43 +144,43 @@ function AdvanceLedgerContent() {
           <h1 className="text-lg font-black text-white flex items-center gap-2">
             <DollarSign size={18} className="text-amber-400" /> Advance & Part Payment Ledger
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">Mechanic advance payments</p>
+          <p className="text-xs text-muted mt-0.5">Mechanic advance payments</p>
         </div>
         <button
           onClick={printReport}
-          className="flex items-center gap-2 px-4 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all print-btn"
+          className="flex items-center gap-2 px-4 py-2 bg-panel border border-app rounded-xl text-xs font-bold text-muted hover:text-white hover:border-blue-500/40 transition-all print-btn"
         >
           <Printer size={13} /> Print
         </button>
       </div>
 
       {/* Filter - hidden on print */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 print:hidden">
+      <div className="bg-panel border border-app rounded-2xl p-4 print:hidden">
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+            <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
               From
             </label>
             <input
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+              className="px-3 py-2 bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-blue-500/50"
             />
           </div>
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+            <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
               To
             </label>
             <input
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+              className="px-3 py-2 bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-blue-500/50"
             />
           </div>
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+            <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
               Staff
             </label>
             <SearchableSelect
@@ -208,15 +208,15 @@ function AdvanceLedgerContent() {
       </div>
 
       {/* Table */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-[#111520]">
+              <tr className="bg-panel-2">
                 {["#", "Date", "Staff Name", "Amount", "Reason / Note", "Action"].map((h) => (
                   <th
                     key={h}
-                    className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left"
+                    className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left"
                   >
                     {h}
                   </th>
@@ -232,7 +232,7 @@ function AdvanceLedgerContent() {
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-slate-600 text-xs font-bold">
+                  <td colSpan={6} className="text-center py-12 text-muted-2 text-xs font-bold">
                     No advance entries found
                   </td>
                 </tr>
@@ -240,21 +240,21 @@ function AdvanceLedgerContent() {
                 rows.map((r, i) => (
                   <tr
                     key={r.id}
-                    className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors"
+                    className="border-t border-app/50 hover:bg-white/[0.02] transition-colors"
                   >
-                    <td className="px-3 py-2.5 text-xs text-slate-500 text-center">{i + 1}</td>
-                    <td className="px-3 py-2.5 text-xs text-slate-400">
+                    <td className="px-3 py-2.5 text-xs text-muted text-center">{i + 1}</td>
+                    <td className="px-3 py-2.5 text-xs text-muted">
                       {new Date(r.date_paid).toLocaleDateString("en-IN", {
                         day: "2-digit",
                         month: "short",
                         year: "numeric",
                       })}
                     </td>
-                    <td className="px-3 py-2.5 text-xs font-bold text-slate-200">{r.name}</td>
+                    <td className="px-3 py-2.5 text-xs font-bold text-app-2">{r.name}</td>
                     <td className="px-3 py-2.5 text-xs text-right font-bold text-red-400">
                       {inr(r.amount)}
                     </td>
-                    <td className="px-3 py-2.5 text-xs text-slate-500">{r.reason || "—"}</td>
+                    <td className="px-3 py-2.5 text-xs text-muted">{r.reason || "—"}</td>
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-1">
                         <button
@@ -282,7 +282,7 @@ function AdvanceLedgerContent() {
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-red-500/30 bg-red-500/5">
-                <td colSpan={3} className="px-3 py-3 text-xs font-black text-slate-400 text-right">
+                <td colSpan={3} className="px-3 py-3 text-xs font-black text-muted text-right">
                   Total Advance Paid:
                 </td>
                 <td className="px-3 py-3 text-sm text-right font-black text-red-400">
@@ -299,7 +299,7 @@ function AdvanceLedgerContent() {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl p-5">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-sm shadow-2xl p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-black text-white">
                 {editRow ? "Edit Advance Entry" : "New Advance Entry"}
@@ -309,14 +309,14 @@ function AdvanceLedgerContent() {
                   setShowModal(false);
                   setEditRow(null);
                 }}
-                className="w-8 h-8 flex items-center justify-center bg-[#111520] hover:bg-[#21293d] rounded-lg text-slate-500 hover:text-white transition-all"
+                className="w-8 h-8 flex items-center justify-center bg-panel-2 hover:bg-panel-2 rounded-lg text-muted hover:text-white transition-all"
               >
                 <X size={14} />
               </button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+                <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
                   Staff *
                 </label>
                 <SearchableSelect
@@ -330,7 +330,7 @@ function AdvanceLedgerContent() {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+                <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
                   Amount *
                 </label>
                 <input
@@ -338,22 +338,22 @@ function AdvanceLedgerContent() {
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                   step="any"
-                  className="w-full px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+                  className="w-full px-3 py-2 bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-blue-500/50"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+                <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
                   Date *
                 </label>
                 <input
                   type="date"
                   value={formData.date_paid}
                   onChange={(e) => setFormData({ ...formData, date_paid: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+                  className="w-full px-3 py-2 bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-blue-500/50"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+                <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
                   Reason
                 </label>
                 <input
@@ -361,7 +361,7 @@ function AdvanceLedgerContent() {
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                   placeholder="e.g., Emergency"
-                  className="w-full px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+                  className="w-full px-3 py-2 bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-blue-500/50"
                 />
               </div>
               <div className="flex gap-3 pt-2">
@@ -384,7 +384,7 @@ function AdvanceLedgerContent() {
                     setShowModal(false);
                     setEditRow(null);
                   }}
-                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl text-xs font-bold hover:text-white"
+                  className="px-6 py-2.5 bg-panel-2 border border-app text-muted rounded-xl text-xs font-bold hover:text-white"
                 >
                   Cancel
                 </button>

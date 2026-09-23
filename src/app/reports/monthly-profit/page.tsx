@@ -12,7 +12,7 @@ import dynamic from "next/dynamic";
 const MonthlyProfitChart = dynamic(() => import("./MonthlyProfitChart"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs font-bold">
+    <div className="w-full h-full flex items-center justify-center text-muted text-xs font-bold">
       Load chart…
     </div>
   ),
@@ -379,19 +379,19 @@ export default function MonthlyProfitReport() {
   };
 
   const cellCls =
-    "px-4 py-3 text-right font-bold text-slate-300 cursor-pointer hover:text-white hover:underline decoration-slate-500 underline-offset-4";
+    "px-4 py-3 text-right font-bold text-app-2 cursor-pointer hover:text-white hover:underline decoration-slate-500 underline-offset-4";
 
   return (
     <div className="space-y-6 pb-10">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-panel border border-app rounded-2xl p-5 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-700 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
             <BarChart3 size={24} className="text-white" />
           </div>
           <div>
             <h1 className="text-xl font-black text-white">Monthly Profit/Loss Report</h1>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">
+            <p className="text-[10px] text-muted uppercase tracking-widest font-bold mt-0.5">
               Yearly Performance Analysis (Click amounts for details)
             </p>
           </div>
@@ -400,7 +400,7 @@ export default function MonthlyProfitReport() {
           <select
             value={year}
             onChange={(e) => setYear(parseInt(e.target.value))}
-            className="bg-[#0d1117] border border-[#21293d] text-white px-4 py-2 rounded-xl font-bold outline-none focus:border-indigo-500 transition-all cursor-pointer"
+            className="bg-app border border-app text-white px-4 py-2 rounded-xl font-bold outline-none focus:border-indigo-500 transition-all cursor-pointer"
           >
             {[...Array(7)].map((_, i) => (
               <option key={i} value={new Date().getFullYear() - i}>
@@ -410,7 +410,7 @@ export default function MonthlyProfitReport() {
           </select>
           <button
             onClick={() => window.print()}
-            className="w-10 h-10 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-400 hover:text-white transition-all"
+            className="w-10 h-10 flex items-center justify-center bg-app border border-app rounded-xl text-muted hover:text-white transition-all"
           >
             <Printer size={18} />
           </button>
@@ -418,8 +418,8 @@ export default function MonthlyProfitReport() {
       </div>
 
       {/* Chart */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-3xl p-6 shadow-2xl h-[400px]">
-        <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+      <div className="bg-panel border border-app rounded-3xl p-6 shadow-2xl h-[400px]">
+        <h3 className="text-sm font-black text-muted uppercase tracking-widest mb-6 flex items-center gap-2">
           <TrendingUp size={16} className="text-indigo-500" /> Sales vs Profit Trend
         </h3>
         <MonthlyProfitChart data={data} />
@@ -450,12 +450,12 @@ export default function MonthlyProfitReport() {
       </div>
 
       {/* Table */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-3xl overflow-hidden shadow-2xl">
+      <div className="bg-panel border border-app rounded-3xl overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead>
-              <tr className="bg-[#0d1117] border-b border-[#21293d] text-[10px] font-black uppercase text-slate-500 tracking-widest">
-                <th className="px-4 py-4 sticky left-0 bg-[#0d1117]">Month</th>
+              <tr className="bg-app border-b border-app text-[10px] font-black uppercase text-muted tracking-widest">
+                <th className="px-4 py-4 sticky left-0 bg-app">Month</th>
                 <th className="px-4 py-4 text-right" title="Repair jobs (Delivered)">
                   Repair Jobs
                 </th>
@@ -505,7 +505,7 @@ export default function MonthlyProfitReport() {
                     ))
                 : data.map((row) => (
                     <tr key={row.month} className="hover:bg-white/[0.02] transition-colors group">
-                      <td className="px-4 py-3 text-white font-black sticky left-0 bg-[#161b27]">
+                      <td className="px-4 py-3 text-white font-black sticky left-0 bg-panel">
                         {row.month}
                       </td>
                       <td
@@ -583,24 +583,24 @@ export default function MonthlyProfitReport() {
                     </tr>
                   ))}
             </tbody>
-            <tfoot className="bg-[#0d1117] font-black border-t border-[#21293d]">
+            <tfoot className="bg-app font-black border-t border-app">
               <tr>
-                <td className="px-4 py-5 text-slate-500 text-[10px] uppercase tracking-widest sticky left-0 bg-[#0d1117]">
+                <td className="px-4 py-5 text-muted text-[10px] uppercase tracking-widest sticky left-0 bg-app">
                   Grand Total
                 </td>
                 <td className="px-4 py-5 text-right text-white">{inr(totals.repair)}</td>
-                <td className="px-4 py-5 text-right text-slate-300">
+                <td className="px-4 py-5 text-right text-app-2">
                   {inr(data.reduce((s, m) => s + m.walkin, 0))}
                 </td>
-                <td className="px-4 py-5 text-right text-slate-300">
+                <td className="px-4 py-5 text-right text-app-2">
                   {inr(data.reduce((s, m) => s + m.clientSales, 0))}
                 </td>
                 <td className="px-4 py-5 text-right text-emerald-400">{inr(totals.revenue)}</td>
                 <td className="px-4 py-5 text-right text-amber-400">{inr(totals.commission)}</td>
-                <td className="px-4 py-5 text-right text-slate-300">{inr(totals.expenses)}</td>
-                <td className="px-4 py-5 text-right text-slate-300">{inr(totals.salaries)}</td>
-                <td className="px-4 py-5 text-right text-slate-300">{inr(totals.emi)}</td>
-                <td className="px-4 py-5 text-right text-slate-300">{inr(totals.discounts)}</td>
+                <td className="px-4 py-5 text-right text-app-2">{inr(totals.expenses)}</td>
+                <td className="px-4 py-5 text-right text-app-2">{inr(totals.salaries)}</td>
+                <td className="px-4 py-5 text-right text-app-2">{inr(totals.emi)}</td>
+                <td className="px-4 py-5 text-right text-app-2">{inr(totals.discounts)}</td>
                 <td className="px-4 py-5 text-right text-rose-400">{inr(totals.totalExp)}</td>
                 <td
                   className={`px-4 py-5 text-right text-lg ${totals.profit >= 0 ? "text-emerald-400" : "text-rose-500"}`}
@@ -621,12 +621,12 @@ export default function MonthlyProfitReport() {
       {/* Drill-down Modal */}
       {modalConfig && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between p-6 border-b border-[#21293d]">
+          <div className="bg-panel border border-app rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between p-6 border-b border-app">
               <h2 className="text-xl font-black text-white">{modalConfig.title}</h2>
               <button
                 onClick={() => setModalConfig(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-rose-500 transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 text-muted hover:text-white hover:bg-rose-500 transition-colors"
               >
                 <X size={18} />
               </button>
@@ -634,13 +634,13 @@ export default function MonthlyProfitReport() {
 
             <div className="p-6 overflow-y-auto">
               {modalConfig.data.length === 0 ? (
-                <div className="text-center py-10 text-slate-500 font-bold">
+                <div className="text-center py-10 text-muted font-bold">
                   No data found for this period.
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-[#21293d]">
+                <div className="overflow-x-auto rounded-xl border border-app">
                   <table className="w-full text-sm text-left">
-                    <thead className="bg-[#0d1117] text-slate-400 text-[10px] uppercase tracking-widest">
+                    <thead className="bg-app text-muted text-[10px] uppercase tracking-widest">
                       {["repair_jobs", "commission"].includes(modalConfig.type) && (
                         <tr>
                           <th className="px-4 py-3">Date</th>
@@ -712,8 +712,8 @@ export default function MonthlyProfitReport() {
                                   year: "numeric",
                                 })}
                               </td>
-                              <td className="px-4 py-3 text-slate-400">{row.code || "-"}</td>
-                              <td className="px-4 py-3 text-slate-300">
+                              <td className="px-4 py-3 text-muted">{row.code || "-"}</td>
+                              <td className="px-4 py-3 text-app-2">
                                 {row.client_name || "Walk-in"}
                               </td>
                               <td className="px-4 py-3 text-right text-rose-400 font-bold">
@@ -732,13 +732,13 @@ export default function MonthlyProfitReport() {
                               <td className="px-4 py-3 text-white">
                                 {String(row.date_created).slice(0, 10)}
                               </td>
-                              <td className="px-4 py-3 text-slate-400">{row.sale_code || "-"}</td>
+                              <td className="px-4 py-3 text-muted">{row.sale_code || "-"}</td>
                               {modalConfig.type === "client_sales" && (
                                 <td className="px-4 py-3 text-indigo-300 font-bold">
                                   {row.client_name || "Unknown"}
                                 </td>
                               )}
-                              <td className="px-4 py-3 text-slate-400">{row.remarks || "-"}</td>
+                              <td className="px-4 py-3 text-muted">{row.remarks || "-"}</td>
                               <td className="px-4 py-3 text-right text-emerald-400 font-bold">
                                 {inr(parseFloat(row.total_amount) || 0)}
                               </td>
@@ -750,13 +750,13 @@ export default function MonthlyProfitReport() {
                               <td className="px-4 py-3 text-white">
                                 {String(row.date_created).slice(0, 10)}
                               </td>
-                              <td className="px-4 py-3 text-slate-300">
+                              <td className="px-4 py-3 text-app-2">
                                 <span className="px-2 py-1 bg-slate-800 rounded-md text-xs">
                                   {row.category}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 text-slate-400">{row.remarks || "-"}</td>
-                              <td className="px-4 py-3 text-slate-400">
+                              <td className="px-4 py-3 text-muted">{row.remarks || "-"}</td>
+                              <td className="px-4 py-3 text-muted">
                                 {row.payment_mode || "Cash"}
                               </td>
                               <td className="px-4 py-3 text-right text-rose-400 font-bold">
@@ -770,12 +770,12 @@ export default function MonthlyProfitReport() {
                           return (
                             <tr key={i} className="hover:bg-white/[0.02]">
                               <td className="px-4 py-3 text-white font-bold">{row.name}</td>
-                              <td className="px-4 py-3 text-center text-slate-300">{row.full}</td>
-                              <td className="px-4 py-3 text-center text-slate-300">{row.half}</td>
+                              <td className="px-4 py-3 text-center text-app-2">{row.full}</td>
+                              <td className="px-4 py-3 text-center text-app-2">{row.half}</td>
                               <td className="px-4 py-3 text-center text-indigo-400 font-bold">
                                 {totalDays}
                               </td>
-                              <td className="px-4 py-3 text-right text-slate-400">
+                              <td className="px-4 py-3 text-right text-muted">
                                 {inr(row.rate)}
                               </td>
                               <td className="px-4 py-3 text-right text-rose-400 font-bold">
@@ -793,7 +793,7 @@ export default function MonthlyProfitReport() {
                               <td className="px-4 py-3 text-indigo-300 font-bold">
                                 {row.lender_name}
                               </td>
-                              <td className="px-4 py-3 text-slate-400">{row.remarks || "-"}</td>
+                              <td className="px-4 py-3 text-muted">{row.remarks || "-"}</td>
                               <td className="px-4 py-3 text-right text-rose-400 font-bold">
                                 {inr(parseFloat(row.amount_paid))}
                               </td>
@@ -808,7 +808,7 @@ export default function MonthlyProfitReport() {
                               <td className="px-4 py-3 text-indigo-300 font-bold">
                                 {row.client_name}
                               </td>
-                              <td className="px-4 py-3 text-slate-400">{row.remarks || "-"}</td>
+                              <td className="px-4 py-3 text-muted">{row.remarks || "-"}</td>
                               <td className="px-4 py-3 text-right text-rose-400 font-bold">
                                 {inr(parseFloat(row.discount))}
                               </td>
@@ -817,11 +817,11 @@ export default function MonthlyProfitReport() {
                         return null;
                       })}
                     </tbody>
-                    <tfoot className="bg-[#0d1117] border-t border-[#21293d]">
+                    <tfoot className="bg-app border-t border-app">
                       <tr>
                         <td
                           colSpan={modalConfig.type === "salaries" ? 5 : 4}
-                          className="px-4 py-4 text-right text-[10px] uppercase tracking-widest text-slate-500 font-black"
+                          className="px-4 py-4 text-right text-[10px] uppercase tracking-widest text-muted font-black"
                         >
                           Total
                         </td>
@@ -883,13 +883,13 @@ function StatCard({
   };
 
   return (
-    <div className="bg-[#161b27] border border-[#21293d] rounded-3xl p-5 shadow-xl group hover:border-indigo-500/30 transition-all">
+    <div className="bg-panel border border-app rounded-3xl p-5 shadow-xl group hover:border-indigo-500/30 transition-all">
       <div
         className={`w-10 h-10 bg-gradient-to-br ${colors[color]} rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg`}
       >
         {icon}
       </div>
-      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">
+      <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">
         {label}
       </p>
       <h3

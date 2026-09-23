@@ -71,14 +71,14 @@ const STATUS_OPTIONS = [
 ];
 
 const STATUS_BADGE: Record<number, { label: string; cls: string }> = {
-  0: { label: "Not Marked", cls: "bg-slate-700/60 text-slate-400 border border-slate-600/40" },
+  0: { label: "Not Marked", cls: "bg-slate-700/60 text-muted border border-muted/40" },
   1: { label: "Present", cls: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30" },
   2: { label: "Absent", cls: "bg-red-500/10 text-red-400 border border-red-500/30" },
   3: { label: "Half Day", cls: "bg-amber-500/10 text-amber-400 border border-amber-500/30" },
 };
 
 const inputCls =
-  "w-full px-2.5 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-white text-sm font-bold text-center focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all [color-scheme:dark]";
+  "w-full px-2.5 py-2 bg-app border border-app rounded-xl text-white text-sm font-bold text-center focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all [color-scheme:dark]";
 
 export default function AttendanceModal({
   mechanicId,
@@ -186,21 +186,21 @@ export default function AttendanceModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+      <div className="bg-panel border border-app rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
         {/* ── Modal Header ── */}
-        <div className="flex items-center justify-between px-4 py-3.5 bg-[#0d1117] border-b border-[#21293d]">
+        <div className="flex items-center justify-between px-4 py-3.5 bg-app border-b border-app">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
               <CheckCircle2 size={16} />
             </div>
             <div>
               <h3 className="font-black text-white text-sm">Update Attendance</h3>
-              <p className="text-[10px] text-slate-400">{fmtDate}</p>
+              <p className="text-[10px] text-muted">{fmtDate}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg bg-[#161b27] border border-[#21293d] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+            className="w-7 h-7 rounded-lg bg-panel border border-app text-muted hover:text-white flex items-center justify-center transition-colors"
           >
             <X size={14} />
           </button>
@@ -209,7 +209,7 @@ export default function AttendanceModal({
         {/* ── Modal Body ── */}
         <div className="p-4 space-y-4">
           {/* Mechanic Info Card */}
-          <div className="bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-2.5 flex items-center justify-between">
+          <div className="bg-app border border-app rounded-xl px-3 py-2.5 flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
               {mechanicImage ? (
                 <Image
@@ -245,7 +245,7 @@ export default function AttendanceModal({
           )}
 
           {loading ? (
-            <div className="flex items-center justify-center py-6 gap-2 text-slate-500 text-xs font-bold">
+            <div className="flex items-center justify-center py-6 gap-2 text-muted text-xs font-bold">
               <Loader2 size={18} className="animate-spin text-blue-500" />
               Loading...
             </div>
@@ -254,7 +254,7 @@ export default function AttendanceModal({
               {/* Time Inputs */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-1">
-                  <label className="text-[9px] uppercase tracking-wider text-slate-500 font-black flex items-center gap-0.5">
+                  <label className="text-[9px] uppercase tracking-wider text-muted font-black flex items-center gap-0.5">
                     <LogIn size={9} className="text-emerald-400" />
                     Check In
                   </label>
@@ -266,7 +266,7 @@ export default function AttendanceModal({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] uppercase tracking-wider text-slate-500 font-black flex items-center gap-0.5">
+                  <label className="text-[9px] uppercase tracking-wider text-muted font-black flex items-center gap-0.5">
                     <LogOut size={9} className="text-red-400" />
                     Check Out
                   </label>
@@ -296,15 +296,15 @@ export default function AttendanceModal({
                 {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                 Save In / Out Times
               </button>
-              <p className="text-center text-[9px] text-slate-500 font-bold -mt-2">
+              <p className="text-center text-[9px] text-muted font-bold -mt-2">
                 Auto-status: &lt;6h = Half Day · Check-in only = Present
               </p>
 
               {/* Divider */}
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-px bg-[#21293d]" />
-                <span className="text-[9px] text-slate-600 font-bold uppercase tracking-wider">or mark directly</span>
-                <div className="flex-1 h-px bg-[#21293d]" />
+                <div className="flex-1 h-px bg-panel-2" />
+                <span className="text-[9px] text-muted-2 font-bold uppercase tracking-wider">or mark directly</span>
+                <div className="flex-1 h-px bg-panel-2" />
               </div>
 
               {/* Status Quick Buttons */}
@@ -326,7 +326,7 @@ export default function AttendanceModal({
               <button
                 onClick={handleClearTimes}
                 disabled={saving}
-                className="w-full py-2 bg-[#21293d] hover:bg-[#2a3550] text-slate-400 hover:text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                className="w-full py-2 bg-panel-2 hover:bg-[#2a3550] text-muted hover:text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
                 <Eraser size={12} />
                 Clear In / Out Times
@@ -334,7 +334,7 @@ export default function AttendanceModal({
 
               <button
                 onClick={onClose}
-                className="w-full py-2 bg-transparent hover:bg-white/[0.03] text-slate-500 hover:text-slate-300 font-bold rounded-xl text-xs transition-all"
+                className="w-full py-2 bg-transparent hover:bg-white/[0.03] text-muted hover:text-app-2 font-bold rounded-xl text-xs transition-all"
               >
                 Cancel
               </button>

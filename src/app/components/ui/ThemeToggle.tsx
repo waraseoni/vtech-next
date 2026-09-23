@@ -27,7 +27,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   themePref,
   theme,
   onSelect,
-  buttonClassName = "p-1.5 text-slate-600 hover:text-amber-400 transition-colors",
+  buttonClassName = "p-1.5 text-muted-2 hover:text-amber-400 transition-colors",
   size = 14,
 }) => {
   const [open, setOpen] = useState(false);
@@ -97,9 +97,9 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
 
   const activeCls = "bg-blue-600 text-white";
   const idleCls =
-    "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-white";
+    "text-muted-2 hover:bg-panel-2 hover:text-app dark:text-muted dark:hover:bg-white/[0.06] dark:hover:text-white";
   const labelCls =
-    "text-slate-500 dark:text-slate-400";
+    "text-muted dark:text-muted";
 
   return (
     <div ref={wrapRef} className="relative flex-shrink-0">
@@ -116,7 +116,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       {open && (
         <div
           style={{ top: pos.top, left: pos.left, width: `${MENU_WIDTH}px` }}
-          className="fixed z-[70] rounded-xl border border-slate-200 bg-white/95 backdrop-blur-xl shadow-2xl py-1.5 dark:border-white/10 dark:bg-[#111827]/95"
+          className="fixed z-[70] rounded-xl border border-app-2 bg-white/95 backdrop-blur-xl shadow-2xl py-1.5 dark:border-white/10 dark:bg-panel-2/95"
           onClick={(e) => e.stopPropagation()}
         >
           <div className={`px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-wider ${labelCls}`}>

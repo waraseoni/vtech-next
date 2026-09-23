@@ -26,7 +26,7 @@ import dynamic from "next/dynamic";
 const CashFlowTrendChart = dynamic(() => import("./CashFlowTrendChart"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs font-bold">
+    <div className="w-full h-full flex items-center justify-center text-muted text-xs font-bold">
       Load chart…
     </div>
   ),
@@ -34,7 +34,7 @@ const CashFlowTrendChart = dynamic(() => import("./CashFlowTrendChart"), {
 const CashFlowDonut = dynamic(() => import("./CashFlowDonut"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs font-bold">
+    <div className="w-full h-full flex items-center justify-center text-muted text-xs font-bold">
       Load chart…
     </div>
   ),
@@ -192,9 +192,9 @@ function CashFlowPageInner() {
   const tooltipColor = isDark ? "#f1f5f9" : "#0f172a";
 
   return (
-    <div className="min-h-screen bg-[#161b27] text-slate-200 selection:bg-blue-500/30">
+    <div className="min-h-screen bg-panel text-app-2 selection:bg-blue-500/30">
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden border-b border-[#21293d] bg-gradient-to-b from-[#111520] to-[#0d1117]">
+      <div className="relative overflow-hidden border-b border-app bg-gradient-to-b from-[#111520] to-[#0d1117]">
         <div className="absolute -top-24 -left-20 w-64 h-64 bg-blue-600/10 blur-[100px] rounded-full" />
         <div className="absolute top-40 -right-20 w-80 h-80 bg-emerald-600/5 blur-[120px] rounded-full" />
 
@@ -203,7 +203,7 @@ function CashFlowPageInner() {
             <div className="flex items-center gap-5">
               <div className="relative">
                 <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 animate-pulse" />
-                <div className="w-14 h-14 rounded-2xl bg-[#111520] border border-[#21293d] flex items-center justify-center shadow-2xl relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-panel-2 border border-app flex items-center justify-center shadow-2xl relative z-10">
                   <Activity size={28} className="text-blue-400" />
                 </div>
               </div>
@@ -215,30 +215,30 @@ function CashFlowPageInner() {
                   </span>
                 </h1>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <Calendar size={13} className="text-slate-500 shrink-0" />
-                  <p className="text-slate-400 text-sm font-semibold truncate">{dateLabel}</p>
+                  <Calendar size={13} className="text-muted shrink-0" />
+                  <p className="text-muted text-sm font-semibold truncate">{dateLabel}</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 bg-[#111520]/50 p-1.5 rounded-2xl border-[#21293d] backdrop-blur-md">
-              <div className="flex items-center gap-1 bg-[#111520] rounded-xl p-1 border-[#21293d]">
+            <div className="flex flex-wrap items-center gap-3 bg-panel-2/50 p-1.5 rounded-2xl border-app backdrop-blur-md">
+              <div className="flex items-center gap-1 bg-panel-2 rounded-xl p-1 border-app">
                 <button
                   onClick={() => navigateDay("prev")}
-                  className="p-2 hover:bg-[#21293d] rounded-lg text-slate-400 hover:text-white transition-all"
+                  className="p-2 hover:bg-panel-2 rounded-lg text-muted hover:text-white transition-all"
                 >
                   <ChevronLeft size={18} />
                 </button>
                 <button
                   onClick={() => navigateDay("next")}
-                  className="p-2 hover:bg-[#21293d] rounded-lg text-slate-400 hover:text-white transition-all"
+                  className="p-2 hover:bg-panel-2 rounded-lg text-muted hover:text-white transition-all"
                 >
                   <ChevronRight size={18} />
                 </button>
               </div>
               <button
                 onClick={() => window.open(`/api/print-ledger?from=${from}&to=${to}`, "_blank")}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#111520] hover:bg-[#21293d] text-white border border-[#21293d] rounded-xl text-xs font-black transition-all shadow-lg active:scale-95"
+                className="flex items-center gap-2 px-5 py-2.5 bg-panel-2 hover:bg-panel-2 text-white border border-app rounded-xl text-xs font-black transition-all shadow-lg active:scale-95"
               >
                 <Printer size={14} /> PRINT LEDGER
               </button>
@@ -252,7 +252,7 @@ function CashFlowPageInner() {
         {/* Filters */}
         <div className="flex flex-wrap items-center justify-between mb-8 gap-4">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center bg-[#111520] border border-[#21293d] rounded-2xl p-1 pr-4 focus-within:border-blue-500/40 transition-all">
+            <div className="flex items-center bg-panel-2 border border-app rounded-2xl p-1 pr-4 focus-within:border-blue-500/40 transition-all">
               <input
                 type="date"
                 value={from}
@@ -260,37 +260,37 @@ function CashFlowPageInner() {
                   setFrom(e.target.value);
                   setViewMode("day");
                 }}
-                className="bg-transparent text-slate-300 px-3 py-2 text-sm outline-none w-[140px]"
+                className="bg-transparent text-app-2 px-3 py-2 text-sm outline-none w-[140px]"
               />
-              <span className="text-slate-600 text-xs font-bold uppercase mx-1">to</span>
+              <span className="text-muted-2 text-xs font-bold uppercase mx-1">to</span>
               <input
                 type="date"
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
-                className="bg-transparent text-slate-300 px-3 py-2 text-sm outline-none w-[140px]"
+                className="bg-transparent text-app-2 px-3 py-2 text-sm outline-none w-[140px]"
               />
             </div>
-            <div className="hidden sm:flex items-center p-1 bg-[#111520] border border-[#21293d] rounded-2xl">
+            <div className="hidden sm:flex items-center p-1 bg-panel-2 border border-app rounded-2xl">
               <button
                 onClick={() => {
                   setFrom(startOfMonthIST());
                   setTo(endOfMonthIST());
                   setViewMode("month");
                 }}
-                className="px-4 py-2 hover:bg-[#21293d] rounded-xl text-xs font-black text-slate-400 hover:text-white transition-all"
+                className="px-4 py-2 hover:bg-panel-2 rounded-xl text-xs font-black text-muted hover:text-white transition-all"
               >
                 THIS MONTH
               </button>
-              <div className="h-4 w-px bg-[#21293d] mx-1" />
+              <div className="h-4 w-px bg-panel-2 mx-1" />
               <button
                 onClick={() => navigateMonth("prev")}
-                className="px-4 py-2 hover:bg-[#21293d] rounded-xl text-xs font-black text-slate-400 hover:text-white transition-all uppercase"
+                className="px-4 py-2 hover:bg-panel-2 rounded-xl text-xs font-black text-muted hover:text-white transition-all uppercase"
               >
                 Prev
               </button>
               <button
                 onClick={() => navigateMonth("next")}
-                className="px-4 py-2 hover:bg-[#21293d] rounded-xl text-xs font-black text-slate-400 hover:text-white transition-all uppercase"
+                className="px-4 py-2 hover:bg-panel-2 rounded-xl text-xs font-black text-muted hover:text-white transition-all uppercase"
               >
                 Next
               </button>
@@ -310,7 +310,7 @@ function CashFlowPageInner() {
               <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20 animate-pulse" />
               <Loader2 size={40} className="animate-spin text-blue-500 relative z-10" />
             </div>
-            <p className="text-slate-500 text-sm font-bold animate-pulse uppercase tracking-widest">
+            <p className="text-muted text-sm font-bold animate-pulse uppercase tracking-widest">
               Aggregating financial data...
             </p>
           </div>
@@ -352,9 +352,9 @@ function CashFlowPageInner() {
                 };
                 return (
                   <div key={i} className="group relative">
-                    <div className="relative bg-[#161b27] border border-[#21293d] rounded-3xl p-6 h-full transition-transform duration-300 group-hover:-translate-y-1 shadow-sm">
+                    <div className="relative bg-panel border border-app rounded-3xl p-6 h-full transition-transform duration-300 group-hover:-translate-y-1 shadow-sm">
                       <div className="flex items-center justify-between mb-4">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                        <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em]">
                           {stat.label}
                         </p>
                         <div
@@ -366,7 +366,7 @@ function CashFlowPageInner() {
                       <h3 className="text-3xl font-black text-white tabular-nums tracking-tighter">
                         {rupee(stat.value)}
                       </h3>
-                      <div className="mt-4 h-1.5 w-full rounded-full bg-[#21293d]/30 overflow-hidden">
+                      <div className="mt-4 h-1.5 w-full rounded-full bg-panel-2/30 overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${bm[stat.color]} html[data-theme='light'] &:${lightColorMap[stat.color]}`}
                           style={{ width: "65%" }}
@@ -381,18 +381,18 @@ function CashFlowPageInner() {
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Area Chart */}
-              <div className="lg:col-span-2 bg-[#161b27] border border-[#21293d] rounded-3xl p-6 relative overflow-hidden">
+              <div className="lg:col-span-2 bg-panel border border-app rounded-3xl p-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
                   <TrendingUp size={220} strokeWidth={1} />
                 </div>
                 <div className="flex items-center justify-between mb-6 relative z-10">
                   <div>
                     <h4 className="text-lg font-black text-white">Daily Cash Movement</h4>
-                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                    <p className="text-xs text-muted font-bold uppercase tracking-wider">
                       Inflow vs Net position
                     </p>
                   </div>
-                  <div className="px-3 py-1 bg-white/5 rounded-lg text-[10px] font-black text-slate-400 border border-white/5">
+                  <div className="px-3 py-1 bg-white/5 rounded-lg text-[10px] font-black text-muted border border-white/5">
                     {stats.trendData.length} POINTS
                   </div>
                 </div>
@@ -410,8 +410,8 @@ function CashFlowPageInner() {
               </div>
 
               {/* Pie Chart */}
-              <div className="bg-[#161b27] border border-[#21293d] rounded-3xl p-6 flex flex-col">
-                <h4 className="text-sm font-black text-slate-500 uppercase tracking-widest mb-5 border-b border-white/5 pb-4 flex items-center justify-between">
+              <div className="bg-panel border border-app rounded-3xl p-6 flex flex-col">
+                <h4 className="text-sm font-black text-muted uppercase tracking-widest mb-5 border-b border-white/5 pb-4 flex items-center justify-between">
                   Inflow Sources <PieChartIcon size={13} className="text-emerald-400" />
                 </h4>
                 <div className="flex-1 h-[200px]">
@@ -433,7 +433,7 @@ function CashFlowPageInner() {
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: COLORS.inflow[i % COLORS.inflow.length] }}
                         />
-                        <span className="text-slate-400 font-bold truncate max-w-[120px]">
+                        <span className="text-muted font-bold truncate max-w-[120px]">
                           {item.name}
                         </span>
                       </div>
@@ -446,8 +446,8 @@ function CashFlowPageInner() {
 
             {/* Summary Tables */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-[#161b27] border border-[#21293d] rounded-3xl overflow-hidden">
-                <div className="px-6 py-4 bg-emerald-500/5 border-b border-[#21293d] flex items-center justify-between">
+              <div className="bg-panel border border-app rounded-3xl overflow-hidden">
+                <div className="px-6 py-4 bg-emerald-500/5 border-b border-app flex items-center justify-between">
                   <span className="text-xs font-black text-emerald-400 uppercase tracking-widest">
                     Revenue Breakdown
                   </span>
@@ -464,9 +464,9 @@ function CashFlowPageInner() {
                     ].map((row, i) => (
                       <tr
                         key={i}
-                        className={`${i > 0 ? "border-t border-[#21293d]/50" : ""} hover:bg-white/[0.02] transition-colors`}
+                        className={`${i > 0 ? "border-t border-app/50" : ""} hover:bg-white/[0.02] transition-colors`}
                       >
-                        <td className="px-5 py-4 text-sm font-semibold text-slate-300">
+                        <td className="px-5 py-4 text-sm font-semibold text-app-2">
                           {row.label}
                         </td>
                         <td className="px-5 py-4 text-sm font-black text-right text-emerald-400 tabular-nums">
@@ -474,7 +474,7 @@ function CashFlowPageInner() {
                         </td>
                       </tr>
                     ))}
-                    <tr className="bg-emerald-500/10 border-t border-[#21293d]">
+                    <tr className="bg-emerald-500/10 border-t border-app">
                       <td className="px-5 py-4 text-xs font-black text-emerald-400 uppercase tracking-widest">
                         Gross Inflow
                       </td>
@@ -486,8 +486,8 @@ function CashFlowPageInner() {
                 </table>
               </div>
 
-              <div className="bg-[#161b27] border border-[#21293d] rounded-3xl overflow-hidden">
-                <div className="px-6 py-4 bg-rose-500/5 border-b border-[#21293d] flex items-center justify-between">
+              <div className="bg-panel border border-app rounded-3xl overflow-hidden">
+                <div className="px-6 py-4 bg-rose-500/5 border-b border-app flex items-center justify-between">
                   <span className="text-xs font-black text-rose-400 uppercase tracking-widest">
                     Expense Categories
                   </span>
@@ -502,9 +502,9 @@ function CashFlowPageInner() {
                     ].map((row, i) => (
                       <tr
                         key={i}
-                        className={`${i > 0 ? "border-t border-[#21293d]/50" : ""} hover:bg-white/[0.02] transition-colors`}
+                        className={`${i > 0 ? "border-t border-app/50" : ""} hover:bg-white/[0.02] transition-colors`}
                       >
-                        <td className="px-5 py-4 text-sm font-semibold text-slate-300">
+                        <td className="px-5 py-4 text-sm font-semibold text-app-2">
                           {row.label}
                         </td>
                         <td className="px-5 py-4 text-sm font-black text-right text-rose-400 tabular-nums">
@@ -512,7 +512,7 @@ function CashFlowPageInner() {
                         </td>
                       </tr>
                     ))}
-                    <tr className="bg-rose-500/10 border-t border-[#21293d]">
+                    <tr className="bg-rose-500/10 border-t border-app">
                       <td className="px-5 py-4 text-xs font-black text-rose-400 uppercase tracking-widest">
                         Gross Outflow
                       </td>
@@ -526,26 +526,26 @@ function CashFlowPageInner() {
             </div>
 
             {/* Transaction Ledger */}
-            <div className="bg-[#161b27] border border-[#21293d] rounded-[2.5rem] overflow-hidden">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-7 py-6 bg-[#111520]/50 border-b border-[#21293d]">
+            <div className="bg-panel border border-app rounded-[2.5rem] overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-7 py-6 bg-panel-2/50 border-b border-app">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-2xl bg-[#111520] flex items-center justify-center border border-[#21293d]">
-                    <TrendingUp size={18} className="text-slate-400" />
+                  <div className="w-10 h-10 rounded-2xl bg-panel-2 flex items-center justify-center border border-app">
+                    <TrendingUp size={18} className="text-muted" />
                   </div>
                   <div>
                     <span className="text-base font-black text-white uppercase tracking-tight">
                       Ledger Detail
                     </span>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
+                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-0.5">
                       {sortedEntries.length} TRANSACTIONS
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="flex items-center gap-2 px-4 py-2 bg-[#111520] hover:bg-[#21293d] border border-[#21293d] rounded-xl text-[10px] font-black uppercase transition-all">
+                  <button className="flex items-center gap-2 px-4 py-2 bg-panel-2 hover:bg-panel-2 border border-app rounded-xl text-[10px] font-black uppercase transition-all">
                     <Download size={12} /> CSV
                   </button>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-[#111520] hover:bg-[#21293d] border border-[#21293d] rounded-xl text-[10px] font-black uppercase transition-all">
+                  <button className="flex items-center gap-2 px-4 py-2 bg-panel-2 hover:bg-panel-2 border border-app rounded-xl text-[10px] font-black uppercase transition-all">
                     <Printer size={12} /> PDF
                   </button>
                 </div>
@@ -553,7 +553,7 @@ function CashFlowPageInner() {
               <div className="overflow-x-auto min-h-[400px]">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-[#111520]">
+                    <tr className="bg-panel-2">
                       {[
                         "Timeline",
                         "Classification",
@@ -564,7 +564,7 @@ function CashFlowPageInner() {
                       ].map((h, i) => (
                         <th
                           key={h}
-                          className={`px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] ${i >= 3 ? "text-right" : "text-left"}`}
+                          className={`px-6 py-4 text-[10px] font-black uppercase text-muted tracking-[0.2em] ${i >= 3 ? "text-right" : "text-left"}`}
                         >
                           {h}
                         </th>
@@ -576,8 +576,8 @@ function CashFlowPageInner() {
                       <tr>
                         <td colSpan={6} className="text-center py-20">
                           <div className="flex flex-col items-center gap-3">
-                            <Info size={32} className="text-slate-700" />
-                            <p className="text-slate-600 text-sm font-bold uppercase tracking-widest">
+                            <Info size={32} className="text-app" />
+                            <p className="text-muted-2 text-sm font-bold uppercase tracking-widest">
                               No records found
                             </p>
                           </div>
@@ -598,10 +598,10 @@ function CashFlowPageInner() {
                           return (
                             <tr
                               key={idx}
-                              className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors group"
+                              className="border-t border-app/50 hover:bg-white/[0.02] transition-colors group"
                             >
                               <td className="px-6 py-4">
-                                <span className="text-xs font-bold text-slate-400 group-hover:text-blue-400 transition-colors">
+                                <span className="text-xs font-bold text-muted group-hover:text-blue-400 transition-colors">
                                   {formatIST(entry.date, {
                                     day: "2-digit",
                                     month: "short",
@@ -625,12 +625,12 @@ function CashFlowPageInner() {
                                   <a
                                     href={`/clients/${entry.client_id}/view`}
                                     target="_blank"
-                                    className="text-xs font-black text-slate-200 hover:text-blue-400 underline decoration-white/10 decoration-2 underline-offset-4 decoration-dotted"
+                                    className="text-xs font-black text-app-2 hover:text-blue-400 underline decoration-white/10 decoration-2 underline-offset-4 decoration-dotted"
                                   >
                                     {entry.details}
                                   </a>
                                 ) : (
-                                  <span className="text-xs font-semibold text-slate-400">
+                                  <span className="text-xs font-semibold text-muted">
                                     {entry.details}
                                   </span>
                                 )}
@@ -639,14 +639,14 @@ function CashFlowPageInner() {
                                 {entry.type === "Cash In" ? (
                                   rupee(entry.net_amount)
                                 ) : (
-                                  <span className="text-slate-700 opacity-40">——</span>
+                                  <span className="text-app opacity-40">——</span>
                                 )}
                               </td>
                               <td className="px-6 py-4 text-sm text-right font-black tabular-nums text-rose-400">
                                 {entry.type === "Cash Out" ? (
                                   rupee(entry.net_amount)
                                 ) : (
-                                  <span className="text-slate-700 opacity-40">——</span>
+                                  <span className="text-app opacity-40">——</span>
                                 )}
                               </td>
                               <td
@@ -657,7 +657,7 @@ function CashFlowPageInner() {
                             </tr>
                           );
                         })}
-                        <tr className="border-t border-[#21293d] bg-[#111520]">
+                        <tr className="border-t border-app bg-panel-2">
                           <td
                             colSpan={3}
                             className="px-6 py-5 text-sm font-black text-white tracking-widest uppercase"
@@ -686,7 +686,7 @@ function CashFlowPageInner() {
             {/* Info Note */}
             <div className="relative group">
               <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/20 to-transparent blur opacity-20 group-hover:opacity-40 transition duration-1000" />
-              <div className="relative bg-[#161b27] border border-amber-500/10 rounded-3xl p-6 flex items-start gap-4">
+              <div className="relative bg-panel border border-amber-500/10 rounded-3xl p-6 flex items-start gap-4">
                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0 border border-amber-500/20">
                   <Info size={18} className="text-amber-500" />
                 </div>
@@ -703,7 +703,7 @@ function CashFlowPageInner() {
                     ].map((txt, i) => (
                       <li
                         key={i}
-                        className="text-[11px] text-slate-500 font-medium flex items-start gap-2"
+                        className="text-[11px] text-muted font-medium flex items-start gap-2"
                       >
                         <div className="w-1 h-1 rounded-full bg-amber-500 mt-1.5 shrink-0" />
                         {txt}
@@ -715,12 +715,12 @@ function CashFlowPageInner() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-40 bg-[#161b27] rounded-3xl border border-[#21293d] border-dashed">
-            <TrendingUp size={48} className="text-slate-700 mb-4" />
-            <h3 className="text-xl font-black text-slate-500 uppercase tracking-widest">
+          <div className="flex flex-col items-center justify-center py-40 bg-panel rounded-3xl border border-app border-dashed">
+            <TrendingUp size={48} className="text-app mb-4" />
+            <h3 className="text-xl font-black text-muted uppercase tracking-widest">
               No Data Found
             </h3>
-            <p className="text-slate-600 text-xs font-bold mt-2 uppercase tracking-wider">
+            <p className="text-muted-2 text-xs font-bold mt-2 uppercase tracking-wider">
               No transaction records for this period
             </p>
           </div>

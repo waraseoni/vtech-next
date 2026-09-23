@@ -80,8 +80,8 @@ type Creds = {
 };
 
 const inputCls =
-  "w-full px-3.5 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-mono";
-const labelCls = "block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5";
+  "w-full px-3.5 py-2.5 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-muted-2 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-mono";
+const labelCls = "block text-[10px] font-black uppercase tracking-widest text-muted mb-1.5";
 
 function daysLeft(expiresAt: string | null): number | null {
   if (!expiresAt) return null;
@@ -140,7 +140,7 @@ function SecretField({
               type="button"
               onClick={copy}
               title="Copy"
-              className="p-1.5 text-slate-600 hover:text-emerald-400 transition-colors"
+              className="p-1.5 text-muted-2 hover:text-emerald-400 transition-colors"
             >
               {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
             </button>
@@ -149,7 +149,7 @@ function SecretField({
             type="button"
             onClick={() => setShow((s) => !s)}
             title={show ? "Hide" : "Show"}
-            className="p-1.5 text-slate-600 hover:text-slate-300 transition-colors"
+            className="p-1.5 text-muted-2 hover:text-app-2 transition-colors"
           >
             {show ? <EyeOff size={13} /> : <Eye size={13} />}
           </button>
@@ -429,7 +429,7 @@ export default function ClientDetailPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/seller"
-              className="w-9 h-9 flex items-center justify-center bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all"
+              className="w-9 h-9 flex items-center justify-center bg-panel border border-app hover:border-blue-500/40 rounded-xl text-muted hover:text-white transition-all"
             >
               <ArrowLeft size={15} />
             </Link>
@@ -438,7 +438,7 @@ export default function ClientDetailPage() {
                 <Store size={17} className="text-blue-400" />{" "}
                 {license?.shop_name || "Client Details"}
               </h1>
-              <p className="text-[11px] text-slate-500 font-semibold mt-0.5 font-mono">
+              <p className="text-[11px] text-muted font-semibold mt-0.5 font-mono">
                 {license?.license_key || "…"}
               </p>
             </div>
@@ -446,7 +446,7 @@ export default function ClientDetailPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={load}
-              className="w-9 h-9 flex items-center justify-center bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all"
+              className="w-9 h-9 flex items-center justify-center bg-panel border border-app hover:border-blue-500/40 rounded-xl text-muted hover:text-white transition-all"
               title="Refresh"
             >
               <RefreshCw size={15} />
@@ -461,15 +461,15 @@ export default function ClientDetailPage() {
         )}
 
         {loading ? (
-          <div className="h-40 flex items-center justify-center text-slate-500 gap-2 text-xs font-bold uppercase tracking-widest">
+          <div className="h-40 flex items-center justify-center text-muted gap-2 text-xs font-bold uppercase tracking-widest">
             <Loader2 size={16} className="animate-spin" /> Loading...
           </div>
         ) : license ? (
           <>
             {/* ── License info ── */}
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
-                <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5">
+              <div className="bg-panel border border-app rounded-2xl p-5">
+                <h2 className="text-[10px] font-black uppercase tracking-widest text-muted mb-3 flex items-center gap-1.5">
                   <KeyRound size={13} className="text-blue-400" /> License
                 </h2>
                 <div className="flex items-center gap-2">
@@ -484,36 +484,36 @@ export default function ClientDetailPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-2">
                       Plan
                     </p>
                     <p className="font-bold text-purple-400 mt-0.5">{license.plan}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-2">
                       Instances
                     </p>
-                    <p className="font-bold text-slate-200 mt-0.5">
+                    <p className="font-bold text-app-2 mt-0.5">
                       {license.activation_count ?? 0}/{license.max_activations}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-2">
                       Owner
                     </p>
-                    <p className="font-bold text-slate-200 mt-0.5">{license.owner_name || "—"}</p>
+                    <p className="font-bold text-app-2 mt-0.5">{license.owner_name || "—"}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-2">
                       Email
                     </p>
-                    <p className="font-bold text-slate-200 mt-0.5 break-all">
+                    <p className="font-bold text-app-2 mt-0.5 break-all">
                       {license.owner_email || "—"}
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 pt-3 border-t border-[#1a2234]">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1.5">
+                <div className="mt-3 pt-3 border-t border-app-2">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-2 mb-1.5">
                     Enabled Modules
                   </p>
                   <div className="flex flex-wrap gap-1">
@@ -522,7 +522,7 @@ export default function ClientDetailPage() {
                       return (
                         <span
                           key={m}
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${mod?.always ? "bg-slate-500/15 text-slate-400 border border-slate-500/20" : "bg-blue-500/15 text-blue-400 border border-blue-500/20"}`}
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${mod?.always ? "bg-muted/15 text-muted border border-muted/20" : "bg-blue-500/15 text-blue-400 border border-blue-500/20"}`}
                         >
                           {mod?.label ?? m}
                         </span>
@@ -531,8 +531,8 @@ export default function ClientDetailPage() {
                   </div>
                 </div>
               </div>
-              <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
-                <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5">
+              <div className="bg-panel border border-app rounded-2xl p-5">
+                <h2 className="text-[10px] font-black uppercase tracking-widest text-muted mb-3 flex items-center gap-1.5">
                   <CalendarDays size={13} className="text-blue-400" /> Expiry & Activity
                 </h2>
                 {(() => {
@@ -541,11 +541,11 @@ export default function ClientDetailPage() {
                   return (
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-2">
                           Expiry
                         </p>
                         <p
-                          className={`font-bold mt-0.5 ${expired ? "text-red-400" : dl !== null && dl! <= 30 ? "text-amber-400" : license.expires_at ? "text-slate-200" : "text-emerald-400"}`}
+                          className={`font-bold mt-0.5 ${expired ? "text-red-400" : dl !== null && dl! <= 30 ? "text-amber-400" : license.expires_at ? "text-app-2" : "text-emerald-400"}`}
                         >
                           {license.expires_at
                             ? new Date(license.expires_at).toLocaleDateString("en-IN", {
@@ -555,39 +555,39 @@ export default function ClientDetailPage() {
                               })
                             : "Lifetime"}
                           {dl !== null && (
-                            <span className="block text-[9px] text-slate-500">
+                            <span className="block text-[9px] text-muted">
                               {expired ? "expired" : `${dl} days left`}
                             </span>
                           )}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-2">
                           Created
                         </p>
-                        <p className="font-bold text-slate-200 mt-0.5">
+                        <p className="font-bold text-app-2 mt-0.5">
                           {new Date(license.created_at).toLocaleDateString("en-IN")}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-2">
                           Last seen
                         </p>
-                        <p className="font-bold text-slate-200 mt-0.5">
+                        <p className="font-bold text-app-2 mt-0.5">
                           {license.last_seen_at
                             ? new Date(license.last_seen_at).toLocaleString("en-IN")
                             : "—"}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-2">
                           Notes
                         </p>
-                        <p className="font-bold text-slate-200 mt-0.5 break-words">
+                        <p className="font-bold text-app-2 mt-0.5 break-words">
                           {creds.notes || "—"}
                         </p>
                         {license.notes && (
-                          <p className="text-[10px] text-slate-500 mt-1 break-words">
+                          <p className="text-[10px] text-muted mt-1 break-words">
                             License: {license.notes}
                           </p>
                         )}
@@ -599,20 +599,20 @@ export default function ClientDetailPage() {
             </div>
 
             {/* ── Activations ── */}
-            <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
-              <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5">
+            <div className="bg-panel border border-app rounded-2xl p-5">
+              <h2 className="text-[10px] font-black uppercase tracking-widest text-muted mb-3 flex items-center gap-1.5">
                 <Server size={13} className="text-blue-400" /> Activations (
                 {license.activations?.length ?? 0})
               </h2>
               {!license.activations || license.activations.length === 0 ? (
-                <p className="text-xs text-slate-600 font-semibold">
+                <p className="text-xs text-muted-2 font-semibold">
                   Koi activation nahi — client ne abhi tak app activate nahi kiya.
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
-                      <tr className="text-[9px] font-black uppercase tracking-widest text-slate-600 border-b border-[#1a2234]">
+                      <tr className="text-[9px] font-black uppercase tracking-widest text-muted-2 border-b border-app-2">
                         <th className="py-2 pr-3">Instance ID</th>
                         <th className="py-2 pr-3">Shop URL</th>
                         <th className="py-2 pr-3">Activated</th>
@@ -622,14 +622,14 @@ export default function ClientDetailPage() {
                     <tbody className="divide-y divide-[#1a2234]">
                       {license.activations.map((a) => (
                         <tr key={a.activation_id}>
-                          <td className="py-2 pr-3 font-mono text-[10px] text-slate-400">
+                          <td className="py-2 pr-3 font-mono text-[10px] text-muted">
                             {a.activation_id.slice(0, 16)}…
                           </td>
-                          <td className="py-2 pr-3 text-xs text-slate-300">{a.shop_url || "—"}</td>
-                          <td className="py-2 pr-3 text-xs text-slate-300">
+                          <td className="py-2 pr-3 text-xs text-app-2">{a.shop_url || "—"}</td>
+                          <td className="py-2 pr-3 text-xs text-app-2">
                             {new Date(a.activated_at).toLocaleString("en-IN")}
                           </td>
-                          <td className="py-2 text-xs text-slate-300">
+                          <td className="py-2 text-xs text-app-2">
                             {new Date(a.last_seen_at).toLocaleString("en-IN")}
                           </td>
                         </tr>
@@ -643,10 +643,10 @@ export default function ClientDetailPage() {
             {/* ── Credentials ── */}
             <form
               onSubmit={save}
-              className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5 space-y-4"
+              className="bg-panel border border-app rounded-2xl p-5 space-y-4"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                <h2 className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
                   <Server size={13} className="text-blue-400" /> Client Credentials (encrypted at
                   rest)
                 </h2>
@@ -667,14 +667,14 @@ export default function ClientDetailPage() {
                   <button
                     type="button"
                     onClick={copyKit}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-[#1a2234] hover:bg-blue-500/15 rounded-xl text-[10px] font-black text-slate-300 hover:text-blue-400 transition-all"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-panel-2 hover:bg-blue-500/15 rounded-xl text-[10px] font-black text-app-2 hover:text-blue-400 transition-all"
                   >
                     <Copy size={12} /> Copy Setup Kit
                   </button>
                   <button
                     type="button"
                     onClick={clearAll}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-[#1a2234] hover:bg-red-500/15 rounded-xl text-[10px] font-black text-slate-400 hover:text-red-400 transition-all"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-panel-2 hover:bg-red-500/15 rounded-xl text-[10px] font-black text-muted hover:text-red-400 transition-all"
                   >
                     <Trash2 size={12} /> Clear
                   </button>
@@ -692,9 +692,9 @@ export default function ClientDetailPage() {
               </div>
 
               {/* Supabase */}
-              <div className="rounded-xl bg-[#1a2234]/50 border border-[#21293d] p-4 space-y-3">
+              <div className="rounded-xl bg-panel-2/50 border border-app p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
                     <Server size={12} /> Supabase (client ka data project)
                   </h3>
                   {supabaseDash && (
@@ -748,8 +748,8 @@ export default function ClientDetailPage() {
               </div>
 
               {/* GitHub */}
-              <div className="rounded-xl bg-[#1a2234]/50 border border-[#21293d] p-4 space-y-3">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+              <div className="rounded-xl bg-panel-2/50 border border-app p-4 space-y-3">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
                   <FolderGit2 size={12} /> GitHub
                 </h3>
                 <div className="grid md:grid-cols-2 gap-3">
@@ -787,8 +787,8 @@ export default function ClientDetailPage() {
               </div>
 
               {/* Vercel */}
-              <div className="rounded-xl bg-[#1a2234]/50 border border-[#21293d] p-4 space-y-3">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+              <div className="rounded-xl bg-panel-2/50 border border-app p-4 space-y-3">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
                   <Triangle size={12} /> Vercel
                 </h3>
                 <div className="grid md:grid-cols-2 gap-3">
@@ -857,7 +857,7 @@ export default function ClientDetailPage() {
                   <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">
                     Public Site Branding (optional)
                   </p>
-                  <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
+                  <p className="text-[11px] text-muted mb-3 leading-relaxed">
                     Client ki alag public site — ye details uske Vercel project par env vars ke roop
                     mein set hoti hain. Khali chhoro to default (V-Technologies) branding dikhegi.
                   </p>
@@ -955,7 +955,7 @@ export default function ClientDetailPage() {
             </form>
           </>
         ) : (
-          <div className="h-40 flex flex-col items-center justify-center gap-2 text-slate-600">
+          <div className="h-40 flex flex-col items-center justify-center gap-2 text-muted-2">
             <Store size={22} />
             <p className="text-xs font-bold uppercase tracking-widest">License nahi mila</p>
           </div>

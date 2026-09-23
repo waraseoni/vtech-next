@@ -465,8 +465,8 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
+      <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between p-5 border-b border-app">
           <h3 className="font-bold text-white flex items-center gap-2">
             {editing ? (
               <>
@@ -480,7 +480,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
           </h3>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+            className="p-1.5 rounded-lg hover:bg-white/10 text-muted transition"
           >
             <X size={16} />
           </button>
@@ -494,10 +494,10 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
 
           {/* Visiting card image */}
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
               Visiting Card
             </label>
-            <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4">
+            <div className="bg-app rounded-xl border border-app p-4">
               <div className="flex items-center gap-4 flex-wrap">
                 {previewSrc ? (
                   <Image
@@ -505,12 +505,12 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                     alt="Visiting card"
                     width={112}
                     height={112}
-                    className="w-28 h-28 rounded-xl object-cover border border-[#21293d] cursor-zoom-in"
+                    className="w-28 h-28 rounded-xl object-cover border border-app cursor-zoom-in"
                     onDoubleClick={() => openImageLightbox(previewSrc, "Visiting Card Preview")}
                   />
                 ) : (
-                  <div className="w-28 h-28 rounded-xl bg-white/5 border border-dashed border-[#2a3450] flex items-center justify-center">
-                    <ImageIcon size={28} className="text-slate-600" />
+                  <div className="w-28 h-28 rounded-xl bg-white/5 border border-dashed border-app-2 flex items-center justify-center">
+                    <ImageIcon size={28} className="text-muted-2" />
                   </div>
                 )}
                 <div className="flex-1 min-w-[160px]">
@@ -542,7 +542,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                     </button>
                     {imgPopup && (
                       <div className="relative">
-                        <div className="absolute top-full left-0 mt-1 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                        <div className="absolute top-full left-0 mt-1 z-50 bg-panel border border-app-2 rounded-xl shadow-2xl p-1.5 min-w-[120px]">
                           <button
                             type="button"
                             onClick={() => {
@@ -585,7 +585,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                       </button>
                     )}
                   </div>
-                  <p className="text-[10px] text-slate-600 mt-1.5">
+                  <p className="text-[10px] text-muted-2 mt-1.5">
                     {imgSaving ? (
                       <span className="inline-flex items-center gap-1">
                         <Loader2 size={10} className="animate-spin" /> Uploading...
@@ -600,27 +600,27 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
           </div>
 
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
               Supplier Name <span className="text-red-400">*</span>
             </label>
             <input
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="e.g. Raj Electronics, Patel Traders"
-              className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+              className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
             />
           </div>
 
           {/* Contact persons */}
           <div className="space-y-3">
-            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-muted">
               Contact Persons{" "}
-              <span className="text-slate-700">(firm ke 1 se zyada person, har ke 1+ mobile)</span>
+              <span className="text-app">(firm ke 1 se zyada person, har ke 1+ mobile)</span>
             </label>
             {contacts.map((p, pi) => (
               <div
                 key={pi}
-                className="bg-[#111520]/60 border border-[#21293d] rounded-xl p-3 space-y-3"
+                className="bg-panel-2/60 border border-app rounded-xl p-3 space-y-3"
               >
                 <div className="flex items-center gap-2">
                   <button
@@ -630,12 +630,12 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                     className={`p-1.5 rounded-lg transition ${
                       p.is_primary
                         ? "bg-amber-500/20 text-amber-400"
-                        : "bg-white/5 text-slate-600 hover:text-amber-400"
+                        : "bg-white/5 text-muted-2 hover:text-amber-400"
                     }`}
                   >
                     <Star size={14} fill={p.is_primary ? "currentColor" : "none"} />
                   </button>
-                  <span className="flex-1 px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-slate-200 font-bold">
+                  <span className="flex-1 px-3 py-2 bg-app border border-app rounded-lg text-xs text-app-2 font-bold">
                     Person {pi + 1}
                     {p.is_primary ? " — Primary" : ""}
                   </span>
@@ -644,7 +644,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                     onClick={() => removePerson(pi)}
                     disabled={contacts.length <= 1}
                     title="Person hatao"
-                    className="p-1.5 rounded-lg bg-white/5 text-slate-600 hover:text-red-400 disabled:opacity-40 transition"
+                    className="p-1.5 rounded-lg bg-white/5 text-muted-2 hover:text-red-400 disabled:opacity-40 transition"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -654,18 +654,18 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                     value={p.name}
                     onChange={(e) => updatePerson(pi, { name: e.target.value })}
                     placeholder="Person ka naam (e.g. Ramesh)"
-                    className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-app border border-app rounded-lg text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   />
                   <input
                     value={p.role}
                     onChange={(e) => updatePerson(pi, { role: e.target.value })}
                     placeholder="Role (e.g. Manager)"
-                    className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-app border border-app rounded-lg text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
                   {p.phones.length === 0 && (
-                    <p className="text-[11px] text-slate-600">
+                    <p className="text-[11px] text-muted-2">
                       Koi phone nahi. Neeche apne numbers add karo.
                     </p>
                   )}
@@ -674,7 +674,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                       <select
                         value={ph.label}
                         onChange={(e) => updatePhone(pi, phi, { label: e.target.value })}
-                        className="px-2 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-slate-300 outline-none focus:border-blue-500"
+                        className="px-2 py-2 bg-app border border-app rounded-lg text-xs text-app-2 outline-none focus:border-blue-500"
                       >
                         {CONTACT_LABELS.map((l) => (
                           <option key={l} value={l}>
@@ -686,7 +686,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                         value={ph.phone}
                         onChange={(e) => updatePhone(pi, phi, { phone: e.target.value })}
                         placeholder="Phone no."
-                        className="flex-1 px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 min-w-[110px]"
+                        className="flex-1 px-3 py-2 bg-app border border-app rounded-lg text-sm text-white placeholder:text-app outline-none focus:border-blue-500 min-w-[110px]"
                       />
                       <button
                         type="button"
@@ -695,7 +695,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                         className={`p-1.5 rounded-lg transition ${
                           ph.is_primary
                             ? "bg-amber-500/20 text-amber-400"
-                            : "bg-white/5 text-slate-600 hover:text-amber-400"
+                            : "bg-white/5 text-muted-2 hover:text-amber-400"
                         }`}
                       >
                         <Star size={13} fill={ph.is_primary ? "currentColor" : "none"} />
@@ -703,7 +703,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                       <button
                         type="button"
                         onClick={() => removePhone(pi, phi)}
-                        className="p-1.5 rounded-lg bg-white/5 text-slate-600 hover:text-red-400 transition"
+                        className="p-1.5 rounded-lg bg-white/5 text-muted-2 hover:text-red-400 transition"
                       >
                         <Trash2 size={13} />
                       </button>
@@ -712,7 +712,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                   <button
                     type="button"
                     onClick={() => addPhone(pi)}
-                    className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-blue-300 font-bold transition-colors"
+                    className="flex items-center gap-1 text-[11px] text-muted hover:text-blue-300 font-bold transition-colors"
                   >
                     <Plus size={12} /> Phone aur add karo
                   </button>
@@ -729,7 +729,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
           </div>
 
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
               Email
             </label>
             <input
@@ -737,11 +737,11 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               placeholder="supplier@example.com"
-              className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+              className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
               Address
             </label>
             <textarea
@@ -749,17 +749,17 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
               onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
               placeholder="Full address..."
               rows={2}
-              className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 resize-none"
+              className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500 resize-none"
             />
           </div>
 
           {/* GST / Tax Details */}
-          <div className="border border-[#21293d] rounded-xl p-3.5 space-y-3 bg-[#111520]/60">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+          <div className="border border-app rounded-xl p-3.5 space-y-3 bg-panel-2/60">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted">
               GST / Tax Details
             </p>
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+              <label className="block text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5">
                 GSTIN
               </label>
               <input
@@ -767,41 +767,41 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                 onChange={(e) => setForm((f) => ({ ...f, gstin: e.target.value }))}
                 placeholder="e.g. 27ABCDE1234F1Z5"
                 maxLength={15}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 uppercase"
+                className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500 uppercase"
               />
             </div>
           </div>
 
           {/* Bank Details */}
-          <div className="border border-[#21293d] rounded-xl p-3.5 space-y-3 bg-[#111520]/60">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+          <div className="border border-app rounded-xl p-3.5 space-y-3 bg-panel-2/60">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted">
               Bank Details
             </p>
             <div className="grid grid-cols-2 gap-2.5">
               <div className="col-span-2">
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5">
                   Bank Name
                 </label>
                 <input
                   value={form.bankName}
                   onChange={(e) => setForm((f) => ({ ...f, bankName: e.target.value }))}
                   placeholder="e.g. HDFC Bank"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                 />
               </div>
               <div className="col-span-2">
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5">
                   Account Number
                 </label>
                 <input
                   value={form.bankAccount}
                   onChange={(e) => setForm((f) => ({ ...f, bankAccount: e.target.value }))}
                   placeholder="Account no."
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5">
                   IFSC
                 </label>
                 <input
@@ -809,19 +809,19 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                   onChange={(e) => setForm((f) => ({ ...f, bankIfsc: e.target.value }))}
                   placeholder="e.g. HDFC0001234"
                   maxLength={11}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500 uppercase"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500 uppercase"
                 />
               </div>
             </div>
           </div>
 
           {/* Business Terms */}
-          <div className="border border-[#21293d] rounded-xl p-3.5 space-y-3 bg-[#111520]/60">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+          <div className="border border-app rounded-xl p-3.5 space-y-3 bg-panel-2/60">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted">
               Business Terms
             </p>
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+              <label className="block text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5">
                 Credit Limit (₹)
               </label>
               <input
@@ -831,17 +831,17 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                 value={form.creditLimit}
                 onChange={(e) => setForm((f) => ({ ...f, creditLimit: e.target.value }))}
                 placeholder="e.g. 50000"
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+              <label className="block text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5">
                 Payment Terms
               </label>
               <select
                 value={form.paymentTerms}
                 onChange={(e) => setForm((f) => ({ ...f, paymentTerms: e.target.value }))}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
               >
                 <option value="">— Select —</option>
                 <option value="COD">COD (Cash on Delivery)</option>
@@ -853,25 +853,25 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
             </div>
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5">
                   City
                 </label>
                 <input
                   value={form.city}
                   onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
                   placeholder="City"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5">
                   State
                 </label>
                 <input
                   value={form.state}
                   onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
                   placeholder="State"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                 />
               </div>
             </div>
@@ -896,7 +896,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
+              className="px-6 py-2.5 bg-panel-2 border border-app text-muted rounded-xl font-bold text-sm hover:bg-panel-2 transition"
             >
               Cancel
             </button>

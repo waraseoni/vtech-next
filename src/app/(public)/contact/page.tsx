@@ -86,7 +86,7 @@ export default function ContactPage() {
   const waText = `Namaste ${info.shop_name || SITE.name}! Main ${form.fullname.trim()} (${form.contact.trim()}).\nService: ${form.service}\n${form.message.trim()}`;
 
   const inputCls =
-    "w-full min-h-11 px-4 py-3 bg-white/[0.04] border border-white/[0.1] rounded-xl text-[14px] text-white font-medium placeholder:text-slate-600 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all";
+    "w-full min-h-11 px-4 py-3 bg-white/[0.04] border border-white/[0.1] rounded-xl text-[14px] text-white font-medium placeholder:text-muted-2 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all";
 
   return (
     <>
@@ -103,7 +103,7 @@ export default function ContactPage() {
               hum jaldi reply karenge
             </span>
           </h1>
-          <p className="mt-4 text-[14px] sm:text-base text-slate-400 max-w-2xl">
+          <p className="mt-4 text-[14px] sm:text-base text-muted max-w-2xl">
             Repair inquiry, estimate, ya koi bhi sawaal — form bharo ya seedha call/WhatsApp karo.
           </p>
         </div>
@@ -126,7 +126,7 @@ export default function ContactPage() {
                       <Phone size={17} className="text-emerald-400" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">
+                      <p className="text-[11px] font-black uppercase tracking-widest text-muted">
                         Call / WhatsApp
                       </p>
                       <p className="text-[14px] font-bold text-white mt-0.5">
@@ -142,7 +142,7 @@ export default function ContactPage() {
                       <Mail size={17} className="text-blue-400" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">
+                      <p className="text-[11px] font-black uppercase tracking-widest text-muted">
                         Email
                       </p>
                       <p className="text-[14px] font-bold text-white mt-0.5 break-all">
@@ -155,10 +155,10 @@ export default function ContactPage() {
                       <MapPin size={17} className="text-cyan-400" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">
+                      <p className="text-[11px] font-black uppercase tracking-widest text-muted">
                         Location
                       </p>
-                      <p className="text-[13px] text-slate-300 leading-relaxed mt-0.5">
+                      <p className="text-[13px] text-app-2 leading-relaxed mt-0.5">
                         {info.address || SITE.address}
                       </p>
                     </div>
@@ -168,7 +168,7 @@ export default function ContactPage() {
                       <Clock size={17} className="text-amber-400" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">
+                      <p className="text-[11px] font-black uppercase tracking-widest text-muted">
                         Timing
                       </p>
                       <p className="text-[13px] font-bold text-white mt-0.5">
@@ -193,7 +193,7 @@ export default function ContactPage() {
             <div className="lg:col-span-7">
               <div className="rounded-3xl p-6 sm:p-8 bg-white/[0.03] border border-white/[0.08]">
                 <h2 className="font-display text-lg font-black mb-1">Send Inquiry</h2>
-                <p className="text-[13px] text-slate-500 mb-6">
+                <p className="text-[13px] text-muted mb-6">
                   Bina login ke — form bharo, hum contact karenge.
                 </p>
 
@@ -203,7 +203,7 @@ export default function ContactPage() {
                       <CheckCircle size={32} className="text-emerald-400" />
                     </div>
                     <h3 className="font-display text-xl font-black mb-2">Message Sent!</h3>
-                    <p className="text-[14px] text-slate-400 mb-6">
+                    <p className="text-[14px] text-muted mb-6">
                       Hum jaldi aapse sampark karenge. Urgent ho to WhatsApp par bhi follow-up karo.
                     </p>
                     <div className="flex flex-col sm:flex-row justify-center gap-3">
@@ -211,7 +211,7 @@ export default function ContactPage() {
                         href={WHATSAPP_LINK(waText, info.whatsapp)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#25D366] text-[#04170c] text-[14px] font-black active:scale-95 transition-transform"
+                        className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#25D366] text-app text-[14px] font-black active:scale-95 transition-transform"
                       >
                         <MessageCircle size={16} /> WhatsApp Follow-up
                       </a>
@@ -226,7 +226,7 @@ export default function ContactPage() {
                             message: "",
                           });
                         }}
-                        className="px-6 py-3.5 rounded-2xl bg-white/[0.06] border border-white/10 text-[14px] font-bold text-slate-300 active:scale-95 transition-transform"
+                        className="px-6 py-3.5 rounded-2xl bg-white/[0.06] border border-white/10 text-[14px] font-bold text-app-2 active:scale-95 transition-transform"
                       >
                         Naya inquiry bhejo
                       </button>
@@ -242,7 +242,7 @@ export default function ContactPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                        <label className="block text-[11px] font-black uppercase tracking-wider text-muted mb-1.5">
                           Aapka Naam *
                         </label>
                         <input
@@ -254,7 +254,7 @@ export default function ContactPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                        <label className="block text-[11px] font-black uppercase tracking-wider text-muted mb-1.5">
                           Mobile Number *
                         </label>
                         <input
@@ -270,7 +270,7 @@ export default function ContactPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                        <label className="block text-[11px] font-black uppercase tracking-wider text-muted mb-1.5">
                           Email (optional)
                         </label>
                         <input
@@ -282,7 +282,7 @@ export default function ContactPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                        <label className="block text-[11px] font-black uppercase tracking-wider text-muted mb-1.5">
                           Service *
                         </label>
                         <select
@@ -300,7 +300,7 @@ export default function ContactPage() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                      <label className="block text-[11px] font-black uppercase tracking-wider text-muted mb-1.5">
                         Message *
                       </label>
                       <textarea

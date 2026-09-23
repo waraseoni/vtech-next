@@ -23,7 +23,7 @@ export default async function LedgerReportPage({
   const to = isValidDate(params.to || "") ? params.to! : "";
 
   return (
-    <div className="min-h-screen bg-[#0d1117]">
+    <div className="min-h-screen bg-app">
       <Suspense
         fallback={<PageLoader icon={BarChart3} label="Loading Ledger Report..." tone="emerald" />}
       >

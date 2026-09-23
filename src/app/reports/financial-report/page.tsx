@@ -218,13 +218,13 @@ function FinancialReportContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-3xl p-6 relative overflow-hidden shadow-2xl">
+      <div className="bg-panel border border-app rounded-3xl p-6 relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/5 blur-[100px] rounded-full -mr-40 -mt-40 pointer-events-none" />
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <Link
               href="/reports"
-              className="w-10 h-10 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-500 hover:text-white transition-all"
+              className="w-10 h-10 flex items-center justify-center bg-app border border-app rounded-xl text-muted hover:text-white transition-all"
             >
               <ArrowLeft size={18} />
             </Link>
@@ -235,7 +235,7 @@ function FinancialReportContent() {
               <h1 className="text-2xl font-black text-white tracking-tight">
                 Workshop Financial Report
               </h1>
-              <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black">
+              <p className="text-[10px] text-muted uppercase tracking-[0.2em] font-black">
                 Comprehensive Profit & Asset Analysis
               </p>
             </div>
@@ -243,7 +243,7 @@ function FinancialReportContent() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => window.print()}
-              className="px-5 py-2.5 bg-[#1e2637] border border-[#2a3550] hover:border-purple-500/40 text-slate-400 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+              className="px-5 py-2.5 bg-panel-2 border border-app-2 hover:border-purple-500/40 text-muted hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2"
             >
               <Printer size={16} /> Print Statement
             </button>
@@ -252,39 +252,39 @@ function FinancialReportContent() {
       </div>
 
       {/* Date Filter */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 no-print shadow-xl">
+      <div className="bg-panel border border-app rounded-2xl p-4 no-print shadow-xl">
         <form onSubmit={handleFilter} className="flex flex-wrap items-end gap-4">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">
+            <label className="text-[10px] font-black uppercase text-muted tracking-widest ml-1">
               Analysis From
             </label>
             <div className="relative">
               <Calendar
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
                 size={14}
               />
               <input
                 type="date"
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
-                className="pl-9 pr-4 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-purple-500 transition-all [color-scheme:dark]"
+                className="pl-9 pr-4 py-2.5 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-purple-500 transition-all [color-scheme:dark]"
               />
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">
+            <label className="text-[10px] font-black uppercase text-muted tracking-widest ml-1">
               Analysis To
             </label>
             <div className="relative">
               <Calendar
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
                 size={14}
               />
               <input
                 type="date"
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
-                className="pl-9 pr-4 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-purple-500 transition-all [color-scheme:dark]"
+                className="pl-9 pr-4 py-2.5 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-purple-500 transition-all [color-scheme:dark]"
               />
             </div>
           </div>
@@ -300,7 +300,7 @@ function FinancialReportContent() {
       {loading ? (
         <div className="py-32 text-center">
           <Loader2 size={40} className="animate-spin text-purple-500 mx-auto mb-4" />
-          <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.3em]">
+          <p className="text-muted-2 text-[10px] font-black uppercase tracking-[0.3em]">
             Crunching Numbers...
           </p>
         </div>
@@ -309,12 +309,12 @@ function FinancialReportContent() {
           {/* Main Profit Section */}
           <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
             {/* Cash Flow Details (Left 4 cols) */}
-            <div className="lg:col-span-4 bg-[#161b27] border border-[#21293d] rounded-3xl overflow-hidden shadow-2xl">
-              <div className="px-6 py-4 bg-gradient-to-r from-blue-600/20 to-transparent border-b border-[#21293d] flex items-center justify-between">
+            <div className="lg:col-span-4 bg-panel border border-app rounded-3xl overflow-hidden shadow-2xl">
+              <div className="px-6 py-4 bg-gradient-to-r from-blue-600/20 to-transparent border-b border-app flex items-center justify-between">
                 <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
                   <TrendingUp size={16} className="text-blue-400" /> Cash Flow (Aay - Vyay)
                 </h3>
-                <span className="text-[10px] font-bold text-slate-500">
+                <span className="text-[10px] font-bold text-muted">
                   {new Date(from).toLocaleDateString()} - {new Date(to).toLocaleDateString()}
                 </span>
               </div>
@@ -322,27 +322,27 @@ function FinancialReportContent() {
               <div className="p-0">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-[#111520] text-[10px] font-black uppercase text-slate-600 tracking-widest">
+                    <tr className="bg-panel-2 text-[10px] font-black uppercase text-muted-2 tracking-widest">
                       <th className="px-6 py-3 text-left">Revenue Source</th>
                       <th className="px-6 py-3 text-right">Amount (₹)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#21293d]">
                     <tr className="hover:bg-white/[0.01] transition-colors">
-                      <td className="px-6 py-4 text-slate-400 font-medium">Service Income</td>
-                      <td className="px-6 py-4 text-right font-black text-slate-200">
+                      <td className="px-6 py-4 text-muted font-medium">Service Income</td>
+                      <td className="px-6 py-4 text-right font-black text-app-2">
                         {inr(data.service_rev)}
                       </td>
                     </tr>
                     <tr className="hover:bg-white/[0.01] transition-colors">
-                      <td className="px-6 py-4 text-slate-400 font-medium">Parts Sold in Jobs</td>
-                      <td className="px-6 py-4 text-right font-black text-slate-200">
+                      <td className="px-6 py-4 text-muted font-medium">Parts Sold in Jobs</td>
+                      <td className="px-6 py-4 text-right font-black text-app-2">
                         {inr(data.parts_rev)}
                       </td>
                     </tr>
                     <tr className="hover:bg-white/[0.01] transition-colors">
-                      <td className="px-6 py-4 text-slate-400 font-medium">Direct Sales Revenue</td>
-                      <td className="px-6 py-4 text-right font-black text-slate-200">
+                      <td className="px-6 py-4 text-muted font-medium">Direct Sales Revenue</td>
+                      <td className="px-6 py-4 text-right font-black text-app-2">
                         {inr(data.direct_sales_rev)}
                       </td>
                     </tr>
@@ -356,7 +356,7 @@ function FinancialReportContent() {
                     </tr>
 
                     <tr className="hover:bg-white/[0.01] transition-colors">
-                      <td className="px-6 py-4 text-slate-400 font-medium">
+                      <td className="px-6 py-4 text-muted font-medium">
                         Shop Operating Expenses
                       </td>
                       <td className="px-6 py-4 text-right font-black text-red-400">
@@ -364,7 +364,7 @@ function FinancialReportContent() {
                       </td>
                     </tr>
                     <tr className="hover:bg-white/[0.01] transition-colors">
-                      <td className="px-6 py-4 text-slate-400 font-medium">
+                      <td className="px-6 py-4 text-muted font-medium">
                         Staff Advance / Salaries
                       </td>
                       <td className="px-6 py-4 text-right font-black text-red-400">
@@ -372,7 +372,7 @@ function FinancialReportContent() {
                       </td>
                     </tr>
                     <tr className="hover:bg-white/[0.01] transition-colors">
-                      <td className="px-6 py-4 text-slate-400 font-medium">Loan EMI Repayments</td>
+                      <td className="px-6 py-4 text-muted font-medium">Loan EMI Repayments</td>
                       <td className="px-6 py-4 text-right font-black text-red-400">
                         -{inr(data.emi_paid)}
                       </td>
@@ -386,7 +386,7 @@ function FinancialReportContent() {
                       </td>
                     </tr>
 
-                    <tr className="bg-[#111520] border-t-2 border-purple-500/40">
+                    <tr className="bg-panel-2 border-t-2 border-purple-500/40">
                       <td className="px-6 py-6 text-white font-black text-sm uppercase tracking-widest flex items-center gap-2">
                         <Landmark size={18} className="text-purple-400" /> Net Cash Profit (A - B)
                       </td>
@@ -397,7 +397,7 @@ function FinancialReportContent() {
                   </tbody>
                 </table>
               </div>
-              <div className="p-4 bg-amber-500/5 border-t border-[#21293d] flex items-center gap-2 text-[10px] text-amber-500/70 font-bold uppercase tracking-wider">
+              <div className="p-4 bg-amber-500/5 border-t border-app flex items-center gap-2 text-[10px] text-amber-500/70 font-bold uppercase tracking-wider">
                 <Info size={14} /> * Note: Stock Purchase cost is not deducted here as Purchase
                 Price is not available.
               </div>
@@ -406,7 +406,7 @@ function FinancialReportContent() {
             {/* Assets & Stock (Right 3 cols) */}
             <div className="lg:col-span-3 space-y-6">
               {/* Stock Card */}
-              <div className="bg-[#161b27] border border-[#21293d] rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+              <div className="bg-panel border border-app rounded-3xl p-6 shadow-2xl relative overflow-hidden">
                 <div className="absolute -right-4 -bottom-4 opacity-5">
                   <Package size={120} className="text-blue-500" />
                 </div>
@@ -424,13 +424,13 @@ function FinancialReportContent() {
 
                   <div className="space-y-4">
                     <div>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">
+                      <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-1">
                         Stock Added This Period
                       </p>
                       <h4 className="text-xl font-black text-blue-400">
                         {inr(data.stock_added_val)}
                       </h4>
-                      <p className="text-[9px] text-slate-600 mt-0.5 uppercase tracking-tighter">
+                      <p className="text-[9px] text-muted-2 mt-0.5 uppercase tracking-tighter">
                         Value at Selling Price
                       </p>
                     </div>
@@ -438,13 +438,13 @@ function FinancialReportContent() {
                     <div className="h-px bg-white/5" />
 
                     <div>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">
+                      <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-1">
                         Total Current Stock
                       </p>
                       <h4 className="text-2xl font-black text-white">
                         {inr(data.current_stock_val)}
                       </h4>
-                      <p className="text-[9px] text-slate-600 mt-0.5 uppercase tracking-tighter">
+                      <p className="text-[9px] text-muted-2 mt-0.5 uppercase tracking-tighter">
                         Available Goods Valuation
                       </p>
                     </div>
@@ -453,7 +453,7 @@ function FinancialReportContent() {
               </div>
 
               {/* Liability Card */}
-              <div className="bg-[#161b27] border border-[#21293d] rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+              <div className="bg-panel border border-app rounded-3xl p-6 shadow-2xl relative overflow-hidden">
                 <div className="absolute -right-4 -bottom-4 opacity-5">
                   <ShieldCheck size={120} className="text-red-500" />
                 </div>
@@ -470,11 +470,11 @@ function FinancialReportContent() {
                   </div>
 
                   <div>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">
+                    <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-1">
                       Pending Loans (Debt)
                     </p>
                     <h4 className="text-2xl font-black text-red-500">{inr(data.loan_pending)}</h4>
-                    <p className="text-[9px] text-slate-600 mt-0.5 uppercase tracking-tighter">
+                    <p className="text-[9px] text-muted-2 mt-0.5 uppercase tracking-tighter">
                       Outstanding Amount to Lenders
                     </p>
                   </div>
@@ -510,7 +510,7 @@ function FinancialReportContent() {
 
 export default function FinancialReport() {
   return (
-    <div className="min-h-screen bg-[#0d1117] p-4 md:p-8">
+    <div className="min-h-screen bg-app p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <Suspense
           fallback={

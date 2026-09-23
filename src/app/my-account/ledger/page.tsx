@@ -233,11 +233,11 @@ ${el.innerHTML}
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+      <div className="bg-panel border border-app rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <Link
             href="/my-account"
-            className="p-2 rounded-xl bg-[#111520] border border-[#21293d] text-slate-400 hover:text-white transition-colors flex-shrink-0"
+            className="p-2 rounded-xl bg-panel-2 border border-app text-muted hover:text-white transition-colors flex-shrink-0"
           >
             <ArrowLeft size={16} />
           </Link>
@@ -246,7 +246,7 @@ ${el.innerHTML}
           </div>
           <div className="min-w-0">
             <h1 className="text-lg sm:text-xl font-black text-white leading-tight">Meri Ledger</h1>
-            <p className="text-slate-500 text-[11px] sm:text-xs mt-0.5">
+            <p className="text-muted text-[11px] sm:text-xs mt-0.5">
               Mera pura hisaab — repairs, sales, payments aur running balance
             </p>
           </div>
@@ -254,7 +254,7 @@ ${el.innerHTML}
         <div className="flex gap-2">
           <button
             onClick={() => setFilterOpen((v) => !v)}
-            className={`flex-1 sm:flex-none items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all border whitespace-nowrap ${filterOpen || isFiltered ? "bg-blue-600 border-blue-600 text-white" : "bg-[#111520] border-[#21293d] text-slate-400 hover:text-white"}`}
+            className={`flex-1 sm:flex-none items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all border whitespace-nowrap ${filterOpen || isFiltered ? "bg-blue-600 border-blue-600 text-white" : "bg-panel-2 border-app text-muted hover:text-white"}`}
           >
             <Filter size={13} /> Filters {isFiltered && "•"}{" "}
             {filterOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
@@ -271,22 +271,22 @@ ${el.innerHTML}
 
       {/* Filter panel */}
       {filterOpen && (
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5 space-y-4">
+        <div className="bg-panel border border-app rounded-2xl p-5 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-end gap-3">
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+              <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                 From
               </label>
               <input
                 type="date"
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
-                className="w-full px-3 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white color-scheme-dark outline-none focus:border-blue-500/60"
+                className="w-full px-3 py-2.5 bg-panel-2 border border-app rounded-xl text-sm text-white color-scheme-dark outline-none focus:border-blue-500/60"
               />
             </div>
-            <span className="text-slate-600 font-bold text-sm pb-2.5">to</span>
+            <span className="text-muted-2 font-bold text-sm pb-2.5">to</span>
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+              <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                 To
               </label>
               <input
@@ -294,7 +294,7 @@ ${el.innerHTML}
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
                 min={from}
-                className="w-full px-3 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white color-scheme-dark outline-none focus:border-blue-500/60"
+                className="w-full px-3 py-2.5 bg-panel-2 border border-app rounded-xl text-sm text-white color-scheme-dark outline-none focus:border-blue-500/60"
               />
             </div>
           </div>
@@ -310,7 +310,7 @@ ${el.innerHTML}
               <button
                 key={q.t}
                 onClick={() => quickDate(q.t)}
-                className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-[#111520] border border-[#21293d] text-slate-400 hover:text-white transition-colors"
+                className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-panel-2 border border-app text-muted hover:text-white transition-colors"
               >
                 {q.label}
               </button>
@@ -318,7 +318,7 @@ ${el.innerHTML}
             <div className="flex-1" />
             <button
               onClick={clearFilter}
-              className="px-3.5 py-2 rounded-lg text-[11px] font-bold bg-[#21293d] text-slate-300 hover:text-white transition-colors"
+              className="px-3.5 py-2 rounded-lg text-[11px] font-bold bg-panel-2 text-app-2 hover:text-white transition-colors"
             >
               Clear All
             </button>
@@ -341,9 +341,9 @@ ${el.innerHTML}
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div
-          className={`rounded-2xl p-4 border ${due > 0 ? "bg-red-500/10 border-red-500/30" : "bg-[#161b27] border-[#21293d]"}`}
+          className={`rounded-2xl p-4 border ${due > 0 ? "bg-red-500/10 border-red-500/30" : "bg-panel border-app"}`}
         >
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted">
             {due > 0 ? "Due Amount" : due < 0 ? "Advance" : "Balance"}
           </p>
           <p
@@ -352,16 +352,16 @@ ${el.innerHTML}
             {inr(due)}
           </p>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Repairs</p>
+        <div className="bg-panel border border-app rounded-2xl p-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted">Repairs</p>
           <p className="text-2xl font-black mt-1 text-white">{inr(data?.totals.repairs ?? 0)}</p>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Sales</p>
+        <div className="bg-panel border border-app rounded-2xl p-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted">Sales</p>
           <p className="text-2xl font-black mt-1 text-white">{inr(data?.totals.sales ?? 0)}</p>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+        <div className="bg-panel border border-app rounded-2xl p-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted">
             Payments (inc. discount)
           </p>
           <p className="text-2xl font-black mt-1 text-emerald-400">
@@ -372,7 +372,7 @@ ${el.innerHTML}
 
       {/* Statement */}
       {loading ? (
-        <div className="h-40 flex items-center justify-center text-slate-600">
+        <div className="h-40 flex items-center justify-center text-muted-2">
           <Loader2 size={22} className="animate-spin" />
         </div>
       ) : !data ? null : (

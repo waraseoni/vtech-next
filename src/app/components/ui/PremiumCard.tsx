@@ -36,7 +36,7 @@ export const PremiumCard: React.FC<PremiumCardProps> = ({
 
       {/* Card Content */}
       <div
-        className={`relative bg-white dark:bg-[#111114] border border-slate-200 dark:border-white/10 rounded-[2rem] p-6 h-full transition-all duration-500 shadow-sm dark:shadow-none ${
+        className={`relative bg-white dark:bg-app border border-app-2 dark:border-white/10 rounded-[2rem] p-6 h-full transition-all duration-500 shadow-sm dark:shadow-none ${
           hover
             ? "group-hover:-translate-y-1.5 group-hover:shadow-2xl dark:group-hover:shadow-[0_40px_100px_rgba(0,0,0,0.4)]"
             : ""

@@ -41,7 +41,7 @@ export default function Lightbox({ src, alt, onClose }: Props) {
 
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 p-2.5 rounded-full bg-black/10 hover:bg-black/20 text-slate-800 dark:bg-white/10 dark:hover:bg-white/25 dark:text-white transition-colors z-10"
+        className="absolute top-4 right-4 p-2.5 rounded-full bg-black/10 hover:bg-black/20 text-app dark:bg-white/10 dark:hover:bg-white/25 dark:text-white transition-colors z-10"
         title="Close (Esc)"
       >
         <X size={18} />
@@ -52,7 +52,7 @@ export default function Lightbox({ src, alt, onClose }: Props) {
         target="_blank"
         rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}
-        className="absolute bottom-4 right-4 p-2.5 rounded-full bg-black/10 hover:bg-black/20 text-slate-800 dark:bg-white/10 dark:hover:bg-white/25 dark:text-white transition-colors z-10"
+        className="absolute bottom-4 right-4 p-2.5 rounded-full bg-black/10 hover:bg-black/20 text-app dark:bg-white/10 dark:hover:bg-white/25 dark:text-white transition-colors z-10"
         title="Naye tab me kholo"
       >
         <ExternalLink size={18} />

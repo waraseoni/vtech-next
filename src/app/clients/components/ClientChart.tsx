@@ -21,8 +21,8 @@ const BarTooltip = ({
 }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="dark:bg-[#1a2035] bg-white dark:border-[#2e3a55] border-gray-200 rounded-xl px-4 py-3 shadow-2xl">
-      <p className="text-[11px] font-bold dark:text-slate-400 text-slate-600 uppercase tracking-wider mb-1">
+    <div className="dark:bg-[#1a2035] bg-white dark:border-app-2 border-app-2 rounded-xl px-4 py-3 shadow-2xl">
+      <p className="text-[11px] font-bold dark:text-muted text-muted-2 uppercase tracking-wider mb-1">
         {label}
       </p>
       <p className="text-sm font-black dark:text-blue-400 text-blue-600">{payload[0].value}</p>
@@ -56,12 +56,12 @@ export default function ClientChart({ clients }: { clients: Client[] }) {
   if (chartData.length === 0) return null;
 
   return (
-    <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
+    <div className="bg-panel border border-app rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xs font-extrabold text-slate-300 uppercase tracking-widest">
+        <h3 className="text-xs font-extrabold text-app-2 uppercase tracking-widest">
           Top Due Clients
         </h3>
-        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">
+        <span className="text-[10px] font-bold text-muted-2 uppercase tracking-widest">
           Highest balance first
         </span>
       </div>

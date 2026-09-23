@@ -22,7 +22,7 @@ export function ClientCard({ client, userRole, handleDelete, openWaModal }: Clie
   return (
     <div
       key={client.id}
-      className={`bg-[#161b27] rounded-2xl border border-[#21293d] overflow-hidden ${meta.rowCls}`}
+      className={`bg-panel rounded-2xl border border-app overflow-hidden ${meta.rowCls}`}
     >
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
@@ -34,9 +34,9 @@ export function ClientCard({ client, userRole, handleDelete, openWaModal }: Clie
               {client.name}
             </Link>
             <div className="flex items-center gap-3 mt-1">
-              <span className="text-slate-600 text-[10px] font-bold">#{client.id}</span>
+              <span className="text-muted-2 text-[10px] font-bold">#{client.id}</span>
               {client.contact && (
-                <span className="text-slate-400 text-[10px] font-bold flex items-center gap-0.5">
+                <span className="text-muted text-[10px] font-bold flex items-center gap-0.5">
                   <Phone size={9} />
                   {client.contact}
                 </span>
@@ -49,11 +49,11 @@ export function ClientCard({ client, userRole, handleDelete, openWaModal }: Clie
             {meta.label}
           </span>
         </div>
-        {client.address && <p className="text-slate-500 text-xs">{client.address}</p>}
+        {client.address && <p className="text-muted text-xs">{client.address}</p>}
       </div>
       <div className="bg-black/20 px-4 py-3 flex items-center justify-between">
         <div className="text-xs">
-          <span className="text-slate-500">Balance: </span>
+          <span className="text-muted">Balance: </span>
           <span className={`font-bold ${client.balance > 0 ? "text-red-400" : "text-emerald-400"}`}>
             {client.balance}
           </span>
@@ -61,20 +61,20 @@ export function ClientCard({ client, userRole, handleDelete, openWaModal }: Clie
         <div className="flex items-center gap-2">
           <button
             onClick={() => openWaModal(client)}
-            className="p-1.5 text-slate-500 hover:text-green-400 transition"
+            className="p-1.5 text-muted hover:text-green-400 transition"
           >
             <MessageCircle size={14} />
           </button>
           <Link
             href={`/clients/${client.id}/edit`}
-            className="p-1.5 text-slate-500 hover:text-blue-400 transition"
+            className="p-1.5 text-muted hover:text-blue-400 transition"
           >
             <Edit3 size={14} />
           </Link>
           {userRole === "admin" && (
             <button
               onClick={() => handleDelete(client.id, client.name)}
-              className="p-1.5 text-slate-500 hover:text-red-400 transition"
+              className="p-1.5 text-muted hover:text-red-400 transition"
             >
               <Trash2 size={14} />
             </button>

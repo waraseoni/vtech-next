@@ -33,10 +33,10 @@ function todayIST(): string {
 const inr = (n: number) => "₹" + Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 const inputCls =
-  "w-full px-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-white font-bold text-sm placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all [color-scheme:dark]";
+  "w-full px-4 py-3 bg-panel-2 border border-app rounded-xl text-white font-bold text-sm placeholder:text-app outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all [color-scheme:dark]";
 
 const labelCls =
-  "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-2";
+  "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-2";
 
 type ActiveLoan = {
   id: number;
@@ -167,10 +167,10 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white font-sans">
+    <div className="min-h-screen bg-app text-white font-sans">
       <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-4">
         {/* HEADER */}
-        <div className="relative overflow-hidden bg-[#161b27] rounded-3xl border border-[#21293d] p-5">
+        <div className="relative overflow-hidden bg-panel rounded-3xl border border-app p-5">
           <div
             className="absolute inset-0 opacity-[0.025]"
             style={{
@@ -182,7 +182,7 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
           <div className="relative flex items-center gap-4">
             <Link
               href={`/clients/${clientId}/view`}
-              className="w-10 h-10 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-slate-500 rounded-xl text-slate-500 hover:text-white transition-all flex-shrink-0"
+              className="w-10 h-10 flex items-center justify-center bg-panel-2 border border-app hover:border-muted rounded-xl text-muted hover:text-white transition-all flex-shrink-0"
             >
               <ArrowLeft size={17} />
             </Link>
@@ -194,7 +194,7 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
                 <h1 className="text-lg font-black tracking-tight text-white leading-none">
                   Collect EMI
                 </h1>
-                <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-1 truncate">
+                <p className="text-[10px] text-muted font-black uppercase tracking-[0.2em] mt-1 truncate">
                   {fetching ? "Loading…" : clientName || `Client #${clientId}`}
                 </p>
               </div>
@@ -207,7 +207,7 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
           <div className="rounded-2xl border border-amber-500/20 bg-amber-500/8 p-6 text-center">
             <Banknote size={32} className="mx-auto text-amber-400/60 mb-3" />
             <p className="text-amber-300 font-bold text-sm">Koi active loan nahi hai</p>
-            <p className="text-slate-500 text-xs mt-1">
+            <p className="text-muted text-xs mt-1">
               Pehle &quot;Give Loan&quot; se loan do, phir EMI collect karo.
             </p>
             <Link
@@ -221,7 +221,7 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
 
         {/* LOAN SELECTOR */}
         {!fetching && loans.length > 0 && (
-          <div className="bg-[#161b27] rounded-3xl border border-[#21293d] p-5 md:p-6">
+          <div className="bg-panel rounded-3xl border border-app p-5 md:p-6">
             <label className={labelCls}>
               <Banknote size={13} className="text-amber-400" />
               Select Loan <span className="text-red-400 ml-0.5">*</span>
@@ -244,7 +244,7 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
 
         {/* SELECTED LOAN DETAILS CARD */}
         {selectedLoan && (
-          <div className="rounded-2xl border border-amber-500/20 bg-[#161b27] p-4 space-y-3">
+          <div className="rounded-2xl border border-amber-500/20 bg-panel p-4 space-y-3">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center">
                 <Banknote size={14} className="text-amber-400" />
@@ -255,14 +255,14 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="rounded-xl bg-[#111520] border border-[#21293d] p-3">
-                <p className="text-[9px] font-black uppercase tracking-wider text-slate-500">
+              <div className="rounded-xl bg-panel-2 border border-app p-3">
+                <p className="text-[9px] font-black uppercase tracking-wider text-muted">
                   Principal
                 </p>
                 <p className="text-white font-bold mt-1">{inr(selectedLoan.principal_amount)}</p>
               </div>
-              <div className="rounded-xl bg-[#111520] border border-[#21293d] p-3">
-                <p className="text-[9px] font-black uppercase tracking-wider text-slate-500">
+              <div className="rounded-xl bg-panel-2 border border-app p-3">
+                <p className="text-[9px] font-black uppercase tracking-wider text-muted">
                   Total Payable
                 </p>
                 <p className="text-white font-bold mt-1">{inr(selectedLoan.total_payable)}</p>
@@ -280,7 +280,7 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
                 <p className="text-red-400 font-bold mt-1">{inr(selectedLoan.balance)}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-[10px] text-slate-500">
+            <div className="flex items-center gap-2 text-[10px] text-muted">
               <Clock size={11} />
               EMI/Month:{" "}
               <span className="text-amber-400 font-bold">{inr(selectedLoan.emi_amount)}</span>
@@ -295,7 +295,7 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
 
         {/* PAYMENT FORM */}
         {!fetching && loans.length > 0 && (
-          <div className="bg-[#161b27] rounded-3xl border border-[#21293d] p-5 md:p-6">
+          <div className="bg-panel rounded-3xl border border-app p-5 md:p-6">
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Amount */}
               <div>
@@ -373,7 +373,7 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
               {/* Remarks */}
               <div>
                 <label className={labelCls}>
-                  <FileText size={13} className="text-slate-400" />
+                  <FileText size={13} className="text-muted" />
                   Remarks / Note
                 </label>
                 <textarea

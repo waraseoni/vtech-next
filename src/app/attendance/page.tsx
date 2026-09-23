@@ -98,14 +98,14 @@ function AttendanceContent() {
   return (
     <div className="w-full max-w-[1550px] mx-auto space-y-4">
       {/* ── HEADER & TABS CARD ── */}
-      <div className="theme-card bg-[#161b27] border border-[#21293d] rounded-2xl p-3 sm:p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="theme-card bg-panel border border-app rounded-2xl p-3 sm:p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-600/20 border border-white/10 flex-shrink-0">
             <ClipboardCheck size={20} className="text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-base sm:text-lg font-black text-app dark:text-white tracking-tight">
                 Attendance Hub
               </h1>
               {liveTime && (
@@ -115,14 +115,14 @@ function AttendanceContent() {
                 </div>
               )}
             </div>
-            <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
+            <p className="text-[11px] text-muted-2 dark:text-muted font-medium">
               Daily staff check-in/out, GPS geofence punch & monthly attendance register
             </p>
           </div>
         </div>
 
         {/* Pill Navigation Tabs */}
-        <div className="flex bg-[#0d1117] p-1 rounded-xl border border-[#21293d] self-start sm:self-auto">
+        <div className="flex bg-app p-1 rounded-xl border border-app self-start sm:self-auto">
           {(
             [
               { key: "daily", label: "Mark Attendance", icon: ClipboardCheck },
@@ -135,7 +135,7 @@ function AttendanceContent() {
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-150 ${
                 activeTab === key
                   ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
-                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  : "text-muted dark:text-muted hover:text-app dark:hover:text-app-2"
               }`}
             >
               <Icon size={13} />
@@ -166,7 +166,7 @@ function AttendanceContent() {
 // ── Page wrapper — Suspense required for useSearchParams ─────────
 export default function AttendancePage() {
   return (
-    <div className="attendance-page min-h-screen bg-[#0d1117] text-white font-sans p-2.5 sm:p-4 lg:p-6">
+    <div className="attendance-page min-h-screen bg-app text-white font-sans p-2.5 sm:p-4 lg:p-6">
       <Suspense
         fallback={
           <div className="min-h-[60vh] flex items-center justify-center">

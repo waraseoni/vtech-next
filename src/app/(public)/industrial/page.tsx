@@ -110,13 +110,13 @@ export default function IndustrialPage() {
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex items-center justify-between mb-5 sm:mb-7">
             <h2 className="font-display text-xl sm:text-2xl font-black">What We Repair</h2>
-            <span className="text-[11px] font-bold text-slate-500">Brand-independent service</span>
+            <span className="text-[11px] font-bold text-muted">Brand-independent service</span>
           </div>
           <EquipmentGrid items={EQUIPMENT} />
         </div>
       </section>
 
-      <section className="py-10 sm:py-14 bg-[#0a0a18]/60 border-y border-white/[0.05]">
+      <section className="py-10 sm:py-14 bg-app/60 border-y border-white/[0.05]">
         <div className="mx-auto max-w-7xl px-4">
           <h2 className="font-display text-xl sm:text-2xl font-black mb-5 sm:mb-7">How It Works</h2>
           <ProcessSteps steps={STEPS} />

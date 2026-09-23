@@ -34,10 +34,10 @@ export function ClientTable({
   openWaModal,
 }: ClientTableProps) {
   return (
-    <div className="hidden md:block bg-[#161b27] border border-[#21293d] rounded-2xl overflow-x-auto">
+    <div className="hidden md:block bg-panel border border-app rounded-2xl overflow-x-auto">
       <table className="w-full min-w-[1200px]">
         <thead>
-          <tr className="text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-[#21293d]">
+          <tr className="text-xs font-bold text-muted uppercase tracking-wider border-b border-app">
             <th
               className="px-4 py-3 text-left flex items-center cursor-pointer"
               onClick={() => toggleSort("name")}
@@ -79,18 +79,18 @@ export function ClientTable({
                   >
                     {client.name}
                   </Link>
-                  <p className="text-slate-500 text-xs mt-0.5">ID: {client.id}</p>
+                  <p className="text-muted text-xs mt-0.5">ID: {client.id}</p>
                 </td>
                 <td className="px-4 py-3">
-                  <p className="text-slate-300 font-medium">{client.contact}</p>
-                  <p className="text-slate-500 text-xs mt-0.5">{client.email}</p>
+                  <p className="text-app-2 font-medium">{client.contact}</p>
+                  <p className="text-muted text-xs mt-0.5">{client.email}</p>
                 </td>
                 <td
                   className={`px-4 py-3 text-right font-bold ${client.balance > 0 ? "text-red-400" : "text-emerald-400"}`}
                 >
                   {inr(client.balance)}
                 </td>
-                <td className="px-4 py-3 text-right font-medium text-slate-300">
+                <td className="px-4 py-3 text-right font-medium text-app-2">
                   {inr(client.total_paid)}
                 </td>
                 <td className="px-4 py-3 text-center">
@@ -100,27 +100,27 @@ export function ClientTable({
                     {meta.label}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-400 text-sm">
+                <td className="px-4 py-3 text-muted text-sm">
                   {new Date(client.date_created).toLocaleDateString("en-IN")}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => openWaModal(client)}
-                      className="p-1.5 text-slate-500 hover:text-green-400 transition"
+                      className="p-1.5 text-muted hover:text-green-400 transition"
                     >
                       <MessageCircle size={14} />
                     </button>
                     <Link
                       href={`/clients/${client.id}/edit`}
-                      className="p-1.5 text-slate-500 hover:text-blue-400 transition"
+                      className="p-1.5 text-muted hover:text-blue-400 transition"
                     >
                       <Edit3 size={14} />
                     </Link>
                     {userRole === "admin" && (
                       <button
                         onClick={() => handleDelete(client.id, client.name)}
-                        className="p-1.5 text-slate-500 hover:text-red-400 transition"
+                        className="p-1.5 text-muted hover:text-red-400 transition"
                       >
                         <Trash2 size={14} />
                       </button>

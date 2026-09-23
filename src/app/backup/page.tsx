@@ -1395,13 +1395,13 @@ export default function BackupPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
+    <div className="min-h-screen bg-app font-sans pb-12">
       {/* ── Restore Report ─────────────────────────────────────────── */}
       {restoreReport.length > 0 && (
         <div className="fixed bottom-4 left-4 right-4 max-w-lg mx-auto z-50">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-xl shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[#21293d]">
-              <span className="text-[11px] font-black uppercase tracking-widest text-[#4a5568]">
+          <div className="bg-panel border border-app rounded-xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-app">
+              <span className="text-[11px] font-black uppercase tracking-widest text-muted">
                 📊 Restore Report
               </span>
               <div className="flex gap-3 text-xs">
@@ -1419,11 +1419,11 @@ export default function BackupPage() {
               {restoreReport.map((r) => (
                 <div
                   key={r.table}
-                  className="flex justify-between items-center px-3 py-1.5 bg-[#0d1117] rounded-lg text-xs"
+                  className="flex justify-between items-center px-3 py-1.5 bg-app rounded-lg text-xs"
                 >
-                  <span className="font-mono text-[#94a3b8]">{r.table}</span>
+                  <span className="font-mono text-muted">{r.table}</span>
                   <span className="flex gap-3 items-center">
-                    <span className="text-[#4a5568]">{r.fileRows} in file</span>
+                    <span className="text-muted">{r.fileRows} in file</span>
                     {r.failed === 0 ? (
                       <span className="text-green-400 font-bold">✓ {r.restored} OK</span>
                     ) : (
@@ -1435,10 +1435,10 @@ export default function BackupPage() {
                 </div>
               ))}
             </div>
-            <div className="px-4 py-2 border-t border-[#21293d] flex justify-end">
+            <div className="px-4 py-2 border-t border-app flex justify-end">
               <button
                 onClick={() => setRestoreReport([])}
-                className="text-[11px] text-[#4a5568] hover:text-white transition-colors"
+                className="text-[11px] text-muted hover:text-white transition-colors"
               >
                 ✕ Close
               </button>
@@ -1449,7 +1449,7 @@ export default function BackupPage() {
 
       <div className="max-w-3xl mx-auto px-4 pt-6 space-y-4">
         {/* Header */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center">
@@ -1457,7 +1457,7 @@ export default function BackupPage() {
               </div>
               <div>
                 <h1 className="text-lg font-black text-white">Database Backup & Restore</h1>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+                <p className="text-[10px] text-muted uppercase tracking-wider">
                   {tableNames.length} tables · Auto-restore order · Sequence safe
                 </p>
               </div>
@@ -1479,7 +1479,7 @@ export default function BackupPage() {
               <button
                 onClick={fetchTableStats}
                 disabled={loadingStats}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 rounded-lg text-xs font-bold transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted rounded-lg text-xs font-bold transition"
               >
                 <RefreshCw size={12} className={loadingStats ? "animate-spin" : ""} /> Refresh
               </button>
@@ -1488,20 +1488,20 @@ export default function BackupPage() {
         </div>
 
         {/* MariaDB Sync card */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center gap-3">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4 flex items-center gap-3">
           <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center flex-shrink-0">
             <RefreshCw size={15} className="text-white" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-black text-white">Supabase → MariaDB Sync</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-muted mt-0.5">
               Saara data MariaDB (<span className="font-mono">vtech_db</span>) me copy karta hai —
               har 15 min pe auto bhi hota hai.
             </p>
           </div>
           <Link
             href="/sync"
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-[#0a0e16] rounded-lg text-xs font-black transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-app rounded-lg text-xs font-black transition"
           >
             <RefreshCw size={12} /> Sync Tool
           </Link>
@@ -1517,10 +1517,10 @@ export default function BackupPage() {
 
         {/* Table Stats */}
         {tableStats.length > 0 && (
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-3">
+          <div className="bg-panel border border-app rounded-2xl px-5 py-3">
             <div className="flex items-center gap-2 mb-3">
-              <Table2 size={14} className="text-slate-500" />
-              <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <Table2 size={14} className="text-muted" />
+              <span className="text-[10px] font-black uppercase text-muted tracking-wider">
                 Current Table Status
               </span>
               <span className="ml-auto text-[10px] text-emerald-400 font-bold">
@@ -1531,11 +1531,11 @@ export default function BackupPage() {
               {tableStats.map(({ table, count }) => (
                 <div
                   key={table}
-                  className="flex items-center justify-between px-2 py-1 bg-[#0d1117] rounded-lg border border-[#21293d]"
+                  className="flex items-center justify-between px-2 py-1 bg-app rounded-lg border border-app"
                 >
-                  <span className="text-[9px] text-slate-500 font-mono truncate">{table}</span>
+                  <span className="text-[9px] text-muted font-mono truncate">{table}</span>
                   <span
-                    className={`text-[10px] font-bold ml-1 ${count > 0 ? "text-emerald-400" : "text-slate-600"}`}
+                    className={`text-[10px] font-bold ml-1 ${count > 0 ? "text-emerald-400" : "text-muted-2"}`}
                   >
                     {count.toLocaleString()}
                   </span>
@@ -1546,15 +1546,15 @@ export default function BackupPage() {
         )}
 
         {/* BACKUP card */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-emerald-600/20 to-transparent border-b border-[#21293d]">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-emerald-600/20 to-transparent border-b border-app">
             <Download size={14} className="text-emerald-400" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
               Backup Lena
             </h3>
           </div>
           <div className="p-5 space-y-4">
-            <p className="text-slate-400 text-sm leading-relaxed">
+            <p className="text-muted text-sm leading-relaxed">
               Supabase ke sabhi tables ka data ek{" "}
               <span className="text-emerald-400 font-bold">.json</span> file mein download hoga. Yeh
               file aapke computer mein safe rahengi.
@@ -1564,18 +1564,18 @@ export default function BackupPage() {
             <div className="space-y-2">
               {Object.entries(groupedTables).map(([order, tables]) => (
                 <div key={order}>
-                  <p className="text-[9px] font-black uppercase text-slate-600 tracking-wider mb-1">
+                  <p className="text-[9px] font-black uppercase text-muted-2 tracking-wider mb-1">
                     Step {order}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {tables.map((t) => (
                       <div
                         key={t}
-                        className="flex items-center gap-1.5 px-2 py-1 bg-[#0d1117] rounded-lg border border-[#21293d]"
+                        className="flex items-center gap-1.5 px-2 py-1 bg-app rounded-lg border border-app"
                       >
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
-                        <span className="text-[10px] text-slate-500 font-mono">{t}</span>
-                        <span className="text-[9px] text-slate-600">({getRowCount(t)})</span>
+                        <span className="text-[10px] text-muted font-mono">{t}</span>
+                        <span className="text-[9px] text-muted-2">({getRowCount(t)})</span>
                       </div>
                     ))}
                   </div>
@@ -1603,19 +1603,19 @@ export default function BackupPage() {
         </div>
 
         {/* SERVER BACKUP (scheduled) card */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-sky-600/20 to-transparent border-b border-[#21293d]">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-sky-600/20 to-transparent border-b border-app">
             <Server size={14} className="text-sky-400" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
               Server Backup (Scheduled)
             </h3>
           </div>
           <div className="p-5 space-y-4">
-            <p className="text-slate-400 text-sm leading-relaxed">
+            <p className="text-muted text-sm leading-relaxed">
               Download wale backup ki tarah hi, par file{" "}
               <span className="text-sky-400 font-bold">server ke backups/ folder</span> me banti
               hai. Isi ko daily schedule kar ke (Task Scheduler / cron){" "}
-              <span className="text-slate-200 font-bold">free-tier automatic backup</span> banta
+              <span className="text-app-2 font-bold">free-tier automatic backup</span> banta
               hai — browser/kholne ki zaroorat nahi.
             </p>
 
@@ -1656,7 +1656,7 @@ export default function BackupPage() {
                   </>
                 )}
                 {serverResult.fileName && (
-                  <span className="block text-slate-500 mt-1 font-mono">{serverResult.fileName}</span>
+                  <span className="block text-muted mt-1 font-mono">{serverResult.fileName}</span>
                 )}
                 {serverResult.storage && (
                   <span
@@ -1674,21 +1674,21 @@ export default function BackupPage() {
 
             {/* Recent files */}
             <div>
-              <p className="flex items-center gap-1.5 text-[9px] font-black uppercase text-slate-600 tracking-wider mb-1.5">
+              <p className="flex items-center gap-1.5 text-[9px] font-black uppercase text-muted-2 tracking-wider mb-1.5">
                 <Clock size={10} /> Recent backups (server)
               </p>
               {serverFiles.length === 0 ? (
-                <p className="text-slate-600 text-xs">Koi server backup nahi — upar se run karo.</p>
+                <p className="text-muted-2 text-xs">Koi server backup nahi — upar se run karo.</p>
               ) : (
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {serverFiles.slice(0, 5).map((f) => (
                     <div
                       key={f.name}
-                      className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-[#0d1117] rounded-lg border border-[#21293d] text-[10px]"
+                      className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-app rounded-lg border border-app text-[10px]"
                     >
-                      <span className="text-slate-400 font-mono truncate">{f.name}</span>
+                      <span className="text-muted font-mono truncate">{f.name}</span>
                       <span className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-slate-600">
+                        <span className="text-muted-2">
                           {new Date(f.modified).toLocaleDateString("en-GB")} ·{" "}
                           {(f.size / 1024).toFixed(0)} KB
                         </span>
@@ -1722,11 +1722,11 @@ export default function BackupPage() {
                 </div>
               )}
 
-              <p className="flex items-center gap-1.5 text-[9px] font-black uppercase text-slate-600 tracking-wider mb-1.5 mt-3">
+              <p className="flex items-center gap-1.5 text-[9px] font-black uppercase text-muted-2 tracking-wider mb-1.5 mt-3">
                 <Cloud size={10} /> Recent cloud copies (Storage bucket)
               </p>
               {serverCloudFiles.length === 0 ? (
-                <p className="text-slate-600 text-xs">
+                <p className="text-muted-2 text-xs">
                   Cloud copy nahi — run karne par &quot;backups&quot; bucket me private upload hoti hai
                   (Vercel par bhi persistent).
                 </p>
@@ -1735,11 +1735,11 @@ export default function BackupPage() {
                   {serverCloudFiles.map((f) => (
                     <div
                       key={f.name}
-                      className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-[#0d1117] rounded-lg border border-[#21293d] text-[10px]"
+                      className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-app rounded-lg border border-app text-[10px]"
                     >
-                      <span className="text-slate-400 font-mono truncate">{f.name}</span>
+                      <span className="text-muted font-mono truncate">{f.name}</span>
                       <span className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-slate-600">
+                        <span className="text-muted-2">
                           {f.modified ? new Date(f.modified).toLocaleDateString("en-GB") : ""}
                         </span>
                         <button
@@ -1773,9 +1773,9 @@ export default function BackupPage() {
               )}
             </div>
 
-            <p className="text-[10px] text-slate-600 leading-relaxed">
+            <p className="text-[10px] text-muted-2 leading-relaxed">
               💡 Daily schedule: Windows me Task Scheduler se{" "}
-              <code className="text-slate-500">
+              <code className="text-muted">
                 node scripts\supabase-json-backup.mjs --storage
               </code>{" "}
               chalate raho (local + cloud, exit 2 = incomplete). Download wala local copy weekly
@@ -1786,10 +1786,10 @@ export default function BackupPage() {
         </div>
 
         {/* RESTORE card */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-amber-600/20 to-transparent border-b border-[#21293d]">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-amber-600/20 to-transparent border-b border-app">
             <Upload size={14} className="text-amber-400" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
               Restore Karna
             </h3>
           </div>
@@ -1810,10 +1810,10 @@ export default function BackupPage() {
 
             {/* Restore order info */}
             <div className="bg-blue-500/5 border border-blue-500/15 rounded-xl px-4 py-3">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">
+              <p className="text-[10px] font-black text-muted uppercase tracking-wider mb-1.5">
                 Restore Process (Auto-Ordered)
               </p>
-              <ol className="space-y-0.5 text-xs text-slate-600">
+              <ol className="space-y-0.5 text-xs text-muted-2">
                 <li>1. Pehle sabhi tables clear honge</li>
                 <li>2. Parent tables phle restore honge (FK dependencies)</li>
                 <li>3. Child tables baad mein restore honge</li>
@@ -1837,8 +1837,8 @@ export default function BackupPage() {
                   dragOver
                     ? "border-amber-500/60 bg-amber-500/10"
                     : busy
-                      ? "border-[#21293d] opacity-50 cursor-not-allowed"
-                      : "border-[#21293d] hover:border-amber-500/40 hover:bg-amber-500/5"
+                      ? "border-app opacity-50 cursor-not-allowed"
+                      : "border-app hover:border-amber-500/40 hover:bg-amber-500/5"
                 }`}
               >
                 <input
@@ -1852,8 +1852,8 @@ export default function BackupPage() {
                   <FileJson size={26} className="text-amber-400" />
                 </div>
                 <div className="text-center">
-                  <p className="text-slate-200 font-bold text-sm">Backup file select karo</p>
-                  <p className="text-slate-500 text-xs mt-1">
+                  <p className="text-app-2 font-bold text-sm">Backup file select karo</p>
+                  <p className="text-muted text-xs mt-1">
                     Drag & drop · ya click karke select karo · sirf .json
                   </p>
                   <p className="text-amber-400/60 text-[10px] mt-2 font-medium">
@@ -1865,9 +1865,9 @@ export default function BackupPage() {
 
             {/* ── STEP 1b: Loading diff ── */}
             {diffLoading && (
-              <div className="flex flex-col items-center gap-3 py-8 border border-[#21293d] rounded-xl bg-[#0d1117]">
+              <div className="flex flex-col items-center gap-3 py-8 border border-app rounded-xl bg-app">
                 <Loader2 size={22} className="animate-spin text-amber-400" />
-                <p className="text-slate-400 text-sm font-medium">
+                <p className="text-muted text-sm font-medium">
                   File parse ho rahi hai aur DB se compare ho raha hai...
                 </p>
               </div>
@@ -1875,9 +1875,9 @@ export default function BackupPage() {
 
             {/* ── STEP 2: Diff Table (file loaded, no restore yet) ── */}
             {diffData && loadedBackup && preview && !restoring && (
-              <div className="rounded-xl border border-[#2a3550] overflow-hidden">
+              <div className="rounded-xl border border-app-2 overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600/15 to-transparent border-b border-[#2a3550]">
+                <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600/15 to-transparent border-b border-app-2">
                   <div className="flex items-center gap-2">
                     <Rows3 size={14} className="text-blue-400" />
                     <span className="text-[11px] font-black uppercase tracking-wider text-blue-400">
@@ -1886,14 +1886,14 @@ export default function BackupPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span
-                      className="text-[10px] text-slate-500 font-mono truncate max-w-[140px]"
+                      className="text-[10px] text-muted font-mono truncate max-w-[140px]"
                       title={preview.fileName}
                     >
                       📄 {preview.fileName}
                     </span>
                     <button
                       onClick={clearLoaded}
-                      className="text-slate-600 hover:text-red-400 text-xs font-bold transition-colors"
+                      className="text-muted-2 hover:text-red-400 text-xs font-bold transition-colors"
                     >
                       ✕ Clear
                     </button>
@@ -1901,22 +1901,22 @@ export default function BackupPage() {
                 </div>
 
                 {/* Summary bar */}
-                <div className="grid grid-cols-4 divide-x divide-[#21293d] bg-[#0d1117] border-b border-[#21293d]">
+                <div className="grid grid-cols-4 divide-x divide-[#21293d] bg-app border-b border-app">
                   <div className="px-3 py-2 text-center">
-                    <p className="text-sm font-black text-slate-300">{preview.totalTables}</p>
-                    <p className="text-[9px] text-slate-600 uppercase">Tables</p>
+                    <p className="text-sm font-black text-app-2">{preview.totalTables}</p>
+                    <p className="text-[9px] text-muted-2 uppercase">Tables</p>
                   </div>
                   <div className="px-3 py-2 text-center">
                     <p className="text-sm font-black text-blue-400">
                       {preview.totalRows.toLocaleString()}
                     </p>
-                    <p className="text-[9px] text-slate-600 uppercase">File Rows</p>
+                    <p className="text-[9px] text-muted-2 uppercase">File Rows</p>
                   </div>
                   <div className="px-3 py-2 text-center">
-                    <p className="text-sm font-black text-slate-400">
+                    <p className="text-sm font-black text-muted">
                       {diffData.reduce((s, d) => s + d.dbRows, 0).toLocaleString()}
                     </p>
-                    <p className="text-[9px] text-slate-600 uppercase">DB Rows</p>
+                    <p className="text-[9px] text-muted-2 uppercase">DB Rows</p>
                   </div>
                   <div className="px-3 py-2 text-center">
                     {(() => {
@@ -1924,12 +1924,12 @@ export default function BackupPage() {
                       return (
                         <>
                           <p
-                            className={`text-sm font-black ${totalDiff > 0 ? "text-emerald-400" : totalDiff < 0 ? "text-red-400" : "text-slate-500"}`}
+                            className={`text-sm font-black ${totalDiff > 0 ? "text-emerald-400" : totalDiff < 0 ? "text-red-400" : "text-muted"}`}
                           >
                             {totalDiff > 0 ? "+" : ""}
                             {totalDiff.toLocaleString()}
                           </p>
-                          <p className="text-[9px] text-slate-600 uppercase">Net Change</p>
+                          <p className="text-[9px] text-muted-2 uppercase">Net Change</p>
                         </>
                       );
                     })()}
@@ -1937,15 +1937,15 @@ export default function BackupPage() {
                 </div>
 
                 {/* Column headers */}
-                <div className="grid grid-cols-[1fr_80px_80px_70px] gap-0 px-3 py-1.5 bg-[#0d1117] border-b border-[#1e2637]">
-                  <span className="text-[9px] font-black uppercase text-slate-600">Table</span>
-                  <span className="text-[9px] font-black uppercase text-slate-600 text-right">
+                <div className="grid grid-cols-[1fr_80px_80px_70px] gap-0 px-3 py-1.5 bg-app border-b border-app-2">
+                  <span className="text-[9px] font-black uppercase text-muted-2">Table</span>
+                  <span className="text-[9px] font-black uppercase text-muted-2 text-right">
                     In File
                   </span>
-                  <span className="text-[9px] font-black uppercase text-slate-600 text-right">
+                  <span className="text-[9px] font-black uppercase text-muted-2 text-right">
                     In DB
                   </span>
-                  <span className="text-[9px] font-black uppercase text-slate-600 text-right">
+                  <span className="text-[9px] font-black uppercase text-muted-2 text-right">
                     Diff
                   </span>
                 </div>
@@ -1962,16 +1962,16 @@ export default function BackupPage() {
                         key={table}
                         className={`grid grid-cols-[1fr_80px_80px_70px] gap-0 px-3 py-2 items-center ${rowBg} hover:bg-white/2 transition-colors`}
                       >
-                        <span className="text-[11px] font-mono text-slate-400">{table}</span>
+                        <span className="text-[11px] font-mono text-muted">{table}</span>
                         <span className="text-[11px] font-bold text-right text-blue-400">
                           {fileRows.toLocaleString()}
                         </span>
-                        <span className="text-[11px] text-right text-slate-500">
+                        <span className="text-[11px] text-right text-muted">
                           {dbRows.toLocaleString()}
                         </span>
                         <span
                           className={`text-[11px] font-black text-right ${
-                            isNew ? "text-emerald-400" : isLess ? "text-red-400" : "text-slate-600"
+                            isNew ? "text-emerald-400" : isLess ? "text-red-400" : "text-muted-2"
                           }`}
                         >
                           {isSame ? "—" : `${diff > 0 ? "+" : ""}${diff}`}
@@ -1982,7 +1982,7 @@ export default function BackupPage() {
                 </div>
 
                 {/* Legend */}
-                <div className="flex items-center gap-4 px-4 py-2 bg-[#0d1117] border-t border-[#1e2637]">
+                <div className="flex items-center gap-4 px-4 py-2 bg-app border-t border-app-2">
                   <span className="flex items-center gap-1.5 text-[10px] text-emerald-400">
                     <span className="w-2 h-2 rounded-full bg-emerald-500/40 inline-block" />
                     File mein zyada rows
@@ -1991,13 +1991,13 @@ export default function BackupPage() {
                     <span className="w-2 h-2 rounded-full bg-red-500/40 inline-block" />
                     DB mein zyada rows
                   </span>
-                  <span className="flex items-center gap-1.5 text-[10px] text-slate-600">
+                  <span className="flex items-center gap-1.5 text-[10px] text-muted-2">
                     <span className="inline-block">—</span> Koi fark nahi
                   </span>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2 px-4 py-3 bg-[#0d1117] border-t border-[#2a3550]">
+                <div className="flex gap-2 px-4 py-3 bg-app border-t border-app-2">
                   <button
                     onClick={() =>
                       handleRestore(new File([], preview.fileName), true, loadedBackup)
@@ -2033,23 +2033,23 @@ export default function BackupPage() {
         </div>
 
         {/* MySQL Converter Tool */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-violet-600/20 to-transparent border-b border-[#21293d]">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-violet-600/20 to-transparent border-b border-app">
             <span className="text-base">🔄</span>
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
               MySQL / MariaDB → JSON Converter
             </h3>
           </div>
           <div className="p-5 space-y-3">
-            <p className="text-xs text-slate-500 leading-relaxed">
+            <p className="text-xs text-muted leading-relaxed">
               MariaDB ya MySQL ka <span className="text-white font-bold">.sql dump</span> file ko
               seedha Supabase backup format mein convert karo — phir restore karo.
             </p>
-            <div className="flex items-center gap-2 bg-[#0d1117] border border-[#21293d] rounded-xl px-4 py-3">
+            <div className="flex items-center gap-2 bg-app border border-app rounded-xl px-4 py-3">
               <span className="text-lg">📁</span>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-slate-300">Converter Tool Location</p>
-                <p className="text-[11px] text-slate-500 font-mono truncate">
+                <p className="text-xs font-bold text-app-2">Converter Tool Location</p>
+                <p className="text-[11px] text-muted font-mono truncate">
                   /public/tools/vtech_mysql_converter.html
                 </p>
               </div>
@@ -2062,7 +2062,7 @@ export default function BackupPage() {
             >
               🔄 Converter Tool Kholo
             </a>
-            <div className="space-y-1.5 text-[10px] text-slate-600">
+            <div className="space-y-1.5 text-[10px] text-muted-2">
               <div className="flex items-center gap-2">
                 <span className="text-violet-400">①</span> phpMyAdmin → Export → SQL → download
               </div>
@@ -2081,14 +2081,14 @@ export default function BackupPage() {
 
         {/* Manual sequence reset note */}
         <div className="bg-indigo-500/5 border border-indigo-500/15 rounded-xl px-4 py-3">
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">
+          <p className="text-[10px] font-black text-muted uppercase tracking-wider mb-1.5">
             Sequence Reset (Optional)
           </p>
-          <p className="text-xs text-slate-600 leading-relaxed">
+          <p className="text-xs text-muted-2 leading-relaxed">
             Restore ke baad agar nayi entries ki IDs galat se start ho rahi hain, toh Supabase SQL
             Editor mein ye query run karein:
           </p>
-          <code className="block mt-2 p-2 bg-[#0d1117] rounded-lg text-[10px] text-emerald-400 font-mono overflow-x-auto">
+          <code className="block mt-2 p-2 bg-app rounded-lg text-[10px] text-emerald-400 font-mono overflow-x-auto">
             {"SELECT setval('table_name_id_seq', (SELECT MAX(id) FROM table_name) + 1, false);"}
           </code>
         </div>

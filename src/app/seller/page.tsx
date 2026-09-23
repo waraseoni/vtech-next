@@ -55,8 +55,8 @@ const statusBadge = (s: string) =>
       : "bg-red-500/15 text-red-400 border-red-500/25";
 
 const inputCls =
-  "w-full px-3.5 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all";
-const labelCls = "block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5";
+  "w-full px-3.5 py-2.5 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-muted-2 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all";
+const labelCls = "block text-[10px] font-black uppercase tracking-widest text-muted mb-1.5";
 
 export default function SellerPage() {
   const [licenses, setLicenses] = useState<License[]>([]);
@@ -135,14 +135,14 @@ export default function SellerPage() {
             <h1 className="text-lg font-black text-white tracking-tight">
               Seller — License Manager
             </h1>
-            <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
+            <p className="text-[11px] text-muted font-semibold mt-0.5">
               Central licensing project (vtech_licence) ke licenses ka CRUD.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={load}
-              className="w-9 h-9 flex items-center justify-center bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all"
+              className="w-9 h-9 flex items-center justify-center bg-panel border border-app hover:border-blue-500/40 rounded-xl text-muted hover:text-white transition-all"
               title="Refresh"
             >
               <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
@@ -190,12 +190,12 @@ export default function SellerPage() {
               color: "text-amber-400 bg-amber-500/10",
             },
           ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+            <div key={label} className="bg-panel border border-app rounded-2xl p-4">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
                 <Icon size={15} />
               </div>
               <p className="text-2xl font-black text-white mt-3">{value}</p>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-0.5">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted mt-0.5">
                 {label}
               </p>
             </div>
@@ -203,13 +203,13 @@ export default function SellerPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
           {loading ? (
-            <div className="h-40 flex items-center justify-center text-slate-500 gap-2 text-xs font-bold uppercase tracking-widest">
+            <div className="h-40 flex items-center justify-center text-muted gap-2 text-xs font-bold uppercase tracking-widest">
               <Loader2 size={16} className="animate-spin" /> Loading...
             </div>
           ) : licenses.length === 0 ? (
-            <div className="h-40 flex flex-col items-center justify-center gap-2 text-slate-600">
+            <div className="h-40 flex flex-col items-center justify-center gap-2 text-muted-2">
               <Store size={22} />
               <p className="text-xs font-bold uppercase tracking-widest">Abhi koi license nahi</p>
             </div>
@@ -217,7 +217,7 @@ export default function SellerPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="text-[9px] font-black uppercase tracking-widest text-slate-600 border-b border-[#1a2234]">
+                  <tr className="text-[9px] font-black uppercase tracking-widest text-muted-2 border-b border-app-2">
                     <th className="px-4 py-3">Key</th>
                     <th className="px-4 py-3">Shop / Owner</th>
                     <th className="px-4 py-3">Plan</th>
@@ -236,13 +236,13 @@ export default function SellerPage() {
                       <tr key={l.id} className="hover:bg-white/[0.02] transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-bold text-slate-200">
+                            <span className="font-mono text-xs font-bold text-app-2">
                               {l.license_key}
                             </span>
                             <button
                               onClick={() => copyKey(l)}
                               title="Copy key"
-                              className="p-1 text-slate-600 hover:text-emerald-400 transition-colors"
+                              className="p-1 text-muted-2 hover:text-emerald-400 transition-colors"
                             >
                               {copied === l.id ? (
                                 <Check size={13} className="text-emerald-400" />
@@ -252,14 +252,14 @@ export default function SellerPage() {
                             </button>
                           </div>
                           {l.last_seen_at && (
-                            <p className="text-[9px] text-slate-600 mt-0.5">
+                            <p className="text-[9px] text-muted-2 mt-0.5">
                               last seen {new Date(l.last_seen_at).toLocaleDateString()}
                             </p>
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <p className="text-xs font-bold text-slate-200">{l.shop_name || "—"}</p>
-                          <p className="text-[10px] text-slate-500">
+                          <p className="text-xs font-bold text-app-2">{l.shop_name || "—"}</p>
+                          <p className="text-[10px] text-muted">
                             {l.owner_name || ""}
                             {l.owner_email ? ` · ${l.owner_email}` : ""}
                           </p>
@@ -270,7 +270,7 @@ export default function SellerPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="text-[10px] font-bold text-slate-400">
+                          <span className="text-[10px] font-bold text-muted">
                             {
                               (l.enabled_modules ?? ALL_MODULES.map((m) => m.key)).filter(
                                 (k) => k !== "dashboard"
@@ -280,21 +280,21 @@ export default function SellerPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="text-xs font-bold text-slate-300">
+                          <span className="text-xs font-bold text-app-2">
                             {l.activation_count ?? 0}/{l.max_activations}
                           </span>
                         </td>
                         <td className="px-4 py-3">
                           {l.expires_at ? (
                             <span
-                              className={`text-[11px] font-bold ${expired ? "text-red-400" : dl !== null && dl <= 30 ? "text-amber-400" : "text-slate-300"}`}
+                              className={`text-[11px] font-bold ${expired ? "text-red-400" : dl !== null && dl <= 30 ? "text-amber-400" : "text-app-2"}`}
                             >
                               {new Date(l.expires_at).toLocaleDateString("en-IN", {
                                 day: "numeric",
                                 month: "short",
                                 year: "numeric",
                               })}
-                              <span className="block text-[9px] text-slate-500">
+                              <span className="block text-[9px] text-muted">
                                 {expired ? "expired" : dl !== null ? `${dl} days left` : "lifetime"}
                               </span>
                             </span>
@@ -314,21 +314,21 @@ export default function SellerPage() {
                             <Link
                               href={`/seller/client/${l.id}`}
                               title="Client Details"
-                              className="w-8 h-8 flex items-center justify-center bg-[#1a2234] hover:bg-blue-500/15 rounded-lg text-slate-400 hover:text-blue-400 transition-all"
+                              className="w-8 h-8 flex items-center justify-center bg-panel-2 hover:bg-blue-500/15 rounded-lg text-muted hover:text-blue-400 transition-all"
                             >
                               <Eye size={13} />
                             </Link>
                             <button
                               onClick={() => setEditing(l)}
                               title="Edit / Renew"
-                              className="w-8 h-8 flex items-center justify-center bg-[#1a2234] hover:bg-blue-500/15 rounded-lg text-slate-400 hover:text-blue-400 transition-all"
+                              className="w-8 h-8 flex items-center justify-center bg-panel-2 hover:bg-blue-500/15 rounded-lg text-muted hover:text-blue-400 transition-all"
                             >
                               <Pencil size={13} />
                             </button>
                             <button
                               onClick={() => remove(l)}
                               title="Delete"
-                              className="w-8 h-8 flex items-center justify-center bg-[#1a2234] hover:bg-red-500/15 rounded-lg text-slate-400 hover:text-red-400 transition-all"
+                              className="w-8 h-8 flex items-center justify-center bg-panel-2 hover:bg-red-500/15 rounded-lg text-muted hover:text-red-400 transition-all"
                             >
                               <Trash2 size={13} />
                             </button>
@@ -384,7 +384,7 @@ function ModuleSelect({ value, onChange }: { value: string[]; onChange: (v: stri
         {ALL_MODULES.filter((m) => !m.always).map((m) => (
           <label
             key={m.key}
-            className="flex items-center gap-2 px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl cursor-pointer hover:border-blue-500/30 transition-all"
+            className="flex items-center gap-2 px-3 py-2 bg-app border border-app rounded-xl cursor-pointer hover:border-blue-500/30 transition-all"
           >
             <input
               type="checkbox"
@@ -392,9 +392,9 @@ function ModuleSelect({ value, onChange }: { value: string[]; onChange: (v: stri
               onChange={(e) => {
                 onChange(e.target.checked ? [...value, m.key] : value.filter((k) => k !== m.key));
               }}
-              className="rounded border-[#21293d] text-blue-500 focus:ring-blue-500/20"
+              className="rounded border-app text-blue-500 focus:ring-blue-500/20"
             />
-            <span className="text-xs font-bold text-slate-300">{m.label}</span>
+            <span className="text-xs font-bold text-app-2">{m.label}</span>
           </label>
         ))}
       </div>
@@ -479,7 +479,7 @@ function NewLicenseModal({
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-[#111520] border border-[#21293d] rounded-3xl p-6 shadow-2xl shadow-black/50 max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-lg bg-panel-2 border border-app rounded-3xl p-6 shadow-2xl shadow-black/50 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-blue-500/15 text-blue-400 rounded-xl flex items-center justify-center">
@@ -489,7 +489,7 @@ function NewLicenseModal({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center bg-[#1a2234] rounded-lg text-slate-500 hover:text-white transition-all"
+            className="w-8 h-8 flex items-center justify-center bg-panel-2 rounded-lg text-muted hover:text-white transition-all"
           >
             <X size={15} />
           </button>
@@ -500,22 +500,22 @@ function NewLicenseModal({
             <div className="w-12 h-12 mx-auto bg-emerald-500/15 text-emerald-400 rounded-2xl flex items-center justify-center mb-4">
               <Check size={22} />
             </div>
-            <p className="text-xs font-bold text-slate-300">
+            <p className="text-xs font-bold text-app-2">
               License ban gaya. Client ko ye key do:
             </p>
-            <div className="mt-4 flex items-center justify-center gap-2 bg-[#0d1117] border border-emerald-500/25 rounded-xl px-4 py-3">
+            <div className="mt-4 flex items-center justify-center gap-2 bg-app border border-emerald-500/25 rounded-xl px-4 py-3">
               <span className="font-mono text-sm font-black text-emerald-300 tracking-wider">
                 {createdKey}
               </span>
               <button
                 onClick={copyNew}
-                className="p-1 text-slate-500 hover:text-emerald-400 transition-colors"
+                className="p-1 text-muted hover:text-emerald-400 transition-colors"
                 title="Copy"
               >
                 {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
               </button>
             </div>
-            <p className="text-[10px] text-slate-500 mt-3 font-semibold">
+            <p className="text-[10px] text-muted mt-3 font-semibold">
               Client app ke Settings → License Activation (ya login ke baad License Gate) mein ye
               key daalega.
             </p>
@@ -725,7 +725,7 @@ function EditLicenseModal({
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-[#111520] border border-[#21293d] rounded-3xl p-6 shadow-2xl shadow-black/50 max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-lg bg-panel-2 border border-app rounded-3xl p-6 shadow-2xl shadow-black/50 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-amber-500/15 text-amber-400 rounded-xl flex items-center justify-center">
@@ -733,17 +733,17 @@ function EditLicenseModal({
             </div>
             <div>
               <h2 className="text-base font-black text-white">Edit / Renew</h2>
-              <p className="font-mono text-[10px] text-slate-500">{license.license_key}</p>
+              <p className="font-mono text-[10px] text-muted">{license.license_key}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center bg-[#1a2234] rounded-lg text-slate-500 hover:text-white transition-all"
+            className="w-8 h-8 flex items-center justify-center bg-panel-2 rounded-lg text-muted hover:text-white transition-all"
           >
             <X size={15} />
           </button>
         </div>
-        <p className="text-[11px] text-slate-500 font-semibold mb-4">
+        <p className="text-[11px] text-muted font-semibold mb-4">
           Renewal: nayi expiry date daalo — key same rahegi, client gate par re-activate karega.
         </p>
 

@@ -74,10 +74,10 @@ export default function NativePrintPreview() {
   return (
     <div className="fixed inset-0 z-[9999] bg-black flex flex-col">
       {/* Top control bar */}
-      <div className="flex items-center gap-2 bg-[#161b27] border-b border-[#21293d] px-3 py-2 flex-shrink-0">
+      <div className="flex items-center gap-2 bg-panel border-b border-app px-3 py-2 flex-shrink-0">
         <div className="flex-1 min-w-0">
           <div className="text-white font-bold text-xs truncate">Print Preview</div>
-          <div className="text-[10px] text-slate-500 truncate">{url}</div>
+          <div className="text-[10px] text-muted truncate">{url}</div>
         </div>
         <button
           onClick={printCurrent}
@@ -89,7 +89,7 @@ export default function NativePrintPreview() {
         </button>
         <button
           onClick={close}
-          className="flex items-center gap-1 bg-[#21293d] hover:bg-[#2a3550] text-slate-300 px-3 py-2 rounded-lg text-xs font-bold"
+          className="flex items-center gap-1 bg-panel-2 hover:bg-[#2a3550] text-app-2 px-3 py-2 rounded-lg text-xs font-bold"
         >
           <X size={14} /> Close
         </button>

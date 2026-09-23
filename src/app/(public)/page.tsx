@@ -85,7 +85,7 @@ function Stat({ value, suffix, label }: { value: number; suffix: string; label: 
         {shown.toLocaleString("en-IN")}
         {suffix}
       </p>
-      <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-slate-500 mt-1.5">
+      <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-muted mt-1.5">
         {label}
       </p>
     </div>
@@ -131,7 +131,7 @@ function BrandedHome() {
                 {name}
               </span>
             </h1>
-            <p className="mt-5 text-[15px] sm:text-lg text-slate-400 leading-relaxed max-w-xl">
+            <p className="mt-5 text-[15px] sm:text-lg text-muted leading-relaxed max-w-xl">
               {SITE.tagline}. Component-level repair, genuine parts, fast service.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
@@ -139,7 +139,7 @@ function BrandedHome() {
                 href={WHATSAPP_LINK("Hello, mujhe repair service chahiye.", info.whatsapp)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1fb959] text-[#04170c] text-[15px] font-black shadow-lg shadow-[#25D366]/25 transition-all active:scale-95"
+                className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1fb959] text-app text-[15px] font-black shadow-lg shadow-[#25D366]/25 transition-all active:scale-95"
               >
                 <MessageCircle size={18} /> WhatsApp karein
               </a>
@@ -181,7 +181,7 @@ function BrandedHome() {
                   </div>
                   <div className="p-5 sm:p-6">
                     <h3 className="font-display text-lg font-bold mb-1.5">{s.label}</h3>
-                    <p className="text-[13px] text-slate-400 leading-relaxed mb-4 line-clamp-2">
+                    <p className="text-[13px] text-muted leading-relaxed mb-4 line-clamp-2">
                       {s.desc}
                     </p>
                     <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-blue-400 group-hover:gap-2.5 transition-all">
@@ -196,7 +196,7 @@ function BrandedHome() {
       )}
 
       {/* CONTACT STRIP */}
-      <section className="py-12 sm:py-16 bg-[#0a0a18]/60 border-y border-white/[0.05]">
+      <section className="py-12 sm:py-16 bg-app/60 border-y border-white/[0.05]">
         <div className="mx-auto max-w-7xl px-4">
           <div className="text-center max-w-2xl mx-auto mb-8">
             <p className="text-[11px] font-black uppercase tracking-widest text-cyan-400 mb-2">
@@ -213,7 +213,7 @@ function BrandedHome() {
             >
               <Phone size={20} className="text-emerald-400 mx-auto mb-3" />
               <h4 className="text-[13px] font-bold text-white">{phone}</h4>
-              <p className="text-[11px] text-slate-500 mt-1">Call / WhatsApp</p>
+              <p className="text-[11px] text-muted mt-1">Call / WhatsApp</p>
             </a>
             <a
               href={`mailto:${email}`}
@@ -221,12 +221,12 @@ function BrandedHome() {
             >
               <Mail size={20} className="text-blue-400 mx-auto mb-3" />
               <h4 className="text-[13px] font-bold text-white break-all">{email}</h4>
-              <p className="text-[11px] text-slate-500 mt-1">Email</p>
+              <p className="text-[11px] text-muted mt-1">Email</p>
             </a>
             <div className="rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] text-center">
               <MapPin size={20} className="text-cyan-400 mx-auto mb-3" />
               <h4 className="text-[13px] font-bold text-white leading-snug">{address}</h4>
-              <p className="text-[11px] text-slate-500 mt-1">Location</p>
+              <p className="text-[11px] text-muted mt-1">Location</p>
             </div>
           </div>
         </div>
@@ -255,7 +255,7 @@ function BrandedHome() {
                   href={WHATSAPP_LINK("Hello, repair ke liye inquiry hai.", info.whatsapp)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-[#25D366] text-[#04170c] text-[15px] font-black shadow-xl active:scale-95 transition-transform"
+                  className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-[#25D366] text-app text-[15px] font-black shadow-xl active:scale-95 transition-transform"
                 >
                   <MessageCircle size={17} /> WhatsApp
                 </a>
@@ -273,7 +273,7 @@ function BrandedHome() {
         aria-label="WhatsApp"
         className="fixed bottom-5 right-4 z-40 w-14 h-14 rounded-full bg-[#25D366] flex items-center justify-center shadow-2xl shadow-black/40 active:scale-90 transition-transform"
       >
-        <MessageCircle size={26} className="text-[#04170c]" />
+        <MessageCircle size={26} className="text-app" />
       </a>
     </>
   );
@@ -320,10 +320,10 @@ export default function PublicHome() {
               </span>
             </h1>
 
-            <p className="mt-5 text-[15px] sm:text-lg text-slate-400 leading-relaxed max-w-xl">
+            <p className="mt-5 text-[15px] sm:text-lg text-muted leading-relaxed max-w-xl">
               SMPS · Sharpy · Moving Head · Par · DMX · Laser · LED Wall · Fog Machine · PLC · HMI ·
               VFD · EV Charger —{" "}
-              <span className="text-slate-200 font-semibold">component-level repair</span>, genuine
+              <span className="text-app-2 font-semibold">component-level repair</span>, genuine
               parts, same-day service.
             </p>
 
@@ -332,7 +332,7 @@ export default function PublicHome() {
                 href={WHATSAPP_LINK("Hello, mujhe repair service chahiye.")}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1fb959] text-[#04170c] text-[15px] font-black shadow-lg shadow-[#25D366]/25 transition-all active:scale-95"
+                className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1fb959] text-app text-[15px] font-black shadow-lg shadow-[#25D366]/25 transition-all active:scale-95"
               >
                 <MessageCircle size={18} /> WhatsApp karein
               </a>
@@ -344,10 +344,10 @@ export default function PublicHome() {
               </a>
             </div>
 
-            <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-bold text-slate-500">
-              <span className="text-slate-300">17+ Years</span>·
-              <span className="text-slate-300">27,000+ Repairs</span>·
-              <span className="text-slate-300">5,000+ Clients</span>·
+            <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-bold text-muted">
+              <span className="text-app-2">17+ Years</span>·
+              <span className="text-app-2">27,000+ Repairs</span>·
+              <span className="text-app-2">5,000+ Clients</span>·
               <span className="flex items-center gap-1 text-emerald-400">
                 <BadgeCheck size={13} /> Genuine Parts
               </span>
@@ -386,7 +386,7 @@ export default function PublicHome() {
                 </div>
                 <div className="p-5 sm:p-6">
                   <h3 className="font-display text-lg font-bold mb-1.5">{s.label}</h3>
-                  <p className="text-[13px] text-slate-400 leading-relaxed mb-4 line-clamp-2">
+                  <p className="text-[13px] text-muted leading-relaxed mb-4 line-clamp-2">
                     {s.desc}
                   </p>
                   <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-blue-400 group-hover:gap-2.5 transition-all">
@@ -412,7 +412,7 @@ export default function PublicHome() {
       </section>
 
       {/* ═══ FEATURED SERVICES ═══════════════════════════════════════════ */}
-      <section className="py-14 sm:py-20 bg-[#0a0a18]/60 border-y border-white/[0.05]">
+      <section className="py-14 sm:py-20 bg-app/60 border-y border-white/[0.05]">
         <div className="mx-auto max-w-7xl px-4">
           <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
             <p className="text-[11px] font-black uppercase tracking-widest text-cyan-400 mb-2">
@@ -421,7 +421,7 @@ export default function PublicHome() {
             <h2 className="font-display text-2xl sm:text-4xl font-black tracking-tight">
               Popular Repair Services
             </h2>
-            <p className="text-[13px] sm:text-sm text-slate-500 mt-3">
+            <p className="text-[13px] sm:text-sm text-muted mt-3">
               Don&apos;t see yours? Call karo — agar bana banaya hai to hum fix kar denge.
             </p>
           </div>
@@ -461,7 +461,7 @@ export default function PublicHome() {
                 key={i}
                 className="group rounded-2xl overflow-hidden bg-white/[0.03] border border-white/[0.06] hover:border-blue-500/40 hover:bg-white/[0.05] transition-all active:scale-[0.98]"
               >
-                <div className="relative h-20 sm:h-24 overflow-hidden bg-[#080a18]">
+                <div className="relative h-20 sm:h-24 overflow-hidden bg-app">
                   <EquipmentArt
                     kind={f.art}
                     className="h-full w-full transition-transform duration-500 group-hover:scale-110"
@@ -469,7 +469,7 @@ export default function PublicHome() {
                 </div>
                 <div className="p-3.5 sm:p-4">
                   <h4 className="text-[13px] sm:text-sm font-bold leading-snug">{f.title}</h4>
-                  <p className="text-[11px] sm:text-[12px] text-slate-500 mt-1">{f.desc}</p>
+                  <p className="text-[11px] sm:text-[12px] text-muted mt-1">{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -533,7 +533,7 @@ export default function PublicHome() {
                   {f.icon}
                 </div>
                 <h4 className="text-[15px] font-bold mb-1.5">{f.title}</h4>
-                <p className="text-[13px] text-slate-400 leading-relaxed">{f.desc}</p>
+                <p className="text-[13px] text-muted leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -541,7 +541,7 @@ export default function PublicHome() {
       </section>
 
       {/* ═══ TESTIMONIALS ════════════════════════════════════════════════ */}
-      <section className="py-14 sm:py-20 bg-[#0a0a18]/60 border-y border-white/[0.05]">
+      <section className="py-14 sm:py-20 bg-app/60 border-y border-white/[0.05]">
         <div className="mx-auto max-w-7xl px-4">
           <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
             <p className="text-[11px] font-black uppercase tracking-widest text-cyan-400 mb-2">
@@ -580,7 +580,7 @@ export default function PublicHome() {
                     <Star key={s} size={14} fill="currentColor" />
                   ))}
                 </div>
-                <p className="text-[14px] text-slate-300 leading-relaxed mb-4">
+                <p className="text-[14px] text-app-2 leading-relaxed mb-4">
                   &ldquo;{t.q}&rdquo;
                 </p>
                 <p className="text-[13px] font-bold text-white">- {t.n}</p>
@@ -613,7 +613,7 @@ export default function PublicHome() {
                   href={WHATSAPP_LINK("Hello, repair ke liye inquiry hai.")}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-[#25D366] text-[#04170c] text-[15px] font-black shadow-xl active:scale-95 transition-transform"
+                  className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-[#25D366] text-app text-[15px] font-black shadow-xl active:scale-95 transition-transform"
                 >
                   <MessageCircle size={17} /> WhatsApp
                 </a>
@@ -631,7 +631,7 @@ export default function PublicHome() {
         aria-label="WhatsApp"
         className="fixed bottom-5 right-4 z-40 w-14 h-14 rounded-full bg-[#25D366] flex items-center justify-center shadow-2xl shadow-black/40 active:scale-90 transition-transform"
       >
-        <MessageCircle size={26} className="text-[#04170c]" />
+        <MessageCircle size={26} className="text-app" />
       </a>
     </>
   );

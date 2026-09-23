@@ -4,9 +4,9 @@ import { ArrowLeft, ShoppingBag, Plus } from "lucide-react";
 
 export default function NewSalePage() {
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
+    <div className="min-h-screen bg-app font-sans pb-16">
       {/* ── HERO HEADER ── */}
-      <div className="relative overflow-hidden bg-[#0d1117] border-b border-[#21293d]">
+      <div className="relative overflow-hidden bg-app border-b border-app">
         {/* Dot grid */}
         <div
           className="absolute inset-0 opacity-[0.025]"
@@ -19,12 +19,12 @@ export default function NewSalePage() {
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-5">
           {/* Breadcrumb */}
-          <div className="flex items-center gap-1.5 text-[10px] text-slate-700 mb-4 font-bold uppercase tracking-wider">
-            <Link href="/direct-sales" className="hover:text-slate-500 transition-colors">
+          <div className="flex items-center gap-1.5 text-[10px] text-app mb-4 font-bold uppercase tracking-wider">
+            <Link href="/direct-sales" className="hover:text-muted transition-colors">
               Direct Sales
             </Link>
-            <span className="text-slate-800">›</span>
-            <span className="text-slate-500">New Sale</span>
+            <span className="text-app">›</span>
+            <span className="text-muted">New Sale</span>
           </div>
 
           <div className="flex items-center justify-between gap-4">
@@ -32,7 +32,7 @@ export default function NewSalePage() {
             <div className="flex items-start gap-4">
               <Link
                 href="/direct-sales"
-                className="mt-1 p-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] rounded-xl text-slate-500 hover:text-slate-300 transition-all flex-shrink-0"
+                className="mt-1 p-2 bg-panel hover:bg-panel-2 border border-app rounded-xl text-muted hover:text-app-2 transition-all flex-shrink-0"
               >
                 <ArrowLeft size={16} />
               </Link>
@@ -44,7 +44,7 @@ export default function NewSalePage() {
                   <h1 className="text-2xl font-black text-white tracking-tight leading-none">
                     New Direct Sale
                   </h1>
-                  <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.2em] mt-1">
+                  <p className="text-muted-2 text-xs font-bold uppercase tracking-[0.2em] mt-1">
                     Create a new sale entry
                   </p>
                 </div>
@@ -56,11 +56,11 @@ export default function NewSalePage() {
 
       {/* ── FORM CARD ── */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5">
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
           {/* Section label */}
-          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-[#21293d] bg-[#111520]">
+          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-app bg-panel-2">
             <ShoppingBag size={13} className="text-emerald-400" />
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
               Sale Details
             </span>
           </div>

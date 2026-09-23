@@ -105,13 +105,13 @@ export default function StockValuationReport() {
       </div>
 
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-[2rem] p-6 shadow-2xl relative overflow-hidden no-print">
+      <div className="bg-panel border border-app rounded-[2rem] p-6 shadow-2xl relative overflow-hidden no-print">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-3xl rounded-full -mr-20 -mt-20 pointer-events-none" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative">
           <div className="flex items-center gap-5">
             <Link
               href="/reports"
-              className="w-12 h-12 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-2xl text-slate-500 hover:text-white hover:bg-emerald-600/10 hover:border-emerald-500/40 transition-all group"
+              className="w-12 h-12 flex items-center justify-center bg-app border border-app rounded-2xl text-muted hover:text-white hover:bg-emerald-600/10 hover:border-emerald-500/40 transition-all group"
             >
               <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
             </Link>
@@ -120,7 +120,7 @@ export default function StockValuationReport() {
             </div>
             <div>
               <h1 className="text-3xl font-black text-white tracking-tight">Stock Valuation</h1>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-[0.3em]">
+              <p className="text-xs text-muted font-bold uppercase tracking-[0.3em]">
                 Available basis + location-wise
               </p>
             </div>
@@ -128,7 +128,7 @@ export default function StockValuationReport() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setRefreshKey((k) => k + 1)}
-              className="flex items-center gap-2 px-5 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all"
+              className="flex items-center gap-2 px-5 py-3 bg-app border border-app rounded-2xl text-xs font-black uppercase tracking-widest text-muted hover:text-white transition-all"
             >
               <RefreshCw size={14} /> Refresh
             </button>
@@ -177,10 +177,10 @@ export default function StockValuationReport() {
       </div>
 
       {/* Note */}
-      <div className="flex items-start gap-3 bg-[#161b27] border border-[#21293d] rounded-2xl p-4 no-print">
+      <div className="flex items-start gap-3 bg-panel border border-app rounded-2xl p-4 no-print">
         <Info size={16} className="text-emerald-400 mt-0.5 shrink-0" />
-        <p className="text-xs text-slate-400 leading-relaxed">
-          <span className="font-black text-slate-300 uppercase tracking-widest">
+        <p className="text-xs text-muted leading-relaxed">
+          <span className="font-black text-app-2 uppercase tracking-widest">
             Do views ka farak:
           </span>{" "}
           <b>Product value</b> = available (sales kat ke) × weighted avg purchase cost — abhi
@@ -191,19 +191,19 @@ export default function StockValuationReport() {
       </div>
 
       {/* Product valuation */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-[2rem] p-5 no-print">
+      <div className="bg-panel border border-app rounded-[2rem] p-5 no-print">
         <div className="flex flex-col md:flex-row md:items-center gap-3">
           <div className="relative w-full md:flex-1 lg:max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-2" size={16} />
             <input
               type="text"
               placeholder="Search by product, HSN or shelf..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-sm text-slate-200 outline-none focus:border-emerald-500 transition-all"
+              className="w-full pl-12 pr-4 py-3 bg-app border border-app rounded-2xl text-sm text-app-2 outline-none focus:border-emerald-500 transition-all"
             />
           </div>
-          <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
+          <span className="flex items-center gap-1.5 text-[11px] font-bold text-muted">
             <Package size={13} className="text-emerald-400" />
             {filteredProducts.length} products
           </span>
@@ -217,7 +217,7 @@ export default function StockValuationReport() {
       ) : (
         <>
           {/* ── PRODUCT TABLE ── */}
-          <div className="overflow-x-auto bg-[#161b27] border border-[#21293d] rounded-[1.5rem] shadow-2xl">
+          <div className="overflow-x-auto bg-panel border border-app rounded-[1.5rem] shadow-2xl">
             <table className="w-full text-sm">
               <thead className="theme-panel-2">
                 <tr>
@@ -225,7 +225,7 @@ export default function StockValuationReport() {
                     (h) => (
                       <th
                         key={h}
-                        className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap"
+                        className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap"
                       >
                         {h}
                       </th>
@@ -237,8 +237,8 @@ export default function StockValuationReport() {
                 {filteredProducts.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-16 text-center">
-                      <PackageX size={36} className="mx-auto text-slate-700 mb-3" />
-                      <p className="text-slate-500 font-bold text-sm">Koi product nahi mila</p>
+                      <PackageX size={36} className="mx-auto text-app mb-3" />
+                      <p className="text-muted font-bold text-sm">Koi product nahi mila</p>
                     </td>
                   </tr>
                 ) : (
@@ -252,12 +252,12 @@ export default function StockValuationReport() {
                           {p.name}
                         </Link>
                         {p.description && (
-                          <div className="text-[10px] text-slate-600 max-w-[320px] truncate">
+                          <div className="text-[10px] text-muted-2 max-w-[320px] truncate">
                             {p.description}
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">
+                      <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
                         {p.hsn || "—"}
                       </td>
                       <td className="px-4 py-3">
@@ -271,14 +271,14 @@ export default function StockValuationReport() {
                           {p.available <= 0 ? "Out" : `${p.available} pcs`}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-300 whitespace-nowrap">
+                      <td className="px-4 py-3 text-xs text-app-2 whitespace-nowrap">
                         {inr(p.avgCost)}
                       </td>
                       <td className="px-4 py-3 text-sm font-black text-white whitespace-nowrap">
                         {inr(p.value)}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-400">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] text-muted">
                           <MapPin size={11} className="text-emerald-400 shrink-0" />
                           <span className="truncate max-w-[240px]" title={p.location}>
                             {p.location}
@@ -293,7 +293,7 @@ export default function StockValuationReport() {
           </div>
 
           {/* ── LOCATION VALUATION ── */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-[2rem] p-6 shadow-2xl">
+          <div className="bg-panel border border-app rounded-[2rem] p-6 shadow-2xl">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-emerald-600 to-teal-800 rounded-2xl flex items-center justify-center">
@@ -303,20 +303,20 @@ export default function StockValuationReport() {
                   <h2 className="text-xl font-black text-white tracking-tight">
                     Location-wise Stock Value
                   </h2>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">
+                  <p className="text-[10px] text-muted font-bold uppercase tracking-[0.3em]">
                     Zone ▸ Rack ▸ Bin ▸ Box — inbound purchase value
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-4 text-right">
                 <div>
-                  <div className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                  <div className="text-[9px] font-black uppercase tracking-widest text-muted-2">
                     Locations
                   </div>
                   <div className="text-xl font-black text-white">{locTotals.totalLocations}</div>
                 </div>
                 <div>
-                  <div className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                  <div className="text-[9px] font-black uppercase tracking-widest text-muted-2">
                     Qty
                   </div>
                   <div className="text-xl font-black text-white">
@@ -324,7 +324,7 @@ export default function StockValuationReport() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                  <div className="text-[9px] font-black uppercase tracking-widest text-muted-2">
                     Value
                   </div>
                   <div className="text-xl font-black text-emerald-400">{inr(locTotals.totalValue)}</div>
@@ -334,18 +334,18 @@ export default function StockValuationReport() {
 
             {locations.length === 0 ? (
               <div className="text-center py-16">
-                <PackageX size={36} className="mx-auto text-slate-700 mb-3" />
-                <p className="text-slate-500 font-bold text-sm">Koi stock-in record nahi</p>
+                <PackageX size={36} className="mx-auto text-app mb-3" />
+                <p className="text-muted font-bold text-sm">Koi stock-in record nahi</p>
               </div>
             ) : (
-              <div className="bg-[#0d1117] border border-[#21293d] rounded-2xl overflow-x-auto">
+              <div className="bg-app border border-app rounded-2xl overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr>
                       {["Location", "Products", "Qty", "Value", ""].map((h) => (
                         <th
                           key={h}
-                          className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap"
+                          className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap"
                         >
                           {h}
                         </th>
@@ -362,25 +362,25 @@ export default function StockValuationReport() {
                             className="cursor-pointer hover:bg-white/[0.02] transition-colors"
                           >
                             <td className="px-4 py-3">
-                              <span className="inline-flex items-center gap-2 font-bold text-slate-200 text-sm">
+                              <span className="inline-flex items-center gap-2 font-bold text-app-2 text-sm">
                                 {open ? (
                                   <ChevronDown size={15} className="text-emerald-400" />
                                 ) : (
-                                  <ChevronRight size={15} className="text-slate-500" />
+                                  <ChevronRight size={15} className="text-muted" />
                                 )}
                                 {loc.path}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-xs text-slate-400">
+                            <td className="px-4 py-3 text-xs text-muted">
                               {loc.productCount} products
                             </td>
-                            <td className="px-4 py-3 text-xs text-slate-300 whitespace-nowrap">
+                            <td className="px-4 py-3 text-xs text-app-2 whitespace-nowrap">
                               {loc.qty.toLocaleString("en-IN")}
                             </td>
                             <td className="px-4 py-3 text-sm font-black text-emerald-400 whitespace-nowrap">
                               {inr(loc.value)}
                             </td>
-                            <td className="px-4 py-3 text-right text-slate-600">
+                            <td className="px-4 py-3 text-right text-muted-2">
                               <span
                                 className={`inline-block transition-transform ${
                                   open ? "rotate-180" : ""
@@ -393,14 +393,14 @@ export default function StockValuationReport() {
                           {open && (
                             <tr>
                               <td colSpan={5} className="px-4 pb-4 bg-black/20">
-                                <div className="overflow-x-auto rounded-xl border border-[#1c2436]">
+                                <div className="overflow-x-auto rounded-xl border border-app-2">
                                   <table className="w-full text-sm">
                                     <thead className="theme-panel-2">
                                       <tr>
                                         {["Product", "Qty", "Value"].map((h) => (
                                           <th
                                             key={h}
-                                            className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-widest text-slate-500"
+                                            className="px-3 py-2 text-left text-[9px] font-black uppercase tracking-widest text-muted"
                                           >
                                             {h}
                                           </th>
@@ -418,7 +418,7 @@ export default function StockValuationReport() {
                                               {pl.name}
                                             </Link>
                                           </td>
-                                          <td className="px-3 py-2 text-xs text-slate-300 whitespace-nowrap">
+                                          <td className="px-3 py-2 text-xs text-app-2 whitespace-nowrap">
                                             {pl.qty.toLocaleString("en-IN")}
                                           </td>
                                           <td className="px-3 py-2 text-xs font-bold text-emerald-400 whitespace-nowrap">

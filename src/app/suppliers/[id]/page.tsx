@@ -68,37 +68,37 @@ const telLink = (phone: string) => `tel:+91${phone.replace(/\D/g, "")}`;
 function PaymentSummary({ amount, baseDue }: { amount: number; baseDue: number }) {
   const remaining = baseDue - amount;
   return (
-    <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-3 space-y-2">
-      <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+    <div className="bg-app rounded-xl border border-app p-3 space-y-2">
+      <p className="text-[10px] font-black uppercase tracking-wider text-muted-2">
         Payment Summary
       </p>
       <div className="flex justify-between text-sm">
-        <span className="text-slate-500">Amount</span>
+        <span className="text-muted">Amount</span>
         <span className="text-white font-bold">{fmtCurrency(amount)}</span>
       </div>
       <div className="flex justify-between text-sm">
-        <span className="text-slate-500">Outstanding</span>
+        <span className="text-muted">Outstanding</span>
         <span className={`font-bold ${baseDue > 0 ? "text-red-400" : "text-emerald-400"}`}>
           {fmtCurrency(baseDue)}
         </span>
       </div>
       {baseDue > 0 && (
-        <div className="flex justify-between text-sm border-t border-[#21293d] pt-2">
+        <div className="flex justify-between text-sm border-t border-app pt-2">
           {remaining > 0 ? (
             <>
-              <span className="text-slate-400 font-black">Remaining After</span>
+              <span className="text-muted font-black">Remaining After</span>
               <span className="text-red-400 font-black">{fmtCurrency(remaining)}</span>
             </>
           ) : remaining === 0 ? (
             <>
-              <span className="text-slate-400 font-black">After Payment</span>
+              <span className="text-muted font-black">After Payment</span>
               <span className="text-emerald-400 font-black">
                 Cleared {fmtCurrency(0)}
               </span>
             </>
           ) : (
             <>
-              <span className="text-slate-400 font-black">Overpaid (Advance)</span>
+              <span className="text-muted font-black">Overpaid (Advance)</span>
               <span className="text-amber-400 font-black">
                 {fmtCurrency(Math.abs(remaining))}
               </span>
@@ -599,8 +599,8 @@ export default function SupplierDetailPage() {
   if (!supplier) {
     return (
       <AdminPage title="Supplier Details" subtitle="Not found">
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-12 text-center">
-          <p className="text-slate-500 text-sm">Supplier not found.</p>
+        <div className="bg-panel border border-app rounded-2xl px-5 py-12 text-center">
+          <p className="text-muted text-sm">Supplier not found.</p>
           <Link
             href="/suppliers"
             className="mt-4 inline-block text-blue-400 text-xs font-bold hover:underline"
@@ -621,7 +621,7 @@ export default function SupplierDetailPage() {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <Link
             href="/suppliers"
-            className="text-sm text-slate-500 hover:text-white flex items-center gap-1 transition-colors"
+            className="text-sm text-muted hover:text-white flex items-center gap-1 transition-colors"
           >
             <ArrowLeft size={14} /> Back to Suppliers
           </Link>
@@ -634,9 +634,9 @@ export default function SupplierDetailPage() {
         </div>
 
         {/* Supplier Info Card */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-[#21293d]">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-app">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-2">
               Supplier Information
             </h3>
           </div>
@@ -647,7 +647,7 @@ export default function SupplierDetailPage() {
                   <ImageIcon size={14} className="text-violet-400" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
                     Visiting Card
                   </p>
                   <button
@@ -662,7 +662,7 @@ export default function SupplierDetailPage() {
                       width={200}
                       height={120}
                       priority
-                      className="h-36 sm:h-44 w-auto max-w-full rounded-xl object-contain border border-[#21293d] bg-black/30"
+                      className="h-36 sm:h-44 w-auto max-w-full rounded-xl object-contain border border-app bg-black/30"
                     />
                   </button>
                 </div>
@@ -673,10 +673,10 @@ export default function SupplierDetailPage() {
                 <Truck size={14} className="text-violet-400" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                   Name
                 </p>
-                <p className="text-sm font-bold text-slate-200">{supplier.name}</p>
+                <p className="text-sm font-bold text-app-2">{supplier.name}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -684,11 +684,11 @@ export default function SupplierDetailPage() {
                 <Phone size={14} className="text-blue-400" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
                   Contact Persons
                 </p>
                 {persons.length === 0 ? (
-                  <p className="text-sm font-bold text-slate-200">—</p>
+                  <p className="text-sm font-bold text-app-2">—</p>
                 ) : (
                   <div className="flex flex-col gap-3">
                     {persons.map((p, i) => (
@@ -702,22 +702,22 @@ export default function SupplierDetailPage() {
                                 fill="currentColor"
                               />
                             )}
-                            <span className="text-xs font-black text-slate-200 uppercase tracking-wide">
+                            <span className="text-xs font-black text-app-2 uppercase tracking-wide">
                               {p.name || "Person"}
                             </span>
                             {p.role && (
-                              <span className="text-[10px] text-slate-500">· {p.role}</span>
+                              <span className="text-[10px] text-muted">· {p.role}</span>
                             )}
                           </div>
                         )}
                         {p.phones.length === 0 ? (
-                          <p className="text-sm font-bold text-slate-200">—</p>
+                          <p className="text-sm font-bold text-app-2">—</p>
                         ) : (
                           <div className="flex flex-col gap-1">
                             {p.phones.map((c, idx) => (
                               <div
                                 key={idx}
-                                className="flex items-center gap-1.5 text-slate-300 text-sm"
+                                className="flex items-center gap-1.5 text-app-2 text-sm"
                               >
                                 {c.is_primary && (
                                   <Star
@@ -726,7 +726,7 @@ export default function SupplierDetailPage() {
                                     fill="currentColor"
                                   />
                                 )}
-                                <span className="text-[10px] font-black uppercase text-slate-500">
+                                <span className="text-[10px] font-black uppercase text-muted">
                                   {c.label}
                                 </span>
                                 {c.phone.replace(/\D/g, "").length >= 10 ? (
@@ -766,19 +766,19 @@ export default function SupplierDetailPage() {
                 <Mail size={14} className="text-red-400" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                   Email
                 </p>
                 {supplier.email ? (
                   <a
                     href={`mailto:${supplier.email}`}
                     title={`Email: ${supplier.email}`}
-                    className="text-sm font-bold text-slate-200 hover:text-blue-400 hover:underline transition-colors"
+                    className="text-sm font-bold text-app-2 hover:text-blue-400 hover:underline transition-colors"
                   >
                     {supplier.email}
                   </a>
                 ) : (
-                  <p className="text-sm font-bold text-slate-200">—</p>
+                  <p className="text-sm font-bold text-app-2">—</p>
                 )}
               </div>
             </div>
@@ -787,10 +787,10 @@ export default function SupplierDetailPage() {
                 <MapPin size={14} className="text-amber-400" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                   Address
                 </p>
-                <p className="text-sm font-bold text-slate-200">{supplier.address || "—"}</p>
+                <p className="text-sm font-bold text-app-2">{supplier.address || "—"}</p>
               </div>
             </div>
             {supplier.gstin && (
@@ -799,10 +799,10 @@ export default function SupplierDetailPage() {
                   <FileSignature size={14} className="text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                     GSTIN
                   </p>
-                  <p className="text-sm font-bold text-slate-200 font-mono">{supplier.gstin}</p>
+                  <p className="text-sm font-bold text-app-2 font-mono">{supplier.gstin}</p>
                 </div>
               </div>
             )}
@@ -812,10 +812,10 @@ export default function SupplierDetailPage() {
                   <MapPin size={14} className="text-sky-400" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                     City / State
                   </p>
-                  <p className="text-sm font-bold text-slate-200">
+                  <p className="text-sm font-bold text-app-2">
                     {[supplier.city, supplier.state].filter(Boolean).join(", ") || "—"}
                   </p>
                 </div>
@@ -827,14 +827,14 @@ export default function SupplierDetailPage() {
                   <Landmark size={14} className="text-violet-400" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                     Bank Account
                   </p>
-                  <p className="text-sm font-bold text-slate-200">
+                  <p className="text-sm font-bold text-app-2">
                     {supplier.bank_name}
                     {supplier.bank_account && ` · ${supplier.bank_account}`}
                     {supplier.bank_ifsc && (
-                      <span className="text-slate-400 font-mono"> · {supplier.bank_ifsc}</span>
+                      <span className="text-muted font-mono"> · {supplier.bank_ifsc}</span>
                     )}
                   </p>
                 </div>
@@ -846,10 +846,10 @@ export default function SupplierDetailPage() {
                   <Wallet size={14} className="text-indigo-400" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                     Business Terms
                   </p>
-                  <p className="text-sm font-bold text-slate-200">
+                  <p className="text-sm font-bold text-app-2">
                     {supplier.credit_limit != null && (
                       <>Credit limit: {fmtCurrency(Number(supplier.credit_limit))}</>
                     )}
@@ -864,38 +864,38 @@ export default function SupplierDetailPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="bg-[#111520] border border-[#21293d] rounded-xl p-4 text-center">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+          <div className="bg-panel-2 border border-app rounded-xl p-4 text-center">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
               Total POs
             </p>
             <p className="text-lg font-black text-blue-400">{totalPOs}</p>
           </div>
-          <div className="bg-[#111520] border border-[#21293d] rounded-xl p-4 text-center">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+          <div className="bg-panel-2 border border-app rounded-xl p-4 text-center">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
               Total Amount
             </p>
-            <p className="text-lg font-black text-slate-200">{fmtCurrency(totalAmount)}</p>
+            <p className="text-lg font-black text-app-2">{fmtCurrency(totalAmount)}</p>
           </div>
-          <div className="bg-[#111520] border border-[#21293d] rounded-xl p-4 text-center">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+          <div className="bg-panel-2 border border-app rounded-xl p-4 text-center">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
               Received Value
             </p>
             <p className="text-lg font-black text-emerald-400">{fmtCurrency(receivedValue)}</p>
           </div>
-          <div className="bg-[#111520] border border-[#21293d] rounded-xl p-4 text-center">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+          <div className="bg-panel-2 border border-app rounded-xl p-4 text-center">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
               Pending Value
             </p>
             <p className="text-lg font-black text-amber-400">{fmtCurrency(pendingValue)}</p>
           </div>
-          <div className="bg-[#111520] border border-[#21293d] rounded-xl p-4 text-center">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+          <div className="bg-panel-2 border border-app rounded-xl p-4 text-center">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
               Total Paid
             </p>
             <p className="text-lg font-black text-emerald-400">{fmtCurrency(totalPaid)}</p>
           </div>
-          <div className="bg-[#111520] border border-[#21293d] rounded-xl p-4 text-center">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">
+          <div className="bg-panel-2 border border-app rounded-xl p-4 text-center">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1">
               Outstanding
             </p>
             <p
@@ -904,7 +904,7 @@ export default function SupplierDetailPage() {
                   ? "text-amber-400"
                   : outstanding < 0
                     ? "text-red-400"
-                    : "text-slate-200"
+                    : "text-app-2"
               }`}
             >
               {fmtCurrency(outstanding)}
@@ -913,33 +913,33 @@ export default function SupplierDetailPage() {
         </div>
 
         {/* Recommended Orders */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between gap-2 flex-wrap">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-app flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
               <ShoppingCart size={14} className="text-amber-400" />
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                 Recommended Orders
               </h3>
             </div>
-            <span className="text-[10px] text-slate-600">
+            <span className="text-[10px] text-muted-2">
               Low stock linked products from this supplier
             </span>
           </div>
 
           {recLoading ? (
-            <div className="px-5 py-10 flex items-center justify-center gap-2 text-slate-500 text-sm">
+            <div className="px-5 py-10 flex items-center justify-center gap-2 text-muted text-sm">
               <Loader2 size={14} className="animate-spin" /> Loading stock...
             </div>
           ) : recItems.length === 0 ? (
-            <div className="px-5 py-10 text-center text-slate-600 text-sm">
+            <div className="px-5 py-10 text-center text-muted-2 text-sm">
               Koi low-stock product nahi (ya is supplier se koi product link nahi).
             </div>
           ) : (
             <div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-[#111520]">
-                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                  <thead className="bg-panel-2">
+                    <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                       <th className="text-left px-4 py-3">Product</th>
                       <th className="text-center px-4 py-3">In Stock</th>
                       <th className="text-center px-4 py-3">On Order</th>
@@ -954,7 +954,7 @@ export default function SupplierDetailPage() {
                         <td className="px-4 py-3">
                           <Link
                             href={`/inventory/${item.id}`}
-                            className="text-slate-200 font-semibold hover:text-blue-400 transition-colors"
+                            className="text-app-2 font-semibold hover:text-blue-400 transition-colors"
                           >
                             {item.name}
                           </Link>
@@ -964,10 +964,10 @@ export default function SupplierDetailPage() {
                             {item.current_stock}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center text-slate-400 font-semibold">
+                        <td className="px-4 py-3 text-center text-muted font-semibold">
                           {item.on_po}
                         </td>
-                        <td className="px-4 py-3 text-center text-slate-400">
+                        <td className="px-4 py-3 text-center text-muted">
                           {item.alert_qty}
                         </td>
                         <td className="px-4 py-3 text-center">
@@ -975,7 +975,7 @@ export default function SupplierDetailPage() {
                             +{item.need_to_order}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-slate-300">
+                        <td className="px-4 py-3 text-right text-app-2">
                           {fmtCurrency(item.price)}
                         </td>
                       </tr>
@@ -983,7 +983,7 @@ export default function SupplierDetailPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="px-5 py-3.5 border-t border-[#21293d] flex items-center justify-end gap-2 flex-wrap">
+              <div className="px-5 py-3.5 border-t border-app flex items-center justify-end gap-2 flex-wrap">
                 <button
                   onClick={createPOFromRec}
                   className="flex items-center gap-2 px-4 py-2 bg-amber-500/15 border border-amber-500/25 text-amber-400 hover:bg-amber-500/25 rounded-xl text-xs font-black transition-all"
@@ -996,28 +996,28 @@ export default function SupplierDetailPage() {
         </div>
 
         {/* Linked Products */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between gap-2 flex-wrap">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-app flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
               <Link2 size={14} className="text-blue-400" />
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                 Linked Products
               </h3>
             </div>
-            <span className="text-[10px] text-slate-600">
+            <span className="text-[10px] text-muted-2">
               {linkedProducts.length} product{linkedProducts.length === 1 ? "" : "s"}
             </span>
           </div>
 
           <div className="p-5">
             {linkLoading ? (
-              <div className="py-6 flex items-center justify-center gap-2 text-slate-500 text-sm">
+              <div className="py-6 flex items-center justify-center gap-2 text-muted text-sm">
                 <Loader2 size={14} className="animate-spin" /> Loading products...
               </div>
             ) : (
               <>
                 {linkedProducts.length === 0 && (
-                  <div className="pb-4 text-center text-slate-600 text-sm">
+                  <div className="pb-4 text-center text-muted-2 text-sm">
                     Koi product link nahi. Recommended Orders ke liye products link karo.
                   </div>
                 )}
@@ -1027,7 +1027,7 @@ export default function SupplierDetailPage() {
                     {linkedProducts.map((p) => (
                       <span
                         key={p.id}
-                        className="inline-flex items-center gap-2 bg-[#1a2234] border border-[#21293d] rounded-xl px-3 py-1.5 text-xs text-slate-300"
+                        className="inline-flex items-center gap-2 bg-panel-2 border border-app rounded-xl px-3 py-1.5 text-xs text-app-2"
                       >
                         <Link
                           href={`/inventory/${p.id}`}
@@ -1036,12 +1036,12 @@ export default function SupplierDetailPage() {
                           {p.name}
                         </Link>
                         {p.price != null && (
-                          <span className="text-slate-500">· {fmtCurrency(Number(p.price))}</span>
+                          <span className="text-muted">· {fmtCurrency(Number(p.price))}</span>
                         )}
                         <button
                           onClick={() => handleRemoveProductLink(p.id)}
                           disabled={linkBusy}
-                          className="p-0.5 rounded-md text-slate-500 hover:text-red-400 transition disabled:opacity-40"
+                          className="p-0.5 rounded-md text-muted hover:text-red-400 transition disabled:opacity-40"
                           title="Unlink"
                         >
                           <X size={13} />
@@ -1065,7 +1065,7 @@ export default function SupplierDetailPage() {
                     </div>
                     <button
                       onClick={() => setShowLinkPicker(false)}
-                      className="text-xs text-slate-500 hover:text-slate-300 transition py-2"
+                      className="text-xs text-muted hover:text-app-2 transition py-2"
                     >
                       Cancel
                     </button>
@@ -1080,7 +1080,7 @@ export default function SupplierDetailPage() {
                   </button>
                 )}
                 {!showLinkPicker && productOptions.length === 0 && linkedProducts.length > 0 && (
-                  <p className="mt-3 text-[10px] text-slate-600">
+                  <p className="mt-3 text-[10px] text-muted-2">
                     Sab active products is supplier se linked hain.
                   </p>
                 )}
@@ -1090,15 +1090,15 @@ export default function SupplierDetailPage() {
         </div>
 
         {/* Purchase Order History */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-[#21293d]">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-app">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-2">
               Purchase Order History
             </h3>
           </div>
 
           {purchaseOrders.length === 0 ? (
-            <div className="px-5 py-12 text-center text-slate-600 text-sm">
+            <div className="px-5 py-12 text-center text-muted-2 text-sm">
               No purchase orders found for this supplier.
             </div>
           ) : (
@@ -1106,8 +1106,8 @@ export default function SupplierDetailPage() {
               {!isMobile && (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-[#111520]">
-                      <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                    <thead className="bg-panel-2">
+                      <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                         <th className="text-left px-4 py-3"></th>
                         <th className="text-left px-4 py-3">PO Code</th>
                         <th className="text-left px-4 py-3">Date</th>
@@ -1133,9 +1133,9 @@ export default function SupplierDetailPage() {
                             >
                               <td className="px-4 py-3.5 w-8">
                                 {isExpanded ? (
-                                  <ChevronDown size={14} className="text-slate-500" />
+                                  <ChevronDown size={14} className="text-muted" />
                                 ) : (
-                                  <ChevronRight size={14} className="text-slate-500" />
+                                  <ChevronRight size={14} className="text-muted" />
                                 )}
                               </td>
                               <td className="px-4 py-3.5">
@@ -1147,23 +1147,23 @@ export default function SupplierDetailPage() {
                                   {po.po_code}
                                 </Link>
                               </td>
-                              <td className="px-4 py-3.5 text-slate-400 text-xs">
+                              <td className="px-4 py-3.5 text-muted text-xs">
                                 {fmtDate(po.date_created)}
                               </td>
                               <td className="px-4 py-3.5">
                                 {po.contact_person_id &&
                                 personNameMap[po.contact_person_id] ? (
-                                  <span className="inline-flex items-center gap-1 text-xs text-slate-300 font-bold">
+                                  <span className="inline-flex items-center gap-1 text-xs text-app-2 font-bold">
                                     {personNameMap[po.contact_person_id]}
                                   </span>
                                 ) : (
-                                  <span className="text-slate-700 text-xs">—</span>
+                                  <span className="text-app text-xs">—</span>
                                 )}
                               </td>
-                              <td className="px-4 py-3.5 text-center text-slate-400">
+                              <td className="px-4 py-3.5 text-center text-muted">
                                 {items.length}
                               </td>
-                              <td className="px-4 py-3.5 text-right font-bold text-slate-200">
+                              <td className="px-4 py-3.5 text-right font-bold text-app-2">
                                 {fmtCurrency(po.total_amount || 0)}
                               </td>
                               <td className="px-4 py-3.5 text-center">
@@ -1173,7 +1173,7 @@ export default function SupplierDetailPage() {
                                   {statusInfo.label}
                                 </span>
                               </td>
-                              <td className="px-4 py-3.5 text-slate-400 text-xs">
+                              <td className="px-4 py-3.5 text-muted text-xs">
                                 {fmtDate(po.received_date)}
                               </td>
                               <td className="px-4 py-3.5 text-center">
@@ -1189,21 +1189,21 @@ export default function SupplierDetailPage() {
 
                             {isExpanded && (
                               <tr>
-                                <td colSpan={9} className="px-4 py-4 bg-[#0d1117]/50">
+                                <td colSpan={9} className="px-4 py-4 bg-app/50">
                                   {po.notes && (
-                                    <div className="mb-3 px-3 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs text-slate-400">
-                                      <span className="font-bold text-slate-500">Notes:</span>{" "}
+                                    <div className="mb-3 px-3 py-2 bg-panel border border-app rounded-xl text-xs text-muted">
+                                      <span className="font-bold text-muted">Notes:</span>{" "}
                                       {po.notes}
                                     </div>
                                   )}
                                   {items.length === 0 ? (
-                                    <p className="text-xs text-slate-600 text-center py-2">
+                                    <p className="text-xs text-muted-2 text-center py-2">
                                       No items found for this PO.
                                     </p>
                                   ) : (
                                     <table className="w-full text-xs">
                                       <thead>
-                                        <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                                        <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                                           <th className="text-left px-3 py-2">Product Name</th>
                                           <th className="text-center px-3 py-2">Ordered Qty</th>
                                           <th className="text-right px-3 py-2">Unit Price</th>
@@ -1213,7 +1213,7 @@ export default function SupplierDetailPage() {
                                       <tbody className="divide-y divide-[#1a2234]">
                                         {items.map((item) => (
                                           <tr key={item.id} className="hover:bg-white/[0.02]">
-                                            <td className="px-3 py-2 text-slate-300">
+                                            <td className="px-3 py-2 text-app-2">
                                               <Link
                                                 href={`/inventory/${item.product_id}`}
                                                 onClick={(e) => e.stopPropagation()}
@@ -1223,13 +1223,13 @@ export default function SupplierDetailPage() {
                                                   `Product #${item.product_id}`}
                                               </Link>
                                             </td>
-                                            <td className="px-3 py-2 text-center text-slate-400">
+                                            <td className="px-3 py-2 text-center text-muted">
                                               {item.qty_ordered}
                                             </td>
-                                            <td className="px-3 py-2 text-right text-slate-400">
+                                            <td className="px-3 py-2 text-right text-muted">
                                               {fmtCurrency(item.unit_cost || 0)}
                                             </td>
-                                            <td className="px-3 py-2 text-center text-slate-400">
+                                            <td className="px-3 py-2 text-center text-muted">
                                               {item.qty_received ?? 0}
                                             </td>
                                           </tr>
@@ -1264,9 +1264,9 @@ export default function SupplierDetailPage() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               {isExpanded ? (
-                                <ChevronDown size={14} className="text-slate-500 flex-shrink-0" />
+                                <ChevronDown size={14} className="text-muted flex-shrink-0" />
                               ) : (
-                                <ChevronRight size={14} className="text-slate-500 flex-shrink-0" />
+                                <ChevronRight size={14} className="text-muted flex-shrink-0" />
                               )}
                               <Link
                                 href={`/inventory/purchase-orders/${po.id}`}
@@ -1276,16 +1276,16 @@ export default function SupplierDetailPage() {
                                 {po.po_code}
                               </Link>
                             </div>
-                            <div className="text-[11px] text-slate-500 mt-1">
+                            <div className="text-[11px] text-muted mt-1">
                               {fmtDate(po.date_created)}
                               {po.received_date && <> · Received {fmtDate(po.received_date)}</>}
                               {po.contact_person_id && personNameMap[po.contact_person_id] && (
                                 <> · via {personNameMap[po.contact_person_id]}</>
                               )}
                             </div>
-                            <div className="text-xs text-slate-400 mt-1">
+                            <div className="text-xs text-muted mt-1">
                               {items.length} item{items.length === 1 ? "" : "s"} ·{" "}
-                              <span className="font-bold text-slate-200">
+                              <span className="font-bold text-app-2">
                                 {fmtCurrency(po.total_amount || 0)}
                               </span>
                             </div>
@@ -1298,14 +1298,14 @@ export default function SupplierDetailPage() {
                         </button>
 
                         {isExpanded && (
-                          <div className="px-4 pb-4 bg-[#0d1117]/40">
+                          <div className="px-4 pb-4 bg-app/40">
                             {po.notes && (
-                              <div className="mb-3 px-3 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs text-slate-400">
-                                <span className="font-bold text-slate-500">Notes:</span> {po.notes}
+                              <div className="mb-3 px-3 py-2 bg-panel border border-app rounded-xl text-xs text-muted">
+                                <span className="font-bold text-muted">Notes:</span> {po.notes}
                               </div>
                             )}
                             {items.length === 0 ? (
-                              <p className="text-xs text-slate-600 text-center py-2">
+                              <p className="text-xs text-muted-2 text-center py-2">
                                 No items found for this PO.
                               </p>
                             ) : (
@@ -1313,7 +1313,7 @@ export default function SupplierDetailPage() {
                                 {items.map((item) => (
                                   <div
                                     key={item.id}
-                                    className="px-3 py-2.5 bg-[#161b27] border border-[#21293d] rounded-xl"
+                                    className="px-3 py-2.5 bg-panel border border-app rounded-xl"
                                   >
                                     <div className="flex items-start justify-between gap-2">
                                       <Link
@@ -1323,17 +1323,17 @@ export default function SupplierDetailPage() {
                                       >
                                         {item.product_list?.name || `Product #${item.product_id}`}
                                       </Link>
-                                      <span className="text-xs font-black text-slate-200 flex-shrink-0">
+                                      <span className="text-xs font-black text-app-2 flex-shrink-0">
                                         {fmtCurrency(item.unit_cost || 0)}
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
+                                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted">
                                       <span>
-                                        Ordered: <b className="text-slate-200">{item.qty_ordered}</b>
+                                        Ordered: <b className="text-app-2">{item.qty_ordered}</b>
                                       </span>
                                       <span>
                                         Received:{" "}
-                                        <b className="text-slate-200">{item.qty_received ?? 0}</b>
+                                        <b className="text-app-2">{item.qty_received ?? 0}</b>
                                       </span>
                                     </div>
                                   </div>
@@ -1352,11 +1352,11 @@ export default function SupplierDetailPage() {
         </div>
 
         {/* Payments / Dues */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-2">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-app flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2.5">
               <Landmark size={15} className="text-emerald-400" />
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                 Payments & Outstanding
               </h3>
               <span
@@ -1380,7 +1380,7 @@ export default function SupplierDetailPage() {
           </div>
 
           {payments.length === 0 ? (
-            <div className="px-5 py-8 text-center text-slate-600 text-sm">
+            <div className="px-5 py-8 text-center text-muted-2 text-sm">
               Abhi tak koi payment record nahi hai. Sabse pehla payment add karein.
             </div>
           ) : (
@@ -1388,8 +1388,8 @@ export default function SupplierDetailPage() {
               {!isMobile && (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-[#111520]">
-                      <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                    <thead className="bg-panel-2">
+                      <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                         <th className="text-left px-4 py-3">Date</th>
                         <th className="text-right px-4 py-3">Amount</th>
                         <th className="text-center px-4 py-3">Mode</th>
@@ -1402,29 +1402,29 @@ export default function SupplierDetailPage() {
                     <tbody className="divide-y divide-[#1a2234]">
                       {payments.map((p) => (
                         <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="px-4 py-3 text-slate-400 text-xs">
+                          <td className="px-4 py-3 text-muted text-xs">
                             {fmtDate(p.payment_date)}
                           </td>
                           <td className="px-4 py-3 text-right font-bold text-emerald-400">
                             − {fmtCurrency(p.amount)}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-slate-300 border border-[#21293d]">
+                            <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-app-2 border border-app">
                               {PAYMENT_MODES.find((m) => m.value === p.payment_mode)?.label ||
                                 p.payment_mode}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-slate-400 text-xs">{p.reference || "—"}</td>
-                          <td className="px-4 py-3 text-slate-500 text-xs max-w-[220px] truncate">
+                          <td className="px-4 py-3 text-muted text-xs">{p.reference || "—"}</td>
+                          <td className="px-4 py-3 text-muted text-xs max-w-[220px] truncate">
                             {p.notes || "—"}
                           </td>
                           <td className="px-4 py-3">
                             {p.contact_person_id && personNameMap[p.contact_person_id] ? (
-                              <span className="text-xs font-bold text-slate-300">
+                              <span className="text-xs font-bold text-app-2">
                                 {personNameMap[p.contact_person_id]}
                               </span>
                             ) : (
-                              <span className="text-slate-700 text-xs">—</span>
+                              <span className="text-app text-xs">—</span>
                             )}
                           </td>
                           <td className="px-4 py-3 text-center">
@@ -1470,25 +1470,25 @@ export default function SupplierDetailPage() {
                   {payments.map((p) => (
                     <div key={p.id} className="px-4 py-3.5 flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="text-xs font-bold text-slate-200">
+                        <div className="text-xs font-bold text-app-2">
                           {fmtDate(p.payment_date)}
                         </div>
                         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                          <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-300 border border-[#21293d]">
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-app-2 border border-app">
                             {PAYMENT_MODES.find((m) => m.value === p.payment_mode)?.label ||
                               p.payment_mode}
                           </span>
                           {p.reference && (
-                            <span className="text-[11px] text-slate-500 font-mono">
+                            <span className="text-[11px] text-muted font-mono">
                               {p.reference}
                             </span>
                           )}
                         </div>
                         {p.notes && (
-                          <div className="text-[11px] text-slate-500 mt-1 truncate">{p.notes}</div>
+                          <div className="text-[11px] text-muted mt-1 truncate">{p.notes}</div>
                         )}
                         {p.contact_person_id && personNameMap[p.contact_person_id] && (
-                          <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wide">
+                          <div className="text-[10px] font-bold text-muted mt-1 uppercase tracking-wide">
                             via {personNameMap[p.contact_person_id]}
                           </div>
                         )}
@@ -1539,15 +1539,15 @@ export default function SupplierDetailPage() {
       {/* Add Payment Modal */}
       {showPayModal && (
         <div className="fixed inset-0 z-[200] bg-black/70 flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-[#111520] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl">
-            <div className="px-5 py-4 border-b border-[#21293d] flex items-center justify-between">
+          <div className="w-full max-w-md bg-panel-2 border border-app rounded-2xl overflow-hidden shadow-2xl">
+            <div className="px-5 py-4 border-b border-app flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Wallet size={16} className="text-emerald-400" />
-                <h3 className="text-sm font-black text-slate-200">Add Payment</h3>
+                <h3 className="text-sm font-black text-app-2">Add Payment</h3>
               </div>
               <button
                 onClick={() => setShowPayModal(false)}
-                className="p-1.5 rounded-lg hover:bg-white/5 text-slate-500 transition"
+                className="p-1.5 rounded-lg hover:bg-white/5 text-muted transition"
               >
                 <X size={16} />
               </button>
@@ -1577,7 +1577,7 @@ export default function SupplierDetailPage() {
                   <Wallet size={16} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-muted">
                     {outstanding > 0 ? "Outstanding (Due)" : "No Due / Cleared"}
                   </p>
                   <p
@@ -1599,7 +1599,7 @@ export default function SupplierDetailPage() {
                 )}
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1 block">
                   Amount (₹)
                 </label>
                 <input
@@ -1609,11 +1609,11 @@ export default function SupplierDetailPage() {
                   value={payAmount}
                   onChange={(e) => setPayAmount(e.target.value)}
                   placeholder="e.g. 2500.00"
-                  className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-app outline-none focus:border-emerald-500"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1 block">
                   Payment Mode
                 </label>
                 <div className="flex flex-wrap gap-1.5">
@@ -1625,7 +1625,7 @@ export default function SupplierDetailPage() {
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
                         payMode === m.value
                           ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                          : "bg-[#0d1117] text-slate-500 border-[#21293d] hover:text-slate-300"
+                          : "bg-app text-muted border-app hover:text-app-2"
                       }`}
                     >
                       {m.label}
@@ -1635,36 +1635,36 @@ export default function SupplierDetailPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1 block">
                     Date
                   </label>
                   <input
                     type="date"
                     value={payDate}
                     onChange={(e) => setPayDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-emerald-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1 block">
                     Reference
                   </label>
                   <input
                     value={payRef}
                     onChange={(e) => setPayRef(e.target.value)}
                     placeholder="UPI ref / cheque no"
-                    className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-app outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
-                  Contact Person <span className="text-slate-700">(optional)</span>
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1 block">
+                  Contact Person <span className="text-app">(optional)</span>
                 </label>
                 <select
                   value={payPerson}
                   onChange={(e) => setPayPerson(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-emerald-500 [color-scheme:dark]"
+                  className="w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-emerald-500 [color-scheme:dark]"
                 >
                   <option value="">— Firm / koi bhi —</option>
                   {persons
@@ -1678,19 +1678,19 @@ export default function SupplierDetailPage() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1 block">
                   Notes
                 </label>
                 <input
                   value={payNotes}
                   onChange={(e) => setPayNotes(e.target.value)}
                   placeholder="Kuch bhi memo (optional)"
-                  className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-app outline-none focus:border-emerald-500"
                 />
               </div>
               {/* Expense ledger toggle */}
               <div
-                className="flex items-start gap-2.5 rounded-xl border border-[#21293d] bg-[#0d1117] px-3 py-2.5 cursor-pointer select-none"
+                className="flex items-start gap-2.5 rounded-xl border border-app bg-app px-3 py-2.5 cursor-pointer select-none"
                 onClick={() => setMakeExpense(!makeExpense)}
               >
                 <input
@@ -1700,10 +1700,10 @@ export default function SupplierDetailPage() {
                   className="mt-0.5 accent-emerald-500 cursor-pointer"
                 />
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-200 leading-snug">
+                  <p className="text-xs font-bold text-app-2 leading-snug">
                     Expense entry bhi banao
                   </p>
-                  <p className="text-[10px] text-slate-500 leading-snug mt-0.5">
+                  <p className="text-[10px] text-muted leading-snug mt-0.5">
                     Expenses ledger me &quot;Spare Parts Purchase&quot; ke roop me yah payment dikhegi.
                   </p>
                 </div>
@@ -1829,8 +1829,8 @@ function SupplierPaymentModal({
   const personName = persons.find((p) => p.id === payment.contact_person_id)?.name || "—";
 
   const inputCls = readOnly
-    ? "w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-600 outline-none"
-    : "w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-emerald-500";
+    ? "w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-muted-2 outline-none"
+    : "w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-emerald-500";
 
   const handleSave = async () => {
     if (!amt || amt <= 0) {
@@ -1867,17 +1867,17 @@ function SupplierPaymentModal({
 
   return (
     <div className="fixed inset-0 z-[201] bg-black/70 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-[#111520] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-        <div className="px-5 py-4 border-b border-[#21293d] flex items-center justify-between flex-shrink-0">
+      <div className="w-full max-w-md bg-panel-2 border border-app rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="px-5 py-4 border-b border-app flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <Wallet size={16} className="text-emerald-400" />
-            <h3 className="text-sm font-black text-slate-200">
+            <h3 className="text-sm font-black text-app-2">
               {readOnly ? "Payment Details" : `Edit Payment #${payment.id}`}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/5 text-slate-500 transition"
+            className="p-1.5 rounded-lg hover:bg-white/5 text-muted transition"
           >
             <X size={16} />
           </button>
@@ -1891,12 +1891,12 @@ function SupplierPaymentModal({
           )}
 
           {readOnly ? (
-            <div className="flex items-start gap-3 rounded-xl border border-[#21293d] bg-[#0d1117] p-3.5">
+            <div className="flex items-start gap-3 rounded-xl border border-app bg-app p-3.5">
               <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
                 <Wallet size={15} className="text-emerald-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                <p className="text-[10px] font-black uppercase tracking-wider text-muted">
                   Paid Amount
                 </p>
                 <p className="text-xl font-black text-emerald-400 mt-0.5">
@@ -1904,10 +1904,10 @@ function SupplierPaymentModal({
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                <p className="text-[10px] font-black uppercase tracking-wider text-muted">
                   Mode
                 </p>
-                <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-slate-300 border border-[#21293d]">
+                <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-app-2 border border-app">
                   {PAYMENT_MODES.find((m) => m.value === payment.payment_mode)?.label ||
                     payment.payment_mode}
                 </span>
@@ -1915,7 +1915,7 @@ function SupplierPaymentModal({
             </div>
           ) : (
             <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1 block">
                 Amount (₹)
               </label>
               <input
@@ -1937,7 +1937,7 @@ function SupplierPaymentModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1 block">
                 Date
               </label>
               <input
@@ -1949,7 +1949,7 @@ function SupplierPaymentModal({
               />
             </div>
             <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1 block">
                 Reference
               </label>
               <input
@@ -1963,11 +1963,11 @@ function SupplierPaymentModal({
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+            <label className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1 block">
               Payment Mode
             </label>
             {readOnly ? (
-              <p className="text-sm font-bold text-slate-300">
+              <p className="text-sm font-bold text-app-2">
                 {PAYMENT_MODES.find((m) => m.value === payment.payment_mode)?.label ||
                   payment.payment_mode}
               </p>
@@ -1981,7 +1981,7 @@ function SupplierPaymentModal({
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
                       mode === m.value
                         ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                        : "bg-[#0d1117] text-slate-500 border-[#21293d] hover:text-slate-300"
+                        : "bg-app text-muted border-app hover:text-app-2"
                     }`}
                   >
                     {m.label}
@@ -1992,16 +1992,16 @@ function SupplierPaymentModal({
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
-              Contact Person <span className="text-slate-700">(optional)</span>
+            <label className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1 block">
+              Contact Person <span className="text-app">(optional)</span>
             </label>
             {readOnly ? (
-              <p className="text-sm font-bold text-slate-300">{personName}</p>
+              <p className="text-sm font-bold text-app-2">{personName}</p>
             ) : (
               <select
                 value={person}
                 onChange={(e) => setPerson(e.target.value)}
-                className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-emerald-500 [color-scheme:dark]"
+                className="w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-emerald-500 [color-scheme:dark]"
               >
                 <option value="">— Firm / koi bhi —</option>
                 {persons
@@ -2017,7 +2017,7 @@ function SupplierPaymentModal({
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1 block">
+            <label className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-1 block">
               Notes
             </label>
             <input
@@ -2034,7 +2034,7 @@ function SupplierPaymentModal({
             className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 ${
               expenseStatus === "exists" || expenseStatus === "created"
                 ? "border-emerald-500/25 bg-emerald-500/[0.04]"
-                : "border-[#21293d] bg-[#0d1117]"
+                : "border-app bg-app"
             }`}
           >
             <input
@@ -2056,11 +2056,11 @@ function SupplierPaymentModal({
               className="mt-0.5 accent-emerald-500 cursor-pointer disabled:cursor-not-allowed"
             />
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-slate-200 leading-snug">
+              <p className="text-xs font-bold text-app-2 leading-snug">
                 Expenses me add karein
               </p>
               {expenseStatus === "loading" ? (
-                <p className="text-[10px] text-slate-500 leading-snug mt-0.5 flex items-center gap-1">
+                <p className="text-[10px] text-muted leading-snug mt-0.5 flex items-center gap-1">
                   <Loader2 size={9} className="animate-spin" /> Checking...
                 </p>
               ) : expenseStatus === "exists" ? (
@@ -2072,11 +2072,11 @@ function SupplierPaymentModal({
                   Expense entry ban gayi — /expenses me dikhegi.
                 </p>
               ) : expenseStatus === "creating" ? (
-                <p className="text-[10px] text-slate-400 leading-snug mt-0.5 flex items-center gap-1">
+                <p className="text-[10px] text-muted leading-snug mt-0.5 flex items-center gap-1">
                   <Loader2 size={9} className="animate-spin" /> Adding...
                 </p>
               ) : (
-                <p className="text-[10px] text-slate-500 leading-snug mt-0.5">
+                <p className="text-[10px] text-muted leading-snug mt-0.5">
                   Expenses me add karne ke liye select karo.
                 </p>
               )}
@@ -2085,7 +2085,7 @@ function SupplierPaymentModal({
         </div>
 
         {/* Sticky footer — hamesha visible, Save/Edit hamesha screen ke andar */}
-        <div className="px-5 py-3.5 border-t border-[#21293d] bg-[#111520] flex-shrink-0">
+        <div className="px-5 py-3.5 border-t border-app bg-panel-2 flex-shrink-0">
           {readOnly ? (
             <div className="flex items-center gap-2">
               <button

@@ -683,7 +683,7 @@ ${el.innerHTML}
                         colorScheme: "light dark",
                       }}
                     />
-                    <span className="text-slate-500" style={{ fontWeight: 700 }}>
+                    <span className="text-muted" style={{ fontWeight: 700 }}>
                       to
                     </span>
                     <input
@@ -767,7 +767,7 @@ ${el.innerHTML}
                     })}
                   </div>
                   {localStatus.length > 0 && (
-                    <p className="text-slate-500" style={{ fontSize: 10, marginTop: 6 }}>
+                    <p className="text-muted" style={{ fontSize: 10, marginTop: 6 }}>
                       Leave empty to show all types
                     </p>
                   )}
@@ -846,11 +846,11 @@ ${el.innerHTML}
             >
               {firmInfo.name}
             </div>
-            <div className="text-slate-500" style={{ fontSize: 11, marginTop: 2 }}>
+            <div className="text-muted" style={{ fontSize: 11, marginTop: 2 }}>
               {firmInfo.address}
             </div>
             {firmInfo.contact && (
-              <div className="text-slate-500" style={{ fontSize: 11 }}>
+              <div className="text-muted" style={{ fontSize: 11 }}>
                 📞 {firmInfo.contact}
               </div>
             )}
@@ -862,11 +862,11 @@ ${el.innerHTML}
             >
               STATEMENT
             </div>
-            <div className="text-slate-500" style={{ fontSize: 11, marginTop: 2 }}>
+            <div className="text-muted" style={{ fontSize: 11, marginTop: 2 }}>
               Generated: {fmtDate(new Date().toISOString())}
             </div>
             {isFiltered && (
-              <div className="text-slate-500" style={{ fontSize: 10, marginTop: 2 }}>
+              <div className="text-muted" style={{ fontSize: 10, marginTop: 2 }}>
                 Period: {fromDate ? fmtDateShort(fromDate + "T00:00") : "All"} —{" "}
                 {toDate ? fmtDateShort(toDate + "T00:00") : "All"}
                 {activeStatuses.length > 0 && (
@@ -895,7 +895,7 @@ ${el.innerHTML}
         >
           <div>
             <div
-              className="text-slate-500"
+              className="text-muted"
               style={{
                 fontSize: 10,
                 fontWeight: 600,
@@ -912,12 +912,12 @@ ${el.innerHTML}
               {clientName}
             </div>
             {client?.contact && (
-              <div className="text-slate-500" style={{ fontSize: 11, marginTop: 2 }}>
+              <div className="text-muted" style={{ fontSize: 11, marginTop: 2 }}>
                 📞 {client.contact}
               </div>
             )}
             {client?.address && (
-              <div className="text-slate-500" style={{ fontSize: 11, marginTop: 1 }}>
+              <div className="text-muted" style={{ fontSize: 11, marginTop: 1 }}>
                 📍 {client.address}
               </div>
             )}
@@ -1002,14 +1002,14 @@ ${el.innerHTML}
                 {
                   label: "Brought Forward",
                   val: rows.find((r) => r.isBroughtFwd)?.balance ?? 0,
-                  className: "text-slate-400",
+                  className: "text-muted",
                 },
                 { label: "Period Debits", val: periodDebit, className: "text-red-400" },
                 { label: "Period Credits", val: periodCredit, className: "text-emerald-400" },
                 { label: "Period Discount", val: periodDiscount, className: "text-blue-400" },
               ].map((item) => (
                 <div key={item.label}>
-                  <div className="text-slate-500" style={{ fontSize: 9, fontWeight: 600 }}>
+                  <div className="text-muted" style={{ fontSize: 9, fontWeight: 600 }}>
                     {item.label}
                   </div>
                   <div className={item.className} style={{ fontSize: 12, fontWeight: 700 }}>
@@ -1046,7 +1046,7 @@ ${el.innerHTML}
               { label: "Total Discount Given", val: totals.discount },
             ].map((item) => (
               <div key={item.label} className="theme-heading" style={{ fontSize: 10 }}>
-                <span className="text-slate-500">{item.label}:</span>{" "}
+                <span className="text-muted">{item.label}:</span>{" "}
                 <strong>{inr(item.val)}</strong>
               </div>
             ))}
@@ -1091,7 +1091,7 @@ ${el.innerHTML}
                 <tr>
                   <td
                     colSpan={9}
-                    className="text-slate-500"
+                    className="text-muted"
                     style={{ padding: 24, textAlign: "center" }}
                   >
                     <AlertTriangle
@@ -1124,7 +1124,7 @@ ${el.innerHTML}
                       }}
                     >
                       <td
-                        className="text-slate-500"
+                        className="text-muted"
                         style={{
                           padding: "6px 5px",
                           textAlign: "center",
@@ -1150,7 +1150,7 @@ ${el.innerHTML}
                         {r.desc}
                       </td>
                       <td
-                        className="text-slate-500"
+                        className="text-muted"
                         style={{
                           padding: "6px 5px",
                           textAlign: "center",
@@ -1200,7 +1200,7 @@ ${el.innerHTML}
                         )}
                       </td>
                       <td
-                        className="text-slate-400"
+                        className="text-muted"
                         style={{
                           padding: "6px 5px",
                           fontStyle: "italic",

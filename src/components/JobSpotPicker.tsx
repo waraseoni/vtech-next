@@ -134,7 +134,7 @@ export default function JobSpotPicker({ value, onSelect }: Props) {
         type="button"
         onClick={() => setNewOpen(true)}
         title="Naya spot banao"
-        className="flex-shrink-0 w-10 self-stretch rounded-lg border border-[#21293d] bg-[#0d1117] hover:border-blue-500 flex items-center justify-center transition-colors"
+        className="flex-shrink-0 w-10 self-stretch rounded-lg border border-app bg-app hover:border-blue-500 flex items-center justify-center transition-colors"
       >
         <Plus size={15} className="text-blue-400" />
       </button>
@@ -145,14 +145,14 @@ export default function JobSpotPicker({ value, onSelect }: Props) {
           onClick={() => !saving && setNewOpen(false)}
         >
           <div
-            className="w-full max-w-xs bg-[#161b27] border border-[#21293d] rounded-2xl p-5 shadow-2xl"
+            className="w-full max-w-xs bg-panel border border-app rounded-2xl p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
               <p className="font-black text-white text-sm">Naya Spot</p>
               <button
                 onClick={() => !saving && setNewOpen(false)}
-                className="text-slate-500 hover:text-white"
+                className="text-muted hover:text-white"
               >
                 <X size={16} />
               </button>
@@ -165,7 +165,7 @@ export default function JobSpotPicker({ value, onSelect }: Props) {
                 if (e.key === "Enter" && !saving) createSpot();
               }}
               placeholder="e.g. Counter 2, Shelf C1"
-              className="w-full bg-[#0d1117] border border-[#21293d] rounded-lg px-3 py-2.5 text-sm text-white focus:border-blue-500 outline-none"
+              className="w-full bg-app border border-app rounded-lg px-3 py-2.5 text-sm text-white focus:border-blue-500 outline-none"
             />
             <button
               onClick={createSpot}

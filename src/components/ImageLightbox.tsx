@@ -45,7 +45,7 @@ export function ImageLightbox() {
     >
       <button
         onClick={() => setState(null)}
-        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 text-slate-800 dark:bg-white/10 dark:hover:bg-white/25 dark:text-white flex items-center justify-center z-20 transition"
+        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 text-app dark:bg-white/10 dark:hover:bg-white/25 dark:text-white flex items-center justify-center z-20 transition"
         title="Close (Esc)"
       >
         <X size={20} />
@@ -58,7 +58,7 @@ export function ImageLightbox() {
           href={state.src}
           target="_blank"
           rel="noreferrer"
-          className="w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 text-slate-800 dark:bg-white/10 dark:hover:bg-white/25 dark:text-white flex items-center justify-center transition"
+          className="w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 text-app dark:bg-white/10 dark:hover:bg-white/25 dark:text-white flex items-center justify-center transition"
           title="Original open karein"
         >
           <ExternalLink size={18} />
@@ -66,7 +66,7 @@ export function ImageLightbox() {
         <a
           href={state.src}
           download
-          className="w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 text-slate-800 dark:bg-white/10 dark:hover:bg-white/25 dark:text-white flex items-center justify-center transition"
+          className="w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 text-app dark:bg-white/10 dark:hover:bg-white/25 dark:text-white flex items-center justify-center transition"
           title="Download"
         >
           <Download size={18} />
@@ -84,7 +84,7 @@ export function ImageLightbox() {
           className="max-w-[92vw] max-h-[88vh] w-auto h-auto object-contain rounded-xl shadow-2xl border border-black/10 dark:border-white/10 bg-white"
         />
       </div>
-      <p className="absolute bottom-5 left-0 right-0 text-center text-slate-500 dark:text-white/60 text-xs font-bold pointer-events-none select-none">
+      <p className="absolute bottom-5 left-0 right-0 text-center text-muted dark:text-white/60 text-xs font-bold pointer-events-none select-none">
         {state.alt} · backdrop par click karke ya Esc se band karein
       </p>
     </div>

@@ -25,10 +25,10 @@ export interface StatusStyle {
 export const JOB_STATUS: Record<number, StatusStyle> = {
   0: {
     label: "Pending",
-    cls: "bg-slate-500/10 text-slate-400 border-slate-500/20",
-    color: "text-slate-400",
-    bg: "bg-slate-500/10 border border-slate-500/20",
-    bar: "bg-slate-500",
+    cls: "bg-muted/10 text-muted border-muted/20",
+    color: "text-muted",
+    bg: "bg-muted/10 border border-muted/20",
+    bar: "bg-muted",
   },
   1: {
     label: "In Progress",
@@ -112,10 +112,10 @@ export const PO_STATUS: Record<number, StatusStyle> = {
   },
   3: {
     label: "Cancelled",
-    cls: "bg-slate-500/10 text-slate-400 border-slate-500/20",
-    color: "text-slate-400",
-    bg: "bg-slate-500/10 border border-slate-500/20",
-    bar: "bg-slate-500",
+    cls: "bg-muted/10 text-muted border-muted/20",
+    color: "text-muted",
+    bg: "bg-muted/10 border border-muted/20",
+    bar: "bg-muted",
   },
 };
 
@@ -129,9 +129,9 @@ export const ENTITY_STATUS = {
   },
   inactive: {
     label: "Inactive",
-    cls: "bg-slate-500/10 text-slate-400 border-slate-500/20",
-    color: "text-slate-400",
-    bg: "bg-slate-500/10 border border-slate-500/20",
+    cls: "bg-muted/10 text-muted border-muted/20",
+    color: "text-muted",
+    bg: "bg-muted/10 border border-muted/20",
   },
 };
 
@@ -175,7 +175,7 @@ export const BADGE_COLORS: Record<string, { bg: string; text: string; border: st
   info: { bg: "bg-cyan-500", text: "text-white", border: "border-cyan-600" },
   success: { bg: "bg-green-600", text: "text-white", border: "border-green-700" },
   danger: { bg: "bg-red-600", text: "text-white", border: "border-red-700" },
-  warning: { bg: "bg-yellow-500", text: "text-gray-900", border: "border-yellow-600" },
+  warning: { bg: "bg-yellow-500", text: "text-app", border: "border-yellow-600" },
 };
 
 /** Status → PHP-style badge color name (view page legacy) */

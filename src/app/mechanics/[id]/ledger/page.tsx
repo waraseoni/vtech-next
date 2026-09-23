@@ -274,23 +274,23 @@ export default function MechanicLedgerPage() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+      <div className="bg-panel border border-app rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <Link
             href={`/mechanics/${id}`}
-            className="p-2 rounded-xl bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition no-underline"
+            className="p-2 rounded-xl bg-app border border-app hover:bg-panel-2 text-muted transition no-underline"
           >
             <ArrowLeft size={16} />
           </Link>
           <div>
             <h1 className="text-lg font-black text-white">Daily Ledger</h1>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">{name}</p>
+            <p className="text-[10px] text-muted uppercase tracking-wider">{name}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={exportExcel}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition"
+            className="flex items-center gap-1.5 px-3 py-2 bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted hover:text-white rounded-xl text-xs font-bold transition"
           >
             <Download size={13} /> Excel
           </button>
@@ -301,7 +301,7 @@ export default function MechanicLedgerPage() {
                 "_blank"
               )
             }
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition"
+            className="flex items-center gap-1.5 px-3 py-2 bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted hover:text-white rounded-xl text-xs font-bold transition"
           >
             <Printer size={13} /> Print
           </button>
@@ -309,11 +309,11 @@ export default function MechanicLedgerPage() {
       </div>
 
       {/* Date Filter */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
+      <div className="bg-panel border border-app rounded-2xl px-5 py-4">
         <div className="flex items-center gap-3 flex-wrap justify-center">
           <button
             onClick={() => shiftMonth(-1)}
-            className="p-2 rounded-xl bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition"
+            className="p-2 rounded-xl bg-app border border-app hover:bg-panel-2 text-muted transition"
           >
             <ChevronLeft size={16} />
           </button>
@@ -322,19 +322,19 @@ export default function MechanicLedgerPage() {
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              className="px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500"
+              className="px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-blue-500"
             />
-            <span className="text-slate-600">—</span>
+            <span className="text-muted-2">—</span>
             <input
               type="date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
-              className="px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 outline-none focus:border-blue-500"
+              className="px-3 py-2 bg-app border border-app rounded-xl text-sm text-app-2 outline-none focus:border-blue-500"
             />
           </div>
           <button
             onClick={() => shiftMonth(1)}
-            className="p-2 rounded-xl bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition"
+            className="p-2 rounded-xl bg-app border border-app hover:bg-panel-2 text-muted transition"
           >
             <ChevronRight size={16} />
           </button>
@@ -343,26 +343,26 @@ export default function MechanicLedgerPage() {
 
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
-          <p className="text-[10px] font-black uppercase text-slate-500">Opening Balance</p>
+        <div className="bg-panel border border-app rounded-2xl p-4">
+          <p className="text-[10px] font-black uppercase text-muted">Opening Balance</p>
           <p
             className={`text-lg font-black ${openingBalance >= 0 ? "text-amber-400" : "text-red-400"}`}
           >
             {inr(openingBalance)}
           </p>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
-          <p className="text-[10px] font-black uppercase text-slate-500">Total Earned</p>
+        <div className="bg-panel border border-app rounded-2xl p-4">
+          <p className="text-[10px] font-black uppercase text-muted">Total Earned</p>
           <p className="text-lg font-black text-emerald-400">
             {inr(totals.earned + totals.commission)}
           </p>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
-          <p className="text-[10px] font-black uppercase text-slate-500">Total Advance</p>
+        <div className="bg-panel border border-app rounded-2xl p-4">
+          <p className="text-[10px] font-black uppercase text-muted">Total Advance</p>
           <p className="text-lg font-black text-red-400">{inr(totals.advance)}</p>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
-          <p className="text-[10px] font-black uppercase text-slate-500">Closing Balance</p>
+        <div className="bg-panel border border-app rounded-2xl p-4">
+          <p className="text-[10px] font-black uppercase text-muted">Closing Balance</p>
           <p
             className={`text-lg font-black ${closingBalance >= 0 ? "text-emerald-400" : "text-red-400"}`}
           >
@@ -372,21 +372,21 @@ export default function MechanicLedgerPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-[#21293d]">
-          <h2 className="text-sm font-bold text-slate-300 text-center">{monthDisplay}</h2>
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-app">
+          <h2 className="text-sm font-bold text-app-2 text-center">{monthDisplay}</h2>
         </div>
 
         {loading ? (
           <div className="px-5 py-12 text-center">
-            <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-600 text-xs font-black uppercase">Loading...</p>
+            <Loader2 size={24} className="animate-spin text-muted-2 mx-auto mb-2" />
+            <p className="text-muted-2 text-xs font-black uppercase">Loading...</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-[#111520]">
-                <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+              <thead className="bg-panel-2">
+                <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                   <th className="text-left px-4 py-3">Date</th>
                   <th className="text-center px-4 py-3">Status</th>
                   <th className="text-right px-4 py-3">Earned Wage</th>
@@ -406,7 +406,7 @@ export default function MechanicLedgerPage() {
                 </tr>
                 {entries.map((entry, i) => (
                   <tr key={i} className="hover:bg-white/[0.02]">
-                    <td className="px-4 py-3 text-slate-300">{entry.date}</td>
+                    <td className="px-4 py-3 text-app-2">{entry.date}</td>
                     <td className="px-4 py-3 text-center">
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${entry.statusClass}`}
@@ -422,29 +422,29 @@ export default function MechanicLedgerPage() {
                       </span>
                     </td>
                     <td
-                      className={`px-4 py-3 text-right ${entry.earned > 0 ? "text-emerald-400" : "text-slate-600"}`}
+                      className={`px-4 py-3 text-right ${entry.earned > 0 ? "text-emerald-400" : "text-muted-2"}`}
                     >
                       {inr(entry.earned)}
                     </td>
                     <td
-                      className={`px-4 py-3 text-right ${entry.commission > 0 ? "text-blue-400" : "text-slate-600"}`}
+                      className={`px-4 py-3 text-right ${entry.commission > 0 ? "text-blue-400" : "text-muted-2"}`}
                     >
                       {inr(entry.commission)}
                     </td>
                     <td
-                      className={`px-4 py-3 text-right ${entry.advance > 0 ? "text-red-400" : "text-slate-600"}`}
+                      className={`px-4 py-3 text-right ${entry.advance > 0 ? "text-red-400" : "text-muted-2"}`}
                     >
                       {inr(entry.advance)}
                     </td>
                     <td
-                      className={`px-4 py-3 text-right font-bold ${entry.running >= 0 ? "text-slate-200" : "text-red-400"}`}
+                      className={`px-4 py-3 text-right font-bold ${entry.running >= 0 ? "text-app-2" : "text-red-400"}`}
                     >
                       {inr(entry.running)}
                     </td>
                   </tr>
                 ))}
-                <tr className="bg-[#111520]">
-                  <td colSpan={5} className="px-4 py-3 text-right font-black text-slate-400">
+                <tr className="bg-panel-2">
+                  <td colSpan={5} className="px-4 py-3 text-right font-black text-muted">
                     Closing Balance:
                   </td>
                   <td

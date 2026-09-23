@@ -128,7 +128,7 @@ export default function PortalGate({
 
   if (state === "checking") {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center text-slate-500 gap-2 text-xs font-bold uppercase tracking-widest">
+      <div className="min-h-[50vh] flex items-center justify-center text-muted gap-2 text-xs font-bold uppercase tracking-widest">
         <Loader2 size={16} className="animate-spin" /> Checking...
       </div>
     );
@@ -137,7 +137,7 @@ export default function PortalGate({
   if (state === "locked") {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
-        <div className="w-full max-w-md bg-[#111520] border border-[#21293d] rounded-3xl p-8 shadow-2xl shadow-black/50">
+        <div className="w-full max-w-md bg-panel-2 border border-app rounded-3xl p-8 shadow-2xl shadow-black/50">
           <div className="w-14 h-14 bg-indigo-500/15 text-indigo-400 rounded-2xl flex items-center justify-center mb-5">
             <ShieldCheck size={26} />
           </div>
@@ -145,7 +145,7 @@ export default function PortalGate({
             {badge}
           </span>
           <h1 className="text-xl font-black text-white tracking-tight mt-1">{title}</h1>
-          <p className="text-[13px] text-slate-400 mt-1.5 leading-relaxed">{description}</p>
+          <p className="text-[13px] text-muted mt-1.5 leading-relaxed">{description}</p>
 
           <form onSubmit={submit} className="mt-6 space-y-3">
             <input
@@ -154,7 +154,7 @@ export default function PortalGate({
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Portal password"
               autoFocus
-              className="w-full px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all"
+              className="w-full px-4 py-3 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-muted-2 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all"
             />
             {error && (
               <p className="text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
@@ -178,14 +178,14 @@ export default function PortalGate({
             </button>
           </form>
 
-          <div className="mt-6 pt-5 border-t border-[#1a2234]">
+          <div className="mt-6 pt-5 border-t border-app-2">
             <Link
               href="/"
-              className="text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors"
+              className="text-xs font-bold text-muted hover:text-app-2 transition-colors"
             >
               Dashboard par wapas
             </Link>
-            <span className="text-[9px] block mt-2 text-slate-700 font-black uppercase tracking-widest">
+            <span className="text-[9px] block mt-2 text-app font-black uppercase tracking-widest">
               Double password: login + portal password
             </span>
           </div>
@@ -203,7 +203,7 @@ export default function PortalGate({
           void logout();
         }}
         title="Portal se log out (15 min inactivity par auto-lock)"
-        className="fixed bottom-5 right-5 z-[100] flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#161b27] border border-[#21293d] hover:border-red-500/40 text-slate-400 hover:text-red-400 text-xs font-black tracking-wide shadow-lg shadow-black/40 transition-all"
+        className="fixed bottom-5 right-5 z-[100] flex items-center gap-2 px-4 py-2.5 rounded-xl bg-panel border border-app hover:border-red-500/40 text-muted hover:text-red-400 text-xs font-black tracking-wide shadow-lg shadow-black/40 transition-all"
       >
         <LogOut size={14} /> Logout
       </button>

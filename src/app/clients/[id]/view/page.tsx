@@ -260,12 +260,12 @@ function StatCard({
         >
           {icon}
         </div>
-        <p className="text-slate-400 text-[9px] md:text-[10px] font-bold uppercase tracking-wider leading-tight">
+        <p className="text-muted text-[9px] md:text-[10px] font-bold uppercase tracking-wider leading-tight">
           {label}
         </p>
       </div>
       <p className="text-white text-lg md:text-xl font-black mt-2 tabular-nums">{value}</p>
-      {sub && <p className="text-slate-500 text-[9px] md:text-[10px] mt-1 leading-snug">{sub}</p>}
+      {sub && <p className="text-muted text-[9px] md:text-[10px] mt-1 leading-snug">{sub}</p>}
     </div>
   );
 }
@@ -1056,9 +1056,9 @@ export default function ViewClientProfile() {
     },
   ] as const;
 
-  const thCls = "px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400";
-  const tdCls = "px-4 py-3 text-sm text-slate-300 align-top";
-  const trCls = "border-b border-[#21293d] hover:bg-white/[0.02] transition-colors";
+  const thCls = "px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-muted";
+  const tdCls = "px-4 py-3 text-sm text-app-2 align-top";
+  const trCls = "border-b border-app hover:bg-white/[0.02] transition-colors";
 
   // ── RENDER ─────────────────────────────────────────────────
   return (
@@ -1081,7 +1081,7 @@ export default function ViewClientProfile() {
                   <button
                     onClick={() => setPhotoPopup(!photoPopup)}
                     disabled={photoSaving}
-                    className="absolute -bottom-1.5 -right-1.5 w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors disabled:opacity-60"
+                    className="absolute -bottom-1.5 -right-1.5 w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-app-2 transition-colors disabled:opacity-60"
                     title="Photo upload"
                   >
                     {photoSaving ? (
@@ -1091,7 +1091,7 @@ export default function ViewClientProfile() {
                     )}
                   </button>
                   {photoPopup && (
-                    <div className="absolute -bottom-20 right-0 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                    <div className="absolute -bottom-20 right-0 z-50 bg-panel border border-app-2 rounded-xl shadow-2xl p-1.5 min-w-[120px]">
                       <button
                         onClick={() => {
                           setPhotoPopup(false);
@@ -1150,7 +1150,7 @@ export default function ViewClientProfile() {
                 <h1 className="text-2xl md:text-3xl font-black text-white uppercase leading-tight tracking-tight break-words">
                   {client.fullName}
                 </h1>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-slate-400 font-medium">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-muted font-medium">
                   <span className="flex items-center gap-1">
                     <User size={11} /> ID: #{client.id}
                   </span>
@@ -1239,33 +1239,33 @@ export default function ViewClientProfile() {
 
             {/* Multi-contact numbers — har number par Call/WhatsApp/SMS */}
             {contacts.length > 0 && (
-              <div className="mt-3 rounded-xl border border-[#21293d] bg-[#12161f] p-3 space-y-2">
+              <div className="mt-3 rounded-xl border border-app bg-panel-2 p-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
                     Contact Numbers
                   </p>
-                  <span className="text-[9px] text-slate-600 font-semibold">
+                  <span className="text-[9px] text-muted-2 font-semibold">
                     {contacts.length} number
                   </span>
                 </div>
                 {contacts.map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-center gap-2 rounded-lg bg-[#111520] border border-[#1d2536] px-2.5 py-2"
+                    className="flex items-center gap-2 rounded-lg bg-panel-2 border border-app-2 px-2.5 py-2"
                   >
                     <Star
                       size={12}
-                      className={c.is_primary ? "text-amber-400 flex-shrink-0" : "text-slate-600 flex-shrink-0"}
+                      className={c.is_primary ? "text-amber-400 flex-shrink-0" : "text-muted-2 flex-shrink-0"}
                       fill={c.is_primary ? "currentColor" : "none"}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-slate-200 truncate">
+                      <p className="text-xs font-bold text-app-2 truncate">
                         {c.name || "Mobile"}
-                        <span className="ml-1.5 text-[9px] font-black uppercase text-slate-500">
+                        <span className="ml-1.5 text-[9px] font-black uppercase text-muted">
                           {c.label}
                         </span>
                       </p>
-                      <p className="text-[10px] text-slate-400 font-mono truncate">{c.phone}</p>
+                      <p className="text-[10px] text-muted font-mono truncate">{c.phone}</p>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <a
@@ -1340,13 +1340,13 @@ export default function ViewClientProfile() {
             <Link
               href={`/clients/${client.id}/ledger-print`}
               target="_blank"
-              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all no-underline"
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-panel-2 border border-app-2 hover:bg-panel-2 text-app-2 transition-all no-underline"
             >
               <Printer size={15} /> Print Ledger
             </Link>
             <button
               onClick={() => safeBack(router, "/clients")}
-              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f42] text-slate-300 transition-all"
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-panel-2 border border-app-2 hover:bg-panel-2 text-app-2 transition-all"
             >
               <ArrowLeft size={15} /> Back
             </button>
@@ -1360,7 +1360,7 @@ export default function ViewClientProfile() {
               ? "border-red-500/20 theme-card"
               : netBalance < 0
                 ? "border-emerald-500/20 theme-card"
-                : "border-slate-500/20 theme-card"
+                : "border-muted/20 theme-card"
           }`}
           style={{
             background:
@@ -1373,12 +1373,12 @@ export default function ViewClientProfile() {
         >
           <div className="flex items-center gap-3">
             <div
-              className={`p-2.5 rounded-xl border ${netBalance > 0 ? "bg-red-500/15 border-red-500/25 text-red-400" : netBalance < 0 ? "bg-emerald-500/15 border-emerald-500/25 text-emerald-400" : "bg-slate-500/15 border-slate-500/25 text-slate-400"}`}
+              className={`p-2.5 rounded-xl border ${netBalance > 0 ? "bg-red-500/15 border-red-500/25 text-red-400" : netBalance < 0 ? "bg-emerald-500/15 border-emerald-500/25 text-emerald-400" : "bg-muted/15 border-muted/25 text-muted"}`}
             >
               {netBalance > 0 ? <TrendingDown size={18} /> : <TrendingUp size={18} />}
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
                 {netBalance > 0
                   ? "Net Balance Due from Client"
                   : netBalance < 0
@@ -1386,7 +1386,7 @@ export default function ViewClientProfile() {
                     : "Account Fully Settled ✓"}
               </p>
               <p
-                className={`text-2xl font-black ${netBalance > 0 ? "text-red-400" : netBalance < 0 ? "text-emerald-400" : "text-slate-400"}`}
+                className={`text-2xl font-black ${netBalance > 0 ? "text-red-400" : netBalance < 0 ? "text-emerald-400" : "text-muted"}`}
               >
                 ₹{fmt(Math.abs(netBalance))}
               </p>
@@ -1394,12 +1394,12 @@ export default function ViewClientProfile() {
           </div>
           <div className="grid grid-cols-3 gap-4 text-right">
             {[
-              { label: "Opening", val: openingBal, clr: "text-slate-300" },
+              { label: "Opening", val: openingBal, clr: "text-app-2" },
               { label: "Billed", val: totalBilled, clr: "text-red-300" },
               { label: "Paid", val: servicePaid, clr: "text-emerald-300" },
             ].map((item) => (
               <div key={item.label}>
-                <p className="text-[9px] font-black uppercase tracking-wider text-slate-600">
+                <p className="text-[9px] font-black uppercase tracking-wider text-muted-2">
                   {item.label}
                 </p>
                 <p className={`text-sm font-black ${item.clr}`}>₹{fmt(item.val)}</p>
@@ -1410,7 +1410,7 @@ export default function ViewClientProfile() {
 
         {/* ── SERVICE STAT CARDS ── */}
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted mb-3">
             Service Summary
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
@@ -1452,7 +1452,7 @@ export default function ViewClientProfile() {
 
         {/* ── LOAN STAT CARDS ── */}
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted mb-3">
             Loan / Advance Summary
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1523,7 +1523,7 @@ export default function ViewClientProfile() {
                       <td className={tdCls}>₹{fmt(loan.emi_amount)}</td>
                       <td className={tdCls}>
                         {loan.status === 0 ? (
-                          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-slate-500/20 text-slate-400 border border-slate-500/30">
+                          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-muted/20 text-muted border border-muted/30">
                             Closed
                           </span>
                         ) : (loan.balance ?? 0) <= 0 ? (
@@ -1589,7 +1589,7 @@ export default function ViewClientProfile() {
                           {r.status || "Sent"}
                         </span>
                       </td>
-                      <td className={`${tdCls} text-xs text-slate-400`}>{r.remarks || "—"}</td>
+                      <td className={`${tdCls} text-xs text-muted`}>{r.remarks || "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1601,7 +1601,7 @@ export default function ViewClientProfile() {
         {/* ── DATE FILTER ── */}
         <div className="rounded-2xl border p-4 flex flex-wrap items-center gap-3 theme-card">
           <Filter size={16} className="text-blue-400" />
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
             Filter by Date
           </span>
           <div className="flex flex-wrap gap-3 ml-auto">
@@ -1609,15 +1609,15 @@ export default function ViewClientProfile() {
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="px-3 py-2 rounded-xl text-sm font-medium text-slate-200 border focus:outline-none focus:border-blue-500 [color-scheme:dark]"
+              className="px-3 py-2 rounded-xl text-sm font-medium text-app-2 border focus:outline-none focus:border-blue-500 [color-scheme:dark]"
               style={{ background: "#0d1117", borderColor: "#21293d" }}
             />
-            <span className="text-slate-500 self-center text-xs">to</span>
+            <span className="text-muted self-center text-xs">to</span>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="px-3 py-2 rounded-xl text-sm font-medium text-slate-200 border focus:outline-none focus:border-blue-500 [color-scheme:dark]"
+              className="px-3 py-2 rounded-xl text-sm font-medium text-app-2 border focus:outline-none focus:border-blue-500 [color-scheme:dark]"
               style={{ background: "#0d1117", borderColor: "#21293d" }}
             />
             <button
@@ -1625,7 +1625,7 @@ export default function ViewClientProfile() {
                 setDateFrom("");
                 setDateTo("");
               }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-slate-300 border border-[#2a3550] bg-[#1e2637] hover:bg-[#252f42] transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-app-2 border border-app-2 bg-panel-2 hover:bg-panel-2 transition-all"
             >
               <RefreshCw size={13} /> Reset
             </button>
@@ -1642,7 +1642,7 @@ export default function ViewClientProfile() {
                 className={`flex items-center gap-2 px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
                   activeTab === tab.key
                     ? "text-blue-400 border-b-2 border-blue-500 bg-blue-500/5"
-                    : "text-slate-500 hover:text-slate-300 border-b-2 border-transparent hover:bg-white/[0.02]"
+                    : "text-muted hover:text-app-2 border-b-2 border-transparent hover:bg-white/[0.02]"
                 }`}
               >
                 {tab.icon} {tab.label}
@@ -1650,7 +1650,7 @@ export default function ViewClientProfile() {
                   className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
                     activeTab === tab.key
                       ? "bg-blue-500/20 text-blue-400"
-                      : "bg-white/5 text-slate-500"
+                      : "bg-white/5 text-muted"
                   }`}
                 >
                   {tab.count}
@@ -1699,7 +1699,7 @@ export default function ViewClientProfile() {
                     {filteredJobs.map((job) => {
                       const st = STATUS_MAP[job.status] ?? {
                         label: "Unknown",
-                        cls: "bg-slate-500/20 text-slate-400 border-slate-500/20",
+                        cls: "bg-muted/20 text-muted border-muted/20",
                       };
                       const isSel = selectedIds.has(job.id);
                       return (
@@ -1716,7 +1716,7 @@ export default function ViewClientProfile() {
                               {isSel ? <CheckSquare size={15} /> : <Square size={15} />}
                             </button>
                           </td>
-                          <td className={`${tdCls} text-xs text-slate-400 whitespace-nowrap`}>
+                          <td className={`${tdCls} text-xs text-muted whitespace-nowrap`}>
                             {fmtDate(job.date_created)}
                           </td>
                           <td className={tdCls}>
@@ -1730,7 +1730,7 @@ export default function ViewClientProfile() {
                               <WaitingPartsBadge count={openPartCounts.get(job.id)!} />
                             )}
                             {job.code && (
-                              <p className="text-[10px] text-slate-600 font-mono mt-0.5">
+                              <p className="text-[10px] text-muted-2 font-mono mt-0.5">
                                 {job.code}
                               </p>
                             )}
@@ -1740,7 +1740,7 @@ export default function ViewClientProfile() {
                           >
                             {job.item}
                           </td>
-                          <td className={`${tdCls} text-xs text-slate-400 max-w-[160px] truncate`}>
+                          <td className={`${tdCls} text-xs text-muted max-w-[160px] truncate`}>
                             {job.fault || "—"}
                           </td>
                           <td className={`${tdCls} text-xs`}>
@@ -1755,12 +1755,12 @@ export default function ViewClientProfile() {
                                   {job.uniq_id}
                                 </Link>
                               ) : (
-                                <span className="text-slate-600">—</span>
+                                <span className="text-muted-2">—</span>
                               )}
                               <button
                                 onClick={() => openSpotEdit(job)}
                                 title="Spot set karo / badlo"
-                                className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md border border-[#2a3550] bg-white/[0.02] text-slate-500 hover:text-amber-400 hover:border-amber-500/40 transition-all"
+                                className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md border border-app-2 bg-white/[0.02] text-muted hover:text-amber-400 hover:border-amber-500/40 transition-all"
                               >
                                 <PencilLine size={11} />
                               </button>
@@ -1772,7 +1772,7 @@ export default function ViewClientProfile() {
                             >
                               {st.label}
                             </span>
-                            <p className="text-[9px] text-slate-600 mt-0.5">
+                            <p className="text-[9px] text-muted-2 mt-0.5">
                               {fmtDateTime(getStatusDate(job))}
                             </p>
                           </td>
@@ -1784,7 +1784,7 @@ export default function ViewClientProfile() {
                     })}
                     {filteredJobs.length === 0 && (
                       <tr>
-                        <td colSpan={8} className="p-10 text-center text-slate-600 text-sm italic">
+                        <td colSpan={8} className="p-10 text-center text-muted-2 text-sm italic">
                           No repairs found
                         </td>
                       </tr>
@@ -1795,12 +1795,12 @@ export default function ViewClientProfile() {
               {/* Mobile cards */}
               <div className="md:hidden divide-y divide-[#21293d]">
                 {filteredJobs.length === 0 && (
-                  <p className="p-8 text-center text-slate-600 text-sm italic">No repairs found</p>
+                  <p className="p-8 text-center text-muted-2 text-sm italic">No repairs found</p>
                 )}
                 {filteredJobs.map((job) => {
                   const st = STATUS_MAP[job.status] ?? {
                     label: "Unknown",
-                    cls: "bg-slate-500/20 text-slate-400 border-slate-500/20",
+                    cls: "bg-muted/20 text-muted border-muted/20",
                   };
                   const isSel = selectedIds.has(job.id);
                   return (
@@ -1823,7 +1823,7 @@ export default function ViewClientProfile() {
                             {job.item}
                           </p>
                           {job.fault && (
-                            <p className="text-xs text-slate-500 mt-0.5 truncate">{job.fault}</p>
+                            <p className="text-xs text-muted mt-0.5 truncate">{job.fault}</p>
                           )}
                         </div>
                         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
@@ -1832,7 +1832,7 @@ export default function ViewClientProfile() {
                           >
                             {st.label}
                           </span>
-                          <span className="text-[9px] text-slate-500">
+                          <span className="text-[9px] text-muted">
                             {fmtDateTime(getStatusDate(job))}
                           </span>
                           <span className="text-base font-black text-white">
@@ -1840,13 +1840,13 @@ export default function ViewClientProfile() {
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 text-[10px] text-slate-600">
+                      <div className="flex items-center gap-3 text-[10px] text-muted-2">
                         <button
                           onClick={() => toggleSelect(job.id)}
                           className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all text-[10px] font-bold ${
                             isSel
                               ? "border-blue-500/40 bg-blue-500/10 text-blue-400"
-                              : "border-[#2a3550] bg-white/[0.02] text-slate-500 hover:text-blue-400"
+                              : "border-app-2 bg-white/[0.02] text-muted hover:text-blue-400"
                           }`}
                           title="Select job"
                         >
@@ -1863,12 +1863,12 @@ export default function ViewClientProfile() {
                               <MapPin size={11} /> {job.uniq_id}
                             </Link>
                           ) : (
-                            <span className="text-slate-600">—</span>
+                            <span className="text-muted-2">—</span>
                           )}
                           <button
                             onClick={() => openSpotEdit(job)}
                             title="Spot set karo / badlo"
-                            className="inline-flex items-center justify-center p-1 rounded-md border border-[#2a3550] bg-white/[0.02] text-slate-500 hover:text-amber-400 hover:border-amber-500/40 transition-all"
+                            className="inline-flex items-center justify-center p-1 rounded-md border border-app-2 bg-white/[0.02] text-muted hover:text-amber-400 hover:border-amber-500/40 transition-all"
                           >
                             <PencilLine size={10} />
                           </button>
@@ -1905,8 +1905,8 @@ export default function ViewClientProfile() {
                         <td className={`${tdCls} font-black font-mono text-xs text-white`}>
                           {sale.sale_code}
                         </td>
-                        <td className={`${tdCls} text-xs text-slate-400`}>{sale.payment_mode}</td>
-                        <td className={`${tdCls} text-xs text-slate-500 max-w-[180px] truncate`}>
+                        <td className={`${tdCls} text-xs text-muted`}>{sale.payment_mode}</td>
+                        <td className={`${tdCls} text-xs text-muted max-w-[180px] truncate`}>
                           {sale.remarks || "—"}
                         </td>
                         <td className={`${tdCls} text-right font-black text-emerald-400`}>
@@ -1924,7 +1924,7 @@ export default function ViewClientProfile() {
                     ))}
                     {filteredSales.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="p-10 text-center text-slate-600 text-sm italic">
+                        <td colSpan={6} className="p-10 text-center text-muted-2 text-sm italic">
                           No direct sales found
                         </td>
                       </tr>
@@ -1934,7 +1934,7 @@ export default function ViewClientProfile() {
               </div>
               <div className="md:hidden divide-y divide-[#21293d]">
                 {filteredSales.length === 0 && (
-                  <p className="p-8 text-center text-slate-600 text-sm italic">
+                  <p className="p-8 text-center text-muted-2 text-sm italic">
                     No direct sales found
                   </p>
                 )}
@@ -1943,11 +1943,11 @@ export default function ViewClientProfile() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="font-black text-white font-mono text-sm">{sale.sale_code}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{sale.payment_mode}</p>
+                        <p className="text-xs text-muted mt-0.5">{sale.payment_mode}</p>
                         {sale.remarks && (
-                          <p className="text-xs text-slate-600 mt-0.5 truncate">{sale.remarks}</p>
+                          <p className="text-xs text-muted-2 mt-0.5 truncate">{sale.remarks}</p>
                         )}
-                        <p className="text-[10px] text-slate-600 mt-1.5">
+                        <p className="text-[10px] text-muted-2 mt-1.5">
                           {fmtDate(sale.date_created)}
                         </p>
                       </div>
@@ -2000,16 +2000,16 @@ export default function ViewClientProfile() {
                         </td>
                         <td className={tdCls}>
                           {p.job_id && (
-                            <div className="text-[11px] text-slate-400">
-                              Job: <span className="text-slate-200">{p.job_id}</span>
+                            <div className="text-[11px] text-muted">
+                              Job: <span className="text-app-2">{p.job_id}</span>
                             </div>
                           )}
                           {p.bill_no && (
-                            <div className="text-[11px] text-slate-400">
-                              Bill: <span className="text-slate-200">{p.bill_no}</span>
+                            <div className="text-[11px] text-muted">
+                              Bill: <span className="text-app-2">{p.bill_no}</span>
                             </div>
                           )}
-                          <div className="text-[10px] text-slate-600">PAY-{p.id}</div>
+                          <div className="text-[10px] text-muted-2">PAY-{p.id}</div>
                         </td>
                         <td className={tdCls}>
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/25">
@@ -2017,7 +2017,7 @@ export default function ViewClientProfile() {
                           </span>
                         </td>
                         <td className={`${tdCls} text-right`}>₹{fmt(p.amount)}</td>
-                        <td className={`${tdCls} text-right text-slate-400`}>
+                        <td className={`${tdCls} text-right text-muted`}>
                           ₹{fmt(p.discount || 0)}
                         </td>
                         {/* Net = Amount + Discount (credit) — matches view_client.php */}
@@ -2045,7 +2045,7 @@ export default function ViewClientProfile() {
                     ))}
                     {filteredPayments.length === 0 && (
                       <tr>
-                        <td colSpan={8} className="p-8 text-center text-slate-500 italic">
+                        <td colSpan={8} className="p-8 text-center text-muted italic">
                           No payments found
                         </td>
                       </tr>
@@ -2057,7 +2057,7 @@ export default function ViewClientProfile() {
               {/* Mobile cards for Payments */}
               <div className="md:hidden divide-y divide-[#21293d]">
                 {filteredPayments.length === 0 && (
-                  <p className="p-8 text-center text-slate-600 text-sm italic">No payments found</p>
+                  <p className="p-8 text-center text-muted-2 text-sm italic">No payments found</p>
                 )}
                 {filteredPayments.map((p) => (
                   <div key={p.id} className="p-4 hover:bg-white/[0.02] transition-colors">
@@ -2069,7 +2069,7 @@ export default function ViewClientProfile() {
                             {p.payment_type || "Full"}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap">
+                        <p className="text-xs text-muted mt-1 flex items-center gap-1.5 flex-wrap">
                           {p.payment_mode}
                           {p.payment_type && (
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
@@ -2083,14 +2083,14 @@ export default function ViewClientProfile() {
                           Net: ₹{fmt(p.amount + (p.discount || 0))}
                         </span>
                         {p.discount > 0 && (
-                          <span className="text-[10px] text-slate-500">
+                          <span className="text-[10px] text-muted">
                             Discount: ₹{fmt(p.discount)}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-600 mt-2 p-2 bg-[#0d1117] rounded-lg">
+                    <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-2 mt-2 p-2 bg-app rounded-lg">
                       <span>{fmtDate(p.payment_date)}</span>
                       <span>• PAY-{p.id}</span>
                       {p.job_id && <span>• Job: {p.job_id}</span>}
@@ -2153,7 +2153,7 @@ export default function ViewClientProfile() {
                           </span>
                         </td>
                         <td className={`${tdCls} text-right`}>₹{fmt(p.amount)}</td>
-                        <td className={`${tdCls} text-right text-slate-400`}>
+                        <td className={`${tdCls} text-right text-muted`}>
                           ₹{fmt(p.discount || 0)}
                         </td>
                         {/* Net = Amount + Discount (credit) — matches view_client.php */}
@@ -2170,7 +2170,7 @@ export default function ViewClientProfile() {
                             )}
                           </span>
                         </td>
-                        <td className={`${tdCls} text-xs text-slate-400`}>{p.remarks || "—"}</td>
+                        <td className={`${tdCls} text-xs text-muted`}>{p.remarks || "—"}</td>
                         <td className={tdCls}>
                           <div className="flex gap-2">
                             <button
@@ -2191,7 +2191,7 @@ export default function ViewClientProfile() {
                     ))}
                     {filteredLoanPay.length === 0 && (
                       <tr>
-                        <td colSpan={8} className="p-8 text-center text-slate-500 italic">
+                        <td colSpan={8} className="p-8 text-center text-muted italic">
                           No loan payments found
                         </td>
                       </tr>
@@ -2203,7 +2203,7 @@ export default function ViewClientProfile() {
               {/* Mobile cards for Loan Payments */}
               <div className="md:hidden divide-y divide-[#21293d]">
                 {filteredLoanPay.length === 0 && (
-                  <p className="p-8 text-center text-slate-600 text-sm italic">
+                  <p className="p-8 text-center text-muted-2 text-sm italic">
                     No loan payments found
                   </p>
                 )}
@@ -2217,14 +2217,14 @@ export default function ViewClientProfile() {
                             LN-{String(p.loan_id ?? 0).padStart(5, "0")}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">{p.payment_mode}</p>
+                        <p className="text-xs text-muted mt-1">{p.payment_mode}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                         <span className="text-sm font-black text-emerald-400">
                           Net: ₹{fmt(p.amount + (p.discount || 0))}
                         </span>
                         {p.discount > 0 && (
-                          <span className="text-[10px] text-slate-500">
+                          <span className="text-[10px] text-muted">
                             Discount: ₹{fmt(p.discount)}
                           </span>
                         )}
@@ -2232,12 +2232,12 @@ export default function ViewClientProfile() {
                     </div>
 
                     {p.remarks && (
-                      <p className="text-xs text-slate-400 mt-2 mb-2 italic">
+                      <p className="text-xs text-muted mt-2 mb-2 italic">
                         &ldquo;{p.remarks}&rdquo;
                       </p>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-600 mt-2 p-2 bg-[#0d1117] rounded-lg">
+                    <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-2 mt-2 p-2 bg-app rounded-lg">
                       <span>{fmtDate(p.payment_date)}</span>
                       <span>• PAY-{p.id}</span>
                     </div>
@@ -2282,7 +2282,7 @@ export default function ViewClientProfile() {
             </div>
             <form onSubmit={handleSaveDueDate} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted dark:text-muted mb-1.5">
                   Promised Due Date
                 </label>
                 <input
@@ -2293,7 +2293,7 @@ export default function ViewClientProfile() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted dark:text-muted mb-1.5">
                   Remarks / Promise Details
                 </label>
                 <textarea
@@ -2301,7 +2301,7 @@ export default function ViewClientProfile() {
                   placeholder="e.g. promised to pay full amount via PhonePe"
                   value={dueForm.due_remarks}
                   onChange={(e) => setDueForm({ ...dueForm, due_remarks: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl theme-input text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  className="w-full px-3 py-2.5 rounded-xl theme-input text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-muted dark:placeholder:text-muted"
                 />
               </div>
               <div className="flex gap-3 pt-1">
@@ -2352,7 +2352,7 @@ export default function ViewClientProfile() {
                 { label: "Discount", key: "discount", type: "number" },
               ].map((f) => (
                 <div key={f.key}>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-muted dark:text-muted mb-1.5">
                     {f.label}
                   </label>
                   <input
@@ -2366,7 +2366,7 @@ export default function ViewClientProfile() {
                 </div>
               ))}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted dark:text-muted mb-1.5">
                   Payment Mode
                 </label>
                 <select
@@ -2389,7 +2389,7 @@ export default function ViewClientProfile() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-muted dark:text-muted mb-1.5">
                     Payment Type
                   </label>
                   <select
@@ -2403,7 +2403,7 @@ export default function ViewClientProfile() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-muted dark:text-muted mb-1.5">
                     Bill No.
                   </label>
                   <input
@@ -2411,19 +2411,19 @@ export default function ViewClientProfile() {
                     placeholder="Optional"
                     value={editForm.bill_no}
                     onChange={(e) => setEditForm({ ...editForm, bill_no: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl theme-input text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                    className="w-full px-3 py-2.5 rounded-xl theme-input text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder:text-muted dark:placeholder:text-muted"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted dark:text-muted mb-1.5">
                   Remarks
                 </label>
                 <textarea
                   rows={2}
                   value={editForm.remarks}
                   onChange={(e) => setEditForm({ ...editForm, remarks: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl theme-input text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  className="w-full px-3 py-2.5 rounded-xl theme-input text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-muted dark:placeholder:text-muted"
                 />
               </div>
               <div className="flex gap-3 pt-1">
@@ -2449,7 +2449,7 @@ export default function ViewClientProfile() {
       {/* ── BULK ACTION BAR (PHP parity: jobs page) ── */}
       {selectedIds.size > 0 && (
         <div
-          className="fixed bottom-5 left-1/2 z-[60] rounded-2xl px-3 py-2.5 flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-3 w-[calc(100%-2rem)] md:min-w-[300px] md:max-w-[95vw] bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] shadow-2xl text-slate-900 dark:text-white"
+          className="fixed bottom-5 left-1/2 z-[60] rounded-2xl px-3 py-2.5 flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-3 w-[calc(100%-2rem)] md:min-w-[300px] md:max-w-[95vw] bg-white dark:bg-panel border border-app-2 dark:border-app shadow-2xl text-app dark:text-white"
           style={{
             transform: "translateX(-50%)",
             animation: "bulkBarPop 0.35s cubic-bezier(0.34,1.56,0.64,1)",
@@ -2556,7 +2556,7 @@ export default function ViewClientProfile() {
                 setBulkStatus("");
                 setBulkDeliverDate("");
               }}
-              className="bg-slate-100 hover:bg-slate-200 dark:bg-white/15 dark:hover:bg-white/25 text-slate-700 dark:text-white border border-slate-300 dark:border-white/30 rounded-lg px-2.5 md:px-3.5 py-1.5 md:py-2 text-xs md:text-sm cursor-pointer transition-colors flex items-center gap-1 whitespace-nowrap"
+              className="bg-panel-2 hover:bg-panel-2 dark:bg-white/15 dark:hover:bg-white/25 text-app dark:text-white border border-app-2 dark:border-white/30 rounded-lg px-2.5 md:px-3.5 py-1.5 md:py-2 text-xs md:text-sm cursor-pointer transition-colors flex items-center gap-1 whitespace-nowrap"
             >
               <X size={13} /> Clear
             </button>
@@ -2573,7 +2573,7 @@ export default function ViewClientProfile() {
           <Plus size={22} className={`transition-transform ${fabOpen ? "rotate-45" : ""}`} />
         </button>
         {fabOpen && (
-          <div className="absolute bottom-14 right-0 bg-white dark:bg-[#161b27] border-2 border-blue-500/40 dark:border-blue-500/50 ring-1 ring-blue-500/30 dark:ring-blue-400/30 rounded-2xl shadow-2xl shadow-black/25 dark:shadow-blue-500/10 py-1.5 w-44 text-sm overflow-hidden">
+          <div className="absolute bottom-14 right-0 bg-white dark:bg-panel border-2 border-blue-500/40 dark:border-blue-500/50 ring-1 ring-blue-500/30 dark:ring-blue-400/30 rounded-2xl shadow-2xl shadow-black/25 dark:shadow-blue-500/10 py-1.5 w-44 text-sm overflow-hidden">
             {[
               {
                 href: `/clients/${client.id}/add-payment`,
@@ -2643,7 +2643,7 @@ export default function ViewClientProfile() {
                 <Icon size={14} className={cls} /> {label}
               </Link>
             ))}
-            <hr className="my-1 border-slate-200 dark:border-[#21293d]" />
+            <hr className="my-1 border-app-2 dark:border-app" />
             <button
               onClick={() => {
                 safeBack(router, "/clients");
@@ -2651,7 +2651,7 @@ export default function ViewClientProfile() {
               }}
               className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/10 theme-heading transition-colors w-full"
             >
-              <ArrowLeft size={14} className="text-slate-500" /> Back
+              <ArrowLeft size={14} className="text-muted" /> Back
             </button>
           </div>
         )}
@@ -2673,12 +2673,12 @@ export default function ViewClientProfile() {
               </p>
               <button
                 onClick={() => setBulkMoveOpen(false)}
-                className="text-slate-500 hover:text-white"
+                className="text-muted hover:text-white"
               >
                 <X size={16} />
               </button>
             </div>
-            <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-3">
+            <p className="text-[10px] text-muted-2 font-bold uppercase tracking-wider mb-3">
               Naya Spot chuno
             </p>
             <JobSpotPicker
@@ -2715,12 +2715,12 @@ export default function ViewClientProfile() {
               </p>
               <button
                 onClick={() => !savingSpot && setSpotEditJob(null)}
-                className="text-slate-500 hover:text-white"
+                className="text-muted hover:text-white"
               >
                 <X size={16} />
               </button>
             </div>
-            <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-3">
+            <p className="text-[10px] text-muted-2 font-bold uppercase tracking-wider mb-3">
               Is job ka spot chuno (ya hatao)
             </p>
             <JobSpotPicker

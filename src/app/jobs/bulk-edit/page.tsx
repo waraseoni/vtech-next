@@ -63,8 +63,8 @@ interface TxnRow {
 }
 
 const iCls =
-  "w-full px-2.5 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-white outline-none focus:border-blue-500/60 transition-all";
-const lCls = "block text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-1";
+  "w-full px-2.5 py-2 bg-app border border-app rounded-lg text-xs text-white outline-none focus:border-blue-500/60 transition-all";
+const lCls = "block text-[9px] font-bold uppercase tracking-wider text-muted mb-1";
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function BulkEditPage() {
@@ -225,17 +225,17 @@ export default function BulkEditPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
+    <div className="min-h-screen bg-app font-sans pb-16">
       <div className="max-w-[1300px] mx-auto px-3 sm:px-5 pt-4 space-y-4">
         {/* ── Header ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
               <Wrench size={18} className="text-white" />
             </div>
             <div>
               <h1 className="text-lg font-black text-white">Bulk Edit Transactions</h1>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+              <p className="text-[10px] text-muted uppercase tracking-wider">
                 {loaded ? (
                   <span className="text-blue-400 font-black">
                     {rows.length} transactions loaded
@@ -249,7 +249,7 @@ export default function BulkEditPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/jobs"
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-300 rounded-xl text-xs font-bold no-underline transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 bg-panel-2 border border-app-2 hover:bg-panel-2 text-app-2 rounded-xl text-xs font-bold no-underline transition-all"
             >
               <ArrowLeft size={13} /> Cancel
             </Link>
@@ -273,10 +273,10 @@ export default function BulkEditPage() {
         </div>
 
         {/* ── Source Client + Global Client ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
+        <div className="bg-panel border border-app rounded-2xl p-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted mb-1.5">
                 <span className="inline-flex items-center gap-1">
                   <User size={11} /> Source Client <span className="text-red-400">*</span>
                 </span>
@@ -306,7 +306,7 @@ export default function BulkEditPage() {
               )}
             </button>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted mb-1.5">
                 <span className="inline-flex items-center gap-1">
                   <Users size={11} /> Apply New Client to All
                 </span>
@@ -318,7 +318,7 @@ export default function BulkEditPage() {
                 placeholder="Select Target Client"
                 clearLabel="Select Target Client"
               />
-              <p className="text-[10px] text-slate-600 mt-1">
+              <p className="text-[10px] text-muted-2 mt-1">
                 Saari rows ka client ek saath badlega.
               </p>
             </div>
@@ -328,7 +328,7 @@ export default function BulkEditPage() {
         {rowLoading && (
           <div className="text-center py-10">
             <Loader2 size={28} className="animate-spin text-blue-400 mx-auto mb-2" />
-            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">
+            <p className="text-muted text-xs font-bold uppercase tracking-widest">
               Loading transactions...
             </p>
           </div>
@@ -342,10 +342,10 @@ export default function BulkEditPage() {
 
         {/* ── Desktop Table View ── */}
         {!rowLoading && loaded && rows.length > 0 && (
-          <div className="hidden md:block bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+          <div className="hidden md:block bg-panel border border-app rounded-2xl overflow-hidden">
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-blue-900/40 border-b border-[#21293d]">
+                <tr className="bg-blue-900/40 border-b border-app">
                   <th className="px-3 py-3 text-center text-[9px] font-black text-blue-300 uppercase w-10">
                     #
                   </th>
@@ -375,10 +375,10 @@ export default function BulkEditPage() {
               <tbody className="divide-y divide-[#21293d]">
                 {rows.map((row, i) => (
                   <tr key={row.id} className="hover:bg-white/[0.015] transition-colors">
-                    <td className="px-3 py-2.5 text-center text-slate-600 font-bold">{i + 1}</td>
+                    <td className="px-3 py-2.5 text-center text-muted-2 font-bold">{i + 1}</td>
                     <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-1 bg-[#0d1117] border border-[#21293d] rounded-lg px-2.5 py-1.5 justify-center">
-                        <Hash size={10} className="text-slate-600" />
+                      <div className="flex items-center gap-1 bg-app border border-app rounded-lg px-2.5 py-1.5 justify-center">
+                        <Hash size={10} className="text-muted-2" />
                         <span className="text-amber-400 font-black text-xs">{row.job_id}</span>
                       </div>
                     </td>
@@ -455,16 +455,16 @@ export default function BulkEditPage() {
             {rows.map((row, i) => (
               <div
                 key={row.id}
-                className="bg-[#161b27] border border-[#21293d] border-l-4 border-l-blue-500 rounded-2xl p-4 relative"
+                className="bg-panel border border-app border-l-4 border-l-blue-500 rounded-2xl p-4 relative"
               >
-                <span className="absolute top-3 right-4 text-slate-700 font-black text-lg">
+                <span className="absolute top-3 right-4 text-app font-black text-lg">
                   #{i + 1}
                 </span>
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>
                     <label className={lCls}>Job ID</label>
-                    <div className="flex items-center gap-1 bg-[#0d1117] border border-[#21293d] rounded-lg px-2.5 py-2">
-                      <Hash size={10} className="text-slate-600" />
+                    <div className="flex items-center gap-1 bg-app border border-app rounded-lg px-2.5 py-2">
+                      <Hash size={10} className="text-muted-2" />
                       <span className="text-amber-400 font-black text-xs">{row.job_id}</span>
                     </div>
                   </div>
@@ -546,7 +546,7 @@ export default function BulkEditPage() {
             <button
               onClick={loadTransactions}
               disabled={rowLoading}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-300 rounded-xl text-sm font-bold transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 bg-panel-2 border border-app-2 hover:bg-panel-2 text-app-2 rounded-xl text-sm font-bold transition-all"
             >
               <RefreshCw size={15} /> Reload
             </button>

@@ -526,7 +526,7 @@ export default function ExpensesPageInner({
   return (
     <div className="space-y-3.5 w-full max-w-[1550px] mx-auto pb-12 px-2 sm:px-3 lg:px-4">
       {/* Top Header Card */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3 sm:p-3.5 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+      <div className="bg-panel border border-app rounded-2xl p-3 sm:p-3.5 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 bg-gradient-to-tr from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md shadow-amber-500/20 border border-white/10 flex-shrink-0">
             <Wallet size={18} className="text-white" />
@@ -538,26 +538,26 @@ export default function ExpensesPageInner({
                 {dateRangeLabel}
               </span>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium">
+            <p className="text-[10px] sm:text-[11px] text-muted font-medium">
               {tab === "staff" ? "Staff payments & advances tracking" : "Shop expenses & category management"}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 self-end sm:self-auto">
-          <div className="flex bg-[#0d1117] p-1 rounded-xl border border-[#21293d]">
+          <div className="flex bg-app p-1 rounded-xl border border-app">
             <button
               onClick={() => setTab("staff")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                 tab === "staff"
                   ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
-                  : "text-slate-400 hover:text-slate-200"
+                  : "text-muted hover:text-app-2"
               }`}
             >
               <UserRound size={12} />
               <span className="hidden sm:inline">Staff</span>
               <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
-                tab === "staff" ? "bg-white/20 text-white" : "bg-slate-800 text-slate-400"
+                tab === "staff" ? "bg-white/20 text-white" : "bg-slate-800 text-muted"
               }`}>
                 {filteredStaffPayments.length}
               </span>
@@ -567,13 +567,13 @@ export default function ExpensesPageInner({
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                 tab === "shop"
                   ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
-                  : "text-slate-400 hover:text-slate-200"
+                  : "text-muted hover:text-app-2"
               }`}
             >
               <Receipt size={12} />
               <span className="hidden sm:inline">Shop</span>
               <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
-                tab === "shop" ? "bg-white/20 text-white" : "bg-slate-800 text-slate-400"
+                tab === "shop" ? "bg-white/20 text-white" : "bg-slate-800 text-muted"
               }`}>
                 {filteredShopExpenses.length}
               </span>
@@ -584,7 +584,7 @@ export default function ExpensesPageInner({
             onClick={() => loadData()}
             disabled={loading}
             title="Refresh Data"
-            className="p-1.5 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] rounded-xl text-slate-400 hover:text-white transition-all disabled:opacity-50 flex-shrink-0"
+            className="p-1.5 bg-app hover:bg-panel-2 border border-app rounded-xl text-muted hover:text-white transition-all disabled:opacity-50 flex-shrink-0"
           >
             <RefreshCw size={13} className={loading ? "animate-spin text-blue-400" : ""} />
           </button>
@@ -593,49 +593,49 @@ export default function ExpensesPageInner({
 
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
-        <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-0.5">
+        <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
+          <div className="flex items-center justify-between text-muted mb-0.5">
             <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">{tab === "staff" ? "Staff Entries" : "Expenses"}</span>
             {tab === "staff" ? <UserRound size={13} className="text-blue-400" /> : <Receipt size={13} className="text-amber-400" />}
           </div>
           <p className="text-base sm:text-lg font-black text-white tracking-tight">{totals.count}</p>
-          <p className="text-[9px] text-slate-500">Total records</p>
+          <p className="text-[9px] text-muted">Total records</p>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-0.5">
+        <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
+          <div className="flex items-center justify-between text-muted mb-0.5">
             <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">{tab === "staff" ? "Total Payout" : "Total Spent"}</span>
             <IndianRupee size={13} className="text-red-400" />
           </div>
           <p className="text-base sm:text-lg font-black text-red-400 tracking-tight">{money(totals.amount)}</p>
-          <p className="text-[9px] text-slate-500">{tab === "staff" ? "Staff paid" : "Shop spent"}</p>
+          <p className="text-[9px] text-muted">{tab === "staff" ? "Staff paid" : "Shop spent"}</p>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-0.5">
+        <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
+          <div className="flex items-center justify-between text-muted mb-0.5">
             <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">From</span>
             <Calendar size={13} className="text-blue-400" />
           </div>
           <p className="text-sm sm:text-base font-black text-white tracking-tight">{fmtDate(fromDate)}</p>
-          <p className="text-[9px] text-slate-500">Start date</p>
+          <p className="text-[9px] text-muted">Start date</p>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-0.5">
+        <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
+          <div className="flex items-center justify-between text-muted mb-0.5">
             <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">To</span>
             <Calendar size={13} className="text-teal-400" />
           </div>
           <p className="text-sm sm:text-base font-black text-white tracking-tight">{fmtDate(toDate)}</p>
-          <p className="text-[9px] text-slate-500">End date</p>
+          <p className="text-[9px] text-muted">End date</p>
         </div>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-2.5 sm:p-3 shadow-sm">
+      <div className="bg-panel border border-app rounded-2xl p-2.5 sm:p-3 shadow-sm">
         <div className="grid gap-2 sm:gap-2.5 lg:items-end lg:grid-cols-[1fr_180px_180px_auto]">
           <div className="relative">
-            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-medium text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700 [color-scheme:dark]"
+              className="w-full pl-8 pr-3 py-2 bg-app border border-app rounded-xl text-xs font-medium text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-app [color-scheme:dark]"
               placeholder={
                 tab === "staff"
                   ? "Staff name ya note search karo"
@@ -647,13 +647,13 @@ export default function ExpensesPageInner({
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
-            className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-medium text-white outline-none focus:border-blue-500/60 transition-all [color-scheme:dark]"
+            className="w-full px-3 py-2 bg-app border border-app rounded-xl text-xs font-medium text-white outline-none focus:border-blue-500/60 transition-all [color-scheme:dark]"
           />
           <input
             type="date"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
-            className="w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-medium text-white outline-none focus:border-blue-500/60 transition-all [color-scheme:dark]"
+            className="w-full px-3 py-2 bg-app border border-app rounded-xl text-xs font-medium text-white outline-none focus:border-blue-500/60 transition-all [color-scheme:dark]"
           />
           <div className="flex items-center gap-1.5">
             <button
@@ -664,7 +664,7 @@ export default function ExpensesPageInner({
             </button>
             <button
               onClick={resetFilters}
-              className="inline-flex items-center gap-1 px-3 py-2 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 hover:text-white transition-all shadow-sm active:scale-95"
+              className="inline-flex items-center gap-1 px-3 py-2 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 hover:text-white transition-all shadow-sm active:scale-95"
             >
               <RotateCcw size={11} /> Reset
             </button>
@@ -692,20 +692,20 @@ export default function ExpensesPageInner({
             <button
               key={label}
               onClick={fn}
-              className="px-2.5 py-1 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] rounded-lg text-[10px] font-bold text-slate-400 hover:text-white transition-all active:scale-95"
+              className="px-2.5 py-1 bg-app hover:bg-panel-2 border border-app rounded-lg text-[10px] font-bold text-muted hover:text-white transition-all active:scale-95"
             >
               {label}
             </button>
           ))}
           <button
             onClick={() => shiftMonth(-1)}
-            className="inline-flex items-center gap-0.5 px-2.5 py-1 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] rounded-lg text-[10px] font-bold text-slate-400 hover:text-white transition-all active:scale-95"
+            className="inline-flex items-center gap-0.5 px-2.5 py-1 bg-app hover:bg-panel-2 border border-app rounded-lg text-[10px] font-bold text-muted hover:text-white transition-all active:scale-95"
           >
             <ChevronLeft size={10} /> Prev
           </button>
           <button
             onClick={() => shiftMonth(1)}
-            className="inline-flex items-center gap-0.5 px-2.5 py-1 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] rounded-lg text-[10px] font-bold text-slate-400 hover:text-white transition-all active:scale-95"
+            className="inline-flex items-center gap-0.5 px-2.5 py-1 bg-app hover:bg-panel-2 border border-app rounded-lg text-[10px] font-bold text-muted hover:text-white transition-all active:scale-95"
           >
             Next <ChevronRight size={10} />
           </button>
@@ -713,27 +713,27 @@ export default function ExpensesPageInner({
       </div>
 
       {err && (
-        <div className="bg-[#161b27] border border-red-500/30 rounded-2xl p-3 text-sm text-red-400 font-bold">{err}</div>
+        <div className="bg-panel border border-red-500/30 rounded-2xl p-3 text-sm text-red-400 font-bold">{err}</div>
       )}
 
       {/* Content Area */}
       {tab === "staff" ? (
         <>
           {/* DESKTOP TABLE */}
-          <div className="hidden md:block bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-lg w-full">
+          <div className="hidden md:block bg-panel border border-app rounded-2xl overflow-hidden shadow-lg w-full">
             {loading ? (
               <div className="flex min-h-[260px] items-center justify-center">
                 <Loader2 className="animate-spin text-blue-400" size={26} />
               </div>
             ) : filteredStaffPayments.length === 0 ? (
-              <div className="px-5 py-12 text-center text-sm text-slate-500">
+              <div className="px-5 py-12 text-center text-sm text-muted">
                 Koi staff payment record nahi mila.
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
-                    <tr className="bg-[#0d1117] border-b border-[#21293d] text-[10px] font-bold uppercase text-slate-400 tracking-wider select-none">
+                    <tr className="bg-app border-b border-app text-[10px] font-bold uppercase text-muted tracking-wider select-none">
                       <th className="py-2.5 px-3 text-center w-10">#</th>
                       <th className="py-2.5 px-3">Staff</th>
                       <th className="py-2.5 px-3">Date</th>
@@ -747,25 +747,25 @@ export default function ExpensesPageInner({
                       const mechanic = mechanicById.get(payment.mechanic_id);
                       return (
                         <tr key={payment.id} className="hover:bg-blue-500/[0.02] transition-colors">
-                          <td className="py-2.5 px-3 text-center text-slate-500 font-bold text-[10px]">{i + 1}</td>
+                          <td className="py-2.5 px-3 text-center text-muted font-bold text-[10px]">{i + 1}</td>
                           <td className="py-2.5 px-3">
                             <div className="flex items-center gap-2 min-w-0">
                               <MechAvatar image={mechanic?.image_path} name={mechanicName(mechanic)} cls="w-7 h-7 text-[10px]" />
                               <div className="min-w-0">
                                 <div className="font-bold text-white text-[11px] truncate">{mechanicName(mechanic)}</div>
-                                <div className="text-[10px] text-slate-500">{mechanic?.designation || "Staff"}</div>
+                                <div className="text-[10px] text-muted">{mechanic?.designation || "Staff"}</div>
                               </div>
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 text-[11px] text-slate-300">{fmtDate(payment.date_paid)}</td>
-                          <td className="py-2.5 px-3 text-[11px] text-slate-400 max-w-[200px] truncate">{payment.reason || "—"}</td>
+                          <td className="py-2.5 px-3 text-[11px] text-app-2">{fmtDate(payment.date_paid)}</td>
+                          <td className="py-2.5 px-3 text-[11px] text-muted max-w-[200px] truncate">{payment.reason || "—"}</td>
                           <td className="py-2.5 px-3 text-right font-black text-amber-400 text-xs">{moneyFull(payment.amount)}</td>
                           <td className="py-2.5 px-3 text-center">
                             <div className="flex items-center justify-center gap-1">
-                              <button onClick={() => openEditStaff(payment)} className="p-1 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all" title="Edit">
+                              <button onClick={() => openEditStaff(payment)} className="p-1 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all" title="Edit">
                                 <Pencil size={11} />
                               </button>
-                              <button onClick={() => deleteStaffPayment(payment.id)} className="p-1 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all" title="Delete">
+                              <button onClick={() => deleteStaffPayment(payment.id)} className="p-1 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all" title="Delete">
                                 <Trash2 size={11} />
                               </button>
                             </div>
@@ -775,8 +775,8 @@ export default function ExpensesPageInner({
                     })}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-[#0d1117] border-t border-[#21293d] font-bold text-xs">
-                      <td colSpan={4} className="py-2.5 px-3 text-right uppercase tracking-wider text-slate-400 text-[10px]">
+                    <tr className="bg-app border-t border-app font-bold text-xs">
+                      <td colSpan={4} className="py-2.5 px-3 text-right uppercase tracking-wider text-muted text-[10px]">
                         Total ({filteredStaffPayments.length} entries):
                       </td>
                       <td className="py-2.5 px-3 text-right text-amber-400 font-black">{moneyFull(staffTotal)}</td>
@@ -792,53 +792,53 @@ export default function ExpensesPageInner({
           <div className="md:hidden space-y-3">
             {loading ? (
               Array(4).fill(0).map((_, i) => (
-                <div key={i} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 animate-pulse space-y-3">
+                <div key={i} className="bg-panel border border-app rounded-2xl p-4 animate-pulse space-y-3">
                   <div className="h-5 bg-slate-800/60 rounded-full w-1/2"></div>
                   <div className="h-14 bg-slate-800/40 rounded-xl w-full"></div>
                 </div>
               ))
             ) : filteredStaffPayments.length === 0 ? (
-              <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-8 text-center space-y-2">
-                <UserRound size={20} className="text-slate-500 mx-auto" />
+              <div className="bg-panel border border-app rounded-2xl p-8 text-center space-y-2">
+                <UserRound size={20} className="text-muted mx-auto" />
                 <p className="text-white font-bold text-xs">No staff payments found</p>
-                <p className="text-slate-500 text-[11px]">Try adjusting search or date range.</p>
+                <p className="text-muted text-[11px]">Try adjusting search or date range.</p>
               </div>
             ) : (
               filteredStaffPayments.map((payment) => {
                 const mechanic = mechanicById.get(payment.mechanic_id);
                 return (
-                  <div key={payment.id} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3.5 shadow-md space-y-3 hover:border-slate-600 transition-all">
+                  <div key={payment.id} className="bg-panel border border-app rounded-2xl p-3.5 shadow-md space-y-3 hover:border-muted transition-all">
                     {/* Top Row */}
                     <div className="flex items-center justify-between gap-2.5">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <MechAvatar image={mechanic?.image_path} name={mechanicName(mechanic)} cls="w-9 h-9 text-xs" />
                         <div className="min-w-0">
                           <p className="text-white font-black text-sm truncate">{mechanicName(mechanic)}</p>
-                          <p className="text-[10px] text-slate-400 font-medium">{mechanic?.designation || "Staff"}</p>
+                          <p className="text-[10px] text-muted font-medium">{mechanic?.designation || "Staff"}</p>
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0 space-y-1">
                         <span className="inline-block px-2.5 py-1 rounded-lg font-black text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30">
                           {moneyFull(payment.amount)}
                         </span>
-                        <p className="text-[9px] font-bold text-slate-500 flex items-center gap-1 justify-end">
+                        <p className="text-[9px] font-bold text-muted flex items-center gap-1 justify-end">
                           <Clock size={9} /> {fmtDate(payment.date_paid)}
                         </p>
                       </div>
                     </div>
 
                     {/* Inner Box */}
-                    <div className="bg-[#0d1117] p-3 rounded-xl border border-[#21293d]/80">
+                    <div className="bg-app p-3 rounded-xl border border-app/80">
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-1 min-w-0">
-                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Note</span>
-                          <p className="text-[11px] text-slate-300 truncate">{payment.reason || "—"}</p>
+                          <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Note</span>
+                          <p className="text-[11px] text-app-2 truncate">{payment.reason || "—"}</p>
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <button onClick={() => openEditStaff(payment)} className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all" title="Edit">
+                          <button onClick={() => openEditStaff(payment)} className="p-1.5 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all" title="Edit">
                             <Pencil size={13} />
                           </button>
-                          <button onClick={() => deleteStaffPayment(payment.id)} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Delete">
+                          <button onClick={() => deleteStaffPayment(payment.id)} className="p-1.5 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Delete">
                             <Trash2 size={13} />
                           </button>
                         </div>
@@ -853,20 +853,20 @@ export default function ExpensesPageInner({
       ) : (
         <>
           {/* DESKTOP TABLE */}
-          <div className="hidden md:block bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-lg w-full">
+          <div className="hidden md:block bg-panel border border-app rounded-2xl overflow-hidden shadow-lg w-full">
             {loading ? (
               <div className="flex min-h-[260px] items-center justify-center">
                 <Loader2 className="animate-spin text-blue-400" size={26} />
               </div>
             ) : filteredShopExpenses.length === 0 ? (
-              <div className="px-5 py-12 text-center text-sm text-slate-500">
+              <div className="px-5 py-12 text-center text-sm text-muted">
                 Koi shop expense record nahi mila.
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
-                    <tr className="bg-[#0d1117] border-b border-[#21293d] text-[10px] font-bold uppercase text-slate-400 tracking-wider select-none">
+                    <tr className="bg-app border-b border-app text-[10px] font-bold uppercase text-muted tracking-wider select-none">
                       <th className="py-2.5 px-3 text-center w-10">#</th>
                       <th className="py-2.5 px-3">Category</th>
                       <th className="py-2.5 px-3">Date</th>
@@ -879,27 +879,27 @@ export default function ExpensesPageInner({
                   <tbody className="divide-y divide-[#21293d]/50">
                     {filteredShopExpenses.map((expense, i) => (
                       <tr key={expense.id} className="hover:bg-blue-500/[0.02] transition-colors">
-                        <td className="py-2.5 px-3 text-center text-slate-500 font-bold text-[10px]">{i + 1}</td>
+                        <td className="py-2.5 px-3 text-center text-muted font-bold text-[10px]">{i + 1}</td>
                         <td className="py-2.5 px-3">
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold">
                             <FileText size={9} />
                             {expense.category}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-[11px] text-slate-300">{fmtDateTime(expense.date_created)}</td>
-                        <td className="py-2.5 px-3 text-[11px] text-slate-400">
+                        <td className="py-2.5 px-3 text-[11px] text-app-2">{fmtDateTime(expense.date_created)}</td>
+                        <td className="py-2.5 px-3 text-[11px] text-muted">
                           {expense.supplier_id != null && supplierMap[expense.supplier_id]
                             ? supplierMap[expense.supplier_id]
                             : "—"}
                         </td>
-                        <td className="py-2.5 px-3 text-[11px] text-slate-400 max-w-[200px] truncate">{expense.remarks || "—"}</td>
+                        <td className="py-2.5 px-3 text-[11px] text-muted max-w-[200px] truncate">{expense.remarks || "—"}</td>
                         <td className="py-2.5 px-3 text-right font-black text-red-400 text-xs">{moneyFull(expense.amount)}</td>
                         <td className="py-2.5 px-3 text-center">
                           <div className="flex items-center justify-center gap-1">
-                            <button onClick={() => openEditExpense(expense)} className="p-1 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all" title="Edit">
+                            <button onClick={() => openEditExpense(expense)} className="p-1 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all" title="Edit">
                               <Pencil size={11} />
                             </button>
-                            <button onClick={() => deleteExpense(expense.id)} className="p-1 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all" title="Delete">
+                            <button onClick={() => deleteExpense(expense.id)} className="p-1 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all" title="Delete">
                               <Trash2 size={11} />
                             </button>
                           </div>
@@ -908,8 +908,8 @@ export default function ExpensesPageInner({
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-[#0d1117] border-t border-[#21293d] font-bold text-xs">
-                      <td colSpan={5} className="py-2.5 px-3 text-right uppercase tracking-wider text-slate-400 text-[10px]">
+                    <tr className="bg-app border-t border-app font-bold text-xs">
+                      <td colSpan={5} className="py-2.5 px-3 text-right uppercase tracking-wider text-muted text-[10px]">
                         Total ({filteredShopExpenses.length} entries):
                       </td>
                       <td className="py-2.5 px-3 text-right text-red-400 font-black">{moneyFull(expenseTotal)}</td>
@@ -925,20 +925,20 @@ export default function ExpensesPageInner({
           <div className="md:hidden space-y-3">
             {loading ? (
               Array(4).fill(0).map((_, i) => (
-                <div key={i} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 animate-pulse space-y-3">
+                <div key={i} className="bg-panel border border-app rounded-2xl p-4 animate-pulse space-y-3">
                   <div className="h-5 bg-slate-800/60 rounded-full w-1/2"></div>
                   <div className="h-14 bg-slate-800/40 rounded-xl w-full"></div>
                 </div>
               ))
             ) : filteredShopExpenses.length === 0 ? (
-              <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-8 text-center space-y-2">
-                <Receipt size={20} className="text-slate-500 mx-auto" />
+              <div className="bg-panel border border-app rounded-2xl p-8 text-center space-y-2">
+                <Receipt size={20} className="text-muted mx-auto" />
                 <p className="text-white font-bold text-xs">No shop expenses found</p>
-                <p className="text-slate-500 text-[11px]">Try adjusting search or date range.</p>
+                <p className="text-muted text-[11px]">Try adjusting search or date range.</p>
               </div>
             ) : (
               filteredShopExpenses.map((expense) => (
-                <div key={expense.id} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3.5 shadow-md space-y-3 hover:border-slate-600 transition-all">
+                <div key={expense.id} className="bg-panel border border-app rounded-2xl p-3.5 shadow-md space-y-3 hover:border-muted transition-all">
                   {/* Top Row */}
                   <div className="flex items-center justify-between gap-2.5">
                     <div className="min-w-0 flex-1">
@@ -946,11 +946,11 @@ export default function ExpensesPageInner({
                         <FileText size={9} />
                         {expense.category}
                       </span>
-                      <p className="text-[9px] font-bold text-slate-500 mt-1 flex items-center gap-1">
+                      <p className="text-[9px] font-bold text-muted mt-1 flex items-center gap-1">
                         <Clock size={9} /> {fmtDateTime(expense.date_created)}
                       </p>
                       {expense.supplier_id != null && supplierMap[expense.supplier_id] && (
-                        <p className="text-[9px] font-bold text-slate-500 mt-0.5 flex items-center gap-1">
+                        <p className="text-[9px] font-bold text-muted mt-0.5 flex items-center gap-1">
                           <Truck size={9} /> {supplierMap[expense.supplier_id]}
                         </p>
                       )}
@@ -963,17 +963,17 @@ export default function ExpensesPageInner({
                   </div>
 
                   {/* Inner Box */}
-                  <div className="bg-[#0d1117] p-3 rounded-xl border border-[#21293d]/80">
+                  <div className="bg-app p-3 rounded-xl border border-app/80">
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1 min-w-0">
-                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Remarks</span>
-                        <p className="text-[11px] text-slate-300 truncate">{expense.remarks || "—"}</p>
+                        <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Remarks</span>
+                        <p className="text-[11px] text-app-2 truncate">{expense.remarks || "—"}</p>
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <button onClick={() => openEditExpense(expense)} className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all" title="Edit">
+                        <button onClick={() => openEditExpense(expense)} className="p-1.5 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all" title="Edit">
                           <Pencil size={13} />
                         </button>
-                        <button onClick={() => deleteExpense(expense.id)} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Delete">
+                        <button onClick={() => deleteExpense(expense.id)} className="p-1.5 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Delete">
                           <Trash2 size={13} />
                         </button>
                       </div>
@@ -992,8 +992,8 @@ export default function ExpensesPageInner({
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
           onClick={(e) => e.target === e.currentTarget && closeModals()}
         >
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150"> 
-            <div className="px-4 py-3.5 bg-[#0d1117] border-b border-[#21293d] flex items-center justify-between sticky top-0 z-10">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150"> 
+            <div className="px-4 py-3.5 bg-app border-b border-app flex items-center justify-between sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
                   <UserRound size={15} />
@@ -1002,16 +1002,16 @@ export default function ExpensesPageInner({
                   <h3 className="font-black text-white text-sm">
                     {staffForm.id ? "Edit Staff Payment" : "Add Staff Payment"}
                   </h3>
-                  <p className="text-[10px] text-slate-500">Staff ko diye advance ya salary payment</p>
+                  <p className="text-[10px] text-muted">Staff ko diye advance ya salary payment</p>
                 </div>
               </div>
-              <button onClick={closeModals} className="w-7 h-7 rounded-lg bg-[#161b27] border border-[#21293d] text-slate-400 hover:text-white flex items-center justify-center transition-colors">
+              <button onClick={closeModals} className="w-7 h-7 rounded-lg bg-panel border border-app text-muted hover:text-white flex items-center justify-center transition-colors">
                 <X size={14} />
               </button>
             </div>
             <form onSubmit={saveStaffPayment} className="p-4 space-y-4">
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Staff</span>
+                <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Staff</span>
                 <SearchableSelect
                   value={staffForm.mechanic_id || null}
                   options={mechanics.map((mechanic) => ({
@@ -1025,38 +1025,38 @@ export default function ExpensesPageInner({
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
-                  <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Amount</span>
+                  <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Amount</span>
                   <input
                     type="number"
                     step="0.01"
                     value={staffForm.amount}
                     onChange={(e) => setStaffForm((prev) => ({ ...prev, amount: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700 [color-scheme:dark]"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-app [color-scheme:dark]"
                     placeholder="0.00"
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Payment Date</span>
+                  <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Payment Date</span>
                   <input
                     type="date"
                     value={staffForm.date_paid}
                     onChange={(e) => setStaffForm((prev) => ({ ...prev, date_paid: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all [color-scheme:dark]"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all [color-scheme:dark]"
                   />
                 </label>
               </div>
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Reason / Note</span>
+                <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Reason / Note</span>
                 <textarea
                   value={staffForm.reason}
                   onChange={(e) => setStaffForm((prev) => ({ ...prev, reason: e.target.value }))}
                   rows={3}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all resize-none placeholder:text-slate-700 [color-scheme:dark]"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all resize-none placeholder:text-app [color-scheme:dark]"
                   placeholder="Salary for month, advance, note..."
                 />
               </label>
               <div className="flex gap-2 pt-1">
-                <button type="button" onClick={closeModals} className="flex-1 py-2.5 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 hover:text-white transition-all active:scale-95">
+                <button type="button" onClick={closeModals} className="flex-1 py-2.5 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 hover:text-white transition-all active:scale-95">
                   Cancel
                 </button>
                 <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-sm">
@@ -1075,8 +1075,8 @@ export default function ExpensesPageInner({
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
           onClick={(e) => e.target === e.currentTarget && closeModals()}
         >
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150">
-            <div className="px-4 py-3.5 bg-[#0d1117] border-b border-[#21293d] flex items-center justify-between sticky top-0 z-10">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150">
+            <div className="px-4 py-3.5 bg-app border-b border-app flex items-center justify-between sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
                   <Receipt size={15} />
@@ -1085,21 +1085,21 @@ export default function ExpensesPageInner({
                   <h3 className="font-black text-white text-sm">
                     {expenseForm.id ? "Edit Shop Expense" : "Add Shop Expense"}
                   </h3>
-                  <p className="text-[10px] text-slate-500">Shop kharch category ke saath</p>
+                  <p className="text-[10px] text-muted">Shop kharch category ke saath</p>
                 </div>
               </div>
-              <button onClick={closeModals} className="w-7 h-7 rounded-lg bg-[#161b27] border border-[#21293d] text-slate-400 hover:text-white flex items-center justify-center transition-colors">
+              <button onClick={closeModals} className="w-7 h-7 rounded-lg bg-panel border border-app text-muted hover:text-white flex items-center justify-center transition-colors">
                 <X size={14} />
               </button>
             </div>
             <form onSubmit={saveExpense} className="p-4 space-y-4">
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Category</span>
+                <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Category</span>
                 <input
                   list="expense-categories"
                   value={expenseForm.category}
                   onChange={(e) => setExpenseForm((prev) => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700 [color-scheme:dark]"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-app [color-scheme:dark]"
                   placeholder="Rent, travel, office, material..."
                 />
                 <datalist id="expense-categories">
@@ -1114,38 +1114,38 @@ export default function ExpensesPageInner({
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
-                  <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Amount</span>
+                  <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Amount</span>
                   <input
                     type="number"
                     step="0.01"
                     value={expenseForm.amount}
                     onChange={(e) => setExpenseForm((prev) => ({ ...prev, amount: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700 [color-scheme:dark]"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-app [color-scheme:dark]"
                     placeholder="0.00"
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Date</span>
+                  <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Date</span>
                   <input
                     type="date"
                     value={expenseForm.date}
                     onChange={(e) => setExpenseForm((prev) => ({ ...prev, date: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all [color-scheme:dark]"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all [color-scheme:dark]"
                   />
                 </label>
               </div>
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Remarks</span>
+                <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Remarks</span>
                 <textarea
                   value={expenseForm.remarks}
                   onChange={(e) => setExpenseForm((prev) => ({ ...prev, remarks: e.target.value }))}
                   rows={3}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all resize-none placeholder:text-slate-700 [color-scheme:dark]"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all resize-none placeholder:text-app [color-scheme:dark]"
                   placeholder="Optional note"
                 />
               </label>
               <div className="flex gap-2 pt-1">
-                <button type="button" onClick={closeModals} className="flex-1 py-2.5 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 hover:text-white transition-all active:scale-95">
+                <button type="button" onClick={closeModals} className="flex-1 py-2.5 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 hover:text-white transition-all active:scale-95">
                   Cancel
                 </button>
                 <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-sm">

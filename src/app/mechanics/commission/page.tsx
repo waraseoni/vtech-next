@@ -466,27 +466,27 @@ function CommissionContent() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+      <div className="bg-panel border border-app rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-700 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
             <TrendingUp size={18} className="text-white" />
           </div>
           <div>
             <h1 className="text-lg font-black text-white">Commission Management</h1>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+            <p className="text-[10px] text-muted uppercase tracking-wider">
               Staff commission and rates
             </p>
           </div>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex bg-[#0d1117] border border-[#21293d] rounded-xl p-1">
+        <div className="flex bg-app border border-app rounded-xl p-1">
           <button
             onClick={() => setTab("statement")}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
               activeTab === "statement"
                 ? "bg-blue-600 text-white"
-                : "text-slate-500 hover:text-slate-300"
+                : "text-muted hover:text-app-2"
             }`}
           >
             <FileText size={14} /> Statement
@@ -496,7 +496,7 @@ function CommissionContent() {
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
               activeTab === "master"
                 ? "bg-blue-600 text-white"
-                : "text-slate-500 hover:text-slate-300"
+                : "text-muted hover:text-app-2"
             }`}
           >
             <Settings size={14} /> Rate Master
@@ -507,36 +507,36 @@ function CommissionContent() {
       {activeTab === "statement" ? (
         <>
           {/* Filters */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
+          <div className="bg-panel border border-app rounded-2xl px-5 py-4">
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted">
                 Month:
               </span>
               <button
                 onClick={() => navigate("prev")}
-                className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 hover:text-white transition-all"
+                className="p-2 rounded-lg bg-app border border-app hover:bg-panel-2 text-muted hover:text-white transition-all"
               >
                 <ChevronLeft size={14} />
               </button>
-              <div className="flex items-center gap-2 bg-[#0d1117] border border-[#21293d] rounded-xl px-4 py-2">
-                <Calendar size={14} className="text-slate-600" />
+              <div className="flex items-center gap-2 bg-app border border-app rounded-xl px-4 py-2">
+                <Calendar size={14} className="text-muted-2" />
                 <input
                   type="month"
                   value={month}
                   onChange={(e) => setMonth(e.target.value)}
-                  className="bg-transparent text-sm font-bold text-slate-200 outline-none"
+                  className="bg-transparent text-sm font-bold text-app-2 outline-none"
                 />
               </div>
               <button
                 onClick={() => navigate("next")}
-                className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 hover:text-white transition-all"
+                className="p-2 rounded-lg bg-app border border-app hover:bg-panel-2 text-muted hover:text-white transition-all"
               >
                 <ChevronRight size={14} />
               </button>
 
-              <div className="h-6 w-px bg-[#21293d] mx-1" />
+              <div className="h-6 w-px bg-panel-2 mx-1" />
 
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted">
                 Staff:
               </span>
               <SearchableSelect
@@ -554,7 +554,7 @@ function CommissionContent() {
                     "_blank"
                   )
                 }
-                className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <Printer size={14} /> Print
               </button>
@@ -567,26 +567,26 @@ function CommissionContent() {
               {summary.map((e) => (
                 <div
                   key={e.name}
-                  className="bg-[#161b27] border border-[#21293d] rounded-xl px-4 py-3"
+                  className="bg-panel border border-app rounded-xl px-4 py-3"
                 >
-                  <p className="text-[10px] text-slate-500 font-bold uppercase truncate">
+                  <p className="text-[10px] text-muted font-bold uppercase truncate">
                     {e.name}
                   </p>
                   <p className="text-base font-black text-emerald-400 mt-1">{inr(e.total)}</p>
-                  <p className="text-[10px] text-slate-600 mt-0.5">{e.jobs} jobs</p>
+                  <p className="text-[10px] text-muted-2 mt-0.5">{e.jobs} jobs</p>
                 </div>
               ))}
             </div>
           )}
 
           {/* Table */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-2">
-              <h2 className="text-sm font-bold text-slate-300">
+          <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+            <div className="px-5 py-3 border-b border-app flex items-center justify-between flex-wrap gap-2">
+              <h2 className="text-sm font-bold text-app-2">
                 Commission Statement — {monthLabel}
               </h2>
               <div className="text-right">
-                <p className="text-[10px] font-black uppercase text-slate-500">Total Commission</p>
+                <p className="text-[10px] font-black uppercase text-muted">Total Commission</p>
                 <p className="text-lg font-black text-emerald-400">{inr(totalComm)}</p>
               </div>
             </div>
@@ -594,13 +594,13 @@ function CommissionContent() {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <Loader2 size={24} className="animate-spin text-blue-400" />
-                <p className="text-slate-600 text-xs font-black uppercase tracking-wider">
+                <p className="text-muted-2 text-xs font-black uppercase tracking-wider">
                   Loading...
                 </p>
               </div>
             ) : rows.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-600">
-                <FileText size={36} className="text-slate-700" />
+              <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-2">
+                <FileText size={36} className="text-app" />
                 <p className="text-sm font-bold">No commission records for this period</p>
               </div>
             ) : (
@@ -608,7 +608,7 @@ function CommissionContent() {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="bg-[#111520]">
+                      <tr className="bg-panel-2">
                         {[
                           "#",
                           "Date",
@@ -623,7 +623,7 @@ function CommissionContent() {
                         ].map((h) => (
                           <th
                             key={h}
-                            className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left last:text-center"
+                            className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left last:text-center"
                           >
                             {h}
                           </th>
@@ -636,12 +636,12 @@ function CommissionContent() {
                         .map((r, i) => (
                           <tr
                             key={r.id}
-                            className="border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors"
+                            className="border-t border-app/50 hover:bg-white/[0.02] transition-colors"
                           >
-                            <td className="px-3 py-2.5 text-xs text-slate-500">
+                            <td className="px-3 py-2.5 text-xs text-muted">
                               {(currentPage - 1) * rowsPerPage + i + 1}
                             </td>
-                            <td className="px-3 py-2.5 text-xs text-slate-400 whitespace-nowrap">
+                            <td className="px-3 py-2.5 text-xs text-muted whitespace-nowrap">
                               {new Date(r.date_completed || r.date_created).toLocaleDateString(
                                 "en-IN",
                                 { day: "2-digit", month: "short", year: "numeric" }
@@ -649,10 +649,10 @@ function CommissionContent() {
                             </td>
                             <td className="px-3 py-2.5">
                               <div className="text-xs font-bold text-blue-400">#{r.job_id}</div>
-                              {r.code && <div className="text-[10px] text-slate-600">{r.code}</div>}
+                              {r.code && <div className="text-[10px] text-muted-2">{r.code}</div>}
                             </td>
-                            <td className="px-3 py-2.5 text-xs text-slate-400">{r.item || "—"}</td>
-                            <td className="px-3 py-2.5 text-xs text-slate-400">
+                            <td className="px-3 py-2.5 text-xs text-muted">{r.item || "—"}</td>
+                            <td className="px-3 py-2.5 text-xs text-muted">
                               {r.client_name || "—"}
                             </td>
                             <td className="px-3 py-2.5">
@@ -662,7 +662,7 @@ function CommissionContent() {
                                   name={r.m_name}
                                   cls="w-7 h-7 text-[10px]"
                                 />
-                                <span className="text-xs font-bold text-slate-200">{r.m_name}</span>
+                                <span className="text-xs font-bold text-app-2">{r.m_name}</span>
                               </div>
                             </td>
                             <td className="px-3 py-2.5 text-xs text-center">
@@ -670,7 +670,7 @@ function CommissionContent() {
                                 {r.rate.toFixed(0)}%
                               </span>
                             </td>
-                            <td className="px-3 py-2.5 text-xs text-right text-slate-300">
+                            <td className="px-3 py-2.5 text-xs text-right text-app-2">
                               {inr(r.service_amount)}
                             </td>
                             <td className="px-3 py-2.5 text-xs text-right font-black text-emerald-400">
@@ -691,8 +691,8 @@ function CommissionContent() {
                 </div>
                 {/* Pagination Footer */}
                 {rows.length > rowsPerPage && (
-                  <div className="bg-[#111520] px-5 py-3 flex items-center justify-between border-t border-[#21293d] flex-wrap gap-3">
-                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  <div className="bg-panel-2 px-5 py-3 flex items-center justify-between border-t border-app flex-wrap gap-3">
+                    <div className="text-[10px] font-bold text-muted uppercase tracking-widest">
                       Showing {(currentPage - 1) * rowsPerPage + 1} to{" "}
                       {Math.min(currentPage * rowsPerPage, rows.length)} of {rows.length} records
                     </div>
@@ -700,11 +700,11 @@ function CommissionContent() {
                       <button
                         onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
-                        className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        className="p-2 rounded-lg bg-app border border-app text-muted hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                       >
                         <ChevronLeft size={16} />
                       </button>
-                      <div className="text-xs font-black text-slate-400 uppercase tracking-widest px-3 border-x border-[#21293d] min-w-[120px] text-center">
+                      <div className="text-xs font-black text-muted uppercase tracking-widest px-3 border-x border-app min-w-[120px] text-center">
                         Page {currentPage} of {Math.ceil(rows.length / rowsPerPage)}
                       </div>
                       <button
@@ -714,7 +714,7 @@ function CommissionContent() {
                           )
                         }
                         disabled={currentPage === Math.ceil(rows.length / rowsPerPage)}
-                        className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        className="p-2 rounded-lg bg-app border border-app text-muted hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                       >
                         <ChevronRight size={16} />
                       </button>
@@ -727,11 +727,11 @@ function CommissionContent() {
         </>
       ) : (
         /* RATE MASTER TAB */
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#21293d] flex items-center justify-between">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-app flex items-center justify-between">
             <div>
               <h2 className="text-sm font-bold text-white">Commission Rate Master</h2>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+              <p className="text-[10px] text-muted uppercase tracking-wider">
                 Set percentage rates for each mechanic
               </p>
             </div>
@@ -745,11 +745,11 @@ function CommissionContent() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-[#111520]">
+                  <tr className="bg-panel-2">
                     {["Mechanic Name", "Current Rate (%)", "Last Updated", "Actions"].map((h) => (
                       <th
                         key={h}
-                        className="px-5 py-3 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left first:pl-6"
+                        className="px-5 py-3 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left first:pl-6"
                       >
                         {h}
                       </th>
@@ -762,7 +762,7 @@ function CommissionContent() {
                       <td className="px-5 py-4 first:pl-6">
                         <div className="flex items-center gap-3">
                           <MechAvatar image={m.image} name={m.name} />
-                          <span className="font-bold text-slate-200">{m.name}</span>
+                          <span className="font-bold text-app-2">{m.name}</span>
                         </div>
                       </td>
                       <td className="px-5 py-4">
@@ -770,7 +770,7 @@ function CommissionContent() {
                           {m.current_rate.toFixed(1)}%
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-xs text-slate-500">
+                      <td className="px-5 py-4 text-xs text-muted">
                         {m.last_updated
                           ? new Date(m.last_updated).toLocaleDateString("en-IN", {
                               day: "2-digit",
@@ -789,7 +789,7 @@ function CommissionContent() {
                           </button>
                           <button
                             onClick={() => openHistory(m)}
-                            className="p-1.5 bg-[#1e2637] border border-[#2a3550] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg transition-all"
+                            className="p-1.5 bg-panel-2 border border-app-2 hover:border-blue-500/40 text-muted hover:text-white rounded-lg transition-all"
                             title="View History"
                           >
                             <History size={14} />
@@ -808,8 +808,8 @@ function CommissionContent() {
       {/* UPDATE MODAL */}
       {showUpdateModal && selectedMech && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-5 border-b border-[#21293d] flex items-center justify-between bg-gradient-to-r from-blue-600/10 to-transparent">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-5 border-b border-app flex items-center justify-between bg-gradient-to-r from-blue-600/10 to-transparent">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
                   <Edit3 size={18} />
@@ -823,7 +823,7 @@ function CommissionContent() {
               </div>
               <button
                 onClick={() => setShowUpdateModal(false)}
-                className="text-slate-500 hover:text-white p-1.5 hover:bg-white/5 rounded-lg transition-all"
+                className="text-muted hover:text-white p-1.5 hover:bg-white/5 rounded-lg transition-all"
               >
                 <X size={18} />
               </button>
@@ -838,7 +838,7 @@ function CommissionContent() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest ml-1">
                     New Rate (%)
                   </label>
                   <div className="relative">
@@ -848,22 +848,22 @@ function CommissionContent() {
                       value={newRate}
                       onChange={(e) => setNewRate(e.target.value)}
                       autoFocus
-                      className="w-full pl-4 pr-10 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-white font-bold focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all"
+                      className="w-full pl-4 pr-10 py-2.5 bg-app border border-app rounded-xl text-white font-bold focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 font-bold">
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-2 font-bold">
                       %
                     </span>
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">
+                  <label className="text-[10px] font-black uppercase text-muted tracking-widest ml-1">
                     Effective Date
                   </label>
                   <input
                     type="date"
                     value={effDate}
                     onChange={(e) => setEffDate(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-white font-bold focus:border-blue-500 outline-none transition-all [color-scheme:dark]"
+                    className="w-full px-4 py-2.5 bg-app border border-app rounded-xl text-white font-bold focus:border-blue-500 outline-none transition-all [color-scheme:dark]"
                   />
                 </div>
               </div>
@@ -887,7 +887,7 @@ function CommissionContent() {
                 <button
                   type="button"
                   onClick={() => setShowUpdateModal(false)}
-                  className="px-6 py-3 bg-[#111520] border border-[#21293d] text-slate-500 hover:text-white rounded-xl font-bold text-sm transition-all"
+                  className="px-6 py-3 bg-panel-2 border border-app text-muted hover:text-white rounded-xl font-bold text-sm transition-all"
                 >
                   Cancel
                 </button>
@@ -900,22 +900,22 @@ function CommissionContent() {
       {/* HISTORY MODAL */}
       {showHistoryModal && selectedMech && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <div className="p-5 border-b border-[#21293d] flex items-center justify-between bg-[#111520]">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="p-5 border-b border-app flex items-center justify-between bg-panel-2">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-center text-amber-500">
                   <History size={18} />
                 </div>
                 <div>
                   <h3 className="font-black text-white">Rate History</h3>
-                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">
+                  <p className="text-[10px] text-muted uppercase font-bold tracking-widest">
                     {selectedMech.name}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowHistoryModal(false)}
-                className="text-slate-500 hover:text-white p-1.5 hover:bg-white/5 rounded-lg transition-all"
+                className="text-muted hover:text-white p-1.5 hover:bg-white/5 rounded-lg transition-all"
               >
                 <X size={18} />
               </button>
@@ -927,14 +927,14 @@ function CommissionContent() {
                   <Loader2 size={24} className="animate-spin text-blue-500 mx-auto" />
                 </div>
               ) : rateHistory.length === 0 ? (
-                <div className="py-20 text-center text-slate-600 space-y-2">
+                <div className="py-20 text-center text-muted-2 space-y-2">
                   <AlertCircle size={32} className="mx-auto opacity-20" />
                   <p className="text-sm font-bold">No history records found.</p>
                 </div>
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-[#0d1117] text-[9px] font-black uppercase text-slate-600 tracking-widest">
+                    <tr className="bg-app text-[9px] font-black uppercase text-muted-2 tracking-widest">
                       <th className="px-5 py-3 text-left">Effective Date</th>
                       <th className="px-5 py-3 text-right">Rate (%)</th>
                       <th className="px-5 py-3 text-right">Date Added</th>
@@ -943,7 +943,7 @@ function CommissionContent() {
                   <tbody className="divide-y divide-[#21293d]">
                     {rateHistory.map((h) => (
                       <tr key={h.id} className="hover:bg-white/[0.01] transition-colors">
-                        <td className="px-5 py-3.5 text-sm font-bold text-slate-300">
+                        <td className="px-5 py-3.5 text-sm font-bold text-app-2">
                           {new Date(h.effective_date).toLocaleDateString("en-IN", {
                             day: "2-digit",
                             month: "short",
@@ -955,7 +955,7 @@ function CommissionContent() {
                             {h.commission_percent.toFixed(1)}%
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 text-right text-[10px] text-slate-600 uppercase">
+                        <td className="px-5 py-3.5 text-right text-[10px] text-muted-2 uppercase">
                           {new Date(h.date_created).toLocaleDateString("en-IN", {
                             day: "2-digit",
                             month: "short",
@@ -967,10 +967,10 @@ function CommissionContent() {
                 </table>
               )}
             </div>
-            <div className="p-4 bg-[#111520] border-t border-[#21293d] text-center">
+            <div className="p-4 bg-panel-2 border-t border-app text-center">
               <button
                 onClick={() => setShowHistoryModal(false)}
-                className="px-8 py-2 bg-[#1e2637] text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all border border-[#2a3550]"
+                className="px-8 py-2 bg-panel-2 text-app-2 hover:text-white rounded-xl text-xs font-bold transition-all border border-app-2"
               >
                 Close
               </button>

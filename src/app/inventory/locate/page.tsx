@@ -546,9 +546,9 @@ export default function LocatePage() {
   const st = (p: ProductLoc): StockStatusStyle => stockStatusStyle(p.available, p.alert_quantity);
 
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
+    <div className="min-h-screen bg-app font-sans pb-16">
       {/* ── HEADER ── */}
-      <div className="relative overflow-hidden bg-[#0d1117] border-b border-[#21293d]">
+      <div className="relative overflow-hidden bg-app border-b border-app">
         <div className="absolute -top-20 -left-20 w-72 h-72 bg-emerald-600/10 rounded-full blur-3xl" />
         <div className="absolute -top-10 right-10 w-48 h-48 bg-teal-600/8 rounded-full blur-2xl" />
 
@@ -562,7 +562,7 @@ export default function LocatePage() {
                 <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none">
                   Spare Finder
                 </h1>
-                <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.2em] mt-1">
+                <p className="text-muted-2 text-xs font-bold uppercase tracking-[0.2em] mt-1">
                   Shop me koi bhi spare kaha rakha hai — foran khojain
                 </p>
               </div>
@@ -571,7 +571,7 @@ export default function LocatePage() {
               <button
                 onClick={() => fetchData(true)}
                 disabled={refreshing}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
                 {refreshing ? "Refreshing..." : "Refresh"}
@@ -579,19 +579,19 @@ export default function LocatePage() {
               <button
                 onClick={() => setPrintOpen(true)}
                 disabled={stats.locations === 0}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all disabled:opacity-40"
+                className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all disabled:opacity-40"
               >
                 <Printer size={13} /> Shelf Labels
               </button>
               <Link
                 href="/inventory"
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <Boxes size={13} /> Inventory
               </Link>
               <Link
                 href="/inventory/purchase-orders"
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <FileText size={13} /> Purchase Orders
               </Link>
@@ -641,7 +641,7 @@ export default function LocatePage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className={`text-xl font-black ${color}`}>{value}</div>
-                    <div className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">
+                    <div className="text-[9px] text-muted-2 font-bold uppercase tracking-widest mt-0.5">
                       {label}
                     </div>
                   </div>
@@ -658,7 +658,7 @@ export default function LocatePage() {
         <div className="flex flex-col sm:flex-row gap-2.5">
           <div className="relative flex-1">
             <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2"
               size={15}
             />
             <input
@@ -669,7 +669,7 @@ export default function LocatePage() {
                 if (e.key === "Enter") handleScanInput(scanInput);
               }}
               placeholder="Product barcode scan karein, ya shelf QR — ya koi bhi name/naam likhein..."
-              className="w-full pl-10 pr-4 py-3 bg-[#161b27] border border-[#21293d] text-slate-200 placeholder-slate-600 rounded-xl text-sm focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-3 bg-panel border border-app text-app-2 placeholder-slate-600 rounded-xl text-sm focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all"
             />
           </div>
           <div className="flex gap-2">
@@ -721,13 +721,13 @@ export default function LocatePage() {
             const styles: Record<string, string> = {
               emerald: active
                 ? "bg-emerald-600 text-white border-emerald-600"
-                : "bg-[#161b27] text-slate-500 border-[#21293d] hover:border-emerald-500/40",
+                : "bg-panel text-muted border-app hover:border-emerald-500/40",
               teal: active
                 ? "bg-teal-600 text-white border-teal-600"
-                : "bg-[#161b27] text-slate-500 border-[#21293d] hover:border-teal-500/40",
+                : "bg-panel text-muted border-app hover:border-teal-500/40",
               amber: active
                 ? "bg-amber-500 text-white border-amber-500"
-                : "bg-[#161b27] text-slate-500 border-[#21293d] hover:border-amber-500/40",
+                : "bg-panel text-muted border-app hover:border-amber-500/40",
             };
             return (
               <button
@@ -753,7 +753,7 @@ export default function LocatePage() {
           {/* local quick filter */}
           <div className="relative">
             <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-700"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-app"
               size={14}
             />
             <input
@@ -764,14 +764,14 @@ export default function LocatePage() {
                 setFocusId(null);
               }}
               placeholder="Name, description, barcode, ya location — filter karein..."
-              className="w-full pl-10 pr-4 py-2.5 bg-[#161b27] border border-[#21293d] text-slate-200 placeholder-slate-600 rounded-xl text-sm focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-panel border border-app text-app-2 placeholder-slate-600 rounded-xl text-sm focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all"
             />
           </div>
 
           {filtered.length === 0 && (
-            <div className="py-16 text-center bg-[#161b27] border border-dashed border-[#21293d] rounded-2xl">
-              <Package size={36} className="mx-auto text-slate-800 mb-3" />
-              <p className="text-slate-600 font-bold text-sm">Koi product nahi mila</p>
+            <div className="py-16 text-center bg-panel border border-dashed border-app rounded-2xl">
+              <Package size={36} className="mx-auto text-app mb-3" />
+              <p className="text-muted-2 font-bold text-sm">Koi product nahi mila</p>
             </div>
           )}
 
@@ -785,7 +785,7 @@ export default function LocatePage() {
                   if (el) resultRefs.current.set(p.id, el);
                   else resultRefs.current.delete(p.id);
                 }}
-                className={`bg-[#161b27] border rounded-2xl overflow-hidden transition-all ${focusId === p.id ? "border-emerald-400 ring-1 ring-emerald-400/40" : "border-[#21293d]"}`}
+                className={`bg-panel border rounded-2xl overflow-hidden transition-all ${focusId === p.id ? "border-emerald-400 ring-1 ring-emerald-400/40" : "border-app"}`}
               >
                 <div
                   className={`h-0.5 w-full ${p.available <= 0 ? "bg-red-500" : p.available <= alertThreshold(p.alert_quantity) ? "bg-amber-400" : "bg-emerald-500"}`}
@@ -793,8 +793,8 @@ export default function LocatePage() {
                 <div className="p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 border bg-[#111520] border-[#21293d]">
-                        <Package size={18} className="text-slate-500" />
+                      <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 border bg-panel-2 border-app">
+                        <Package size={18} className="text-muted" />
                       </div>
                       <div className="min-w-0">
                         <Link
@@ -803,7 +803,7 @@ export default function LocatePage() {
                         >
                           {p.name}
                         </Link>
-                        <div className="text-[11px] text-slate-600 truncate max-w-[320px]">
+                        <div className="text-[11px] text-muted-2 truncate max-w-[320px]">
                           {p.description}
                         </div>
                         {p.barcode && (
@@ -863,7 +863,7 @@ export default function LocatePage() {
                         bharo
                       </div>
                     ) : (
-                      <span className="text-[11px] text-slate-700">No stock</span>
+                      <span className="text-[11px] text-app">No stock</span>
                     )}
                   </div>
                 </div>
@@ -877,15 +877,15 @@ export default function LocatePage() {
       {tab === "tree" && (
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           {stats.locations === 0 ? (
-            <div className="py-16 text-center bg-[#161b27] border border-dashed border-[#21293d] rounded-2xl">
-              <QrCode size={36} className="mx-auto text-slate-800 mb-3" />
-              <p className="text-slate-600 font-bold text-sm">Abhi koi location set nahi hai</p>
-              <p className="text-slate-700 text-xs mt-1">
+            <div className="py-16 text-center bg-panel border border-dashed border-app rounded-2xl">
+              <QrCode size={36} className="mx-auto text-app mb-3" />
+              <p className="text-muted-2 font-bold text-sm">Abhi koi location set nahi hai</p>
+              <p className="text-app text-xs mt-1">
                 Stock add/edit karte waqt Zone ▸ Rack ▸ Bin ▸ Box bharein
               </p>
             </div>
           ) : (
-            <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3 space-y-1">
+            <div className="bg-panel border border-app rounded-2xl p-3 space-y-1">
               <RecursiveTree
                 root={tree}
                 expanded={expanded}
@@ -903,7 +903,7 @@ export default function LocatePage() {
       {tab === "unplaced" && (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-2.5">
           {unplaced.length === 0 ? (
-            <div className="py-16 text-center bg-[#161b27] border border-dashed border-[#21293d] rounded-2xl">
+            <div className="py-16 text-center bg-panel border border-dashed border-app rounded-2xl">
               <Check size={32} className="mx-auto text-emerald-500 mb-3" />
               <p className="text-emerald-400 font-bold text-sm">
                 Sab products ki location set hai!
@@ -911,14 +911,14 @@ export default function LocatePage() {
             </div>
           ) : (
             <>
-              <p className="text-[11px] text-slate-600 font-bold px-1">
+              <p className="text-[11px] text-muted-2 font-bold px-1">
                 {unplaced.length} product{unplaced.length > 1 ? "s" : ""} me stock hai par location
                 nahi — inhe location assign karo.
               </p>
               {unplaced.map((p) => (
                 <div
                   key={p.id}
-                  className="flex items-center justify-between gap-3 bg-[#161b27] border border-amber-500/20 rounded-xl px-4 py-3"
+                  className="flex items-center justify-between gap-3 bg-panel border border-amber-500/20 rounded-xl px-4 py-3"
                 >
                   <div className="min-w-0">
                     <Link
@@ -927,13 +927,13 @@ export default function LocatePage() {
                     >
                       {p.name}
                     </Link>
-                    <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-600">
+                    <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-2">
                       <span className="font-bold text-amber-400">{p.unlocatedQty} unit stock</span>
                       {p.unlocatedPoCodes.length > 0 && (
                         <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-400 font-bold">
                           <FileText size={9} /> {p.unlocatedPoCodes.slice(0, 2).join(", ")}
                           {p.unlocatedPoCodes.length > 2 && (
-                            <span className="text-slate-600">
+                            <span className="text-muted-2">
                               {" "}
                               +{p.unlocatedPoCodes.length - 2}
                             </span>
@@ -966,12 +966,12 @@ export default function LocatePage() {
             onClick={() => setQrOpen(null)}
           />
           <div
-            className="relative bg-[#161b27] border border-[#21293d] rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl"
+            className="relative bg-panel border border-app rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl"
             style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}
           >
             <button
               onClick={() => setQrOpen(null)}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all"
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg bg-panel-2 hover:bg-white/5 text-muted hover:text-app-2 border border-app transition-all"
             >
               <X size={15} />
             </button>
@@ -979,23 +979,23 @@ export default function LocatePage() {
               <QrCode size={20} className="text-emerald-400" />
             </div>
             <h3 className="text-white font-black">Shelf Location QR</h3>
-            <p className="text-[11px] text-slate-500 font-bold mt-1 break-words">
+            <p className="text-[11px] text-muted font-bold mt-1 break-words">
               {locPath(qrOpen)}
             </p>
             <div className="mt-4 bg-white rounded-2xl p-3 inline-block mx-auto">
               {qrUrl ? (
                 <Image src={qrUrl} alt="QR" width={176} height={176} className="w-44 h-44 cursor-zoom-in" onDoubleClick={() => openImageLightbox(qrUrl, "Shelf Location QR")} />
               ) : (
-                <Loader2 size={40} className="animate-spin text-slate-500" />
+                <Loader2 size={40} className="animate-spin text-muted" />
               )}
             </div>
-            <p className="text-[9px] text-slate-600 mt-3 font-bold uppercase tracking-widest">
+            <p className="text-[9px] text-muted-2 mt-3 font-bold uppercase tracking-widest">
               Label chipkao · Spare Finder me scan karo
             </p>
             <div className="grid grid-cols-2 gap-2 mt-4">
               <button
                 onClick={copyToken}
-                className="flex items-center justify-center gap-1.5 py-2.5 bg-[#111520] border border-[#21293d] text-slate-300 rounded-xl text-xs font-bold hover:border-emerald-500/40 transition-all"
+                className="flex items-center justify-center gap-1.5 py-2.5 bg-panel-2 border border-app text-app-2 rounded-xl text-xs font-bold hover:border-emerald-500/40 transition-all"
               >
                 {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}{" "}
                 {copied ? "Copied!" : "Copy Token"}
@@ -1019,12 +1019,12 @@ export default function LocatePage() {
             onClick={() => setPrintOpen(false)}
           />
           <div
-            className="relative bg-[#161b27] border border-[#21293d] rounded-2xl p-6 w-full max-w-md shadow-2xl"
+            className="relative bg-panel border border-app rounded-2xl p-6 w-full max-w-md shadow-2xl"
             style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}
           >
             <button
               onClick={() => setPrintOpen(false)}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all"
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg bg-panel-2 hover:bg-white/5 text-muted hover:text-app-2 border border-app transition-all"
             >
               <X size={15} />
             </button>
@@ -1032,14 +1032,14 @@ export default function LocatePage() {
               <Printer size={20} className="text-emerald-400" />
             </div>
             <h3 className="text-white font-black">Shelf Location Labels</h3>
-            <p className="text-[11px] text-slate-500 font-bold mt-1 leading-relaxed">
+            <p className="text-[11px] text-muted font-bold mt-1 leading-relaxed">
               {stats.locations} locations. Har label par QR hota hai — print karke shelf/box par
               chipkayein. Scan karne par Spare Finder me wo location khulegi.
             </p>
             <div className="flex gap-2 mt-5">
               <button
                 onClick={() => setPrintOpen(false)}
-                className="flex-1 py-3 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl text-sm font-bold hover:border-slate-500 transition-all"
+                className="flex-1 py-3 bg-panel-2 border border-app text-muted rounded-xl text-sm font-bold hover:border-muted transition-all"
               >
                 Cancel
               </button>
@@ -1126,19 +1126,19 @@ function RecursiveTree({
               </div>
               {hasChildren ? (
                 isOpen ? (
-                  <ChevronDown size={13} className="text-slate-600 flex-shrink-0" />
+                  <ChevronDown size={13} className="text-muted-2 flex-shrink-0" />
                 ) : (
-                  <ChevronRight size={13} className="text-slate-600 flex-shrink-0" />
+                  <ChevronRight size={13} className="text-muted-2 flex-shrink-0" />
                 )
               ) : (
                 <span className="w-3.5 flex-shrink-0" />
               )}
               <div
-                className={`flex-1 min-w-0 font-bold text-sm ${isActive ? "text-emerald-300" : "text-slate-300"}`}
+                className={`flex-1 min-w-0 font-bold text-sm ${isActive ? "text-emerald-300" : "text-app-2"}`}
               >
                 {node.label}
               </div>
-              <span className="text-[10px] text-slate-600 font-bold flex-shrink-0">
+              <span className="text-[10px] text-muted-2 font-bold flex-shrink-0">
                 {node.allProducts.length} prod · {sumUnits(node.allProducts)} unit
               </span>
               <button
@@ -1147,7 +1147,7 @@ function RecursiveTree({
                   e.stopPropagation();
                   onQr(node.parts);
                 }}
-                className="p-1.5 bg-[#111520] border border-[#21293d] hover:border-emerald-500/40 text-slate-500 hover:text-emerald-400 rounded-lg transition-all flex-shrink-0"
+                className="p-1.5 bg-panel-2 border border-app hover:border-emerald-500/40 text-muted hover:text-emerald-400 rounded-lg transition-all flex-shrink-0"
                 title="Shelf QR label"
               >
                 <QrCode size={12} />
@@ -1162,10 +1162,10 @@ function RecursiveTree({
                     <Link
                       key={x.id}
                       href={`/inventory/${x.id}`}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111520] border border-[#21293d] hover:border-emerald-500/30 transition-all group"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-panel-2 border border-app hover:border-emerald-500/30 transition-all group"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
-                      <span className="flex-1 min-w-0 text-xs font-bold text-slate-300 group-hover:text-emerald-300 truncate">
+                      <span className="flex-1 min-w-0 text-xs font-bold text-app-2 group-hover:text-emerald-300 truncate">
                         {x.name}
                       </span>
                       <span className="text-[10px] font-black text-emerald-400 flex-shrink-0">
@@ -1173,7 +1173,7 @@ function RecursiveTree({
                       </span>
                       <LinkIcon
                         size={10}
-                        className="text-slate-700 group-hover:text-emerald-400 flex-shrink-0"
+                        className="text-app group-hover:text-emerald-400 flex-shrink-0"
                       />
                     </Link>
                   ))}

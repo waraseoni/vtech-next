@@ -836,7 +836,7 @@ function JobsListContent() {
         </span>
       );
     return (
-      <span className="bg-slate-700/50 text-slate-500 border border-slate-600/30 px-1.5 py-0.5 rounded-full text-[9px] font-bold">
+      <span className="bg-slate-700/50 text-muted border border-muted/30 px-1.5 py-0.5 rounded-full text-[9px] font-bold">
         Bal 0
       </span>
     );
@@ -1448,7 +1448,7 @@ function JobsListContent() {
   // ── Bulk Action Bar + WhatsApp Modal (shared desktop + mobile) ────────────
   const bulkActionBar = selectedIds.size > 0 && (
     <div
-      className="fixed bottom-5 left-1/2 z-[60] rounded-2xl px-3 py-2.5 flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-3 w-[calc(100%-2rem)] md:min-w-[300px] md:max-w-[95vw] bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] shadow-2xl text-slate-900 dark:text-white"
+      className="fixed bottom-5 left-1/2 z-[60] rounded-2xl px-3 py-2.5 flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-3 w-[calc(100%-2rem)] md:min-w-[300px] md:max-w-[95vw] bg-white dark:bg-panel border border-app-2 dark:border-app shadow-2xl text-app dark:text-white"
       style={{
         transform: "translateX(-50%)",
         animation: "bulkBarPop 0.35s cubic-bezier(0.34,1.56,0.64,1)",
@@ -1482,7 +1482,7 @@ function JobsListContent() {
               setBulkDeliverDate(toISTString().slice(0, 16));
             }
           }}
-          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px] bg-[#0d1117] border border-[#21293d] text-slate-200 focus:border-blue-500 transition-all [color-scheme:dark]"
+          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold outline-none cursor-pointer flex-1 md:flex-none md:min-w-[130px] bg-app border border-app text-app-2 focus:border-blue-500 transition-all [color-scheme:dark]"
         >
           <option value="" disabled>
             -- New Status --
@@ -1500,7 +1500,7 @@ function JobsListContent() {
             value={bulkDeliverDate}
             onChange={(e) => setBulkDeliverDate(e.target.value)}
             title="Delivery Date & Time"
-            className="rounded-lg px-2.5 py-1.5 text-xs outline-none cursor-pointer flex-1 md:flex-none bg-[#0d1117] border border-[#21293d] text-slate-200 focus:border-blue-500 transition-all [color-scheme:dark]"
+            className="rounded-lg px-2.5 py-1.5 text-xs outline-none cursor-pointer flex-1 md:flex-none bg-app border border-app text-app-2 focus:border-blue-500 transition-all [color-scheme:dark]"
           />
         )}
       </div>
@@ -1555,7 +1555,7 @@ function JobsListContent() {
             setBulkStatus("");
             setBulkDeliverDate("");
           }}
-          className="bg-slate-100 hover:bg-slate-200 dark:bg-white/15 dark:hover:bg-white/25 text-slate-700 dark:text-white border border-slate-300 dark:border-white/30 rounded-lg px-2.5 md:px-3.5 py-1.5 md:py-2 text-xs md:text-sm cursor-pointer transition-colors flex items-center gap-1 whitespace-nowrap"
+          className="bg-panel-2 hover:bg-panel-2 dark:bg-white/15 dark:hover:bg-white/25 text-app dark:text-white border border-app-2 dark:border-white/30 rounded-lg px-2.5 md:px-3.5 py-1.5 md:py-2 text-xs md:text-sm cursor-pointer transition-colors flex items-center gap-1 whitespace-nowrap"
         >
           <X size={13} /> Clear
         </button>
@@ -1570,7 +1570,7 @@ function JobsListContent() {
       onClick={() => !bulkActionLoading && setBulkMoveOpen(false)}
     >
       <div
-        className="w-full max-w-xs bg-[#161b27] border border-[#21293d] rounded-2xl p-5 shadow-2xl"
+        className="w-full max-w-xs bg-panel border border-app rounded-2xl p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-1">
@@ -1579,12 +1579,12 @@ function JobsListContent() {
           </p>
           <button
             onClick={() => setBulkMoveOpen(false)}
-            className="text-slate-500 hover:text-white"
+            className="text-muted hover:text-white"
           >
             <X size={16} />
           </button>
         </div>
-        <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-3">
+        <p className="text-[10px] text-muted-2 font-bold uppercase tracking-wider mb-3">
           Naya Spot chuno
         </p>
         <JobSpotPicker
@@ -1612,7 +1612,7 @@ function JobsListContent() {
       onClick={() => !savingSpot && setSpotEditTxn(null)}
     >
       <div
-        className="w-full max-w-xs bg-[#161b27] border border-[#21293d] rounded-2xl p-5 shadow-2xl"
+        className="w-full max-w-xs bg-panel border border-app rounded-2xl p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-1">
@@ -1621,12 +1621,12 @@ function JobsListContent() {
           </p>
           <button
             onClick={() => !savingSpot && setSpotEditTxn(null)}
-            className="text-slate-500 hover:text-white"
+            className="text-muted hover:text-white"
           >
             <X size={16} />
           </button>
         </div>
-        <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-3">
+        <p className="text-[10px] text-muted-2 font-bold uppercase tracking-wider mb-3">
           Is job ka spot chuno (ya hatao)
         </p>
         <JobSpotPicker
@@ -1668,14 +1668,14 @@ function JobsListContent() {
       onClick={dismissStale}
     >
       <div
-        className="w-full max-w-md bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col"
+        className="w-full max-w-md bg-panel border border-app rounded-2xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#21293d] bg-amber-500/10">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-app bg-amber-500/10">
           <p className="font-black text-amber-400 text-sm flex items-center gap-1.5">
             <AlertCircle size={15} /> {staleItems.length} item(s) spot par atke hain (7+ din)
           </p>
-          <button onClick={dismissStale} className="text-slate-500 hover:text-white">
+          <button onClick={dismissStale} className="text-muted hover:text-white">
             <X size={16} />
           </button>
         </div>
@@ -1687,7 +1687,7 @@ function JobsListContent() {
               className="flex items-center gap-3 px-5 py-2.5 hover:bg-white/[0.04] no-underline transition-colors"
             >
               <span className="font-black text-blue-400 text-xs">#{t.job_id}</span>
-              <span className="text-slate-300 text-xs truncate flex-1">{t.item}</span>
+              <span className="text-app-2 text-xs truncate flex-1">{t.item}</span>
               <span className="text-[10px] text-amber-400/90 font-medium flex-shrink-0 flex items-center gap-0.5">
                 <MapPin size={9} /> {t.uniq_id}
               </span>
@@ -1695,11 +1695,11 @@ function JobsListContent() {
             </Link>
           ))}
           {staleItems.length === 0 && (
-            <p className="text-center text-slate-600 text-xs py-8">Sab clear hai!</p>
+            <p className="text-center text-muted-2 text-xs py-8">Sab clear hai!</p>
           )}
         </div>
-        <div className="px-5 py-3 border-t border-[#21293d]">
-          <p className="text-[10px] text-slate-600">
+        <div className="px-5 py-3 border-t border-app">
+          <p className="text-[10px] text-muted-2">
             Tip: deliver hone par location khali karo, ya abhi Move karke ready-shelf par rakho.
           </p>
         </div>
@@ -1709,7 +1709,7 @@ function JobsListContent() {
 
   const bulkWaModal = waModal && (
     <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+      <div className="bg-white dark:bg-panel border border-app-2 dark:border-app rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
         <div className="bg-emerald-600 px-5 py-3.5 flex items-center justify-between">
           <h3 className="font-black !text-white text-sm flex items-center gap-2">
             <MessageCircle size={16} className="!text-white" /> Send WhatsApp Message
@@ -1735,13 +1735,13 @@ function JobsListContent() {
               setWaText(e.target.value);
               setWaEdited(true);
             }}
-            className="w-full bg-slate-50 dark:bg-[#0d1117] border border-emerald-500/40 text-slate-900 dark:text-slate-200 rounded-xl p-3 text-sm font-mono leading-relaxed outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 resize-none"
+            className="w-full bg-slate-50 dark:bg-app border border-emerald-500/40 text-app dark:text-app-2 rounded-xl p-3 text-sm font-mono leading-relaxed outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 resize-none"
           />
         </div>
-        <div className="px-5 py-3.5 bg-slate-50 dark:bg-[#111520] flex items-center justify-end gap-2 border-t border-slate-200 dark:border-[#21293d]">
+        <div className="px-5 py-3.5 bg-slate-50 dark:bg-panel-2 flex items-center justify-end gap-2 border-t border-app-2 dark:border-app">
           <button
             onClick={() => setWaModal(false)}
-            className="px-4 py-2 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-400 bg-slate-200 hover:bg-slate-300 dark:bg-[#21293d] dark:hover:bg-[#2a3550] transition-colors"
+            className="px-4 py-2 rounded-xl text-sm font-bold text-app dark:text-muted bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] transition-colors"
           >
             Close
           </button>
@@ -1774,7 +1774,7 @@ function JobsListContent() {
   // ══════════════════════════════════════════════════════════════════
   // -- Shared Table (desktop + mobile card/table toggle) ------------
   const tableSection = (
-    <div className="bg-[#161b27] border border-[#21293d] rounded-xl overflow-hidden">
+    <div className="bg-panel border border-app rounded-xl overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm table-fixed min-w-[1000px]">
           <colgroup>
@@ -1791,12 +1791,12 @@ function JobsListContent() {
             <col className="w-[8%]" />
           </colgroup>
           <thead>
-            <tr className="bg-[#111520] border-b border-[#21293d]">
+            <tr className="bg-panel-2 border-b border-app">
               <th className="px-3 py-3 text-center">
                 <button
                   onClick={toggleSelectAll}
                   title="Select All / Clear"
-                  className="text-slate-500 hover:text-blue-400 transition-colors"
+                  className="text-muted hover:text-blue-400 transition-colors"
                 >
                   {selectedIds.size === paginatedTransactions.length &&
                   paginatedTransactions.length > 0 ? (
@@ -1820,7 +1820,7 @@ function JobsListContent() {
               ].map((h) => (
                 <th
                   key={h}
-                  className="px-3 py-3 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-600"
+                  className="px-3 py-3 text-left text-[10px] font-extrabold uppercase tracking-wider text-muted-2"
                 >
                   {h}
                 </th>
@@ -1842,21 +1842,21 @@ function JobsListContent() {
                     <button
                       onClick={() => toggleSelect(txn.id)}
                       title="Select / Deselect"
-                      className="text-slate-500 hover:text-blue-400 transition-colors"
+                      className="text-muted hover:text-blue-400 transition-colors"
                     >
                       {selectedIds.has(txn.id) ? <CheckSquare size={13} /> : <Square size={13} />}
                     </button>
                   </td>
-                  <td className="px-3 py-2.5 text-slate-600 text-xs">
+                  <td className="px-3 py-2.5 text-muted-2 text-xs">
                     {pageIndex * pageSize + idx + 1}
                   </td>
 
                   {/* Date + Time (PHP feature) */}
                   <td className="px-3 py-2.5">
-                    <div className="text-xs text-slate-300 font-medium">
+                    <div className="text-xs text-app-2 font-medium">
                       {fmtDate(txn.date_created)}
                     </div>
-                    <div className="text-[10px] text-slate-600 mt-0.5">
+                    <div className="text-[10px] text-muted-2 mt-0.5">
                       {fmtTime(txn.date_created)}
                     </div>
                   </td>
@@ -1874,14 +1874,14 @@ function JobsListContent() {
                     {txn.code && (
                       <Link
                         href={`/jobs/${txn.id}/view`}
-                        className="block text-slate-600 hover:text-slate-400 text-[10px] truncate transition-colors no-underline mt-0.5"
+                        className="block text-muted-2 hover:text-muted text-[10px] truncate transition-colors no-underline mt-0.5"
                       >
                         {txn.code}
                       </Link>
                     )}
                     {txn.mechanic_id != null && mechNames[txn.mechanic_id] && (
                       <div
-                        className="text-[9px] font-medium text-slate-500 truncate max-w-[110px] mt-0.5"
+                        className="text-[9px] font-medium text-muted truncate max-w-[110px] mt-0.5"
                         title={`Mechanic: ${mechNames[txn.mechanic_id]}`}
                       >
                         {mechNames[txn.mechanic_id]}
@@ -1896,7 +1896,7 @@ function JobsListContent() {
                       <div className="min-w-0">
                         <Link
                           href={`/clients/${txn.client_name}/view`}
-                          className="font-bold text-slate-200 text-xs hover:text-blue-400 truncate block max-w-[150px] transition-colors"
+                          className="font-bold text-app-2 text-xs hover:text-blue-400 truncate block max-w-[150px] transition-colors"
                           title={clientName}
                         >
                           {clientName}
@@ -1918,7 +1918,7 @@ function JobsListContent() {
                     </div>
                   </td>
 
-                  <td className="px-3 py-2.5 text-xs text-slate-300 truncate" title={txn.item}>
+                  <td className="px-3 py-2.5 text-xs text-app-2 truncate" title={txn.item}>
                     {txn.item}
                   </td>
                   <td className="px-3 py-2.5 text-xs text-red-400 truncate" title={txn.fault}>
@@ -1936,18 +1936,18 @@ function JobsListContent() {
                           <span className="truncate max-w-[120px]">{txn.uniq_id}</span>
                         </Link>
                       ) : (
-                        <span className="text-slate-600">{"\u2014"}</span>
+                        <span className="text-muted-2">{"\u2014"}</span>
                       )}
                       <button
                         onClick={() => openSpotEdit(txn)}
                         title="Spot set karo / badlo"
-                        className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md border border-[#2a3550] bg-white/[0.02] text-slate-500 hover:text-amber-400 hover:border-amber-500/40 transition-all"
+                        className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md border border-app-2 bg-white/[0.02] text-muted hover:text-amber-400 hover:border-amber-500/40 transition-all"
                       >
                         <PenSquare size={11} />
                       </button>
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 text-right font-bold text-sm text-slate-200">
+                  <td className="px-3 py-2.5 text-right font-bold text-sm text-app-2">
                     {"\u20B9"}
                     {(txn.amount || 0).toFixed(0)}
                   </td>
@@ -1955,7 +1955,7 @@ function JobsListContent() {
                   <td className="px-3 py-2.5 text-center">
                     <span className={getStatusBadge(txn.status)}>{STATUS_MAP[txn.status]}</span>
                     {txn.status_changed_at && (
-                      <div className="text-[9px] text-slate-600 mt-0.5">
+                      <div className="text-[9px] text-muted-2 mt-0.5">
                         {fmtDate(txn.status_changed_at)} {fmtTime(txn.status_changed_at)}
                       </div>
                     )}
@@ -1966,14 +1966,14 @@ function JobsListContent() {
                     <button
                       data-dropdown-trigger
                       onClick={() => setOpenDropdownId(openDropdownId === txn.id ? null : txn.id)}
-                      className="bg-[#21293d] hover:bg-[#2a3550] border border-[#2a3550] text-slate-400 hover:text-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold flex items-center gap-1 mx-auto transition-all"
+                      className="bg-panel-2 hover:bg-[#2a3550] border border-app-2 text-muted hover:text-app-2 rounded-lg px-3 py-1.5 text-xs font-bold flex items-center gap-1 mx-auto transition-all"
                     >
                       Action <ChevronDown size={12} />
                     </button>
                     {openDropdownId === txn.id && (
                       <div
                         data-dropdown-menu
-                        className="absolute right-0 mt-1 w-44 bg-[#161b27] border border-[#21293d] rounded-xl shadow-2xl z-20 py-1 overflow-hidden"
+                        className="absolute right-0 mt-1 w-44 bg-panel border border-app rounded-xl shadow-2xl z-20 py-1 overflow-hidden"
                       >
                         {[
                           {
@@ -1998,7 +1998,7 @@ function JobsListContent() {
                           <Link
                             key={label}
                             href={href}
-                            className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-slate-400 hover:text-slate-200 transition-colors"
+                            className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-app-2 transition-colors"
                             onClick={() => setOpenDropdownId(null)}
                           >
                             <Icon size={13} className={cls} /> {label}
@@ -2009,14 +2009,14 @@ function JobsListContent() {
                             sendWA(txn);
                             setOpenDropdownId(null);
                           }}
-                          className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-slate-400 hover:text-emerald-400 transition-colors"
+                          className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-emerald-400 transition-colors"
                         >
                           <Phone size={13} className="text-emerald-400" /> WhatsApp
                         </button>
                         <a
                           href={`/api/print-bill?job_id=${txn.job_id}`}
                           target="_blank"
-                          className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-slate-400 hover:text-orange-400 transition-colors"
+                          className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-orange-400 transition-colors"
                           onClick={() => setOpenDropdownId(null)}
                         >
                           <Printer size={13} className="text-orange-400" /> Print Bill
@@ -2024,14 +2024,14 @@ function JobsListContent() {
                         <a
                           href={`/api/print-bill?job_id=${txn.job_id}&type=thermal`}
                           target="_blank"
-                          className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-slate-400 hover:text-yellow-400 transition-colors"
+                          className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-yellow-400 transition-colors"
                           onClick={() => setOpenDropdownId(null)}
                         >
                           <Printer size={13} className="text-yellow-400" /> Thermal Receipt
                         </a>
                         {userRole === "admin" && (
                           <>
-                            <hr className="my-1 border-[#21293d]" />
+                            <hr className="my-1 border-app" />
                             <button
                               onClick={() => {
                                 handleDelete(txn.id);
@@ -2051,8 +2051,8 @@ function JobsListContent() {
             })}
             {filteredTransactions.length === 0 && (
               <tr>
-                <td colSpan={10} className="text-center py-16 text-slate-600">
-                  <AlertCircle className="mx-auto mb-2 text-slate-700" size={32} />
+                <td colSpan={10} className="text-center py-16 text-muted-2">
+                  <AlertCircle className="mx-auto mb-2 text-app" size={32} />
                   <p className="text-sm font-bold">No transactions found</p>
                   <p className="text-xs mt-1">Try adjusting filters</p>
                 </td>
@@ -2063,8 +2063,8 @@ function JobsListContent() {
       </div>
 
       {/* ── Pagination ── */}
-      <div className="flex items-center justify-between border-t border-[#21293d] bg-[#111520] px-4 py-3">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
+      <div className="flex items-center justify-between border-t border-app bg-panel-2 px-4 py-3">
+        <div className="flex items-center gap-2 text-xs text-muted">
           <span>Show</span>
           <select
             value={pageSize}
@@ -2072,7 +2072,7 @@ function JobsListContent() {
               setPageSize(Number(e.target.value));
               setPageIndex(0);
             }}
-            className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1 text-xs outline-none"
+            className="bg-app border border-app text-app-2 rounded-lg px-2 py-1 text-xs outline-none"
           >
             <option value={25}>25</option>
             <option value={50}>50</option>
@@ -2086,17 +2086,17 @@ function JobsListContent() {
           <button
             onClick={() => setPageIndex((p) => Math.max(p - 1, 0))}
             disabled={pageIndex === 0}
-            className="px-3 py-1.5 bg-[#21293d] border border-[#21293d] text-slate-400 rounded-lg disabled:opacity-30 hover:bg-[#2a3550] transition-all"
+            className="px-3 py-1.5 bg-panel-2 border border-app text-muted rounded-lg disabled:opacity-30 hover:bg-[#2a3550] transition-all"
           >
             ← Prev
           </button>
-          <span className="text-slate-500 px-2">
+          <span className="text-muted px-2">
             Page {pageIndex + 1} / {totalPages || 1}
           </span>
           <button
             onClick={() => setPageIndex((p) => Math.min(p + 1, totalPages - 1))}
             disabled={pageIndex >= totalPages - 1}
-            className="px-3 py-1.5 bg-[#21293d] border border-[#21293d] text-slate-400 rounded-lg disabled:opacity-30 hover:bg-[#2a3550] transition-all"
+            className="px-3 py-1.5 bg-panel-2 border border-app text-muted rounded-lg disabled:opacity-30 hover:bg-[#2a3550] transition-all"
           >
             Next →
           </button>
@@ -2108,17 +2108,17 @@ function JobsListContent() {
   // ══════════════════════════════════════════════════════════════════
   if (!isMobile) {
     return (
-      <div className="min-h-screen bg-[#0d1117] p-4 font-sans">
+      <div className="min-h-screen bg-app p-4 font-sans">
         <div className="max-w-[1600px] mx-auto space-y-4">
           {/* ── Header ── */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-panel border border-app rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-lg shadow-blue-500/20">
                 <Wrench className="text-white" size={20} />
               </div>
               <div>
                 <h1 className="text-base font-bold text-white">Transaction History</h1>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted">
                   {userRole === "admin" ? "👑 Admin" : "👤 Staff"} • {totalRows} records
                 </p>
               </div>
@@ -2201,7 +2201,7 @@ function JobsListContent() {
                 <Icon size={18} className={color} />
                 <div>
                   <div className={`text-lg font-black ${color}`}>{value}</div>
-                  <div className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">
+                  <div className="text-[10px] text-muted-2 font-bold uppercase tracking-wider">
                     {label}
                   </div>
                 </div>
@@ -2213,39 +2213,39 @@ function JobsListContent() {
           {staleBanner}
 
           {/* ── Filter Bar ── */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-4">
+          <div className="bg-panel border border-app rounded-xl p-4">
             <div className="flex flex-wrap items-end gap-2 text-sm">
               <div>
-                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                <label className="block text-[10px] font-bold text-muted-2 uppercase mb-1">
                   From
                 </label>
                 <input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="bg-[#0d1117] border border-[#21293d] text-white rounded-lg px-2.5 py-1.5 text-xs focus:border-blue-500 outline-none transition-all"
+                  className="bg-app border border-app text-white rounded-lg px-2.5 py-1.5 text-xs focus:border-blue-500 outline-none transition-all"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                <label className="block text-[10px] font-bold text-muted-2 uppercase mb-1">
                   To
                 </label>
                 <input
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="bg-[#0d1117] border border-[#21293d] text-white rounded-lg px-2.5 py-1.5 text-xs focus:border-blue-500 outline-none transition-all"
+                  className="bg-app border border-app text-white rounded-lg px-2.5 py-1.5 text-xs focus:border-blue-500 outline-none transition-all"
                 />
               </div>
               {/* BUG FIX 7: Status filter in desktop bar (was missing) */}
               <div>
-                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                <label className="block text-[10px] font-bold text-muted-2 uppercase mb-1">
                   Status
                 </label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value ? parseInt(e.target.value) : "")}
-                  className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:border-blue-500 outline-none transition-all"
+                  className="bg-app border border-app text-app-2 rounded-lg px-2.5 py-1.5 text-xs focus:border-blue-500 outline-none transition-all"
                 >
                   <option value="">All Status</option>
                   {Object.entries(STATUS_MAP).map(([v, l]) => (
@@ -2257,14 +2257,14 @@ function JobsListContent() {
               </div>
               {/* Spot filter — "kahan rakha hai?" (khali spots pehle, count ke saath) */}
               <div>
-                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                <label className="block text-[10px] font-bold text-muted-2 uppercase mb-1">
                   Spot
                 </label>
                 <select
                   value={spotFilter}
                   onChange={(e) => setSpotFilter(e.target.value)}
                   title="Job items ki physical location"
-                  className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:border-blue-500 outline-none transition-all max-w-[170px]"
+                  className="bg-app border border-app text-app-2 rounded-lg px-2.5 py-1.5 text-xs focus:border-blue-500 outline-none transition-all max-w-[170px]"
                 >
                   <option value="">All Spots</option>
                   {jobSpots.map((s) => (
@@ -2284,7 +2284,7 @@ function JobsListContent() {
               <Link
                 href="/jobs/spot-labels"
                 title="Har spot ka printable QR label \u2014 scan karke us spot ke items khulenge"
-                className="bg-[#21293d] hover:bg-[#2a3550] text-slate-400 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all no-underline"
+                className="bg-panel-2 hover:bg-[#2a3550] text-muted px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all no-underline"
               >
                 <MapPin size={13} /> QR
               </Link>
@@ -2292,7 +2292,7 @@ function JobsListContent() {
                 onClick={clearDeliveredSpots}
                 disabled={spotCleaning}
                 title="Delivered jobs jinki location abhi bhi lagi hai \u2014 sab ek saath khali karo"
-                className="bg-[#21293d] hover:bg-[#2a3550] text-slate-400 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-60"
+                className="bg-panel-2 hover:bg-[#2a3550] text-muted px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-60"
               >
                 {spotCleaning ? (
                   <Loader2 size={13} className="animate-spin" />
@@ -2303,19 +2303,19 @@ function JobsListContent() {
               </button>
               <button
                 onClick={resetFilters}
-                className="bg-[#21293d] hover:bg-[#2a3550] text-slate-400 px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
+                className="bg-panel-2 hover:bg-[#2a3550] text-muted px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
               >
                 Reset
               </button>
               <button
                 onClick={() => shiftDay(-1)}
-                className="bg-[#21293d] hover:bg-[#2a3550] text-slate-400 border border-[#21293d] px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all"
+                className="bg-panel-2 hover:bg-[#2a3550] text-muted border border-app px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all"
               >
                 <ChevronLeft size={13} /> Prev
               </button>
               <button
                 onClick={() => shiftDay(1)}
-                className="bg-[#21293d] hover:bg-[#2a3550] text-slate-400 border border-[#21293d] px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all"
+                className="bg-panel-2 hover:bg-[#2a3550] text-muted border border-app px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all"
               >
                 Next <ChevronRight size={13} />
               </button>
@@ -2337,14 +2337,14 @@ function JobsListContent() {
               >
                 <Truck size={13} /> Delivered Report
               </Link>
-              <label className="flex items-center gap-2 ml-auto bg-[#0d1117] border border-[#21293d] px-3 py-1.5 rounded-lg cursor-pointer">
+              <label className="flex items-center gap-2 ml-auto bg-app border border-app px-3 py-1.5 rounded-lg cursor-pointer">
                 <input
                   type="checkbox"
                   checked={hideDelivered}
                   onChange={(e) => setHideDelivered(e.target.checked)}
                   className="w-3.5 h-3.5 accent-blue-500"
                 />
-                <span className="text-xs font-bold text-slate-400">Hide Delivered</span>
+                <span className="text-xs font-bold text-muted">Hide Delivered</span>
               </label>
             </div>
           </div>
@@ -2352,7 +2352,7 @@ function JobsListContent() {
           {/* ── Search ── */}
           <div className="relative">
             <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2"
               size={16}
             />
             <input
@@ -2360,12 +2360,12 @@ function JobsListContent() {
               placeholder="Search by job ID, client, device, fault, code, status, remark..."
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-[#161b27] border border-[#21293d] text-slate-200 placeholder-slate-600 rounded-xl text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-panel border border-app text-app-2 placeholder-slate-600 rounded-xl text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all"
             />
             {localSearch && (
               <button
                 onClick={() => setLocalSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-2 hover:text-muted"
               >
                 <X size={15} />
               </button>
@@ -2538,7 +2538,7 @@ function JobsListContent() {
         ].map(({ label, value, color, border, bg }) => (
           <div key={label} className={`${bg} border ${border} rounded-xl py-2.5 text-center`}>
             <div className={`text-xl font-black ${color}`}>{value}</div>
-            <div className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">
+            <div className="text-[9px] text-muted-2 font-bold uppercase tracking-widest mt-0.5">
               {label}
             </div>
           </div>
@@ -2546,7 +2546,7 @@ function JobsListContent() {
       </div>
       {userRole === "admin" && (
         <div className="mx-3 mt-2 bg-purple-500/5 border border-purple-500/20 rounded-xl py-2 px-4 flex items-center justify-between">
-          <span className="text-[10px] text-slate-600 font-bold uppercase">Total Amount</span>
+          <span className="text-[10px] text-muted-2 font-bold uppercase">Total Amount</span>
           <span className="text-sm font-black text-purple-400">
             {"\u20B9"}
             {stats.totalAmt.toLocaleString("en-IN")}
@@ -2559,13 +2559,13 @@ function JobsListContent() {
 
       {/* ── Search results indicator ── */}
       {debouncedSearch && (
-        <div className="mx-3 my-2 bg-[#161b27] border border-[#21293d] p-2.5 rounded-xl flex justify-between items-center text-xs">
-          <span className="text-slate-500">
+        <div className="mx-3 my-2 bg-panel border border-app p-2.5 rounded-xl flex justify-between items-center text-xs">
+          <span className="text-muted">
             Found <strong className="text-blue-400">{totalRows}</strong> results
           </span>
           <button
             onClick={() => setLocalSearch("")}
-            className="text-slate-600 hover:text-slate-400"
+            className="text-muted-2 hover:text-muted"
           >
             <X size={14} />
           </button>
@@ -2578,10 +2578,10 @@ function JobsListContent() {
       ) : (
         <div className="p-3 space-y-3">
           {paginatedTransactions.length === 0 ? (
-            <div className="bg-[#161b27] border border-[#21293d] p-10 rounded-2xl text-center">
-              <AlertCircle className="mx-auto text-slate-700 mb-2" size={36} />
-              <p className="text-slate-500 text-sm font-bold">No transactions found</p>
-              <p className="text-xs text-slate-600 mt-1">Adjust filters or search</p>
+            <div className="bg-panel border border-app p-10 rounded-2xl text-center">
+              <AlertCircle className="mx-auto text-app mb-2" size={36} />
+              <p className="text-muted text-sm font-bold">No transactions found</p>
+              <p className="text-xs text-muted-2 mt-1">Adjust filters or search</p>
             </div>
           ) : (
             paginatedTransactions.map((txn) => {
@@ -2592,7 +2592,7 @@ function JobsListContent() {
               return (
                 <div
                   key={txn.id}
-                  className={`bg-[#161b27] rounded-2xl border border-[#21293d] border-l-4 overflow-hidden ${STATUS_BORDER[txn.status] || "border-l-slate-600"} ${selectedIds.has(txn.id) ? "ring-2 ring-blue-500/50" : ""}`}
+                  className={`bg-panel rounded-2xl border border-app border-l-4 overflow-hidden ${STATUS_BORDER[txn.status] || "border-l-slate-600"} ${selectedIds.has(txn.id) ? "ring-2 ring-blue-500/50" : ""}`}
                 >
                   {/* Card Top */}
                   <div className="flex justify-between items-start p-3 bg-gradient-to-r from-white/[0.02] to-transparent">
@@ -2603,7 +2603,7 @@ function JobsListContent() {
                         className={`mt-1 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                           selectedIds.has(txn.id)
                             ? "bg-blue-600 border-blue-600 text-white"
-                            : "border-[#21293d] hover:border-slate-500"
+                            : "border-app hover:border-muted"
                         }`}
                       >
                         {selectedIds.has(txn.id) && <CheckCircle2 size={12} />}
@@ -2625,20 +2625,20 @@ function JobsListContent() {
                           >
                             {txn.code || "No Code"}
                           </Link>
-                          <span className="text-[10px] text-slate-600">
+                          <span className="text-[10px] text-muted-2">
                             {fmtDate(txn.date_created)}
                           </span>
                         </div>
                         {txn.mechanic_id != null && mechNames[txn.mechanic_id] && (
                           <div
-                            className="text-[9px] font-medium text-slate-500 truncate mt-0.5"
+                            className="text-[9px] font-medium text-muted truncate mt-0.5"
                             title={`Mechanic: ${mechNames[txn.mechanic_id]}`}
                           >
                             {mechNames[txn.mechanic_id]}
                           </div>
                         )}
                         {txn.status_changed_at && (
-                          <div className="flex items-center gap-1 mt-1 text-[9px] text-slate-500">
+                          <div className="flex items-center gap-1 mt-1 text-[9px] text-muted">
                             <Clock size={9} />
                             {STATUS_MAP[txn.status]}: {fmtDateTime(txn.status_changed_at)}
                           </div>
@@ -2698,12 +2698,12 @@ function JobsListContent() {
                   </div>
 
                   {/* Client Info */}
-                  <div className="px-3 py-2.5 border-t border-[#21293d] flex items-center gap-2.5">
+                  <div className="px-3 py-2.5 border-t border-app flex items-center gap-2.5">
                     <ClientMiniAvatar image={txn.client_image} name={clientName} />
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/clients/${txn.client_name}/view`}
-                        className="font-bold text-sm text-slate-200 hover:text-blue-400 transition-colors block truncate"
+                        className="font-bold text-sm text-app-2 hover:text-blue-400 transition-colors block truncate"
                       >
                         {clientName}
                       </Link>
@@ -2723,18 +2723,18 @@ function JobsListContent() {
                   </div>
 
                   {/* Details */}
-                  <div className="px-3 py-2.5 border-t border-[#21293d] space-y-1.5 text-xs">
+                  <div className="px-3 py-2.5 border-t border-app space-y-1.5 text-xs">
                     {[
-                      { label: "Item/Model", value: txn.item, cls: "text-slate-300 font-bold" },
+                      { label: "Item/Model", value: txn.item, cls: "text-app-2 font-bold" },
                       { label: "Fault/Issue", value: txn.fault, cls: "text-red-400" },
                     ].map(({ label, value, cls }) => (
                       <div key={label} className="flex justify-between gap-2">
-                        <span className="text-slate-600 flex-shrink-0">{label}:</span>
+                        <span className="text-muted-2 flex-shrink-0">{label}:</span>
                         <span className={`${cls} text-right`}>{value}</span>
                       </div>
                     ))}
                     <div className="flex justify-between gap-2 items-center">
-                      <span className="text-slate-600 flex-shrink-0">Spot:</span>
+                      <span className="text-muted-2 flex-shrink-0">Spot:</span>
                       <span className="flex items-center gap-1.5 min-w-0">
                         <span className="text-amber-400/90 text-right truncate">
                           {txn.uniq_id || "\u2014"}
@@ -2742,7 +2742,7 @@ function JobsListContent() {
                         <button
                           onClick={() => openSpotEdit(txn)}
                           title="Spot set karo / badlo"
-                          className="inline-flex items-center justify-center p-1 rounded-md border border-[#2a3550] bg-white/[0.02] text-slate-500 hover:text-amber-400 hover:border-amber-500/40 transition-all flex-shrink-0"
+                          className="inline-flex items-center justify-center p-1 rounded-md border border-app-2 bg-white/[0.02] text-muted hover:text-amber-400 hover:border-amber-500/40 transition-all flex-shrink-0"
                         >
                           <PenSquare size={10} />
                         </button>
@@ -2750,14 +2750,14 @@ function JobsListContent() {
                     </div>
                     {txn.remark && (
                       <div className="flex justify-between gap-2">
-                        <span className="text-slate-600 flex-shrink-0 flex items-center gap-1">
+                        <span className="text-muted-2 flex-shrink-0 flex items-center gap-1">
                           <MessageSquare size={10} /> Remark:
                         </span>
-                        <span className="text-slate-400 text-right">{txn.remark}</span>
+                        <span className="text-muted text-right">{txn.remark}</span>
                       </div>
                     )}
-                    <div className="flex justify-between font-black text-sm pt-1 border-t border-[#21293d]">
-                      <span className="text-slate-600">Bill Amount:</span>
+                    <div className="flex justify-between font-black text-sm pt-1 border-t border-app">
+                      <span className="text-muted-2">Bill Amount:</span>
                       <span className="text-emerald-400">
                         {"\u20B9"}
                         {(txn.amount || 0).toFixed(2)}
@@ -2766,21 +2766,21 @@ function JobsListContent() {
                   </div>
 
                   {/* Additional Info (PHP feature) */}
-                  <div className="px-3 py-2 bg-[#111520] border-t border-[#21293d] space-y-1">
+                  <div className="px-3 py-2 bg-panel-2 border-t border-app space-y-1">
                     <div className="flex justify-between text-[9px]">
-                      <span className="text-slate-700">Created:</span>
-                      <span className="text-slate-600">{fmtDateTime(txn.date_created)}</span>
+                      <span className="text-app">Created:</span>
+                      <span className="text-muted-2">{fmtDateTime(txn.date_created)}</span>
                     </div>
                     {txn.date_updated && txn.date_updated !== txn.date_created && (
                       <div className="flex justify-between text-[9px]">
-                        <span className="text-slate-700">Last Updated:</span>
-                        <span className="text-slate-600">{fmtDateTime(txn.date_updated)}</span>
+                        <span className="text-app">Last Updated:</span>
+                        <span className="text-muted-2">{fmtDateTime(txn.date_updated)}</span>
                       </div>
                     )}
                   </div>
 
                   {/* Action Buttons (6 grid + delete full-width) */}
-                  <div className="p-3 bg-[#111520] border-t border-[#21293d] space-y-1.5">
+                  <div className="p-3 bg-panel-2 border-t border-app space-y-1.5">
                     <div className="grid grid-cols-3 gap-1.5">
                       {[
                         {
@@ -2834,7 +2834,7 @@ function JobsListContent() {
                             key={label}
                             href={href}
                             target={target}
-                            className={`flex flex-col items-center p-2 bg-[#161b27] rounded-xl border ${border} ${text} text-[9px] font-bold gap-1 hover:opacity-80 active:scale-95 transition-all`}
+                            className={`flex flex-col items-center p-2 bg-panel rounded-xl border ${border} ${text} text-[9px] font-bold gap-1 hover:opacity-80 active:scale-95 transition-all`}
                           >
                             <Icon size={14} />
                             <span>{label}</span>
@@ -2843,7 +2843,7 @@ function JobsListContent() {
                           <button
                             key={label}
                             onClick={onClick}
-                            className={`flex flex-col items-center p-2 bg-[#161b27] rounded-xl border ${border} ${text} text-[9px] font-bold gap-1 hover:opacity-80 active:scale-95 transition-all`}
+                            className={`flex flex-col items-center p-2 bg-panel rounded-xl border ${border} ${text} text-[9px] font-bold gap-1 hover:opacity-80 active:scale-95 transition-all`}
                           >
                             <Icon size={14} />
                             <span>{label}</span>
@@ -2877,7 +2877,7 @@ function JobsListContent() {
           <Plus size={22} className={`transition-transform ${fabOpen ? "rotate-45" : ""}`} />
         </button>
         {fabOpen && (
-          <div className="absolute bottom-14 right-0 bg-white dark:bg-[#161b27] border-2 border-blue-500/40 dark:border-blue-500/50 ring-1 ring-blue-500/30 dark:ring-blue-400/30 rounded-2xl shadow-2xl shadow-black/25 dark:shadow-blue-500/10 py-1.5 w-44 text-sm overflow-hidden">
+          <div className="absolute bottom-14 right-0 bg-white dark:bg-panel border-2 border-blue-500/40 dark:border-blue-500/50 ring-1 ring-blue-500/30 dark:ring-blue-400/30 rounded-2xl shadow-2xl shadow-black/25 dark:shadow-blue-500/10 py-1.5 w-44 text-sm overflow-hidden">
             {[
               {
                 action: () => setShowQuickCreate(true),
@@ -2915,7 +2915,7 @@ function JobsListContent() {
                   key={label}
                   href={href}
                   onClick={() => setFabOpen(false)}
-                  className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                  className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-panel-2 dark:hover:bg-white/[0.04] text-app dark:text-muted hover:text-app dark:hover:text-app-2 transition-colors"
                 >
                   <Icon size={14} className={cls} /> {label}
                 </Link>
@@ -2926,19 +2926,19 @@ function JobsListContent() {
                     action?.();
                     setFabOpen(false);
                   }}
-                  className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors w-full"
+                  className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-panel-2 dark:hover:bg-white/[0.04] text-app dark:text-muted hover:text-app dark:hover:text-app-2 transition-colors w-full"
                 >
                   <Icon size={14} className={cls} /> {label}
                 </button>
               )
             )}
-            <hr className="my-1 border-slate-200 dark:border-[#21293d]" />
+            <hr className="my-1 border-app-2 dark:border-app" />
             <button
               onClick={() => {
                 printReport();
                 setFabOpen(false);
               }}
-              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 w-full transition-colors"
+              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-panel-2 dark:hover:bg-white/[0.04] text-app dark:text-muted w-full transition-colors"
             >
               <Printer size={14} className="text-emerald-600 dark:text-emerald-400" /> Print
             </button>
@@ -2947,7 +2947,7 @@ function JobsListContent() {
                 exportExcel();
                 setFabOpen(false);
               }}
-              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-400 w-full transition-colors"
+              className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-panel-2 dark:hover:bg-white/[0.04] text-app dark:text-muted w-full transition-colors"
             >
               <FileSpreadsheet size={14} className="text-teal-600 dark:text-teal-400" /> Excel
             </button>
@@ -2958,21 +2958,21 @@ function JobsListContent() {
       {/* ── Quick Create Modal ── */}
       {showQuickCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-panel border border-app-2 dark:border-app rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             {/* Header */}
-            <div className="sticky top-0 bg-white dark:bg-[#161b27] border-b border-slate-200 dark:border-[#21293d] flex items-center justify-between p-4 z-10">
+            <div className="sticky top-0 bg-white dark:bg-panel border-b border-app-2 dark:border-app flex items-center justify-between p-4 z-10">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
                   <Zap size={18} className="!text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white">Quick Create Job</h3>
-                  <p className="text-xs text-slate-500">Create job instantly</p>
+                  <h3 className="font-bold text-app dark:text-white">Quick Create Job</h3>
+                  <p className="text-xs text-muted">Create job instantly</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowQuickCreate(false)}
-                className="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-[#111520] dark:hover:bg-[#21293d] rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all"
+                className="w-8 h-8 flex items-center justify-center bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-panel-2 rounded-lg text-muted hover:text-app dark:hover:text-white transition-all"
               >
                 <X size={16} />
               </button>
@@ -2982,19 +2982,19 @@ function JobsListContent() {
             <div className="p-4 space-y-4">
               {/* Client Selection */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-1.5">
                   <User size={12} className="inline mr-1" />
                   Client (Optional)
                 </label>
                 {quickClientId ? (
-                  <div className="flex items-center justify-between bg-slate-50 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5">
-                    <span className="text-sm text-slate-900 dark:text-white font-medium">
+                  <div className="flex items-center justify-between bg-slate-50 dark:bg-panel-2 border border-app-2 dark:border-app rounded-xl px-3 py-2.5">
+                    <span className="text-sm text-app dark:text-white font-medium">
                       {quickClients.find((c) => c.id === quickClientId)?.firstname}{" "}
                       {quickClients.find((c) => c.id === quickClientId)?.lastname}
                     </span>
                     <button
                       onClick={() => setQuickClientId(null)}
-                      className="text-slate-400 hover:text-red-500"
+                      className="text-muted hover:text-red-500"
                     >
                       <X size={14} />
                     </button>
@@ -3003,23 +3003,23 @@ function JobsListContent() {
                   <div className="relative">
                     <button
                       onClick={() => setQuickClientOpen(!quickClientOpen)}
-                      className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-xl text-sm text-left hover:border-slate-400 dark:hover:border-slate-600 transition-all"
+                      className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 dark:bg-panel-2 border border-app-2 dark:border-app rounded-xl text-sm text-left hover:border-muted dark:hover:border-muted transition-all"
                     >
-                      <span className="text-slate-500">Search client...</span>
-                      <ChevronDown size={14} className="text-slate-500" />
+                      <span className="text-muted">Search client...</span>
+                      <ChevronDown size={14} className="text-muted" />
                     </button>
                     {quickClientOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-xl shadow-2xl z-20 p-2">
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-panel border border-app-2 dark:border-app rounded-xl shadow-2xl z-20 p-2">
                         <input
                           autoFocus
                           placeholder="Search by name or contact..."
                           value={quickClientSearch}
                           onChange={(e) => setQuickClientSearch(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-50 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-lg text-slate-900 dark:text-white text-sm outline-none mb-2"
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-panel-2 border border-app-2 dark:border-app rounded-lg text-app dark:text-white text-sm outline-none mb-2"
                         />
                         <div className="max-h-40 overflow-y-auto space-y-0.5">
                           {filteredQuickClients.length === 0 ? (
-                            <p className="text-slate-500 text-xs text-center py-4">
+                            <p className="text-muted text-xs text-center py-4">
                               Koi client nahi mila
                             </p>
                           ) : (
@@ -3031,12 +3031,12 @@ function JobsListContent() {
                                   setQuickClientOpen(false);
                                   setQuickClientSearch("");
                                 }}
-                                className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer transition-all"
+                                className="px-3 py-2 rounded-lg hover:bg-panel-2 dark:hover:bg-white/5 cursor-pointer transition-all"
                               >
-                                <div className="text-sm font-bold text-slate-900 dark:text-white">
+                                <div className="text-sm font-bold text-app dark:text-white">
                                   {c.firstname} {c.lastname}
                                 </div>
-                                <div className="text-xs text-slate-500">{c.contact}</div>
+                                <div className="text-xs text-muted">{c.contact}</div>
                               </div>
                             ))
                           )}
@@ -3049,7 +3049,7 @@ function JobsListContent() {
 
               {/* Item */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-1.5">
                   Item / Model <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -3057,13 +3057,13 @@ function JobsListContent() {
                   placeholder="e.g. iPhone 15, Samsung S24"
                   value={quickForm.item}
                   onChange={(e) => setQuickForm((p) => ({ ...p, item: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-xl text-slate-900 dark:text-white text-sm placeholder:text-slate-400 dark:placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-panel-2 border border-app-2 dark:border-app rounded-xl text-app dark:text-white text-sm placeholder:text-muted dark:placeholder:text-app outline-none focus:border-blue-500"
                 />
               </div>
 
               {/* Fault */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-1.5">
                   Fault Reported <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -3071,19 +3071,19 @@ function JobsListContent() {
                   placeholder="e.g. Screen broken, Battery drain"
                   value={quickForm.fault}
                   onChange={(e) => setQuickForm((p) => ({ ...p, fault: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-xl text-slate-900 dark:text-white text-sm placeholder:text-slate-400 dark:placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-panel-2 border border-app-2 dark:border-app rounded-xl text-app dark:text-white text-sm placeholder:text-muted dark:placeholder:text-app outline-none focus:border-blue-500"
                 />
               </div>
 
               {/* Mechanic */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-1.5">
                   Mechanic <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={quickForm.mechanicId}
                   onChange={(e) => setQuickForm((p) => ({ ...p, mechanicId: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-xl text-slate-900 dark:text-white text-sm outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-panel-2 border border-app-2 dark:border-app rounded-xl text-app dark:text-white text-sm outline-none focus:border-blue-500"
                 >
                   <option value="">Select Mechanic</option>
                   {quickMechanics.map((m) => (
@@ -3096,7 +3096,7 @@ function JobsListContent() {
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 bg-slate-50 dark:bg-[#161b27] border-t border-slate-200 dark:border-[#21293d] p-4 flex gap-3">
+            <div className="sticky bottom-0 bg-slate-50 dark:bg-panel border-t border-app-2 dark:border-app p-4 flex gap-3">
               <button
                 onClick={handleQuickCreate}
                 disabled={quickCreateLoading}
@@ -3116,7 +3116,7 @@ function JobsListContent() {
               </button>
               <button
                 onClick={() => setShowQuickCreate(false)}
-                className="px-6 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-[#111520] dark:hover:bg-[#21293d] border border-slate-300 dark:border-[#21293d] text-slate-700 dark:text-slate-400 rounded-xl font-bold text-sm transition-all"
+                className="px-6 py-3 bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-panel-2 border border-app-2 dark:border-app text-app dark:text-muted rounded-xl font-bold text-sm transition-all"
               >
                 Cancel
               </button>
@@ -3133,12 +3133,12 @@ function JobsListContent() {
       {/* ── Filter Modal ── */}
       {showFilterModal && (
         <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl w-full max-w-sm p-5 shadow-2xl">
+          <div className="bg-white dark:bg-panel border border-app-2 dark:border-app rounded-2xl w-full max-w-sm p-5 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-black text-slate-900 dark:text-white">Filter Transactions</h3>
+              <h3 className="font-black text-app dark:text-white">Filter Transactions</h3>
               <button
                 onClick={() => setShowFilterModal(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                className="text-muted hover:text-muted-2 dark:hover:text-app-2"
               >
                 <X size={18} />
               </button>
@@ -3149,12 +3149,12 @@ function JobsListContent() {
                 { label: "To Date", value: dateTo, set: setDateTo },
               ].map(({ label, value, set }) => (
                 <div key={label}>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{label}</label>
+                  <label className="block text-xs font-bold text-muted mb-1">{label}</label>
                   <input
                     type="date"
                     value={value}
                     onChange={(e) => set(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] text-slate-900 dark:text-slate-200 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 transition-all"
+                    className="w-full bg-slate-50 dark:bg-app border border-app-2 dark:border-app text-app dark:text-app-2 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 transition-all"
                   />
                 </div>
               ))}
@@ -3162,23 +3162,23 @@ function JobsListContent() {
               <div className="flex gap-2">
                 <button
                   onClick={() => shiftDay(-1)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-[#21293d] dark:hover:bg-[#2a3550] text-slate-700 dark:text-slate-400 p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors"
+                  className="flex-1 bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors"
                 >
                   <ChevronLeft size={13} /> Prev Day
                 </button>
                 <button
                   onClick={() => shiftDay(1)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-[#21293d] dark:hover:bg-[#2a3550] text-slate-700 dark:text-slate-400 p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors"
+                  className="flex-1 bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors"
                 >
                   Next Day <ChevronRight size={13} />
                 </button>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Status</label>
+                <label className="block text-xs font-bold text-muted mb-1">Status</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value ? parseInt(e.target.value) : "")}
-                  className="w-full bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] text-slate-900 dark:text-slate-300 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 transition-all"
+                  className="w-full bg-slate-50 dark:bg-app border border-app-2 dark:border-app text-app dark:text-app-2 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 transition-all"
                 >
                   <option value="">All Status</option>
                   {Object.entries(STATUS_MAP).map(([v, l]) => (
@@ -3189,13 +3189,13 @@ function JobsListContent() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">
+                <label className="block text-xs font-bold text-muted mb-1">
                   Spot (Location)
                 </label>
                 <select
                   value={spotFilter}
                   onChange={(e) => setSpotFilter(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] text-slate-900 dark:text-slate-300 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 transition-all"
+                  className="w-full bg-slate-50 dark:bg-app border border-app-2 dark:border-app text-app dark:text-app-2 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 transition-all"
                 >
                   <option value="">All Spots</option>
                   {jobSpots.map((s) => (
@@ -3208,7 +3208,7 @@ function JobsListContent() {
               <button
                 onClick={clearDeliveredSpots}
                 disabled={spotCleaning}
-                className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-[#21293d] dark:hover:bg-[#2a3550] text-slate-700 dark:text-slate-400 p-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 transition-all disabled:opacity-60"
+                className="w-full bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 transition-all disabled:opacity-60"
               >
                 {spotCleaning ? (
                   <Loader2 size={14} className="animate-spin" />
@@ -3220,7 +3220,7 @@ function JobsListContent() {
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={resetFilters}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-[#21293d] dark:hover:bg-[#2a3550] text-slate-700 dark:text-slate-400 p-2.5 rounded-xl text-sm font-bold transition-all"
+                  className="flex-1 bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2.5 rounded-xl text-sm font-bold transition-all"
                 >
                   Reset
                 </button>
@@ -3244,9 +3244,9 @@ export default function JobsPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex flex-col items-center justify-center min-h-screen bg-[#0d1117] gap-4">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-app gap-4">
           <Loader2 className="animate-spin text-blue-500" size={44} />
-          <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.3em]">Loading...</p>
+          <p className="text-muted-2 text-xs font-bold uppercase tracking-[0.3em]">Loading...</p>
         </div>
       }
     >

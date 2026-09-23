@@ -71,9 +71,9 @@ const PAYMENT_CONFIG: Record<
 const getPayConfig = (mode: string) =>
   PAYMENT_CONFIG[mode] || {
     icon: Banknote,
-    color: "text-slate-400",
-    bg: "bg-slate-500/10",
-    border: "border-slate-500/25",
+    color: "text-muted",
+    bg: "bg-muted/10",
+    border: "border-muted/25",
   };
 
 const fmtDate = (d: string) => formatIST(d, { day: "2-digit", month: "short", year: "numeric" });
@@ -398,9 +398,9 @@ function DirectSalesPageInner() {
   // ══════════════════════════════════════════════════════════════════════════
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-[#0d1117] pb-24">
+      <div className="min-h-screen bg-app pb-24">
         {/* Mobile Header */}
-        <div className="bg-[#0d1117] border-b border-[#21293d] px-4 pt-5 pb-4">
+        <div className="bg-app border-b border-app px-4 pt-5 pb-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-emerald-500/10 border border-emerald-500/25 rounded-xl flex items-center justify-center">
@@ -408,7 +408,7 @@ function DirectSalesPageInner() {
               </div>
               <div>
                 <h1 className="text-lg font-black text-white leading-none">Direct Sales</h1>
-                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mt-0.5">
+                <p className="text-[10px] text-muted-2 font-bold uppercase tracking-wider mt-0.5">
                   {monthLabel}
                 </p>
               </div>
@@ -434,10 +434,10 @@ function DirectSalesPageInner() {
             ].map(({ label, value, color }) => (
               <div
                 key={label}
-                className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 text-center"
+                className="bg-panel border border-app rounded-xl p-2.5 text-center"
               >
                 <div className={`text-base font-black ${color}`}>{value}</div>
-                <div className="text-[9px] text-slate-700 font-bold uppercase tracking-widest">
+                <div className="text-[9px] text-app font-bold uppercase tracking-widest">
                   {label}
                 </div>
               </div>
@@ -448,19 +448,19 @@ function DirectSalesPageInner() {
           <div className="flex items-center gap-2 mb-3">
             <button
               onClick={() => shiftMonth(-1)}
-              className="w-8 h-8 bg-[#161b27] border border-[#21293d] rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-300 transition-all"
+              className="w-8 h-8 bg-panel border border-app rounded-lg flex items-center justify-center text-muted hover:text-app-2 transition-all"
             >
               <ChevronLeft size={14} />
             </button>
             <button
               onClick={goCurrentMonth}
-              className="flex-1 h-8 bg-[#161b27] border border-[#21293d] rounded-lg text-[11px] font-extrabold text-slate-400 hover:text-white transition-all"
+              className="flex-1 h-8 bg-panel border border-app rounded-lg text-[11px] font-extrabold text-muted hover:text-white transition-all"
             >
               {monthLabel}
             </button>
             <button
               onClick={() => shiftMonth(1)}
-              className="w-8 h-8 bg-[#161b27] border border-[#21293d] rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-300 transition-all"
+              className="w-8 h-8 bg-panel border border-app rounded-lg flex items-center justify-center text-muted hover:text-app-2 transition-all"
             >
               <ChevronRight size={14} />
             </button>
@@ -468,17 +468,17 @@ function DirectSalesPageInner() {
 
           {/* Search */}
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
             <input
               type="text"
               placeholder="Search sales, clients..."
               value={mobileSearch}
               onChange={(e) => setMobileSearch(e.target.value)}
-              className="w-full pl-9 pr-10 py-2.5 bg-[#161b27] border border-[#21293d] text-slate-200 placeholder-slate-700 rounded-xl text-sm outline-none focus:border-blue-500/50 transition-all"
+              className="w-full pl-9 pr-10 py-2.5 bg-panel border border-app text-app-2 placeholder-slate-700 rounded-xl text-sm outline-none focus:border-blue-500/50 transition-all"
             />
             <button
               onClick={() => setShowFilterModal(true)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-[#111520] border border-[#21293d] p-1 rounded-lg text-slate-500"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-panel-2 border border-app p-1 rounded-lg text-muted"
             >
               <Filter size={13} />
             </button>
@@ -498,7 +498,7 @@ function DirectSalesPageInner() {
                       ? f === "all"
                         ? "bg-blue-600 text-white border-blue-600"
                         : `${cfg!.bg} ${cfg!.color} ${cfg!.border}`
-                      : "bg-[#161b27] text-slate-600 border-[#21293d]"
+                      : "bg-panel text-muted-2 border-app"
                   }`}
                 >
                   {f === "all" ? "All" : f}
@@ -514,7 +514,7 @@ function DirectSalesPageInner() {
             return (
               <div
                 key={s.id}
-                className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden"
+                className="bg-panel border border-app rounded-2xl overflow-hidden"
               >
                 <div
                   className={`h-0.5 w-full ${
@@ -537,10 +537,10 @@ function DirectSalesPageInner() {
                         {s.sale_code}
                       </Link>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-slate-600 font-bold">
+                        <span className="text-[10px] text-muted-2 font-bold">
                           {fmtDate(s.date_created)}
                         </span>
-                        <span className="text-[10px] text-slate-700">· {s.staff_name}</span>
+                        <span className="text-[10px] text-app">· {s.staff_name}</span>
                       </div>
                     </div>
                     <div className="text-right">
@@ -555,19 +555,19 @@ function DirectSalesPageInner() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-6 h-6 bg-slate-700/50 rounded-full flex items-center justify-center flex-shrink-0">
-                        <User size={11} className="text-slate-500" />
+                        <User size={11} className="text-muted" />
                       </div>
                       <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                         {s.client_id ? (
                           <Link
                             href={`/clients/${s.client_id}/view`}
-                            className="text-xs text-slate-300 hover:text-blue-300 font-medium truncate max-w-[130px] transition-colors underline-offset-2 active:text-blue-300"
+                            className="text-xs text-app-2 hover:text-blue-300 font-medium truncate max-w-[130px] transition-colors underline-offset-2 active:text-blue-300"
                             title={`${s.client_name} — view client`}
                           >
                             {s.client_name}
                           </Link>
                         ) : (
-                          <span className="text-xs text-slate-400 font-medium">
+                          <span className="text-xs text-muted font-medium">
                             Walk-in Customer
                           </span>
                         )}
@@ -595,22 +595,22 @@ function DirectSalesPageInner() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-[#21293d]">
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-app">
                     <Link
                       href={`/direct-sales/${s.id}/view`}
-                      className="flex-1 flex items-center justify-center gap-1 py-2 bg-[#111520] border border-[#21293d] hover:border-blue-500/30 text-slate-400 hover:text-blue-400 rounded-xl text-[11px] font-extrabold transition-all"
+                      className="flex-1 flex items-center justify-center gap-1 py-2 bg-panel-2 border border-app hover:border-blue-500/30 text-muted hover:text-blue-400 rounded-xl text-[11px] font-extrabold transition-all"
                     >
                       <Eye size={12} /> View
                     </Link>
                     <Link
                       href={`/direct-sales/${s.id}/edit`}
-                      className="flex-1 flex items-center justify-center gap-1 py-2 bg-[#111520] border border-[#21293d] hover:border-amber-500/30 text-slate-400 hover:text-amber-400 rounded-xl text-[11px] font-extrabold transition-all"
+                      className="flex-1 flex items-center justify-center gap-1 py-2 bg-panel-2 border border-app hover:border-amber-500/30 text-muted hover:text-amber-400 rounded-xl text-[11px] font-extrabold transition-all"
                     >
                       <Edit3 size={12} /> Edit
                     </Link>
                     <button
                       onClick={() => handleDelete(s.id)}
-                      className="flex-1 flex items-center justify-center gap-1 py-2 bg-[#111520] border border-[#21293d] hover:border-red-500/30 text-slate-400 hover:text-red-400 rounded-xl text-[11px] font-extrabold transition-all"
+                      className="flex-1 flex items-center justify-center gap-1 py-2 bg-panel-2 border border-app hover:border-red-500/30 text-muted hover:text-red-400 rounded-xl text-[11px] font-extrabold transition-all"
                     >
                       <Trash2 size={12} /> Del
                     </button>
@@ -621,9 +621,9 @@ function DirectSalesPageInner() {
           })}
 
           {filteredSales.length === 0 && (
-            <div className="py-20 text-center bg-[#161b27] border border-dashed border-[#21293d] rounded-2xl">
-              <ShoppingBag size={32} className="mx-auto text-slate-800 mb-3" />
-              <p className="text-slate-600 font-bold text-sm">No sales found</p>
+            <div className="py-20 text-center bg-panel border border-dashed border-app rounded-2xl">
+              <ShoppingBag size={32} className="mx-auto text-app mb-3" />
+              <p className="text-muted-2 font-bold text-sm">No sales found</p>
             </div>
           )}
         </div>
@@ -635,17 +635,17 @@ function DirectSalesPageInner() {
             onClick={() => setShowFilterModal(false)}
           >
             <div
-              className="bg-[#161b27] border-t border-[#21293d] rounded-t-3xl w-full p-5 pb-8"
+              className="bg-panel border-t border-app rounded-t-3xl w-full p-5 pb-8"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="w-10 h-1 bg-[#21293d] rounded-full mx-auto mb-5" />
+              <div className="w-10 h-1 bg-panel-2 rounded-full mx-auto mb-5" />
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
                   Filter Sales
                 </h3>
                 <button
                   onClick={() => setShowFilterModal(false)}
-                  className="w-7 h-7 bg-[#111520] border border-[#21293d] rounded-lg flex items-center justify-center text-slate-500"
+                  className="w-7 h-7 bg-panel-2 border border-app rounded-lg flex items-center justify-center text-muted"
                 >
                   <X size={14} />
                 </button>
@@ -656,25 +656,25 @@ function DirectSalesPageInner() {
                   { label: "To Date", val: dateTo, set: setDateTo },
                 ].map(({ label, val, set }) => (
                   <div key={label}>
-                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-1.5">
+                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-1.5">
                       {label}
                     </label>
                     <input
                       type="date"
                       value={val}
                       onChange={(e) => set(e.target.value)}
-                      className="w-full bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500/50 [color-scheme:dark]"
+                      className="w-full bg-panel-2 border border-app text-app-2 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500/50 [color-scheme:dark]"
                     />
                   </div>
                 ))}
                 <div>
-                  <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-1.5">
+                  <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-1.5">
                     Payment Mode
                   </label>
                   <select
                     value={paymentFilter}
                     onChange={(e) => setPaymentFilter(e.target.value)}
-                    className="w-full bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none [color-scheme:dark]"
+                    className="w-full bg-panel-2 border border-app text-app-2 rounded-xl px-4 py-2.5 text-sm outline-none [color-scheme:dark]"
                   >
                     {["all", "Cash", "Card", "UPI", "Bank Transfer"].map((m) => (
                       <option key={m} value={m}>
@@ -690,7 +690,7 @@ function DirectSalesPageInner() {
                       setDateTo(endOfMonthIST());
                       setPaymentFilter("all");
                     }}
-                    className="flex-1 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl text-sm font-extrabold"
+                    className="flex-1 py-2.5 bg-panel-2 border border-app text-muted rounded-xl text-sm font-extrabold"
                   >
                     Reset
                   </button>
@@ -716,9 +716,9 @@ function DirectSalesPageInner() {
   // ── DESKTOP VIEW ─────────────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
+    <div className="min-h-screen bg-app font-sans pb-16">
       {/* ── HERO HEADER ── */}
-      <div className="relative overflow-hidden bg-[#0d1117] border-b border-[#21293d]">
+      <div className="relative overflow-hidden bg-app border-b border-app">
         <div
           className="absolute inset-0 opacity-[0.025]"
           style={{
@@ -734,11 +734,11 @@ function DirectSalesPageInner() {
             <div className="flex items-center gap-4">
               <div className="relative w-14 h-14 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-emerald-500/25 flex-shrink-0">
                 <ShoppingBag size={26} className="text-white" />
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-[#0d1117]" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-app" />
               </div>
               <div>
                 <h1 className="text-2xl font-black text-white tracking-tight">Direct Sales</h1>
-                <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.2em] mt-0.5">
+                <p className="text-muted-2 text-xs font-bold uppercase tracking-[0.2em] mt-0.5">
                   {monthLabel} · {stats.totalSales} transactions
                 </p>
               </div>
@@ -748,13 +748,13 @@ function DirectSalesPageInner() {
             <div className="flex items-center gap-2">
               <button
                 onClick={printReport}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-500 hover:text-slate-300 rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-app-2 rounded-xl text-xs font-bold transition-all"
               >
                 <Printer size={13} /> Print
               </button>
               <button
                 onClick={exportCSV}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-500 hover:text-slate-300 rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-app-2 rounded-xl text-xs font-bold transition-all"
               >
                 <FileSpreadsheet size={13} /> Export
               </button>
@@ -818,7 +818,7 @@ function DirectSalesPageInner() {
                 <Icon size={18} className={`${color} flex-shrink-0`} />
                 <div className="min-w-0">
                   <div className={`text-lg font-black ${color} truncate`}>{value}</div>
-                  <div className="text-[9px] text-slate-700 font-bold uppercase tracking-widest mt-0.5">
+                  <div className="text-[9px] text-app font-bold uppercase tracking-widest mt-0.5">
                     {label}
                   </div>
                 </div>
@@ -830,7 +830,7 @@ function DirectSalesPageInner() {
 
       <div className="max-w-7xl mx-auto px-5 py-4 space-y-4">
         {/* ── FILTER BAR ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4">
           <div className="flex flex-wrap items-end gap-3">
             {/* Date range */}
             {[
@@ -838,7 +838,7 @@ function DirectSalesPageInner() {
               { label: "To", val: dateTo, set: setDateTo },
             ].map(({ label, val, set }) => (
               <div key={label}>
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-1.5">
                   <span className="flex items-center gap-1">
                     <CalendarDays size={9} /> {label}
                   </span>
@@ -847,20 +847,20 @@ function DirectSalesPageInner() {
                   type="date"
                   value={val}
                   onChange={(e) => set(e.target.value)}
-                  className="bg-[#111520] border border-[#21293d] text-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-500/50 transition-all [color-scheme:dark]"
+                  className="bg-panel-2 border border-app text-app-2 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-500/50 transition-all [color-scheme:dark]"
                 />
               </div>
             ))}
 
             {/* Payment mode */}
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-1.5">
+              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-1.5">
                 Payment
               </label>
               <select
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
-                className="bg-[#111520] border border-[#21293d] text-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-500/50 [color-scheme:dark]"
+                className="bg-panel-2 border border-app text-app-2 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-500/50 [color-scheme:dark]"
               >
                 {["all", "Cash", "Card", "UPI", "Bank Transfer"].map((m) => (
                   <option key={m} value={m}>
@@ -882,19 +882,19 @@ function DirectSalesPageInner() {
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => shiftMonth(-1)}
-                className="w-9 h-9 bg-[#111520] border border-[#21293d] hover:border-slate-600 text-slate-500 hover:text-slate-300 rounded-xl flex items-center justify-center transition-all"
+                className="w-9 h-9 bg-panel-2 border border-app hover:border-muted text-muted hover:text-app-2 rounded-xl flex items-center justify-center transition-all"
               >
                 <ChevronLeft size={15} />
               </button>
               <button
                 onClick={goCurrentMonth}
-                className="px-3 h-9 bg-[#111520] border border-[#21293d] hover:border-blue-500/30 text-slate-500 hover:text-slate-300 rounded-xl text-xs font-bold transition-all"
+                className="px-3 h-9 bg-panel-2 border border-app hover:border-blue-500/30 text-muted hover:text-app-2 rounded-xl text-xs font-bold transition-all"
               >
                 This Month
               </button>
               <button
                 onClick={() => shiftMonth(1)}
-                className="w-9 h-9 bg-[#111520] border border-[#21293d] hover:border-slate-600 text-slate-500 hover:text-slate-300 rounded-xl flex items-center justify-center transition-all"
+                className="w-9 h-9 bg-panel-2 border border-app hover:border-muted text-muted hover:text-app-2 rounded-xl flex items-center justify-center transition-all"
               >
                 <ChevronRight size={15} />
               </button>
@@ -921,15 +921,15 @@ function DirectSalesPageInner() {
         </div>
 
         {/* ── TABLE ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#111520] border-b border-[#21293d]">
+              <tr className="bg-panel-2 border-b border-app">
                 {["#", "Date & Code", "Client", "Staff", "Amount", "Payment", "Actions"].map(
                   (h, i) => (
                     <th
                       key={h}
-                      className={`px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 ${
+                      className={`px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-muted-2 ${
                         i === 4 ? "text-right" : i === 6 ? "text-center" : "text-left"
                       }`}
                     >
@@ -944,7 +944,7 @@ function DirectSalesPageInner() {
               {sales.map((s, idx) => (
                 <tr key={s.id} className="group hover:bg-white/[0.02] transition-colors">
                   {/* # */}
-                  <td className="px-4 py-3.5 text-slate-700 text-xs">{idx + 1}</td>
+                  <td className="px-4 py-3.5 text-app text-xs">{idx + 1}</td>
 
                   {/* Date & Code */}
                   <td className="px-4 py-3.5">
@@ -955,13 +955,13 @@ function DirectSalesPageInner() {
                       {s.sale_code}
                     </Link>
                     <div className="flex items-center gap-1 mt-1">
-                      <Clock size={9} className="text-slate-700" />
-                      <span className="text-[10px] text-slate-600 font-medium">
+                      <Clock size={9} className="text-app" />
+                      <span className="text-[10px] text-muted-2 font-medium">
                         {fmtDateTime(s.date_created)}
                       </span>
                     </div>
                     {s.last_editor_name && (
-                      <div className="text-[9px] text-slate-700 mt-0.5">
+                      <div className="text-[9px] text-app mt-0.5">
                         Edited: {s.last_editor_name}
                       </div>
                     )}
@@ -970,24 +970,24 @@ function DirectSalesPageInner() {
                   {/* Client */}
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 bg-slate-700/30 border border-[#21293d] rounded-full flex items-center justify-center flex-shrink-0">
-                        <User size={13} className="text-slate-600" />
+                      <div className="w-8 h-8 bg-slate-700/30 border border-app rounded-full flex items-center justify-center flex-shrink-0">
+                        <User size={13} className="text-muted-2" />
                       </div>
                       <div className="min-w-0">
                         {s.client_id ? (
                           <Link
                             href={`/clients/${s.client_id}/view`}
-                            className="block text-slate-200 hover:text-blue-300 font-semibold text-xs truncate max-w-[140px] transition-colors underline-offset-2 hover:underline"
+                            className="block text-app-2 hover:text-blue-300 font-semibold text-xs truncate max-w-[140px] transition-colors underline-offset-2 hover:underline"
                             title={`${s.client_name} — view client`}
                           >
                             {s.client_name}
                           </Link>
                         ) : (
                           <div
-                            className="text-slate-200 font-semibold text-xs truncate max-w-[140px]"
+                            className="text-app-2 font-semibold text-xs truncate max-w-[140px]"
                             title="Walk-in"
                           >
-                            <span className="text-slate-600 italic">Walk-in</span>
+                            <span className="text-muted-2 italic">Walk-in</span>
                           </div>
                         )}
                         {s.client_due != null &&
@@ -1015,7 +1015,7 @@ function DirectSalesPageInner() {
 
                   {/* Staff */}
                   <td className="px-4 py-3.5">
-                    <span className="text-xs text-slate-500 font-medium">{s.staff_name}</span>
+                    <span className="text-xs text-muted font-medium">{s.staff_name}</span>
                   </td>
 
                   {/* Amount */}
@@ -1025,7 +1025,7 @@ function DirectSalesPageInner() {
                     </span>
                     {s.remarks && (
                       <div
-                        className="text-[10px] text-slate-600 truncate max-w-[100px] ml-auto mt-0.5"
+                        className="text-[10px] text-muted-2 truncate max-w-[100px] ml-auto mt-0.5"
                         title={s.remarks}
                       >
                         {s.remarks}
@@ -1043,21 +1043,21 @@ function DirectSalesPageInner() {
                     <div className="flex justify-center gap-1.5">
                       <Link
                         href={`/direct-sales/${s.id}/view`}
-                        className="p-1.5 bg-[#21293d] hover:bg-blue-600/30 border border-[#21293d] hover:border-blue-500/40 rounded-lg text-slate-600 hover:text-blue-400 transition-all"
+                        className="p-1.5 bg-panel-2 hover:bg-blue-600/30 border border-app hover:border-blue-500/40 rounded-lg text-muted-2 hover:text-blue-400 transition-all"
                         title="View"
                       >
                         <Eye size={13} />
                       </Link>
                       <Link
                         href={`/direct-sales/${s.id}/edit`}
-                        className="p-1.5 bg-[#21293d] hover:bg-amber-600/20 border border-[#21293d] hover:border-amber-500/40 rounded-lg text-slate-600 hover:text-amber-400 transition-all"
+                        className="p-1.5 bg-panel-2 hover:bg-amber-600/20 border border-app hover:border-amber-500/40 rounded-lg text-muted-2 hover:text-amber-400 transition-all"
                         title="Edit"
                       >
                         <Edit3 size={13} />
                       </Link>
                       <button
                         onClick={() => handleDelete(s.id)}
-                        className="p-1.5 bg-[#21293d] hover:bg-red-600/20 border border-[#21293d] hover:border-red-500/40 rounded-lg text-slate-600 hover:text-red-400 transition-all"
+                        className="p-1.5 bg-panel-2 hover:bg-red-600/20 border border-app hover:border-red-500/40 rounded-lg text-muted-2 hover:text-red-400 transition-all"
                         title="Delete"
                       >
                         <Trash2 size={13} />
@@ -1070,9 +1070,9 @@ function DirectSalesPageInner() {
               {sales.length === 0 && (
                 <tr>
                   <td colSpan={7} className="py-20 text-center">
-                    <ShoppingBag size={36} className="mx-auto text-slate-800 mb-3" />
-                    <p className="text-slate-600 font-bold text-sm">No sales in this period</p>
-                    <p className="text-slate-700 text-xs mt-1">
+                    <ShoppingBag size={36} className="mx-auto text-app mb-3" />
+                    <p className="text-muted-2 font-bold text-sm">No sales in this period</p>
+                    <p className="text-app text-xs mt-1">
                       Try changing the date range or filters
                     </p>
                   </td>
@@ -1083,10 +1083,10 @@ function DirectSalesPageInner() {
             {/* Footer totals */}
             {sales.length > 0 && (
               <tfoot>
-                <tr className="bg-[#111520] border-t border-[#21293d]">
+                <tr className="bg-panel-2 border-t border-app">
                   <td
                     colSpan={4}
-                    className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-600"
+                    className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-muted-2"
                   >
                     {sales.length} sales · {formatIST(dateFrom, { day: "2-digit", month: "short" })}{" "}
                     → {formatIST(dateTo, { day: "2-digit", month: "short", year: "numeric" })}
@@ -1094,7 +1094,7 @@ function DirectSalesPageInner() {
                   <td className="px-4 py-3 text-right font-black text-emerald-400 text-base">
                     ₹{stats.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </td>
-                  <td colSpan={2} className="px-4 py-3 text-xs text-slate-600 font-bold">
+                  <td colSpan={2} className="px-4 py-3 text-xs text-muted-2 font-bold">
                     Avg: ₹{stats.avgAmount.toFixed(0)}
                   </td>
                 </tr>

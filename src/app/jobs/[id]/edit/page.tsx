@@ -35,12 +35,12 @@ import { toast } from "@/lib/toast";
 // STYLES
 // ─────────────────────────────────────────────────────────────────────────────
 const inputCls =
-  "w-full px-3 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-white text-sm font-medium " +
-  "placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 " +
+  "w-full px-3 py-2.5 bg-panel-2 border border-app rounded-xl text-white text-sm font-medium " +
+  "placeholder:text-app outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 " +
   "transition-all [color-scheme:dark]";
 
 const labelCls =
-  "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-1.5";
+  "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-1.5";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
@@ -730,25 +730,25 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white font-sans">
+    <div className="min-h-screen bg-app text-white font-sans">
       {/* Add New Client Modal */}
       {showAddClientModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
+            <div className="flex items-center justify-between p-5 border-b border-app">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
                   <User size={18} className="text-white" />
                 </div>
                 <div>
                   <h3 className="font-bold text-white">Add New Client</h3>
-                  <p className="text-xs text-slate-500">Create a new client for this job</p>
+                  <p className="text-xs text-muted">Create a new client for this job</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowAddClientModal(false)}
-                className="w-8 h-8 flex items-center justify-center bg-[#111520] hover:bg-[#21293d] rounded-lg text-slate-500 hover:text-white transition-all"
+                className="w-8 h-8 flex items-center justify-center bg-panel-2 hover:bg-panel-2 rounded-lg text-muted hover:text-white transition-all"
               >
                 <X size={16} />
               </button>
@@ -829,7 +829,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center gap-3 p-5 border-t border-[#21293d]">
+            <div className="flex items-center gap-3 p-5 border-t border-app">
               <button
                 onClick={handleSaveNewClient}
                 disabled={savingClient}
@@ -849,7 +849,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
               </button>
               <button
                 onClick={() => setShowAddClientModal(false)}
-                className="px-6 py-2.5 bg-[#111520] hover:bg-[#21293d] border border-[#21293d] text-slate-400 hover:text-white rounded-xl font-bold text-sm transition-all"
+                className="px-6 py-2.5 bg-panel-2 hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl font-bold text-sm transition-all"
               >
                 Cancel
               </button>
@@ -860,7 +860,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
 
       <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-4">
         {/* ── PAGE HEADER ─────────────────────────────────────────────── */}
-        <div className="relative overflow-hidden bg-[#161b27] rounded-3xl border border-[#21293d] p-5">
+        <div className="relative overflow-hidden bg-panel rounded-3xl border border-app p-5">
           <div
             className="absolute inset-0 opacity-[0.025]"
             style={{
@@ -872,7 +872,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
           <div className="relative flex items-center gap-4">
             <button
               onClick={() => safeBack(router, "/jobs")}
-              className="w-10 h-10 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-slate-500 rounded-xl text-slate-500 hover:text-white transition-all flex-shrink-0"
+              className="w-10 h-10 flex items-center justify-center bg-panel-2 border border-app hover:border-muted rounded-xl text-muted hover:text-white transition-all flex-shrink-0"
             >
               <ArrowLeft size={17} />
             </button>
@@ -890,7 +890,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
                 <h1 className="text-lg font-black tracking-tight text-white leading-none">
                   {isEdit ? `Edit Job — ${jobCode}` : "New Job"}
                 </h1>
-                <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-1">
+                <p className="text-[10px] text-muted font-black uppercase tracking-[0.2em] mt-1">
                   {isEdit ? "Update existing job details" : "Create a new repair job"}
                 </p>
               </div>
@@ -898,7 +898,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
             {/* Job Code badge */}
             {jobCode && (
               <div className="hidden sm:block text-right flex-shrink-0">
-                <p className="text-[9px] text-slate-600 uppercase tracking-wider">Job No.</p>
+                <p className="text-[9px] text-muted-2 uppercase tracking-wider">Job No.</p>
                 <p className="text-sm font-black text-blue-400 font-mono">{jobCode}</p>
               </div>
             )}
@@ -906,8 +906,8 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         </div>
 
         {/* ── SECTION 1: CLIENT + JOB NO + MECHANIC ─────────────────── */}
-        <div className="bg-[#161b27] rounded-2xl border border-[#21293d] p-5">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 mb-4">
+        <div className="bg-panel rounded-2xl border border-app p-5">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-2 mb-4">
             1. Client & Assignment
           </p>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -955,7 +955,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
                       ? "bg-red-500/10 border-red-500/20 text-red-400"
                       : clientBalance.type === "advance"
                         ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                        : "bg-slate-500/10 border-slate-500/20 text-slate-500"
+                        : "bg-muted/10 border-muted/20 text-muted"
                   }`}
                 >
                   <IndianRupee size={10} />
@@ -967,7 +967,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
             {/* Job Code — col 2 */}
             <div className="md:col-span-2">
               <label className={labelCls}>
-                <Hash size={13} className="text-slate-600" />
+                <Hash size={13} className="text-muted-2" />
                 Job No.
               </label>
               <input
@@ -1003,8 +1003,8 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         </div>
 
         {/* ── SECTION 2: DEVICE INFO ────────────────────────────────── */}
-        <div className="bg-[#161b27] rounded-2xl border border-[#21293d] p-5">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 mb-4">
+        <div className="bg-panel rounded-2xl border border-app p-5">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-2 mb-4">
             2. Device Information
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1047,7 +1047,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
             </div>
             <div>
               <label className={labelCls}>
-                <MessageSquare size={13} className="text-slate-600" />
+                <MessageSquare size={13} className="text-muted-2" />
                 Remarks
               </label>
               <input
@@ -1063,11 +1063,11 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         {/* ── SECTION 3: SERVICES + PRODUCTS ───────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* SERVICES */}
-          <div className="bg-[#161b27] rounded-2xl border border-[#21293d] p-5">
+          <div className="bg-panel rounded-2xl border border-app p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Wrench size={15} className="text-blue-400" />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
                   Services
                 </p>
               </div>
@@ -1089,25 +1089,25 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
             </div>
 
             {/* Service table */}
-            <div className="space-y-0 border border-[#21293d] rounded-xl overflow-hidden">
-              <div className="grid grid-cols-[1fr_90px_36px] bg-[#111520] px-3 py-2">
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-600">
+            <div className="space-y-0 border border-app rounded-xl overflow-hidden">
+              <div className="grid grid-cols-[1fr_90px_36px] bg-panel-2 px-3 py-2">
+                <span className="text-[9px] font-black uppercase tracking-wider text-muted-2">
                   Service
                 </span>
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-600 text-right">
+                <span className="text-[9px] font-black uppercase tracking-wider text-muted-2 text-right">
                   Amount
                 </span>
                 <span />
               </div>
               {serviceRows.length === 0 ? (
-                <div className="px-3 py-6 text-center text-slate-700 text-xs">
+                <div className="px-3 py-6 text-center text-app text-xs">
                   Koi service add nahi ki
                 </div>
               ) : (
                 serviceRows.map((r) => (
                   <div
                     key={r.tempId}
-                    className="grid grid-cols-[1fr_90px_36px] items-center px-3 py-2 border-t border-[#21293d] hover:bg-white/[0.02]"
+                    className="grid grid-cols-[1fr_90px_36px] items-center px-3 py-2 border-t border-app hover:bg-white/[0.02]"
                   >
                     <input
                       value={r.service_name ?? ""}
@@ -1122,7 +1122,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
                     />
                     <button
                       onClick={() => removeService(r.tempId)}
-                      className="flex justify-end text-slate-700 hover:text-red-400 transition-colors"
+                      className="flex justify-end text-app hover:text-red-400 transition-colors"
                     >
                       <Trash2 size={13} />
                     </button>
@@ -1133,11 +1133,11 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
           </div>
 
           {/* PRODUCTS */}
-          <div className="bg-[#161b27] rounded-2xl border border-[#21293d] p-5">
+          <div className="bg-panel rounded-2xl border border-app p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Package size={15} className="text-emerald-400" />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
                   Products
                 </p>
               </div>
@@ -1167,12 +1167,12 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
               <button
                 type="button"
                 onClick={() => setShowCustom(true)}
-                className="w-full mb-3 text-xs bg-slate-600/10 text-slate-400 border border-dashed border-slate-600/40 px-3 py-2 rounded-xl hover:text-emerald-300 hover:border-emerald-500/40 transition-all inline-flex items-center justify-center gap-1.5"
+                className="w-full mb-3 text-xs bg-slate-600/10 text-muted border border-dashed border-muted/40 px-3 py-2 rounded-xl hover:text-emerald-300 hover:border-emerald-500/40 transition-all inline-flex items-center justify-center gap-1.5"
               >
                 <Plus size={13} /> Custom spare add karo (inventory se alag)
               </button>
             ) : (
-              <div className="mb-3 border border-[#21293d] rounded-xl bg-[#111520] p-3 grid grid-cols-1 sm:grid-cols-[1fr_90px_120px_auto] gap-2 items-end">
+              <div className="mb-3 border border-app rounded-xl bg-panel-2 p-3 grid grid-cols-1 sm:grid-cols-[1fr_90px_120px_auto] gap-2 items-end">
                 <div>
                   <label className={labelCls}>Spare naam *</label>
                   <input
@@ -1209,7 +1209,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
                       setCustomName("");
                       setCustomPrice("");
                     }}
-                    className="text-slate-500 hover:text-red-400 text-xs px-2 py-2"
+                    className="text-muted hover:text-red-400 text-xs px-2 py-2"
                   >
                     <X size={14} />
                   </button>
@@ -1218,19 +1218,19 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
             )}
 
             {/* Product table */}
-            <div className="space-y-0 border border-[#21293d] rounded-xl overflow-hidden">
-              <div className="grid grid-cols-[1fr_50px_80px_80px_36px] bg-[#111520] px-3 py-2">
+            <div className="space-y-0 border border-app rounded-xl overflow-hidden">
+              <div className="grid grid-cols-[1fr_50px_80px_80px_36px] bg-panel-2 px-3 py-2">
                 {["Product", "Qty", "Price", "Total", ""].map((h) => (
                   <span
                     key={h}
-                    className="text-[9px] font-black uppercase tracking-wider text-slate-600 last:col-span-1"
+                    className="text-[9px] font-black uppercase tracking-wider text-muted-2 last:col-span-1"
                   >
                     {h}
                   </span>
                 ))}
               </div>
               {productRows.length === 0 ? (
-                <div className="px-3 py-6 text-center text-slate-700 text-xs">
+                <div className="px-3 py-6 text-center text-app text-xs">
                   Koi product add nahi kiya
                 </div>
               ) : (
@@ -1240,7 +1240,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
                   return (
                     <div
                       key={r.tempId}
-                      className={`grid grid-cols-[1fr_50px_80px_80px_36px] items-center px-3 py-2 border-t border-[#21293d] hover:bg-white/[0.02] ${overStock ? "bg-amber-500/5" : ""}`}
+                      className={`grid grid-cols-[1fr_50px_80px_80px_36px] items-center px-3 py-2 border-t border-app hover:bg-white/[0.02] ${overStock ? "bg-amber-500/5" : ""}`}
                     >
                       <span
                         className="text-white text-xs font-medium truncate"
@@ -1260,14 +1260,14 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
                         step="0.01"
                         value={r.price ?? 0}
                         onChange={(e) => updateProductPrice(r.tempId, e.target.value)}
-                        className="bg-transparent text-right text-sm font-medium text-slate-300 outline-none w-full"
+                        className="bg-transparent text-right text-sm font-medium text-app-2 outline-none w-full"
                       />
                       <span className="text-emerald-400 text-xs font-black text-right pr-1">
                         {inr(r.qty * r.price)}
                       </span>
                       <button
                         onClick={() => removeProduct(r.tempId)}
-                        className="flex justify-end text-slate-700 hover:text-red-400 transition-colors"
+                        className="flex justify-end text-app hover:text-red-400 transition-colors"
                       >
                         <Trash2 size={13} />
                       </button>
@@ -1280,16 +1280,16 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         </div>
 
         {/* ── SECTION 4: TOTALS + COMMISSION ────────────────────────── */}
-        <div className="bg-[#161b27] rounded-2xl border border-[#21293d] p-5">
+        <div className="bg-panel rounded-2xl border border-app p-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             {/* Grand Total */}
             <div className="bg-gradient-to-br from-blue-600/15 to-blue-800/10 border border-blue-500/20 rounded-2xl px-6 py-4 flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
                   Total Payable
                 </p>
                 <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-slate-500 text-sm">₹</span>
+                  <span className="text-muted text-sm">₹</span>
                   <span className="text-3xl font-black text-white">
                     {grandTotal.toLocaleString("en-IN")}
                   </span>
@@ -1321,7 +1321,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
                   {(() => {
                     const mech = mechanics.find((m) => m.id === parseInt(selectedMechanic));
                     return selectedMechanic && mech && mech.commission_percent > 0 ? (
-                      <p className="text-[9px] text-slate-600 mt-1">
+                      <p className="text-[9px] text-muted-2 mt-1">
                         Auto: {mech.commission_percent}% of services total
                       </p>
                     ) : null;
@@ -1357,7 +1357,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
           </button>
           <button
             onClick={() => safeBack(router, "/jobs")}
-            className="px-6 py-3.5 bg-[#111520] border border-[#21293d] hover:border-slate-500 text-slate-400 hover:text-white rounded-2xl font-bold text-sm transition-all"
+            className="px-6 py-3.5 bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-2xl font-bold text-sm transition-all"
           >
             Cancel
           </button>

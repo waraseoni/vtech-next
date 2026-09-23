@@ -445,9 +445,9 @@ export default function PurchaseOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
+    <div className="min-h-screen bg-app font-sans pb-16">
       {/* ── HERO ── */}
-      <div className="relative overflow-hidden bg-[#0d1117] border-b border-[#21293d]">
+      <div className="relative overflow-hidden bg-app border-b border-app">
         <div
           className="absolute inset-0 opacity-[0.025]"
           style={{
@@ -461,7 +461,7 @@ export default function PurchaseOrdersPage() {
             <div className="flex items-center gap-4">
               <Link
                 href="/inventory"
-                className="flex-shrink-0 p-2.5 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] rounded-xl text-slate-500 hover:text-white transition-all"
+                className="flex-shrink-0 p-2.5 bg-panel hover:bg-panel-2 border border-app rounded-xl text-muted hover:text-white transition-all"
                 title="Back to Inventory"
               >
                 <ArrowLeft size={16} />
@@ -470,7 +470,7 @@ export default function PurchaseOrdersPage() {
                 <div className="w-14 h-14 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-emerald-500/30">
                   <ClipboardList size={26} className="text-white" />
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-[#0d1117]" />
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-app" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -481,7 +481,7 @@ export default function PurchaseOrdersPage() {
                     New
                   </span>
                 </div>
-                <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.2em] mt-1">
+                <p className="text-muted-2 text-xs font-bold uppercase tracking-[0.2em] mt-1">
                   Reorder → PO → Stock-in
                 </p>
               </div>
@@ -489,14 +489,14 @@ export default function PurchaseOrdersPage() {
             <div className="flex items-center gap-2">
               <Link
                 href="/suppliers"
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <Truck size={13} /> Suppliers
               </Link>
               <button
                 onClick={() => fetchPos(true)}
                 disabled={refreshing}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
                 {refreshing ? "Refreshing..." : "Refresh"}
@@ -553,7 +553,7 @@ export default function PurchaseOrdersPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className={`text-xl font-black ${text}`}>{value}</div>
-                    <div className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">
+                    <div className="text-[9px] text-muted-2 font-bold uppercase tracking-widest mt-0.5">
                       {label}
                     </div>
                   </div>
@@ -570,14 +570,14 @@ export default function PurchaseOrdersPage() {
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
           <div className="relative flex-1">
             <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2"
               size={15}
             />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search PO code or supplier..."
-              className="w-full pl-10 pr-10 py-2.5 bg-[#161b27] border border-[#21293d] text-slate-200 placeholder-slate-600 rounded-xl text-sm focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all"
+              className="w-full pl-10 pr-10 py-2.5 bg-panel border border-app text-app-2 placeholder-slate-600 rounded-xl text-sm focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all"
             />
           </div>
           <div className="flex gap-2">
@@ -590,7 +590,7 @@ export default function PurchaseOrdersPage() {
                 className={`px-3.5 py-2.5 rounded-xl text-xs font-bold border transition-all ${
                   statusF === f
                     ? "bg-emerald-600 text-white border-emerald-600"
-                    : "bg-[#161b27] text-slate-600 border-[#21293d] hover:border-emerald-500/30 hover:text-slate-400"
+                    : "bg-panel text-muted-2 border-app hover:border-emerald-500/30 hover:text-muted"
                 }`}
               >
                 {f === "all"
@@ -607,10 +607,10 @@ export default function PurchaseOrdersPage() {
       {/* ── PO LIST ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {filtered.length === 0 ? (
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl py-20 text-center">
-            <ClipboardList size={36} className="mx-auto text-slate-800 mb-3" />
-            <p className="text-slate-600 font-bold text-sm">No purchase orders found</p>
-            <p className="text-slate-700 text-xs mt-1">Create one from the top-right button</p>
+          <div className="bg-panel border border-app rounded-2xl py-20 text-center">
+            <ClipboardList size={36} className="mx-auto text-app mb-3" />
+            <p className="text-muted-2 font-bold text-sm">No purchase orders found</p>
+            <p className="text-app text-xs mt-1">Create one from the top-right button</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -620,10 +620,10 @@ export default function PurchaseOrdersPage() {
               return (
                 <div
                   key={po.id}
-                  className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden hover:border-[#2b3750] transition-colors"
+                  className="bg-panel border border-app rounded-2xl overflow-hidden hover:border-app-2 transition-colors"
                 >
                   {/* Header row */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-[#21293d] bg-[#111520]">
+                  <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-app bg-panel-2">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center">
                         <FileText size={16} className="text-emerald-400" />
@@ -643,11 +643,11 @@ export default function PurchaseOrdersPage() {
                             {meta.label}
                           </span>
                         </div>
-                        <div className="text-[11px] text-slate-600 mt-0.5">
+                        <div className="text-[11px] text-muted-2 mt-0.5">
                           {po.supplier_id != null ? (
                             <Link
                               href={`/suppliers/${po.supplier_id}`}
-                              className="text-slate-500 hover:text-blue-400 transition-colors"
+                              className="text-muted hover:text-blue-400 transition-colors"
                             >
                               {po.supplier_name}
                             </Link>
@@ -655,7 +655,7 @@ export default function PurchaseOrdersPage() {
                             po.supplier_name
                           )}{" "}
                           · {fmtDate(po.date_created)}
-                          {po.person_name && <> · <b className="text-slate-400 font-bold">{po.person_name}</b></>}
+                          {po.person_name && <> · <b className="text-muted font-bold">{po.person_name}</b></>}
                         </div>
                         {po.transaction_id != null && (
                           <Link
@@ -671,14 +671,14 @@ export default function PurchaseOrdersPage() {
                       <Link
                         href={`/inventory/purchase-orders/${po.id}`}
                         title="View PO"
-                        className="p-2 bg-[#21293d] hover:bg-blue-600/30 border border-[#21293d] hover:border-blue-500/40 rounded-lg text-slate-500 hover:text-blue-400 transition-all"
+                        className="p-2 bg-panel-2 hover:bg-blue-600/30 border border-app hover:border-blue-500/40 rounded-lg text-muted hover:text-blue-400 transition-all"
                       >
                         <Eye size={13} />
                       </Link>
                       <button
                         title="Print / Download PDF"
                         onClick={() => window.open(`/api/print-purchase-order?po_id=${po.id}`, "_blank")}
-                        className="p-2 bg-[#21293d] hover:bg-emerald-600/30 border border-[#21293d] hover:border-emerald-500/40 rounded-lg text-slate-500 hover:text-emerald-400 transition-all"
+                        className="p-2 bg-panel-2 hover:bg-emerald-600/30 border border-app hover:border-emerald-500/40 rounded-lg text-muted hover:text-emerald-400 transition-all"
                       >
                         <Printer size={13} />
                       </button>
@@ -686,7 +686,7 @@ export default function PurchaseOrdersPage() {
                         <button
                           title="Send WhatsApp to Supplier"
                           onClick={() => openWhatsApp(po)}
-                          className="p-2 bg-[#21293d] hover:bg-green-600/30 border border-[#21293d] hover:border-green-500/40 rounded-lg text-slate-500 hover:text-green-400 transition-all"
+                          className="p-2 bg-panel-2 hover:bg-green-600/30 border border-app hover:border-green-500/40 rounded-lg text-muted hover:text-green-400 transition-all"
                         >
                           <MessageCircle size={13} />
                         </button>
@@ -695,12 +695,12 @@ export default function PurchaseOrdersPage() {
                         <button
                           onClick={() => setEditTarget(po)}
                           title="Edit PO"
-                          className="p-2 bg-[#21293d] hover:bg-amber-600/30 border border-[#21293d] hover:border-amber-500/40 rounded-lg text-slate-500 hover:text-amber-400 transition-all"
+                          className="p-2 bg-panel-2 hover:bg-amber-600/30 border border-app hover:border-amber-500/40 rounded-lg text-muted hover:text-amber-400 transition-all"
                         >
                           <Pencil size={13} />
                         </button>
                       )}
-                      <span className="text-xs text-slate-500 font-bold mr-2">
+                      <span className="text-xs text-muted font-bold mr-2">
                         {po.items.length} item{po.items.length === 1 ? "" : "s"}
                       </span>
                       {(po.status === "ordered" || po.status === "partially_received") &&
@@ -727,7 +727,7 @@ export default function PurchaseOrdersPage() {
                           <button
                             onClick={() => updateStatus(po, "cancelled")}
                             disabled={acting === po.id}
-                            className="px-3 py-1.5 bg-[#21293d] hover:bg-red-600/30 border border-[#21293d] hover:border-red-500/40 text-slate-400 hover:text-red-400 rounded-lg text-xs font-bold transition-all"
+                            className="px-3 py-1.5 bg-panel-2 hover:bg-red-600/30 border border-app hover:border-red-500/40 text-muted hover:text-red-400 rounded-lg text-xs font-bold transition-all"
                           >
                             Cancel
                           </button>
@@ -737,7 +737,7 @@ export default function PurchaseOrdersPage() {
                         <button
                           onClick={() => deletePo(po)}
                           disabled={acting === po.id}
-                          className="p-2 bg-[#21293d] hover:bg-red-600/30 border border-[#21293d] hover:border-red-500/40 rounded-lg text-slate-500 hover:text-red-400 transition-all"
+                          className="p-2 bg-panel-2 hover:bg-red-600/30 border border-app hover:border-red-500/40 rounded-lg text-muted hover:text-red-400 transition-all"
                         >
                           <Trash2 size={13} />
                         </button>
@@ -752,22 +752,22 @@ export default function PurchaseOrdersPage() {
                         return (
                           <div
                             key={item.id}
-                            className="bg-[#111520] border border-[#21293d] rounded-xl p-3"
+                            className="bg-panel-2 border border-app rounded-xl p-3"
                           >
                             <div className="flex items-center justify-between gap-2">
                               <Link
                                 href={`/inventory/${item.product_id}`}
-                                className="text-xs font-bold text-slate-300 hover:text-emerald-300 transition-colors truncate"
+                                className="text-xs font-bold text-app-2 hover:text-emerald-300 transition-colors truncate"
                               >
                                 {item.product_name}
                               </Link>
                             </div>
                             <div className="flex items-center justify-between mt-2.5">
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] text-slate-700 font-bold uppercase tracking-wider">
+                                <span className="text-[10px] text-app font-bold uppercase tracking-wider">
                                   Ordered
                                 </span>
-                                <span className="text-sm font-black text-slate-200">
+                                <span className="text-sm font-black text-app-2">
                                   {item.qty_ordered}
                                 </span>
                               </div>
@@ -786,13 +786,13 @@ export default function PurchaseOrdersPage() {
                         );
                       })}
                       {po.items.length === 0 && (
-                        <p className="text-slate-700 text-xs">No items on this PO.</p>
+                        <p className="text-app text-xs">No items on this PO.</p>
                       )}
                     </div>
 
                     {po.notes && (
-                      <p className="text-[11px] text-slate-600 mt-3 border-t border-[#21293d] pt-3">
-                        <span className="text-slate-700 font-bold">Notes:</span> {po.notes}
+                      <p className="text-[11px] text-muted-2 mt-3 border-t border-app pt-3">
+                        <span className="text-app font-bold">Notes:</span> {po.notes}
                       </p>
                     )}
                   </div>
@@ -839,23 +839,23 @@ export default function PurchaseOrdersPage() {
       {waModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setWaModalOpen(false)} />
-          <div className="relative w-full max-w-lg bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl shadow-black/50 max-h-[85vh] flex flex-col">
+          <div className="relative w-full max-w-lg bg-panel border border-app rounded-2xl overflow-hidden shadow-2xl shadow-black/50 max-h-[85vh] flex flex-col">
             <div className="h-0.5 w-full bg-gradient-to-r from-green-500 to-emerald-600" />
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-app">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center border bg-green-500/10 border-green-500/25">
                   <MessageCircle size={16} className="text-green-400" />
                 </div>
                 <div>
                   <h3 className="text-base font-extrabold text-white leading-none">WhatsApp Message</h3>
-                  <p className="text-[10px] text-slate-600 font-bold mt-0.5 uppercase tracking-wider">
+                  <p className="text-[10px] text-muted-2 font-bold mt-0.5 uppercase tracking-wider">
                     Edit, copy or send directly
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setWaModalOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-panel-2 hover:bg-white/5 text-muted hover:text-app-2 border border-app transition-all"
               >
                 <X size={15} />
               </button>
@@ -866,17 +866,17 @@ export default function PurchaseOrdersPage() {
                 value={waMessage}
                 onChange={(e) => setWaMessage(e.target.value)}
                 rows={14}
-                className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl outline-none focus:border-green-500/60 text-sm font-mono resize-none leading-relaxed"
+                className="w-full px-4 py-3 bg-panel-2 border border-app text-app-2 rounded-xl outline-none focus:border-green-500/60 text-sm font-mono resize-none leading-relaxed"
               />
             </div>
 
-            <div className="px-5 py-4 border-t border-[#21293d] flex items-center gap-3">
-              <div className="flex-1 text-[10px] text-slate-600">
+            <div className="px-5 py-4 border-t border-app flex items-center gap-3">
+              <div className="flex-1 text-[10px] text-muted-2">
                 {waMessage.length} characters
               </div>
               <button
                 onClick={() => setWaModalOpen(false)}
-                className="px-4 py-2.5 bg-[#111520] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-slate-300 rounded-xl font-bold text-xs transition-all"
+                className="px-4 py-2.5 bg-panel-2 hover:bg-white/5 border border-app text-muted hover:text-app-2 rounded-xl font-bold text-xs transition-all"
               >
                 Cancel
               </button>
@@ -885,7 +885,7 @@ export default function PurchaseOrdersPage() {
                 className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 border ${
                   waCopied
                     ? "bg-emerald-600/20 border-emerald-500/40 text-emerald-400"
-                    : "bg-[#21293d] hover:bg-blue-600/30 border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-blue-400"
+                    : "bg-panel-2 hover:bg-blue-600/30 border-app hover:border-blue-500/40 text-muted hover:text-blue-400"
                 }`}
               >
                 {waCopied ? <><CheckCircle2 size={13} /> Copied!</> : "Copy"}
@@ -1125,12 +1125,12 @@ function CreatePOModal({
     >
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div
-        className="relative w-full sm:max-w-2xl bg-[#161b27] border border-[#21293d] sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl shadow-black/50 max-h-[90vh] flex flex-col"
+        className="relative w-full sm:max-w-2xl bg-panel border border-app sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl shadow-black/50 max-h-[90vh] flex flex-col"
         style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="h-0.5 w-full bg-gradient-to-r from-emerald-500 to-teal-600" />
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-app">
           <div className="flex items-center gap-3">
             <div
               className={`w-9 h-9 rounded-xl flex items-center justify-center border ${
@@ -1149,14 +1149,14 @@ function CreatePOModal({
               <h3 className="text-base font-extrabold text-white leading-none">
                 {editing ? `Edit ${editing.po_code}` : "New Purchase Order"}
               </h3>
-              <p className="text-[10px] text-slate-600 font-bold mt-0.5 uppercase tracking-wider">
+              <p className="text-[10px] text-muted-2 font-bold mt-0.5 uppercase tracking-wider">
                 {editing ? "Update supplier, dates & line items" : "Reorder stock from supplier"}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-panel-2 hover:bg-white/5 text-muted hover:text-app-2 border border-app transition-all"
           >
             <X size={15} />
           </button>
@@ -1174,7 +1174,7 @@ function CreatePOModal({
             {/* Supplier + expected date */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
+                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2.5">
                   Supplier (Optional)
                 </label>
                 <SupplierPicker
@@ -1185,9 +1185,9 @@ function CreatePOModal({
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
+                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2.5">
                   <span className="flex items-center gap-1.5">
-                    <CalendarDays size={10} className="text-slate-700" /> Expected Date
+                    <CalendarDays size={10} className="text-app" /> Expected Date
                   </span>
                 </label>
                 <input
@@ -1195,7 +1195,7 @@ function CreatePOModal({
                   value={expectedDate}
                   min={editing ? undefined : today}
                   onChange={(e) => setExpectedDate(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm [color-scheme:dark]"
+                  className="w-full px-4 py-3 bg-panel-2 border border-app text-app-2 rounded-xl outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm [color-scheme:dark]"
                 />
               </div>
             </div>
@@ -1203,13 +1203,13 @@ function CreatePOModal({
             {/* Contact person (optional) */}
             {supplierId && persons.length > 0 && (
               <div>
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
+                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2.5">
                   Contact Person (Optional)
                 </label>
                 <select
                   value={contactPerson}
                   onChange={(e) => setContactPerson(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm [color-scheme:dark]"
+                  className="w-full px-4 py-3 bg-panel-2 border border-app text-app-2 rounded-xl outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm [color-scheme:dark]"
                 >
                   <option value="">-- Koi bhi person --</option>
                   {persons.map((p) => (
@@ -1224,19 +1224,19 @@ function CreatePOModal({
 
             {/* Line items */}
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
+              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2.5">
                 Products to Reorder
               </label>
               <div className="space-y-2.5">
                 {lines.map((l, idx) => (
                   <div
                     key={idx}
-                    className="relative bg-[#111520] border border-[#21293d] rounded-xl p-3 space-y-2.5"
+                    className="relative bg-panel-2 border border-app rounded-xl p-3 space-y-2.5"
                   >
                     <button
                       type="button"
                       onClick={() => removeLine(idx)}
-                      className="absolute top-3 right-3 z-10 p-2 bg-[#21293d] hover:bg-red-600/30 border border-[#21293d] hover:border-red-500/40 rounded-lg text-slate-500 hover:text-red-400 transition-all"
+                      className="absolute top-3 right-3 z-10 p-2 bg-panel-2 hover:bg-red-600/30 border border-app hover:border-red-500/40 rounded-lg text-muted hover:text-red-400 transition-all"
                     >
                       <X size={13} />
                     </button>
@@ -1258,7 +1258,7 @@ function CreatePOModal({
                     </div>
                     <div className="grid grid-cols-1 gap-2.5">
                       <div>
-                        <label className="block text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-1.5">
+                        <label className="block text-[9px] font-extrabold uppercase tracking-widest text-muted-2 mb-1.5">
                           Qty
                         </label>
                         <input
@@ -1268,7 +1268,7 @@ function CreatePOModal({
                           onChange={(e) =>
                             setLine(idx, { qty: Math.max(1, Number(e.target.value)) })
                           }
-                          className="w-full px-3 py-2.5 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-xl outline-none focus:border-emerald-500/60 text-sm"
+                          className="w-full px-3 py-2.5 bg-panel border border-app text-app-2 rounded-xl outline-none focus:border-emerald-500/60 text-sm"
                         />
                       </div>
                     </div>
@@ -1278,7 +1278,7 @@ function CreatePOModal({
               <button
                 type="button"
                 onClick={addLine}
-                className="mt-2.5 w-full py-2.5 rounded-xl border border-dashed border-[#21293d] hover:border-emerald-500/40 hover:bg-emerald-500/5 text-slate-500 hover:text-emerald-400 text-xs font-bold transition-all"
+                className="mt-2.5 w-full py-2.5 rounded-xl border border-dashed border-app hover:border-emerald-500/40 hover:bg-emerald-500/5 text-muted hover:text-emerald-400 text-xs font-bold transition-all"
               >
                 + Add another product
               </button>
@@ -1286,7 +1286,7 @@ function CreatePOModal({
 
             {/* Notes */}
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
+              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2.5">
                 Notes (Optional)
               </label>
               <textarea
@@ -1294,25 +1294,25 @@ function CreatePOModal({
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
                 placeholder="e.g. Urgent restock, shelf placement..."
-                className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 placeholder-slate-700 rounded-xl outline-none focus:border-emerald-500/60 text-sm resize-none"
+                className="w-full px-4 py-3 bg-panel-2 border border-app text-app-2 placeholder-slate-700 rounded-xl outline-none focus:border-emerald-500/60 text-sm resize-none"
               />
             </div>
           </div>
 
           {/* Footer */}
-          <div className="px-5 py-4 border-t border-[#21293d] flex items-center gap-3">
+          <div className="px-5 py-4 border-t border-app flex items-center gap-3">
             <div className="flex-1">
-              <span className="text-[10px] text-slate-700 font-bold uppercase tracking-widest block">
+              <span className="text-[10px] text-app font-bold uppercase tracking-widest block">
                 Price
               </span>
-              <span className="text-sm font-bold text-slate-500">
+              <span className="text-sm font-bold text-muted">
                 As per supplier invoice
               </span>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-3 bg-[#111520] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-slate-300 rounded-xl font-bold text-sm transition-all"
+              className="px-5 py-3 bg-panel-2 hover:bg-white/5 border border-app text-muted hover:text-app-2 rounded-xl font-bold text-sm transition-all"
             >
               Cancel
             </button>
@@ -1380,9 +1380,9 @@ function ReceiveStockModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl shadow-black/50 max-h-[90vh] flex flex-col">
+      <div className="relative w-full max-w-2xl bg-panel border border-app rounded-2xl overflow-hidden shadow-2xl shadow-black/50 max-h-[90vh] flex flex-col">
         <div className="h-0.5 w-full bg-gradient-to-r from-emerald-500 to-teal-600" />
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-app">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center border bg-emerald-500/10 border-emerald-500/25">
               <Truck size={16} className="text-emerald-400" />
@@ -1391,14 +1391,14 @@ function ReceiveStockModal({
               <h3 className="text-base font-extrabold text-white leading-none">
                 Receive Stock — {target.po_code}
               </h3>
-              <p className="text-[10px] text-slate-600 font-bold mt-0.5 uppercase tracking-wider">
+              <p className="text-[10px] text-muted-2 font-bold mt-0.5 uppercase tracking-wider">
                 Enter qty, purchase price &amp; sell price per item
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-panel-2 hover:bg-white/5 text-muted hover:text-app-2 border border-app transition-all"
           >
             <X size={15} />
           </button>
@@ -1406,14 +1406,14 @@ function ReceiveStockModal({
 
         <div className="px-5 py-4 space-y-3 overflow-y-auto">
           {/* PO Expenses */}
-          <div className="bg-[#111520] border border-[#21293d] rounded-xl p-3">
+          <div className="bg-panel-2 border border-app rounded-xl p-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-xs font-bold text-slate-300">Total PO Expenses</div>
-                <div className="text-[10px] text-slate-600">Freight, handling, packing etc. (distributed per unit)</div>
+                <div className="text-xs font-bold text-app-2">Total PO Expenses</div>
+                <div className="text-[10px] text-muted-2">Freight, handling, packing etc. (distributed per unit)</div>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-slate-500 text-sm font-bold">₹</span>
+                <span className="text-muted text-sm font-bold">₹</span>
                 <input
                   type="number"
                   min={0}
@@ -1421,7 +1421,7 @@ function ReceiveStockModal({
                   value={expenses || ""}
                   onChange={(e) => setExpenses(Math.max(0, Number(e.target.value) || 0))}
                   placeholder="0"
-                  className="w-28 px-3 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-lg outline-none focus:border-emerald-500/60 text-sm text-right"
+                  className="w-28 px-3 py-2 bg-panel border border-app text-app-2 rounded-lg outline-none focus:border-emerald-500/60 text-sm text-right"
                 />
               </div>
             </div>
@@ -1438,21 +1438,21 @@ function ReceiveStockModal({
             return (
               <div
                 key={item.id}
-                className="bg-[#111520] border border-[#21293d] rounded-xl p-3 space-y-2.5"
+                className="bg-panel-2 border border-app rounded-xl p-3 space-y-2.5"
               >
                 {/* Header row */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-300 truncate">
+                    <div className="text-xs font-bold text-app-2 truncate">
                       {item.product_name}
                     </div>
-                    <div className="text-[10px] text-slate-600 mt-0.5">
+                    <div className="text-[10px] text-muted-2 mt-0.5">
                       Ordered {item.qty_ordered} · Recv {item.qty_received} ·{" "}
                       <span className="text-emerald-400 font-bold">Open {outstanding}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-600 font-bold">Qty:</span>
+                    <span className="text-[10px] text-muted-2 font-bold">Qty:</span>
                     <input
                       type="number"
                       min={0}
@@ -1462,7 +1462,7 @@ function ReceiveStockModal({
                         const v = Math.max(0, Math.min(outstanding, Number(e.target.value) || 0));
                         setQtys((q) => ({ ...q, [item.product_id]: v }));
                       }}
-                      className="w-20 px-3 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-lg outline-none focus:border-emerald-500/60 text-sm text-center"
+                      className="w-20 px-3 py-2 bg-panel border border-app text-app-2 rounded-lg outline-none focus:border-emerald-500/60 text-sm text-center"
                     />
                   </div>
                 </div>
@@ -1470,7 +1470,7 @@ function ReceiveStockModal({
                 {qty > 0 && (
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label className="block text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-1">
+                      <label className="block text-[9px] font-extrabold uppercase tracking-widest text-muted-2 mb-1">
                         Purchase Price (₹ / unit)
                       </label>
                       <input
@@ -1488,11 +1488,11 @@ function ReceiveStockModal({
                           }))
                         }
                         placeholder="Supplier price"
-                        className="w-full px-3 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-lg outline-none focus:border-emerald-500/60 text-sm"
+                        className="w-full px-3 py-2 bg-panel border border-app text-app-2 rounded-lg outline-none focus:border-emerald-500/60 text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mb-1">
+                      <label className="block text-[9px] font-extrabold uppercase tracking-widest text-muted-2 mb-1">
                         Sell Price (₹ / unit)
                       </label>
                       <input
@@ -1510,12 +1510,12 @@ function ReceiveStockModal({
                           }))
                         }
                         placeholder="Our selling price"
-                        className="w-full px-3 py-2 bg-[#161b27] border border-[#21293d] text-slate-200 rounded-lg outline-none focus:border-emerald-500/60 text-sm"
+                        className="w-full px-3 py-2 bg-panel border border-app text-app-2 rounded-lg outline-none focus:border-emerald-500/60 text-sm"
                       />
                     </div>
                     {/* Calculated cost price */}
                     {uc > 0 && (
-                      <div className="col-span-2 flex items-center gap-2 text-[10px] text-slate-500 border-t border-[#21293d] pt-2">
+                      <div className="col-span-2 flex items-center gap-2 text-[10px] text-muted border-t border-app pt-2">
                         <span>Cost Price = ₹{uc.toFixed(2)}</span>
                         {getExpensePerUnit > 0 && (
                           <> + ₹{getExpensePerUnit.toFixed(2)} expense = <span className="text-emerald-400 font-bold">₹{costWithExpense.toFixed(2)}</span></>
@@ -1533,31 +1533,31 @@ function ReceiveStockModal({
             );
           })}
           {target.items.every((i) => i.qty_ordered - i.qty_received <= 0) && (
-            <p className="text-slate-600 text-sm font-bold text-center py-6">
+            <p className="text-muted-2 text-sm font-bold text-center py-6">
               Nothing left to receive on this PO.
             </p>
           )}
         </div>
 
-        <div className="px-5 py-4 border-t border-[#21293d] flex items-center gap-3">
+        <div className="px-5 py-4 border-t border-app flex items-center gap-3">
           <div className="flex-1">
-            <span className="text-[10px] text-slate-700 font-bold uppercase tracking-widest block">
+            <span className="text-[10px] text-app font-bold uppercase tracking-widest block">
               Receiving
             </span>
             <span className="text-xl font-black text-emerald-400">{totalReceiving} units</span>
             {expenses > 0 && totalReceiving > 0 && (
-              <span className="block text-[10px] text-slate-600 font-bold mt-0.5">
+              <span className="block text-[10px] text-muted-2 font-bold mt-0.5">
                 + ₹{expenses.toLocaleString("en-IN")} expenses (₹{getExpensePerUnit.toFixed(2)}/unit)
               </span>
             )}
-            <span className="block text-[10px] text-slate-700 font-bold mt-0.5">
+            <span className="block text-[10px] text-app font-bold mt-0.5">
               {allFull && totalReceiving > 0 ? "Will mark PO as Received" : "PO stays Partially Received"}
             </span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-3 bg-[#111520] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-slate-300 rounded-xl font-bold text-sm transition-all"
+            className="px-5 py-3 bg-panel-2 hover:bg-white/5 border border-app text-muted hover:text-app-2 rounded-xl font-bold text-sm transition-all"
           >
             Cancel
           </button>

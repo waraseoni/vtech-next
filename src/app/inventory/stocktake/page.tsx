@@ -226,11 +226,11 @@ export default function StocktakePage() {
   }
   if (userRole !== "admin" && userRole !== "developer") {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0d1117] flex items-center justify-center px-6">
+      <div className="min-h-screen bg-white dark:bg-app flex items-center justify-center px-6">
         <div className="text-center">
-          <ShieldCheck size={40} className="text-slate-400 dark:text-slate-700 mx-auto mb-3" />
-          <h1 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Admin only</h1>
-          <p className="text-slate-500 dark:text-slate-600 text-sm mt-1">
+          <ShieldCheck size={40} className="text-muted dark:text-app mx-auto mb-3" />
+          <h1 className="text-lg font-black text-app dark:text-white tracking-tight">Admin only</h1>
+          <p className="text-muted dark:text-muted-2 text-sm mt-1">
             Stocktake (physical count) sirf admin kar sakta hai.
           </p>
         </div>
@@ -239,9 +239,9 @@ export default function StocktakePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0d1117] font-sans pb-16">
+    <div className="min-h-screen bg-white dark:bg-app font-sans pb-16">
       {/* ── HERO HEADER ── */}
-      <div className="relative overflow-hidden bg-white dark:bg-[#0d1117] border-b border-slate-200 dark:border-[#21293d]">
+      <div className="relative overflow-hidden bg-white dark:bg-app border-b border-app-2 dark:border-app">
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
         <div className="absolute -top-20 -left-20 w-72 h-72 bg-teal-600/10 rounded-full blur-3xl" />
         <div className="absolute -top-10 right-10 w-48 h-48 bg-emerald-600/8 rounded-full blur-2xl" />
@@ -255,16 +255,16 @@ export default function StocktakePage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <Link href="/inventory" className="text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-300 transition-colors">
+                  <Link href="/inventory" className="text-xs text-muted hover:text-app dark:hover:text-app-2 transition-colors">
                     Inventory
                   </Link>
-                  <span className="text-slate-400 dark:text-slate-700 text-xs">/</span>
-                  <span className="text-xs text-slate-800 dark:text-slate-300">Stocktake</span>
+                  <span className="text-muted dark:text-app text-xs">/</span>
+                  <span className="text-xs text-app dark:text-app-2">Stocktake</span>
                 </div>
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-0.5">
+                <h1 className="text-xl sm:text-2xl font-black text-app dark:text-white tracking-tight mt-0.5">
                   Stocktake &amp; Adjustment
                 </h1>
-                <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">Physical count reconciliation — full audit trail.</p>
+                <p className="text-muted dark:text-muted text-sm mt-0.5">Physical count reconciliation — full audit trail.</p>
               </div>
             </div>
             <button
@@ -272,7 +272,7 @@ export default function StocktakePage() {
                 loadProducts();
                 loadRecent();
               }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#21293d] dark:hover:bg-[#2a3348] text-slate-600 dark:text-slate-300 text-sm font-semibold transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3348] text-muted-2 dark:text-app-2 text-sm font-semibold transition-colors"
             >
               <RefreshCw size={15} /> Refresh
             </button>
@@ -282,18 +282,18 @@ export default function StocktakePage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid lg:grid-cols-2 gap-6">
         {/* ── LEFT: pick a product ── */}
-        <div className="bg-white dark:bg-[#161b25] border border-slate-200 dark:border-[#21293d] rounded-2xl p-5">
+        <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Search size={16} className="text-slate-500 dark:text-slate-400" />
-            <h2 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">Select a product</h2>
+            <Search size={16} className="text-muted dark:text-muted" />
+            <h2 className="text-sm font-black text-app dark:text-white tracking-tight">Select a product</h2>
           </div>
           <div className="relative mb-3">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-600" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted dark:text-muted-2" />
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by name or barcode..."
-              className="w-full bg-white dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-teal-500/60"
+              className="w-full bg-white dark:bg-app border border-app-2 dark:border-app rounded-xl pl-9 pr-3 py-2.5 text-sm text-app dark:text-white placeholder:text-muted dark:placeholder:text-muted-2 focus:outline-none focus:border-teal-500/60"
             />
           </div>
           <div className="max-h-96 overflow-y-auto space-y-1 pr-1">
@@ -306,12 +306,12 @@ export default function StocktakePage() {
                   key={p.id}
                   onClick={() => pickProduct(p.id)}
                   className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-left transition-colors ${
-                    isSel ? "bg-teal-500/15 border border-teal-500/40" : "border border-transparent hover:bg-slate-100 dark:hover:bg-[#21293d]"
+                    isSel ? "bg-teal-500/15 border border-teal-500/40" : "border border-transparent hover:bg-panel-2 dark:hover:bg-panel-2"
                   }`}
                 >
                   <div className="min-w-0">
-                    <div className="text-sm text-slate-900 dark:text-white font-semibold truncate">{p.name}</div>
-                    <div className="text-[11px] text-slate-500 dark:text-slate-500">{p.barcode || "no barcode"}</div>
+                    <div className="text-sm text-app dark:text-white font-semibold truncate">{p.name}</div>
+                    <div className="text-[11px] text-muted dark:text-muted">{p.barcode || "no barcode"}</div>
                   </div>
                   <div className="flex-shrink-0 text-right">
                     <div
@@ -325,13 +325,13 @@ export default function StocktakePage() {
                     >
                       {av}
                     </div>
-                    <div className="text-[10px] text-slate-500 uppercase tracking-wide">available</div>
+                    <div className="text-[10px] text-muted uppercase tracking-wide">available</div>
                   </div>
                 </button>
               );
             })}
             {filtered.length === 0 && (
-              <div className="text-center text-slate-500 dark:text-slate-600 text-sm py-8">No products match.</div>
+              <div className="text-center text-muted dark:text-muted-2 text-sm py-8">No products match.</div>
             )}
           </div>
         </div>
@@ -339,14 +339,14 @@ export default function StocktakePage() {
         {/* ── RIGHT: count entry + recent ── */}
         <div className="space-y-6">
           {selected ? (
-            <div className="bg-white dark:bg-[#161b25] border border-slate-200 dark:border-[#21293d] rounded-2xl p-5">
+            <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5">
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div>
-                  <h2 className="text-base font-black text-slate-900 dark:text-white tracking-tight">{selected.name}</h2>
-                  <div className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">{selected.barcode || "no barcode"}</div>
+                  <h2 className="text-base font-black text-app dark:text-white tracking-tight">{selected.name}</h2>
+                  <div className="text-xs text-muted dark:text-muted mt-0.5">{selected.barcode || "no barcode"}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-slate-500 dark:text-slate-500">System available</div>
+                  <div className="text-xs text-muted dark:text-muted">System available</div>
                   <div className={`text-2xl font-black ${available <= 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}>
                     {available}
                   </div>
@@ -369,24 +369,24 @@ export default function StocktakePage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Counted quantity</label>
+                  <label className="text-xs text-muted dark:text-muted font-semibold">Counted quantity</label>
                   <input
                     type="number"
                     value={countedQty}
                     onChange={(e) => setCountedQty(e.target.value)}
                     placeholder="e.g. 12"
-                    className="mt-1 w-full bg-white dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-teal-500/60"
+                    className="mt-1 w-full bg-white dark:bg-app border border-app-2 dark:border-app rounded-xl px-3 py-2.5 text-sm text-app dark:text-white placeholder:text-muted dark:placeholder:text-muted-2 focus:outline-none focus:border-teal-500/60"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Reason</label>
+                  <label className="text-xs text-muted dark:text-muted font-semibold">Reason</label>
                   <select
                     value={reason}
                     onChange={(e) => setReason(e.target.value as Reason)}
-                    className="mt-1 w-full bg-white dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-teal-500/60"
+                    className="mt-1 w-full bg-white dark:bg-app border border-app-2 dark:border-app rounded-xl px-3 py-2.5 text-sm text-app dark:text-white focus:outline-none focus:border-teal-500/60"
                   >
                     {REASONS.map((r) => (
-                      <option key={r} value={r} className="bg-white dark:bg-[#0d1117]">
+                      <option key={r} value={r} className="bg-white dark:bg-app">
                         {r}
                       </option>
                     ))}
@@ -395,13 +395,13 @@ export default function StocktakePage() {
               </div>
 
               {/* delta preview */}
-              <div className="mt-4 rounded-xl bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] p-4 flex items-center justify-between">
-                <div className="text-xs text-slate-500 dark:text-slate-500">
+              <div className="mt-4 rounded-xl bg-slate-50 dark:bg-app border border-app-2 dark:border-app p-4 flex items-center justify-between">
+                <div className="text-xs text-muted dark:text-muted">
                   Counted {countedValid ? countedNum : "—"} vs {available} available
                 </div>
                 <div
                   className={`flex items-center gap-2 font-black text-lg ${
-                    delta === null ? "text-slate-500 dark:text-slate-600" : delta > 0 ? "text-emerald-600 dark:text-emerald-400" : delta < 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-500 dark:text-slate-400"
+                    delta === null ? "text-muted dark:text-muted-2" : delta > 0 ? "text-emerald-600 dark:text-emerald-400" : delta < 0 ? "text-rose-600 dark:text-rose-400" : "text-muted dark:text-muted"
                   }`}
                 >
                   {delta !== null && delta > 0 && <TrendingUp size={18} />}
@@ -409,28 +409,28 @@ export default function StocktakePage() {
                   {deltaLabel}
                 </div>
               </div>
-              <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-600 leading-relaxed">
+              <p className="mt-2 text-[11px] text-muted dark:text-muted-2 leading-relaxed">
                 A new stock row is added with this {delta !== null ? (delta >= 0 ? "positive" : "negative") : ""} quantity so the
                 derived available matches your physical count. History is never deleted.
               </p>
 
               <div className="grid sm:grid-cols-2 gap-3 mt-4">
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Note (count)</label>
+                  <label className="text-xs text-muted dark:text-muted font-semibold">Note (count)</label>
                   <input
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     placeholder="optional"
-                    className="mt-1 w-full bg-white dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-teal-500/60"
+                    className="mt-1 w-full bg-white dark:bg-app border border-app-2 dark:border-app rounded-xl px-3 py-2.5 text-sm text-app dark:text-white placeholder:text-muted dark:placeholder:text-muted-2 focus:outline-none focus:border-teal-500/60"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Remark (adjustment)</label>
+                  <label className="text-xs text-muted dark:text-muted font-semibold">Remark (adjustment)</label>
                   <input
                     value={remark}
                     onChange={(e) => setRemark(e.target.value)}
                     placeholder="optional"
-                    className="mt-1 w-full bg-white dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-teal-500/60"
+                    className="mt-1 w-full bg-white dark:bg-app border border-app-2 dark:border-app rounded-xl px-3 py-2.5 text-sm text-app dark:text-white placeholder:text-muted dark:placeholder:text-muted-2 focus:outline-none focus:border-teal-500/60"
                   />
                 </div>
               </div>
@@ -452,38 +452,38 @@ export default function StocktakePage() {
               </button>
             </div>
           ) : (
-            <div className="bg-white dark:bg-[#161b25] border border-dashed border-slate-300 dark:border-[#21293d] rounded-2xl p-10 text-center">
-              <ClipboardList size={32} className="text-slate-400 dark:text-slate-700 mx-auto mb-3" />
-              <p className="text-slate-500 dark:text-slate-400 text-sm">Select a product to start counting.</p>
+            <div className="bg-white dark:bg-panel-2 border border-dashed border-app-2 dark:border-app rounded-2xl p-10 text-center">
+              <ClipboardList size={32} className="text-muted dark:text-app mx-auto mb-3" />
+              <p className="text-muted dark:text-muted text-sm">Select a product to start counting.</p>
             </div>
           )}
 
           {/* recent adjustments */}
-          <div className="bg-white dark:bg-[#161b25] border border-slate-200 dark:border-[#21293d] rounded-2xl p-5">
+          <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
-              <FileText size={16} className="text-slate-500 dark:text-slate-400" />
-              <h2 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">Recent adjustments</h2>
+              <FileText size={16} className="text-muted dark:text-muted" />
+              <h2 className="text-sm font-black text-app dark:text-white tracking-tight">Recent adjustments</h2>
             </div>
             {loadingRecent ? (
               <div className="flex justify-center py-6">
-                <Loader2 size={20} className="animate-spin text-slate-500 dark:text-slate-600" />
+                <Loader2 size={20} className="animate-spin text-muted dark:text-muted-2" />
               </div>
             ) : recent.length === 0 ? (
-              <p className="text-slate-500 dark:text-slate-600 text-sm py-4">No adjustments yet.</p>
+              <p className="text-muted dark:text-muted-2 text-sm py-4">No adjustments yet.</p>
             ) : (
               <div className="space-y-1.5">
                 {recent.map((a) => {
                   const pl = products.find((p) => p.id === a.product_id);
                   return (
-                    <div key={a.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d]">
+                    <div key={a.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-slate-50 dark:bg-app border border-app-2 dark:border-app">
                       <div className="min-w-0">
-                        <div className="text-sm text-slate-900 dark:text-white font-semibold truncate">{pl?.name || `#${a.product_id}`}</div>
-                        <div className="text-[11px] text-slate-500 capitalize">
+                        <div className="text-sm text-app dark:text-white font-semibold truncate">{pl?.name || `#${a.product_id}`}</div>
+                        <div className="text-[11px] text-muted capitalize">
                           {a.reason}
                           {a.counted_qty != null ? ` · counted ${a.counted_qty}` : ""}
                         </div>
                       </div>
-                      <div className={`flex-shrink-0 font-black ${a.delta > 0 ? "text-emerald-600 dark:text-emerald-400" : a.delta < 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-500 dark:text-slate-400"}`}>
+                      <div className={`flex-shrink-0 font-black ${a.delta > 0 ? "text-emerald-600 dark:text-emerald-400" : a.delta < 0 ? "text-rose-600 dark:text-rose-400" : "text-muted dark:text-muted"}`}>
                         {a.delta > 0 ? "+" : ""}{a.delta}
                       </div>
                     </div>
@@ -491,7 +491,7 @@ export default function StocktakePage() {
                 })}
               </div>
             )}
-            <div className="text-[11px] text-slate-500 dark:text-slate-600 mt-3">
+            <div className="text-[11px] text-muted dark:text-muted-2 mt-3">
               <Package size={11} className="inline mr-1" />
               Adjustments write a ledger row + reconciliation stock row.
             </div>

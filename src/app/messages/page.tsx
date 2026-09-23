@@ -82,7 +82,7 @@ function Avatar({
         alt={name || "User"}
         width={40}
         height={40}
-        className={`${cls} rounded-full object-cover border border-[#21293d] cursor-zoom-in`}
+        className={`${cls} rounded-full object-cover border border-app cursor-zoom-in`}
         onDoubleClick={() => openImageLightbox(src, name || "User")}
         onError={(e) => {
           (e.target as HTMLImageElement).style.display = "none";
@@ -560,7 +560,7 @@ export default function MessagesPage() {
         <div className="text-center text-rose-400 text-sm">
           <Inbox className="mx-auto mb-3" size={40} />
           {loadErr}
-          <p className="mt-2 text-slate-500 text-xs">Thodi der baad dubara try karo.</p>
+          <p className="mt-2 text-muted text-xs">Thodi der baad dubara try karo.</p>
         </div>
       </div>
     );
@@ -568,7 +568,7 @@ export default function MessagesPage() {
   if (notFound && !isMobile) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="text-center text-slate-400 text-sm">
+        <div className="text-center text-muted text-sm">
           <Inbox className="mx-auto mb-3" size={40} />
           Koi aur staff/admin registered nahi hai — messenger sirf staff/admin ke beech chat ke liye hai.
         </div>
@@ -592,7 +592,7 @@ export default function MessagesPage() {
                 window.history.replaceState(null, "", `/messages${sp.toString()}`);
               } catch { /* ignore */ }
             }}
-            className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:bg-white/[0.06]"
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-muted hover:bg-white/[0.06]"
           >
             <ArrowLeft size={18} />
           </button>
@@ -600,16 +600,16 @@ export default function MessagesPage() {
         <div className="relative">
           <Avatar name={activeConv.other.full_name} avatarUrl={activeConv.other.avatar_url} />
           {isOnline(activeConv.presence) && (
-            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#0d1117]" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-app" />
           )}
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-bold text-slate-100 truncate">
+          <p className="text-sm font-bold text-app-2 truncate">
             {activeConv.other.full_name || "User"}
           </p>
           <p
             className={`text-[10px] font-semibold ${
-              typingFrom ? "text-emerald-400" : isOnline(activeConv.presence) ? "text-emerald-400" : "text-slate-500"
+              typingFrom ? "text-emerald-400" : isOnline(activeConv.presence) ? "text-emerald-400" : "text-muted"
             }`}
           >
             {typingFrom
@@ -625,7 +625,7 @@ export default function MessagesPage() {
       {/* messages */}
       <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-2">
         {messages.length === 0 && (
-          <p className="text-center text-slate-500 text-xs pt-10">
+          <p className="text-center text-muted text-xs pt-10">
             Abhi koi message nahi — pehla message bhejo
           </p>
         )}
@@ -638,7 +638,7 @@ export default function MessagesPage() {
                 className={`relative max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-snug ${
                   mine
                     ? "bg-blue-600 text-white rounded-br-md"
-                    : "bg-white/[0.06] text-slate-100 rounded-bl-md"
+                    : "bg-white/[0.06] text-app-2 rounded-bl-md"
                 }`}
               >
                 {isMedia && (
@@ -678,7 +678,7 @@ export default function MessagesPage() {
                 )}
                 <div
                   className={`flex items-center gap-1 mt-1 text-[9px] ${
-                    mine ? "text-blue-200" : "text-slate-500"
+                    mine ? "text-blue-200" : "text-muted"
                   }`}
                 >
                   {fmtDay(m.created_at)}
@@ -706,7 +706,7 @@ export default function MessagesPage() {
                       <button
                         onClick={() => handleDeleteClick(m)}
                         title="Delete"
-                        className="ml-1 p-0.5 rounded hover:bg-white/10 text-slate-400 hover:text-rose-300"
+                        className="ml-1 p-0.5 rounded hover:bg-white/10 text-muted hover:text-rose-300"
                       >
                         <Trash2 size={10} />
                       </button>
@@ -728,13 +728,13 @@ export default function MessagesPage() {
             {pendingMedia.map((f, i) => (
               <div
                 key={i}
-                className="relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0d1117] border border-[#21293d] text-xs text-slate-300"
+                className="relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-app border border-app text-xs text-app-2"
               >
                 {f.type.startsWith("image/") ? <ImageIcon size={14} /> : <Paperclip size={14} />}
                 <span className="max-w-[140px] truncate">{f.name}</span>
                 <button
                   onClick={() => removePending(i)}
-                  className="text-slate-500 hover:text-rose-300"
+                  className="text-muted hover:text-rose-300"
                 >
                   <X size={13} />
                 </button>
@@ -758,7 +758,7 @@ export default function MessagesPage() {
             onClick={() => fileInputRef.current?.click()}
             disabled={sending || uploading}
             title="Attach media"
-            className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-[#0d1117] border border-[#21293d] text-slate-400 hover:text-blue-400 hover:border-blue-500/40 disabled:opacity-40 transition-all"
+            className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-app border border-app text-muted hover:text-blue-400 hover:border-blue-500/40 disabled:opacity-40 transition-all"
           >
             <Paperclip size={18} />
           </button>
@@ -772,7 +772,7 @@ export default function MessagesPage() {
               }
             }}
             placeholder={`${activeConv.other.full_name || "User"} ko message likho…`}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[#21293d] text-sm text-white outline-none focus:border-blue-500/60 placeholder:text-slate-600"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-app border border-app text-sm text-white outline-none focus:border-blue-500/60 placeholder:text-muted-2"
           />
           <button
             onClick={() => void send()}
@@ -796,7 +796,7 @@ export default function MessagesPage() {
   const listPane = (
     <div className={`${isMobile && chatPane ? "hidden" : "flex"} flex-col h-full min-h-0 flex-1`}>
       <div className="px-4 pt-4 pb-2">
-        <h1 className="text-lg font-black text-slate-100 flex items-center gap-2">
+        <h1 className="text-lg font-black text-app-2 flex items-center gap-2">
           <MessageSquare size={20} className="text-blue-400" />
           Messages
         </h1>
@@ -809,12 +809,12 @@ export default function MessagesPage() {
           </Link>
         ) : null}
         <div className="relative mt-3">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search user…"
-            className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#0d1117] border border-[#21293d] text-sm text-white outline-none focus:border-blue-500/60 placeholder:text-slate-600"
+            className="w-full pl-9 pr-3 py-2 rounded-xl bg-app border border-app text-sm text-white outline-none focus:border-blue-500/60 placeholder:text-muted-2"
           />
         </div>
       </div>
@@ -833,22 +833,22 @@ export default function MessagesPage() {
               <div className="relative flex-shrink-0">
                 <Avatar name={c.other.full_name} avatarUrl={c.other.avatar_url} size="md" />
                 {on && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#0d1117]" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-app" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold text-slate-100 truncate">
+                  <p className="text-sm font-bold text-app-2 truncate">
                     {c.other.full_name || "User"}
                   </p>
                   {c.lastMessage && (
-                    <span className="text-[9px] text-slate-500 flex-shrink-0 ml-2">
+                    <span className="text-[9px] text-muted flex-shrink-0 ml-2">
                       {fmtDay(c.lastMessage.created_at)}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <p className="text-xs text-slate-500 truncate flex-1">
+                  <p className="text-xs text-muted truncate flex-1">
                     {c.lastMessage
                       ? `${c.lastMessage.sender_id === meId ? "You: " : ""}${c.lastMessage.content}`
                       : "Koi message nahi"}
@@ -867,7 +867,7 @@ export default function MessagesPage() {
         {/* filtered user to start new chat */}
         {filteredProfiles.length > 0 && (
           <>
-            <div className="px-4 pt-3 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-600">
+            <div className="px-4 pt-3 pb-1 text-[10px] font-black uppercase tracking-wider text-muted-2">
               New chat
             </div>
             {filteredProfiles.map((p) => (
@@ -880,10 +880,10 @@ export default function MessagesPage() {
                   <Avatar name={p.full_name} avatarUrl={p.avatar_url} size="md" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-slate-100 truncate">
+                  <p className="text-sm font-bold text-app-2 truncate">
                     {p.full_name || "User"}
                   </p>
-                  <p className="text-xs text-slate-500 truncate">{p.role || "staff"} • Start chat</p>
+                  <p className="text-xs text-muted truncate">{p.role || "staff"} • Start chat</p>
                 </div>
               </button>
             ))}
@@ -891,7 +891,7 @@ export default function MessagesPage() {
         )}
 
         {conversations.length === 0 && filteredProfiles.length === 0 && (
-          <div className="px-6 py-16 text-center text-slate-500">
+          <div className="px-6 py-16 text-center text-muted">
             <Inbox className="mx-auto mb-3" size={36} />
             <p className="text-sm">Koi user nahi mila</p>
           </div>
@@ -914,7 +914,7 @@ export default function MessagesPage() {
     <div className="h-[calc(100vh-3.5rem)] max-w-6xl mx-auto w-full flex">
       <div className="w-80 flex-shrink-0 border-r border-white/5">{listPane}</div>
       {chatPane || (
-        <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
+        <div className="flex-1 flex items-center justify-center text-muted text-sm">
           <div className="text-center">
             <MessageSquare className="mx-auto mb-3" size={40} />
             Baat-cheet shuru karne ke liye left me kisi user ko select karo

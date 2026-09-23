@@ -163,10 +163,10 @@ export default function ClientPaymentReportPage() {
     <AdminPage title="Clients Payment" subtitle="Modern payment report with filters & pagination">
       <div className="space-y-6">
         {/* Glassy Filter Panel */}
-        <div className="bg-[#161b27]/80 backdrop-blur-xl border border-[#21293d]/80 rounded-3xl p-6 shadow-2xl">
+        <div className="bg-panel/80 backdrop-blur-xl border border-app/80 rounded-3xl p-6 shadow-2xl">
           <div className="flex flex-wrap gap-4 items-end">
             <div className="flex-1 min-w-[280px]">
-              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-1.5">
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted mb-1.5">
                 Date Range
               </label>
               <div className="flex gap-3">
@@ -174,19 +174,19 @@ export default function ClientPaymentReportPage() {
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="bg-[#0f141f] border border-[#21293d] text-slate-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 w-full"
+                  className="bg-app border border-app text-app-2 rounded-2xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 w-full"
                 />
                 <input
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="bg-[#0f141f] border border-[#21293d] text-slate-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 w-full"
+                  className="bg-app border border-app text-app-2 rounded-2xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 w-full"
                 />
               </div>
             </div>
 
             <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-1.5">
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted mb-1.5">
                 Client ID
               </label>
               <input
@@ -194,7 +194,7 @@ export default function ClientPaymentReportPage() {
                 placeholder="Search by Client ID..."
                 value={clientSearch}
                 onChange={(e) => setClientSearch(e.target.value)}
-                className="bg-[#0f141f] border border-[#21293d] text-slate-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 w-full placeholder-slate-600"
+                className="bg-app border border-app text-app-2 rounded-2xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 w-full placeholder-slate-600"
               />
             </div>
 
@@ -210,7 +210,7 @@ export default function ClientPaymentReportPage() {
                 <button
                   key={btn.value}
                   onClick={() => setQuickDate(btn.value)}
-                  className="px-5 py-3 bg-[#1a2234] hover:bg-[#21293d] border border-[#2a3347] text-slate-300 hover:text-white rounded-2xl text-sm font-medium transition-all active:scale-95"
+                  className="px-5 py-3 bg-panel-2 hover:bg-panel-2 border border-app-2 text-app-2 hover:text-white rounded-2xl text-sm font-medium transition-all active:scale-95"
                 >
                   {btn.label}
                 </button>
@@ -227,10 +227,10 @@ export default function ClientPaymentReportPage() {
         </div>
 
         {/* Table Container */}
-        <div className="bg-[#161b27]/90 backdrop-blur-2xl border border-[#21293d] rounded-3xl overflow-hidden shadow-xl">
-          <div className="px-8 py-5 border-b border-[#21293d] flex items-center justify-between bg-[#111520]/80">
+        <div className="bg-panel/90 backdrop-blur-2xl border border-app rounded-3xl overflow-hidden shadow-xl">
+          <div className="px-8 py-5 border-b border-app flex items-center justify-between bg-panel-2/80">
             <div>
-              <div className="text-xs font-black uppercase tracking-[0.125em] text-slate-500">
+              <div className="text-xs font-black uppercase tracking-[0.125em] text-muted">
                 SHOWING {rows.length} OF {totalCount} PAYMENTS
               </div>
               <div className="text-2xl font-black text-emerald-300 tracking-tight">
@@ -243,19 +243,19 @@ export default function ClientPaymentReportPage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-5 py-2.5 bg-[#1a2234] hover:bg-[#21293d] disabled:opacity-40 rounded-2xl border border-[#2a3347] transition-all"
+                  className="px-5 py-2.5 bg-panel-2 hover:bg-panel-2 disabled:opacity-40 rounded-2xl border border-app-2 transition-all"
                 >
                   ← Previous
                 </button>
 
-                <div className="px-6 py-2.5 bg-[#0f141f] rounded-2xl border border-[#21293d] font-mono text-slate-400">
+                <div className="px-6 py-2.5 bg-app rounded-2xl border border-app font-mono text-muted">
                   Page {currentPage} / {totalPages}
                 </div>
 
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-5 py-2.5 bg-[#1a2234] hover:bg-[#21293d] disabled:opacity-40 rounded-2xl border border-[#2a3347] transition-all"
+                  className="px-5 py-2.5 bg-panel-2 hover:bg-panel-2 disabled:opacity-40 rounded-2xl border border-app-2 transition-all"
                 >
                   Next →
                 </button>
@@ -266,31 +266,31 @@ export default function ClientPaymentReportPage() {
           {err && <div className="px-8 py-4 text-red-400">{err}</div>}
 
           {loading ? (
-            <div className="py-20 text-center text-slate-600 font-black tracking-widest">
+            <div className="py-20 text-center text-muted-2 font-black tracking-widest">
               LOADING...
             </div>
           ) : rows.length === 0 ? (
-            <div className="py-20 text-center text-slate-500">
+            <div className="py-20 text-center text-muted">
               No payments found for selected filters.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-[#0c101a] sticky top-0 z-10">
-                  <tr className="border-b border-[#21293d]">
-                    <th className="text-left px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">
+                <thead className="bg-app sticky top-0 z-10">
+                  <tr className="border-b border-app">
+                    <th className="text-left px-8 py-5 text-xs font-black uppercase tracking-widest text-muted">
                       Date
                     </th>
-                    <th className="text-left px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">
+                    <th className="text-left px-8 py-5 text-xs font-black uppercase tracking-widest text-muted">
                       Client ID
                     </th>
-                    <th className="text-left px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">
+                    <th className="text-left px-8 py-5 text-xs font-black uppercase tracking-widest text-muted">
                       Mode
                     </th>
-                    <th className="text-right px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">
+                    <th className="text-right px-8 py-5 text-xs font-black uppercase tracking-widest text-muted">
                       Amount
                     </th>
-                    <th className="text-right px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500">
+                    <th className="text-right px-8 py-5 text-xs font-black uppercase tracking-widest text-muted">
                       Discount
                     </th>
                     <th className="text-right px-8 py-5 text-xs font-black uppercase tracking-widest text-emerald-400">
@@ -303,19 +303,19 @@ export default function ClientPaymentReportPage() {
                     const net = Number(r.amount || 0) - Number(r.discount || 0);
                     return (
                       <tr key={r.id} className="hover:bg-white/[0.025] transition-colors">
-                        <td className="px-8 py-5 text-slate-300">
+                        <td className="px-8 py-5 text-app-2">
                           {formatIST(r.payment_date, {
                             day: "2-digit",
                             month: "short",
                             year: "numeric",
                           })}
                         </td>
-                        <td className="px-8 py-5 font-mono text-slate-400">#{r.client_id}</td>
-                        <td className="px-8 py-5 text-slate-400 capitalize">{r.payment_mode}</td>
-                        <td className="px-8 py-5 text-right font-semibold text-slate-200">
+                        <td className="px-8 py-5 font-mono text-muted">#{r.client_id}</td>
+                        <td className="px-8 py-5 text-muted capitalize">{r.payment_mode}</td>
+                        <td className="px-8 py-5 text-right font-semibold text-app-2">
                           Rs. {Number(r.amount || 0).toFixed(2)}
                         </td>
-                        <td className="px-8 py-5 text-right text-slate-500">
+                        <td className="px-8 py-5 text-right text-muted">
                           {r.discount ? `- Rs. ${Number(r.discount).toFixed(2)}` : "—"}
                         </td>
                         <td className="px-8 py-5 text-right font-black text-emerald-300 text-lg">

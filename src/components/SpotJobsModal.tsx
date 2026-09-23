@@ -15,7 +15,7 @@ type SpotJob = { id: number; job_id: string; item: string; status: number; del_s
 
 // Job status badges (jobs/[id]/view ke STATUS_MAP se)
 const JOB_STATUS_BADGE: Record<number, { label: string; cls: string }> = {
-  0: { label: "Pending", cls: "bg-slate-500/15 text-slate-400 border-slate-500/30" },
+  0: { label: "Pending", cls: "bg-muted/15 text-muted border-muted/30" },
   1: { label: "On-Progress", cls: "bg-blue-500/15 text-blue-300 border-blue-500/30" },
   2: { label: "Done", cls: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30" },
   3: { label: "Paid", cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" },
@@ -75,14 +75,14 @@ export default function SpotJobsModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col"
+        className="w-full max-w-md bg-panel border border-app rounded-2xl overflow-hidden shadow-2xl max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#21293d]">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-app">
           <p className="font-black text-white text-sm flex items-center gap-1.5">
             <MapPin size={15} className="text-amber-400" /> {spot?.name}
           </p>
-          <button onClick={onClose} className="text-slate-500 hover:text-white">
+          <button onClick={onClose} className="text-muted hover:text-white">
             <X size={16} />
           </button>
         </div>
@@ -93,7 +93,7 @@ export default function SpotJobsModal({
               <Loader2 size={22} className="animate-spin text-blue-400" />
             </div>
           ) : jobs.length === 0 ? (
-            <p className="text-center text-slate-600 text-xs py-10">
+            <p className="text-center text-muted-2 text-xs py-10">
               Is spot par abhi kuch nahi rakha.
             </p>
           ) : (
@@ -105,7 +105,7 @@ export default function SpotJobsModal({
                   {live.map((j) => {
                     const badge = JOB_STATUS_BADGE[j.status] || {
                       label: `Status ${j.status}`,
-                      cls: "bg-slate-500/15 text-slate-400 border-slate-500/30",
+                      cls: "bg-muted/15 text-muted border-muted/30",
                     };
                     return (
                       <Link
@@ -114,7 +114,7 @@ export default function SpotJobsModal({
                         className="flex items-center gap-3 px-5 py-2.5 hover:bg-white/[0.04] no-underline transition-colors"
                       >
                         <span className="font-black text-blue-400 text-xs">#{j.job_id}</span>
-                        <span className="text-slate-300 text-xs truncate flex-1">{j.item}</span>
+                        <span className="text-app-2 text-xs truncate flex-1">{j.item}</span>
                         <span
                           className={`text-[9px] font-bold border rounded-md px-1.5 py-0.5 flex-shrink-0 ${badge.cls}`}
                         >
@@ -125,14 +125,14 @@ export default function SpotJobsModal({
                   })}
                   {past.length > 0 && (
                     <div className="px-5 py-3">
-                      <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mb-1.5">
+                      <p className="text-[9px] font-bold text-muted-2 uppercase tracking-widest mb-1.5">
                         Purane records ({past.length})
                       </p>
                       <div className="space-y-1">
                         {past.slice(0, 20).map((j) => {
                           const badge = JOB_STATUS_BADGE[j.status] || {
                             label: `Status ${j.status}`,
-                            cls: "bg-slate-500/15 text-slate-400 border-slate-500/30",
+                            cls: "bg-muted/15 text-muted border-muted/30",
                           };
                           return (
                             <Link
@@ -140,10 +140,10 @@ export default function SpotJobsModal({
                               href={`/jobs/${j.id}/view`}
                               className="flex items-center gap-3 opacity-60 hover:opacity-100 no-underline transition-opacity"
                             >
-                              <span className="text-slate-500 text-[10px] font-bold">
+                              <span className="text-muted text-[10px] font-bold">
                                 #{j.job_id}
                               </span>
-                              <span className="text-slate-600 text-[10px] truncate flex-1">
+                              <span className="text-muted-2 text-[10px] truncate flex-1">
                                 {j.item}
                               </span>
                               <span
@@ -155,7 +155,7 @@ export default function SpotJobsModal({
                           );
                         })}
                         {past.length > 20 && (
-                          <p className="text-[9px] text-slate-700">+{past.length - 20} aur…</p>
+                          <p className="text-[9px] text-app">+{past.length - 20} aur…</p>
                         )}
                       </div>
                     </div>
@@ -166,8 +166,8 @@ export default function SpotJobsModal({
           )}
         </div>
 
-        <div className="px-5 py-3 border-t border-[#21293d] flex items-center justify-between gap-3">
-          <p className="text-[10px] text-slate-600">
+        <div className="px-5 py-3 border-t border-app flex items-center justify-between gap-3">
+          <p className="text-[10px] text-muted-2">
             {jobs.filter(isLive).length} live · {jobs.filter((j) => !isLive(j)).length} purane
           </p>
           <Link

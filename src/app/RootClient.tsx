@@ -224,7 +224,7 @@ function NavbarSearch() {
         5: "Delivered",
       };
       const STATUS_COLORS: Record<number, string> = {
-        0: "bg-slate-500/20 text-slate-400",
+        0: "bg-muted/20 text-muted",
         1: "bg-blue-500/20 text-blue-400",
         2: "bg-teal-500/20 text-teal-400",
         3: "bg-emerald-500/20 text-emerald-400",
@@ -253,7 +253,7 @@ function NavbarSearch() {
           title: `Job #${r.job_id} — ${r.item}`,
           subtitle: r.fault || "—",
           tag: STATUS_LABELS[r.status] || "Job",
-          tagColor: STATUS_COLORS[r.status] || "bg-slate-500/20 text-slate-400",
+          tagColor: STATUS_COLORS[r.status] || "bg-muted/20 text-muted",
           href: `/jobs/${r.id}/view`,
           icon: "job",
         });
@@ -350,7 +350,7 @@ function NavbarSearch() {
 
   const ICON_MAP = {
     client: <Users size={13} className="text-blue-400 flex-shrink-0" />,
-    job: <Wrench size={13} className="text-slate-400 flex-shrink-0" />,
+    job: <Wrench size={13} className="text-muted flex-shrink-0" />,
     product: <Package size={13} className="text-amber-400 flex-shrink-0" />,
     mechanic: <User size={13} className="text-purple-400 flex-shrink-0" />,
     sale: <ShoppingCart size={13} className="text-pink-400 flex-shrink-0" />,
@@ -363,7 +363,7 @@ function NavbarSearch() {
       {/* Input */}
       <Search
         size={14}
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-blue-400 transition-colors pointer-events-none z-10"
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 group-focus-within:text-blue-400 transition-colors pointer-events-none z-10"
       />
       {loading && (
         <Loader2
@@ -378,7 +378,7 @@ function NavbarSearch() {
             setResults([]);
             setOpen(false);
           }}
-          className="absolute right-12 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors z-10"
+          className="absolute right-12 top-1/2 -translate-y-1/2 text-muted-2 hover:text-muted transition-colors z-10"
         >
           <X size={13} />
         </button>
@@ -390,31 +390,31 @@ function NavbarSearch() {
         onChange={handleChange}
         onFocus={() => results.length > 0 && setOpen(true)}
         placeholder="Search..."
-        className="w-full pl-9 pr-24 py-2.5 sm:py-2 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-slate-300 placeholder:text-slate-600 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium"
+        className="w-full pl-9 pr-24 py-2.5 sm:py-2 bg-panel-2 border border-app rounded-xl text-sm text-app-2 placeholder:text-muted-2 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium"
       />
       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
-        <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#1a2234] border border-[#21293d] text-[10px] font-medium text-slate-500">
+        <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-panel-2 border border-app text-[10px] font-medium text-muted">
           Ctrl
         </kbd>
-        <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-[#1a2234] border border-[#21293d] text-[10px] font-medium text-slate-500">
+        <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-panel-2 border border-app text-[10px] font-medium text-muted">
           K
         </kbd>
       </div>
 
       {/* Dropdown Results */}
       {open && (
-        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-[#111520] border border-[#21293d] rounded-2xl shadow-2xl shadow-black/60 z-[200] overflow-hidden">
+        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-panel-2 border border-app rounded-2xl shadow-2xl shadow-black/60 z-[200] overflow-hidden">
           {results.length === 0 && !loading ? (
-            <div className="px-4 py-5 text-center text-slate-600 text-xs font-bold uppercase tracking-wider">
+            <div className="px-4 py-5 text-center text-muted-2 text-xs font-bold uppercase tracking-wider">
               No results found
             </div>
           ) : (
             <>
               <div className="px-3 pt-2.5 pb-1 flex items-center justify-between">
-                <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">
+                <span className="text-[9px] font-black text-app uppercase tracking-widest">
                   {results.length} result{results.length !== 1 ? "s" : ""}
                 </span>
-                <span className="text-[9px] text-slate-700">
+                <span className="text-[9px] text-app">
                   Clients · Jobs · Products · Mechanics · Sales · Locations · Spots
                 </span>
               </div>
@@ -425,12 +425,12 @@ function NavbarSearch() {
                       onClick={() => handleSelect(r.href)}
                       className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors text-left"
                     >
-                      <div className="w-7 h-7 rounded-lg bg-[#1a2234] flex items-center justify-center flex-shrink-0">
+                      <div className="w-7 h-7 rounded-lg bg-panel-2 flex items-center justify-center flex-shrink-0">
                         {ICON_MAP[r.icon]}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-slate-200 truncate">
+                          <span className="text-sm font-semibold text-app-2 truncate">
                             {r.title}
                           </span>
                           <span
@@ -439,14 +439,14 @@ function NavbarSearch() {
                             {r.tag}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-600 truncate mt-0.5">{r.subtitle}</p>
+                        <p className="text-[11px] text-muted-2 truncate mt-0.5">{r.subtitle}</p>
                       </div>
-                      <ChevronRight size={12} className="text-slate-700 flex-shrink-0" />
+                      <ChevronRight size={12} className="text-app flex-shrink-0" />
                     </button>
                   </li>
                 ))}
               </ul>
-              <div className="px-3 py-2 border-t border-[#1a2234] text-[9px] text-slate-700 text-center">
+              <div className="px-3 py-2 border-t border-app-2 text-[9px] text-app text-center">
                 Press Enter ya click karo to navigate
               </div>
             </>
@@ -492,7 +492,7 @@ function SubMenu({
           }
           setOpen((p) => !p);
         }}
-        className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-white/[0.04] hover:text-slate-300 transition-all"
+        className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold text-muted hover:bg-white/[0.04] hover:text-app-2 transition-all"
       >
         <div className="flex items-center gap-3">
           <span>{icon}</span>
@@ -503,9 +503,9 @@ function SubMenu({
         </div>
         {!collapsed &&
           (open ? (
-            <ChevronDown size={13} className="text-slate-600" />
+            <ChevronDown size={13} className="text-muted-2" />
           ) : (
-            <ChevronRight size={13} className="text-slate-600" />
+            <ChevronRight size={13} className="text-muted-2" />
           ))}
       </button>
       {open && !collapsed && <ul className="pl-3 mt-0.5 space-y-0.5">{children}</ul>}
@@ -518,14 +518,14 @@ const navLinkCls = (active: boolean) =>
   `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-150 ${
     active
       ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
-      : "text-slate-500 hover:bg-white/[0.04] hover:text-slate-200"
+      : "text-muted hover:bg-white/[0.04] hover:text-app-2"
   }`;
 
 const subLinkCls = (active: boolean) =>
   `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-bold transition-all duration-150 ${
     active
       ? "text-blue-400 bg-blue-500/10"
-      : "text-slate-600 hover:text-slate-200 hover:bg-white/[0.04]"
+      : "text-muted-2 hover:text-app-2 hover:bg-white/[0.04]"
   }`;
 
 // ─── Sidebar nav (shared by desktop + mobile drawer) ─────────────────────────
@@ -675,7 +675,7 @@ function SidebarNav({
           </Link>
         </li>
 
-        <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+        <li className="text-[9px] font-black uppercase text-app tracking-widest px-3 pt-5 pb-1.5 select-none">
           Customer
         </li>
         <SubMenu
@@ -772,7 +772,7 @@ function SidebarNav({
 
         {canSeeInventory && isModuleEnabled(enabledModules, "inventory") && (
           <>
-            <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+            <li className="text-[9px] font-black uppercase text-app tracking-widest px-3 pt-5 pb-1.5 select-none">
               Inventory
             </li>
             <SubMenu
@@ -875,7 +875,7 @@ function SidebarNav({
                     className={subLinkCls(pathname === "/inventory/locations/manage")}
                     onClick={onNavClick}
                   >
-                    <Settings2 size={12} className="text-slate-400" />
+                    <Settings2 size={12} className="text-muted" />
                     Location Hierarchy
                   </Link>
                 </li>
@@ -911,7 +911,7 @@ function SidebarNav({
             {/* ══ FINANCE ══════════════════════════════════════════════════ */}
             {isModuleEnabled(enabledModules, "finance") && (
               <>
-                <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+                <li className="text-[9px] font-black uppercase text-app tracking-widest px-3 pt-5 pb-1.5 select-none">
                   Finance
                 </li>
                 <SubMenu
@@ -1017,7 +1017,7 @@ function SidebarNav({
             {/* ══ PEOPLE ═══════════════════════════════════════════════════ */}
             {isModuleEnabled(enabledModules, "people") && (
               <>
-                <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+                <li className="text-[9px] font-black uppercase text-app tracking-widest px-3 pt-5 pb-1.5 select-none">
                   People
                 </li>
                 <SubMenu title="People" icon={<UsersRound size={15} />} matchPaths={["/services"]} collapsed={collapsed} onExpand={onExpand}>
@@ -1062,7 +1062,7 @@ function SidebarNav({
             {/* ══ REPORTS ══════════════════════════════════════════════════ */}
             {isModuleEnabled(enabledModules, "reports") && (
               <>
-                <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+                <li className="text-[9px] font-black uppercase text-app tracking-widest px-3 pt-5 pb-1.5 select-none">
                   Reports
                 </li>
                 <SubMenu
@@ -1073,7 +1073,7 @@ function SidebarNav({
                   basePath="/reports"
                   matchPaths={["/activity-logs"]}
                 >
-                  <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-2 pb-0.5 select-none">
+                  <li className="text-[8px] font-black uppercase text-muted-2 tracking-widest px-3 pt-2 pb-0.5 select-none">
                     Overview
                   </li>
                   <li>
@@ -1097,7 +1097,7 @@ function SidebarNav({
                     </Link>
                   </li>
 
-                  <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">
+                  <li className="text-[8px] font-black uppercase text-muted-2 tracking-widest px-3 pt-3 pb-0.5 select-none">
                     Financial
                   </li>
                   <li>
@@ -1161,7 +1161,7 @@ function SidebarNav({
                     </Link>
                   </li>
 
-                  <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">
+                  <li className="text-[8px] font-black uppercase text-muted-2 tracking-widest px-3 pt-3 pb-0.5 select-none">
                     Sales &amp; Service
                   </li>
                   <li>
@@ -1235,7 +1235,7 @@ function SidebarNav({
                     </Link>
                   </li>
 
-                  <li className="text-[8px] font-black uppercase text-slate-600 tracking-widest px-3 pt-3 pb-0.5 select-none">
+                  <li className="text-[8px] font-black uppercase text-muted-2 tracking-widest px-3 pt-3 pb-0.5 select-none">
                     Audit
                   </li>
                   <li>
@@ -1253,7 +1253,7 @@ function SidebarNav({
             )}
 
             {/* ══ SYSTEM ═══════════════════════════════════════════════════ */}
-            <li className="text-[9px] font-black uppercase text-slate-700 tracking-widest px-3 pt-5 pb-1.5 select-none">
+            <li className="text-[9px] font-black uppercase text-app tracking-widest px-3 pt-5 pb-1.5 select-none">
               System
             </li>
             <SubMenu
@@ -1621,21 +1621,21 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
   if (isPublicPage) {
     // Auth pages par logged-in user ko flash na dikhe — blank while redirect.
-    if (profile && isAuthPage) return <div className="min-h-screen bg-[#0d1117]" />;
+    if (profile && isAuthPage) return <div className="min-h-screen bg-app" />;
     return <>{children}</>;
   }
 
   if (!authReady) {
     return (
-      <PullToRefresh className="h-screen flex items-center justify-center bg-[#0d1117]">
+      <PullToRefresh className="h-screen flex items-center justify-center bg-app">
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
             <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-900/60">
               <Sparkles size={26} className="text-white" />
             </div>
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-[#0d1117] animate-ping" />
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-app animate-ping" />
           </div>
-          <p className="text-[10px] font-black uppercase tracking-[0.35em] text-slate-600">
+          <p className="text-[10px] font-black uppercase tracking-[0.35em] text-muted-2">
             V-TECH Secure Boot
           </p>
         </div>
@@ -1669,13 +1669,13 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // client-side navigation middleware se kabhi nahi guzarti.)
   if (LITE_MODE && !isLiteRouteAllowed(pathname)) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#0d1117]">
+      <div className="h-screen flex items-center justify-center bg-app">
         <div className="text-center max-w-sm mx-auto px-6">
-          <div className="w-16 h-16 mx-auto bg-slate-500/15 text-slate-400 rounded-2xl flex items-center justify-center mb-5">
+          <div className="w-16 h-16 mx-auto bg-muted/15 text-muted rounded-2xl flex items-center justify-center mb-5">
             <Package size={28} />
           </div>
           <h1 className="text-lg font-black text-white mb-2">Feature Not Available</h1>
-          <p className="text-sm text-slate-400 mb-6">
+          <p className="text-sm text-muted mb-6">
             Is lite version me sirf Dashboard, Attendance aur Staff modules hain.
           </p>
           <button
@@ -1692,15 +1692,15 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // ── MODULE ROUTE GUARD ──
   if (isAdmin && license?.enabledModules && isRouteDisabled(pathname, license.enabledModules)) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#0d1117]">
+      <div className="h-screen flex items-center justify-center bg-app">
         <div className="text-center max-w-sm mx-auto px-6">
           <div className="w-16 h-16 mx-auto bg-amber-500/15 text-amber-400 rounded-2xl flex items-center justify-center mb-5">
             <Package size={28} />
           </div>
           <h1 className="text-lg font-black text-white mb-2">Module Not Available</h1>
-          <p className="text-sm text-slate-400 mb-6">
+          <p className="text-sm text-muted mb-6">
             Ye module aapke plan mein included nahi hai. Seller se contact karein ya{" "}
-            <span className="font-bold text-slate-300">Settings &rarr; License</span> mein plan
+            <span className="font-bold text-app-2">Settings &rarr; License</span> mein plan
             upgrade karein.
           </p>
           <button
@@ -1744,7 +1744,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
           <div
             className={`relative overflow-hidden ${
               sidebarCollapsed ? "px-1" : "px-5"
-            } py-4 border-b border-[#1a2234]`}
+            } py-4 border-b border-app-2`}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-blue-700/15 to-transparent pointer-events-none" />
             <Link
@@ -1774,7 +1774,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                     <span className="vtech-brand">V-TECH</span>{" "}
                     <span className="vtech-pro font-light">PRO</span>
                   </div>
-                  <div className="text-[8px] text-slate-500 dark:text-slate-300 font-black uppercase tracking-widest mt-0.5">
+                  <div className="text-[8px] text-muted dark:text-app-2 font-black uppercase tracking-widest mt-0.5">
                     Management System · Click → Website
                   </div>
                 </div>
@@ -1798,11 +1798,11 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
           <div
             className={`${
               sidebarCollapsed ? "px-0 justify-center" : "px-4 justify-between"
-            } py-3 border-t border-[#1a2234] flex items-center`}
+            } py-3 border-t border-app-2 flex items-center`}
           >
             {!sidebarCollapsed && (
               <span
-                className="text-[9px] text-slate-500 dark:text-slate-300 font-black tracking-widest uppercase"
+                className="text-[9px] text-muted dark:text-app-2 font-black tracking-widest uppercase"
                 title={APP_COMMIT ? `Build ${APP_COMMIT.slice(0, 7)}` : undefined}
               >
                 V-TECH PRO {APP_VERSION_LABEL}
@@ -1830,7 +1830,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             }`}
           >
             {/* Drawer header — brand click → public website */}
-            <div className="relative overflow-hidden px-4 py-4 border-b border-[#1a2234] flex items-center justify-between">
+            <div className="relative overflow-hidden px-4 py-4 border-b border-app-2 flex items-center justify-between">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-700/15 to-transparent pointer-events-none" />
               <Link
                 href="/"
@@ -1857,14 +1857,14 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                   <div className="text-base font-black tracking-tight text-white leading-none">
                     V-TECH <span className="text-blue-400 font-light">PRO</span>
                   </div>
-                  <div className="text-[8px] text-slate-600 font-black uppercase tracking-widest mt-0.5">
+                  <div className="text-[8px] text-muted-2 font-black uppercase tracking-widest mt-0.5">
                     Management System · Website
                   </div>
                 </div>
               </Link>
               <button
                 onClick={() => setDrawerOpen(false)}
-                className="relative w-8 h-8 flex items-center justify-center glass border rounded-lg text-slate-500 hover:text-white transition-all"
+                className="relative w-8 h-8 flex items-center justify-center glass border rounded-lg text-muted hover:text-white transition-all"
               >
                 <X size={15} />
               </button>
@@ -1886,7 +1886,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             {!isClient && <TeamOnline />}
 
             {/* User info at drawer bottom */}
-            <div className="px-3 py-3 border-t border-[#1a2234]">
+            <div className="px-3 py-3 border-t border-app-2">
               <div className="flex items-center gap-3 px-3 py-2.5 glass rounded-xl">
                 {profile?.avatar_url ? (
                   <Image
@@ -1918,7 +1918,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                 <ThemeToggle themePref={themePref} theme={theme} onSelect={setThemePref} />
                 <button
                   onClick={handleLogout}
-                  className="p-1.5 text-slate-600 hover:text-red-400 transition-colors"
+                  className="p-1.5 text-muted-2 hover:text-red-400 transition-colors"
                   title="Logout"
                 >
                   <LogOut size={14} />
@@ -1947,7 +1947,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               {isMobile === true && (
                 <button
                   onClick={() => setDrawerOpen(true)}
-                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all"
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-blue-500/40 rounded-xl text-muted hover:text-white transition-all"
                 >
                   <Menu size={16} />
                 </button>
@@ -1957,7 +1957,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                 <button
                   onClick={toggleSidebarCollapse}
                   title={sidebarCollapsed ? "Sidebar kholo" : "Sidebar collapse karo"}
-                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-blue-500/40 rounded-xl text-slate-400 hover:text-white transition-all hidden lg:flex"
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-blue-500/40 rounded-xl text-muted hover:text-white transition-all hidden lg:flex"
                 >
                   {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
                 </button>
@@ -1974,7 +1974,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             {isMobile === false && (
               <button
                 onClick={() => router.refresh()}
-                className="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-emerald-500/40 rounded-xl text-slate-500 hover:text-emerald-400 transition-all"
+                className="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-emerald-500/40 rounded-xl text-muted hover:text-emerald-400 transition-all"
                 title="Refresh page"
               >
                 <RefreshCw size={15} />
@@ -1999,7 +1999,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                 theme={theme}
                 onSelect={setThemePref}
                 size={16}
-                buttonClassName="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-blue-500/40 rounded-xl text-slate-500 hover:text-white transition-all"
+                buttonClassName="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-blue-500/40 rounded-xl text-muted hover:text-white transition-all"
               />
             )}
 
@@ -2010,7 +2010,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                 className="flex items-center gap-2.5 hover:bg-white/[0.04] px-2 py-1.5 rounded-xl transition-all"
               >
                 <div className="hidden sm:block text-right leading-none">
-                  <p className="text-[11px] font-black uppercase text-slate-200">{displayName}</p>
+                  <p className="text-[11px] font-black uppercase text-app-2">{displayName}</p>
                   <p className="text-[9px] font-bold text-blue-400 uppercase mt-0.5">
                     {profile?.role}
                   </p>
@@ -2040,19 +2040,19 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               {dropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#21293d] rounded-2xl shadow-2xl shadow-black/60 p-1.5 z-50">
-                    <div className="px-3 py-2.5 border-b border-slate-200 dark:border-[#1a2234] mb-1">
-                      <p className="text-[9px] font-black text-slate-700 dark:text-slate-400 uppercase tracking-wider">
+                  <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-panel border border-app-2 dark:border-app rounded-2xl shadow-2xl shadow-black/60 p-1.5 z-50">
+                    <div className="px-3 py-2.5 border-b border-app-2 dark:border-app-2 mb-1">
+                      <p className="text-[9px] font-black text-app dark:text-muted uppercase tracking-wider">
                         Logged in as
                       </p>
-                      <p className="text-xs font-bold text-slate-600 dark:text-slate-400 truncate mt-0.5">
+                      <p className="text-xs font-bold text-muted-2 dark:text-muted truncate mt-0.5">
                         {userEmail}
                       </p>
                     </div>
                     <Link
                       href="/profile"
                       onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-white rounded-xl transition-all"
+                      className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-app dark:text-app-2 hover:bg-panel-2 dark:hover:bg-white/[0.05] hover:text-app dark:hover:text-white rounded-xl transition-all"
                     >
                       <User size={13} /> My Profile
                     </Link>
@@ -2060,12 +2060,12 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                       <Link
                         href="/settings"
                         onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-white rounded-xl transition-all"
+                        className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-app dark:text-app-2 hover:bg-panel-2 dark:hover:bg-white/[0.05] hover:text-app dark:hover:text-white rounded-xl transition-all"
                       >
                         <Settings size={13} /> Settings
                       </Link>
                     )}
-                    <div className="border-t border-slate-200 dark:border-[#1a2234] mt-1 pt-1">
+                    <div className="border-t border-app-2 dark:border-app-2 mt-1 pt-1">
                       <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all"
@@ -2093,7 +2093,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         <main className={`flex-1 ${isAiPage ? "p-0" : "p-3 sm:p-5 theme-body"}`}>
           <PullToRefresh>
             {isClient && !pathname.startsWith("/my-account") ? (
-              <div className="h-[60vh] flex flex-col items-center justify-center gap-3 text-slate-600">
+              <div className="h-[60vh] flex flex-col items-center justify-center gap-3 text-muted-2">
                 <Loader2 size={22} className="animate-spin" />
                 <p className="text-xs font-bold uppercase tracking-widest">Redirecting...</p>
               </div>
@@ -2110,7 +2110,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       {!isClient && !isAiPage && !pathname.startsWith("/messages") && (
         <button
           onClick={goInAppBack}
-          className="fixed bottom-5 left-4 z-40 md:hidden w-11 h-11 glass border rounded-full flex items-center justify-center text-slate-400 hover:text-white active:scale-95 transition-all shadow-lg"
+          className="fixed bottom-5 left-4 z-40 md:hidden w-11 h-11 glass border rounded-full flex items-center justify-center text-muted hover:text-white active:scale-95 transition-all shadow-lg"
           title="Back"
           aria-label="Back"
         >
@@ -2153,7 +2153,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                 </div>
                 <button
                   onClick={() => setAiDrawerOpen(false)}
-                  className="w-8 h-8 flex items-center justify-center glass border rounded-lg text-slate-500 hover:text-white hover:border-red-500/40 transition-all"
+                  className="w-8 h-8 flex items-center justify-center glass border rounded-lg text-muted hover:text-white hover:border-red-500/40 transition-all"
                 >
                   <X size={16} />
                 </button>
@@ -2186,10 +2186,10 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               <Clock size={24} className="text-amber-400" />
             </div>
             <h3 className="text-white font-bold text-base mb-2">Session expiring soon</h3>
-            <p className="text-slate-400 text-sm mb-1">
+            <p className="text-muted text-sm mb-1">
               Aap {idleLogoutMin} minute se kuch nahi kar rahe.
             </p>
-            <p className="text-slate-500 text-xs mb-5">
+            <p className="text-muted text-xs mb-5">
               Agar {idleWarnMin} minute mein kuch nahi kiya to aap automatically logout ho jayenge.
             </p>
             <button

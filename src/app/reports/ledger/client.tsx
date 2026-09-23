@@ -168,9 +168,9 @@ type Props = { fromDate?: string; toDate?: string };
 
 // ── Shared UI components ──────────────────────────────────────────────────────
 const thCls =
-  "px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 text-left bg-[#111520]";
-const tdCls = "px-3 py-2.5 text-xs text-slate-400";
-const trCls = "border-b border-[#21293d] hover:bg-white/[0.02] transition-colors";
+  "px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-2 text-left bg-panel-2";
+const tdCls = "px-3 py-2.5 text-xs text-muted";
+const trCls = "border-b border-app hover:bg-white/[0.02] transition-colors";
 
 function TBadge({ type }: { type: "Cash In" | "Cash Out" }) {
   return type === "Cash In" ? (
@@ -217,9 +217,9 @@ function Modal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl">
+      <div className="bg-panel border border-app rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#21293d] bg-[#111520] rounded-t-2xl flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-app bg-panel-2 rounded-t-2xl flex-shrink-0">
           <div className="flex items-center gap-2.5">
             {Icon && (
               <div className="w-7 h-7 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-center">
@@ -230,7 +230,7 @@ function Modal({
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 bg-[#21293d] hover:bg-white/10 border border-[#21293d] rounded-lg flex items-center justify-center text-slate-500 hover:text-white transition-all"
+            className="w-7 h-7 bg-panel-2 hover:bg-white/10 border border-app rounded-lg flex items-center justify-center text-muted hover:text-white transition-all"
           >
             <X size={13} />
           </button>
@@ -262,7 +262,7 @@ function StatCard({
   const ring = {
     up: "border-emerald-500/20 bg-emerald-500/5",
     down: "border-red-500/20 bg-red-500/5",
-    neutral: "border-[#21293d] bg-[#111520]",
+    neutral: "border-app bg-panel-2",
   }[trend ?? "neutral"];
   return (
     <div className={`border rounded-2xl p-4 flex flex-col gap-2 ${ring}`}>
@@ -277,10 +277,10 @@ function StatCard({
       </div>
       <div>
         <div className="text-xl font-black text-white leading-none">{value}</div>
-        <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mt-1">
+        <div className="text-[9px] font-extrabold uppercase tracking-widest text-muted-2 mt-1">
           {label}
         </div>
-        {sub && <div className="text-[10px] text-slate-700 mt-0.5">{sub}</div>}
+        {sub && <div className="text-[10px] text-app mt-0.5">{sub}</div>}
       </div>
     </div>
   );
@@ -292,7 +292,7 @@ function PRow({
   value,
   sub,
   onClick,
-  colorClass = "text-slate-300",
+  colorClass = "text-app-2",
 }: {
   label: string;
   value: number;
@@ -301,20 +301,20 @@ function PRow({
   colorClass?: string;
 }) {
   return (
-    <tr className="border-b border-[#21293d] hover:bg-white/[0.02] transition-colors group">
+    <tr className="border-b border-app hover:bg-white/[0.02] transition-colors group">
       <td className={`px-4 py-2.5 text-xs ${colorClass}`}>
         {onClick ? (
           <button
             onClick={onClick}
             className="flex items-center gap-1.5 hover:text-blue-400 transition-colors text-left"
           >
-            <Eye size={10} className="text-slate-700 group-hover:text-blue-400 flex-shrink-0" />
+            <Eye size={10} className="text-app group-hover:text-blue-400 flex-shrink-0" />
             {label}
           </button>
         ) : (
           <span>{label}</span>
         )}
-        {sub && <div className="text-[10px] text-slate-700 mt-0.5 ml-4">{sub}</div>}
+        {sub && <div className="text-[10px] text-app mt-0.5 ml-4">{sub}</div>}
       </td>
       <td className={`px-4 py-2.5 text-xs text-right font-bold tabular-nums ${colorClass}`}>
         {rupee(value, 2)}
@@ -403,14 +403,14 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen bg-app flex flex-col items-center justify-center gap-4">
         <div className="relative">
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
             <BarChart3 size={28} className="text-emerald-500/60" />
           </div>
           <div className="absolute inset-0 rounded-2xl border border-emerald-500/40 animate-ping" />
         </div>
-        <p className="text-slate-600 text-xs font-extrabold uppercase tracking-[0.3em]">
+        <p className="text-muted-2 text-xs font-extrabold uppercase tracking-[0.3em]">
           Loading Ledger...
         </p>
       </div>
@@ -420,13 +420,13 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
   // ── Error ──────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center p-6">
-        <div className="bg-[#161b27] border border-red-500/20 rounded-2xl p-8 max-w-md w-full text-center">
+      <div className="min-h-screen bg-app flex items-center justify-center p-6">
+        <div className="bg-panel border border-red-500/20 rounded-2xl p-8 max-w-md w-full text-center">
           <div className="w-14 h-14 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <AlertTriangle size={24} className="text-red-400" />
           </div>
           <h3 className="text-white font-extrabold text-lg mb-2">Report Load Failed</h3>
-          <p className="text-slate-500 text-sm mb-5">{error}</p>
+          <p className="text-muted text-sm mb-5">{error}</p>
           <button
             onClick={fetchData}
             className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-extrabold text-sm transition-all"
@@ -481,9 +481,9 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
 
   // ── RENDER ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0d1117] pb-20 font-sans">
+    <div className="min-h-screen bg-app pb-20 font-sans">
       {/* ═══════════════════════════════════════════ HERO HEADER */}
-      <div className="relative overflow-hidden bg-[#0d1117] border-b border-[#21293d]">
+      <div className="relative overflow-hidden bg-app border-b border-app">
         <div
           className="absolute inset-0 opacity-[0.025]"
           style={{
@@ -496,10 +496,10 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-5">
           {/* Breadcrumb */}
-          <div className="flex items-center gap-1.5 text-[10px] text-slate-700 mb-4 font-bold uppercase tracking-wider">
+          <div className="flex items-center gap-1.5 text-[10px] text-app mb-4 font-bold uppercase tracking-wider">
             <span>Reports</span>
             <CRight size={9} />
-            <span className="text-slate-500">Ledger & Cash Flow</span>
+            <span className="text-muted">Ledger & Cash Flow</span>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -511,7 +511,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                 <h1 className="text-2xl font-black text-white tracking-tight leading-none">
                   Business Ledger
                 </h1>
-                <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.2em] mt-1">
+                <p className="text-muted-2 text-xs font-bold uppercase tracking-[0.2em] mt-1">
                   {monthLabel} · Cash Flow & P&L
                 </p>
               </div>
@@ -519,7 +519,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
 
             <button
               onClick={() => window.open(`/api/print-ledger?from=${from}&to=${to}`, "_blank")}
-              className="no-print flex items-center gap-2 px-4 py-2.5 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] hover:border-emerald-500/30 text-slate-400 hover:text-emerald-400 rounded-xl text-xs font-extrabold transition-all"
+              className="no-print flex items-center gap-2 px-4 py-2.5 bg-panel hover:bg-panel-2 border border-app hover:border-emerald-500/30 text-muted hover:text-emerald-400 rounded-xl text-xs font-extrabold transition-all"
             >
               <Printer size={13} /> Print Report
             </button>
@@ -571,7 +571,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
         {/* ═══════════════════════════════════════════ FILTER BAR */}
         <form
           onSubmit={handleFilter}
-          className="no-print bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4"
+          className="no-print bg-panel border border-app rounded-2xl px-5 py-4"
         >
           <div className="flex flex-wrap gap-3 items-end">
             {[
@@ -579,7 +579,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
               { label: "To", val: to, set: setTo },
             ].map(({ label, val, set }) => (
               <div key={label}>
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-1.5">
                   {label}
                 </label>
                 <input
@@ -587,7 +587,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                   required
                   value={val}
                   onChange={(e) => set(e.target.value)}
-                  className="bg-[#111520] border border-[#21293d] text-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-emerald-500/40 transition-all [color-scheme:dark]"
+                  className="bg-panel-2 border border-app text-app-2 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-emerald-500/40 transition-all [color-scheme:dark]"
                 />
               </div>
             ))}
@@ -602,21 +602,21 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
               <button
                 type="button"
                 onClick={() => goToMonth("prev")}
-                className="w-[38px] h-[38px] bg-[#111520] border border-[#21293d] hover:border-slate-600 text-slate-500 hover:text-white rounded-xl flex items-center justify-center transition-all"
+                className="w-[38px] h-[38px] bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-xl flex items-center justify-center transition-all"
               >
                 <ChevronLeft size={14} />
               </button>
               <button
                 type="button"
                 onClick={resetMonth}
-                className="flex items-center gap-1.5 px-3 h-[38px] bg-[#111520] border border-[#21293d] hover:border-slate-600 text-slate-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 h-[38px] bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <RefreshCw size={11} /> This Month
               </button>
               <button
                 type="button"
                 onClick={() => goToMonth("next")}
-                className="w-[38px] h-[38px] bg-[#111520] border border-[#21293d] hover:border-slate-600 text-slate-500 hover:text-white rounded-xl flex items-center justify-center transition-all"
+                className="w-[38px] h-[38px] bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-xl flex items-center justify-center transition-all"
               >
                 <ChevronRight size={14} />
               </button>
@@ -627,20 +627,20 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
         {/* ═══════════════════════════════════════════ P&L + CASH FLOW */}
         <div className="grid md:grid-cols-2 gap-4">
           {/* P&L */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[#21293d] bg-[#111520]">
+          <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-app bg-panel-2">
               <TrendingUp size={13} className="text-emerald-400" />
-              <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+              <span className="text-xs font-extrabold text-muted uppercase tracking-wider">
                 Business Performance (P&L)
               </span>
             </div>
             <table className="w-full">
               <tbody>
                 {/* Revenue section */}
-                <tr className="border-b border-[#21293d]">
+                <tr className="border-b border-app">
                   <td
                     colSpan={2}
-                    className="px-4 py-2 text-[9px] font-extrabold uppercase tracking-widest text-slate-700 bg-[#0f1520]"
+                    className="px-4 py-2 text-[9px] font-extrabold uppercase tracking-widest text-app bg-app"
                   >
                     Revenue (कमाई)
                   </td>
@@ -648,22 +648,22 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                 <PRow
                   label="Repair Jobs Income"
                   value={jobIncome}
-                  colorClass="text-slate-300"
+                  colorClass="text-app-2"
                   onClick={() => openModal("repair")}
                 />
                 <PRow
                   label="Walk-in Direct Sales"
                   value={walkinIncome}
-                  colorClass="text-slate-300"
+                  colorClass="text-app-2"
                   onClick={() => openModal("walkin")}
                 />
                 <PRow
                   label="Client Direct Sales"
                   value={clientSalesIncome}
-                  colorClass="text-slate-300"
+                  colorClass="text-app-2"
                   onClick={() => openModal("clientsales")}
                 />
-                <tr className="border-b border-[#21293d] bg-emerald-500/5">
+                <tr className="border-b border-app bg-emerald-500/5">
                   <td className="px-4 py-2.5 text-xs font-extrabold text-emerald-400">
                     Net Revenue
                   </td>
@@ -673,10 +673,10 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                 </tr>
 
                 {/* Expense section */}
-                <tr className="border-b border-[#21293d]">
+                <tr className="border-b border-app">
                   <td
                     colSpan={2}
-                    className="px-4 py-2 text-[9px] font-extrabold uppercase tracking-widest text-slate-700 bg-[#0f1520]"
+                    className="px-4 py-2 text-[9px] font-extrabold uppercase tracking-widest text-app bg-app"
                   >
                     Expenses (खर्च)
                   </td>
@@ -706,7 +706,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                   colorClass="text-red-400/80"
                   onClick={() => openModal("discount")}
                 />
-                <tr className="border-b border-[#21293d] bg-red-500/5">
+                <tr className="border-b border-app bg-red-500/5">
                   <td className="px-4 py-2.5 text-xs font-extrabold text-red-400">
                     Total Expenses
                   </td>
@@ -729,19 +729,19 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           </div>
 
           {/* Cash Flow */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[#21293d] bg-[#111520]">
+          <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-app bg-panel-2">
               <Wallet size={13} className="text-blue-400" />
-              <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+              <span className="text-xs font-extrabold text-muted uppercase tracking-wider">
                 Cash Flow (नकदी प्रवाह)
               </span>
             </div>
             <table className="w-full">
               <tbody>
-                <tr className="border-b border-[#21293d]">
+                <tr className="border-b border-app">
                   <td
                     colSpan={2}
-                    className="px-4 py-2 text-[9px] font-extrabold uppercase tracking-widest text-slate-700 bg-[#0f1520]"
+                    className="px-4 py-2 text-[9px] font-extrabold uppercase tracking-widest text-app bg-app"
                   >
                     Cash Inflow (नकद आय)
                   </td>
@@ -758,7 +758,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                   colorClass="text-emerald-400/80"
                   onClick={() => openModal("walkin")}
                 />
-                <tr className="border-b border-[#21293d] bg-emerald-500/5">
+                <tr className="border-b border-app bg-emerald-500/5">
                   <td className="px-4 py-2.5 text-xs font-extrabold text-emerald-400">
                     Total Cash In
                   </td>
@@ -767,10 +767,10 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                   </td>
                 </tr>
 
-                <tr className="border-b border-[#21293d]">
+                <tr className="border-b border-app">
                   <td
                     colSpan={2}
-                    className="px-4 py-2 text-[9px] font-extrabold uppercase tracking-widest text-slate-700 bg-[#0f1520]"
+                    className="px-4 py-2 text-[9px] font-extrabold uppercase tracking-widest text-app bg-app"
                   >
                     Cash Outflow (नकद भुगतान)
                   </td>
@@ -788,7 +788,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                   onClick={() => openModal("shopexp")}
                 />
                 <PRow label="Loan EMI Paid" value={totalEmiPaid} colorClass="text-red-400/80" />
-                <tr className="border-b border-[#21293d] bg-red-500/5">
+                <tr className="border-b border-app bg-red-500/5">
                   <td className="px-4 py-2.5 text-xs font-extrabold text-red-400">
                     Total Cash Out
                   </td>
@@ -816,7 +816,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                   Notes
                 </span>
               </div>
-              <ul className="space-y-0.5 text-[10px] text-slate-600 list-disc list-inside">
+              <ul className="space-y-0.5 text-[10px] text-muted-2 list-disc list-inside">
                 <li>Repair revenue counted when job is delivered.</li>
                 <li>Client Payments = cash recovery, not new revenue.</li>
                 <li>Customer discounts counted as business expense.</li>
@@ -829,14 +829,14 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
         </div>
 
         {/* ═══════════════════════════════════════════ LEDGER TABLE */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#21293d] bg-[#111520]">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-app bg-panel-2">
             <div className="flex items-center gap-2">
-              <Receipt size={13} className="text-slate-500" />
-              <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+              <Receipt size={13} className="text-muted" />
+              <span className="text-xs font-extrabold text-muted uppercase tracking-wider">
                 Transaction Ledger
               </span>
-              <span className="text-[9px] text-slate-700 ml-1">
+              <span className="text-[9px] text-app ml-1">
                 {displayFrom} — {displayTo}
               </span>
             </div>
@@ -857,7 +857,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                   {["Date", "Category", "Details", "Cash In", "Cash Out", "Balance"].map((h, i) => (
                     <th
                       key={h}
-                      className={`${thCls} ${i >= 3 ? "text-right" : ""} border-b border-[#21293d]`}
+                      className={`${thCls} ${i >= 3 ? "text-right" : ""} border-b border-app`}
                     >
                       {h}
                     </th>
@@ -867,7 +867,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
               <tbody>
                 {ledgerEntries.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-600 text-sm">
+                    <td colSpan={6} className="py-12 text-center text-muted-2 text-sm">
                       Is period mein koi transaction nahi mila.
                     </td>
                   </tr>
@@ -883,7 +883,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                       return (
                         <tr
                           key={`${e.date}-${e.category}-${idx}`}
-                          className={`border-b border-[#21293d] transition-colors ${e.type === "Cash In" ? "hover:bg-emerald-500/[0.02]" : "hover:bg-red-500/[0.02]"}`}
+                          className={`border-b border-app transition-colors ${e.type === "Cash In" ? "hover:bg-emerald-500/[0.02]" : "hover:bg-red-500/[0.02]"}`}
                         >
                           <td className={`${tdCls} whitespace-nowrap`}>{safeFormatDate(e.date)}</td>
                           <td className={tdCls}>
@@ -929,7 +929,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           </div>
 
           {/* Footer totals */}
-          <div className="flex flex-wrap justify-between items-center gap-3 px-4 py-3 border-t border-[#21293d] bg-[#111520]">
+          <div className="flex flex-wrap justify-between items-center gap-3 px-4 py-3 border-t border-app bg-panel-2">
             {[
               { label: "Total Cash In", value: totalCashInflow, cls: "text-emerald-400" },
               { label: "Total Cash Out", value: totalCashOutflow, cls: "text-red-400" },
@@ -940,7 +940,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
               },
             ].map(({ label, value, cls }) => (
               <div key={label} className="text-[10px]">
-                <span className="text-slate-600 font-bold">{label}: </span>
+                <span className="text-muted-2 font-bold">{label}: </span>
                 <span className={`font-black tabular-nums ${cls}`}>{rupee(value, 2)}</span>
               </div>
             ))}
@@ -989,11 +989,11 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           ].map(({ title, icon: Icon, rows, cols, empty, renderRow, total, totalCls }) => (
             <div
               key={title}
-              className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden"
+              className="bg-panel border border-app rounded-2xl overflow-hidden"
             >
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-[#21293d] bg-[#111520]">
-                <Icon size={12} className="text-slate-500" />
-                <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-app bg-panel-2">
+                <Icon size={12} className="text-muted" />
+                <span className="text-xs font-extrabold text-muted uppercase tracking-wider">
                   {title}
                 </span>
               </div>
@@ -1004,7 +1004,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                       {cols.map((c, i) => (
                         <th
                           key={c}
-                          className={`${thCls} border-b border-[#21293d] ${i === cols.length - 1 ? "text-right" : ""}`}
+                          className={`${thCls} border-b border-app ${i === cols.length - 1 ? "text-right" : ""}`}
                         >
                           {c}
                         </th>
@@ -1014,7 +1014,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                   <tbody>
                     {rows.length === 0 ? (
                       <tr>
-                        <td colSpan={3} className="py-8 text-center text-slate-600 text-xs">
+                        <td colSpan={3} className="py-8 text-center text-muted-2 text-xs">
                           {empty}
                         </td>
                       </tr>
@@ -1024,10 +1024,10 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                   </tbody>
                   {rows.length > 0 && (
                     <tfoot>
-                      <tr className="border-t border-[#21293d] bg-[#111520]">
+                      <tr className="border-t border-app bg-panel-2">
                         <td
                           colSpan={2}
-                          className="px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-widest text-slate-600 text-right"
+                          className="px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-widest text-muted-2 text-right"
                         >
                           Total
                         </td>
@@ -1048,47 +1048,47 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
         {/* ═══════════════════════════════════════════ TRADING + BALANCE SHEET */}
         <div className="grid md:grid-cols-2 gap-4">
           {/* Trading / P&L */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[#21293d] bg-[#111520]">
-              <BarChart3 size={12} className="text-slate-500" />
-              <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+          <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-app bg-panel-2">
+              <BarChart3 size={12} className="text-muted" />
+              <span className="text-xs font-extrabold text-muted uppercase tracking-wider">
                 व्यापारिक खाता (Trading/P&L)
               </span>
             </div>
             <table className="w-full">
               <tbody>
-                <tr className="border-b border-[#21293d]">
+                <tr className="border-b border-app">
                   <td
                     colSpan={2}
-                    className="px-4 py-1.5 text-[9px] font-extrabold uppercase tracking-widest text-slate-700 bg-[#0f1520]"
+                    className="px-4 py-1.5 text-[9px] font-extrabold uppercase tracking-widest text-app bg-app"
                   >
                     आय (Income)
                   </td>
                 </tr>
-                <PRow label="सर्विस राजस्व" value={jobIncome} colorClass="text-slate-400" />
-                <PRow label="वॉक-इन बिक्री" value={walkinIncome} colorClass="text-slate-400" />
-                <PRow label="ग्राहक बिक्री" value={clientSalesIncome} colorClass="text-slate-400" />
-                <tr className="border-b border-[#21293d] bg-emerald-500/5">
+                <PRow label="सर्विस राजस्व" value={jobIncome} colorClass="text-muted" />
+                <PRow label="वॉक-इन बिक्री" value={walkinIncome} colorClass="text-muted" />
+                <PRow label="ग्राहक बिक्री" value={clientSalesIncome} colorClass="text-muted" />
+                <tr className="border-b border-app bg-emerald-500/5">
                   <td className="px-4 py-2.5 text-xs font-extrabold text-emerald-400">शुद्ध आय</td>
                   <td className="px-4 py-2.5 text-xs font-black text-right text-emerald-400 tabular-nums">
                     {rupee(totalIncome, 2)}
                   </td>
                 </tr>
 
-                <tr className="border-b border-[#21293d]">
+                <tr className="border-b border-app">
                   <td
                     colSpan={2}
-                    className="px-4 py-1.5 text-[9px] font-extrabold uppercase tracking-widest text-slate-700 bg-[#0f1520]"
+                    className="px-4 py-1.5 text-[9px] font-extrabold uppercase tracking-widest text-app bg-app"
                   >
                     व्यय (Expenses)
                   </td>
                 </tr>
-                <PRow label="वेतन" value={totalSalary} colorClass="text-slate-400" />
-                <PRow label="कमीशन" value={totalCommission} colorClass="text-slate-400" />
-                <PRow label="दुकान खर्च" value={totalOtherExpenses} colorClass="text-slate-400" />
-                <PRow label="लोन किस्त" value={totalEmiPaid} colorClass="text-slate-400" />
-                <PRow label="ग्राहक छूट" value={totalDiscountGiven} colorClass="text-slate-400" />
-                <tr className="border-b border-[#21293d] bg-red-500/5">
+                <PRow label="वेतन" value={totalSalary} colorClass="text-muted" />
+                <PRow label="कमीशन" value={totalCommission} colorClass="text-muted" />
+                <PRow label="दुकान खर्च" value={totalOtherExpenses} colorClass="text-muted" />
+                <PRow label="लोन किस्त" value={totalEmiPaid} colorClass="text-muted" />
+                <PRow label="ग्राहक छूट" value={totalDiscountGiven} colorClass="text-muted" />
+                <tr className="border-b border-app bg-red-500/5">
                   <td className="px-4 py-2.5 text-xs font-extrabold text-red-400">कुल व्यय</td>
                   <td className="px-4 py-2.5 text-xs font-black text-right text-red-400 tabular-nums">
                     {rupee(totalBusinessExpense, 2)}
@@ -1108,43 +1108,43 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           </div>
 
           {/* Balance Sheet */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[#21293d] bg-[#111520]">
-              <Landmark size={12} className="text-slate-500" />
-              <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+          <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-app bg-panel-2">
+              <Landmark size={12} className="text-muted" />
+              <span className="text-xs font-extrabold text-muted uppercase tracking-wider">
                 चिट्ठा (Balance Sheet)
               </span>
             </div>
             <table className="w-full">
               <tbody>
-                <tr className="border-b border-[#21293d]">
+                <tr className="border-b border-app">
                   <td
                     colSpan={2}
-                    className="px-4 py-1.5 text-[9px] font-extrabold uppercase tracking-widest text-slate-700 bg-[#0f1520]"
+                    className="px-4 py-1.5 text-[9px] font-extrabold uppercase tracking-widest text-app bg-app"
                   >
                     संपत्ति (Assets)
                   </td>
                 </tr>
-                <PRow label="स्टॉक मूल्य" value={stockValue} colorClass="text-slate-400" />
-                <PRow label="नकद शेष" value={netCash} colorClass="text-slate-400" />
-                <tr className="border-b border-[#21293d] bg-blue-500/5">
+                <PRow label="स्टॉक मूल्य" value={stockValue} colorClass="text-muted" />
+                <PRow label="नकद शेष" value={netCash} colorClass="text-muted" />
+                <tr className="border-b border-app bg-blue-500/5">
                   <td className="px-4 py-2.5 text-xs font-extrabold text-blue-400">कुल संपत्ति</td>
                   <td className="px-4 py-2.5 text-xs font-black text-right text-blue-400 tabular-nums">
                     {rupee(totalAssets, 2)}
                   </td>
                 </tr>
 
-                <tr className="border-b border-[#21293d]">
+                <tr className="border-b border-app">
                   <td
                     colSpan={2}
-                    className="px-4 py-1.5 text-[9px] font-extrabold uppercase tracking-widest text-slate-700 bg-[#0f1520]"
+                    className="px-4 py-1.5 text-[9px] font-extrabold uppercase tracking-widest text-app bg-app"
                   >
                     दायित्व (Liabilities)
                   </td>
                 </tr>
                 <PRow label="स्टाफ बकाया" value={staffLiability} colorClass="text-red-400/80" />
                 <PRow label="लोन बकाया" value={loanOutstanding} colorClass="text-red-400/80" />
-                <tr className="border-b border-[#21293d] bg-red-500/5">
+                <tr className="border-b border-app bg-red-500/5">
                   <td className="px-4 py-2.5 text-xs font-extrabold text-red-400">कुल दायित्व</td>
                   <td className="px-4 py-2.5 text-xs font-black text-right text-red-400 tabular-nums">
                     {rupee(totalLiabilities, 2)}
@@ -1165,14 +1165,14 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
         </div>
 
         {/* ═══════════════════════════════════════════ INFO BOX */}
-        <div className="no-print bg-[#161b27] border border-amber-500/15 rounded-2xl p-4">
+        <div className="no-print bg-panel border border-amber-500/15 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Info size={12} className="text-amber-400" />
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
               सुझाव (Notes)
             </span>
           </div>
-          <ul className="list-disc list-inside text-[11px] text-slate-600 space-y-1">
+          <ul className="list-disc list-inside text-[11px] text-muted-2 space-y-1">
             <li>Balance Sheet अनुमानित है — सटीक चिट्ठा के लिए सभी लेनदेन रिकॉर्ड करें।</li>
             <li>Revenue जॉब डिलीवर होने पर माना जाता है, भुगतान मिलने पर नहीं।</li>
             <li>Client Payments नकद आवक है, नई आय नहीं।</li>
@@ -1181,7 +1181,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
         </div>
 
         {/* ═══════════════════════════════════════════ CALCULATION SUMMARY */}
-        <div className="bg-[#161b27] border border-blue-500/15 rounded-2xl p-4 mt-4">
+        <div className="bg-panel border border-blue-500/15 rounded-2xl p-4 mt-4">
           <div className="flex items-center gap-2 mb-2">
             <Info size={12} className="text-blue-400" />
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-400">
@@ -1191,7 +1191,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[10px] font-mono">
             <div className="bg-slate-900/50 rounded-lg p-2">
               <p className="text-blue-400 font-bold mb-1">P&L (Profit & Loss)</p>
-              <div className="text-slate-500 space-y-0.5">
+              <div className="text-muted space-y-0.5">
                 <div>
                   <span className="text-emerald-400">Net Revenue</span> = Repair Jobs + Walk-in
                   Sales + Client Sales
@@ -1207,7 +1207,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
             </div>
             <div className="bg-slate-900/50 rounded-lg p-2">
               <p className="text-blue-400 font-bold mb-1">Cash Flow</p>
-              <div className="text-slate-500 space-y-0.5">
+              <div className="text-muted space-y-0.5">
                 <div>
                   <span className="text-emerald-400">Total Cash In</span> = Client Payments +
                   Walk-in Sales
@@ -1229,7 +1229,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
         <div className="no-print">
           <button
             onClick={() => setShowStock((p) => !p)}
-            className="flex items-center gap-2.5 px-4 py-2.5 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] hover:border-blue-500/30 text-slate-500 hover:text-blue-400 rounded-xl text-xs font-extrabold transition-all"
+            className="flex items-center gap-2.5 px-4 py-2.5 bg-panel hover:bg-panel-2 border border-app hover:border-blue-500/30 text-muted hover:text-blue-400 rounded-xl text-xs font-extrabold transition-all"
           >
             <Package size={13} />
             {showStock ? "Hide" : "Show"} Detailed Stock Table
@@ -1241,13 +1241,13 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
         </div>
 
         {showStock && (
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[#21293d] bg-[#111520]">
-              <Package size={12} className="text-slate-500" />
-              <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+          <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-app bg-panel-2">
+              <Package size={12} className="text-muted" />
+              <span className="text-xs font-extrabold text-muted uppercase tracking-wider">
                 Detailed Stock Report
               </span>
-              <span className="ml-auto text-[10px] text-slate-600 font-bold">
+              <span className="ml-auto text-[10px] text-muted-2 font-bold">
                 Total: {rupee(stockValue, 2)}
               </span>
             </div>
@@ -1258,7 +1258,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                     {["#", "Product Name", "Qty", "Unit Price", "Total Value"].map((h, i) => (
                       <th
                         key={h}
-                        className={`${thCls} border-b border-[#21293d] ${i >= 2 ? "text-right" : ""}`}
+                        className={`${thCls} border-b border-app ${i >= 2 ? "text-right" : ""}`}
                       >
                         {h}
                       </th>
@@ -1268,14 +1268,14 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                 <tbody>
                   {stockItems.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-10 text-center text-slate-600 text-xs">
+                      <td colSpan={5} className="py-10 text-center text-muted-2 text-xs">
                         Koi stock nahi mila.
                       </td>
                     </tr>
                   ) : (
                     stockItems.map((item, idx) => (
                       <tr key={idx} className={trCls}>
-                        <td className={`${tdCls} text-slate-700`}>{idx + 1}</td>
+                        <td className={`${tdCls} text-app`}>{idx + 1}</td>
                         <td className={tdCls}>{item.name}</td>
                         <td className={`${tdCls} text-right tabular-nums`}>
                           {toNum(item.quantity).toLocaleString()}
@@ -1283,7 +1283,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                         <td className={`${tdCls} text-right tabular-nums`}>
                           {rupee(toNum(item.price), 2)}
                         </td>
-                        <td className={`${tdCls} text-right tabular-nums font-bold text-slate-300`}>
+                        <td className={`${tdCls} text-right tabular-nums font-bold text-app-2`}>
                           {rupee(toNum(item.price) * toNum(item.quantity), 2)}
                         </td>
                       </tr>
@@ -1291,10 +1291,10 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
                   )}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t border-[#21293d] bg-[#111520]">
+                  <tr className="border-t border-app bg-panel-2">
                     <td
                       colSpan={4}
-                      className="px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-widest text-slate-600 text-right"
+                      className="px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-widest text-muted-2 text-right"
                     >
                       Grand Total Stock Value
                     </td>
@@ -1332,7 +1332,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           <tbody>
             {repairJobs.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-10 text-center text-slate-600">
+                <td colSpan={7} className="py-10 text-center text-muted-2">
                   Koi repair job nahi mili.
                 </td>
               </tr>
@@ -1364,7 +1364,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           </tbody>
           {repairJobs.length > 0 && (
             <tfoot>
-              <tr className="border-t border-[#21293d] bg-[#111520]">
+              <tr className="border-t border-app bg-panel-2">
                 <td colSpan={4} className={`${tdCls} text-right font-extrabold`}>
                   Total
                 </td>
@@ -1400,7 +1400,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           <tbody>
             {walkinSales.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-10 text-center text-slate-600">
+                <td colSpan={6} className="py-10 text-center text-muted-2">
                   Koi walk-in sale nahi mili.
                 </td>
               </tr>
@@ -1423,7 +1423,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           </tbody>
           {walkinSales.length > 0 && (
             <tfoot>
-              <tr className="border-t border-[#21293d] bg-[#111520]">
+              <tr className="border-t border-app bg-panel-2">
                 <td colSpan={4} className={`${tdCls} text-right font-extrabold`}>
                   Total
                 </td>
@@ -1456,7 +1456,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           <tbody>
             {clientSales.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-10 text-center text-slate-600">
+                <td colSpan={7} className="py-10 text-center text-muted-2">
                   Koi client sale nahi mili.
                 </td>
               </tr>
@@ -1482,7 +1482,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           </tbody>
           {clientSales.length > 0 && (
             <tfoot>
-              <tr className="border-t border-[#21293d] bg-[#111520]">
+              <tr className="border-t border-app bg-panel-2">
                 <td colSpan={5} className={`${tdCls} text-right font-extrabold`}>
                   Total
                 </td>
@@ -1523,7 +1523,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           <tbody>
             {clientPayments.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-10 text-center text-slate-600">
+                <td colSpan={7} className="py-10 text-center text-muted-2">
                   Koi payment nahi mili.
                 </td>
               </tr>
@@ -1551,7 +1551,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           </tbody>
           {clientPayments.length > 0 && (
             <tfoot>
-              <tr className="border-t border-[#21293d] bg-[#111520]">
+              <tr className="border-t border-app bg-panel-2">
                 <td colSpan={2} className={`${tdCls} text-right font-extrabold`}>
                   Total
                 </td>
@@ -1589,7 +1589,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           <tbody>
             {commissionData.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-10 text-center text-slate-600">
+                <td colSpan={6} className="py-10 text-center text-muted-2">
                   Koi commission nahi mila.
                 </td>
               </tr>
@@ -1620,7 +1620,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           </tbody>
           {commissionData.length > 0 && (
             <tfoot>
-              <tr className="border-t border-[#21293d] bg-[#111520]">
+              <tr className="border-t border-app bg-panel-2">
                 <td colSpan={3} className={`${tdCls} text-right font-extrabold`}>
                   Total
                 </td>
@@ -1653,7 +1653,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           <tbody>
             {clientPayments.filter((p) => toNum(p.discount) > 0).length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-10 text-center text-slate-600">
+                <td colSpan={6} className="py-10 text-center text-muted-2">
                   Koi discount nahi mila.
                 </td>
               </tr>
@@ -1708,7 +1708,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           <tbody>
             {salaryDetails.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-10 text-center text-slate-600">
+                <td colSpan={6} className="py-10 text-center text-muted-2">
                   Koi salary detail nahi mili.
                 </td>
               </tr>
@@ -1731,7 +1731,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           </tbody>
           {salaryDetails.length > 0 && (
             <tfoot>
-              <tr className="border-t border-[#21293d] bg-[#111520]">
+              <tr className="border-t border-app bg-panel-2">
                 <td colSpan={5} className={`${tdCls} text-right font-extrabold`}>
                   Total
                 </td>
@@ -1763,7 +1763,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           <tbody>
             {advancePayments.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-10 text-center text-slate-600">
+                <td colSpan={5} className="py-10 text-center text-muted-2">
                   Koi advance nahi mila.
                 </td>
               </tr>
@@ -1783,7 +1783,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           </tbody>
           {advancePayments.length > 0 && (
             <tfoot>
-              <tr className="border-t border-[#21293d] bg-[#111520]">
+              <tr className="border-t border-app bg-panel-2">
                 <td colSpan={2} className={`${tdCls} text-right font-extrabold`}>
                   Total
                 </td>
@@ -1816,7 +1816,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           <tbody>
             {expenses.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-10 text-center text-slate-600">
+                <td colSpan={6} className="py-10 text-center text-muted-2">
                   Koi expense nahi mila.
                 </td>
               </tr>
@@ -1837,7 +1837,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
           </tbody>
           {expenses.length > 0 && (
             <tfoot>
-              <tr className="border-t border-[#21293d] bg-[#111520]">
+              <tr className="border-t border-app bg-panel-2">
                 <td colSpan={3} className={`${tdCls} text-right font-extrabold`}>
                   Total
                 </td>

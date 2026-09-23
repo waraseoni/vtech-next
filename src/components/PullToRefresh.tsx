@@ -118,7 +118,7 @@ export default function PullToRefresh({
       }}
     >
       <div
-        className={`pointer-events-none flex items-center justify-center gap-2 text-slate-400 will-change-transform ${
+        className={`pointer-events-none flex items-center justify-center gap-2 text-muted will-change-transform ${
           refreshing ? "" : "transition-none"
         }`}
         style={{ height: `${refreshing ? TRIGGER_DISTANCE : pull}px`, overflow: "hidden" }}
@@ -129,7 +129,7 @@ export default function PullToRefresh({
           pull > 12 && (
             <span
               className={`text-[10px] font-black uppercase tracking-widest ${
-                pull >= TRIGGER_DISTANCE ? "text-blue-400" : "text-slate-600"
+                pull >= TRIGGER_DISTANCE ? "text-blue-400" : "text-muted-2"
               }`}
             >
               {pull >= TRIGGER_DISTANCE ? "Refresh karne ke liye chhodo" : "Neeche kheecho"}

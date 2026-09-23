@@ -249,7 +249,7 @@ const BADGE_COLORS: Record<string, { bg: string; text: string; border: string }>
   info: { bg: "bg-cyan-500", text: "text-white", border: "border-cyan-600" },
   success: { bg: "bg-green-600", text: "text-white", border: "border-green-700" },
   danger: { bg: "bg-red-600", text: "text-white", border: "border-red-700" },
-  warning: { bg: "bg-yellow-500", text: "text-gray-900", border: "border-yellow-600" },
+  warning: { bg: "bg-yellow-500", text: "text-app", border: "border-yellow-600" },
 };
 
 const DEL_STATUS: Record<number, string> = { 0: "In Shop", 1: "Delivered" };
@@ -289,7 +289,7 @@ function Fieldset({
     danger: "text-red-400 border-red-500/30",
   };
   return (
-    <fieldset className={`border-2 min-w-0 ${colors[color].split(" ")[1]} rounded-lg bg-[#111520] mb-4`}>
+    <fieldset className={`border-2 min-w-0 ${colors[color].split(" ")[1]} rounded-lg bg-panel-2 mb-4`}>
       <legend
         className={`px-3 py-1 text-sm font-bold ${colors[color].split(" ")[0]} ml-3 flex items-center gap-1.5`}
       >
@@ -305,8 +305,8 @@ function Fieldset({
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <p className="mb-1.5 text-sm">
-      <span className="font-semibold text-slate-500">{label}:</span>{" "}
-      <span className="text-slate-200">{value}</span>
+      <span className="font-semibold text-muted">{label}:</span>{" "}
+      <span className="text-app-2">{value}</span>
     </p>
   );
 }
@@ -879,14 +879,14 @@ ${svcHtml}${prodHtml}
 
   // ── RENDER ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans">
+    <div className="min-h-screen bg-app font-sans">
       {/* ── PAGE CONTENT ─────────────────────────────────────────────────────── */}
-      <div className="py-4 px-3 md:px-6 text-slate-200">
+      <div className="py-4 px-3 md:px-6 text-app-2">
         <div className="max-w-5xl mx-auto">
           {/* Card */}
-          <div className="bg-[#161b27] rounded shadow-sm border border-[#21293d]">
+          <div className="bg-panel rounded shadow-sm border border-app">
             {/* Card Header — PHP style navy */}
-            <div className="bg-[#0d1f35] text-white rounded-t px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#21293d]">
+            <div className="bg-app text-white rounded-t px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-app">
               <h5 className="font-bold text-base flex items-center gap-2 m-0">
                 <FileText size={16} />
                 Transaction Details — {job.job_id} ({job.code})
@@ -921,7 +921,7 @@ ${svcHtml}${prodHtml}
                 </button>
                 <button
                   onClick={() => safeBack(router, "/jobs")}
-                  className="col-span-2 flex items-center justify-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors sm:col-span-1"
+                  className="col-span-2 flex items-center justify-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white border border-muted px-3 py-1.5 rounded text-xs font-semibold transition-colors sm:col-span-1"
                 >
                   <ArrowLeft size={12} /> Back
                 </button>
@@ -929,7 +929,7 @@ ${svcHtml}${prodHtml}
                   onClick={() => prevJob && router.push(`/jobs/${prevJob.id}/view`)}
                   disabled={!prevJob}
                   title={prevJob ? `Job ${prevJob.job_id}` : "No previous job"}
-                  className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-muted px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft size={12} /> Prev
                 </button>
@@ -937,7 +937,7 @@ ${svcHtml}${prodHtml}
                   onClick={() => nextJob && router.push(`/jobs/${nextJob.id}/view`)}
                   disabled={!nextJob}
                   title={nextJob ? `Job ${nextJob.job_id}` : "No next job"}
-                  className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500 px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-muted px-3 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Next <ChevronRight size={12} />
                 </button>
@@ -945,10 +945,10 @@ ${svcHtml}${prodHtml}
             </div>
 
             {/* Card Body */}
-            <div className="p-4 text-slate-200">
+            <div className="p-4 text-app-2">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 {/* ── LEFT COLUMN (7/12) ─────────────────────────────────── */}
-                <div className="lg:col-span-7 lg:border-r lg:border-[#21293d] lg:pr-4 min-w-0">
+                <div className="lg:col-span-7 lg:border-r lg:border-app lg:pr-4 min-w-0">
                   {/* Client + Job Info row */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                     {/* Client Info */}
@@ -977,13 +977,13 @@ ${svcHtml}${prodHtml}
                       {client?.address && (
                         <InfoRow
                           label="Address"
-                          value={<span className="text-slate-400 text-xs">{client.address}</span>}
+                          value={<span className="text-muted text-xs">{client.address}</span>}
                         />
                       )}
                       {client?.email && (
                         <InfoRow
                           label="Email"
-                          value={<span className="text-slate-400 text-xs">{client.email}</span>}
+                          value={<span className="text-muted text-xs">{client.email}</span>}
                         />
                       )}
                     </Fieldset>
@@ -992,7 +992,7 @@ ${svcHtml}${prodHtml}
                     <Fieldset title="Job Details" icon={Wrench} color="info">
                       <InfoRow
                         label="Mechanic"
-                        value={mechName || <em className="text-slate-600">Not Assigned</em>}
+                        value={mechName || <em className="text-muted-2">Not Assigned</em>}
                       />
                       <InfoRow label="Received" value={fmtDateTime(job.date_created)} />
                       <InfoRow
@@ -1020,12 +1020,12 @@ ${svcHtml}${prodHtml}
                                 {job.uniq_id}
                               </Link>
                             ) : (
-                              <em className="text-slate-600">N/A</em>
+                              <em className="text-muted-2">N/A</em>
                             )}
                             <button
                               onClick={openSpotPicker}
                               title="Spot set karo / badlo"
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold border border-[#2a3550] bg-white/[0.02] text-slate-400 hover:text-amber-400 hover:border-amber-500/40 transition-all"
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold border border-app-2 bg-white/[0.02] text-muted hover:text-amber-400 hover:border-amber-500/40 transition-all"
                             >
                               <MapPin size={11} />
                               Change
@@ -1044,13 +1044,13 @@ ${svcHtml}${prodHtml}
                       value={<span className="font-semibold">{job.item}</span>}
                     />
                     <div className="mb-1.5 text-sm">
-                      <span className="font-semibold text-slate-500">Fault Reported:</span>
-                      <p className="mt-0.5 text-slate-300 whitespace-pre-line">{job.fault}</p>
+                      <span className="font-semibold text-muted">Fault Reported:</span>
+                      <p className="mt-0.5 text-app-2 whitespace-pre-line">{job.fault}</p>
                     </div>
                     <div className="text-sm">
-                      <span className="font-semibold text-slate-500">Remarks:</span>
-                      <p className="mt-0.5 text-slate-400 whitespace-pre-line">
-                        {job.remark?.trim() || <em className="text-slate-600">No remarks</em>}
+                      <span className="font-semibold text-muted">Remarks:</span>
+                      <p className="mt-0.5 text-muted whitespace-pre-line">
+                        {job.remark?.trim() || <em className="text-muted-2">No remarks</em>}
                       </p>
                     </div>
                   </Fieldset>
@@ -1059,8 +1059,8 @@ ${svcHtml}${prodHtml}
                   {services.length > 0 && (
                     <Fieldset title="Services Availed" icon={Settings2} color="primary">
                       <div className="overflow-x-auto">
-                        <table className="w-full border border-[#21293d] text-sm">
-                          <thead className="bg-[#0d1f35] text-slate-300">
+                        <table className="w-full border border-app text-sm">
+                          <thead className="bg-app text-app-2">
                             <tr>
                               <th className="px-3 py-2 text-left">Service</th>
                               <th className="px-3 py-2 text-center">HSN/SAC</th>
@@ -1069,24 +1069,24 @@ ${svcHtml}${prodHtml}
                           </thead>
                           <tbody className="divide-y divide-[#21293d]">
                             {services.map((s, i) => (
-                              <tr key={i} className={i % 2 === 0 ? "bg-[#111520]" : "bg-[#161b27]"}>
-                                <td className="px-3 py-2 text-slate-300">
+                              <tr key={i} className={i % 2 === 0 ? "bg-panel-2" : "bg-panel"}>
+                                <td className="px-3 py-2 text-app-2">
                                   {s.service_name || `Service #${s.service_id}`}
                                 </td>
-                                <td className="px-3 py-2 text-center text-slate-500 text-xs">
+                                <td className="px-3 py-2 text-center text-muted text-xs">
                                   {s.hsn || "—"}
                                 </td>
-                                <td className="px-3 py-2 text-right font-medium text-slate-200">
+                                <td className="px-3 py-2 text-right font-medium text-app-2">
                                   Rs.{s.price.toFixed(2)}
                                 </td>
                               </tr>
                             ))}
                           </tbody>
-                          <tfoot className="bg-[#0d1117] font-bold border-t border-[#21293d]">
+                          <tfoot className="bg-app font-bold border-t border-app">
                             <tr>
                               <td
                                 colSpan={2}
-                                className="px-3 py-2 text-right text-sm text-slate-500"
+                                className="px-3 py-2 text-right text-sm text-muted"
                               >
                                 Services Total:
                               </td>
@@ -1104,7 +1104,7 @@ ${svcHtml}${prodHtml}
                   {products.length > 0 && (
                     <Fieldset title="Products Used" icon={Package} color="success">
                       <div className="overflow-x-auto">
-                        <table className="w-full border border-[#21293d] text-sm">
+                        <table className="w-full border border-app text-sm">
                           <thead className="bg-emerald-900/50 text-emerald-300">
                             <tr>
                               <th className="px-3 py-2 text-left">Product</th>
@@ -1116,28 +1116,28 @@ ${svcHtml}${prodHtml}
                           </thead>
                           <tbody className="divide-y divide-[#21293d]">
                             {products.map((p, i) => (
-                              <tr key={i} className={i % 2 === 0 ? "bg-[#111520]" : "bg-[#161b27]"}>
-                                <td className="px-3 py-2 text-slate-300">
+                              <tr key={i} className={i % 2 === 0 ? "bg-panel-2" : "bg-panel"}>
+                                <td className="px-3 py-2 text-app-2">
                                   {p.product_name || `Product #${p.product_id}`}
                                 </td>
-                                <td className="px-3 py-2 text-center text-slate-500 text-xs">
+                                <td className="px-3 py-2 text-center text-muted text-xs">
                                   {p.hsn || "—"}
                                 </td>
-                                <td className="px-3 py-2 text-center text-slate-400">{p.qty}</td>
-                                <td className="px-3 py-2 text-right text-slate-400">
+                                <td className="px-3 py-2 text-center text-muted">{p.qty}</td>
+                                <td className="px-3 py-2 text-right text-muted">
                                   Rs.{p.price.toFixed(2)}
                                 </td>
-                                <td className="px-3 py-2 text-right font-medium text-slate-200">
+                                <td className="px-3 py-2 text-right font-medium text-app-2">
                                   Rs.{(p.qty * p.price).toFixed(2)}
                                 </td>
                               </tr>
                             ))}
                           </tbody>
-                          <tfoot className="bg-[#0d1117] font-bold border-t border-[#21293d]">
+                          <tfoot className="bg-app font-bold border-t border-app">
                             <tr>
                               <td
                                 colSpan={4}
-                                className="px-3 py-2 text-right text-sm text-slate-500"
+                                className="px-3 py-2 text-right text-sm text-muted"
                               >
                                 Products Total:
                               </td>
@@ -1165,16 +1165,16 @@ ${svcHtml}${prodHtml}
                 <div className="lg:col-span-5 min-w-0">
                   {/* Current Status — PHP style big badge */}
                   <div className="text-center mb-5">
-                    <p className="text-slate-400 font-semibold text-sm mb-2">Current Job Status</p>
+                    <p className="text-muted font-semibold text-sm mb-2">Current Job Status</p>
                     <span
                       className={`inline-block px-8 py-4 rounded-sm shadow-sm font-black text-2xl ${badge.bg} ${badge.text} border ${badge.border}`}
                       style={{ minWidth: "90%" }}
                     >
                       {st.label}
                     </span>
-                    <p className="text-slate-500 text-sm mt-2 italic">{st.explanation}</p>
+                    <p className="text-muted text-sm mt-2 italic">{st.explanation}</p>
                     {job.status === 5 && job.date_completed && (
-                      <div className="mt-3 text-emerald-400 border-t border-[#21293d] pt-3">
+                      <div className="mt-3 text-emerald-400 border-t border-app pt-3">
                         <CheckCircle2 className="inline mr-1" size={16} />
                         <span className="font-semibold">Delivered On:</span>
                         <br />
@@ -1204,7 +1204,7 @@ ${svcHtml}${prodHtml}
                       </button>
                       {imgPopup && (
                         <div className="relative">
-                          <div className="absolute top-full left-0 mt-1 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[140px]">
+                          <div className="absolute top-full left-0 mt-1 z-50 bg-panel border border-app-2 rounded-xl shadow-2xl p-1.5 min-w-[140px]">
                             <button
                               onClick={() => {
                                 setImgPopup(false);
@@ -1232,7 +1232,7 @@ ${svcHtml}${prodHtml}
                           </div>
                         </div>
                       )}
-                      <span className="text-[10px] text-slate-500">
+                      <span className="text-[10px] text-muted">
                         JPEG/PNG · ≤100KB · auto-compressed
                       </span>
                       <input
@@ -1265,7 +1265,7 @@ ${svcHtml}${prodHtml}
                               alt="Item"
                               width={640}
                               height={128}
-                              className="w-full h-32 object-cover rounded-lg border border-[#21293d] hover:opacity-80 transition-opacity cursor-zoom-in"
+                              className="w-full h-32 object-cover rounded-lg border border-app hover:opacity-80 transition-opacity cursor-zoom-in"
                               onDoubleClick={() => openImageLightbox(img.image_path, "Job Photo")}
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = "none";
@@ -1273,7 +1273,7 @@ ${svcHtml}${prodHtml}
                             />
                             <button
                               onClick={() => handleImageDelete(img)}
-                              className="absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors"
+                              className="absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-lg border-2 border-app-2 transition-colors"
                               title="Delete photo"
                             >
                               <X size={13} />
@@ -1282,7 +1282,7 @@ ${svcHtml}${prodHtml}
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-500 italic">
+                      <p className="text-xs text-muted italic">
                         Koi photo upload nahi hui. Item ka photo add karein.
                       </p>
                     )}
@@ -1294,13 +1294,13 @@ ${svcHtml}${prodHtml}
                     {(services.length > 0 || products.length > 0) && (
                       <div className="mb-3 space-y-1">
                         {services.length > 0 && (
-                          <div className="flex justify-between text-sm text-slate-500">
+                          <div className="flex justify-between text-sm text-muted">
                             <span>Services ({services.length})</span>
                             <span>Rs.{servicesTotal.toFixed(2)}</span>
                           </div>
                         )}
                         {products.length > 0 && (
-                          <div className="flex justify-between text-sm text-slate-500">
+                          <div className="flex justify-between text-sm text-muted">
                             <span>Products ({products.length})</span>
                             <span>Rs.{productsTotal.toFixed(2)}</span>
                           </div>
@@ -1309,7 +1309,7 @@ ${svcHtml}${prodHtml}
                       </div>
                     )}
                     <div className="flex justify-between items-center border-b border-emerald-500/25 pb-2 mb-2">
-                      <span className="font-medium text-sm text-slate-400">Total Amount:</span>
+                      <span className="font-medium text-sm text-muted">Total Amount:</span>
                       <span className="text-2xl font-black text-white">
                         Rs.{job.amount.toFixed(2)}
                       </span>
@@ -1318,18 +1318,18 @@ ${svcHtml}${prodHtml}
                       <p className="text-3xl font-black text-emerald-400">
                         Rs.{job.amount.toFixed(2)}
                       </p>
-                      <p className="text-slate-500 text-xs mt-1">Final Payable Amount</p>
+                      <p className="text-muted text-xs mt-1">Final Payable Amount</p>
                     </div>
                     {(job.mechanic_amount > 0 || job.mechanic_commission_amount > 0) && (
                       <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-1">
                         {job.mechanic_amount > 0 && (
-                          <div className="flex justify-between text-xs text-slate-500">
+                          <div className="flex justify-between text-xs text-muted">
                             <span>Mechanic Amount:</span>
                             <span>Rs.{job.mechanic_amount.toFixed(0)}</span>
                           </div>
                         )}
                         {job.mechanic_commission_amount > 0 && (
-                          <div className="flex justify-between text-xs text-slate-500">
+                          <div className="flex justify-between text-xs text-muted">
                             <span>Commission:</span>
                             <span>Rs.{job.mechanic_commission_amount.toFixed(0)}</span>
                           </div>
@@ -1465,14 +1465,14 @@ ${svcHtml}${prodHtml}
                                 <Plus size={14} className="text-blue-400" />
                               </div>
                               {entries.length > 0 && (
-                                <div className="w-px flex-1 bg-[#21293d] mt-1" />
+                                <div className="w-px flex-1 bg-panel-2 mt-1" />
                               )}
                             </div>
                             <div className="flex-1 pb-4">
-                              <p className="text-sm text-slate-300 font-medium">Job Created</p>
-                              <p className="text-[11px] text-slate-600 mt-1">
+                              <p className="text-sm text-app-2 font-medium">Job Created</p>
+                              <p className="text-[11px] text-muted-2 mt-1">
                                 {fmtLogTime(job.date_created)} ·{" "}
-                                <span className="text-slate-500">{whoName(job.user_id)}</span>
+                                <span className="text-muted">{whoName(job.user_id)}</span>
                               </p>
                             </div>
                           </div>
@@ -1491,25 +1491,25 @@ ${svcHtml}${prodHtml}
                                   >
                                     {st.icon}
                                   </div>
-                                  {!isLast && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
+                                  {!isLast && <div className="w-px flex-1 bg-panel-2 mt-1" />}
                                 </div>
                                 <div className="flex-1 pb-4">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <p className="text-sm text-slate-300 font-medium">{title}</p>
+                                    <p className="text-sm text-app-2 font-medium">{title}</p>
                                     {transition?.to && (
                                       <span
-                                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusColor(transition.to) || "border-[#21293d] text-slate-500"}`}
+                                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusColor(transition.to) || "border-app text-muted"}`}
                                       >
                                         {transition.to}
                                       </span>
                                     )}
                                   </div>
                                   {act.details && act.details !== title && (
-                                    <p className="text-xs text-slate-500 mt-0.5">{act.details}</p>
+                                    <p className="text-xs text-muted mt-0.5">{act.details}</p>
                                   )}
-                                  <p className="text-[11px] text-slate-600 mt-1">
+                                  <p className="text-[11px] text-muted-2 mt-1">
                                     {fmtLogTime(act.date_created)} ·{" "}
-                                    <span className="text-slate-500">{whoName(act.user_id)}</span>
+                                    <span className="text-muted">{whoName(act.user_id)}</span>
                                   </p>
                                 </div>
                               </div>
@@ -1529,21 +1529,21 @@ ${svcHtml}${prodHtml}
                                     >
                                       {st.icon}
                                     </div>
-                                    {!isLast && <div className="w-px flex-1 bg-[#21293d] mt-1" />}
+                                    {!isLast && <div className="w-px flex-1 bg-panel-2 mt-1" />}
                                   </div>
                                   <div
                                     className={`flex-1 pb-4 ${s === job.status ? "" : "opacity-60"}`}
                                   >
-                                    <p className="text-sm text-slate-300 font-medium">
+                                    <p className="text-sm text-app-2 font-medium">
                                       {s === job.status ? `${st.label} (current)` : st.label}
                                     </p>
                                     {s === 5 && job.date_completed && (
-                                      <p className="text-[11px] text-slate-600 mt-1">
+                                      <p className="text-[11px] text-muted-2 mt-1">
                                         {fmtLogTime(job.date_completed)}
                                       </p>
                                     )}
                                     {s !== 5 && (
-                                      <p className="text-[11px] text-slate-600 mt-1">
+                                      <p className="text-[11px] text-muted-2 mt-1">
                                         {fmtLogTime(job.date_updated)}
                                       </p>
                                     )}
@@ -1559,7 +1559,7 @@ ${svcHtml}${prodHtml}
               </div>
 
               {/* ── ACTION BUTTONS (bottom — PHP style) ───────────────────── */}
-              <hr className="my-4 border-[#21293d]" />
+              <hr className="my-4 border-app" />
               <div className="grid grid-cols-2 gap-2 justify-center sm:flex sm:flex-wrap">
                 <button
                   onClick={() => {
@@ -1578,14 +1578,14 @@ ${svcHtml}${prodHtml}
                 </Link>
                 <button
                   onClick={handlePrint}
-                  className="flex items-center justify-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors"
+                  className="flex items-center justify-center gap-1.5 bg-panel-2 hover:bg-panel-2 text-app-2 border border-app-2 px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors"
                 >
                   <Printer size={15} /> Print Page
                 </button>
                 <Link
                   href={`/api/print-bill?job_id=${job.job_id}&type=thermal`}
                   target="_blank"
-                  className="flex items-center justify-center gap-1.5 bg-[#1e2637] hover:bg-[#252f45] text-slate-300 border border-[#2a3550] px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline"
+                  className="flex items-center justify-center gap-1.5 bg-panel-2 hover:bg-panel-2 text-app-2 border border-app-2 px-5 py-2.5 rounded font-semibold text-sm shadow-sm transition-colors no-underline"
                 >
                   <Printer size={15} /> Thermal Receipt
                 </Link>
@@ -1620,7 +1620,7 @@ ${svcHtml}${prodHtml}
             if (e.target === e.currentTarget) setShowStatusModal(false);
           }}
         >
-          <div className="bg-[#161b27] rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-[#21293d]">
+          <div className="bg-panel rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-app">
             {/* Modal Header */}
             <div className="bg-[#001f3f] text-white px-5 py-3.5 flex items-center justify-between">
               <h3 className="font-bold text-base flex items-center gap-2">
@@ -1637,13 +1637,13 @@ ${svcHtml}${prodHtml}
             {/* Modal Body */}
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-400 mb-1.5">
+                <label className="block text-sm font-semibold text-muted mb-1.5">
                   New Status
                 </label>
                 <select
                   value={newStatus}
                   onChange={(e) => setNewStatus(parseInt(e.target.value))}
-                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 bg-[#0d1117]"
+                  className="w-full border border-app-2 rounded px-3 py-2.5 text-sm text-app-2 focus:outline-none focus:border-blue-500 bg-app"
                 >
                   {Object.entries(STATUS_MAP).map(([val, info]) => (
                     <option key={val} value={val}>
@@ -1660,7 +1660,7 @@ ${svcHtml}${prodHtml}
                 >
                   {STATUS_MAP[newStatus]?.label}
                 </span>
-                <p className="text-slate-500 text-xs mt-1">{STATUS_MAP[newStatus]?.explanation}</p>
+                <p className="text-muted text-xs mt-1">{STATUS_MAP[newStatus]?.explanation}</p>
               </div>
 
               {/* ── Delivery Date/Time — only when status = 5 (Delivered) ── */}
@@ -1669,13 +1669,13 @@ ${svcHtml}${prodHtml}
                   <p className="text-emerald-400 font-semibold text-sm flex items-center gap-1.5">
                     <CheckCircle2 size={15} /> Delivery Date & Time
                   </p>
-                  <p className="text-slate-500 text-xs">
+                  <p className="text-muted text-xs">
                     Agar delivery pehle ho gayi thi aur ab entry kar rahe hain, to sahi date aur
                     time enter karein.
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1">
+                      <label className="block text-xs font-semibold text-muted mb-1">
                         Delivery Date
                       </label>
                       <input
@@ -1683,18 +1683,18 @@ ${svcHtml}${prodHtml}
                         value={deliveryDate}
                         onChange={(e) => setDeliveryDate(e.target.value)}
                         max={todayISTStr()}
-                        className="w-full border border-[#2a3550] rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"
+                        className="w-full border border-app-2 rounded px-3 py-2 text-sm text-app-2 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1">
+                      <label className="block text-xs font-semibold text-muted mb-1">
                         Delivery Time
                       </label>
                       <input
                         type="time"
                         value={deliveryTime}
                         onChange={(e) => setDeliveryTime(e.target.value)}
-                        className="w-full border border-[#2a3550] rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"
+                        className="w-full border border-app-2 rounded px-3 py-2 text-sm text-app-2 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 [color-scheme:light]"
                       />
                     </div>
                   </div>
@@ -1708,10 +1708,10 @@ ${svcHtml}${prodHtml}
             </div>
 
             {/* Modal Footer */}
-            <div className="px-5 py-4 bg-[#111520] border-t border-[#21293d] flex gap-3 justify-end flex-wrap">
+            <div className="px-5 py-4 bg-panel-2 border-t border-app flex gap-3 justify-end flex-wrap">
               <button
                 onClick={() => setShowStatusModal(false)}
-                className="px-5 py-2 bg-[#1e2637] border border-[#2a3550] text-slate-400 rounded font-medium text-sm hover:bg-[#252f45] transition-colors"
+                className="px-5 py-2 bg-panel-2 border border-app-2 text-muted rounded font-medium text-sm hover:bg-panel-2 transition-colors"
               >
                 Cancel
               </button>
@@ -1745,7 +1745,7 @@ ${svcHtml}${prodHtml}
             if (e.target === e.currentTarget) setShowPayModal(false);
           }}
         >
-          <div className="bg-[#161b27] rounded-t-2xl sm:rounded-lg shadow-2xl w-full sm:max-w-md overflow-hidden border border-[#21293d]">
+          <div className="bg-panel rounded-t-2xl sm:rounded-lg shadow-2xl w-full sm:max-w-md overflow-hidden border border-app">
             <div className="bg-[#001f3f] text-white px-5 py-3.5 flex items-center justify-between">
               <h3 className="font-bold text-base flex items-center gap-2">
                 <IndianRupee size={16} /> Record New Payment
@@ -1761,17 +1761,17 @@ ${svcHtml}${prodHtml}
             <div className="p-5 space-y-4">
               <div className="bg-blue-500/10 border border-blue-500/20 rounded px-3 py-2 text-sm">
                 <span className="font-semibold text-blue-400">{clientName}</span>
-                <span className="text-slate-600 mx-2">·</span>
-                <span className="text-slate-400">Job #{job.job_id}</span>
-                <span className="text-slate-600 mx-2">·</span>
-                <span className="text-slate-400">
+                <span className="text-muted-2 mx-2">·</span>
+                <span className="text-muted">Job #{job.job_id}</span>
+                <span className="text-muted-2 mx-2">·</span>
+                <span className="text-muted">
                   Bill: <span className="font-bold text-white">Rs.{job.amount.toFixed(2)}</span>
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                  <label className="block text-xs font-semibold text-muted mb-1.5">
                     Amount (Rs.) *
                   </label>
                   <input
@@ -1781,11 +1781,11 @@ ${svcHtml}${prodHtml}
                     value={payAmount}
                     onChange={(e) => setPayAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                    className="w-full border border-app-2 rounded px-3 py-2.5 text-sm text-app-2 bg-app focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                  <label className="block text-xs font-semibold text-muted mb-1.5">
                     Discount (Rs.)
                   </label>
                   <input
@@ -1795,14 +1795,14 @@ ${svcHtml}${prodHtml}
                     value={payDiscount}
                     onChange={(e) => setPayDiscount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                    className="w-full border border-app-2 rounded px-3 py-2.5 text-sm text-app-2 bg-app focus:outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
 
               {payAmount && (
                 <div className="bg-emerald-500/5 border border-emerald-500/20 rounded px-4 py-2.5 flex justify-between items-center">
-                  <span className="text-xs text-slate-500 font-semibold">Net Settled</span>
+                  <span className="text-xs text-muted font-semibold">Net Settled</span>
                   <span className="text-emerald-400 font-black text-base">
                     Rs.
                     {((parseFloat(payAmount) || 0) + (parseFloat(payDiscount) || 0)).toLocaleString(
@@ -1814,7 +1814,7 @@ ${svcHtml}${prodHtml}
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                <label className="block text-xs font-semibold text-muted mb-1.5">
                   Bill No.
                 </label>
                 <input
@@ -1822,30 +1822,30 @@ ${svcHtml}${prodHtml}
                   value={payBillNo}
                   onChange={(e) => setPayBillNo(e.target.value)}
                   placeholder="Optional — e.g. INV-001"
-                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                  className="w-full border border-app-2 rounded px-3 py-2.5 text-sm text-app-2 bg-app focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                  <label className="block text-xs font-semibold text-muted mb-1.5">
                     Payment Date
                   </label>
                   <input
                     type="date"
                     value={payDate}
                     onChange={(e) => setPayDate(e.target.value)}
-                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                    className="w-full border border-app-2 rounded px-3 py-2.5 text-sm text-app-2 bg-app focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                  <label className="block text-xs font-semibold text-muted mb-1.5">
                     Payment Type
                   </label>
                   <select
                     value={payType}
                     onChange={(e) => setPayType(e.target.value)}
-                    className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                    className="w-full border border-app-2 rounded px-3 py-2.5 text-sm text-app-2 bg-app focus:outline-none focus:border-blue-500"
                   >
                     {["Full", "Partial", "Advance", "On Account"].map((m) => (
                       <option key={m}>{m}</option>
@@ -1855,13 +1855,13 @@ ${svcHtml}${prodHtml}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                <label className="block text-xs font-semibold text-muted mb-1.5">
                   Payment Mode *
                 </label>
                 <select
                   value={payMode}
                   onChange={(e) => setPayMode(e.target.value)}
-                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                  className="w-full border border-app-2 rounded px-3 py-2.5 text-sm text-app-2 bg-app focus:outline-none focus:border-blue-500"
                 >
                   {["Cash", "PhonePe/GPay", "UPI", "NEFT", "Cheque", "Bank Transfer"].map((m) => (
                     <option key={m}>{m}</option>
@@ -1870,21 +1870,21 @@ ${svcHtml}${prodHtml}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Remarks</label>
+                <label className="block text-xs font-semibold text-muted mb-1.5">Remarks</label>
                 <input
                   type="text"
                   value={payRemarks}
                   onChange={(e) => setPayRemarks(e.target.value)}
                   placeholder="Koi notes..."
-                  className="w-full border border-[#2a3550] rounded px-3 py-2.5 text-sm text-slate-200 bg-[#0d1117] focus:outline-none focus:border-blue-500"
+                  className="w-full border border-app-2 rounded px-3 py-2.5 text-sm text-app-2 bg-app focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
 
-            <div className="px-5 py-4 bg-[#111520] border-t border-[#21293d] flex gap-3 flex-wrap">
+            <div className="px-5 py-4 bg-panel-2 border-t border-app flex gap-3 flex-wrap">
               <button
                 onClick={() => setShowPayModal(false)}
-                className="flex-1 py-2.5 bg-[#1e2637] border border-[#2a3550] text-slate-400 rounded font-medium text-sm hover:bg-[#252f45] transition-colors"
+                className="flex-1 py-2.5 bg-panel-2 border border-app-2 text-muted rounded font-medium text-sm hover:bg-panel-2 transition-colors"
               >
                 Cancel
               </button>
@@ -1917,7 +1917,7 @@ ${svcHtml}${prodHtml}
           onClick={() => !savingSpot && setShowSpotModal(false)}
         >
           <div
-            className="w-full max-w-xs bg-[#161b27] border border-[#21293d] rounded-2xl p-5 shadow-2xl"
+            className="w-full max-w-xs bg-panel border border-app rounded-2xl p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-1">
@@ -1926,12 +1926,12 @@ ${svcHtml}${prodHtml}
               </p>
               <button
                 onClick={() => !savingSpot && setShowSpotModal(false)}
-                className="text-slate-500 hover:text-white"
+                className="text-muted hover:text-white"
               >
                 <X size={16} />
               </button>
             </div>
-            <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-3">
+            <p className="text-[10px] text-muted-2 font-bold uppercase tracking-wider mb-3">
               Is job ka spot chuno (ya hatao)
             </p>
             <JobSpotPicker

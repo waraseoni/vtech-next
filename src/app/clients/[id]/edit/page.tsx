@@ -29,10 +29,10 @@ import type { ClientContactInput } from "@/lib/clientContacts";
 // STYLE CONSTANTS (dark theme)
 // ─────────────────────────────────────────────────────────────────────────────
 const inputCls =
-  "w-full px-4 py-3 rounded-xl bg-[#111520] border border-[#21293d] text-white " +
-  "placeholder:text-slate-700 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 " +
+  "w-full px-4 py-3 rounded-xl bg-panel-2 border border-app text-white " +
+  "placeholder:text-app focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 " +
   "outline-none transition-all text-sm font-medium [color-scheme:dark]";
-const labelCls = "block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5";
+const labelCls = "block text-[10px] font-extrabold uppercase tracking-wider text-muted mb-1.5";
 const errCls = "text-red-400 text-xs mt-1 font-medium";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -314,28 +314,28 @@ export default function ManageClientPage() {
 
   // ── RENDER ──────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white font-sans p-4 md:p-8">
+    <div className="min-h-screen bg-app text-white font-sans p-4 md:p-8">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Top Bar */}
         <div className="flex items-center justify-between">
           <button
             onClick={() => safeBack(router, "/clients")}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-bold"
+            className="flex items-center gap-2 text-muted hover:text-white transition-colors text-sm font-bold"
           >
             <ArrowLeft size={18} /> Back
           </button>
           <Link
             href="/clients"
-            className="text-xs text-slate-600 hover:text-slate-400 transition-colors font-medium"
+            className="text-xs text-muted-2 hover:text-muted transition-colors font-medium"
           >
             All Clients
           </Link>
         </div>
 
         {/* Form Card */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
           {/* Card Header */}
-          <div className="px-6 py-5 border-b border-[#21293d] flex items-center gap-4">
+          <div className="px-6 py-5 border-b border-app flex items-center gap-4">
             <div
               className={`p-3 rounded-xl border ${
                 isEdit ? "bg-amber-500/10 border-amber-500/20" : "bg-blue-500/10 border-blue-500/20"
@@ -351,7 +351,7 @@ export default function ManageClientPage() {
               <h1 className="text-xl font-black text-white tracking-tight">
                 {isEdit ? "Edit Client" : "New Client"}
               </h1>
-              <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-600 mt-0.5">
+              <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-2 mt-0.5">
                 {isEdit ? `Editing Client #${clientId}` : "Add a new client to the system"}
               </p>
             </div>
@@ -377,7 +377,7 @@ export default function ManageClientPage() {
               <div>
                 <label className={labelCls}>
                   Middle Name{" "}
-                  <span className="text-slate-600 normal-case font-semibold text-[9px]">
+                  <span className="text-muted-2 normal-case font-semibold text-[9px]">
                     (optional)
                   </span>
                 </label>
@@ -416,19 +416,19 @@ export default function ManageClientPage() {
                   onChange={(e) => handleChange("opening_balance", e.target.value)}
                   className={`${inputCls} text-right`}
                 />
-                <p className="text-[9px] text-slate-600 mt-1">
+                <p className="text-[9px] text-muted-2 mt-1">
                   Positive = Due from client · Negative = Advance paid
                 </p>
               </div>
             </div>
 
             {/* Contact Numbers — multi-contact editor (client_contacts) */}
-            <div className="rounded-xl border border-[#21293d] bg-[#12161f] p-4 space-y-3">
+            <div className="rounded-xl border border-app bg-panel-2 p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <label className={labelCls + " mb-0"}>
                   Contact Numbers <span className="text-red-500">*</span>
                 </label>
-                <span className="text-[9px] text-slate-600 font-semibold">
+                <span className="text-[9px] text-muted-2 font-semibold">
                   star = primary · name = kaun ka number
                 </span>
               </div>
@@ -441,7 +441,7 @@ export default function ManageClientPage() {
                     className={`flex-shrink-0 w-9 h-9 rounded-lg border flex items-center justify-center transition-all ${
                       r.is_primary
                         ? "bg-amber-500/15 border-amber-500/40 text-amber-400"
-                        : "bg-[#111520] border-[#21293d] text-slate-700 hover:text-slate-400"
+                        : "bg-panel-2 border-app text-app hover:text-muted"
                     }`}
                     title={r.is_primary ? "Primary" : "Primary banao"}
                   >
@@ -459,7 +459,7 @@ export default function ManageClientPage() {
                   <select
                     value={r.label}
                     onChange={(e) => updateRow(r.key, { label: e.target.value })}
-                    className={`${inputCls} sm:w-32 text-slate-400`}
+                    className={`${inputCls} sm:w-32 text-muted`}
                   >
                     {CONTACT_LABELS.map((l) => (
                       <option key={l} value={l}>
@@ -482,7 +482,7 @@ export default function ManageClientPage() {
                   <button
                     type="button"
                     onClick={() => removeRow(r.key)}
-                    className="flex-shrink-0 w-9 h-9 rounded-lg border border-[#21293d] bg-[#111520] text-slate-600 hover:text-red-400 hover:border-red-500/40 flex items-center justify-center transition-all"
+                    className="flex-shrink-0 w-9 h-9 rounded-lg border border-app bg-panel-2 text-muted-2 hover:text-red-400 hover:border-red-500/40 flex items-center justify-center transition-all"
                     title="Number hatayein"
                   >
                     <Trash2 size={14} />
@@ -505,7 +505,7 @@ export default function ManageClientPage() {
             <div>
               <label className={labelCls}>
                 Email{" "}
-                <span className="text-slate-600 normal-case font-semibold text-[9px]">
+                <span className="text-muted-2 normal-case font-semibold text-[9px]">
                   (optional)
                 </span>
               </label>
@@ -519,7 +519,7 @@ export default function ManageClientPage() {
               {errors.email && <p className={errCls}>{errors.email}</p>}
               {/* Hint that it's truly optional */}
               {!errors.email && (
-                <p className="text-[9px] text-slate-700 mt-1">
+                <p className="text-[9px] text-app mt-1">
                   Secondary mobile upar contact numbers me add karo
                 </p>
               )}
@@ -540,7 +540,7 @@ export default function ManageClientPage() {
               {errors.address && <p className={errCls}>{errors.address}</p>}
             </div>
 
-            <div className="border-t border-[#21293d]" />
+            <div className="border-t border-app" />
 
             {/* Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
@@ -568,7 +568,7 @@ export default function ManageClientPage() {
               <button
                 type="button"
                 onClick={() => safeBack(router, "/clients")}
-                className="flex-1 sm:flex-none sm:px-8 py-3 rounded-xl font-bold text-sm bg-[#21293d] hover:bg-[#2a3550] text-slate-300 transition-all"
+                className="flex-1 sm:flex-none sm:px-8 py-3 rounded-xl font-bold text-sm bg-panel-2 hover:bg-[#2a3550] text-app-2 transition-all"
               >
                 Cancel
               </button>

@@ -76,7 +76,7 @@ const PAYMENT_MODES = [
 
 // ─── Shared input styles ──────────────────────────────────────────────────────
 const inputCls =
-  "w-full bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500/60 transition-all";
+  "w-full bg-panel-2 border border-app text-app-2 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500/60 transition-all";
 
 function Field({
   label,
@@ -89,7 +89,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2">
+      <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
@@ -479,7 +479,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
           </div>
           <div className="absolute inset-0 rounded-xl border border-blue-500/30 animate-ping" />
         </div>
-        <p className="text-slate-600 text-[11px] font-extrabold uppercase tracking-[0.2em]">
+        <p className="text-muted-2 text-[11px] font-extrabold uppercase tracking-[0.2em]">
           Loading form...
         </p>
       </div>
@@ -506,7 +506,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
 
       {/* ── Staff Assignment (admin + new only) ── */}
       {userRole === "admin" && mode === "new" && (
-        <div className="bg-[#111520] border border-purple-500/20 rounded-xl p-4">
+        <div className="bg-panel-2 border border-purple-500/20 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <UserCog size={12} className="text-purple-400" />
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-400/70">
@@ -549,7 +549,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
                 className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-extrabold transition-all ${
                   paymentMode === value
                     ? `${color} ${active}`
-                    : "text-slate-600 bg-[#111520] border-[#21293d] hover:border-slate-600 hover:text-slate-400"
+                    : "text-muted-2 bg-panel-2 border-app hover:border-muted hover:text-muted"
                 }`}
               >
                 <Icon size={13} /> {value}
@@ -560,10 +560,10 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
       </div>
 
       {/* ── Product Search + Add ── */}
-      <div className="bg-[#111520] border border-[#21293d] rounded-xl p-4 space-y-3">
+      <div className="bg-panel-2 border border-app rounded-xl p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Package size={12} className="text-blue-400" />
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
             Add Product
           </span>
         </div>
@@ -619,14 +619,14 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
       </div>
 
       {/* ── Items Table ── */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center gap-2 px-5 py-3 bg-[#111520] border-b border-[#21293d]">
+        <div className="flex items-center gap-2 px-5 py-3 bg-panel-2 border-b border-app">
           <ShoppingCart size={13} className="text-emerald-400" />
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
             Sale Items
           </span>
-          <span className="ml-auto text-[10px] text-slate-700 font-bold">
+          <span className="ml-auto text-[10px] text-app font-bold">
             {items.length} item{items.length !== 1 ? "s" : ""}
             {items.length > 0 && ` · ${items.reduce((s, i) => s + i.qty, 0)} units`}
           </span>
@@ -635,11 +635,11 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[520px]">
             <thead>
-              <tr className="border-b border-[#21293d]">
+              <tr className="border-b border-app">
                 {["Product", "Qty", "Unit Price", "Total", ""].map((h, i) => (
                   <th
                     key={i}
-                    className={`px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 ${
+                    className={`px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-muted-2 ${
                       i === 0 ? "text-left" : i === 4 ? "text-center w-12" : "text-right"
                     }`}
                   >
@@ -665,12 +665,12 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
                           <Package size={12} className="text-blue-400" />
                         </div>
                         <div>
-                          <div className="text-slate-200 font-semibold text-xs leading-tight">
+                          <div className="text-app-2 font-semibold text-xs leading-tight">
                             {item.product_name}
                           </div>
                           <div
                             className={`text-[9px] mt-0.5 font-bold ${
-                              overStock ? "text-amber-500/90" : "text-slate-700"
+                              overStock ? "text-amber-500/90" : "text-app"
                             }`}
                           >
                             {overStock
@@ -688,7 +688,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
                           type="button"
                           onClick={() => updateQty(idx, item.qty - 1)}
                           disabled={item.qty <= 1}
-                          className="w-6 h-6 flex items-center justify-center bg-[#21293d] hover:bg-red-600/20 border border-[#21293d] hover:border-red-500/30 rounded-lg text-slate-600 hover:text-red-400 transition-all disabled:opacity-25 disabled:cursor-not-allowed"
+                          className="w-6 h-6 flex items-center justify-center bg-panel-2 hover:bg-red-600/20 border border-app hover:border-red-500/30 rounded-lg text-muted-2 hover:text-red-400 transition-all disabled:opacity-25 disabled:cursor-not-allowed"
                         >
                           <Minus size={10} />
                         </button>
@@ -697,16 +697,16 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
                           min={1}
                           value={item.qty}
                           onChange={(e) => updateQty(idx, parseInt(e.target.value))}
-                          className={`w-12 text-center text-sm font-black rounded-lg py-1 outline-none transition-all bg-[#111520] border [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none ${
+                          className={`w-12 text-center text-sm font-black rounded-lg py-1 outline-none transition-all bg-panel-2 border [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none ${
                             overStock
                               ? "border-amber-500/40 text-amber-400"
-                              : "border-[#21293d] text-white focus:border-blue-500/50"
+                              : "border-app text-white focus:border-blue-500/50"
                           }`}
                         />
                         <button
                           type="button"
                           onClick={() => updateQty(idx, item.qty + 1)}
-                          className="w-6 h-6 flex items-center justify-center bg-[#21293d] hover:bg-blue-600/20 border border-[#21293d] hover:border-blue-500/30 rounded-lg text-slate-600 hover:text-blue-400 transition-all"
+                          className="w-6 h-6 flex items-center justify-center bg-panel-2 hover:bg-blue-600/20 border border-app hover:border-blue-500/30 rounded-lg text-muted-2 hover:text-blue-400 transition-all"
                         >
                           <Plus size={10} />
                         </button>
@@ -716,14 +716,14 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
                     {/* Price */}
                     <td className="px-4 py-3.5 text-right">
                       <div className="inline-flex items-center gap-1 justify-end">
-                        <span className="text-slate-700 text-xs">₹</span>
+                        <span className="text-app text-xs">₹</span>
                         <input
                           type="number"
                           step="0.01"
                           min={0}
                           value={item.price}
                           onChange={(e) => updatePrice(idx, parseFloat(e.target.value))}
-                          className="w-24 text-right text-xs font-bold text-slate-200 bg-[#111520] border border-[#21293d] rounded-lg px-2 py-1.5 outline-none focus:border-blue-500/50 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                          className="w-24 text-right text-xs font-bold text-app-2 bg-panel-2 border border-app rounded-lg px-2 py-1.5 outline-none focus:border-blue-500/50 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
                         />
                       </div>
                     </td>
@@ -740,7 +740,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
                       <button
                         type="button"
                         onClick={() => removeItem(idx)}
-                        className="w-7 h-7 flex items-center justify-center mx-auto bg-[#21293d] hover:bg-red-600/20 border border-[#21293d] hover:border-red-500/30 rounded-lg text-slate-600 hover:text-red-400 transition-all"
+                        className="w-7 h-7 flex items-center justify-center mx-auto bg-panel-2 hover:bg-red-600/20 border border-app hover:border-red-500/30 rounded-lg text-muted-2 hover:text-red-400 transition-all"
                       >
                         <Trash2 size={12} />
                       </button>
@@ -752,9 +752,9 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
               {items.length === 0 && (
                 <tr>
                   <td colSpan={5} className="py-16 text-center">
-                    <ShoppingCart size={30} className="mx-auto text-slate-800 mb-2" />
-                    <p className="text-slate-600 text-sm font-bold">No products added yet</p>
-                    <p className="text-slate-700 text-[11px] mt-0.5">
+                    <ShoppingCart size={30} className="mx-auto text-app mb-2" />
+                    <p className="text-muted-2 text-sm font-bold">No products added yet</p>
+                    <p className="text-app text-[11px] mt-0.5">
                       Use the panel above to add products
                     </p>
                   </td>
@@ -765,15 +765,15 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
             {/* Footer total */}
             {items.length > 0 && (
               <tfoot>
-                <tr className="bg-[#111520] border-t border-[#21293d]">
+                <tr className="bg-panel-2 border-t border-app">
                   <td
                     colSpan={2}
-                    className="px-4 py-3 text-[10px] text-slate-700 font-bold uppercase tracking-wider"
+                    className="px-4 py-3 text-[10px] text-app font-bold uppercase tracking-wider"
                   >
                     {items.length} product{items.length !== 1 ? "s" : ""} ·{" "}
                     {items.reduce((s, i) => s + i.qty, 0)} units
                   </td>
-                  <td className="px-4 py-3 text-right text-[10px] text-slate-600 font-bold">
+                  <td className="px-4 py-3 text-right text-[10px] text-muted-2 font-bold">
                     Grand Total
                   </td>
                   <td className="px-4 py-3 text-right font-black text-emerald-400 text-xl">
@@ -792,7 +792,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
         <div className="relative">
           <MessageSquare
             size={12}
-            className="absolute left-3.5 top-3.5 text-slate-600 pointer-events-none"
+            className="absolute left-3.5 top-3.5 text-muted-2 pointer-events-none"
           />
           <textarea
             value={remarks}
@@ -805,16 +805,16 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
       </Field>
 
       {/* ── Submit Row ── */}
-      <div className="flex items-center justify-between gap-3 pt-4 border-t border-[#21293d]">
+      <div className="flex items-center justify-between gap-3 pt-4 border-t border-app">
         <div>
-          <div className="text-[9px] text-slate-700 font-extrabold uppercase tracking-widest mb-0.5">
+          <div className="text-[9px] text-app font-extrabold uppercase tracking-widest mb-0.5">
             Grand Total
           </div>
           <div className="text-2xl font-black text-white">
             ₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
           </div>
           {items.length > 0 && (
-            <div className="text-[10px] text-slate-700 mt-0.5">
+            <div className="text-[10px] text-app mt-0.5">
               {items.length} item{items.length !== 1 ? "s" : ""} ·{" "}
               {items.reduce((s, i) => s + i.qty, 0)} units
             </div>
@@ -825,7 +825,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
           <button
             type="button"
             onClick={() => safeBack(router, "/direct-sales")}
-            className="px-5 py-2.5 bg-[#111520] hover:bg-white/5 border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-sm font-extrabold transition-all"
+            className="px-5 py-2.5 bg-panel-2 hover:bg-white/5 border border-app text-muted hover:text-white rounded-xl text-sm font-extrabold transition-all"
           >
             Cancel
           </button>

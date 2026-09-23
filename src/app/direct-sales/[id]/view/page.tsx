@@ -93,9 +93,9 @@ const PAY_CFG: Record<
 const getPayCfg = (m: string) =>
   PAY_CFG[m] || {
     icon: Banknote,
-    color: "text-slate-400",
-    bg: "bg-slate-500/10",
-    border: "border-slate-500/25",
+    color: "text-muted",
+    bg: "bg-muted/10",
+    border: "border-muted/25",
   };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -120,12 +120,12 @@ function InfoRow({
   muted?: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between py-2 border-b border-[#21293d] last:border-0 gap-3">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 flex-shrink-0">
+    <div className="flex items-start justify-between py-2 border-b border-app last:border-0 gap-3">
+      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-2 flex-shrink-0">
         {label}
       </span>
       <span
-        className={`text-xs font-semibold text-right ${muted ? "text-slate-500" : "text-slate-300"}`}
+        className={`text-xs font-semibold text-right ${muted ? "text-muted" : "text-app-2"}`}
       >
         {value}
       </span>
@@ -254,8 +254,8 @@ export default function ViewSalePage() {
   if (!sale) {
     return (
       <div className="min-h-screen theme-body flex items-center justify-center">
-        <div className="text-center theme-card border border-[#21293d] rounded-2xl p-10">
-          <ShoppingBag size={40} className="mx-auto text-slate-700 mb-3" />
+        <div className="text-center theme-card border border-app rounded-2xl p-10">
+          <ShoppingBag size={40} className="mx-auto text-app mb-3" />
           <h2 className="text-xl font-black text-white">Sale not found</h2>
           <Link
             href="/direct-sales"
@@ -276,7 +276,7 @@ export default function ViewSalePage() {
   return (
     <div className="min-h-screen theme-body font-sans pb-16">
       {/* ── HERO HEADER ── */}
-      <div className="relative overflow-hidden border-b border-[#21293d]">
+      <div className="relative overflow-hidden border-b border-app">
         <div
           className="absolute inset-0 opacity-[0.025]"
           style={{
@@ -288,12 +288,12 @@ export default function ViewSalePage() {
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-5">
           {/* Breadcrumb */}
-          <div className="flex items-center gap-1.5 text-[10px] text-slate-700 mb-4 font-bold uppercase tracking-wider">
-            <Link href="/direct-sales" className="hover:text-slate-500 transition-colors">
+          <div className="flex items-center gap-1.5 text-[10px] text-app mb-4 font-bold uppercase tracking-wider">
+            <Link href="/direct-sales" className="hover:text-muted transition-colors">
               Direct Sales
             </Link>
             <ChevronRight size={10} />
-            <span className="text-slate-500">{sale.sale_code}</span>
+            <span className="text-muted">{sale.sale_code}</span>
           </div>
 
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -301,7 +301,7 @@ export default function ViewSalePage() {
             <div className="flex items-start gap-4">
               <Link
                 href="/direct-sales"
-                className="mt-1 p-2 theme-panel hover:bg-[var(--app-hover)] border border-[#21293d] rounded-xl text-slate-500 hover:text-slate-300 transition-all flex-shrink-0"
+                className="mt-1 p-2 theme-panel hover:bg-[var(--app-hover)] border border-app rounded-xl text-muted hover:text-app-2 transition-all flex-shrink-0"
               >
                 <ArrowLeft size={16} />
               </Link>
@@ -321,13 +321,13 @@ export default function ViewSalePage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                    <span className="flex items-center gap-1 text-[10px] text-slate-600 font-bold">
+                    <span className="flex items-center gap-1 text-[10px] text-muted-2 font-bold">
                       <Calendar size={9} /> {fmtIST(sale.date_created, false)}
                     </span>
-                    <span className="flex items-center gap-1 text-[10px] text-slate-600 font-bold">
+                    <span className="flex items-center gap-1 text-[10px] text-muted-2 font-bold">
                       <Clock size={9} /> {fmtIST(sale.date_created).split(",")[1]?.trim()}
                     </span>
-                    <span className="flex items-center gap-1 text-[10px] text-slate-600 font-bold">
+                    <span className="flex items-center gap-1 text-[10px] text-muted-2 font-bold">
                       <Hash size={9} /> ID: {sale.id}
                     </span>
                   </div>
@@ -357,7 +357,7 @@ export default function ViewSalePage() {
       {/* ── MAIN CONTENT ── */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 space-y-4">
         {/* ── COMPANY BANNER ── */}
-        <div className="relative bg-gradient-to-r from-[var(--app-panel)] via-[var(--app-hover)] to-[var(--app-panel)] border border-[#21293d] rounded-2xl px-6 py-5 overflow-hidden">
+        <div className="relative bg-gradient-to-r from-[var(--app-panel)] via-[var(--app-hover)] to-[var(--app-panel)] border border-app rounded-2xl px-6 py-5 overflow-hidden">
           <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-emerald-600/10 to-transparent" />
           <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-10">
             <Sparkles size={48} className="text-emerald-400" />
@@ -369,12 +369,12 @@ export default function ViewSalePage() {
               </h2>
               <div className="flex flex-wrap items-center gap-3 mt-1">
                 {sysInfo.address && (
-                  <span className="flex items-center gap-1 text-[11px] text-slate-500">
+                  <span className="flex items-center gap-1 text-[11px] text-muted">
                     <MapPin size={9} /> {sysInfo.address}
                   </span>
                 )}
                 {sysInfo.contact && (
-                  <span className="flex items-center gap-1 text-[11px] text-slate-500">
+                  <span className="flex items-center gap-1 text-[11px] text-muted">
                     <Phone size={9} /> {sysInfo.contact}
                   </span>
                 )}
@@ -392,10 +392,10 @@ export default function ViewSalePage() {
         {/* ── TWO COLUMN: Client + Invoice Details ── */}
         <div className="grid sm:grid-cols-2 gap-4">
           {/* Client card */}
-          <div className="theme-card border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-[#21293d] theme-panel-2">
+          <div className="theme-card border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-app theme-panel-2">
               <User size={12} className="text-blue-400" />
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
                 Bill To
               </span>
             </div>
@@ -406,7 +406,7 @@ export default function ViewSalePage() {
                   sale.client_name ? (
                     <span className="text-white font-bold">{sale.client_name}</span>
                   ) : (
-                    <span className="text-slate-600 italic">Walk-in Customer</span>
+                    <span className="text-muted-2 italic">Walk-in Customer</span>
                   )
                 }
               />
@@ -449,16 +449,16 @@ export default function ViewSalePage() {
                 />
               )}
               {!sale.client_contact && !sale.client_address && !sale.client_name && (
-                <div className="py-4 text-center text-slate-700 text-xs">No client details</div>
+                <div className="py-4 text-center text-app text-xs">No client details</div>
               )}
             </div>
           </div>
 
           {/* Invoice details */}
-          <div className="theme-card border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-[#21293d] theme-panel-2">
+          <div className="theme-card border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-app theme-panel-2">
               <FileText size={12} className="text-emerald-400" />
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
                 Invoice Details
               </span>
             </div>
@@ -476,7 +476,7 @@ export default function ViewSalePage() {
                 label="Staff"
                 value={
                   <span className="flex items-center gap-1.5">
-                    <UserCog size={10} className="text-slate-600" /> {sale.staff_name}
+                    <UserCog size={10} className="text-muted-2" /> {sale.staff_name}
                   </span>
                 }
               />
@@ -506,21 +506,21 @@ export default function ViewSalePage() {
         </div>
 
         {/* ── ITEMS TABLE ── */}
-        <div className="theme-card border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-[#21293d] theme-panel-2">
+        <div className="theme-card border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-app theme-panel-2">
             <Package size={13} className="text-purple-400" />
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
               Items ({sale.items.length})
             </span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#21293d]">
+                <tr className="border-b border-app">
                   {["#", "Product", "Qty", "Unit Price", "Total"].map((h, i) => (
                     <th
                       key={h}
-                      className={`px-5 py-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 ${
+                      className={`px-5 py-3 text-[10px] font-extrabold uppercase tracking-wider text-muted-2 ${
                         i === 0
                           ? "text-left w-10"
                           : i === 1
@@ -539,34 +539,34 @@ export default function ViewSalePage() {
                 {sale.items.map((item, idx) => (
                   <tr
                     key={item.id}
-                    className="border-b border-[#21293d] last:border-0 hover:bg-white/[0.02] transition-colors"
+                    className="border-b border-app last:border-0 hover:bg-white/[0.02] transition-colors"
                   >
-                    <td className="px-5 py-3.5 text-slate-700 text-xs">{idx + 1}</td>
+                    <td className="px-5 py-3.5 text-app text-xs">{idx + 1}</td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
                           <Package size={12} className="text-purple-400" />
                         </div>
-                        <span className="text-slate-200 font-semibold text-sm">
+                        <span className="text-app-2 font-semibold text-sm">
                           {item.product_name}
                         </span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5 text-center">
                       <span className="text-xl font-black text-white">{item.qty}</span>
-                      <span className="text-slate-600 text-xs ml-1">pcs</span>
+                      <span className="text-muted-2 text-xs ml-1">pcs</span>
                     </td>
-                    <td className="px-5 py-3.5 text-right text-slate-400 text-xs">
+                    <td className="px-5 py-3.5 text-right text-muted text-xs">
                       ₹{item.price.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="px-5 py-3.5 text-right font-black text-slate-200">
+                    <td className="px-5 py-3.5 text-right font-black text-app-2">
                       ₹{item.total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
                 ))}
                 {sale.items.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-slate-700">
+                    <td colSpan={5} className="py-12 text-center text-app">
                       No items found
                     </td>
                   </tr>
@@ -578,23 +578,23 @@ export default function ViewSalePage() {
 
         {/* ── BILL SUMMARY ── */}
         <div className="flex justify-end">
-          <div className="w-full sm:w-80 theme-card border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-[#21293d] theme-panel-2">
+          <div className="w-full sm:w-80 theme-card border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-app theme-panel-2">
               <IndianRupee size={12} className="text-teal-400" />
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
                 Bill Summary
               </span>
             </div>
             <div className="px-5 py-3 space-y-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-600">Subtotal ({sale.items.length} items)</span>
-                <span className="text-slate-400 font-bold">
+                <span className="text-muted-2">Subtotal ({sale.items.length} items)</span>
+                <span className="text-muted font-bold">
                   ₹{subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
               </div>
               {subtotal !== sale.total_amount && (
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-600">Adjustment</span>
+                  <span className="text-muted-2">Adjustment</span>
                   <span
                     className={`font-bold ${sale.total_amount > subtotal ? "text-red-400" : "text-emerald-400"}`}
                   >
@@ -605,14 +605,14 @@ export default function ViewSalePage() {
                   </span>
                 </div>
               )}
-              <div className="border-t border-[#21293d] pt-2 flex justify-between items-center">
-                <span className="text-sm font-extrabold text-slate-300">Grand Total</span>
+              <div className="border-t border-app pt-2 flex justify-between items-center">
+                <span className="text-sm font-extrabold text-app-2">Grand Total</span>
                 <span className="text-2xl font-black text-white">
                   ₹{sale.total_amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="theme-panel-2 border border-[#21293d] rounded-xl px-3 py-2 mt-1">
-                <p className="text-[10px] text-slate-600 leading-relaxed italic">
+              <div className="theme-panel-2 border border-app rounded-xl px-3 py-2 mt-1">
+                <p className="text-[10px] text-muted-2 leading-relaxed italic">
                   {numberToWords(sale.total_amount)} Rupees Only
                 </p>
               </div>
@@ -628,15 +628,15 @@ export default function ViewSalePage() {
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-400 block mb-0.5">
                 Remarks
               </span>
-              <p className="text-slate-400 text-sm leading-relaxed">{sale.remarks}</p>
+              <p className="text-muted text-sm leading-relaxed">{sale.remarks}</p>
             </div>
           </div>
         )}
 
         {/* ── FOOTER NOTE ── */}
-        <div className="flex items-center justify-center gap-2 py-4 border-t border-[#21293d]">
-          <CheckCircle2 size={12} className="text-slate-700" />
-          <p className="text-[11px] text-slate-700 font-medium">
+        <div className="flex items-center justify-center gap-2 py-4 border-t border-app">
+          <CheckCircle2 size={12} className="text-app" />
+          <p className="text-[11px] text-app font-medium">
             Goods sold are not returnable. Thank you for your business! —{" "}
             {sysInfo.name || "V-Technologies"}
           </p>

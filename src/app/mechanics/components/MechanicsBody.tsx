@@ -50,15 +50,15 @@ function StatCard({
     amber: "text-amber-400 bg-amber-500/8",
   };
   return (
-    <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+    <div className="bg-panel border border-app rounded-2xl p-4">
       <div className="flex items-center gap-3">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors[color]}`}>
           {icon}
         </div>
         <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted">{label}</p>
           <p className="text-lg font-black text-white">{value}</p>
-          {sub && <p className="text-xs text-slate-500">{sub}</p>}
+          {sub && <p className="text-xs text-muted">{sub}</p>}
         </div>
       </div>
     </div>
@@ -267,14 +267,14 @@ export default function MechanicsBody({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+      <div className="bg-panel border border-app rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
             <Users size={18} className="text-white" />
           </div>
           <div>
             <h1 className="text-lg font-black text-white">Mechanics Directory</h1>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+            <p className="text-[10px] text-muted uppercase tracking-wider">
               Manage workshop mechanics
             </p>
           </div>
@@ -282,7 +282,7 @@ export default function MechanicsBody({
         <div className="flex items-center gap-2">
           <Link
             href="/mechanics/commission"
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 hover:text-white rounded-xl text-xs font-bold no-underline transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted hover:text-white rounded-xl text-xs font-bold no-underline transition-all"
           >
             <FileText size={13} /> Commission
           </Link>
@@ -325,22 +325,22 @@ export default function MechanicsBody({
       </div>
 
       {/* Table */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-app flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
               />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name, contact..."
-                className="pl-9 pr-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-blue-500 w-64"
+                className="pl-9 pr-4 py-2 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-app outline-none focus:border-blue-500 w-64"
               />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-2">
               {filtered.length} of {rows.length}
             </span>
           </div>
@@ -354,21 +354,21 @@ export default function MechanicsBody({
 
         {refreshing ? (
           <div className="px-5 py-12 text-center">
-            <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">
+            <Loader2 size={24} className="animate-spin text-muted-2 mx-auto mb-2" />
+            <p className="text-muted-2 text-xs font-extrabold uppercase tracking-widest">
               Loading...
             </p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="px-5 py-12 text-center text-slate-600 text-sm">
-            <Users size={36} className="mx-auto mb-2 text-slate-700" />
+          <div className="px-5 py-12 text-center text-muted-2 text-sm">
+            <Users size={36} className="mx-auto mb-2 text-app" />
             <p>No mechanics found.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[#111520]">
-                <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+              <thead className="bg-panel-2">
+                <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                   <th className="text-left px-4 py-3">Name / Contact</th>
                   <th className="text-left px-4 py-3">Designation</th>
                   <th className="text-right px-4 py-3">Daily Salary</th>
@@ -391,7 +391,7 @@ export default function MechanicsBody({
                               alt={name}
                               width={36}
                               height={36}
-                              className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+                              className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-app cursor-zoom-in"
                               onDoubleClick={(e) => {
                                 e.stopPropagation();
                                 openImageLightbox(m.image_path, name);
@@ -401,13 +401,13 @@ export default function MechanicsBody({
                               }}
                             />
                           ) : (
-                            <div className="w-9 h-9 rounded-xl bg-[#1a2234] flex items-center justify-center text-slate-400 font-black text-sm">
+                            <div className="w-9 h-9 rounded-xl bg-panel-2 flex items-center justify-center text-muted font-black text-sm">
                               {name.slice(0, 2).toUpperCase()}
                             </div>
                           )}
                           <div>
-                            <p className="font-bold text-slate-200">{name}</p>
-                            <p className="text-xs text-slate-500">{m.contact}</p>
+                            <p className="font-bold text-app-2">{name}</p>
+                            <p className="text-xs text-muted">{m.contact}</p>
                           </div>
                         </div>
                       </td>
@@ -424,7 +424,7 @@ export default function MechanicsBody({
                           {Number(m.commission_percent || 0).toFixed(1)}%
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-slate-500 text-xs">
+                      <td className="px-4 py-3.5 text-muted text-xs">
                         {m.date_added
                           ? new Date(m.date_added).toLocaleDateString("en-IN", {
                               day: "2-digit",
@@ -439,7 +439,7 @@ export default function MechanicsBody({
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
                             m.status === 1
                               ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-                              : "bg-slate-500/10 border-slate-500/20 text-slate-500 hover:bg-slate-500/20"
+                              : "bg-muted/10 border-muted/20 text-muted hover:bg-muted/20"
                           }`}
                         >
                           {m.status === 1 ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
@@ -495,8 +495,8 @@ export default function MechanicsBody({
             if (e.target === e.currentTarget) setShowModal(false);
           }}
         >
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-app">
               <h3 className="font-bold text-white flex items-center gap-2">
                 {editing ? (
                   <>
@@ -510,7 +510,7 @@ export default function MechanicsBody({
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+                className="p-1.5 rounded-lg hover:bg-white/10 text-muted transition"
               >
                 <X size={16} />
               </button>
@@ -524,68 +524,68 @@ export default function MechanicsBody({
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     First Name <span className="text-red-400">*</span>
                   </label>
                   <input
                     value={form.firstname}
                     onChange={(e) => setForm((p) => ({ ...p, firstname: e.target.value }))}
                     placeholder="First name"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Middle Name
                   </label>
                   <input
                     value={form.middlename}
                     onChange={(e) => setForm((p) => ({ ...p, middlename: e.target.value }))}
                     placeholder="Optional"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Last Name <span className="text-red-400">*</span>
                   </label>
                   <input
                     value={form.lastname}
                     onChange={(e) => setForm((p) => ({ ...p, lastname: e.target.value }))}
                     placeholder="Last name"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Contact <span className="text-red-400">*</span>
                   </label>
                   <input
                     value={form.contact}
                     onChange={(e) => setForm((p) => ({ ...p, contact: e.target.value }))}
                     placeholder="Phone number"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Designation
                   </label>
                   <input
                     value={form.designation}
                     onChange={(e) => setForm((p) => ({ ...p, designation: e.target.value }))}
                     placeholder="e.g. Mechanic, Senior Mechanic"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Daily Salary (₹) <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -594,11 +594,11 @@ export default function MechanicsBody({
                     value={form.daily_salary}
                     onChange={(e) => setForm((p) => ({ ...p, daily_salary: e.target.value }))}
                     placeholder="0.00"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Commission (%)
                   </label>
                   <input
@@ -607,7 +607,7 @@ export default function MechanicsBody({
                     value={form.commission_percent}
                     onChange={(e) => setForm((p) => ({ ...p, commission_percent: e.target.value }))}
                     placeholder="0.0"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -631,7 +631,7 @@ export default function MechanicsBody({
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
+                  className="px-6 py-2.5 bg-panel-2 border border-app text-muted rounded-xl font-bold text-sm hover:bg-panel-2 transition"
                 >
                   Cancel
                 </button>

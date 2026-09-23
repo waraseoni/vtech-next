@@ -312,7 +312,7 @@ export default function ReportsCenter() {
             <h1 className="text-xl font-black tracking-tight text-white leading-none">
               Reports <span className="text-blue-500">Center</span>
             </h1>
-            <p className="text-[10px] text-slate-500 font-bold uppercase mt-1 tracking-widest">
+            <p className="text-[10px] text-muted font-bold uppercase mt-1 tracking-widest">
               Business Intelligence Dashboard
             </p>
           </div>
@@ -320,7 +320,7 @@ export default function ReportsCenter() {
 
         <div className="relative group w-full lg:w-96">
           <Search
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-blue-400 transition-colors"
             size={16}
           />
           <input
@@ -328,7 +328,7 @@ export default function ReportsCenter() {
             placeholder="Search all reports..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-[#111520] border border-white/5 rounded-xl text-xs text-slate-200 placeholder:text-slate-600 outline-none focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/5 transition-all shadow-xl"
+            className="w-full pl-11 pr-4 py-2.5 bg-panel-2 border border-white/5 rounded-xl text-xs text-app-2 placeholder:text-muted-2 outline-none focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/5 transition-all shadow-xl"
           />
         </div>
       </div>
@@ -344,7 +344,7 @@ export default function ReportsCenter() {
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 pr-4 py-1 border-r border-white/5">
                   <span className="text-blue-400">{cat.icon}</span>
-                  <h2 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  <h2 className="text-[9px] font-black uppercase tracking-[0.2em] text-muted">
                     {cat.name}
                   </h2>
                 </div>
@@ -356,7 +356,7 @@ export default function ReportsCenter() {
                   <Link
                     key={report.title}
                     href={report.href}
-                    className="group relative flex flex-col p-3.5 bg-[#111520]/60 border border-white/5 rounded-2xl hover:bg-white/[0.04] hover:border-blue-500/40 transition-all duration-300 hover:-translate-y-0.5 overflow-hidden shadow-lg shadow-black/20"
+                    className="group relative flex flex-col p-3.5 bg-panel-2/60 border border-white/5 rounded-2xl hover:bg-white/[0.04] hover:border-blue-500/40 transition-all duration-300 hover:-translate-y-0.5 overflow-hidden shadow-lg shadow-black/20"
                   >
                     {/* Compact Accent */}
                     <div
@@ -381,16 +381,16 @@ export default function ReportsCenter() {
                     </div>
 
                     <div className="space-y-1 relative">
-                      <h3 className="text-[12px] font-black text-slate-100 group-hover:text-blue-400 transition-colors truncate">
+                      <h3 className="text-[12px] font-black text-app-2 group-hover:text-blue-400 transition-colors truncate">
                         {report.title}
                       </h3>
-                      <p className="text-[10px] leading-tight text-slate-500 font-medium line-clamp-2 h-6">
+                      <p className="text-[10px] leading-tight text-muted font-medium line-clamp-2 h-6">
                         {report.description}
                       </p>
                     </div>
 
                     <div className="mt-2.5 pt-2.5 border-t border-white/[0.03] flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-300">
-                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">
+                      <span className="text-[9px] font-black text-muted uppercase tracking-wider">
                         Analyze
                       </span>
                       <ChevronRight
@@ -410,11 +410,11 @@ export default function ReportsCenter() {
       {filteredReports.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
           <div className="p-4 bg-white/5 rounded-full border border-white/5 opacity-50">
-            <Search size={32} className="text-slate-600" />
+            <Search size={32} className="text-muted-2" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-slate-400">No matching reports</h3>
-            <p className="text-[11px] text-slate-600 italic">
+            <h3 className="text-sm font-bold text-muted">No matching reports</h3>
+            <p className="text-[11px] text-muted-2 italic">
               Try a different keyword or category.
             </p>
           </div>
@@ -423,20 +423,20 @@ export default function ReportsCenter() {
 
       {/* Slim Footer */}
       <div className="pt-8 pb-4 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-700">
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-app">
           V-TECH PRO · INTELLIGENCE v4.2
         </p>
         <div className="flex items-center gap-4">
           <Link
             href="/help"
-            className="text-[9px] font-bold text-slate-600 hover:text-blue-400 transition-colors uppercase"
+            className="text-[9px] font-bold text-muted-2 hover:text-blue-400 transition-colors uppercase"
           >
             Help
           </Link>
           <div className="w-1 h-1 bg-slate-800 rounded-full" />
           <Link
             href="/settings"
-            className="text-[9px] font-bold text-slate-600 hover:text-blue-400 transition-colors uppercase"
+            className="text-[9px] font-bold text-muted-2 hover:text-blue-400 transition-colors uppercase"
           >
             Layout
           </Link>

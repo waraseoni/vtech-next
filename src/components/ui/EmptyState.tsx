@@ -28,11 +28,11 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   action,
 }) => (
   <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-    <div className="w-16 h-16 rounded-2xl bg-slate-500/10 border border-slate-500/20 flex items-center justify-center mb-4">
-      <Icon size={28} className="text-slate-500" />
+    <div className="w-16 h-16 rounded-2xl bg-muted/10 border border-muted/20 flex items-center justify-center mb-4">
+      <Icon size={28} className="text-muted" />
     </div>
-    <p className="text-sm font-bold text-slate-400">{title}</p>
-    {hint && <p className="text-xs text-slate-600 mt-1">{hint}</p>}
+    <p className="text-sm font-bold text-muted">{title}</p>
+    {hint && <p className="text-xs text-muted-2 mt-1">{hint}</p>}
     {action && (
       <button
         type="button"

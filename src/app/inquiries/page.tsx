@@ -214,9 +214,9 @@ function InquiriesPageInner() {
   // ══════════════════════════════════════════════════════════════════════════
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-[#0d1117] pb-24">
+      <div className="min-h-screen bg-app pb-24">
         {/* Mobile header */}
-        <div className="bg-[#0d1117] border-b border-[#21293d] px-4 pt-5 pb-4">
+        <div className="bg-app border-b border-app px-4 pt-5 pb-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center">
@@ -224,7 +224,7 @@ function InquiriesPageInner() {
               </div>
               <div>
                 <h1 className="text-lg font-black text-white leading-none">Inquiries</h1>
-                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mt-0.5">
+                <p className="text-[10px] text-muted-2 font-bold uppercase tracking-wider mt-0.5">
                   {monthLabel}
                 </p>
               </div>
@@ -250,16 +250,16 @@ function InquiriesPageInner() {
           {/* Mini stats */}
           <div className="grid grid-cols-3 gap-2 mb-4">
             {[
-              { label: "Total", value: filteredStats.total, color: "text-slate-300" },
+              { label: "Total", value: filteredStats.total, color: "text-app-2" },
               { label: "Unread", value: filteredStats.unread, color: "text-blue-400" },
               { label: "Read", value: filteredStats.read, color: "text-emerald-400" },
             ].map(({ label, value, color }) => (
               <div
                 key={label}
-                className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 text-center"
+                className="bg-panel border border-app rounded-xl p-2.5 text-center"
               >
                 <div className={`text-base font-black ${color}`}>{value}</div>
-                <div className="text-[9px] text-slate-700 font-bold uppercase tracking-widest">
+                <div className="text-[9px] text-app font-bold uppercase tracking-widest">
                   {label}
                 </div>
               </div>
@@ -270,19 +270,19 @@ function InquiriesPageInner() {
           <div className="flex items-center gap-2 mb-3">
             <button
               onClick={prevMonth}
-              className="w-8 h-8 bg-[#161b27] border border-[#21293d] rounded-lg flex items-center justify-center text-slate-500 hover:text-white transition-all"
+              className="w-8 h-8 bg-panel border border-app rounded-lg flex items-center justify-center text-muted hover:text-white transition-all"
             >
               <ChevronLeft size={14} />
             </button>
             <button
               onClick={currMonth}
-              className="flex-1 h-8 bg-[#161b27] border border-[#21293d] rounded-lg text-[11px] font-extrabold text-slate-500 hover:text-white transition-all"
+              className="flex-1 h-8 bg-panel border border-app rounded-lg text-[11px] font-extrabold text-muted hover:text-white transition-all"
             >
               {monthLabel}
             </button>
             <button
               onClick={nextMonth}
-              className="w-8 h-8 bg-[#161b27] border border-[#21293d] rounded-lg flex items-center justify-center text-slate-500 hover:text-white transition-all"
+              className="w-8 h-8 bg-panel border border-app rounded-lg flex items-center justify-center text-muted hover:text-white transition-all"
             >
               <ChevronRight size={14} />
             </button>
@@ -290,17 +290,17 @@ function InquiriesPageInner() {
 
           {/* Search row */}
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
             <input
               type="text"
               placeholder="Search inquiries..."
               value={mobileSearch}
               onChange={(e) => setMobileSearch(e.target.value)}
-              className="w-full pl-9 pr-10 py-2.5 bg-[#161b27] border border-[#21293d] text-slate-200 placeholder-slate-700 rounded-xl text-sm outline-none focus:border-blue-500/40 transition-all"
+              className="w-full pl-9 pr-10 py-2.5 bg-panel border border-app text-app-2 placeholder-slate-700 rounded-xl text-sm outline-none focus:border-blue-500/40 transition-all"
             />
             <button
               onClick={() => setShowFilterModal(true)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-[#111520] border border-[#21293d] p-1 rounded-lg text-slate-600"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-panel-2 border border-app p-1 rounded-lg text-muted-2"
             >
               <Filter size={12} />
             </button>
@@ -319,7 +319,7 @@ function InquiriesPageInner() {
                       : f === "read"
                         ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
                         : "bg-white/5 border-white/10 text-white"
-                    : "bg-[#161b27] border-[#21293d] text-slate-600"
+                    : "bg-panel border-app text-muted-2"
                 }`}
               >
                 {f}
@@ -333,8 +333,8 @@ function InquiriesPageInner() {
           {filteredMobile.map((inq) => (
             <div
               key={inq.id}
-              className={`bg-[#161b27] border rounded-2xl overflow-hidden transition-all ${
-                inq.status === 0 ? "border-blue-500/20" : "border-[#21293d]"
+              className={`bg-panel border rounded-2xl overflow-hidden transition-all ${
+                inq.status === 0 ? "border-blue-500/20" : "border-app"
               }`}
             >
               <div className={`h-0.5 ${inq.status === 0 ? "bg-blue-500" : "bg-emerald-600/40"}`} />
@@ -342,7 +342,7 @@ function InquiriesPageInner() {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="text-sm font-extrabold text-white">{inq.fullname}</div>
-                    <div className="text-[10px] text-slate-600 font-bold mt-0.5">
+                    <div className="text-[10px] text-muted-2 font-bold mt-0.5">
                       {fmtDate(inq.date_created)} · {daysAgo(inq.date_created)}
                     </div>
                   </div>
@@ -364,7 +364,7 @@ function InquiriesPageInner() {
                     )}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-[11px] text-slate-500 mb-3">
+                <div className="flex items-center gap-3 text-[11px] text-muted mb-3">
                   <span className="flex items-center gap-1">
                     <Phone size={9} className="text-emerald-400" />
                     {inq.contact}
@@ -374,19 +374,19 @@ function InquiriesPageInner() {
                     {inq.email}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+                <p className="text-xs text-muted line-clamp-2 mb-3 leading-relaxed">
                   {inq.message}
                 </p>
-                <div className="flex gap-2 pt-2.5 border-t border-[#21293d]">
+                <div className="flex gap-2 pt-2.5 border-t border-app">
                   <button
                     onClick={() => handleView(inq.id)}
-                    className="flex-1 flex items-center justify-center gap-1 py-2 bg-[#111520] border border-[#21293d] hover:border-blue-500/30 text-slate-500 hover:text-blue-400 rounded-xl text-[11px] font-extrabold transition-all"
+                    className="flex-1 flex items-center justify-center gap-1 py-2 bg-panel-2 border border-app hover:border-blue-500/30 text-muted hover:text-blue-400 rounded-xl text-[11px] font-extrabold transition-all"
                   >
                     <Eye size={12} /> View
                   </button>
                   <button
                     onClick={() => handleDelete(inq.id)}
-                    className="flex-1 flex items-center justify-center gap-1 py-2 bg-[#111520] border border-[#21293d] hover:border-red-500/30 text-slate-500 hover:text-red-400 rounded-xl text-[11px] font-extrabold transition-all"
+                    className="flex-1 flex items-center justify-center gap-1 py-2 bg-panel-2 border border-app hover:border-red-500/30 text-muted hover:text-red-400 rounded-xl text-[11px] font-extrabold transition-all"
                   >
                     <Trash2 size={12} /> Delete
                   </button>
@@ -395,9 +395,9 @@ function InquiriesPageInner() {
             </div>
           ))}
           {filteredMobile.length === 0 && (
-            <div className="py-20 text-center bg-[#161b27] border border-dashed border-[#21293d] rounded-2xl">
-              <MessageSquare size={32} className="mx-auto text-slate-800 mb-3" />
-              <p className="text-slate-600 font-bold text-sm">No inquiries found</p>
+            <div className="py-20 text-center bg-panel border border-dashed border-app rounded-2xl">
+              <MessageSquare size={32} className="mx-auto text-app mb-3" />
+              <p className="text-muted-2 font-bold text-sm">No inquiries found</p>
             </div>
           )}
         </div>
@@ -409,17 +409,17 @@ function InquiriesPageInner() {
             onClick={() => setShowFilterModal(false)}
           >
             <div
-              className="bg-[#161b27] border-t border-[#21293d] rounded-t-3xl w-full p-5 pb-8"
+              className="bg-panel border-t border-app rounded-t-3xl w-full p-5 pb-8"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="w-10 h-1 bg-[#21293d] rounded-full mx-auto mb-5" />
+              <div className="w-10 h-1 bg-panel-2 rounded-full mx-auto mb-5" />
               <div className="flex justify-between items-center mb-5">
                 <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
                   Filter
                 </h3>
                 <button
                   onClick={() => setShowFilterModal(false)}
-                  className="w-7 h-7 bg-[#111520] border border-[#21293d] rounded-lg flex items-center justify-center text-slate-500"
+                  className="w-7 h-7 bg-panel-2 border border-app rounded-lg flex items-center justify-center text-muted"
                 >
                   <X size={13} />
                 </button>
@@ -430,14 +430,14 @@ function InquiriesPageInner() {
                   { label: "To", val: toDate, set: setToDate },
                 ].map(({ label, val, set }) => (
                   <div key={label}>
-                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-1.5">
+                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-1.5">
                       {label}
                     </label>
                     <input
                       type="date"
                       value={val}
                       onChange={(e) => set(e.target.value)}
-                      className="w-full bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none [color-scheme:dark]"
+                      className="w-full bg-panel-2 border border-app text-app-2 rounded-xl px-4 py-2.5 text-sm outline-none [color-scheme:dark]"
                     />
                   </div>
                 ))}
@@ -448,7 +448,7 @@ function InquiriesPageInner() {
                       setToDate(lastOfMon());
                       setShowFilterModal(false);
                     }}
-                    className="flex-1 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl text-sm font-extrabold"
+                    className="flex-1 py-2.5 bg-panel-2 border border-app text-muted rounded-xl text-sm font-extrabold"
                   >
                     Reset
                   </button>
@@ -485,9 +485,9 @@ function InquiriesPageInner() {
   // ── DESKTOP ───────────────────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#0d1117] pb-16 font-sans">
+    <div className="min-h-screen bg-app pb-16 font-sans">
       {/* ── HERO HEADER ── */}
-      <div className="relative overflow-hidden bg-[#0d1117] border-b border-[#21293d]">
+      <div className="relative overflow-hidden bg-app border-b border-app">
         <div
           className="absolute inset-0 opacity-[0.025]"
           style={{
@@ -504,7 +504,7 @@ function InquiriesPageInner() {
               <div className="relative w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/25 flex-shrink-0">
                 <MessageSquare size={26} className="text-white" />
                 {allTimeStats.unread > 0 && (
-                  <div className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] bg-red-500 rounded-full border-2 border-[#0d1117] flex items-center justify-center">
+                  <div className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] bg-red-500 rounded-full border-2 border-app flex items-center justify-center">
                     <span className="text-[9px] font-black text-white px-1">
                       {allTimeStats.unread}
                     </span>
@@ -513,7 +513,7 @@ function InquiriesPageInner() {
               </div>
               <div>
                 <h1 className="text-2xl font-black text-white tracking-tight">Inquiries</h1>
-                <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.2em] mt-0.5">
+                <p className="text-muted-2 text-xs font-bold uppercase tracking-[0.2em] mt-0.5">
                   {monthLabel} · {filteredStats.total} messages
                 </p>
               </div>
@@ -546,9 +546,9 @@ function InquiriesPageInner() {
                 label: "This Period",
                 value: filteredStats.total,
                 icon: MessageSquare,
-                color: "text-slate-300",
+                color: "text-app-2",
                 grad: "from-slate-600/10 to-slate-700/5",
-                border: "border-slate-500/15",
+                border: "border-muted/15",
               },
               {
                 label: "Unread",
@@ -574,7 +574,7 @@ function InquiriesPageInner() {
                 <Icon size={18} className={`${color} flex-shrink-0`} />
                 <div>
                   <div className={`text-2xl font-black ${color}`}>{value}</div>
-                  <div className="text-[9px] text-slate-700 font-bold uppercase tracking-widest mt-0.5">
+                  <div className="text-[9px] text-app font-bold uppercase tracking-widest mt-0.5">
                     {label}
                   </div>
                 </div>
@@ -586,14 +586,14 @@ function InquiriesPageInner() {
 
       <div className="max-w-7xl mx-auto px-5 py-4 space-y-4">
         {/* ── FILTER BAR ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4">
           <div className="flex flex-wrap items-end gap-3">
             {[
               { label: "From", val: fromDate, set: setFromDate },
               { label: "To", val: toDate, set: setToDate },
             ].map(({ label, val, set }) => (
               <div key={label}>
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-1.5">
                   <span className="flex items-center gap-1">
                     <CalendarDays size={9} /> {label}
                   </span>
@@ -609,14 +609,14 @@ function InquiriesPageInner() {
                       statusFilter
                     );
                   }}
-                  className="bg-[#111520] border border-[#21293d] text-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-500/50 transition-all [color-scheme:dark]"
+                  className="bg-panel-2 border border-app text-app-2 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-blue-500/50 transition-all [color-scheme:dark]"
                 />
               </div>
             ))}
 
             {/* Status filter pills */}
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-1.5">
+              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-1.5">
                 Status
               </label>
               <div className="flex gap-1.5">
@@ -631,7 +631,7 @@ function InquiriesPageInner() {
                           : f === "read"
                             ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
                             : "bg-white/5 border-white/10 text-white"
-                        : "bg-[#111520] border-[#21293d] text-slate-600 hover:text-slate-400"
+                        : "bg-panel-2 border-app text-muted-2 hover:text-muted"
                     }`}
                   >
                     {f}
@@ -644,19 +644,19 @@ function InquiriesPageInner() {
             <div className="flex items-center gap-1.5 ml-auto">
               <button
                 onClick={prevMonth}
-                className="w-9 h-9 bg-[#111520] border border-[#21293d] hover:border-slate-600 text-slate-500 hover:text-white rounded-xl flex items-center justify-center transition-all"
+                className="w-9 h-9 bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-xl flex items-center justify-center transition-all"
               >
                 <ChevronLeft size={15} />
               </button>
               <button
                 onClick={currMonth}
-                className="flex items-center gap-1.5 px-3 h-9 bg-[#111520] border border-[#21293d] hover:border-blue-500/30 text-slate-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 h-9 bg-panel-2 border border-app hover:border-blue-500/30 text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <RefreshCw size={11} /> This Month
               </button>
               <button
                 onClick={nextMonth}
-                className="w-9 h-9 bg-[#111520] border border-[#21293d] hover:border-slate-600 text-slate-500 hover:text-white rounded-xl flex items-center justify-center transition-all"
+                className="w-9 h-9 bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-xl flex items-center justify-center transition-all"
               >
                 <ChevronRight size={15} />
               </button>
@@ -665,15 +665,15 @@ function InquiriesPageInner() {
         </div>
 
         {/* ── TABLE ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#111520] border-b border-[#21293d]">
+              <tr className="bg-panel-2 border-b border-app">
                 {["#", "Inquirer", "Contact", "Date", "Message Preview", "Status", "Actions"].map(
                   (h, i) => (
                     <th
                       key={h}
-                      className={`px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 ${
+                      className={`px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-muted-2 ${
                         i === 0
                           ? "text-left w-10"
                           : i === 5
@@ -700,7 +700,7 @@ function InquiriesPageInner() {
                   }`}
                 >
                   {/* # */}
-                  <td className="px-4 py-3.5 text-slate-700 text-xs">{idx + 1}</td>
+                  <td className="px-4 py-3.5 text-app text-xs">{idx + 1}</td>
 
                   {/* Inquirer */}
                   <td className="px-4 py-3.5">
@@ -709,18 +709,18 @@ function InquiriesPageInner() {
                         className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-black ${
                           inq.status === 0
                             ? "bg-blue-500/15 border border-blue-500/20 text-blue-400"
-                            : "bg-slate-700/40 border border-[#21293d] text-slate-500"
+                            : "bg-slate-700/40 border border-app text-muted"
                         }`}
                       >
                         {inq.fullname.charAt(0).toUpperCase()}
                       </div>
                       <div>
                         <div
-                          className={`font-extrabold text-sm ${inq.status === 0 ? "text-white" : "text-slate-300"}`}
+                          className={`font-extrabold text-sm ${inq.status === 0 ? "text-white" : "text-app-2"}`}
                         >
                           {inq.fullname}
                         </div>
-                        <div className="text-[10px] text-slate-600 truncate max-w-[140px]">
+                        <div className="text-[10px] text-muted-2 truncate max-w-[140px]">
                           {inq.email}
                         </div>
                       </div>
@@ -740,16 +740,16 @@ function InquiriesPageInner() {
 
                   {/* Date */}
                   <td className="px-4 py-3.5">
-                    <div className="text-xs text-slate-400 font-medium">
+                    <div className="text-xs text-muted font-medium">
                       {fmtDate(inq.date_created)}
                     </div>
                     <div className="flex items-center gap-1 mt-0.5">
-                      <Clock size={9} className="text-slate-700" />
-                      <span className="text-[10px] text-slate-600">
+                      <Clock size={9} className="text-app" />
+                      <span className="text-[10px] text-muted-2">
                         {fmtTime(inq.date_created)}
                       </span>
                     </div>
-                    <div className="text-[9px] text-slate-700 mt-0.5">
+                    <div className="text-[9px] text-app mt-0.5">
                       {daysAgo(inq.date_created)}
                     </div>
                   </td>
@@ -757,7 +757,7 @@ function InquiriesPageInner() {
                   {/* Message preview */}
                   <td className="px-4 py-3.5 max-w-xs">
                     <p
-                      className="text-xs text-slate-500 truncate leading-relaxed"
+                      className="text-xs text-muted truncate leading-relaxed"
                       title={inq.message}
                     >
                       {inq.message}
@@ -790,14 +790,14 @@ function InquiriesPageInner() {
                     <div className="flex justify-center gap-1.5">
                       <button
                         onClick={() => handleView(inq.id)}
-                        className="p-1.5 bg-[#21293d] hover:bg-blue-600/30 border border-[#21293d] hover:border-blue-500/40 rounded-lg text-slate-600 hover:text-blue-400 transition-all"
+                        className="p-1.5 bg-panel-2 hover:bg-blue-600/30 border border-app hover:border-blue-500/40 rounded-lg text-muted-2 hover:text-blue-400 transition-all"
                         title="View"
                       >
                         <Eye size={13} />
                       </button>
                       <button
                         onClick={() => handleDelete(inq.id)}
-                        className="p-1.5 bg-[#21293d] hover:bg-red-600/20 border border-[#21293d] hover:border-red-500/40 rounded-lg text-slate-600 hover:text-red-400 transition-all"
+                        className="p-1.5 bg-panel-2 hover:bg-red-600/20 border border-app hover:border-red-500/40 rounded-lg text-muted-2 hover:text-red-400 transition-all"
                         title="Delete"
                       >
                         <Trash2 size={13} />
@@ -810,9 +810,9 @@ function InquiriesPageInner() {
               {inquiries.length === 0 && (
                 <tr>
                   <td colSpan={7} className="py-20 text-center">
-                    <MessageSquare size={36} className="mx-auto text-slate-800 mb-3" />
-                    <p className="text-slate-600 font-bold text-sm">No inquiries found</p>
-                    <p className="text-slate-700 text-xs mt-1">
+                    <MessageSquare size={36} className="mx-auto text-app mb-3" />
+                    <p className="text-muted-2 font-bold text-sm">No inquiries found</p>
+                    <p className="text-app text-xs mt-1">
                       Try changing the date range or status filter
                     </p>
                   </td>
@@ -822,17 +822,17 @@ function InquiriesPageInner() {
 
             {inquiries.length > 0 && (
               <tfoot>
-                <tr className="bg-[#111520] border-t border-[#21293d]">
+                <tr className="bg-panel-2 border-t border-app">
                   <td
                     colSpan={5}
-                    className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-600"
+                    className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-muted-2"
                   >
                     {filteredStats.total} total · {filteredStats.unread} unread ·{" "}
                     {filteredStats.read} read
                   </td>
                   <td
                     colSpan={2}
-                    className="px-4 py-3 text-[10px] text-slate-700 font-bold text-right"
+                    className="px-4 py-3 text-[10px] text-app font-bold text-right"
                   >
                     {new Date(fromDate).toLocaleDateString("en-IN", {
                       day: "2-digit",

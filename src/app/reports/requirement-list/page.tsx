@@ -199,13 +199,13 @@ function RequirementListContent() {
       </div>
 
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-[2rem] p-6 shadow-2xl relative overflow-hidden no-print">
+      <div className="bg-panel border border-app rounded-[2rem] p-6 shadow-2xl relative overflow-hidden no-print">
         <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-3xl rounded-full -mr-20 -mt-20 pointer-events-none" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative">
           <div className="flex items-center gap-5">
             <Link
               href="/inventory"
-              className="w-12 h-12 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-2xl text-slate-500 hover:text-white hover:bg-amber-600/10 hover:border-amber-500/40 transition-all group"
+              className="w-12 h-12 flex items-center justify-center bg-app border border-app rounded-2xl text-muted hover:text-white hover:bg-amber-600/10 hover:border-amber-500/40 transition-all group"
             >
               <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
             </Link>
@@ -214,7 +214,7 @@ function RequirementListContent() {
             </div>
             <div>
               <h1 className="text-3xl font-black text-white tracking-tight">Requirement List</h1>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-[0.3em]">
+              <p className="text-xs text-muted font-bold uppercase tracking-[0.3em]">
                 Low Stock Spares
               </p>
             </div>
@@ -222,7 +222,7 @@ function RequirementListContent() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setRefreshKey((k) => k + 1)}
-              className="flex items-center gap-2 px-5 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all"
+              className="flex items-center gap-2 px-5 py-3 bg-app border border-app rounded-2xl text-xs font-black uppercase tracking-widest text-muted hover:text-white transition-all"
             >
               <RefreshCw size={14} /> Refresh
             </button>
@@ -272,21 +272,21 @@ function RequirementListContent() {
       </div>
 
       {/* Search */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-[2rem] p-5 no-print">
+      <div className="bg-panel border border-app rounded-[2rem] p-5 no-print">
         <div className="flex flex-col md:flex-row md:items-center gap-3">
           <div className="relative w-full md:flex-1 lg:max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-2" size={16} />
             <input
               type="text"
               placeholder="Search by name, HSN or supplier..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-12 pr-12 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-sm text-slate-200 outline-none focus:border-amber-500 transition-all"
+              className="w-full pl-12 pr-12 py-3 bg-app border border-app rounded-2xl text-sm text-app-2 outline-none focus:border-amber-500 transition-all"
             />
             {search && (
               <button
                 onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-[#21293d] text-slate-400 hover:text-white hover:bg-slate-700/60 transition-all"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-panel-2 text-muted hover:text-white hover:bg-slate-700/60 transition-all"
                 title="Clear search"
               >
                 <X size={13} />
@@ -294,7 +294,7 @@ function RequirementListContent() {
             )}
           </div>
           <div className="flex items-center gap-2 md:justify-end">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-muted">
               <Layers size={13} className="text-amber-400" />
               {filtered.length} item{filtered.length === 1 ? "" : "s"}
             </span>
@@ -314,16 +314,16 @@ function RequirementListContent() {
           <Loader2 size={48} className="animate-spin text-amber-500" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-[#161b27] border border-[#21293d] rounded-[2.5rem] py-24 text-center">
+        <div className="bg-panel border border-app rounded-[2.5rem] py-24 text-center">
           <PackageX size={48} className="mx-auto text-emerald-500 mb-4" />
-          <p className="text-slate-400 font-bold">
+          <p className="text-muted font-bold">
             Koi low-stock spare nahi mila. Sab stock theek hai! 🎉
           </p>
         </div>
       ) : (
         <>
           {/* ── DESKTOP TABLE ── */}
-          <div className="hidden md:block overflow-x-auto bg-[#161b27] border border-[#21293d] rounded-[1.5rem] shadow-2xl">
+          <div className="hidden md:block overflow-x-auto bg-panel border border-app rounded-[1.5rem] shadow-2xl">
             <table className="w-full text-sm">
               <thead className="theme-panel-2">
                 <tr>
@@ -331,7 +331,7 @@ function RequirementListContent() {
                     (h) => (
                       <th
                         key={h}
-                        className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap"
+                        className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap"
                       >
                         {h}
                       </th>
@@ -359,10 +359,10 @@ function RequirementListContent() {
                           {item.name}
                         </Link>
                         {item.description && (
-                          <div className="text-[10px] text-slate-600">{item.description}</div>
+                          <div className="text-[10px] text-muted-2">{item.description}</div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">
+                      <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
                         {item.hsn || "—"}
                       </td>
                       <td className="px-4 py-3">
@@ -392,13 +392,13 @@ function RequirementListContent() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2 w-32">
-                          <div className="h-1.5 flex-1 bg-[#0d1117] rounded-full overflow-hidden">
+                          <div className="h-1.5 flex-1 bg-app rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full ${isOut ? "bg-red-500" : "bg-amber-500"}`}
                               style={{ width: `${pct}%` }}
                             />
                           </div>
-                          <span className="text-[10px] text-slate-500 w-8 text-right">
+                          <span className="text-[10px] text-muted w-8 text-right">
                             {pct.toFixed(0)}%
                           </span>
                         </div>
@@ -418,7 +418,7 @@ function RequirementListContent() {
                             ))}
                           </div>
                         ) : (
-                          <span className="text-[10px] text-slate-600 italic">
+                          <span className="text-[10px] text-muted-2 italic">
                             <Link href="/products" className="text-amber-700 dark:text-amber-500">
                               link in Products
                             </Link>
@@ -433,14 +433,14 @@ function RequirementListContent() {
           </div>
 
           {/* ── DESKTOP PAGINATION ── */}
-          <div className="hidden md:flex items-center justify-between flex-wrap gap-3 bg-[#161b27] border border-[#21293d] rounded-2xl p-3 no-print">
+          <div className="hidden md:flex items-center justify-between flex-wrap gap-3 bg-panel border border-app rounded-2xl p-3 no-print">
             <div className="flex items-center gap-3 flex-wrap px-2">
-              <label className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <label className="flex items-center gap-2 text-[11px] font-bold text-muted uppercase tracking-wider">
                 Rows/page
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="bg-[#0d1117] border border-[#21293d] rounded-lg px-2 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-amber-500/50"
+                  className="bg-app border border-app rounded-lg px-2 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-amber-500/50"
                 >
                   <option value={10}>10</option>
                   <option value={25}>25</option>
@@ -449,9 +449,9 @@ function RequirementListContent() {
                   <option value={0}>All</option>
                 </select>
               </label>
-              <p className="text-xs text-slate-500 font-bold">
+              <p className="text-xs text-muted font-bold">
                 Showing{" "}
-                <span className="text-slate-300">
+                <span className="text-app-2">
                   {filtered.length > 0
                     ? `${(safePage - 1) * effectiveSize + 1}–${Math.min(
                         safePage * effectiveSize,
@@ -459,7 +459,7 @@ function RequirementListContent() {
                       )}`
                     : "0–0"}
                 </span>{" "}
-                of <span className="text-slate-300">{filtered.length}</span> items
+                of <span className="text-app-2">{filtered.length}</span> items
               </p>
             </div>
             {totalPages > 1 && (
@@ -467,7 +467,7 @@ function RequirementListContent() {
                 <button
                   onClick={() => setPage(1)}
                   disabled={safePage <= 1}
-                  className="w-9 h-9 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-300 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  className="w-9 h-9 flex items-center justify-center bg-app border border-app rounded-xl text-app-2 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   title="First page"
                 >
                   <ChevronsLeft size={15} />
@@ -475,7 +475,7 @@ function RequirementListContent() {
                 <button
                   onClick={() => setPage(safePage - 1)}
                   disabled={safePage <= 1}
-                  className="w-9 h-9 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-300 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  className="w-9 h-9 flex items-center justify-center bg-app border border-app rounded-xl text-app-2 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   title="Previous page"
                 >
                   <ChevronLeft size={15} />
@@ -483,7 +483,7 @@ function RequirementListContent() {
                 <button
                   onClick={() => setPage(safePage + 1)}
                   disabled={safePage >= totalPages}
-                  className="w-9 h-9 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-300 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  className="w-9 h-9 flex items-center justify-center bg-app border border-app rounded-xl text-app-2 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   title="Next page"
                 >
                   <ChevronRight size={15} />
@@ -491,12 +491,12 @@ function RequirementListContent() {
                 <button
                   onClick={() => setPage(totalPages)}
                   disabled={safePage >= totalPages}
-                  className="w-9 h-9 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-300 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  className="w-9 h-9 flex items-center justify-center bg-app border border-app rounded-xl text-app-2 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   title="Last page"
                 >
                   <ChevronsRight size={15} />
                 </button>
-                <span className="ml-1 text-[11px] font-bold text-slate-500">
+                <span className="ml-1 text-[11px] font-bold text-muted">
                   {safePage} / {totalPages}
                 </span>
               </div>
@@ -514,7 +514,7 @@ function RequirementListContent() {
               return (
                 <div
                   key={item.id}
-                  className="bg-[#161b27] border border-[#21293d] rounded-[1.5rem] p-5 shadow-2xl"
+                  className="bg-panel border border-app rounded-[1.5rem] p-5 shadow-2xl"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -524,7 +524,7 @@ function RequirementListContent() {
                       >
                         {item.name}
                       </Link>
-                      <p className="text-[10px] text-slate-600 font-bold mt-0.5">
+                      <p className="text-[10px] text-muted-2 font-bold mt-0.5">
                         {item.hsn ? `HSN ${item.hsn}` : "No HSN"}
                         {item.description ? ` · ${item.description.slice(0, 40)}` : ""}
                       </p>
@@ -547,38 +547,38 @@ function RequirementListContent() {
                   </div>
 
                   <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                    <div className="bg-[#0d1117] border border-[#21293d] rounded-xl p-3">
+                    <div className="bg-app border border-app rounded-xl p-3">
                     <div
                       className={`text-xl font-black ${isOut ? "text-red-400" : "text-amber-700 dark:text-amber-400"}`}
                     >
                         {item.current_stock}
                       </div>
-                      <div className="text-[9px] font-black uppercase tracking-widest text-slate-600 mt-0.5">
+                      <div className="text-[9px] font-black uppercase tracking-widest text-muted-2 mt-0.5">
                         Current
                       </div>
                     </div>
-                    <div className="bg-[#0d1117] border border-[#21293d] rounded-xl p-3">
+                    <div className="bg-app border border-app rounded-xl p-3">
                       <div className="text-xl font-black text-white">{item.effective_alert}</div>
-                      <div className="text-[9px] font-black uppercase tracking-widest text-slate-600 mt-0.5">
+                      <div className="text-[9px] font-black uppercase tracking-widest text-muted-2 mt-0.5">
                         Min Req
                       </div>
                     </div>
-                    <div className="bg-[#0d1117] border border-[#21293d] rounded-xl p-3">
+                    <div className="bg-app border border-app rounded-xl p-3">
                       <div className="text-xl font-black text-emerald-400">
                         +{item.need_to_order}
                       </div>
-                      <div className="text-[9px] font-black uppercase tracking-widest text-slate-600 mt-0.5">
+                      <div className="text-[9px] font-black uppercase tracking-widest text-muted-2 mt-0.5">
                         To Order
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-4">
-                    <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-1.5">
+                    <div className="flex justify-between text-[10px] font-bold text-muted-2 mb-1.5">
                       <span>Stock level</span>
                       <span>{pct.toFixed(0)}%</span>
                     </div>
-                    <div className="h-2 bg-[#0d1117] rounded-full overflow-hidden">
+                    <div className="h-2 bg-app rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${
                           isOut ? "bg-red-500" : "bg-amber-500"
@@ -588,7 +588,7 @@ function RequirementListContent() {
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-[#21293d]">
+                  <div className="mt-4 pt-4 border-t border-app">
                     {item.suppliers.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {item.suppliers.map((s) => (
@@ -603,7 +603,7 @@ function RequirementListContent() {
                         ))}
                       </div>
                     ) : (
-                      <span className="text-[10px] text-slate-600 italic">
+                      <span className="text-[10px] text-muted-2 italic">
                         No supplier linked —{" "}
                         <Link href="/products" className="text-amber-700 dark:text-amber-500 no-print">
                           link in Products
@@ -621,11 +621,11 @@ function RequirementListContent() {
               ref={mobileSentinelRef}
               className="flex flex-col items-center justify-center gap-2 py-6 md:hidden no-print"
             >
-              <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500">
+              <div className="flex items-center gap-2 text-[11px] font-bold text-muted">
                 <Loader2 size={14} className="animate-spin text-amber-500" />
                 Loading more...
               </div>
-              <p className="text-[10px] text-slate-600">
+              <p className="text-[10px] text-muted-2">
                 {mobileVisible} of {filtered.length} items loaded — scroll for more
               </p>
             </div>

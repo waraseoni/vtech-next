@@ -428,11 +428,11 @@ export default function InventoryPage() {
   // ── Role guard ── Stock Overview is admin-only ─────────────────────────
   if (userRole !== "admin" && userRole !== "developer") {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-6">
+      <div className="min-h-screen bg-app flex items-center justify-center px-6">
         <div className="text-center">
-          <ShieldCheck size={40} className="text-slate-700 mx-auto mb-3" />
+          <ShieldCheck size={40} className="text-app mx-auto mb-3" />
           <h1 className="text-lg font-black text-white tracking-tight">Admin only</h1>
-          <p className="text-slate-600 text-sm mt-1">
+          <p className="text-muted-2 text-sm mt-1">
             Stock Overview sirf admin dekh sakta hai.
           </p>
         </div>
@@ -442,9 +442,9 @@ export default function InventoryPage() {
 
   // ══════════════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
+    <div className="min-h-screen bg-app font-sans pb-16">
       {/* ── HERO HEADER ── */}
-      <div className="relative overflow-hidden bg-[#0d1117] border-b border-[#21293d]">
+      <div className="relative overflow-hidden bg-app border-b border-app">
         {/* Background grid pattern */}
         <div
           className="absolute inset-0 opacity-[0.03]"
@@ -466,13 +466,13 @@ export default function InventoryPage() {
                 <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/30">
                   <Boxes size={26} className="text-white" />
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-[#0d1117]" />
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-app" />
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none">
                   Inventory
                 </h1>
-                <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.2em] mt-1">
+                <p className="text-muted-2 text-xs font-bold uppercase tracking-[0.2em] mt-1">
                   {stats.total} Products · Stock Management
                 </p>
               </div>
@@ -488,26 +488,26 @@ export default function InventoryPage() {
               </button>
               <Link
                 href="/inventory/locate"
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <MapPin size={13} /> Spare Finder
               </Link>
               <Link
                 href="/inventory/purchase-orders"
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <FileText size={13} /> Purchase Orders
               </Link>
               <Link
                 href="/inventory/box-labels"
                 title="Har box ka printable label — box ID, QR aur items list (qty ke bina)"
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <Boxes size={13} /> Box Labels
               </Link>
               <button
                 onClick={openPrintModal}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <Printer size={13} /> Labels
               </button>
@@ -520,14 +520,14 @@ export default function InventoryPage() {
               <button
                 onClick={() => fetchProducts(true)}
                 disabled={refreshing}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
                 {refreshing ? "Refreshing..." : "Refresh"}
               </button>
               <button
                 onClick={handlePrint}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <Printer size={13} /> Print
               </button>
@@ -593,7 +593,7 @@ export default function InventoryPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className={`text-xl font-black ${text}`}>{value}</div>
-                    <div className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">
+                    <div className="text-[9px] text-muted-2 font-bold uppercase tracking-widest mt-0.5">
                       {label}
                     </div>
                   </div>
@@ -614,7 +614,7 @@ export default function InventoryPage() {
           {/* Search */}
           <div className="relative flex-1">
             <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2"
               size={15}
             />
             <input
@@ -622,12 +622,12 @@ export default function InventoryPage() {
               placeholder="Search products, descriptions, barcode..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 bg-[#161b27] border border-[#21293d] text-slate-200 placeholder-slate-600 rounded-xl text-sm focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all"
+              className="w-full pl-10 pr-10 py-2.5 bg-panel border border-app text-app-2 placeholder-slate-600 rounded-xl text-sm focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-2 hover:text-muted"
               >
                 <X size={14} />
               </button>
@@ -648,16 +648,16 @@ export default function InventoryPage() {
               const styles: Record<string, string> = {
                 blue: active
                   ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-[#161b27] text-slate-500 border-[#21293d] hover:border-blue-500/40",
+                  : "bg-panel text-muted border-app hover:border-blue-500/40",
                 emerald: active
                   ? "bg-emerald-600 text-white border-emerald-600"
-                  : "bg-[#161b27] text-slate-500 border-[#21293d] hover:border-emerald-500/40",
+                  : "bg-panel text-muted border-app hover:border-emerald-500/40",
                 amber: active
                   ? "bg-amber-500 text-white border-amber-500"
-                  : "bg-[#161b27] text-slate-500 border-[#21293d] hover:border-amber-500/40",
+                  : "bg-panel text-muted border-app hover:border-amber-500/40",
                 red: active
                   ? "bg-red-600 text-white border-red-600"
-                  : "bg-[#161b27] text-slate-500 border-[#21293d] hover:border-red-500/40",
+                  : "bg-panel text-muted border-app hover:border-red-500/40",
               };
               return (
                 <button
@@ -679,10 +679,10 @@ export default function InventoryPage() {
 
         {/* Results indicator */}
         {(searchTerm || filter !== "all" || pageSize !== 25) && (
-          <div className="mt-2 flex items-center gap-2 text-xs text-slate-600">
+          <div className="mt-2 flex items-center gap-2 text-xs text-muted-2">
             <span>
               Showing{" "}
-              <span className="text-slate-400 font-bold">
+              <span className="text-muted font-bold">
                 {filtered.length === 0 ? 0 : (safePage - 1) * (pageSize || filtered.length) + 1}-
                 {Math.min(safePage * (pageSize || filtered.length), filtered.length)}
               </span>{" "}
@@ -708,12 +708,12 @@ export default function InventoryPage() {
       {/* ══════════════════════════════════════════════════════════════════ */}
       {!isMobile && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+          <div className="bg-panel border border-app rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-[#111520] border-b border-[#21293d]">
-                    <th className="px-4 py-3 text-left text-[10px] font-extrabold uppercase tracking-wider text-slate-600 w-10">
+                  <tr className="bg-panel-2 border-b border-app">
+                    <th className="px-4 py-3 text-left text-[10px] font-extrabold uppercase tracking-wider text-muted-2 w-10">
                       #
                     </th>
 
@@ -721,7 +721,7 @@ export default function InventoryPage() {
                     <th className="px-4 py-3 text-left w-[280px]">
                       <button
                         onClick={() => toggleSort("name")}
-                        className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 hover:text-slate-400 transition-colors"
+                        className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-muted-2 hover:text-muted transition-colors"
                       >
                         Product{" "}
                         <ArrowUpDown
@@ -731,7 +731,7 @@ export default function InventoryPage() {
                       </button>
                     </th>
 
-                    <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600 w-28">
+                    <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-muted-2 w-28">
                       Stock
                     </th>
 
@@ -739,7 +739,7 @@ export default function InventoryPage() {
                     <th className="px-4 py-3 text-right w-20">
                       <button
                         onClick={() => toggleSort("available")}
-                        className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 hover:text-slate-400 transition-colors ml-auto"
+                        className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-muted-2 hover:text-muted transition-colors ml-auto"
                       >
                         Avail{" "}
                         <ArrowUpDown
@@ -753,7 +753,7 @@ export default function InventoryPage() {
                     <th className="px-4 py-3 text-right w-20">
                       <button
                         onClick={() => toggleSort("total_sold")}
-                        className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 hover:text-slate-400 transition-colors ml-auto"
+                        className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-muted-2 hover:text-muted transition-colors ml-auto"
                       >
                         Sold{" "}
                         <ArrowUpDown
@@ -767,7 +767,7 @@ export default function InventoryPage() {
                     <th className="px-4 py-3 text-right w-24">
                       <button
                         onClick={() => toggleSort("stock_value")}
-                        className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-600 hover:text-slate-400 transition-colors ml-auto"
+                        className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-muted-2 hover:text-muted transition-colors ml-auto"
                       >
                         Value{" "}
                         <ArrowUpDown
@@ -777,13 +777,13 @@ export default function InventoryPage() {
                       </button>
                     </th>
 
-                    <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600 w-24">
+                    <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-muted-2 w-24">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600 w-32">
+                    <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-muted-2 w-32">
                       Place
                     </th>
-                    <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-slate-600 w-20">
+                    <th className="px-4 py-3 text-center text-[10px] font-extrabold uppercase tracking-wider text-muted-2 w-20">
                       Action
                     </th>
                   </tr>
@@ -794,7 +794,7 @@ export default function InventoryPage() {
                     const st = stockStatusStyle(p.available, p.alert_quantity);
                     return (
                       <tr key={p.id} className="group hover:bg-white/[0.02] transition-colors">
-                        <td className="px-4 py-3 text-slate-700 text-xs">
+                        <td className="px-4 py-3 text-app text-xs">
                           {pageSize === 0 ? idx + 1 : (safePage - 1) * pageSize + idx + 1}
                         </td>
 
@@ -806,7 +806,7 @@ export default function InventoryPage() {
                                 alt={p.name}
                                 width={48}
                                 height={48}
-                                className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+                                className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-app cursor-zoom-in"
                                 onDoubleClick={(e) => {
                                   e.stopPropagation();
                                   openImageLightbox(p.image_path, p.name);
@@ -824,13 +824,13 @@ export default function InventoryPage() {
                             )}
                             <div className="min-w-0">
                               <div
-                                className="font-bold text-slate-200 text-sm truncate max-w-[250px]"
+                                className="font-bold text-app-2 text-sm truncate max-w-[250px]"
                                 title={p.name}
                               >
                                 {p.name}
                               </div>
                               <div
-                                className="text-xs text-slate-600 truncate max-w-[250px]"
+                                className="text-xs text-muted-2 truncate max-w-[250px]"
                                 title={p.description}
                               >
                                 {p.description}
@@ -845,7 +845,7 @@ export default function InventoryPage() {
                                       printBarcodeLabels([{ value: p.barcode!, name: p.name }])
                                     }
                                     title="Print label"
-                                    className="text-slate-700 hover:text-slate-300 transition-colors"
+                                    className="text-app hover:text-app-2 transition-colors"
                                   >
                                     <Printer size={10} />
                                   </button>
@@ -858,7 +858,7 @@ export default function InventoryPage() {
                         {/* Stock bar cell */}
                         <td className="px-4 py-3 w-28">
                           <div className="flex flex-col gap-1 items-end">
-                            <span className="text-[10px] text-slate-600">{p.total_in} in</span>
+                            <span className="text-[10px] text-muted-2">{p.total_in} in</span>
                             <StockBar
                               available={p.available}
                               total_in={p.total_in}
@@ -877,12 +877,12 @@ export default function InventoryPage() {
                         </td>
 
                         <td className="px-4 py-3 text-right">
-                          <span className="text-slate-400 font-bold">{p.total_sold}</span>
+                          <span className="text-muted font-bold">{p.total_sold}</span>
                         </td>
 
                         <td className="px-4 py-3 text-right">
                           <span
-                            className={`text-xs font-bold ${p.stock_value > 0 ? "text-teal-400" : "text-slate-700"}`}
+                            className={`text-xs font-bold ${p.stock_value > 0 ? "text-teal-400" : "text-app"}`}
                           >
                             {p.stock_value > 0 ? `₹${p.stock_value.toLocaleString("en-IN")}` : "—"}
                           </span>
@@ -906,20 +906,20 @@ export default function InventoryPage() {
                                     key={pl}
                                     href={`/inventory/locate?loc=${encodeURIComponent(pl)}`}
                                     title={pl}
-                                    className="inline-flex items-center gap-0.5 text-[10px] text-slate-500 border border-[#21293d] rounded-md px-1.5 py-0.5 hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
+                                    className="inline-flex items-center gap-0.5 text-[10px] text-muted border border-app rounded-md px-1.5 py-0.5 hover:text-emerald-400 hover:border-emerald-500/30 transition-colors"
                                   >
-                                    <MapPin size={9} className="text-slate-700" />{" "}
+                                    <MapPin size={9} className="text-app" />{" "}
                                     {pl.split(" ▸ ").slice(-2).join(" ▸ ")}
                                   </Link>
                                 ))}
                                 {p.places.length > 2 && (
-                                  <span className="text-[10px] text-slate-700 font-bold">
+                                  <span className="text-[10px] text-app font-bold">
                                     +{p.places.length - 2}
                                   </span>
                                 )}
                               </div>
                             ) : p.poCodes.length === 0 ? (
-                              <span className="text-slate-700 text-[11px]">—</span>
+                              <span className="text-app text-[11px]">—</span>
                             ) : null}
                             {p.poCodes.length > 0 && (
                               <div
@@ -935,7 +935,7 @@ export default function InventoryPage() {
                                   </span>
                                 ))}
                                 {p.poCodes.length > 2 && (
-                                  <span className="text-[10px] text-slate-700 font-bold">
+                                  <span className="text-[10px] text-app font-bold">
                                     +{p.poCodes.length - 2}
                                   </span>
                                 )}
@@ -959,9 +959,9 @@ export default function InventoryPage() {
                   {paginated.length === 0 && (
                     <tr>
                       <td colSpan={9} className="py-20 text-center">
-                        <Package size={36} className="mx-auto text-slate-800 mb-3" />
-                        <p className="text-slate-600 font-bold text-sm">No products found</p>
-                        <p className="text-slate-700 text-xs mt-1">
+                        <Package size={36} className="mx-auto text-app mb-3" />
+                        <p className="text-muted-2 font-bold text-sm">No products found</p>
+                        <p className="text-app text-xs mt-1">
                           Try adjusting your search or filter
                         </p>
                       </td>
@@ -972,17 +972,17 @@ export default function InventoryPage() {
                 {/* Table Footer Summary */}
                 {paginated.length > 0 && (
                   <tfoot>
-                    <tr className="bg-[#111520] border-t border-[#21293d]">
+                    <tr className="bg-panel-2 border-t border-app">
                       <td
                         colSpan={3}
-                        className="px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-600"
+                        className="px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-2"
                       >
                         {paginated.length} on this page
                       </td>
-                      <td className="px-4 py-2.5 text-right font-black text-slate-400 text-sm">
+                      <td className="px-4 py-2.5 text-right font-black text-muted text-sm">
                         {filtered.reduce((s, p) => s + p.available, 0)}
                       </td>
-                      <td className="px-4 py-2.5 text-right font-black text-slate-400 text-sm">
+                      <td className="px-4 py-2.5 text-right font-black text-muted text-sm">
                         {filtered.reduce((s, p) => s + p.total_sold, 0)}
                       </td>
                       <td className="px-4 py-2.5 text-right font-black text-teal-400 text-sm">
@@ -997,13 +997,13 @@ export default function InventoryPage() {
 
             {/* Pagination footer */}
             {filtered.length > 0 && (
-              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-[#21293d] bg-[#111520]">
-                <div className="flex items-center gap-2 text-[11px] text-slate-600 font-bold">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-app bg-panel-2">
+                <div className="flex items-center gap-2 text-[11px] text-muted-2 font-bold">
                   <span>Show</span>
                   <select
                     value={pageSize}
                     onChange={(e) => setPageSize(Number(e.target.value))}
-                    className="bg-[#161b27] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60"
+                    className="bg-panel border border-app text-app-2 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60"
                   >
                     {[10, 25, 50, 100, 0].map((n) => (
                       <option key={n} value={n}>
@@ -1018,17 +1018,17 @@ export default function InventoryPage() {
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={safePage <= 1}
-                    className="px-3 py-1.5 bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-3 py-1.5 bg-panel border border-app hover:border-blue-500/40 text-muted hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Prev
                   </button>
-                  <span className="px-3 py-1.5 text-[11px] font-black text-slate-400 bg-[#161b27] border border-[#21293d] rounded-lg">
+                  <span className="px-3 py-1.5 text-[11px] font-black text-muted bg-panel border border-app rounded-lg">
                     {safePage} / {pageCount}
                   </span>
                   <button
                     onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
                     disabled={safePage >= pageCount}
-                    className="px-3 py-1.5 bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-3 py-1.5 bg-panel border border-app hover:border-blue-500/40 text-muted hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Next
                   </button>
@@ -1053,7 +1053,7 @@ export default function InventoryPage() {
             return (
               <div
                 key={p.id}
-                className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden group"
+                className="bg-panel border border-app rounded-2xl overflow-hidden group"
               >
                 {/* Top accent bar — colored by status */}
                 <div
@@ -1076,7 +1076,7 @@ export default function InventoryPage() {
                           alt={p.name}
                           width={48}
                           height={48}
-                          className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+                          className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-app cursor-zoom-in"
                           onDoubleClick={(e) => {
                             e.stopPropagation();
                             openImageLightbox(p.image_path, p.name);
@@ -1094,7 +1094,7 @@ export default function InventoryPage() {
                       )}
                       <div className="min-w-0">
                         <div className="font-black text-white text-sm truncate">{p.name}</div>
-                        <div className="text-[11px] text-slate-600 truncate mt-0.5">
+                        <div className="text-[11px] text-muted-2 truncate mt-0.5">
                           {p.description}
                         </div>
                         {p.barcode && (
@@ -1107,7 +1107,7 @@ export default function InventoryPage() {
                                 printBarcodeLabels([{ value: p.barcode!, name: p.name }])
                               }
                               title="Print label"
-                              className="text-slate-700 hover:text-slate-300 transition-colors"
+                              className="text-app hover:text-app-2 transition-colors"
                             >
                               <Printer size={10} />
                             </button>
@@ -1132,12 +1132,12 @@ export default function InventoryPage() {
                   <div className="grid grid-cols-3 gap-2 mb-3">
                     {[
                       { label: "Available", value: Math.max(0, p.available), color: st.color },
-                      { label: "Total In", value: p.total_in, color: "text-slate-400" },
+                      { label: "Total In", value: p.total_in, color: "text-muted" },
                       { label: "Sold", value: p.total_sold, color: "text-purple-400" },
                     ].map(({ label, value, color }) => (
-                      <div key={label} className="bg-[#111520] rounded-xl p-2.5 text-center">
+                      <div key={label} className="bg-panel-2 rounded-xl p-2.5 text-center">
                         <div className={`text-xl font-black ${color}`}>{value}</div>
-                        <div className="text-[8px] text-slate-700 font-bold uppercase tracking-widest mt-0.5">
+                        <div className="text-[8px] text-app font-bold uppercase tracking-widest mt-0.5">
                           {label}
                         </div>
                       </div>
@@ -1147,10 +1147,10 @@ export default function InventoryPage() {
                   {/* Stock bar */}
                   <div className="mb-3">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] text-slate-700 font-bold uppercase tracking-wider">
+                      <span className="text-[10px] text-app font-bold uppercase tracking-wider">
                         Stock Level
                       </span>
-                      <span className="text-[10px] font-bold text-slate-500">
+                      <span className="text-[10px] font-bold text-muted">
                         {pct.toFixed(0)}%
                       </span>
                     </div>
@@ -1172,11 +1172,11 @@ export default function InventoryPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-wrap">
                       {p.places.length > 0 && (
-                        <span className="flex items-center gap-1 text-[11px] text-slate-600">
+                        <span className="flex items-center gap-1 text-[11px] text-muted-2">
                           <MapPin size={10} />
                           {p.places.slice(0, 2).join(", ")}
                           {p.places.length > 2 && (
-                            <span className="text-slate-700 font-bold">+{p.places.length - 2}</span>
+                            <span className="text-app font-bold">+{p.places.length - 2}</span>
                           )}
                         </span>
                       )}
@@ -1185,7 +1185,7 @@ export default function InventoryPage() {
                           <FileText size={10} />
                           {p.poCodes.slice(0, 2).join(", ")}
                           {p.poCodes.length > 2 && (
-                            <span className="text-slate-700 font-bold">
+                            <span className="text-app font-bold">
                               +{p.poCodes.length - 2}
                             </span>
                           )}
@@ -1210,9 +1210,9 @@ export default function InventoryPage() {
           })}
 
           {paginated.length === 0 && (
-            <div className="py-20 text-center bg-[#161b27] border border-dashed border-[#21293d] rounded-2xl">
-              <Package size={36} className="mx-auto text-slate-800 mb-3" />
-              <p className="text-slate-600 font-bold text-sm">No products match</p>
+            <div className="py-20 text-center bg-panel border border-dashed border-app rounded-2xl">
+              <Package size={36} className="mx-auto text-app mb-3" />
+              <p className="text-muted-2 font-bold text-sm">No products match</p>
               <button
                 onClick={() => {
                   setSearchTerm("");
@@ -1228,11 +1228,11 @@ export default function InventoryPage() {
           {/* Mobile pagination footer */}
           {filtered.length > 0 && (
             <div className="flex items-center justify-between flex-wrap gap-3 pt-2">
-              <div className="flex items-center gap-2 text-[11px] text-slate-600 font-bold">
+              <div className="flex items-center gap-2 text-[11px] text-muted-2 font-bold">
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="bg-[#161b27] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1.5 text-[11px] font-bold outline-none focus:border-blue-500/60"
+                  className="bg-panel border border-app text-app-2 rounded-lg px-2 py-1.5 text-[11px] font-bold outline-none focus:border-blue-500/60"
                 >
                   {[10, 25, 50, 100, 0].map((n) => (
                     <option key={n} value={n}>
@@ -1246,17 +1246,17 @@ export default function InventoryPage() {
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={safePage <= 1}
-                  className="px-3 py-1.5 bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 bg-panel border border-app hover:border-blue-500/40 text-muted hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Prev
                 </button>
-                <span className="px-3 py-1.5 text-[11px] font-black text-slate-400 bg-[#161b27] border border-[#21293d] rounded-lg">
+                <span className="px-3 py-1.5 text-[11px] font-black text-muted bg-panel border border-app rounded-lg">
                   {safePage} / {pageCount}
                 </span>
                 <button
                   onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
                   disabled={safePage >= pageCount}
-                  className="px-3 py-1.5 bg-[#161b27] border border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 bg-panel border border-app hover:border-blue-500/40 text-muted hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>
@@ -1277,7 +1277,7 @@ export default function InventoryPage() {
               <p className="text-red-400 text-xs font-extrabold uppercase tracking-wide">
                 {stats.outOfStock} product{stats.outOfStock > 1 ? "s" : ""} out of stock
               </p>
-              <p className="text-slate-700 text-[11px] mt-0.5">
+              <p className="text-app text-[11px] mt-0.5">
                 Restock recommended to avoid service delays
               </p>
             </div>
@@ -1301,7 +1301,7 @@ export default function InventoryPage() {
               <p className="text-amber-400 text-xs font-extrabold uppercase tracking-wide">
                 {stats.lowStock} product{stats.lowStock > 1 ? "s" : ""} running low
               </p>
-              <p className="text-slate-700 text-[11px] mt-0.5">Consider restocking soon</p>
+              <p className="text-app text-[11px] mt-0.5">Consider restocking soon</p>
             </div>
             <button
               onClick={() => setFilter("low-stock")}
@@ -1316,10 +1316,10 @@ export default function InventoryPage() {
       {/* ── LOW STOCK QUICK PANEL ── */}
       {products.some((p) => p.available > 0 && p.available <= alertThreshold(p.alert_quantity)) && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-4">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-[#21293d] bg-[#111520]">
+          <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-app bg-panel-2">
               <Zap size={13} className="text-amber-400" />
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
                 Critical Low Stock
               </span>
             </div>
@@ -1335,7 +1335,7 @@ export default function InventoryPage() {
                     <span className="w-5 h-5 bg-amber-500 text-white text-[10px] font-black rounded flex items-center justify-center flex-shrink-0 group-hover:bg-amber-400 transition-colors">
                       {p.available}
                     </span>
-                    <span className="text-xs font-bold text-slate-400 group-hover:text-slate-200 transition-colors max-w-[120px] truncate">
+                    <span className="text-xs font-bold text-muted group-hover:text-app-2 transition-colors max-w-[120px] truncate">
                       {p.name}
                     </span>
                   </Link>
@@ -1370,28 +1370,28 @@ export default function InventoryPage() {
       {/* ── PRINT LABELS MODAL ── */}
       {printOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
             {/* Header */}
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d] flex-shrink-0">
+            <div className="flex items-center justify-between p-5 border-b border-app flex-shrink-0">
               <h3 className="font-bold text-white flex items-center gap-2 text-sm">
                 <Printer size={16} className="text-blue-400" /> Print Barcode Labels
               </h3>
               <button
                 onClick={() => setPrintOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+                className="p-1.5 rounded-lg hover:bg-white/10 text-muted transition"
               >
                 <X size={16} />
               </button>
             </div>
 
             {/* Print options bar */}
-            <div className="px-5 py-3 border-b border-[#21293d] bg-[#111520] flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
-              <div className="text-[11px] text-slate-400 font-bold">
+            <div className="px-5 py-3 border-b border-app bg-panel-2 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
+              <div className="text-[11px] text-muted font-bold">
                 {printableProducts.length} products me barcode hai
               </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-muted">
                     Label
                   </span>
                   <select
@@ -1399,7 +1399,7 @@ export default function InventoryPage() {
                     onChange={(e) =>
                       setPrintOpts((p) => ({ ...p, size: e.target.value as LabelSize }))
                     }
-                    className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60 cursor-pointer"
+                    className="bg-app border border-app text-app-2 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60 cursor-pointer"
                   >
                     <option value="medium">63.5 × 38mm</option>
                     <option value="small">63.5 × 25mm</option>
@@ -1407,7 +1407,7 @@ export default function InventoryPage() {
                   </select>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-muted">
                     Orient
                   </span>
                   <select
@@ -1415,14 +1415,14 @@ export default function InventoryPage() {
                     onChange={(e) =>
                       setPrintOpts((p) => ({ ...p, orientation: e.target.value as Orientation }))
                     }
-                    className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60 cursor-pointer"
+                    className="bg-app border border-app text-app-2 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60 cursor-pointer"
                   >
                     <option value="portrait">Portrait</option>
                     <option value="landscape">Landscape</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-muted">
                     Margin
                   </span>
                   <select
@@ -1430,7 +1430,7 @@ export default function InventoryPage() {
                     onChange={(e) =>
                       setPrintOpts((p) => ({ ...p, margin: e.target.value as PrintMargin }))
                     }
-                    className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60 cursor-pointer"
+                    className="bg-app border border-app text-app-2 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60 cursor-pointer"
                   >
                     <option value="narrow">Narrow (3mm)</option>
                     <option value="normal">Normal (8mm)</option>
@@ -1447,10 +1447,10 @@ export default function InventoryPage() {
                 return (
                   <div
                     key={p.id}
-                    className="flex items-center justify-between gap-3 bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-2.5"
+                    className="flex items-center justify-between gap-3 bg-app border border-app rounded-xl px-3 py-2.5"
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs font-bold text-slate-200 truncate">{p.name}</div>
+                      <div className="text-xs font-bold text-app-2 truncate">{p.name}</div>
                       <div className="text-[10px] font-mono text-purple-500/70 truncate">
                         {p.barcode}
                       </div>
@@ -1460,7 +1460,7 @@ export default function InventoryPage() {
                         type="button"
                         onClick={() => adjustCopies(p.id, -1)}
                         disabled={copies <= 1}
-                        className="w-7 h-7 rounded-lg bg-[#161b27] border border-[#21293d] text-slate-400 hover:text-white hover:border-blue-500/40 flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-7 h-7 rounded-lg bg-panel border border-app text-muted hover:text-white hover:border-blue-500/40 flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Minus size={12} />
                       </button>
@@ -1470,13 +1470,13 @@ export default function InventoryPage() {
                         max={999}
                         value={copies}
                         onChange={(e) => setCopies(p.id, e.target.value)}
-                        className="w-14 h-7 text-center bg-[#161b27] border border-[#21293d] text-white rounded-lg text-xs font-bold outline-none focus:border-blue-500/60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-14 h-7 text-center bg-panel border border-app text-white rounded-lg text-xs font-bold outline-none focus:border-blue-500/60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                       <button
                         type="button"
                         onClick={() => adjustCopies(p.id, 1)}
                         disabled={copies >= 999}
-                        className="w-7 h-7 rounded-lg bg-[#161b27] border border-[#21293d] text-slate-400 hover:text-white hover:border-blue-500/40 flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-7 h-7 rounded-lg bg-panel border border-app text-muted hover:text-white hover:border-blue-500/40 flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Plus size={12} />
                       </button>
@@ -1487,14 +1487,14 @@ export default function InventoryPage() {
             </div>
 
             {/* Footer */}
-            <div className="px-5 py-4 border-t border-[#21293d] bg-[#111520] flex items-center justify-between gap-3 flex-shrink-0">
+            <div className="px-5 py-4 border-t border-app bg-panel-2 flex items-center justify-between gap-3 flex-shrink-0">
               <div>
-                <div className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                <div className="text-[10px] font-black uppercase tracking-wider text-muted">
                   Total labels
                 </div>
                 <div className="text-lg font-black text-white leading-tight">
                   {totalLabels}
-                  <span className="text-xs font-bold text-slate-500 ml-2">
+                  <span className="text-xs font-bold text-muted ml-2">
                     ≈ {Math.ceil(totalLabels / perSheet)} A4 sheet(s)
                   </span>
                 </div>

@@ -391,7 +391,7 @@ function AccountingDashboardContent() {
   ];
 
   const pctBar = (v: number) => (
-    <div className="h-2 bg-[#0d1117] rounded-full overflow-hidden">
+    <div className="h-2 bg-app rounded-full overflow-hidden">
       <div
         className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full"
         style={{ width: `${Math.min(100, Math.max(0, v))}%` }}
@@ -402,13 +402,13 @@ function AccountingDashboardContent() {
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto pb-20">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-[2rem] p-6 shadow-2xl relative overflow-hidden no-print">
+      <div className="bg-panel border border-app rounded-[2rem] p-6 shadow-2xl relative overflow-hidden no-print">
         <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 blur-3xl rounded-full -mr-20 -mt-20 pointer-events-none" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative">
           <div className="flex items-center gap-5">
             <Link
               href="/reports"
-              className="w-12 h-12 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-2xl text-slate-500 hover:text-white hover:bg-purple-600/10 hover:border-purple-500/40 transition-all group"
+              className="w-12 h-12 flex items-center justify-center bg-app border border-app rounded-2xl text-muted hover:text-white hover:bg-purple-600/10 hover:border-purple-500/40 transition-all group"
             >
               <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
             </Link>
@@ -419,7 +419,7 @@ function AccountingDashboardContent() {
               <h1 className="text-3xl font-black text-white tracking-tight">
                 Accounting Dashboard
               </h1>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-[0.3em]">
+              <p className="text-xs text-muted font-bold uppercase tracking-[0.3em]">
                 Financial Analytics
               </p>
             </div>
@@ -427,7 +427,7 @@ function AccountingDashboardContent() {
           <div className="flex items-center gap-3">
             <Link
               href="/reports/balancesheet"
-              className="flex items-center gap-2 px-5 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white hover:border-purple-500/40 transition-all"
+              className="flex items-center gap-2 px-5 py-3 bg-app border border-app rounded-2xl text-xs font-black uppercase tracking-widest text-muted hover:text-white hover:border-purple-500/40 transition-all"
             >
               <Scale size={14} /> Balance Sheet
             </Link>
@@ -442,28 +442,28 @@ function AccountingDashboardContent() {
       </div>
 
       {/* Filters */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-[2rem] p-5 no-print">
+      <div className="bg-panel border border-app rounded-[2rem] p-5 no-print">
         <form onSubmit={handleFilter} className="flex flex-wrap items-end gap-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-slate-600 tracking-[0.2em] ml-2">
+            <label className="text-[10px] font-black uppercase text-muted-2 tracking-[0.2em] ml-2">
               From Date
             </label>
             <input
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-sm text-slate-200 outline-none focus:border-purple-500 transition-all [color-scheme:dark]"
+              className="px-4 py-3 bg-app border border-app rounded-2xl text-sm text-app-2 outline-none focus:border-purple-500 transition-all [color-scheme:dark]"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-slate-600 tracking-[0.2em] ml-2">
+            <label className="text-[10px] font-black uppercase text-muted-2 tracking-[0.2em] ml-2">
               To Date
             </label>
             <input
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-sm text-slate-200 outline-none focus:border-purple-500 transition-all [color-scheme:dark]"
+              className="px-4 py-3 bg-app border border-app rounded-2xl text-sm text-app-2 outline-none focus:border-purple-500 transition-all [color-scheme:dark]"
             />
           </div>
           <button
@@ -474,7 +474,7 @@ function AccountingDashboardContent() {
               <RefreshCw size={14} /> Update Analytics
             </span>
           </button>
-          <div className="ml-auto px-5 py-3 bg-[#0d1117] border border-purple-500/20 rounded-2xl">
+          <div className="ml-auto px-5 py-3 bg-app border border-purple-500/20 rounded-2xl">
             <span className="text-xs font-black text-purple-400">
               Period:{" "}
               {new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short" }).format(
@@ -528,13 +528,13 @@ function AccountingDashboardContent() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-[2.5rem] overflow-hidden shadow-2xl">
-        <div className="flex flex-wrap gap-2 p-4 border-b border-[#21293d] no-print">
+      <div className="bg-panel border border-app rounded-[2.5rem] overflow-hidden shadow-2xl">
+        <div className="flex flex-wrap gap-2 p-4 border-b border-app no-print">
           {TABS.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${tab === t.key ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "bg-[#0d1117] text-slate-400 hover:text-white border border-[#21293d]"}`}
+              className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${tab === t.key ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "bg-app text-muted hover:text-white border border-app"}`}
             >
               {t.label}
             </button>
@@ -554,28 +554,28 @@ function AccountingDashboardContent() {
                   <div className="lg:col-span-2">
                     <h4 className="font-black text-white mb-4">Profit &amp; Loss Overview</h4>
                     <table className="w-full text-sm">
-                      <thead className="bg-[#0d1117] text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">
+                      <thead className="bg-app text-[10px] font-black uppercase text-muted tracking-[0.2em]">
                         <tr>
                           <th className="px-4 py-3 text-left">Description</th>
                           <th className="px-4 py-3 text-right">Amount (₹)</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#21293d] text-slate-300">
+                      <tbody className="divide-y divide-[#21293d] text-app-2">
                         <tr>
                           <td className="px-4 py-3">
                             Service/Repair Revenue{" "}
-                            <span className="text-slate-600 text-xs">(Delivered jobs)</span>
+                            <span className="text-muted-2 text-xs">(Delivered jobs)</span>
                           </td>
                           <td className="px-4 py-3 text-right">{inr(data.serviceRevenue)}</td>
                         </tr>
                         <tr>
                           <td className="px-4 py-3">
                             Direct Sales Revenue{" "}
-                            <span className="text-slate-600 text-xs">(Walk-in + Client)</span>
+                            <span className="text-muted-2 text-xs">(Walk-in + Client)</span>
                           </td>
                           <td className="px-4 py-3 text-right">{inr(data.salesRevenue)}</td>
                         </tr>
-                        <tr className="bg-[#0d1117]">
+                        <tr className="bg-app">
                           <td className="px-4 py-3 font-black text-white">Total Gross Revenue</td>
                           <td className="px-4 py-3 text-right font-black text-white">
                             {inr(data.totalRevenue)}
@@ -584,7 +584,7 @@ function AccountingDashboardContent() {
                         <tr>
                           <td className="px-4 py-3 text-red-400">
                             − Staff Salary Earned{" "}
-                            <span className="text-slate-600 text-xs">(Attendance)</span>
+                            <span className="text-muted-2 text-xs">(Attendance)</span>
                           </td>
                           <td className="px-4 py-3 text-right text-red-400">
                             ({inr(data.salaryEarned)})
@@ -627,23 +627,23 @@ function AccountingDashboardContent() {
                   </div>
                   <div>
                     <h4 className="font-black text-white mb-4">Efficiency Metrics</h4>
-                    <div className="bg-[#0d1117] border border-[#21293d] rounded-2xl p-5 space-y-6">
+                    <div className="bg-app border border-app rounded-2xl p-5 space-y-6">
                       <div>
-                        <div className="flex justify-between text-xs font-bold text-slate-400 mb-1.5">
+                        <div className="flex justify-between text-xs font-bold text-muted mb-1.5">
                           <span>Net Profit Margin</span>
                           <span>{margin.toFixed(1)}%</span>
                         </div>
                         {pctBar(margin)}
                       </div>
                       <div>
-                        <div className="flex justify-between text-xs font-bold text-slate-400 mb-1.5">
+                        <div className="flex justify-between text-xs font-bold text-muted mb-1.5">
                           <span>Collection Efficiency</span>
                           <span>{collectionRate.toFixed(1)}%</span>
                         </div>
                         {pctBar(collectionRate)}
                       </div>
-                      <div className="p-4 bg-[#111520] border border-[#21293d] rounded-xl text-xs text-slate-400">
-                        <p className="font-black text-slate-300 mb-1">💡 Strategy Insight:</p>
+                      <div className="p-4 bg-panel-2 border border-app rounded-xl text-xs text-muted">
+                        <p className="font-black text-app-2 mb-1">💡 Strategy Insight:</p>
                         <p>
                           Gross Profit <b className="text-white">{inr(data.grossProfit)}</b>. Net
                           profit badhane ke liye <b className="text-white">Shop Expenses</b> aur{" "}
@@ -660,15 +660,15 @@ function AccountingDashboardContent() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div>
                     <h4 className="font-black text-white mb-4">Expense Breakdown</h4>
-                    <div className="bg-[#0d1117] border border-[#21293d] rounded-2xl divide-y divide-[#21293d]">
+                    <div className="bg-app border border-app rounded-2xl divide-y divide-[#21293d]">
                       {data.expenseCategories.length === 0 ? (
-                        <div className="p-6 text-center text-slate-600 italic">
+                        <div className="p-6 text-center text-muted-2 italic">
                           Is period me koi expense recorded nahi
                         </div>
                       ) : (
                         data.expenseCategories.map((ex, i) => (
                           <div key={i} className="flex items-center justify-between px-5 py-3.5">
-                            <span className="text-sm text-slate-300">{ex.category}</span>
+                            <span className="text-sm text-app-2">{ex.category}</span>
                             <span className="font-black text-red-400">{inr(ex.total)}</span>
                           </div>
                         ))
@@ -677,15 +677,15 @@ function AccountingDashboardContent() {
                   </div>
                   <div>
                     <h4 className="font-black text-white mb-4">Top 5 Revenue Contributors</h4>
-                    <div className="bg-[#0d1117] border border-[#21293d] rounded-2xl divide-y divide-[#21293d]">
+                    <div className="bg-app border border-app rounded-2xl divide-y divide-[#21293d]">
                       {data.topCustomers.length === 0 ? (
-                        <div className="p-6 text-center text-slate-600 italic">
+                        <div className="p-6 text-center text-muted-2 italic">
                           Koi revenue data nahi
                         </div>
                       ) : (
                         data.topCustomers.map((tc, i) => (
                           <div key={i} className="flex items-center justify-between px-5 py-3.5">
-                            <span className="text-sm text-slate-300">{tc.name}</span>
+                            <span className="text-sm text-app-2">{tc.name}</span>
                             <span className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-black">
                               {inr(tc.total)}
                             </span>
@@ -704,16 +704,16 @@ function AccountingDashboardContent() {
                     <h4 className="font-black text-emerald-400 mb-4 flex items-center gap-2">
                       <ArrowDownCircle size={16} /> Cash Inflow (Receipts)
                     </h4>
-                    <div className="bg-[#0d1117] border border-[#21293d] rounded-2xl divide-y divide-[#21293d]">
-                      <div className="flex justify-between px-5 py-3.5 text-sm text-slate-300">
+                    <div className="bg-app border border-app rounded-2xl divide-y divide-[#21293d]">
+                      <div className="flex justify-between px-5 py-3.5 text-sm text-app-2">
                         <span>Client Payments Collected</span>
                         <span className="font-bold text-emerald-400">{inr(data.collections)}</span>
                       </div>
-                      <div className="flex justify-between px-5 py-3.5 text-sm text-slate-300">
+                      <div className="flex justify-between px-5 py-3.5 text-sm text-app-2">
                         <span>Walk-in Direct Sales (Cash)</span>
                         <span className="font-bold text-emerald-400">{inr(data.walkinSales)}</span>
                       </div>
-                      <div className="flex justify-between px-5 py-4 bg-[#111520] text-sm">
+                      <div className="flex justify-between px-5 py-4 bg-panel-2 text-sm">
                         <span className="font-black text-white">Total Cash In</span>
                         <span className="font-black text-emerald-400">{inr(data.cashInflow)}</span>
                       </div>
@@ -723,20 +723,20 @@ function AccountingDashboardContent() {
                     <h4 className="font-black text-red-400 mb-4 flex items-center gap-2">
                       <ArrowUpCircle size={16} /> Cash Outflow (Payments)
                     </h4>
-                    <div className="bg-[#0d1117] border border-[#21293d] rounded-2xl divide-y divide-[#21293d]">
-                      <div className="flex justify-between px-5 py-3.5 text-sm text-slate-300">
+                    <div className="bg-app border border-app rounded-2xl divide-y divide-[#21293d]">
+                      <div className="flex justify-between px-5 py-3.5 text-sm text-app-2">
                         <span>Shop &amp; Operational Expenses</span>
                         <span className="font-bold">{inr(data.shopExpenses)}</span>
                       </div>
-                      <div className="flex justify-between px-5 py-3.5 text-sm text-slate-300">
+                      <div className="flex justify-between px-5 py-3.5 text-sm text-app-2">
                         <span>Staff Advance / Salary Paid</span>
                         <span className="font-bold">{inr(data.staffAdvances)}</span>
                       </div>
-                      <div className="flex justify-between px-5 py-3.5 text-sm text-slate-300">
+                      <div className="flex justify-between px-5 py-3.5 text-sm text-app-2">
                         <span>Loan EMI / Debt Repayments</span>
                         <span className="font-bold">{inr(data.loanEmis)}</span>
                       </div>
-                      <div className="flex justify-between px-5 py-4 bg-[#111520] text-sm">
+                      <div className="flex justify-between px-5 py-4 bg-panel-2 text-sm">
                         <span className="font-black text-white">Total Cash Out</span>
                         <span className="font-black text-red-400">{inr(data.cashOutflow)}</span>
                       </div>
@@ -759,20 +759,20 @@ function AccountingDashboardContent() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div>
                     <h4 className="font-black text-white mb-4">Current Assets</h4>
-                    <div className="bg-[#0d1117] border border-[#21293d] rounded-2xl p-5 space-y-3 text-sm">
-                      <div className="flex justify-between text-slate-300">
+                    <div className="bg-app border border-app rounded-2xl p-5 space-y-3 text-sm">
+                      <div className="flex justify-between text-app-2">
                         <span>Cash &amp; Bank Balance (Est.)</span>
                         <span className="font-bold">{inr(data.cashOnHand)}</span>
                       </div>
-                      <div className="flex justify-between text-slate-300">
+                      <div className="flex justify-between text-app-2">
                         <span>Accounts Receivable (Customer Dues)</span>
                         <span className="font-bold">{inr(data.accountsReceivable)}</span>
                       </div>
-                      <div className="flex justify-between text-slate-300">
+                      <div className="flex justify-between text-app-2">
                         <span>Inventory / Stock Value</span>
                         <span className="font-bold">{inr(data.inventoryValue)}</span>
                       </div>
-                      <hr className="border-[#21293d]" />
+                      <hr className="border-app" />
                       <div className="flex justify-between font-black text-white text-base">
                         <span>TOTAL ASSETS</span>
                         <span>{inr(totalAssets)}</span>
@@ -781,12 +781,12 @@ function AccountingDashboardContent() {
                   </div>
                   <div>
                     <h4 className="font-black text-white mb-4">Current Liabilities</h4>
-                    <div className="bg-[#0d1117] border border-[#21293d] rounded-2xl p-5 space-y-3 text-sm">
-                      <div className="flex justify-between text-slate-300">
+                    <div className="bg-app border border-app rounded-2xl p-5 space-y-3 text-sm">
+                      <div className="flex justify-between text-app-2">
                         <span>Lender Loans Payable</span>
                         <span className="font-bold">{inr(data.loansPayable)}</span>
                       </div>
-                      <hr className="border-[#21293d]" />
+                      <hr className="border-app" />
                       <div className="flex justify-between font-black text-red-400 text-base">
                         <span>TOTAL LIABILITIES</span>
                         <span>{inr(data.loansPayable)}</span>
@@ -800,9 +800,9 @@ function AccountingDashboardContent() {
               {tab === "inventory" && (
                 <div>
                   <h4 className="font-black text-white mb-4">Top Inventory Assets</h4>
-                  <div className="bg-[#0d1117] border border-[#21293d] rounded-2xl overflow-hidden">
+                  <div className="bg-app border border-app rounded-2xl overflow-hidden">
                     <table className="w-full text-sm">
-                      <thead className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] border-b border-[#21293d]">
+                      <thead className="text-[10px] font-black uppercase text-muted tracking-[0.2em] border-b border-app">
                         <tr>
                           <th className="px-5 py-3.5 text-left">Product Name</th>
                           <th className="px-5 py-3.5 text-center">Current Qty</th>
@@ -810,7 +810,7 @@ function AccountingDashboardContent() {
                           <th className="px-5 py-3.5 text-right">Total Value</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#21293d] text-slate-300">
+                      <tbody className="divide-y divide-[#21293d] text-app-2">
                         {data.stockItems.map((row, i) => (
                           <tr key={i}>
                             <td className="px-5 py-3.5">{row.name}</td>
@@ -827,7 +827,7 @@ function AccountingDashboardContent() {
                         ))}
                       </tbody>
                       <tfoot>
-                        <tr className="bg-[#111520] border-t border-[#21293d]">
+                        <tr className="bg-panel-2 border-t border-app">
                           <td colSpan={3} className="px-5 py-3.5 text-right font-black text-white">
                             Estimated Total Stock Value:
                           </td>
@@ -838,7 +838,7 @@ function AccountingDashboardContent() {
                       </tfoot>
                     </table>
                   </div>
-                  <div className="mt-4 flex items-center gap-3 text-xs text-slate-400">
+                  <div className="mt-4 flex items-center gap-3 text-xs text-muted">
                     <Package size={16} className="text-purple-400" /> Stock value end-date tak
                     calculate kiya gaya hai.
                   </div>

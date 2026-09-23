@@ -91,8 +91,8 @@ interface SelProduct {
 }
 
 const iCls =
-  "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all";
-const lCls = "block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5";
+  "w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all";
+const lCls = "block text-[10px] font-bold uppercase tracking-wider text-muted mb-1.5";
 const fmtN = (n: number) => n.toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -426,10 +426,10 @@ export default function ManageJobPage() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
+    <div className="min-h-screen bg-app font-sans pb-16">
       <div className="max-w-5xl mx-auto px-3 sm:px-5 pt-4 space-y-4">
         {/* Header */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
               <Wrench size={18} className="text-white" />
@@ -438,7 +438,7 @@ export default function ManageJobPage() {
               <h1 className="text-lg font-black text-white">
                 {isEdit ? `Edit Transaction — ${item || editId}` : "Old Job Entry (Manual)"}
               </h1>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+              <p className="text-[10px] text-muted uppercase tracking-wider">
                 {isEdit
                   ? "Update existing transaction"
                   : "Old / backdated job entry — Job ID manually set"}
@@ -451,7 +451,7 @@ export default function ManageJobPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/jobs"
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-300 rounded-xl text-xs font-bold no-underline transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 bg-panel-2 border border-app-2 hover:bg-panel-2 text-app-2 rounded-xl text-xs font-bold no-underline transition-all"
             >
               <ArrowLeft size={13} /> Cancel
             </Link>
@@ -475,7 +475,7 @@ export default function ManageJobPage() {
         </div>
 
         {/* ── ROW 1: Client · Date · Job ID ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
+        <div className="bg-panel border border-app rounded-2xl p-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Client */}
             <div>
@@ -519,7 +519,7 @@ export default function ManageJobPage() {
               <div className="relative">
                 <Hash
                   size={13}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
                 />
                 <input
                   type="text"
@@ -534,8 +534,8 @@ export default function ManageJobPage() {
         </div>
 
         {/* ── ROW 2: Item · Fault · Uniq ID ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
-          <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
+        <div className="bg-panel border border-app rounded-2xl p-5">
+          <h3 className="text-xs font-black uppercase tracking-wider text-muted mb-4 flex items-center gap-2">
             <Package size={13} /> Item Details
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
@@ -585,10 +585,10 @@ export default function ManageJobPage() {
         {/* ── ROW 3: Services + Products side by side ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Services */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600/20 to-transparent border-b border-[#21293d]">
+          <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600/20 to-transparent border-b border-app">
               <Settings2 size={14} className="text-blue-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 Services
               </h3>
             </div>
@@ -612,16 +612,16 @@ export default function ManageJobPage() {
               {selServices.length > 0 ? (
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-[#0d1117]">
-                      <th className="px-3 py-2 text-left text-slate-600 font-bold">Service</th>
-                      <th className="px-3 py-2 text-right text-slate-600 font-bold">Price</th>
+                    <tr className="bg-app">
+                      <th className="px-3 py-2 text-left text-muted-2 font-bold">Service</th>
+                      <th className="px-3 py-2 text-right text-muted-2 font-bold">Price</th>
                       <th className="px-2 py-2 w-8"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#21293d]">
                     {selServices.map((s, i) => (
                       <tr key={i} className="hover:bg-white/[0.02]">
-                        <td className="px-3 py-2 text-slate-300">{s.service_name}</td>
+                        <td className="px-3 py-2 text-app-2">{s.service_name}</td>
                         <td className="px-3 py-2 text-right">
                           <input
                             type="number"
@@ -634,7 +634,7 @@ export default function ManageJobPage() {
                                 )
                               )
                             }
-                            className="w-24 px-2 py-1 bg-[#0d1117] border border-[#21293d] rounded text-right text-slate-200 outline-none focus:border-blue-500"
+                            className="w-24 px-2 py-1 bg-app border border-app rounded text-right text-app-2 outline-none focus:border-blue-500"
                           />
                         </td>
                         <td className="px-2 py-2">
@@ -649,8 +649,8 @@ export default function ManageJobPage() {
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-[#0d1117] border-t border-[#21293d]">
-                      <td className="px-3 py-2 text-right text-slate-500 text-[10px] font-bold uppercase">
+                    <tr className="bg-app border-t border-app">
+                      <td className="px-3 py-2 text-right text-muted text-[10px] font-bold uppercase">
                         Total:
                       </td>
                       <td className="px-3 py-2 text-right text-blue-400 font-black">
@@ -661,16 +661,16 @@ export default function ManageJobPage() {
                   </tfoot>
                 </table>
               ) : (
-                <p className="text-center text-slate-700 text-xs py-4 italic">No services added</p>
+                <p className="text-center text-app text-xs py-4 italic">No services added</p>
               )}
             </div>
           </div>
 
           {/* Products */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-emerald-600/20 to-transparent border-b border-[#21293d]">
+          <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-emerald-600/20 to-transparent border-b border-app">
               <Package size={14} className="text-emerald-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 Products Used
               </h3>
             </div>
@@ -694,18 +694,18 @@ export default function ManageJobPage() {
               {selProducts.length > 0 ? (
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-[#0d1117]">
-                      <th className="px-3 py-2 text-left text-slate-600 font-bold">Product</th>
-                      <th className="px-2 py-2 text-center text-slate-600 font-bold">Qty</th>
-                      <th className="px-3 py-2 text-right text-slate-600 font-bold">Price</th>
-                      <th className="px-3 py-2 text-right text-slate-600 font-bold">Total</th>
+                    <tr className="bg-app">
+                      <th className="px-3 py-2 text-left text-muted-2 font-bold">Product</th>
+                      <th className="px-2 py-2 text-center text-muted-2 font-bold">Qty</th>
+                      <th className="px-3 py-2 text-right text-muted-2 font-bold">Price</th>
+                      <th className="px-3 py-2 text-right text-muted-2 font-bold">Total</th>
                       <th className="px-2 py-2 w-8"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#21293d]">
                     {selProducts.map((p, i) => (
                       <tr key={i} className="hover:bg-white/[0.02]">
-                        <td className="px-3 py-2 text-slate-300">{p.product_name}</td>
+                        <td className="px-3 py-2 text-app-2">{p.product_name}</td>
                         <td className="px-2 py-2">
                           <input
                             type="number"
@@ -718,7 +718,7 @@ export default function ManageJobPage() {
                                 )
                               )
                             }
-                            className="w-14 px-2 py-1 bg-[#0d1117] border border-[#21293d] rounded text-center text-slate-200 outline-none focus:border-blue-500"
+                            className="w-14 px-2 py-1 bg-app border border-app rounded text-center text-app-2 outline-none focus:border-blue-500"
                           />
                         </td>
                         <td className="px-3 py-2">
@@ -733,10 +733,10 @@ export default function ManageJobPage() {
                                 )
                               )
                             }
-                            className="w-24 px-2 py-1 bg-[#0d1117] border border-[#21293d] rounded text-right text-slate-200 outline-none focus:border-blue-500"
+                            className="w-24 px-2 py-1 bg-app border border-app rounded text-right text-app-2 outline-none focus:border-blue-500"
                           />
                         </td>
-                        <td className="px-3 py-2 text-right text-slate-200 font-bold">
+                        <td className="px-3 py-2 text-right text-app-2 font-bold">
                           Rs.{fmtN(p.qty * p.price)}
                         </td>
                         <td className="px-2 py-2">
@@ -751,10 +751,10 @@ export default function ManageJobPage() {
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-[#0d1117] border-t border-[#21293d]">
+                    <tr className="bg-app border-t border-app">
                       <td
                         colSpan={3}
-                        className="px-3 py-2 text-right text-slate-500 text-[10px] font-bold uppercase"
+                        className="px-3 py-2 text-right text-muted text-[10px] font-bold uppercase"
                       >
                         Products Total:
                       </td>
@@ -766,7 +766,7 @@ export default function ManageJobPage() {
                   </tfoot>
                 </table>
               ) : (
-                <p className="text-center text-slate-700 text-xs py-4 italic">No products added</p>
+                <p className="text-center text-app text-xs py-4 italic">No products added</p>
               )}
             </div>
           </div>
@@ -775,14 +775,14 @@ export default function ManageJobPage() {
         {/* ── Total + Mechanic ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Total Payable */}
-          <div className="bg-[#161b27] border border-indigo-500/20 rounded-2xl p-5 flex items-center justify-between">
+          <div className="bg-panel border border-indigo-500/20 rounded-2xl p-5 flex items-center justify-between">
             <div>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+              <p className="text-xs text-muted font-bold uppercase tracking-wider">
                 Total Payable Amount
               </p>
               <p className="text-3xl font-black text-white mt-1">Rs.{fmtN(totalAmount)}</p>
               {svcTotal > 0 && (
-                <p className="text-[10px] text-slate-600 mt-1">
+                <p className="text-[10px] text-muted-2 mt-1">
                   Services: Rs.{fmtN(svcTotal)} · Products: Rs.{fmtN(prodTotal)}
                 </p>
               )}
@@ -792,8 +792,8 @@ export default function ManageJobPage() {
 
           {/* Mechanic Assignment */}
           {(userRole === "admin" || userRole === "manager") && (
-            <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+            <div className="bg-panel border border-app rounded-2xl p-5">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted mb-3 flex items-center gap-2">
                 <User size={13} /> Assign Technician
               </h3>
               <div className="mb-3">
@@ -823,7 +823,7 @@ export default function ManageJobPage() {
                   {(() => {
                     const m = mechanics.find((x) => x.id === parseInt(mechanicId));
                     return m && m.commission_percent > 0 ? (
-                      <p className="text-[10px] text-slate-600 mt-1">
+                      <p className="text-[10px] text-muted-2 mt-1">
                         Auto: {m.commission_percent}% of services Rs.{fmtN(svcTotal)}
                       </p>
                     ) : null;
@@ -838,7 +838,7 @@ export default function ManageJobPage() {
         <div className="flex justify-end gap-3 pt-2">
           <Link
             href="/jobs"
-            className="px-6 py-3 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-300 rounded-xl font-bold text-sm no-underline transition-all"
+            className="px-6 py-3 bg-panel-2 border border-app-2 hover:bg-panel-2 text-app-2 rounded-xl font-bold text-sm no-underline transition-all"
           >
             Cancel
           </Link>

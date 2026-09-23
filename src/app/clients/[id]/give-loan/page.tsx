@@ -33,10 +33,10 @@ function todayIST(): string {
 const inr = (n: number) => "₹" + Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 const inputCls =
-  "w-full px-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-white font-bold text-sm placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all [color-scheme:dark]";
+  "w-full px-4 py-3 bg-panel-2 border border-app rounded-xl text-white font-bold text-sm placeholder:text-app outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all [color-scheme:dark]";
 
 const labelCls =
-  "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-2";
+  "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-2";
 
 export default function GiveLoanPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -161,10 +161,10 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white font-sans">
+    <div className="min-h-screen bg-app text-white font-sans">
       <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-4">
         {/* HEADER */}
-        <div className="relative overflow-hidden bg-[#161b27] rounded-3xl border border-[#21293d] p-5">
+        <div className="relative overflow-hidden bg-panel rounded-3xl border border-app p-5">
           <div
             className="absolute inset-0 opacity-[0.025]"
             style={{
@@ -176,7 +176,7 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
           <div className="relative flex items-center gap-4">
             <Link
               href={`/clients/${clientId}/view`}
-              className="w-10 h-10 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-slate-500 rounded-xl text-slate-500 hover:text-white transition-all flex-shrink-0"
+              className="w-10 h-10 flex items-center justify-center bg-panel-2 border border-app hover:border-muted rounded-xl text-muted hover:text-white transition-all flex-shrink-0"
             >
               <ArrowLeft size={17} />
             </Link>
@@ -188,7 +188,7 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
                 <h1 className="text-lg font-black tracking-tight text-white leading-none">
                   Give Loan / Advance
                 </h1>
-                <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-1 truncate">
+                <p className="text-[10px] text-muted font-black uppercase tracking-[0.2em] mt-1 truncate">
                   {fetching ? "Loading…" : clientName || `Client #${clientId}`}
                 </p>
               </div>
@@ -213,7 +213,7 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
               {balance > 0 ? <TrendingDown size={18} /> : <CheckCircle2 size={18} />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+              <p className="text-[10px] font-black uppercase tracking-wider text-muted">
                 {balance > 0 ? "Current Outstanding" : "Advance Balance"}
               </p>
               <p
@@ -226,7 +226,7 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
         )}
 
         {/* FORM */}
-        <div className="bg-[#161b27] rounded-3xl border border-[#21293d] p-5 md:p-6">
+        <div className="bg-panel rounded-3xl border border-app p-5 md:p-6">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Principal */}
             <div>
@@ -262,7 +262,7 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
                   placeholder="0"
                   className={inputCls}
                 />
-                <p className="text-[10px] text-slate-600 mt-1">Byaj nahi lena to 0 rakho.</p>
+                <p className="text-[10px] text-muted-2 mt-1">Byaj nahi lena to 0 rakho.</p>
               </div>
               <div>
                 <label className={labelCls}>
@@ -282,16 +282,16 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
             </div>
 
             {/* Calculated Totals */}
-            <div className="rounded-2xl bg-[#111520] border border-[#21293d] p-4 space-y-3">
+            <div className="rounded-2xl bg-panel-2 border border-app p-4 space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                <span className="text-[10px] font-black uppercase tracking-wider text-muted">
                   Total Payable (Byaj Sahit)
                 </span>
                 <span className="text-white font-bold text-sm tabular-nums">
                   {inr(totalPayable)}
                 </span>
               </div>
-              <div className="h-px bg-[#21293d]" />
+              <div className="h-px bg-panel-2" />
               <div className="flex justify-between items-center">
                 <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">
                   Monthly EMI (Masik Kist)
@@ -318,7 +318,7 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
             {/* Remarks */}
             <div>
               <label className={labelCls}>
-                <FileText size={13} className="text-slate-400" />
+                <FileText size={13} className="text-muted" />
                 Remarks / Note
               </label>
               <textarea

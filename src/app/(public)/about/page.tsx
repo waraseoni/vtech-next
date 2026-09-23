@@ -56,7 +56,7 @@ function StatChip({ value, suffix, label }: { value: number; suffix: string; lab
         {shown.toLocaleString("en-IN")}
         {suffix}
       </p>
-      <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-slate-500 mt-1">
+      <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-muted mt-1">
         {label}
       </p>
     </div>
@@ -96,7 +96,7 @@ function BrandedAbout() {
               {SITE.tagline}
             </span>
           </h1>
-          <p className="mt-4 text-[14px] sm:text-base text-slate-400 leading-relaxed max-w-2xl">
+          <p className="mt-4 text-[14px] sm:text-base text-muted leading-relaxed max-w-2xl">
             {SITE.owner && (
               <>
                 Hamare yahan <strong className="text-blue-400">{SITE.owner}</strong> ki leadership
@@ -123,7 +123,7 @@ function BrandedAbout() {
                 <Phone size={18} className="text-emerald-400 shrink-0 mt-0.5" />
                 <span>
                   <span className="block text-[13px] font-bold text-white">{phone}</span>
-                  <span className="text-[11px] text-slate-500">Call for repair / estimate</span>
+                  <span className="text-[11px] text-muted">Call for repair / estimate</span>
                 </span>
               </a>
               <a
@@ -133,12 +133,12 @@ function BrandedAbout() {
                 <Mail size={18} className="text-blue-400 shrink-0 mt-0.5" />
                 <span>
                   <span className="block text-[13px] font-bold text-white break-all">{email}</span>
-                  <span className="text-[11px] text-slate-500">Email</span>
+                  <span className="text-[11px] text-muted">Email</span>
                 </span>
               </a>
               <div className="flex items-start gap-3 rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06]">
                 <MapPin size={18} className="text-cyan-400 shrink-0 mt-0.5" />
-                <p className="text-[13px] text-slate-400 leading-relaxed">{address}</p>
+                <p className="text-[13px] text-muted leading-relaxed">{address}</p>
               </div>
               <div className="flex items-start gap-3 rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06]">
                 <Clock size={18} className="text-amber-400 shrink-0 mt-0.5" />
@@ -181,7 +181,7 @@ function BrandedAbout() {
                   href={WHATSAPP_LINK("Hello, repair ke liye inquiry hai.")}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#25D366] text-[#04170c] text-[14px] font-black shadow-xl active:scale-95 transition-transform"
+                  className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#25D366] text-app text-[14px] font-black shadow-xl active:scale-95 transition-transform"
                 >
                   <MessageCircle size={16} /> WhatsApp
                 </a>
@@ -212,7 +212,7 @@ export default function AboutPage() {
             </span>{" "}
             — {SITE.tagline}
           </h1>
-          <p className="mt-4 text-[14px] sm:text-base text-slate-400 leading-relaxed max-w-2xl">
+          <p className="mt-4 text-[14px] sm:text-base text-muted leading-relaxed max-w-2xl">
             DJ systems, moving heads, laser lights, LED walls, processors aur SMPS — Central India
             ka sabse bada aur bharosemand repair center.
           </p>
@@ -235,7 +235,7 @@ export default function AboutPage() {
                   Biggest Repair Hub
                 </span>
               </h2>
-              <div className="mt-5 space-y-4 text-[14px] sm:text-[15px] text-slate-400 leading-relaxed">
+              <div className="mt-5 space-y-4 text-[14px] sm:text-[15px] text-muted leading-relaxed">
                 <p>
                   Hi, I&apos;m <strong className="text-blue-400">{SITE.owner}</strong>. In 2007,
                   maine yeh journey shuru ki — bas ek chhoti si table, kuch tools, aur cheezein
@@ -285,7 +285,7 @@ export default function AboutPage() {
               </div>
               <div className="rounded-2xl p-6 text-center bg-gradient-to-br from-blue-600/20 to-cyan-600/10 border border-blue-500/20">
                 <p className="font-display text-3xl font-black text-white">24×7</p>
-                <p className="text-[12px] font-bold text-slate-400 mt-1">
+                <p className="text-[12px] font-bold text-muted mt-1">
                   Emergency Repair Service
                 </p>
               </div>
@@ -295,7 +295,7 @@ export default function AboutPage() {
       </section>
 
       {/* ═══ WHY ═════════════════════════════════════════════════════════ */}
-      <section className="py-12 sm:py-16 bg-[#0a0a18]/60 border-y border-white/[0.05]">
+      <section className="py-12 sm:py-16 bg-app/60 border-y border-white/[0.05]">
         <div className="mx-auto max-w-7xl px-4">
           <h2 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-center mb-8 sm:mb-12">
             Why{" "}
@@ -330,7 +330,7 @@ export default function AboutPage() {
                   {f.icon}
                 </div>
                 <h3 className="text-[15px] font-bold mb-1.5">{f.title}</h3>
-                <p className="text-[13px] text-slate-400 leading-relaxed">{f.desc}</p>
+                <p className="text-[13px] text-muted leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -380,7 +380,7 @@ export default function AboutPage() {
                   </div>
                   <h3 className="text-[15px] font-bold mt-4">{m.name}</h3>
                   <p className="text-[12px] font-bold text-blue-400 mt-0.5">{m.role}</p>
-                  <p className="text-[13px] text-slate-400 leading-relaxed mt-3">{m.quote}</p>
+                  <p className="text-[13px] text-muted leading-relaxed mt-3">{m.quote}</p>
                 </div>
               </div>
             ))}
@@ -389,7 +389,7 @@ export default function AboutPage() {
       </section>
 
       {/* ═══ TESTIMONIALS ════════════════════════════════════════════════ */}
-      <section className="py-12 sm:py-16 bg-[#0a0a18]/60 border-y border-white/[0.05]">
+      <section className="py-12 sm:py-16 bg-app/60 border-y border-white/[0.05]">
         <div className="mx-auto max-w-7xl px-4">
           <h2 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-center mb-8 sm:mb-12">
             What Our{" "}
@@ -415,7 +415,7 @@ export default function AboutPage() {
                     <Star key={s} size={14} fill="currentColor" />
                   ))}
                 </div>
-                <p className="text-[14px] text-slate-300 leading-relaxed mb-4">
+                <p className="text-[14px] text-app-2 leading-relaxed mb-4">
                   &ldquo;{t.q}&rdquo;
                 </p>
                 <p className="text-[13px] font-bold text-white">- {t.n}</p>
@@ -435,7 +435,7 @@ export default function AboutPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex items-start gap-3 rounded-2xl p-4 bg-white/[0.03] border border-white/[0.06]">
                 <MapPin size={18} className="text-cyan-400 shrink-0 mt-0.5" />
-                <p className="text-[13px] text-slate-400 leading-relaxed">{SITE.address}</p>
+                <p className="text-[13px] text-muted leading-relaxed">{SITE.address}</p>
               </div>
               <a
                 href={SITE.phoneHref}
@@ -444,7 +444,7 @@ export default function AboutPage() {
                 <Phone size={18} className="text-emerald-400 shrink-0 mt-0.5" />
                 <span>
                   <span className="block text-[13px] font-bold text-white">{SITE.phone}</span>
-                  <span className="text-[11px] text-slate-500">Call for repair / estimate</span>
+                  <span className="text-[11px] text-muted">Call for repair / estimate</span>
                 </span>
               </a>
             </div>
@@ -470,7 +470,7 @@ export default function AboutPage() {
                   href={WHATSAPP_LINK("Hello, repair ke liye inquiry hai.")}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#25D366] text-[#04170c] text-[14px] font-black shadow-xl active:scale-95 transition-transform"
+                  className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#25D366] text-app text-[14px] font-black shadow-xl active:scale-95 transition-transform"
                 >
                   <MessageCircle size={16} /> WhatsApp
                 </a>

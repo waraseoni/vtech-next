@@ -30,8 +30,8 @@ import {
 } from "@/lib/requiredParts";
 
 const inputCls =
-  "w-full px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
-const labelCls = "block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5";
+  "w-full px-3 py-2 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-app";
+const labelCls = "block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5";
 
 interface Props {
   numId: number;
@@ -269,7 +269,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
 
   if (loading)
     return (
-      <div className="bg-[#111520] border border-[#21293d] rounded-lg p-4 flex items-center gap-2 text-slate-400 text-sm">
+      <div className="bg-panel-2 border border-app rounded-lg p-4 flex items-center gap-2 text-muted text-sm">
         <Loader2 size={14} className="animate-spin" /> Required saman load ho raha hai...
       </div>
     );
@@ -277,7 +277,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
   const openCount = parts.filter((p) => p.status < 2).length;
 
   return (
-    <fieldset className="border-2 border-amber-500/30 rounded-lg bg-[#111520] mb-4">
+    <fieldset className="border-2 border-amber-500/30 rounded-lg bg-panel-2 mb-4">
       <legend className="px-3 py-1 text-sm font-bold text-amber-400 ml-3 flex items-center gap-1.5">
         <Package size={14} />
         Required Saman (Waiting Parts)
@@ -289,7 +289,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
       </legend>
       <div className="px-4 pb-4 pt-1">
         {parts.length === 0 ? (
-          <p className="text-sm text-slate-500 py-2">
+          <p className="text-sm text-muted py-2">
             Abhi koi required spare nahi hai.{" "}
             {closed
               ? "(Job delivered/cancelled ho chuki hai)"
@@ -300,7 +300,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
             {parts.map((part) => (
               <div
                 key={part.id}
-                className="border border-[#21293d] rounded-lg bg-[#0d1117] p-3 flex flex-col sm:flex-row gap-3"
+                className="border border-app rounded-lg bg-app p-3 flex flex-col sm:flex-row gap-3"
               >
                 {/* Photo */}
                 <div className="w-16 h-16 shrink-0">
@@ -311,7 +311,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                         alt="Spare"
                         width={64}
                         height={64}
-                        className="w-16 h-16 object-cover rounded-lg border border-[#21293d] cursor-zoom-in"
+                        className="w-16 h-16 object-cover rounded-lg border border-app cursor-zoom-in"
                         onDoubleClick={() => openImageLightbox(part.photo_url!, "Required Spare")}
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.visibility = "hidden";
@@ -332,7 +332,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                       <button
                         onClick={() => fileRef.current?.click()}
                         disabled={uploading !== null}
-                        className="w-16 h-16 rounded-lg border border-dashed border-[#2a3450] flex flex-col items-center justify-center text-slate-500 hover:text-amber-300 hover:border-amber-500/40 transition-all"
+                        className="w-16 h-16 rounded-lg border border-dashed border-app-2 flex flex-col items-center justify-center text-muted hover:text-amber-300 hover:border-amber-500/40 transition-all"
                       >
                         <Camera size={16} />
                         <span className="text-[9px] mt-0.5">Photo</span>
@@ -349,7 +349,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                       />
                     </>
                   ) : (
-                    <div className="w-16 h-16 rounded-lg bg-[#161b27] border border-[#21293d] flex items-center justify-center text-slate-600">
+                    <div className="w-16 h-16 rounded-lg bg-panel border border-app flex items-center justify-center text-muted-2">
                       <X size={14} />
                     </div>
                   )}
@@ -358,7 +358,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold text-slate-200 text-sm">{part.product_name}</span>
+                    <span className="font-bold text-app-2 text-sm">{part.product_name}</span>
                     <span
                       className={`px-2 py-0.5 text-[10px] font-black rounded-full border ${STATUS_CHIP[part.status]}`}
                     >
@@ -369,14 +369,14 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                         PO #{part.purchase_order_id} se linked
                       </span>
                     )}
-                    <span className="text-[10px] text-slate-500 flex items-center gap-1">
+                    <span className="text-[10px] text-muted flex items-center gap-1">
                       <Clock size={10} /> {daysOld(part.date_created)} din se waiting
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-400 mt-1">
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted mt-1">
                     <span>
                       Qty:{" "}
-                      <b className="text-slate-200">
+                      <b className="text-app-2">
                         {part.qty_received}/{part.qty_needed}
                       </b>
                     </span>
@@ -388,7 +388,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                     )}
                     {part.eta && <span>ETA: {part.eta}</span>}
                     {part.remark && (
-                      <span className="italic text-slate-500">&ldquo;{part.remark}&rdquo;</span>
+                      <span className="italic text-muted">&ldquo;{part.remark}&rdquo;</span>
                     )}
                   </div>
                 </div>
@@ -500,7 +500,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
         )}
 
         {!closed && showForm && (
-          <div className="mt-3 border border-[#21293d] rounded-xl bg-[#161b27] p-4 space-y-3">
+          <div className="mt-3 border border-app rounded-xl bg-panel p-4 space-y-3">
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => {
@@ -511,7 +511,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                 className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
                   !useCustom
                     ? "bg-blue-500/15 text-blue-300 border-blue-500/50"
-                    : "bg-[#0d1117] text-slate-400 border-[#21293d]"
+                    : "bg-app text-muted border-app"
                 }`}
               >
                 Inventory product
@@ -524,7 +524,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                 className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
                   useCustom
                     ? "bg-amber-500/15 text-amber-300 border-amber-500/50"
-                    : "bg-[#0d1117] text-slate-400 border-[#21293d]"
+                    : "bg-app text-muted border-app"
                 }`}
               >
                 Custom spare
@@ -540,21 +540,21 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                   placeholder="Type to search product..."
                   className={inputCls}
                 />
-                <div className="mt-1.5 max-h-40 overflow-y-auto border border-[#21293d] rounded-lg divide-y divide-[#21293d]">
+                <div className="mt-1.5 max-h-40 overflow-y-auto border border-app rounded-lg divide-y divide-[#21293d]">
                   {filtered.map((p) => (
                     <button
                       key={p.id}
                       type="button"
                       onClick={() => pickProduct(p.id)}
-                      className={`w-full text-left px-3 py-2 text-xs hover:bg-[#1a2030] transition-all ${
-                        picked === p.id ? "bg-amber-500/10 text-amber-300" : "text-slate-300"
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-panel-2 transition-all ${
+                        picked === p.id ? "bg-amber-500/10 text-amber-300" : "text-app-2"
                       }`}
                     >
                       {p.name}
                     </button>
                   ))}
                   {filtered.length === 0 && (
-                    <div className="px-3 py-2 text-xs text-slate-600">No product found</div>
+                    <div className="px-3 py-2 text-xs text-muted-2">No product found</div>
                   )}
                 </div>
               </div>
@@ -649,7 +649,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                       alt="New spare"
                       width={64}
                       height={64}
-                      className="w-16 h-16 object-cover rounded-lg border border-[#21293d] cursor-zoom-in"
+                      className="w-16 h-16 object-cover rounded-lg border border-app cursor-zoom-in"
                       onDoubleClick={() => openImageLightbox(photoPreview, "New Spare Photo")}
                     />
                     <button
@@ -665,7 +665,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                   <button
                     type="button"
                     onClick={() => formPhotoRef.current?.click()}
-                    className="w-16 h-16 rounded-lg border border-dashed border-[#2a3450] flex flex-col items-center justify-center text-slate-500 hover:text-amber-300 hover:border-amber-500/40 transition-all"
+                    className="w-16 h-16 rounded-lg border border-dashed border-app-2 flex flex-col items-center justify-center text-muted hover:text-amber-300 hover:border-amber-500/40 transition-all"
                   >
                     <Camera size={16} />
                     <span className="text-[9px] mt-0.5">Photo</span>
@@ -679,7 +679,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                   onChange={onFormPhotoChange}
                 />
                 {photoPreview && (
-                  <span className="text-[10px] text-slate-500">
+                  <span className="text-[10px] text-muted">
                     Spare ki photo attach ho jayegi
                   </span>
                 )}
@@ -701,7 +701,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
               </button>
               <button
                 onClick={resetForm}
-                className="text-xs bg-slate-600/10 text-slate-400 border border-slate-600/30 px-4 py-2 rounded-xl hover:bg-slate-600/20 transition-all"
+                className="text-xs bg-slate-600/10 text-muted border border-muted/30 px-4 py-2 rounded-xl hover:bg-slate-600/20 transition-all"
               >
                 Cancel
               </button>

@@ -330,22 +330,22 @@ export default function LendersPage() {
 
   return (
     <AdminPage title="Lenders" subtitle="Loan liye hue lenders se">
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-app flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
               />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name, contact..."
-                className="pl-9 pr-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-blue-500 w-64"
+                className="pl-9 pr-4 py-2 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-app outline-none focus:border-blue-500 w-64"
               />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-2">
               {filtered.length} of {rows.length}
             </span>
           </div>
@@ -363,9 +363,9 @@ export default function LendersPage() {
           </div>
         )}
 
-        <div className="px-5 py-2 border-b border-[#1a2234] bg-[#0d1117]/50 grid grid-cols-3 gap-4 text-[10px] font-black uppercase tracking-widest text-slate-600">
+        <div className="px-5 py-2 border-b border-app-2 bg-app/50 grid grid-cols-3 gap-4 text-[10px] font-black uppercase tracking-widest text-muted-2">
           <div>
-            Total Loan: <span className="text-slate-300 font-bold">{inr(totals.principal)}</span>
+            Total Loan: <span className="text-app-2 font-bold">{inr(totals.principal)}</span>
           </div>
           <div>
             Total Paid: <span className="text-emerald-400 font-bold">{inr(totals.paid)}</span>
@@ -377,18 +377,18 @@ export default function LendersPage() {
 
         {loading ? (
           <div className="px-5 py-12 text-center">
-            <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">
+            <Loader2 size={24} className="animate-spin text-muted-2 mx-auto mb-2" />
+            <p className="text-muted-2 text-xs font-extrabold uppercase tracking-widest">
               Loading...
             </p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="px-5 py-12 text-center text-slate-600 text-sm">No lenders found.</div>
+          <div className="px-5 py-12 text-center text-muted-2 text-sm">No lenders found.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[#111520]">
-                <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+              <thead className="bg-panel-2">
+                <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                   <th className="text-left px-4 py-3">Lender</th>
                   <th className="text-left px-4 py-3">Loan Details</th>
                   <th className="text-right px-4 py-3">Monthly EMI</th>
@@ -404,23 +404,23 @@ export default function LendersPage() {
                   return (
                     <tr key={lender.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-3.5">
-                        <div className="font-bold text-slate-200">{lender.fullname}</div>
-                        <div className="text-xs text-slate-600">{lender.contact}</div>
+                        <div className="font-bold text-app-2">{lender.fullname}</div>
+                        <div className="text-xs text-muted-2">{lender.contact}</div>
                       </td>
                       <td className="px-4 py-3.5">
                         <div className="text-xs">
-                          <span className="text-slate-400">P: </span>
-                          <span className="font-bold text-slate-200">
+                          <span className="text-muted">P: </span>
+                          <span className="font-bold text-app-2">
                             {inr(lender.loan_amount)}
                           </span>
-                          <span className="text-slate-600 ml-2">R: </span>
+                          <span className="text-muted-2 ml-2">R: </span>
                           <span className="text-blue-400">
                             {Number(lender.interest_rate || 0).toFixed(1)}%
                           </span>
-                          <span className="text-slate-600 ml-2">N: </span>
-                          <span className="text-slate-400">{lender.tenure_months} mo</span>
+                          <span className="text-muted-2 ml-2">N: </span>
+                          <span className="text-muted">{lender.tenure_months} mo</span>
                         </div>
-                        <div className="text-xs text-slate-600 mt-0.5">
+                        <div className="text-xs text-muted-2 mt-0.5">
                           Start: {fmtDate(lender.start_date)}
                         </div>
                       </td>
@@ -441,7 +441,7 @@ export default function LendersPage() {
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
                             lender.status === 1
                               ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-                              : "bg-slate-500/10 border-slate-500/20 text-slate-500 hover:bg-slate-500/20"
+                              : "bg-muted/10 border-muted/20 text-muted hover:bg-muted/20"
                           }`}
                         >
                           {lender.status === 1 ? (
@@ -498,8 +498,8 @@ export default function LendersPage() {
       {/* Add/Edit Lender Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-app">
               <h3 className="font-bold text-white flex items-center gap-2">
                 {editing ? (
                   <>
@@ -513,7 +513,7 @@ export default function LendersPage() {
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+                className="p-1.5 rounded-lg hover:bg-white/10 text-muted transition"
               >
                 <X size={16} />
               </button>
@@ -527,44 +527,44 @@ export default function LendersPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Lender Name <span className="text-red-400">*</span>
                   </label>
                   <input
                     value={form.fullname}
                     onChange={(e) => setForm((p) => ({ ...p, fullname: e.target.value }))}
                     placeholder="Full name"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Contact <span className="text-red-400">*</span>
                   </label>
                   <input
                     value={form.contact}
                     onChange={(e) => setForm((p) => ({ ...p, contact: e.target.value }))}
                     placeholder="Phone number"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Start Date
                 </label>
                 <input
                   type="date"
                   value={form.start_date}
                   onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Loan Amount (₹) <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -573,11 +573,11 @@ export default function LendersPage() {
                     value={form.loan_amount}
                     onChange={(e) => setForm((p) => ({ ...p, loan_amount: e.target.value }))}
                     placeholder="Principal"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Rate (%)
                   </label>
                   <input
@@ -586,11 +586,11 @@ export default function LendersPage() {
                     value={form.interest_rate}
                     onChange={(e) => setForm((p) => ({ ...p, interest_rate: e.target.value }))}
                     placeholder="e.g. 12"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Tenure (mo)
                   </label>
                   <input
@@ -598,14 +598,14 @@ export default function LendersPage() {
                     value={form.tenure_months}
                     onChange={(e) => setForm((p) => ({ ...p, tenure_months: e.target.value }))}
                     placeholder="e.g. 12"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Monthly EMI (₹)
                     <button
                       type="button"
@@ -621,17 +621,17 @@ export default function LendersPage() {
                     value={form.emi_amount}
                     onChange={(e) => setForm((p) => ({ ...p, emi_amount: e.target.value }))}
                     placeholder="Monthly EMI"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Status
                   </label>
                   <select
                     value={form.status}
                     onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                   >
                     <option value="1">Active</option>
                     <option value="2">Completed</option>
@@ -640,7 +640,7 @@ export default function LendersPage() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Remarks / Reason
                 </label>
                 <textarea
@@ -648,7 +648,7 @@ export default function LendersPage() {
                   onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))}
                   placeholder="Optional notes..."
                   rows={2}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500 resize-none"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500 resize-none"
                 />
               </div>
 
@@ -671,7 +671,7 @@ export default function LendersPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
+                  className="px-6 py-2.5 bg-panel-2 border border-app text-muted rounded-xl font-bold text-sm hover:bg-panel-2 transition"
                 >
                   Cancel
                 </button>
@@ -684,15 +684,15 @@ export default function LendersPage() {
       {/* Pay EMI Modal */}
       {showPayModal && payingLender && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-sm shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-app">
               <h3 className="font-bold text-white flex items-center gap-2">
                 <CreditCard size={16} className="text-emerald-400" /> Pay EMI —{" "}
                 {payingLender.fullname}
               </h3>
               <button
                 onClick={() => setShowPayModal(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+                className="p-1.5 rounded-lg hover:bg-white/10 text-muted transition"
               >
                 <X size={16} />
               </button>
@@ -703,14 +703,14 @@ export default function LendersPage() {
                   <AlertCircle size={14} /> {payErr}
                 </div>
               )}
-              <div className="p-3 bg-[#0d1117] rounded-xl border border-[#21293d] text-xs text-slate-500">
+              <div className="p-3 bg-app rounded-xl border border-app text-xs text-muted">
                 Monthly EMI:{" "}
                 <span className="font-black text-amber-400 ml-1">
                   {inr(payingLender.emi_amount)}
                 </span>
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Amount Paid (₹) <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -719,29 +719,29 @@ export default function LendersPage() {
                   value={payForm.amount_paid}
                   onChange={(e) => setPayForm((p) => ({ ...p, amount_paid: e.target.value }))}
                   placeholder="EMI amount"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Payment Date
                 </label>
                 <input
                   type="date"
                   value={payForm.payment_date}
                   onChange={(e) => setPayForm((p) => ({ ...p, payment_date: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Remarks
                 </label>
                 <input
                   value={payForm.remarks}
                   onChange={(e) => setPayForm((p) => ({ ...p, remarks: e.target.value }))}
                   placeholder="Optional"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                 />
               </div>
               <div className="flex gap-3 pt-2">
@@ -763,7 +763,7 @@ export default function LendersPage() {
                 <button
                   type="button"
                   onClick={() => setShowPayModal(false)}
-                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
+                  className="px-6 py-2.5 bg-panel-2 border border-app text-muted rounded-xl font-bold text-sm hover:bg-panel-2 transition"
                 >
                   Cancel
                 </button>
@@ -781,14 +781,14 @@ export default function LendersPage() {
           const { totalPaid, totalToPay, balance } = getLenderTotals(viewing);
           return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-              <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
+              <div className="bg-panel border border-app rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between p-5 border-b border-app">
                   <h3 className="font-bold text-white flex items-center gap-2">
                     <History size={16} className="text-blue-400" /> Lender Details
                   </h3>
                   <button
                     onClick={() => setShowViewModal(false)}
-                    className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+                    className="p-1.5 rounded-lg hover:bg-white/10 text-muted transition"
                   >
                     <X size={16} />
                   </button>
@@ -831,34 +831,34 @@ export default function LendersPage() {
                     <DetailItem
                       label="Status"
                       value={viewing.status === 1 ? "Active" : "Completed"}
-                      valueClass={viewing.status === 1 ? "text-emerald-400" : "text-slate-500"}
+                      valueClass={viewing.status === 1 ? "text-emerald-400" : "text-muted"}
                     />
                   </div>
                   {viewing.reason && (
-                    <div className="rounded-xl border border-[#21293d] bg-[#0d1117] p-3">
-                      <div className="text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1">
+                    <div className="rounded-xl border border-app bg-app p-3">
+                      <div className="text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1">
                         Remarks
                       </div>
-                      <div className="text-sm text-slate-400">{viewing.reason}</div>
+                      <div className="text-sm text-muted">{viewing.reason}</div>
                     </div>
                   )}
 
                   {lPayments.length > 0 && (
                     <div>
-                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-2">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-2">
                         Payment History
                       </div>
                       <div className="space-y-1.5 max-h-48 overflow-y-auto">
                         {lPayments.map((p) => (
                           <div
                             key={p.id}
-                            className="flex items-center justify-between p-2.5 rounded-xl border border-[#21293d] bg-[#0d1117]"
+                            className="flex items-center justify-between p-2.5 rounded-xl border border-app bg-app"
                           >
                             <div>
-                              <div className="text-xs font-bold text-slate-200">
+                              <div className="text-xs font-bold text-app-2">
                                 {inr(p.amount_paid)}
                               </div>
-                              <div className="text-[10px] text-slate-600">
+                              <div className="text-[10px] text-muted-2">
                                 {fmtDate(p.payment_date)}
                               </div>
                             </div>
@@ -897,7 +897,7 @@ export default function LendersPage() {
                     </button>
                     <button
                       onClick={() => setShowViewModal(false)}
-                      className="px-5 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
+                      className="px-5 py-2.5 bg-panel-2 border border-app text-muted rounded-xl font-bold text-sm hover:bg-panel-2 transition"
                     >
                       Close
                     </button>
@@ -921,11 +921,11 @@ function DetailItem({
   valueClass?: string;
 }) {
   return (
-    <div className="rounded-xl border border-[#21293d] bg-[#0d1117] p-3">
-      <div className="text-[10px] font-black uppercase tracking-wider text-slate-600 mb-1">
+    <div className="rounded-xl border border-app bg-app p-3">
+      <div className="text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1">
         {label}
       </div>
-      <div className={`text-sm font-bold text-slate-200 ${valueClass || ""}`}>{value}</div>
+      <div className={`text-sm font-bold text-app-2 ${valueClass || ""}`}>{value}</div>
     </div>
   );
 }

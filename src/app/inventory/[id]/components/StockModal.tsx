@@ -136,19 +136,19 @@ export default function StockModal({
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
       <div
-        className="relative w-full sm:max-w-md bg-[#161b27] border border-[#21293d] sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
+        className="relative w-full sm:max-w-md bg-panel border border-app sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
         style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {success && (
-          <div className="absolute inset-0 z-10 bg-[#161b27] flex flex-col items-center justify-center gap-3">
+          <div className="absolute inset-0 z-10 bg-panel flex flex-col items-center justify-center gap-3">
             <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
               <CheckCircle2 size={32} className="text-emerald-400" />
             </div>
             <p className="text-white font-extrabold text-lg">
               {isEdit ? "Updated!" : "Stock Added!"}
             </p>
-            <p className="text-slate-600 text-xs font-bold uppercase tracking-widest">
+            <p className="text-muted-2 text-xs font-bold uppercase tracking-widest">
               {quantity} unit{quantity !== 1 ? "s" : ""} {isEdit ? "updated" : "added"}
             </p>
           </div>
@@ -158,7 +158,7 @@ export default function StockModal({
           className={`h-0.5 w-full ${isEdit ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-gradient-to-r from-blue-500 to-indigo-600"}`}
         />
 
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-app">
           <div className="flex items-center gap-3">
             <div
               className={`w-9 h-9 rounded-xl flex items-center justify-center border ${isEdit ? "bg-amber-500/10 border-amber-500/25" : "bg-blue-500/10 border-blue-500/25"}`}
@@ -173,14 +173,14 @@ export default function StockModal({
               <h3 className="text-base font-extrabold text-white leading-none">
                 {isEdit ? "Edit Stock Entry" : "Add New Stock"}
               </h3>
-              <p className="text-[10px] text-slate-600 font-bold mt-0.5 uppercase tracking-wider">
+              <p className="text-[10px] text-muted-2 font-bold mt-0.5 uppercase tracking-wider">
                 {isEdit ? `Editing entry #${stock!.id}` : `Product ID: #${productId}`}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-panel-2 hover:bg-white/5 text-muted hover:text-app-2 border border-app transition-all"
           >
             <X size={15} />
           </button>
@@ -200,20 +200,20 @@ export default function StockModal({
               <div className="flex items-center gap-2 px-3 py-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
                 <MapPin size={13} className="text-emerald-400 flex-shrink-0" />
                 <span className="text-xs font-bold text-emerald-300">{productLocationLabel}</span>
-                <span className="text-[9px] text-slate-600 ml-auto">Product Location</span>
+                <span className="text-[9px] text-muted-2 ml-auto">Product Location</span>
               </div>
             )}
 
             {/* Quantity */}
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
+              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2.5">
                 Quantity <span className="text-red-500">*</span>
               </label>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => adjustQty(-1)}
-                  className="w-11 h-11 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-red-500/40 hover:text-red-400 text-slate-500 rounded-xl transition-all active:scale-95"
+                  className="w-11 h-11 flex items-center justify-center bg-panel-2 border border-app hover:border-red-500/40 hover:text-red-400 text-muted rounded-xl transition-all active:scale-95"
                 >
                   <Minus size={16} />
                 </button>
@@ -224,13 +224,13 @@ export default function StockModal({
                     min={1}
                     value={quantity}
                     onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                    className="w-full text-center text-3xl font-black text-white bg-[#111520] border border-[#21293d] rounded-xl py-3 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full text-center text-3xl font-black text-white bg-panel-2 border border-app rounded-xl py-3 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={() => adjustQty(1)}
-                  className="w-11 h-11 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-blue-500/40 hover:text-blue-400 text-slate-500 rounded-xl transition-all active:scale-95"
+                  className="w-11 h-11 flex items-center justify-center bg-panel-2 border border-app hover:border-blue-500/40 hover:text-blue-400 text-muted rounded-xl transition-all active:scale-95"
                 >
                   <Plus size={16} />
                 </button>
@@ -241,7 +241,7 @@ export default function StockModal({
                     key={n}
                     type="button"
                     onClick={() => setQuantity(n)}
-                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold border transition-all ${quantity === n ? "bg-blue-600 text-white border-blue-600" : "bg-[#111520] text-slate-600 border-[#21293d] hover:border-blue-500/30 hover:text-slate-400"}`}
+                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold border transition-all ${quantity === n ? "bg-blue-600 text-white border-blue-600" : "bg-panel-2 text-muted-2 border-app hover:border-blue-500/30 hover:text-muted"}`}
                   >
                     {n}
                   </button>
@@ -251,9 +251,9 @@ export default function StockModal({
 
             {/* Supplier */}
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
+              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2.5">
                 <span className="flex items-center gap-1.5">
-                  <Package size={10} className="text-slate-700" /> Supplier (Optional)
+                  <Package size={10} className="text-app" /> Supplier (Optional)
                 </span>
               </label>
               <SupplierPicker
@@ -267,9 +267,9 @@ export default function StockModal({
 
             {/* Stock Date */}
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
+              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2.5">
                 <span className="flex items-center gap-1.5">
-                  <Calendar size={10} className="text-slate-700" /> Stock Date{" "}
+                  <Calendar size={10} className="text-app" /> Stock Date{" "}
                   <span className="text-red-500">*</span>
                 </span>
               </label>
@@ -279,7 +279,7 @@ export default function StockModal({
                 value={stockDate}
                 max={today}
                 onChange={(e) => setStockDate(e.target.value)}
-                className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all text-sm [color-scheme:dark]"
+                className="w-full px-4 py-3 bg-panel-2 border border-app text-app-2 rounded-xl outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all text-sm [color-scheme:dark]"
               />
               <div className="flex gap-2 mt-2">
                 {[
@@ -290,7 +290,7 @@ export default function StockModal({
                     key={label}
                     type="button"
                     onClick={() => setStockDate(val)}
-                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold border transition-all ${stockDate === val ? "bg-blue-600 text-white border-blue-600" : "bg-[#111520] text-slate-600 border-[#21293d] hover:border-blue-500/30 hover:text-slate-400"}`}
+                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold border transition-all ${stockDate === val ? "bg-blue-600 text-white border-blue-600" : "bg-panel-2 text-muted-2 border-app hover:border-blue-500/30 hover:text-muted"}`}
                   >
                     {label}
                   </button>
@@ -322,7 +322,7 @@ export default function StockModal({
             <button
               type="button"
               onClick={onClose}
-              className="py-3 px-5 bg-[#111520] hover:bg-white/5 border border-[#21293d] text-slate-500 hover:text-slate-300 rounded-xl font-bold text-sm transition-all"
+              className="py-3 px-5 bg-panel-2 hover:bg-white/5 border border-app text-muted hover:text-app-2 rounded-xl font-bold text-sm transition-all"
             >
               Cancel
             </button>

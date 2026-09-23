@@ -27,12 +27,12 @@ export function PageHero({
     <section className="relative overflow-hidden border-b border-white/[0.06]">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(37,99,235,0.16),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(6,182,212,0.10),transparent_50%)]" />
       <div className="relative mx-auto max-w-7xl px-4 py-12 sm:py-16">
-        <nav className="flex items-center gap-1.5 text-[12px] font-bold text-slate-500 mb-4">
+        <nav className="flex items-center gap-1.5 text-[12px] font-bold text-muted mb-4">
           <Link href="/" className="hover:text-white transition-colors">
             Home
           </Link>
           <ChevronRight size={13} />
-          <span className="text-slate-300">{badge}</span>
+          <span className="text-app-2">{badge}</span>
         </nav>
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px] font-bold uppercase tracking-widest mb-4">
           <BadgeCheck size={13} /> {badge}
@@ -43,7 +43,7 @@ export function PageHero({
             {highlight}
           </span>
         </h1>
-        <p className="mt-4 text-[14px] sm:text-base text-slate-400 leading-relaxed max-w-2xl">
+        <p className="mt-4 text-[14px] sm:text-base text-muted leading-relaxed max-w-2xl">
           {subtitle}
         </p>
       </div>
@@ -69,7 +69,7 @@ export function EquipmentGrid({
           key={i}
           className="group rounded-2xl overflow-hidden bg-white/[0.03] border border-white/[0.06] hover:border-blue-500/40 transition-all active:scale-[0.98]"
         >
-          <div className="relative h-32 sm:h-36 overflow-hidden bg-[#080a18]">
+          <div className="relative h-32 sm:h-36 overflow-hidden bg-app">
             {it.image ? (
               <ZoomableImage
                 src={it.image}
@@ -98,7 +98,7 @@ export function EquipmentGrid({
           </div>
           <div className="p-4 sm:p-5">
             <h3 className="text-[15px] font-bold mb-1">{it.name}</h3>
-            <p className="text-[13px] text-slate-400 leading-relaxed">{it.detail}</p>
+            <p className="text-[13px] text-muted leading-relaxed">{it.detail}</p>
           </div>
         </div>
       ))}
@@ -119,10 +119,10 @@ export function ProcessSteps({ steps }: { steps: { title: string; desc: string }
               {i + 1}
             </div>
             <div className="h-px flex-1 bg-white/[0.08]" />
-            <Clock size={15} className="text-slate-600" />
+            <Clock size={15} className="text-muted-2" />
           </div>
           <h4 className="text-[15px] font-bold mb-1">{s.title}</h4>
-          <p className="text-[13px] text-slate-400 leading-relaxed">{s.desc}</p>
+          <p className="text-[13px] text-muted leading-relaxed">{s.desc}</p>
         </div>
       ))}
     </div>
@@ -140,7 +140,7 @@ export function RepairHighlights({ points }: { points: { title: string; desc: st
           <CheckCircle2 size={18} className="text-emerald-400 shrink-0 mt-0.5" />
           <div>
             <p className="text-[14px] font-bold">{p.title}</p>
-            <p className="text-[12px] text-slate-500 mt-0.5">{p.desc}</p>
+            <p className="text-[12px] text-muted mt-0.5">{p.desc}</p>
           </div>
         </div>
       ))}
@@ -172,7 +172,7 @@ export function CtaBand() {
                 href={WHATSAPP_LINK("Hello, repair ke liye inquiry hai.")}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#25D366] text-[#04170c] text-[14px] font-black shadow-xl active:scale-95 transition-transform"
+                className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#25D366] text-app text-[14px] font-black shadow-xl active:scale-95 transition-transform"
               >
                 <MessageCircle size={16} /> WhatsApp par bhejo
               </a>
@@ -225,11 +225,11 @@ export function BrandedServicePage({
                   {f.icon}
                 </div>
                 <h3 className="text-[15px] font-bold mb-1.5">{f.title}</h3>
-                <p className="text-[13px] text-slate-400 leading-relaxed">{f.desc}</p>
+                <p className="text-[13px] text-muted leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
-          <p className="text-[14px] text-slate-400 leading-relaxed mt-10">
+          <p className="text-[14px] text-muted leading-relaxed mt-10">
             Kisi bhi repair ke liye {SITE.phone} par call karein ya WhatsApp karein.
           </p>
         </div>

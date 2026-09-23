@@ -98,15 +98,15 @@ function StatCard({
     red: "text-red-400 bg-red-500/8",
   };
   return (
-    <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+    <div className="bg-panel border border-app rounded-2xl p-4">
       <div className="flex items-center gap-3">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors[color]}`}>
           {icon}
         </div>
         <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted">{label}</p>
           <p className="text-lg font-black text-white">{value}</p>
-          {sub && <p className="text-xs text-slate-500">{sub}</p>}
+          {sub && <p className="text-xs text-muted">{sub}</p>}
         </div>
       </div>
     </div>
@@ -444,11 +444,11 @@ export default function MechanicDetailPage() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
+      <div className="bg-panel border border-app rounded-2xl px-5 py-4">
         <div className="flex items-center gap-4 flex-wrap">
           <Link
             href="/mechanics"
-            className="p-2 rounded-xl bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition no-underline"
+            className="p-2 rounded-xl bg-app border border-app hover:bg-panel-2 text-muted transition no-underline"
           >
             <ArrowLeft size={16} />
           </Link>
@@ -473,13 +473,13 @@ export default function MechanicDetailPage() {
             <button
               onClick={() => setPhotoPopup(!photoPopup)}
               disabled={photoSaving}
-              className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-[#161b27] transition-colors disabled:opacity-60"
+              className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-app-2 transition-colors disabled:opacity-60"
               title="Photo upload"
             >
               {photoSaving ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />}
             </button>
             {photoPopup && (
-              <div className="absolute -bottom-20 -right-2 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+              <div className="absolute -bottom-20 -right-2 z-50 bg-panel border border-app-2 rounded-xl shadow-2xl p-1.5 min-w-[120px]">
                 <button
                   onClick={() => {
                     setPhotoPopup(false);
@@ -529,12 +529,12 @@ export default function MechanicDetailPage() {
                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                   mechanic?.status === 1
                     ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                    : "bg-slate-500/10 border-slate-500/20 text-slate-500"
+                    : "bg-muted/10 border-muted/20 text-muted"
                 }`}
               >
                 {mechanic?.status === 1 ? "Active" : "Inactive"}
               </span>
-              <span className="text-xs text-slate-500">{mechanic?.contact}</span>
+              <span className="text-xs text-muted">{mechanic?.contact}</span>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-500/10 text-blue-400">
                 <Wrench size={9} /> {mechanic?.designation || "Mechanic"}
               </span>
@@ -561,7 +561,7 @@ export default function MechanicDetailPage() {
             </button>
             <button
               onClick={shareWhatsApp}
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#25D366]/10 border border-[#25D366]/20 text-[#25D366] hover:bg-[#25D366]/20 rounded-xl text-xs font-bold transition"
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#25D366]/10 border border-[#25D366]/20 text-emerald-500 hover:bg-[#25D366]/20 rounded-xl text-xs font-bold transition"
             >
               <MessageSquare size={13} /> WhatsApp
             </button>
@@ -572,7 +572,7 @@ export default function MechanicDetailPage() {
                   "_blank"
                 )
               }
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#1e2637] border border-[#2a3550] text-slate-400 hover:bg-[#252f45] rounded-xl text-xs font-bold transition"
+              className="flex items-center gap-1.5 px-3 py-2 bg-panel-2 border border-app-2 text-muted hover:bg-panel-2 rounded-xl text-xs font-bold transition"
             >
               <Printer size={13} /> Print
             </button>
@@ -587,14 +587,14 @@ export default function MechanicDetailPage() {
       </div>
 
       {/* Date Filter */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-3">
+      <div className="bg-panel border border-app rounded-2xl px-5 py-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mr-2">
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted mr-2">
             Period:
           </span>
           <button
             onClick={() => shiftMonth(-1)}
-            className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition"
+            className="p-2 rounded-lg bg-app border border-app hover:bg-panel-2 text-muted transition"
           >
             <ChevronLeft size={14} />
           </button>
@@ -603,19 +603,19 @@ export default function MechanicDetailPage() {
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              className="px-3 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-slate-200 outline-none focus:border-blue-500"
+              className="px-3 py-1.5 bg-app border border-app rounded-lg text-xs text-app-2 outline-none focus:border-blue-500"
             />
-            <span className="text-slate-600 text-xs">—</span>
+            <span className="text-muted-2 text-xs">—</span>
             <input
               type="date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
-              className="px-3 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-slate-200 outline-none focus:border-blue-500"
+              className="px-3 py-1.5 bg-app border border-app rounded-lg text-xs text-app-2 outline-none focus:border-blue-500"
             />
           </div>
           <button
             onClick={() => shiftMonth(1)}
-            className="p-2 rounded-lg bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 transition"
+            className="p-2 rounded-lg bg-app border border-app hover:bg-panel-2 text-muted transition"
           >
             <ChevronRight size={14} />
           </button>
@@ -661,30 +661,30 @@ export default function MechanicDetailPage() {
       </div>
 
       {/* Summary Bar */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
+      <div className="bg-panel border border-app rounded-2xl px-5 py-4">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-center">
-          <div className="border-r border-[#21293d] pr-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+          <div className="border-r border-app pr-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted">
               Total Jobs
             </p>
             <p className="text-xl font-black text-blue-400">{stats.jobCount}</p>
           </div>
-          <div className="border-r border-[#21293d] pr-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+          <div className="border-r border-app pr-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted">
               Avg Commission
             </p>
             <p className="text-xl font-black text-amber-400">
               {stats.jobCount > 0 ? inr(stats.totalCommission / stats.jobCount) : inr(0)}
             </p>
           </div>
-          <div className="border-r border-[#21293d] pr-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+          <div className="border-r border-app pr-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted">
               Working Days
             </p>
             <p className="text-xl font-black text-teal-400">{stats.workingDays}</p>
           </div>
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted">
               Avg Daily Earn
             </p>
             <p className="text-xl font-black text-emerald-400">
@@ -695,8 +695,8 @@ export default function MechanicDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-        <div className="flex border-b border-[#21293d] overflow-x-auto">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+        <div className="flex border-b border-app overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -704,7 +704,7 @@ export default function MechanicDetailPage() {
               className={`flex items-center gap-2 px-5 py-3 text-xs font-bold border-b-2 transition whitespace-nowrap ${
                 activeTab === tab.key
                   ? "border-blue-500 text-blue-400 bg-blue-500/5"
-                  : "border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/5"
+                  : "border-transparent text-muted hover:text-app-2 hover:bg-white/5"
               }`}
             >
               {tab.label}
@@ -712,7 +712,7 @@ export default function MechanicDetailPage() {
                 className={`px-1.5 py-0.5 rounded-full text-[10px] ${
                   activeTab === tab.key
                     ? "bg-blue-500/20 text-blue-400"
-                    : "bg-slate-500/20 text-slate-500"
+                    : "bg-muted/20 text-muted"
                 }`}
               >
                 {tab.count}
@@ -724,8 +724,8 @@ export default function MechanicDetailPage() {
         <div className="p-5">
           {loading ? (
             <div className="text-center py-12">
-              <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-              <p className="text-slate-600 text-xs font-black uppercase">Loading...</p>
+              <Loader2 size={24} className="animate-spin text-muted-2 mx-auto mb-2" />
+              <p className="text-muted-2 text-xs font-black uppercase">Loading...</p>
             </div>
           ) : (
             <>
@@ -746,8 +746,8 @@ export default function MechanicDetailPage() {
                     <div>
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                          <thead className="bg-[#111520]">
-                            <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                          <thead className="bg-panel-2">
+                            <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                               <th className="text-left px-4 py-3">Date</th>
                               <th className="text-left px-4 py-3">Job ID</th>
                               <th className="text-left px-4 py-3">Item/Service</th>
@@ -759,15 +759,15 @@ export default function MechanicDetailPage() {
                           <tbody className="divide-y divide-[#1a2234]">
                             {paginatedJobs.length === 0 ? (
                               <tr>
-                                <td colSpan={6} className="px-4 py-12 text-center text-slate-600">
-                                  <Wrench size={32} className="mx-auto mb-2 text-slate-700" />
+                                <td colSpan={6} className="px-4 py-12 text-center text-muted-2">
+                                  <Wrench size={32} className="mx-auto mb-2 text-app" />
                                   <p>No work history found</p>
                                 </td>
                               </tr>
                             ) : (
                               paginatedJobs.map((job) => (
                                 <tr key={job.id} className="hover:bg-white/[0.02]">
-                                  <td className="px-4 py-3 text-slate-400 text-xs">
+                                  <td className="px-4 py-3 text-muted text-xs">
                                     {new Date(job.date_updated).toLocaleDateString("en-IN", {
                                       day: "2-digit",
                                       month: "short",
@@ -782,7 +782,7 @@ export default function MechanicDetailPage() {
                                       {job.job_id}
                                     </Link>
                                   </td>
-                                  <td className="px-4 py-3 text-slate-400">{job.item}</td>
+                                  <td className="px-4 py-3 text-muted">{job.item}</td>
                                   <td className="px-4 py-3 text-right font-bold text-white">
                                     {inr(job.service_amount || 0)}
                                   </td>
@@ -800,8 +800,8 @@ export default function MechanicDetailPage() {
                           </tbody>
                           {jobs.length > 0 && (
                             <tfoot>
-                              <tr className="bg-[#111520] text-[10px] font-black uppercase tracking-widest text-slate-500">
-                                <td colSpan={3} className="text-right px-4 py-3 text-slate-600">
+                              <tr className="bg-panel-2 text-[10px] font-black uppercase tracking-widest text-muted">
+                                <td colSpan={3} className="text-right px-4 py-3 text-muted-2">
                                   Period Total ({jobs.length} jobs):
                                 </td>
                                 <td className="text-right px-4 py-3 text-white">{inr(totalSvc)}</td>
@@ -815,8 +815,8 @@ export default function MechanicDetailPage() {
                         </table>
                       </div>
                       {totalJobPages > 1 && (
-                        <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-4 border-t border-[#21293d]">
-                          <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-4 border-t border-app">
+                          <div className="flex items-center gap-2 text-xs text-muted">
                             <span>Show</span>
                             <select
                               value={itemsPerPage}
@@ -824,7 +824,7 @@ export default function MechanicDetailPage() {
                                 setItemsPerPage(Number(e.target.value));
                                 setCurrentPage(1);
                               }}
-                              className="bg-[#0d1117] border border-[#21293d] rounded-lg px-2 py-1.5 text-white text-xs font-bold"
+                              className="bg-app border border-app rounded-lg px-2 py-1.5 text-white text-xs font-bold"
                             >
                               <option value={10}>10</option>
                               <option value={25}>25</option>
@@ -837,7 +837,7 @@ export default function MechanicDetailPage() {
                             <button
                               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                               disabled={currentPage === 1}
-                              className="px-3 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs font-bold text-slate-400 hover:bg-[#1a2234] disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="px-3 py-1.5 bg-app border border-app rounded-lg text-xs font-bold text-muted hover:bg-panel-2 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               <ChevronLeft size={14} />
                             </button>
@@ -852,7 +852,7 @@ export default function MechanicDetailPage() {
                                 <button
                                   key={pageNum}
                                   onClick={() => setCurrentPage(pageNum)}
-                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${currentPage === pageNum ? "bg-blue-600 text-white" : "bg-[#0d1117] border border-[#21293d] text-slate-400 hover:bg-[#1a2234]"}`}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${currentPage === pageNum ? "bg-blue-600 text-white" : "bg-app border border-app text-muted hover:bg-panel-2"}`}
                                 >
                                   {pageNum}
                                 </button>
@@ -861,7 +861,7 @@ export default function MechanicDetailPage() {
                             <button
                               onClick={() => setCurrentPage((p) => Math.min(totalJobPages, p + 1))}
                               disabled={currentPage === totalJobPages}
-                              className="px-3 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs font-bold text-slate-400 hover:bg-[#1a2234] disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="px-3 py-1.5 bg-app border border-app rounded-lg text-xs font-bold text-muted hover:bg-panel-2 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               <ChevronRight size={14} />
                             </button>
@@ -876,8 +876,8 @@ export default function MechanicDetailPage() {
               {activeTab === "ledger" && (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-[#111520]">
-                      <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                    <thead className="bg-panel-2">
+                      <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                         <th className="text-left px-4 py-3">Date</th>
                         <th className="text-left px-4 py-3">Note</th>
                         <th className="text-right px-4 py-3">Amount</th>
@@ -887,27 +887,27 @@ export default function MechanicDetailPage() {
                     <tbody className="divide-y divide-[#1a2234]">
                       {advances.length === 0 ? (
                         <tr>
-                          <td colSpan={4} className="px-4 py-12 text-center text-slate-600">
-                            <DollarSign size={32} className="mx-auto mb-2 text-slate-700" />
+                          <td colSpan={4} className="px-4 py-12 text-center text-muted-2">
+                            <DollarSign size={32} className="mx-auto mb-2 text-app" />
                             <p>No payments found</p>
                           </td>
                         </tr>
                       ) : (
                         advances.map((adv) => (
                           <tr key={adv.id} className="hover:bg-white/[0.02]">
-                            <td className="px-4 py-3 text-slate-400 text-xs">
+                            <td className="px-4 py-3 text-muted text-xs">
                               {new Date(adv.date_paid).toLocaleDateString("en-IN", {
                                 day: "2-digit",
                                 month: "short",
                                 year: "numeric",
                               })}
                             </td>
-                            <td className="px-4 py-3 text-slate-400">{adv.reason}</td>
+                            <td className="px-4 py-3 text-muted">{adv.reason}</td>
                             <td className="px-4 py-3 text-right font-bold text-red-400">
                               {inr(adv.amount)}
                             </td>
                             <td className="px-4 py-3 text-center">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-500/10 text-slate-400">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-muted/10 text-muted">
                                 Advance
                               </span>
                             </td>
@@ -925,21 +925,21 @@ export default function MechanicDetailPage() {
                   <div className="grid grid-cols-3 gap-3 mb-4">
                     <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
                       <p className="text-2xl font-black text-emerald-400">{stats.fullDays}</p>
-                      <p className="text-[10px] font-black uppercase text-slate-500">Full Days</p>
+                      <p className="text-[10px] font-black uppercase text-muted">Full Days</p>
                     </div>
                     <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
                       <p className="text-2xl font-black text-amber-400">{stats.halfDays}</p>
-                      <p className="text-[10px] font-black uppercase text-slate-500">Half Days</p>
+                      <p className="text-[10px] font-black uppercase text-muted">Half Days</p>
                     </div>
                     <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center">
                       <p className="text-2xl font-black text-red-400">{stats.absentDays}</p>
-                      <p className="text-[10px] font-black uppercase text-slate-500">Absent</p>
+                      <p className="text-[10px] font-black uppercase text-muted">Absent</p>
                     </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead className="bg-[#111520]">
-                        <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                      <thead className="bg-panel-2">
+                        <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                           <th className="text-left px-4 py-3">Date</th>
                           <th className="text-left px-4 py-3">Day</th>
                           <th className="text-center px-4 py-3">Status</th>
@@ -949,8 +949,8 @@ export default function MechanicDetailPage() {
                       <tbody className="divide-y divide-[#1a2234]">
                         {attendance.length === 0 ? (
                           <tr>
-                            <td colSpan={4} className="px-4 py-12 text-center text-slate-600">
-                              <Calendar size={32} className="mx-auto mb-2 text-slate-700" />
+                            <td colSpan={4} className="px-4 py-12 text-center text-muted-2">
+                              <Calendar size={32} className="mx-auto mb-2 text-app" />
                               <p>No attendance records found</p>
                             </td>
                           </tr>
@@ -958,7 +958,7 @@ export default function MechanicDetailPage() {
                           attendance.map((att) => {
                             const dayRate = getRate(att.curr_date);
                             let daySalary = 0;
-                            let statusClass = "bg-slate-500/10 text-slate-500";
+                            let statusClass = "bg-muted/10 text-muted";
                             let statusText = "Absent";
                             if (att.status === 1) {
                               daySalary = dayRate;
@@ -971,14 +971,14 @@ export default function MechanicDetailPage() {
                             }
                             return (
                               <tr key={att.id} className="hover:bg-white/[0.02]">
-                                <td className="px-4 py-3 text-slate-300 text-xs">
+                                <td className="px-4 py-3 text-app-2 text-xs">
                                   {new Date(att.curr_date).toLocaleDateString("en-IN", {
                                     day: "2-digit",
                                     month: "short",
                                     year: "numeric",
                                   })}
                                 </td>
-                                <td className="px-4 py-3 text-slate-400 text-xs">
+                                <td className="px-4 py-3 text-muted text-xs">
                                   {new Date(att.curr_date).toLocaleDateString("en-IN", {
                                     weekday: "long",
                                   })}
@@ -998,7 +998,7 @@ export default function MechanicDetailPage() {
                                   </span>
                                 </td>
                                 <td
-                                  className={`px-4 py-3 text-right font-bold ${daySalary > 0 ? "text-emerald-400" : "text-slate-600"}`}
+                                  className={`px-4 py-3 text-right font-bold ${daySalary > 0 ? "text-emerald-400" : "text-muted-2"}`}
                                 >
                                   {inr(daySalary)}
                                 </td>
@@ -1024,31 +1024,31 @@ export default function MechanicDetailPage() {
             if (e.target === e.currentTarget) setShowPayModal(false);
           }}
         >
-          <div className="bg-[#161b27] border border-[#21293d] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+          <div className="bg-panel border border-app rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
             <div className="px-6 py-5 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center justify-between">
               <h3 className="text-lg font-black text-emerald-400 flex items-center gap-2">
                 <CreditCard size={20} /> New Payment
               </h3>
               <button
                 onClick={() => setShowPayModal(false)}
-                className="text-slate-600 hover:text-white transition-colors"
+                className="text-muted-2 hover:text-white transition-colors"
               >
                 <ChevronLeft className="rotate-180" />
               </button>
             </div>
             <form onSubmit={handleAddPayment} className="p-6 space-y-5">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                <label className="text-[10px] font-black text-muted uppercase tracking-widest ml-1">
                   Staff Member
                 </label>
                 <input
                   value={name}
                   readOnly
-                  className="w-full px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-300 font-bold outline-none"
+                  className="w-full px-4 py-3 bg-app border border-app rounded-xl text-sm text-app-2 font-bold outline-none"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                <label className="text-[10px] font-black text-muted uppercase tracking-widest ml-1">
                   Amount (₹)
                 </label>
                 <div className="relative">
@@ -1063,12 +1063,12 @@ export default function MechanicDetailPage() {
                     onChange={(e) => setPayAmount(e.target.value)}
                     required
                     placeholder="0.00"
-                    className="w-full pl-10 pr-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl text-xl font-black text-white outline-none focus:border-emerald-500 transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-app border border-app rounded-xl text-xl font-black text-white outline-none focus:border-emerald-500 transition-all"
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                <label className="text-[10px] font-black text-muted uppercase tracking-widest ml-1">
                   Payment Date
                 </label>
                 <input
@@ -1076,18 +1076,18 @@ export default function MechanicDetailPage() {
                   value={payDate}
                   onChange={(e) => setPayDate(e.target.value)}
                   required
-                  className="w-full px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-emerald-500 transition-all [color-scheme:dark]"
+                  className="w-full px-4 py-3 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-emerald-500 transition-all [color-scheme:dark]"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                <label className="text-[10px] font-black text-muted uppercase tracking-widest ml-1">
                   Remarks
                 </label>
                 <textarea
                   value={payReason}
                   onChange={(e) => setPayReason(e.target.value)}
                   placeholder="e.g. Advance, Salary for July 2026"
-                  className="w-full px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-emerald-500 transition-all resize-none h-20"
+                  className="w-full px-4 py-3 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-emerald-500 transition-all resize-none h-20"
                 />
               </div>
               <button

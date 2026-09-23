@@ -177,7 +177,7 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
         <button
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-white/[0.06] text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+          className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-xl bg-white/[0.06] text-muted hover:text-white hover:bg-white/10 transition-colors"
         >
           <X size={17} />
         </button>
@@ -186,7 +186,7 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
           <QrCode size={24} className="text-white" />
         </div>
         <h3 className="font-display text-lg font-black">Website Scan &amp; Share</h3>
-        <p className="text-[13px] text-slate-500 mt-1">
+        <p className="text-[13px] text-muted mt-1">
           Mobile se scan karo — website turant khul jayegi
         </p>
 
@@ -201,25 +201,25 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
               onDoubleClick={() => openImageLightbox(qrDataUrl, "Website QR Code")}
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted">
               <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
               <span className="text-[11px] font-bold">Generating…</span>
             </div>
           )}
         </div>
 
-        <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-500">
+        <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-bold text-muted">
           <Smartphone size={13} className="text-cyan-400" /> Scan → Website khulegi
         </div>
 
         <div className="mt-4 flex items-center gap-2 rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-2.5">
-          <p className="flex-1 min-w-0 text-[12px] font-bold text-slate-300 text-left truncate">
+          <p className="flex-1 min-w-0 text-[12px] font-bold text-app-2 text-left truncate">
             {siteUrl || "…"}
           </p>
           <button
             onClick={copyLink}
             aria-label="Copy link"
-            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-white/[0.06] text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-white/[0.06] text-app-2 hover:text-white hover:bg-white/10 transition-colors"
           >
             {copied ? <Check size={15} className="text-emerald-400" /> : <Copy size={15} />}
           </button>
@@ -230,11 +230,11 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
             <div className="flex items-center justify-between mb-2.5">
               <button
                 onClick={() => setPickShareOpen(false)}
-                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-white/[0.06] text-[11px] font-bold text-slate-400 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-white/[0.06] text-[11px] font-bold text-muted hover:text-white transition-colors"
               >
                 <ArrowLeft size={13} /> Back
               </button>
-              <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+              <p className="text-[11px] font-black text-muted uppercase tracking-wider">
                 Share via…
               </p>
             </div>
@@ -249,14 +249,14 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
                   style={{ color: t.color }}
                 >
                   {t.icon}
-                  <span className="text-[9px] font-bold text-slate-400">{t.name}</span>
+                  <span className="text-[9px] font-bold text-muted">{t.name}</span>
                 </a>
               ))}
             </div>
             <div className="mt-2 grid grid-cols-2 gap-2">
               <button
                 onClick={copyLink}
-                className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 text-[12px] font-bold text-slate-300 hover:bg-white/[0.1] transition-colors"
+                className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 text-[12px] font-bold text-app-2 hover:bg-white/[0.1] transition-colors"
               >
                 {copied ? (
                   <>
@@ -272,20 +272,20 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
                 <a
                   href={qrDataUrl}
                   download="vtech-website.png"
-                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 text-[12px] font-bold text-slate-300 hover:bg-white/[0.1] transition-colors"
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 text-[12px] font-bold text-app-2 hover:bg-white/[0.1] transition-colors"
                 >
                   <Download size={14} /> Save QR Image
                 </a>
               )}
             </div>
-            <p className="mt-2 text-[10px] text-slate-600 leading-relaxed">
-              WhatsApp par <span className="text-slate-400">contact chun kar forward</span> karo. QR
-              image bhejne ke liye pehle <span className="text-slate-400">Save QR Image</span>{" "}
+            <p className="mt-2 text-[10px] text-muted-2 leading-relaxed">
+              WhatsApp par <span className="text-muted">contact chun kar forward</span> karo. QR
+              image bhejne ke liye pehle <span className="text-muted">Save QR Image</span>{" "}
               dabao, phir WhatsApp mein attach karo.
             </p>
-            <p className="mt-1 text-[10px] text-slate-700 leading-relaxed">
+            <p className="mt-1 text-[10px] text-app leading-relaxed">
               Note: native mobile share sheet sirf{" "}
-              <span className="text-slate-500">HTTPS (production)</span> par aati hai — LAN/HTTP par
+              <span className="text-muted">HTTPS (production)</span> par aati hai — LAN/HTTP par
               browser use block karta hai.
             </p>
           </div>
@@ -300,7 +300,7 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
             <div className="flex gap-2.5">
               <button
                 onClick={copyLink}
-                className="flex items-center justify-center gap-1.5 flex-1 px-4 py-3 rounded-xl bg-white/[0.06] border border-white/10 text-[13px] font-bold text-slate-300 active:scale-95 transition-transform"
+                className="flex items-center justify-center gap-1.5 flex-1 px-4 py-3 rounded-xl bg-white/[0.06] border border-white/10 text-[13px] font-bold text-app-2 active:scale-95 transition-transform"
               >
                 {copied ? (
                   <>
@@ -314,12 +314,12 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
               </button>
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-3 rounded-xl bg-white/[0.06] border border-white/10 text-[13px] font-bold text-slate-300 active:scale-95 transition-transform"
+                className="flex-1 px-4 py-3 rounded-xl bg-white/[0.06] border border-white/10 text-[13px] font-bold text-app-2 active:scale-95 transition-transform"
               >
                 Close
               </button>
             </div>
-            <p className="text-[11px] text-slate-600">
+            <p className="text-[11px] text-muted-2">
               Share dabao → app chuno (WhatsApp, Telegram, Email…). Mobile par native share sheet
               khulega.
             </p>

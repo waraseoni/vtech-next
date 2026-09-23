@@ -23,9 +23,9 @@ export default function BackupGuidePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
+    <div className="min-h-screen bg-app font-sans pb-16">
       <div className="max-w-3xl mx-auto px-4 pt-6">
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 mb-4">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4 mb-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-indigo-700 rounded-xl flex items-center justify-center">
@@ -33,14 +33,14 @@ export default function BackupGuidePage() {
               </div>
               <div>
                 <h1 className="text-lg font-black text-white">Backup & Restore Guide</h1>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+                <p className="text-[10px] text-muted uppercase tracking-wider">
                   Hindi · English · Hinglish
                 </p>
               </div>
             </div>
             <Link
               href="/backup"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 rounded-lg text-xs font-bold transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted rounded-lg text-xs font-bold transition"
             >
               <ArrowLeft size={12} /> Back to Backup
             </Link>
@@ -53,7 +53,7 @@ export default function BackupGuidePage() {
           </div>
         ) : (
           <article
-            className="backup-guide bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-5 sm:px-7 sm:py-6"
+            className="backup-guide bg-panel border border-app rounded-2xl px-5 py-5 sm:px-7 sm:py-6"
             dangerouslySetInnerHTML={{ __html: html }}
           />
         )}

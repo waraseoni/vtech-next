@@ -244,17 +244,17 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
       <div
-        className="relative w-full sm:max-w-md bg-[#161b27] border border-[#21293d] sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
+        className="relative w-full sm:max-w-md bg-panel border border-app sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
         style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {success && (
-          <div className="absolute inset-0 z-10 bg-[#161b27] flex flex-col items-center justify-center gap-3">
+          <div className="absolute inset-0 z-10 bg-panel flex flex-col items-center justify-center gap-3">
             <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
               <CheckCircle2 size={32} className="text-emerald-400" />
             </div>
             <p className="text-white font-extrabold text-lg">Stock Added!</p>
-            <p className="text-slate-600 text-xs font-bold uppercase tracking-widest">
+            <p className="text-muted-2 text-xs font-bold uppercase tracking-widest">
               {quantity} unit{quantity !== 1 ? "s" : ""} added
             </p>
           </div>
@@ -262,7 +262,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
 
         <div className="h-0.5 w-full bg-gradient-to-r from-emerald-500 to-teal-600" />
 
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-app">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center border bg-emerald-500/10 border-emerald-500/25">
               <ScanLine size={16} className="text-emerald-400" />
@@ -271,14 +271,14 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
               <h3 className="text-base font-extrabold text-white leading-none">
                 Quick Barcode Scan
               </h3>
-              <p className="text-[10px] text-slate-600 font-bold mt-0.5 uppercase tracking-wider">
+              <p className="text-[10px] text-muted-2 font-bold mt-0.5 uppercase tracking-wider">
                 Scan barcode → instant stock-in
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#111520] hover:bg-white/5 text-slate-500 hover:text-slate-300 border border-[#21293d] transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-panel-2 hover:bg-white/5 text-muted hover:text-app-2 border border-app transition-all"
           >
             <X size={15} />
           </button>
@@ -319,10 +319,10 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
               </div>
             )}
             {cameraOn && (
-              <div className="mt-3 rounded-xl overflow-hidden border border-[#21293d] bg-black relative">
+              <div className="mt-3 rounded-xl overflow-hidden border border-app bg-black relative">
                 <div id="quickscan-camera" ref={cameraBoxRef} className="w-full" />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2 text-center">
-                  <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                  <p className="text-[10px] font-bold text-app-2 uppercase tracking-widest">
                     Point camera at barcode / QR
                   </p>
                 </div>
@@ -332,15 +332,15 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
 
           {/* ── Scan input ── */}
           <div>
-            <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
+            <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2.5">
               <span className="flex items-center gap-1.5">
-                <ScanLine size={10} className="text-slate-700" /> Scan / Enter Barcode
+                <ScanLine size={10} className="text-app" /> Scan / Enter Barcode
               </span>
             </label>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Search
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2"
                   size={14}
                 />
                 <input
@@ -355,7 +355,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
                   }}
                   placeholder="Point scanner here or type barcode..."
                   autoFocus
-                  className="w-full pl-10 pr-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 placeholder-slate-700 rounded-xl outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm font-mono uppercase"
+                  className="w-full pl-10 pr-4 py-3 bg-panel-2 border border-app text-app-2 placeholder-slate-700 rounded-xl outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm font-mono uppercase"
                 />
               </div>
               <button
@@ -396,11 +396,11 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
 
           {/* ── Matched product card ── */}
           {match && st && (
-            <div className="bg-[#111520] border border-[#21293d] rounded-xl p-4 space-y-4">
+            <div className="bg-panel-2 border border-app rounded-xl p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <div className="font-black text-white text-sm truncate">{match.name}</div>
-                  <div className="text-[11px] text-slate-600 truncate mt-0.5">
+                  <div className="text-[11px] text-muted-2 truncate mt-0.5">
                     {match.description}
                   </div>
                   <Link
@@ -414,7 +414,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
                   <div className={`text-xl font-black ${st.color}`}>
                     {Math.max(0, match.available)}
                   </div>
-                  <div className="text-[8px] text-slate-700 font-bold uppercase tracking-widest">
+                  <div className="text-[8px] text-app font-bold uppercase tracking-widest">
                     available
                   </div>
                 </div>
@@ -423,7 +423,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Quantity */}
                 <div>
-                  <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
+                  <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2.5">
                     Quantity <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -432,15 +432,15 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
                     min={1}
                     value={quantity}
                     onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                    className="w-full text-center text-3xl font-black text-white bg-[#111520] border border-[#21293d] rounded-xl py-3 outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full text-center text-3xl font-black text-white bg-panel-2 border border-app rounded-xl py-3 outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
 
                 {/* Stock date */}
                 <div>
-                  <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-2.5">
+                  <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2.5">
                     <span className="flex items-center gap-1.5">
-                      <Calendar size={10} className="text-slate-700" /> Stock Date{" "}
+                      <Calendar size={10} className="text-app" /> Stock Date{" "}
                       <span className="text-red-500">*</span>
                     </span>
                   </label>
@@ -450,7 +450,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
                     value={stockDate}
                     max={today}
                     onChange={(e) => setStockDate(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#111520] border border-[#21293d] text-slate-200 rounded-xl outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm [color-scheme:dark]"
+                    className="w-full px-4 py-3 bg-panel-2 border border-app text-app-2 rounded-xl outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all text-sm [color-scheme:dark]"
                   />
                   <div className="flex gap-2 mt-2">
                     {[
@@ -464,7 +464,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
                         className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold border transition-all ${
                           stockDate === val
                             ? "bg-emerald-600 text-white border-emerald-600"
-                            : "bg-[#111520] text-slate-600 border-[#21293d] hover:border-emerald-500/30 hover:text-slate-400"
+                            : "bg-panel-2 text-muted-2 border-app hover:border-emerald-500/30 hover:text-muted"
                         }`}
                       >
                         {label}
@@ -499,7 +499,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
               <div className="w-16 h-16 rounded-2xl bg-emerald-500/5 border border-emerald-500/15 flex items-center justify-center mb-3">
                 <Package size={26} className="text-emerald-500/40" />
               </div>
-              <p className="text-slate-500 text-xs font-bold max-w-[240px] leading-relaxed">
+              <p className="text-muted text-xs font-bold max-w-[240px] leading-relaxed">
                 Phone camera se scan karein — ya USB scanner / manual barcode entry
               </p>
             </div>

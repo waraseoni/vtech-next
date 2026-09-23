@@ -293,7 +293,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
   return (
     <AdminPage title="Payments" subtitle="Client payments management">
       {/* Glassy Header */}
-      <div className="relative overflow-hidden mb-6 border-b border-[#21293d] bg-gradient-to-b from-[#111520] to-[#0d1117] rounded-[2rem] p-6 md:p-8">
+      <div className="relative overflow-hidden mb-6 border-b border-app bg-gradient-to-b from-[#111520] to-[#0d1117] rounded-[2rem] p-6 md:p-8">
         <div className="absolute -top-24 -left-20 w-64 h-64 bg-emerald-600/10 blur-[100px] rounded-full" />
         <div className="absolute top-40 -right-20 w-80 h-80 bg-purple-600/10 blur-[120px] rounded-full" />
         <div className="absolute top-20 left-1/3 w-40 h-40 bg-blue-600/8 blur-[80px] rounded-full" />
@@ -303,7 +303,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
             <div className="flex items-center gap-5">
               <div className="relative">
                 <div className="absolute inset-0 bg-emerald-500 blur-xl opacity-20 animate-pulse" />
-                <div className="w-14 h-14 rounded-2xl bg-[#161b27] border border-[#21293d] flex items-center justify-center shadow-2xl relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-panel border border-app flex items-center justify-center shadow-2xl relative z-10">
                   <DollarSign size={28} className="text-emerald-400" />
                 </div>
               </div>
@@ -315,8 +315,8 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                   </span>
                 </h1>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <Calendar size={13} className="text-slate-500 shrink-0" />
-                  <p className="text-slate-400 text-sm font-semibold truncate">
+                  <Calendar size={13} className="text-muted shrink-0" />
+                  <p className="text-muted text-sm font-semibold truncate">
                     {fromDate && toDate ? `${fmtDate(fromDate)} - ${fmtDate(toDate)}` : "All time"}
                   </p>
                 </div>
@@ -330,13 +330,13 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#161b27] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 rounded-xl text-xs font-black transition-all"
+              className="flex items-center gap-2 px-4 py-2.5 bg-panel border border-app hover:bg-panel-2 text-muted rounded-xl text-xs font-black transition-all"
             >
               Print
             </button>
             <button
               onClick={handleExportCSV}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#161b27] border border-[#21293d] hover:bg-[#1a2234] text-slate-400 rounded-xl text-xs font-black transition-all"
+              className="flex items-center gap-2 px-4 py-2.5 bg-panel border border-app hover:bg-panel-2 text-muted rounded-xl text-xs font-black transition-all"
             >
               Export CSV
             </button>
@@ -345,16 +345,16 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
       </div>
 
       {/* Filters */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5 mb-6">
+      <div className="bg-panel border border-app rounded-2xl p-5 mb-6">
         <div className="grid gap-4 xl:grid-cols-[1fr_200px_150px_150px]">
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
               Search
             </label>
             <div className="relative">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
               />
               <input
                 value={search}
@@ -362,13 +362,13 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                   setSearch(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-purple-500/60 transition-all pl-9"
+                className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-purple-500/60 transition-all pl-9"
                 placeholder="ID, client, mode..."
               />
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
               Client
             </label>
             <SearchableSelect
@@ -387,13 +387,13 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
               renderSelected={(opt) => (
                 <div className="min-w-0">
                   <div className="font-bold text-white text-sm truncate">{opt.label}</div>
-                  {opt.sub && <div className="text-[10px] text-slate-500 truncate">{opt.sub}</div>}
+                  {opt.sub && <div className="text-[10px] text-muted truncate">{opt.sub}</div>}
                 </div>
               )}
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
               From Date
             </label>
             <input
@@ -403,11 +403,11 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                 setFromDate(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-purple-500/60 transition-all"
+              className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-purple-500/60 transition-all"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
               To Date
             </label>
             <input
@@ -417,7 +417,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                 setToDate(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-purple-500/60 transition-all"
+              className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-purple-500/60 transition-all"
             />
           </div>
         </div>
@@ -428,13 +428,13 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
               setToDate(istToday);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all"
+            className="px-3 py-2 bg-app border border-app hover:bg-panel-2 rounded-xl text-xs font-bold text-muted transition-all"
           >
             Today
           </button>
           <button
             onClick={() => applyMonth(0)}
-            className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all"
+            className="px-3 py-2 bg-app border border-app hover:bg-panel-2 rounded-xl text-xs font-bold text-muted transition-all"
           >
             This Month
           </button>
@@ -447,7 +447,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
               setToDate(s);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1"
+            className="px-3 py-2 bg-app border border-app hover:bg-panel-2 rounded-xl text-xs font-bold text-muted transition-all flex items-center gap-1"
           >
             <ChevronLeft size={14} /> Prev Day
           </button>
@@ -460,25 +460,25 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
               setToDate(s);
               setCurrentPage(1);
             }}
-            className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1"
+            className="px-3 py-2 bg-app border border-app hover:bg-panel-2 rounded-xl text-xs font-bold text-muted transition-all flex items-center gap-1"
           >
             Next Day <ChevronRight size={14} />
           </button>
           <button
             onClick={() => applyMonth(-1)}
-            className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1"
+            className="px-3 py-2 bg-app border border-app hover:bg-panel-2 rounded-xl text-xs font-bold text-muted transition-all flex items-center gap-1"
           >
             <ChevronLeft size={14} /> Prev Month
           </button>
           <button
             onClick={() => applyMonth(1)}
-            className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1"
+            className="px-3 py-2 bg-app border border-app hover:bg-panel-2 rounded-xl text-xs font-bold text-muted transition-all flex items-center gap-1"
           >
             Next Month <ChevronRight size={14} />
           </button>
           <button
             onClick={reset}
-            className="px-3 py-2 bg-[#0d1117] border border-[#21293d] hover:bg-[#1a2234] rounded-xl text-xs font-bold text-slate-400 transition-all flex items-center gap-1"
+            className="px-3 py-2 bg-app border border-app hover:bg-panel-2 rounded-xl text-xs font-bold text-muted transition-all flex items-center gap-1"
           >
             <RotateCcw size={14} /> Reset
           </button>
@@ -487,25 +487,25 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+        <div className="bg-panel border border-app rounded-2xl p-4">
           <div className="inline-flex rounded-xl border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-blue-400 bg-blue-500/10 border-blue-500/20">
             Total
           </div>
           <p className="mt-3 text-xl font-black text-white">{filtered.length}</p>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+        <div className="bg-panel border border-app rounded-2xl p-4">
           <div className="inline-flex rounded-xl border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border-emerald-500/20">
             Amount
           </div>
           <p className="mt-3 text-xl font-black text-emerald-400">{fmtMoney(totals.amount)}</p>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+        <div className="bg-panel border border-app rounded-2xl p-4">
           <div className="inline-flex rounded-xl border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 border-amber-500/20">
             Discount
           </div>
           <p className="mt-3 text-xl font-black text-amber-400">{fmtMoney(totals.discount)}</p>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+        <div className="bg-panel border border-app rounded-2xl p-4">
           <div className="inline-flex rounded-xl border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 border-purple-500/20">
             Net Received
           </div>
@@ -516,25 +516,25 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
       </div>
 
       {err && (
-        <div className="bg-[#161b27] border border-red-500/30 rounded-2xl p-4 text-sm text-red-400 mb-6">
+        <div className="bg-panel border border-red-500/30 rounded-2xl p-4 text-sm text-red-400 mb-6">
           {err}
         </div>
       )}
 
       {/* Table */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="animate-spin text-purple-400" size={32} />
           </div>
         ) : paginated.length === 0 ? (
-          <div className="px-4 py-12 text-center text-sm text-slate-500">No payments found</div>
+          <div className="px-4 py-12 text-center text-sm text-muted">No payments found</div>
         ) : (
           <>
             <div className="overflow-x-auto hidden lg:block" id="payments-table">
               <table className="w-full text-sm">
-                <thead className="bg-[#111520]">
-                  <tr className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                <thead className="bg-panel-2">
+                  <tr className="text-[10px] font-black uppercase tracking-wider text-muted">
                     <th className="px-4 py-3 text-left">ID</th>
                     <th className="px-4 py-3 text-left">Date</th>
                     <th className="px-4 py-3 text-left">Client</th>
@@ -555,8 +555,8 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                           {paymentCode(p.id)}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-slate-400">{fmtDate(p.payment_date)}</td>
-                      <td className="px-4 py-3 font-bold text-slate-200">
+                      <td className="px-4 py-3 text-muted">{fmtDate(p.payment_date)}</td>
+                      <td className="px-4 py-3 font-bold text-app-2">
                         {clientName(clientMap.get(p.client_id))}
                       </td>
                       <td className="px-4 py-3 text-right font-black text-emerald-400">
@@ -574,19 +574,19 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => viewReceipt(p)}
-                            className="p-2 hover:bg-[#1a2234] rounded-lg text-slate-400 hover:text-white"
+                            className="p-2 hover:bg-panel-2 rounded-lg text-muted hover:text-white"
                           >
                             <Receipt size={14} />
                           </button>
                           <button
                             onClick={() => openEdit(p)}
-                            className="p-2 hover:bg-[#1a2234] rounded-lg text-slate-400 hover:text-white"
+                            className="p-2 hover:bg-panel-2 rounded-lg text-muted hover:text-white"
                           >
                             <Pencil size={14} />
                           </button>
                           <button
                             onClick={() => deleteP(p.id)}
-                            className="p-2 hover:bg-[#1a2234] rounded-lg text-slate-400 hover:text-red-400"
+                            className="p-2 hover:bg-panel-2 rounded-lg text-muted hover:text-red-400"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -601,7 +601,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
             {/* Mobile Card View */}
             <div className="lg:hidden grid gap-3 p-3">
               {paginated.map((p) => (
-                <div key={p.id} className="rounded-2xl border border-[#21293d] bg-[#111520] p-4">
+                <div key={p.id} className="rounded-2xl border border-app bg-panel-2 p-4">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div>
                       <button
@@ -610,7 +610,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                       >
                         {paymentCode(p.id)}
                       </button>
-                      <div className="text-xs text-slate-500 mt-1">{fmtDate(p.payment_date)}</div>
+                      <div className="text-xs text-muted mt-1">{fmtDate(p.payment_date)}</div>
                     </div>
                     <span className="inline-flex rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-blue-300">
                       {p.payment_mode}
@@ -619,34 +619,34 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                   <div className="text-sm font-bold text-white mb-1">
                     {clientName(clientMap.get(p.client_id))}
                   </div>
-                  <div className="text-xs text-slate-500 mb-3">
+                  <div className="text-xs text-muted mb-3">
                     {clientMap.get(p.client_id)?.contact || ""}
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs mb-3">
-                    <div className="rounded-lg bg-[#0d1117] p-2">
-                      <div className="text-slate-500">Amount</div>
+                    <div className="rounded-lg bg-app p-2">
+                      <div className="text-muted">Amount</div>
                       <div className="font-black text-emerald-400">{fmtMoney(p.amount)}</div>
                     </div>
-                    <div className="rounded-lg bg-[#0d1117] p-2">
-                      <div className="text-slate-500">Discount</div>
+                    <div className="rounded-lg bg-app p-2">
+                      <div className="text-muted">Discount</div>
                       <div className="font-black text-amber-400">{fmtMoney(p.discount || 0)}</div>
                     </div>
                   </div>
                   {p.remarks && (
-                    <div className="text-xs text-slate-400 mb-3 bg-[#0d1117] rounded-lg p-2">
+                    <div className="text-xs text-muted mb-3 bg-app rounded-lg p-2">
                       {p.remarks}
                     </div>
                   )}
                   <div className="flex gap-2">
                     <button
                       onClick={() => viewReceipt(p)}
-                      className="flex-1 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 flex items-center justify-center gap-1"
+                      className="flex-1 py-2 bg-app border border-app rounded-xl text-xs font-bold text-muted flex items-center justify-center gap-1"
                     >
                       <Receipt size={12} /> Receipt
                     </button>
                     <button
                       onClick={() => openEdit(p)}
-                      className="flex-1 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 flex items-center justify-center gap-1"
+                      className="flex-1 py-2 bg-app border border-app rounded-xl text-xs font-bold text-muted flex items-center justify-center gap-1"
                     >
                       <Pencil size={12} /> Edit
                     </button>
@@ -662,13 +662,13 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-4 border-t border-[#21293d]">
-                <div className="flex items-center gap-2 text-xs text-slate-400">
+              <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-4 border-t border-app">
+                <div className="flex items-center gap-2 text-xs text-muted">
                   <span>Show</span>
                   <select
                     value={itemsPerPage}
                     onChange={(e) => handleItemsPerPage(Number(e.target.value))}
-                    className="bg-[#0d1117] border border-[#21293d] rounded-lg px-2 py-1.5 text-white text-xs font-bold"
+                    className="bg-app border border-app rounded-lg px-2 py-1.5 text-white text-xs font-bold"
                   >
                     <option value={10}>10</option>
                     <option value={25}>25</option>
@@ -681,7 +681,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:bg-[#1a2234] disabled:opacity-40"
+                    className="px-3 py-2 bg-app border border-app rounded-xl text-xs font-bold text-muted hover:bg-panel-2 disabled:opacity-40"
                   >
                     <ChevronLeft size={14} />
                   </button>
@@ -698,7 +698,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                       <button
                         key={pageNum}
                         onClick={() => setCurrentPage(pageNum)}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${currentPage === pageNum ? "bg-purple-600 text-white" : "bg-[#0d1117] border border-[#21293d] text-slate-400 hover:bg-[#1a2234]"}`}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${currentPage === pageNum ? "bg-purple-600 text-white" : "bg-app border border-app text-muted hover:bg-panel-2"}`}
                       >
                         {pageNum}
                       </button>
@@ -707,7 +707,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                   <button
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:bg-[#1a2234] disabled:opacity-40"
+                    className="px-3 py-2 bg-app border border-app rounded-xl text-xs font-bold text-muted hover:bg-panel-2 disabled:opacity-40"
                   >
                     <ChevronRight size={14} />
                   </button>
@@ -721,24 +721,24 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
       {/* Add/Edit Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm">
-          <div className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-[#21293d] bg-[#161b27] shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#21293d] px-5 py-4">
+          <div className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-app bg-panel shadow-2xl">
+            <div className="flex items-center justify-between border-b border-app px-5 py-4">
               <div>
                 <h3 className="text-base font-black text-white">
                   {form.id ? "Edit Payment" : "New Payment"}
                 </h3>
-                <p className="text-xs text-slate-500">Client payment details</p>
+                <p className="text-xs text-muted">Client payment details</p>
               </div>
               <button
                 onClick={closeModal}
-                className="rounded-xl p-2 text-slate-500 hover:bg-white/[0.05] hover:text-white"
+                className="rounded-xl p-2 text-muted hover:bg-white/[0.05] hover:text-white"
               >
                 <X size={16} />
               </button>
             </div>
             <form onSubmit={save} className="space-y-4 px-5 py-5">
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Client
                 </label>
                 <SearchableSelect
@@ -754,7 +754,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                     <div className="min-w-0">
                       <div className="font-bold text-white text-sm truncate">{opt.label}</div>
                       {opt.sub && (
-                        <div className="text-[10px] text-slate-500 truncate">{opt.sub}</div>
+                        <div className="text-[10px] text-muted truncate">{opt.sub}</div>
                       )}
                     </div>
                   )}
@@ -762,24 +762,24 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Date
                   </label>
                   <input
                     type="date"
                     value={form.payment_date}
                     onChange={(e) => setForm((p) => ({ ...p, payment_date: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-purple-500/60"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-purple-500/60"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Mode
                   </label>
                   <select
                     value={form.payment_mode}
                     onChange={(e) => setForm((p) => ({ ...p, payment_mode: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-purple-500/60"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-purple-500/60"
                   >
                     <option value="Cash">Cash</option>
                     <option value="Online">Online</option>
@@ -791,7 +791,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Amount
                   </label>
                   <input
@@ -799,12 +799,12 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                     step="0.01"
                     value={form.amount}
                     onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-purple-500/60"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-purple-500/60"
                     placeholder="0.00"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                     Discount
                   </label>
                   <input
@@ -812,20 +812,20 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                     step="0.01"
                     value={form.discount}
                     onChange={(e) => setForm((p) => ({ ...p, discount: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-purple-500/60"
+                    className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-purple-500/60"
                     placeholder="0.00"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Remarks
                 </label>
                 <input
                   type="text"
                   value={form.remarks}
                   onChange={(e) => setForm((p) => ({ ...p, remarks: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-purple-500/60"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-purple-500/60"
                   placeholder="Optional..."
                 />
               </div>
@@ -833,7 +833,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm font-bold text-slate-400 hover:bg-[#1a2234]"
+                  className="flex-1 px-4 py-3 bg-app border border-app rounded-xl text-sm font-bold text-muted hover:bg-panel-2"
                 >
                   Cancel
                 </button>
@@ -859,46 +859,46 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
       {/* Receipt Modal */}
       {receiptOpen && receiptPayment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm">
-          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-[#21293d] bg-[#161b27] shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#21293d] px-5 py-4">
+          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-app bg-panel shadow-2xl">
+            <div className="flex items-center justify-between border-b border-app px-5 py-4">
               <div className="flex items-center gap-2 text-base font-black text-white">
                 <IndianRupee size={18} /> Payment Receipt
               </div>
               <button
                 onClick={() => setReceiptOpen(false)}
-                className="px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:bg-[#1a2234]"
+                className="px-3 py-2 bg-app border border-app rounded-xl text-xs font-bold text-muted hover:bg-panel-2"
               >
                 <X size={13} className="mr-1 inline" /> Close
               </button>
             </div>
             <div className="p-5">
-              <div className="rounded-2xl bg-white p-6 text-slate-900">
+              <div className="rounded-2xl bg-white p-6 text-app">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h3 className="text-xl font-black">V-Technologies</h3>
-                    <p className="text-sm text-slate-500">Client Payment Receipt</p>
+                    <p className="text-sm text-muted">Client Payment Receipt</p>
                   </div>
                   <div className="sm:text-right">
                     <div className="text-lg font-black">{paymentCode(receiptPayment.id)}</div>
-                    <div className="text-sm text-slate-500">
+                    <div className="text-sm text-muted">
                       {fmtDate(receiptPayment.payment_date)}
                     </div>
                   </div>
                 </div>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <div>
-                    <div className="text-xs font-black uppercase tracking-wider text-slate-400">
+                    <div className="text-xs font-black uppercase tracking-wider text-muted">
                       Received From
                     </div>
                     <div className="mt-1 font-black">
                       {clientName(clientMap.get(receiptPayment.client_id))}
                     </div>
-                    <div className="text-sm text-slate-500">
+                    <div className="text-sm text-muted">
                       {clientMap.get(receiptPayment.client_id)?.contact || ""}
                     </div>
                   </div>
                   <div className="sm:text-right">
-                    <div className="text-xs font-black uppercase tracking-wider text-slate-400">
+                    <div className="text-xs font-black uppercase tracking-wider text-muted">
                       Mode
                     </div>
                     <span className="mt-1 inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-black text-sky-700">
@@ -908,46 +908,46 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                 </div>
                 <table className="mt-5 w-full border-collapse text-sm">
                   <thead>
-                    <tr className="border border-slate-200 bg-slate-50">
-                      <th className="border border-slate-200 px-3 py-2 text-left font-black">
+                    <tr className="border border-app-2 bg-slate-50">
+                      <th className="border border-app-2 px-3 py-2 text-left font-black">
                         Description
                       </th>
-                      <th className="border border-slate-200 px-3 py-2 text-right font-black">
+                      <th className="border border-app-2 px-3 py-2 text-right font-black">
                         Amount
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border border-slate-200">
-                      <td className="border border-slate-200 px-3 py-2 font-semibold">
+                    <tr className="border border-app-2">
+                      <td className="border border-app-2 px-3 py-2 font-semibold">
                         Payment Received
                       </td>
-                      <td className="border border-slate-200 px-3 py-2 text-right font-black text-emerald-600">
+                      <td className="border border-app-2 px-3 py-2 text-right font-black text-emerald-600">
                         {fmtMoney(receiptPayment.amount)}
                       </td>
                     </tr>
                     {(receiptPayment.discount || 0) > 0 && (
-                      <tr className="border border-slate-200">
-                        <td className="border border-slate-200 px-3 py-2 font-semibold">
+                      <tr className="border border-app-2">
+                        <td className="border border-app-2 px-3 py-2 font-semibold">
                           Discount
                         </td>
-                        <td className="border border-slate-200 px-3 py-2 text-right font-black text-amber-600">
+                        <td className="border border-app-2 px-3 py-2 text-right font-black text-amber-600">
                           -{fmtMoney(receiptPayment.discount || 0)}
                         </td>
                       </tr>
                     )}
                   </tbody>
                   <tfoot>
-                    <tr className="border border-slate-200 bg-slate-100">
-                      <td className="border border-slate-200 px-3 py-2 font-black">Total</td>
-                      <td className="border border-slate-200 px-3 py-2 text-right font-black text-lg text-emerald-600">
+                    <tr className="border border-app-2 bg-panel-2">
+                      <td className="border border-app-2 px-3 py-2 font-black">Total</td>
+                      <td className="border border-app-2 px-3 py-2 text-right font-black text-lg text-emerald-600">
                         {fmtMoney(receiptPayment.amount + (receiptPayment.discount || 0))}
                       </td>
                     </tr>
                   </tfoot>
                 </table>
                 {receiptPayment.remarks && (
-                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                  <div className="mt-4 rounded-xl border border-app-2 bg-slate-50 px-3 py-2 text-xs text-muted">
                     <strong>Remarks:</strong> {receiptPayment.remarks}
                   </div>
                 )}

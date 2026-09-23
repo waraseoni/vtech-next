@@ -40,12 +40,12 @@ function nowIST(): string {
 // STYLES
 // ─────────────────────────────────────────────────────────────────────────────
 const inputCls =
-  "w-full px-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-white font-bold " +
-  "text-sm placeholder:text-slate-700 outline-none focus:border-blue-500/60 " +
+  "w-full px-4 py-3 bg-panel-2 border border-app rounded-xl text-white font-bold " +
+  "text-sm placeholder:text-app outline-none focus:border-blue-500/60 " +
   "focus:ring-1 focus:ring-blue-500/20 transition-all [color-scheme:dark]";
 
 const labelCls =
-  "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-2";
+  "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-2";
 
 const inr = (n: number) => "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
@@ -206,10 +206,10 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
   // ─────────────────────────────────────────────────────────────────────────
   return (
     // BUG FIX: dark theme — was bg-white (light)
-    <div className="min-h-screen bg-[#0d1117] text-white font-sans">
+    <div className="min-h-screen bg-app text-white font-sans">
       <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4">
         {/* ── HEADER ──────────────────────────────────────────────────── */}
-        <div className="relative overflow-hidden bg-[#161b27] rounded-3xl border border-[#21293d] p-5">
+        <div className="relative overflow-hidden bg-panel rounded-3xl border border-app p-5">
           <div
             className="absolute inset-0 opacity-[0.025]"
             style={{
@@ -222,7 +222,7 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
           <div className="relative flex items-center gap-4">
             <Link
               href={`/clients/${clientId}/view`}
-              className="w-10 h-10 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-slate-500 rounded-xl text-slate-500 hover:text-white transition-all flex-shrink-0"
+              className="w-10 h-10 flex items-center justify-center bg-panel-2 border border-app hover:border-muted rounded-xl text-muted hover:text-white transition-all flex-shrink-0"
             >
               <ArrowLeft size={17} />
             </Link>
@@ -234,15 +234,15 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
                 <h1 className="text-lg font-black tracking-tight text-white leading-none">
                   New Direct Sale
                 </h1>
-                <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-1 truncate">
+                <p className="text-[10px] text-muted font-black uppercase tracking-[0.2em] mt-1 truncate">
                   {clientName || `Client #${clientId}`}
                 </p>
               </div>
             </div>
             {/* Sale Code badge */}
             <div className="hidden sm:block text-right flex-shrink-0">
-              <p className="text-[9px] text-slate-600 uppercase tracking-wider">Sale Code</p>
-              <p className="text-xs font-black text-slate-400 font-mono">{saleCode}</p>
+              <p className="text-[9px] text-muted-2 uppercase tracking-wider">Sale Code</p>
+              <p className="text-xs font-black text-muted font-mono">{saleCode}</p>
             </div>
           </div>
         </div>
@@ -250,7 +250,7 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
         {/* ── FORM ────────────────────────────────────────────────────── */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Payment Mode */}
-          <div className="bg-[#161b27] rounded-2xl border border-[#21293d] p-5">
+          <div className="bg-panel rounded-2xl border border-app p-5">
             <label className={labelCls}>
               <IndianRupee size={13} className="text-purple-400" />
               Payment Mode
@@ -264,7 +264,7 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
                   className={`py-2.5 px-3 rounded-xl text-xs font-black border transition-all ${
                     paymentMode === mode
                       ? "bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-600/20"
-                      : "bg-[#111520] border-[#21293d] text-slate-500 hover:border-slate-500 hover:text-slate-300"
+                      : "bg-panel-2 border-app text-muted hover:border-muted hover:text-app-2"
                   }`}
                 >
                   {mode}
@@ -274,7 +274,7 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
           </div>
 
           {/* Items */}
-          <div className="bg-[#161b27] rounded-2xl border border-[#21293d] p-5">
+          <div className="bg-panel rounded-2xl border border-app p-5">
             <div className="flex items-center justify-between mb-4">
               <label className={labelCls}>
                 <Package size={13} className="text-purple-400" />
@@ -294,7 +294,7 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
               {["Description", "Qty", "Price (₹)", ""].map((h) => (
                 <span
                   key={h}
-                  className="text-[9px] font-black uppercase tracking-wider text-slate-600"
+                  className="text-[9px] font-black uppercase tracking-wider text-muted-2"
                 >
                   {h}
                 </span>
@@ -343,7 +343,7 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
 
                   {/* Mobile row total */}
                   {item.quantity > 0 && item.price > 0 && (
-                    <div className="sm:hidden text-right text-xs text-slate-500 col-span-full -mt-1 pr-1">
+                    <div className="sm:hidden text-right text-xs text-muted col-span-full -mt-1 pr-1">
                       {item.quantity} × {inr(item.price)} ={" "}
                       <span className="text-white font-bold">
                         {inr(item.quantity * item.price)}
@@ -355,8 +355,8 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* Total */}
-            <div className="flex justify-between items-center mt-4 pt-4 border-t border-[#21293d]">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-500">
+            <div className="flex justify-between items-center mt-4 pt-4 border-t border-app">
+              <span className="text-xs font-black uppercase tracking-wider text-muted">
                 Total Amount
               </span>
               <span className="text-2xl font-black text-emerald-400">{inr(totalAmount)}</span>
@@ -364,7 +364,7 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
           </div>
 
           {/* Remarks */}
-          <div className="bg-[#161b27] rounded-2xl border border-[#21293d] p-5">
+          <div className="bg-panel rounded-2xl border border-app p-5">
             <label className={labelCls}>Remarks</label>
             <textarea
               rows={2}
@@ -396,7 +396,7 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
             </button>
             <Link
               href={`/clients/${clientId}/view`}
-              className="px-6 py-3.5 bg-[#111520] border border-[#21293d] hover:border-slate-500 text-slate-400 hover:text-white rounded-2xl font-bold text-sm transition-all no-underline"
+              className="px-6 py-3.5 bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-2xl font-bold text-sm transition-all no-underline"
             >
               Cancel
             </Link>

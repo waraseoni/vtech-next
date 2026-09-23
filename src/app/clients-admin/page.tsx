@@ -48,14 +48,14 @@ type ClientForm = {
   opening_balance: string;
 };
 
-const card = "bg-[#161b27] border border-[#21293d] rounded-2xl";
+const card = "bg-panel border border-app rounded-2xl";
 const input =
-  "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
-const label = "block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5";
+  "w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-app";
+const label = "block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5";
 const btn =
   "px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98]";
 const btnPrimary = `${btn} bg-blue-600 hover:bg-blue-500 text-white`;
-const btnGhost = `${btn} bg-white/[0.04] hover:bg-white/[0.07] dark:text-slate-300 text-slate-800 border border-[#21293d] dark:border-[#21293d]`;
+const btnGhost = `${btn} bg-white/[0.04] hover:bg-white/[0.07] dark:text-app-2 text-app border border-app dark:border-app`;
 const btnDanger = `${btn} bg-red-600 hover:bg-red-500 text-white`;
 
 const blankForm: ClientForm = {
@@ -321,13 +321,13 @@ export default function ClientAmtPage() {
       </div>
 
       <div className={`${card} overflow-hidden`}>
-        <div className="flex flex-col gap-3 px-4 py-4 border-b border-[#21293d] lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 px-4 py-4 border-b border-app lg:flex-row lg:items-center lg:justify-between">
           <div className="flex-1 max-w-md">
             <label className={label}>Search Client</label>
             <div className="relative">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
               />
               <input
                 value={search}
@@ -355,13 +355,13 @@ export default function ClientAmtPage() {
             <Loader2 className="animate-spin text-blue-400" size={26} />
           </div>
         ) : filteredClients.length === 0 ? (
-          <div className="px-5 py-12 text-sm text-center text-slate-500">
+          <div className="px-5 py-12 text-sm text-center text-muted">
             Koi client record nahi mila.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1080px] text-sm">
-              <thead className="bg-[#111520] text-[10px] font-black uppercase tracking-widest text-slate-600">
+              <thead className="bg-panel-2 text-[10px] font-black uppercase tracking-widest text-muted-2">
                 <tr>
                   <th className="px-4 py-3 text-left">Client</th>
                   <th className="px-4 py-3 text-left">Contact</th>
@@ -380,7 +380,7 @@ export default function ClientAmtPage() {
                       ? "text-red-400"
                       : client.balance < 0
                         ? "text-emerald-400"
-                        : "text-slate-300";
+                        : "text-app-2";
                   const isRisk = client.balance > 10000;
                   return (
                     <tr
@@ -389,22 +389,22 @@ export default function ClientAmtPage() {
                     >
                       <td className="px-4 py-4 align-top">
                         <div className="font-black text-white">{fullName(client)}</div>
-                        <div className="mt-1 text-[11px] text-slate-600">ID #{client.id}</div>
-                        <div className="mt-1 text-xs text-slate-500">{client.address}</div>
+                        <div className="mt-1 text-[11px] text-muted-2">ID #{client.id}</div>
+                        <div className="mt-1 text-xs text-muted">{client.address}</div>
                       </td>
                       <td className="px-4 py-4 align-top">
-                        <div className="text-slate-300">{client.contact}</div>
-                        <div className="mt-1 text-xs text-slate-600">
+                        <div className="text-app-2">{client.contact}</div>
+                        <div className="mt-1 text-xs text-muted-2">
                           {client.email || "No email"}
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-right font-bold text-slate-300">
+                      <td className="px-4 py-4 text-right font-bold text-app-2">
                         {money(Number(client.opening_balance || 0))}
                       </td>
-                      <td className="px-4 py-4 text-right text-slate-300">
+                      <td className="px-4 py-4 text-right text-app-2">
                         {money(client.repair_billed)}
                       </td>
-                      <td className="px-4 py-4 text-right text-slate-300">
+                      <td className="px-4 py-4 text-right text-app-2">
                         {money(client.direct_sale_billed)}
                       </td>
                       <td className="px-4 py-4 text-right text-emerald-300">
@@ -443,19 +443,19 @@ export default function ClientAmtPage() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-3xl border border-[#21293d] bg-[#161b27] shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#21293d]">
+          <div className="w-full max-w-2xl rounded-3xl border border-app bg-panel shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-app">
               <div>
                 <h3 className="text-base font-black text-white">
                   {form.id ? "Update Client Amount" : "Add New Client"}
                 </h3>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-muted-2">
                   PHP client amount manager ki tarah opening balance bhi yahin manage hoga.
                 </p>
               </div>
               <button
                 onClick={closeModal}
-                className="p-2 rounded-xl text-slate-500 hover:bg-white/[0.05] hover:text-white"
+                className="p-2 rounded-xl text-muted hover:bg-white/[0.05] hover:text-white"
               >
                 <X size={16} />
               </button>
@@ -527,7 +527,7 @@ export default function ClientAmtPage() {
                 />
               </Field>
 
-              <div className="flex justify-end gap-2 pt-4 border-t border-[#21293d]">
+              <div className="flex justify-end gap-2 pt-4 border-t border-app">
                 <button type="button" onClick={closeModal} className={btnGhost}>
                   Cancel
                 </button>
@@ -580,7 +580,7 @@ function StatCard({
       <div className="flex items-center gap-3">
         <div className={`rounded-xl border p-2.5 ${tones[tone]}`}>{icon}</div>
         <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">{label}</p>
+          <p className="text-[10px] font-black uppercase tracking-wider text-muted-2">{label}</p>
           <p className="text-lg font-black text-white truncate">{value}</p>
         </div>
       </div>

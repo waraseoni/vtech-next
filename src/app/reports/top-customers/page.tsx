@@ -324,7 +324,7 @@ function TopCustomersContent() {
           <h1 className="text-lg font-black text-white flex items-center gap-2">
             <Star size={18} className="text-amber-400" /> Top Customers
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">Customers by total repair amount</p>
+          <p className="text-xs text-muted mt-0.5">Customers by total repair amount</p>
         </div>
         <button
           onClick={() =>
@@ -333,22 +333,22 @@ function TopCustomersContent() {
               "_blank"
             )
           }
-          className="flex items-center gap-2 px-4 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:border-blue-500/40 transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-panel border border-app rounded-xl text-xs font-bold text-muted hover:text-white hover:border-blue-500/40 transition-all"
         >
           <Printer size={13} /> Print
         </button>
       </div>
 
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4">
+      <div className="bg-panel border border-app rounded-2xl p-4">
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+            <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
               Filter
             </label>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as "monthly" | "yearly" | "all")}
-              className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+              className="px-3 py-2 bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-blue-500/50"
             >
               <option value="all">All Time</option>
               <option value="yearly">Yearly</option>
@@ -358,7 +358,7 @@ function TopCustomersContent() {
           {filterType !== "all" && (
             <>
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+                <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
                   Year
                 </label>
                 <input
@@ -367,18 +367,18 @@ function TopCustomersContent() {
                   onChange={(e) => setSelYear(parseInt(e.target.value))}
                   min={2020}
                   max={new Date().getFullYear() + 1}
-                  className="w-24 px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+                  className="w-24 px-3 py-2 bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-blue-500/50"
                 />
               </div>
               {filterType === "monthly" && (
                 <div>
-                  <label className="text-[10px] font-black uppercase text-slate-600 tracking-widest block mb-1">
+                  <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
                     Month
                   </label>
                   <select
                     value={selMonth}
                     onChange={(e) => setSelMonth(parseInt(e.target.value))}
-                    className="px-3 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-300 outline-none focus:border-blue-500/50"
+                    className="px-3 py-2 bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-blue-500/50"
                   >
                     {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                       <option key={m} value={m}>
@@ -396,36 +396,36 @@ function TopCustomersContent() {
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 text-center">
-          <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest">
+        <div className="bg-panel border border-app rounded-2xl p-4 text-center">
+          <p className="text-[10px] font-black uppercase text-muted-2 tracking-widest">
             Total Revenue
           </p>
           <p className="text-lg font-black text-emerald-400 mt-1">{inr(grandTotal)}</p>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 text-center">
-          <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest">
+        <div className="bg-panel border border-app rounded-2xl p-4 text-center">
+          <p className="text-[10px] font-black uppercase text-muted-2 tracking-widest">
             Total Collected
           </p>
           <p className="text-lg font-black text-teal-400 mt-1">{inr(grandPayment)}</p>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 text-center">
-          <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest">
+        <div className="bg-panel border border-app rounded-2xl p-4 text-center">
+          <p className="text-[10px] font-black uppercase text-muted-2 tracking-widest">
             Outstanding
           </p>
           <p className="text-lg font-black text-blue-400 mt-1">{inr(grandBalance)}</p>
         </div>
       </div>
 
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-[#111520]">
+              <tr className="bg-panel-2">
                 {["Rank", "Customer", "Contact", "Jobs", "Total Amount", "Payment", "Balance"].map(
                   (h) => (
                     <th
                       key={h}
-                      className="px-3 py-2.5 text-[10px] font-black uppercase text-slate-600 tracking-widest text-left"
+                      className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left"
                     >
                       {h}
                     </th>
@@ -442,7 +442,7 @@ function TopCustomersContent() {
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-slate-600 text-xs font-bold">
+                  <td colSpan={7} className="text-center py-12 text-muted-2 text-xs font-bold">
                     No data found
                   </td>
                 </tr>
@@ -450,17 +450,17 @@ function TopCustomersContent() {
                 rows.map((r, i) => (
                   <tr
                     key={r.client_id}
-                    className={`border-t border-[#21293d]/50 hover:bg-white/[0.02] transition-colors ${i < 3 ? "bg-amber-500/5" : ""}`}
+                    className={`border-t border-app/50 hover:bg-white/[0.02] transition-colors ${i < 3 ? "bg-amber-500/5" : ""}`}
                   >
                     <td className="px-3 py-2.5 text-center">
                       {i === 0 ? (
                         <span className="text-amber-400 text-lg">🥇</span>
                       ) : i === 1 ? (
-                        <span className="text-slate-300 text-lg">🥈</span>
+                        <span className="text-app-2 text-lg">🥈</span>
                       ) : i === 2 ? (
                         <span className="text-amber-700 text-lg">🥉</span>
                       ) : (
-                        <span className="text-slate-500 text-xs font-bold">{i + 1}</span>
+                        <span className="text-muted text-xs font-bold">{i + 1}</span>
                       )}
                     </td>
                     <td className="px-3 py-2.5">
@@ -474,8 +474,8 @@ function TopCustomersContent() {
                         </Link>
                       </div>
                     </td>
-                    <td className="px-3 py-2.5 text-xs text-slate-400">{r.contact || "—"}</td>
-                    <td className="px-3 py-2.5 text-xs text-center text-slate-300">
+                    <td className="px-3 py-2.5 text-xs text-muted">{r.contact || "—"}</td>
+                    <td className="px-3 py-2.5 text-xs text-center text-app-2">
                       {r.total_jobs}
                     </td>
                     <td className="px-3 py-2.5 text-xs text-right font-bold text-emerald-400">
@@ -521,17 +521,17 @@ function TopCustomersContent() {
 
       {modalClient && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl shadow-xl shadow-black/40 w-full max-w-2xl overflow-hidden flex flex-col max-h-[80vh]">
-            <div className="flex items-center justify-between p-4 border-b border-[#21293d] bg-[#111520]">
+          <div className="bg-panel border border-app rounded-2xl shadow-xl shadow-black/40 w-full max-w-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between p-4 border-b border-app bg-panel-2">
               <div>
                 <h3 className="text-sm font-black text-white">{modalClient.name}</h3>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-muted mt-0.5">
                   {modalClient.type === "revenue" ? "Transaction History" : "Payment History"}
                 </p>
               </div>
               <button
                 onClick={() => setModalClient(null)}
-                className="p-2 text-slate-400 hover:text-white bg-white/5 rounded-xl transition-colors"
+                className="p-2 text-muted hover:text-white bg-white/5 rounded-xl transition-colors"
               >
                 <X size={16} />
               </button>
@@ -542,17 +542,17 @@ function TopCustomersContent() {
                   <Loader2 size={24} className="animate-spin text-blue-400" />
                 </div>
               ) : modalData.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 text-xs font-bold">
+                <div className="text-center py-12 text-muted text-xs font-bold">
                   No records found.
                 </div>
               ) : (
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-[#21293d]">
-                      <th className="pb-2 text-[10px] font-black uppercase text-slate-600 tracking-widest">
+                    <tr className="border-b border-app">
+                      <th className="pb-2 text-[10px] font-black uppercase text-muted-2 tracking-widest">
                         {modalClient.type === "revenue" ? "Job Info" : "Date"}
                       </th>
-                      <th className="pb-2 text-[10px] font-black uppercase text-slate-600 tracking-widest text-right">
+                      <th className="pb-2 text-[10px] font-black uppercase text-muted-2 tracking-widest text-right">
                         Amount
                       </th>
                     </tr>
@@ -566,17 +566,17 @@ function TopCustomersContent() {
                         <td className="py-3">
                           {modalClient.type === "revenue" ? (
                             <div>
-                              <div className="text-xs font-bold text-slate-200">
+                              <div className="text-xs font-bold text-app-2">
                                 {d.source === "sale" ? "Direct Sale " : "Job "}#{d.id}{" "}
                                 {d.code ? `(${d.code})` : ""}
                               </div>
-                              <div className="text-[10px] text-slate-500 mt-0.5">
+                              <div className="text-[10px] text-muted mt-0.5">
                                 {formatIST(d.date_created, { dateStyle: "medium" })}
                               </div>
                             </div>
                           ) : (
                             <div>
-                              <div className="text-xs font-bold text-slate-200">
+                              <div className="text-xs font-bold text-app-2">
                                 {formatIST(d.payment_date, { dateStyle: "medium" })}
                               </div>
                               {d.payment_mode && (
@@ -592,7 +592,7 @@ function TopCustomersContent() {
                             {inr(d.amount + (d.discount || 0))}
                           </div>
                           {d.discount > 0 && (
-                            <div className="text-[10px] text-slate-500">
+                            <div className="text-[10px] text-muted">
                               inc. {inr(d.discount)} disc.
                             </div>
                           )}

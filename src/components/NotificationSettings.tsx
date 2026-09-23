@@ -58,7 +58,7 @@ export default function NotificationSettings() {
 
   if (!status) {
     return (
-      <div className="flex items-center gap-2 text-slate-600 text-xs">
+      <div className="flex items-center gap-2 text-muted-2 text-xs">
         <Loader2 size={14} className="animate-spin" /> Checking push support...
       </div>
     );
@@ -67,9 +67,9 @@ export default function NotificationSettings() {
   return (
     <div className="p-5 space-y-4">
       {!status.supported ? (
-        <div className="flex items-start gap-3 bg-slate-500/5 border border-slate-500/20 rounded-xl px-4 py-3">
-          <BellOff size={15} className="text-slate-500 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-slate-500">
+        <div className="flex items-start gap-3 bg-muted/5 border border-muted/20 rounded-xl px-4 py-3">
+          <BellOff size={15} className="text-muted flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-muted">
             Ye browser Push notifications support nahi karta. Chrome / Edge / Android me use karein.
           </p>
         </div>
@@ -140,7 +140,7 @@ export default function NotificationSettings() {
                 Enable Push Notifications
               </button>
             )}
-            <span className="flex items-center gap-1.5 text-[10px] text-slate-600 font-bold uppercase tracking-wider">
+            <span className="flex items-center gap-1.5 text-[10px] text-muted-2 font-bold uppercase tracking-wider">
               <Smartphone size={11} />{" "}
               {status.permission === "granted"
                 ? "Permission granted"

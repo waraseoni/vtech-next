@@ -91,22 +91,22 @@ export default function BarcodeCameraScanner({ onScan }: { onScan: (text: string
   }, [elementId, onScan]);
 
   return (
-    <div className="rounded-xl overflow-hidden border border-[#21293d] bg-black relative">
+    <div className="rounded-xl overflow-hidden border border-app bg-black relative">
       <div id={elementId} ref={boxRef} className="w-full" />
       {starting && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-          <Loader2 size={22} className="animate-spin text-slate-400" />
+          <Loader2 size={22} className="animate-spin text-muted" />
         </div>
       )}
       {!camErr && (
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-1.5 text-center pointer-events-none">
-          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+          <p className="text-[9px] font-bold text-app-2 uppercase tracking-widest">
             Barcode / QR ko camera me laayen
           </p>
         </div>
       )}
       {camErr && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#111520]/95 px-4">
+        <div className="absolute inset-0 flex items-center justify-center bg-panel-2/95 px-4">
           <div className="flex items-start gap-2">
             <AlertCircle size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
             <p className="text-amber-400 text-xs font-bold">{camErr}</p>

@@ -93,7 +93,7 @@ const MechAvatar = ({
 
 // Day status → pill classes for the calendar heatmap
 const dayPillCls = (status: 0 | 1 | 2 | 3, isSunday: boolean): string => {
-  if (status === 0) return "bg-[#0d1117] text-slate-600 border border-[#21293d]"; // future / no data
+  if (status === 0) return "bg-app text-muted-2 border border-app"; // future / no data
   if (status === 1) return "bg-emerald-500 text-white shadow-sm shadow-emerald-900/40";
   if (status === 3) return "bg-amber-500 text-white shadow-sm shadow-amber-900/30";
   if (isSunday) return "bg-[#1a0505] text-red-500 border border-red-900/30"; // Sunday absent
@@ -288,17 +288,17 @@ export default function MonthlyReport({
 
   if (loading)
     return (
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-12 flex flex-col items-center justify-center gap-3">
+      <div className="bg-panel border border-app rounded-2xl p-12 flex flex-col items-center justify-center gap-3">
         <Loader2 size={28} className="animate-spin text-blue-500" />
-        <p className="text-slate-500 text-xs font-bold">Loading monthly report...</p>
+        <p className="text-muted text-xs font-bold">Loading monthly report...</p>
       </div>
     );
 
   if (mechanicsData.length === 0)
     return (
-      <div className="bg-[#161b27] border border-dashed border-[#21293d] rounded-2xl p-12 text-center">
-        <Users size={24} className="text-slate-600 mx-auto mb-2" />
-        <p className="text-slate-500 font-bold text-sm">
+      <div className="bg-panel border border-dashed border-app rounded-2xl p-12 text-center">
+        <Users size={24} className="text-muted-2 mx-auto mb-2" />
+        <p className="text-muted font-bold text-sm">
           {userRole === "staff"
             ? "No mechanic profile linked to your account. Contact admin."
             : "No active mechanics found."}
@@ -317,12 +317,12 @@ export default function MonthlyReport({
   return (
     <div className="space-y-3.5">
       {/* ── Month Navigator + KPI Summary ── */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3 sm:p-3.5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-panel border border-app rounded-2xl p-3 sm:p-3.5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Month Switcher */}
-        <div className="flex items-center gap-1 bg-[#0d1117] p-1 rounded-xl border border-[#21293d]">
+        <div className="flex items-center gap-1 bg-app p-1 rounded-xl border border-app">
           <button
             onClick={() => changeMonth(-1)}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-white/5 transition-all"
             title="Previous Month"
           >
             <ChevronLeft size={15} />
@@ -343,7 +343,7 @@ export default function MonthlyReport({
           </div>
           <button
             onClick={() => changeMonth(1)}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-white/5 transition-all"
             title="Next Month"
           >
             <ChevronRight size={15} />
@@ -364,44 +364,44 @@ export default function MonthlyReport({
 
         {/* Compact KPI Pills */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0d1117] border border-[#21293d] rounded-xl">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-app border border-app rounded-xl">
             <TrendingUp size={12} className="text-blue-400" />
             <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Rate</span>
             <span className="text-xs font-black text-white">{overallStats.overallRate.toFixed(0)}%</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0d1117] border border-emerald-500/20 rounded-xl">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-app border border-emerald-500/20 rounded-xl">
             <CheckCircle2 size={12} className="text-emerald-400" />
             <span className="text-[10px] font-bold text-emerald-400">{overallStats.totalFullDays}</span>
-            <span className="text-[9px] text-slate-500 font-bold uppercase">Full</span>
+            <span className="text-[9px] text-muted font-bold uppercase">Full</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0d1117] border border-amber-500/20 rounded-xl">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-app border border-amber-500/20 rounded-xl">
             <Clock size={12} className="text-amber-400" />
             <span className="text-[10px] font-bold text-amber-400">{overallStats.totalHalfDays}</span>
-            <span className="text-[9px] text-slate-500 font-bold uppercase">Half</span>
+            <span className="text-[9px] text-muted font-bold uppercase">Half</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0d1117] border border-red-500/20 rounded-xl">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-app border border-red-500/20 rounded-xl">
             <X size={12} className="text-red-400" />
             <span className="text-[10px] font-bold text-red-400">{overallStats.totalAbsent}</span>
-            <span className="text-[9px] text-slate-500 font-bold uppercase">Absent</span>
+            <span className="text-[9px] text-muted font-bold uppercase">Absent</span>
           </div>
         </div>
       </div>
 
       {/* ── Desktop Heatmap Table (md+) ── */}
-      <div className="hidden md:block bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-md">
+      <div className="hidden md:block bg-panel border border-app rounded-2xl overflow-hidden shadow-md">
         <div className="overflow-x-auto">
           <table className="w-full text-xs border-collapse">
             {/* Header: Staff | 1..N day numbers | P | H | A | Eff */}
             <thead>
-              <tr className="bg-[#0d1117] border-b border-[#21293d]">
-                <th className="py-2.5 px-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400 sticky left-0 bg-[#0d1117] z-10 min-w-[160px]">
+              <tr className="bg-app border-b border-app">
+                <th className="py-2.5 px-3 text-left text-[10px] font-bold uppercase tracking-wider text-muted sticky left-0 bg-app z-10 min-w-[160px]">
                   Staff Member
                 </th>
                 {mechanicsData[0]?.days.map((day) => (
                   <th
                     key={day.day}
                     className={`py-2 px-0 text-center text-[10px] font-bold w-7 ${
-                      day.isSunday ? "text-red-500" : "text-slate-400"
+                      day.isSunday ? "text-red-500" : "text-muted"
                     }`}
                     title={DOW_LABELS[parseISTDate(`${month}-${day.day.toString().padStart(2, "0")}`).getDay()]}
                   >
@@ -418,7 +418,7 @@ export default function MonthlyReport({
               {mechanicsData.map((md) => (
                 <tr key={md.mechanic.id} className="hover:bg-blue-500/[0.02] transition-colors group">
                   {/* Staff Name */}
-                  <td className="py-2 px-3 sticky left-0 bg-[#161b27] group-hover:bg-[#1a2030] z-10 transition-colors">
+                  <td className="py-2 px-3 sticky left-0 bg-panel group-hover:bg-panel-2 z-10 transition-colors">
                     <div className="flex items-center gap-2 min-w-0">
                       <MechAvatar image={md.mechanic.image} name={md.mechanic.name} cls="w-6 h-6 text-[9px]" />
                       <span className="text-white font-bold text-xs truncate max-w-[110px]">
@@ -476,8 +476,8 @@ export default function MonthlyReport({
             </tbody>
             {/* Footer totals */}
             <tfoot>
-              <tr className="bg-[#0d1117] border-t border-[#21293d]">
-                <td className="py-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider sticky left-0 bg-[#0d1117]">
+              <tr className="bg-app border-t border-app">
+                <td className="py-2 px-3 text-[10px] font-bold text-muted uppercase tracking-wider sticky left-0 bg-app">
                   Total ({mechanicsData.length})
                 </td>
                 {mechanicsData[0]?.days.map((_, i) => (
@@ -511,7 +511,7 @@ export default function MonthlyReport({
           return (
             <div
               key={md.mechanic.id}
-              className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3.5 shadow-sm space-y-3"
+              className="bg-panel border border-app rounded-2xl p-3.5 shadow-sm space-y-3"
             >
               {/* Card Header */}
               <div className="flex items-center justify-between gap-2">
@@ -519,7 +519,7 @@ export default function MonthlyReport({
                   <MechAvatar image={md.mechanic.image} name={md.mechanic.name} cls="w-9 h-9 text-xs" />
                   <div className="min-w-0">
                     <p className="text-white font-black text-sm truncate">{md.mechanic.name}</p>
-                    <p className="text-[10px] text-slate-400 font-medium">{monthName}</p>
+                    <p className="text-[10px] text-muted font-medium">{monthName}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -538,12 +538,12 @@ export default function MonthlyReport({
               {/* Attendance Progress Bar */}
               <div className="space-y-1">
                 <div className="flex justify-between text-[10px] font-bold">
-                  <span className="text-slate-400">Attendance Rate</span>
+                  <span className="text-muted">Attendance Rate</span>
                   <span className={attendanceRate >= 80 ? "text-emerald-400" : attendanceRate >= 50 ? "text-amber-400" : "text-red-400"}>
                     {attendanceRate.toFixed(0)}%
                   </span>
                 </div>
-                <div className="h-1.5 bg-[#0d1117] rounded-full border border-[#21293d] overflow-hidden">
+                <div className="h-1.5 bg-app rounded-full border border-app overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${
                       attendanceRate >= 80 ? "bg-emerald-500" : attendanceRate >= 50 ? "bg-amber-500" : "bg-red-500"
@@ -560,7 +560,7 @@ export default function MonthlyReport({
                   {DOW_LABELS.map((d, i) => (
                     <div
                       key={i}
-                      className={`text-[9px] font-black text-center py-0.5 ${i === 0 ? "text-red-500" : "text-slate-600"}`}
+                      className={`text-[9px] font-black text-center py-0.5 ${i === 0 ? "text-red-500" : "text-muted-2"}`}
                     >
                       {d}
                     </div>
@@ -591,7 +591,7 @@ export default function MonthlyReport({
                             : "cursor-default"
                         }`}
                       >
-                        {statusLabel || <span className="text-[8px] font-bold text-slate-700">{day.day}</span>}
+                        {statusLabel || <span className="text-[8px] font-bold text-app">{day.day}</span>}
                       </div>
                     );
                   })}
@@ -599,8 +599,8 @@ export default function MonthlyReport({
               </div>
 
               {/* Footer summary */}
-              <div className="flex items-center justify-between pt-2 border-t border-[#21293d] text-[10px] font-bold">
-                <span className="text-slate-400">
+              <div className="flex items-center justify-between pt-2 border-t border-app text-[10px] font-bold">
+                <span className="text-muted">
                   Effective: <span className="text-blue-400">{effectiveDays.toFixed(1)} days</span>
                 </span>
                 {userRole === "admin" && (

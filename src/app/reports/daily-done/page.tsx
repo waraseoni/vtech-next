@@ -418,7 +418,7 @@ export default function DailyDoneReportPage() {
     <AdminPage allowStaff>
       <div className="space-y-3.5 w-full max-w-[1550px] mx-auto pb-12 px-2 sm:px-3 lg:px-4">
         {/* Top Header Card */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3 sm:p-3.5 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="bg-panel border border-app rounded-2xl p-3 sm:p-3.5 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-600/20 border border-white/10 flex-shrink-0">
               <ListChecks size={18} className="text-white" />
@@ -432,7 +432,7 @@ export default function DailyDoneReportPage() {
                   {fmtDate(date)}
                 </span>
               </div>
-              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium">
+              <p className="text-[10px] sm:text-[11px] text-muted font-medium">
                 Jobs marked Done on this day (delivery kabhi bhi ho sakti hai)
               </p>
             </div>
@@ -440,13 +440,13 @@ export default function DailyDoneReportPage() {
           <div className="flex items-center gap-1.5 self-end sm:self-auto">
             <Link
               href="/reports/delivered"
-              className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] rounded-xl text-[11px] font-bold text-slate-300 hover:text-white transition-all shadow-sm active:scale-95 no-underline"
+              className="inline-flex items-center gap-1 px-2.5 py-1 bg-app hover:bg-panel-2 border border-app rounded-xl text-[11px] font-bold text-app-2 hover:text-white transition-all shadow-sm active:scale-95 no-underline"
             >
               <Package size={12} /> Delivered
             </Link>
             <button
               onClick={handlePrint}
-              className="p-1.5 bg-[#0d1117] hover:bg-[#1a2236] border border-[#21293d] rounded-xl text-slate-400 hover:text-white transition-all flex-shrink-0"
+              className="p-1.5 bg-app hover:bg-panel-2 border border-app rounded-xl text-muted hover:text-white transition-all flex-shrink-0"
               title="Print Report"
             >
               <Printer size={13} />
@@ -456,48 +456,48 @@ export default function DailyDoneReportPage() {
 
         {/* KPI Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
-            <div className="flex items-center justify-between text-slate-400 mb-0.5">
+          <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
+            <div className="flex items-center justify-between text-muted mb-0.5">
               <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Done Jobs</span>
               <CheckSquare size={13} className="text-teal-400" />
             </div>
             <p className="text-base sm:text-lg font-black text-white tracking-tight">{totals.count}</p>
-            <p className="text-[9px] text-slate-500">{totals.uniqueMechanics} mechanics</p>
+            <p className="text-[9px] text-muted">{totals.uniqueMechanics} mechanics</p>
           </div>
-          <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
-            <div className="flex items-center justify-between text-slate-400 mb-0.5">
+          <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
+            <div className="flex items-center justify-between text-muted mb-0.5">
               <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Total Value</span>
               <IndianRupee size={13} className="text-emerald-400" />
             </div>
             <p className="text-base sm:text-lg font-black text-emerald-400 tracking-tight">{inrShort(totals.amount)}</p>
-            <p className="text-[9px] text-slate-500">Billable amount</p>
+            <p className="text-[9px] text-muted">Billable amount</p>
           </div>
-          <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
-            <div className="flex items-center justify-between text-slate-400 mb-0.5">
+          <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
+            <div className="flex items-center justify-between text-muted mb-0.5">
               <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Clients</span>
               <Wrench size={13} className="text-blue-400" />
             </div>
             <p className="text-base sm:text-lg font-black text-white tracking-tight">{totals.uniqueClients}</p>
-            <p className="text-[9px] text-slate-500">Unique clients</p>
+            <p className="text-[9px] text-muted">Unique clients</p>
           </div>
-          <div className="bg-[#161b27] border border-[#21293d] rounded-xl p-2.5 sm:p-3 shadow-sm">
-            <div className="flex items-center justify-between text-slate-400 mb-0.5">
+          <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
+            <div className="flex items-center justify-between text-muted mb-0.5">
               <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Avg Bill</span>
               <IndianRupee size={13} className="text-amber-400" />
             </div>
             <p className="text-base sm:text-lg font-black text-amber-300 tracking-tight">
               {totals.count > 0 ? inrShort(totals.amount / totals.count) : "₹0"}
             </p>
-            <p className="text-[9px] text-slate-500">Per job</p>
+            <p className="text-[9px] text-muted">Per job</p>
           </div>
         </div>
 
         {/* Date & Mechanic Toolbar */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-2.5 sm:p-3 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
-          <div className="flex items-center justify-between sm:justify-start gap-1 bg-[#0d1117] p-1 rounded-xl border border-[#21293d]">
+        <div className="bg-panel border border-app rounded-2xl p-2.5 sm:p-3 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
+          <div className="flex items-center justify-between sm:justify-start gap-1 bg-app p-1 rounded-xl border border-app">
             <button
               onClick={() => shiftDay(-1)}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-white/5 transition-all"
             >
               <ChevronLeft size={15} />
             </button>
@@ -512,7 +512,7 @@ export default function DailyDoneReportPage() {
             </div>
             <button
               onClick={() => shiftDay(1)}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-white/5 transition-all"
             >
               <ChevronRight size={15} />
             </button>
@@ -528,11 +528,11 @@ export default function DailyDoneReportPage() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <div className="relative flex-1 sm:flex-initial sm:w-48">
-              <Wrench size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <Wrench size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
               <select
                 value={selectedMechanic}
                 onChange={(e) => setSelectedMechanic(e.target.value)}
-                className="w-full pl-7 pr-6 py-1 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-medium text-white outline-none focus:border-blue-500/60 transition-all appearance-none cursor-pointer"
+                className="w-full pl-7 pr-6 py-1 bg-app border border-app rounded-xl text-xs font-medium text-white outline-none focus:border-blue-500/60 transition-all appearance-none cursor-pointer"
               >
                 <option value="all">All Mechanics</option>
                 {mechanics.map((m) => (
@@ -556,11 +556,11 @@ export default function DailyDoneReportPage() {
           </div>
 
           {/* DESKTOP TABLE */}
-          <div className="hidden md:block bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden shadow-lg w-full">
+          <div className="hidden md:block bg-panel border border-app rounded-2xl overflow-hidden shadow-lg w-full">
             <div className="w-full overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#0d1117] border-b border-[#21293d] text-[10px] font-bold uppercase text-slate-400 tracking-wider select-none">
+                  <tr className="bg-app border-b border-app text-[10px] font-bold uppercase text-muted tracking-wider select-none">
                     <th className="py-2.5 px-3 text-center w-10">#</th>
                     <th className="py-2.5 px-3">Done Time</th>
                     <th className="py-2.5 px-3">Job ID & Status</th>
@@ -584,11 +584,11 @@ export default function DailyDoneReportPage() {
                     <tr>
                       <td colSpan={8} className="py-8 px-3 text-center">
                         <div className="max-w-xs mx-auto text-center space-y-1.5">
-                          <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
+                          <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-muted">
                             <CheckSquare size={15} />
                           </div>
                           <p className="text-white font-bold text-xs">No done jobs found</p>
-                          <p className="text-slate-500 text-[10px]">Try selecting a different date or mechanic.</p>
+                          <p className="text-muted text-[10px]">Try selecting a different date or mechanic.</p>
                         </div>
                       </td>
                     </tr>
@@ -596,13 +596,13 @@ export default function DailyDoneReportPage() {
                     items.map((item, i) => {
                       const statusConfig = statusMap[item.status] || {
                         label: "Unknown",
-                        color: "text-slate-500 bg-slate-500/10 border-slate-500/20",
+                        color: "text-muted bg-muted/10 border-muted/20",
                       };
                       return (
                         <tr key={item.id} className="hover:bg-blue-500/[0.02] transition-colors group">
-                          <td className="py-2 px-3 text-center text-slate-500 font-bold text-[10px]">{i + 1}</td>
+                          <td className="py-2 px-3 text-center text-muted font-bold text-[10px]">{i + 1}</td>
                           <td className="py-2 px-3">
-                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#0d1117] border border-[#21293d] rounded-lg text-[10px] font-bold text-slate-300">
+                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-app border border-app rounded-lg text-[10px] font-bold text-app-2">
                               <Clock size={10} className="text-teal-500" />
                               {fmtTime(item.done_at)}
                             </div>
@@ -641,15 +641,15 @@ export default function DailyDoneReportPage() {
                                       </button>
                                     </>
                                   ) : (
-                                    <p className="text-[10px] text-slate-400 font-medium">—</p>
+                                    <p className="text-[10px] text-muted font-medium">—</p>
                                   )}
                                 </div>
                               </div>
                             </div>
                           </td>
                           <td className="py-2 px-3">
-                            <p className="text-[11px] text-slate-300 truncate max-w-[160px]">{item.item}</p>
-                            <p className="text-[10px] text-slate-500 italic truncate max-w-[160px]">{item.remark || "—"}</p>
+                            <p className="text-[11px] text-app-2 truncate max-w-[160px]">{item.item}</p>
+                            <p className="text-[10px] text-muted italic truncate max-w-[160px]">{item.remark || "—"}</p>
                           </td>
                           <td className="py-2 px-3">
                             <div className="flex items-center gap-1.5 min-w-0">
@@ -660,7 +660,7 @@ export default function DailyDoneReportPage() {
                           <td className="py-2 px-3 text-right font-black text-emerald-400 text-xs">{inr(item.amount)}</td>
                           <td className="py-2 px-3 text-center">
                             <div className="flex items-center justify-center gap-1">
-                              <Link href={`/jobs/${item.transaction_id}/view`} className="p-1 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all" title="View Job">
+                              <Link href={`/jobs/${item.transaction_id}/view`} className="p-1 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all" title="View Job">
                                 <Eye size={11} />
                               </Link>
                             </div>
@@ -672,8 +672,8 @@ export default function DailyDoneReportPage() {
                 </tbody>
                 {!loading && items.length > 0 && (
                   <tfoot>
-                    <tr className="bg-[#0d1117] border-t border-[#21293d] font-bold text-xs">
-                      <td colSpan={6} className="py-2 px-3 text-right uppercase tracking-wider text-slate-400 text-[10px]">
+                    <tr className="bg-app border-t border-app font-bold text-xs">
+                      <td colSpan={6} className="py-2 px-3 text-right uppercase tracking-wider text-muted text-[10px]">
                         Total ({totals.count} jobs):
                       </td>
                       <td className="py-2 px-3 text-right text-emerald-400 font-black">{inr(totals.amount)}</td>
@@ -689,25 +689,25 @@ export default function DailyDoneReportPage() {
           <div className="md:hidden space-y-3">
             {loading ? (
               Array(4).fill(0).map((_, i) => (
-                <div key={i} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 animate-pulse space-y-3">
+                <div key={i} className="bg-panel border border-app rounded-2xl p-4 animate-pulse space-y-3">
                   <div className="h-5 bg-slate-800/60 rounded-full w-1/2"></div>
                   <div className="h-14 bg-slate-800/40 rounded-xl w-full"></div>
                 </div>
               ))
             ) : items.length === 0 ? (
-              <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-8 text-center space-y-2">
-                <CheckSquare size={20} className="text-slate-500 mx-auto" />
+              <div className="bg-panel border border-app rounded-2xl p-8 text-center space-y-2">
+                <CheckSquare size={20} className="text-muted mx-auto" />
                 <p className="text-white font-bold text-xs">No done jobs found</p>
-                <p className="text-slate-500 text-[11px]">Try selecting a different date or mechanic.</p>
+                <p className="text-muted text-[11px]">Try selecting a different date or mechanic.</p>
               </div>
             ) : (
               items.map((item) => {
                 const statusConfig = statusMap[item.status] || {
                   label: "Unknown",
-                  color: "text-slate-500 bg-slate-500/10 border-slate-500/20",
+                  color: "text-muted bg-muted/10 border-muted/20",
                 };
                 return (
-                  <div key={item.id} className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3.5 shadow-md space-y-3 hover:border-slate-600 transition-all">
+                  <div key={item.id} className="bg-panel border border-app rounded-2xl p-3.5 shadow-md space-y-3 hover:border-muted transition-all">
                     {/* Top Row */}
                     <div className="flex items-center justify-between gap-2.5">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -732,7 +732,7 @@ export default function DailyDoneReportPage() {
                                 </button>
                               </>
                             ) : (
-                              <p className="text-[10px] text-slate-400 font-medium">—</p>
+                              <p className="text-[10px] text-muted font-medium">—</p>
                             )}
                           </div>
                         </div>
@@ -743,13 +743,13 @@ export default function DailyDoneReportPage() {
                             #{item.job_id}
                           </Link>
                           {item.code !== "-" && (
-                            <span className="text-[9px] text-slate-500 font-bold ml-1">{item.code}</span>
+                            <span className="text-[9px] text-muted font-bold ml-1">{item.code}</span>
                           )}
                         </p>
                         <span className={`inline-block px-2 py-0.5 rounded font-black text-[9px] uppercase tracking-wider border ${statusConfig.color}`}>
                           {statusConfig.label}
                         </span>
-                        <p className="text-[9px] font-bold text-slate-500 flex items-center gap-1 justify-end">
+                        <p className="text-[9px] font-bold text-muted flex items-center gap-1 justify-end">
                           <Clock size={9} />
                           {item.status === 5 && item.delivered_at ? fmtDateTime(item.delivered_at) : fmtTime(item.done_at)}
                         </p>
@@ -757,25 +757,25 @@ export default function DailyDoneReportPage() {
                     </div>
 
                     {/* Inner Box - 4 Corners */}
-                    <div className="bg-[#0d1117] p-3 rounded-xl border border-[#21293d]/80">
+                    <div className="bg-app p-3 rounded-xl border border-app/80">
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Mechanic</span>
+                          <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Mechanic</span>
                           <div className="flex items-center gap-1.5">
                             <MechAvatar image={item.mechanic_image} name={item.mechanic_name} cls="w-5 h-5 text-[8px]" />
                             <p className="font-bold text-blue-400 text-[11px] truncate max-w-[80px]">{item.mechanic_name}</p>
                           </div>
                         </div>
                         <div className="space-y-1 text-right">
-                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Item</span>
-                          <p className="font-bold text-slate-300 text-[11px] truncate">{item.item}</p>
+                          <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Item</span>
+                          <p className="font-bold text-app-2 text-[11px] truncate">{item.item}</p>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Remark</span>
-                          <p className="font-bold text-slate-400 text-[11px] truncate">{item.remark || "—"}</p>
+                          <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Remark</span>
+                          <p className="font-bold text-muted text-[11px] truncate">{item.remark || "—"}</p>
                         </div>
                         <div className="space-y-1 text-right">
-                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Amount</span>
+                          <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Amount</span>
                           <p className="font-black text-emerald-400 text-xs">{inr(item.amount)}</p>
                         </div>
                       </div>

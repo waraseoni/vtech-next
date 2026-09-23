@@ -111,9 +111,9 @@ export default function LicenseGate({
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-app flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="bg-[#111520] border border-[#21293d] rounded-3xl p-8 shadow-2xl shadow-black/50 anim-fade">
+        <div className="bg-panel-2 border border-app rounded-3xl p-8 shadow-2xl shadow-black/50 anim-fade">
           {/* ── Header: icon + title + badge + message — sab compact ── */}
           <div className="flex items-start gap-3.5">
             <div
@@ -142,7 +142,7 @@ export default function LicenseGate({
                   {expired ? "Expired" : status.activated ? "Invalid" : "Trial"}
                 </span>
               </div>
-              <p className="text-[12px] text-slate-400 mt-1 leading-relaxed">
+              <p className="text-[12px] text-muted mt-1 leading-relaxed">
                 {expired ? (
                   <>
                     Aapka license{" "}
@@ -167,29 +167,29 @@ export default function LicenseGate({
 
           {/* ── Shop name ── */}
           {status.shopName && (
-            <div className="mt-3.5 flex items-center justify-between bg-[#1a2234] rounded-xl px-4 py-2.5">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+            <div className="mt-3.5 flex items-center justify-between bg-panel-2 rounded-xl px-4 py-2.5">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted">
                 Shop
               </span>
-              <span className="text-xs font-bold text-slate-200">{status.shopName}</span>
+              <span className="text-xs font-bold text-app-2">{status.shopName}</span>
             </div>
           )}
 
           {/* ── Seller contact info ── */}
-          <div className="mt-3.5 bg-[#0f1a2e] border border-blue-500/15 rounded-xl p-3.5 space-y-2">
+          <div className="mt-3.5 bg-panel-2 border border-blue-500/15 rounded-xl p-3.5 space-y-2">
             <p className="text-[10px] font-black uppercase tracking-widest text-blue-400/70 mb-2">
               License ke liye sampark karein
             </p>
             <div className="flex items-center gap-2.5">
-              <User size={12} className="text-slate-500 shrink-0" />
-              <span className="text-[11px] text-slate-300">{SELLER_INFO.name}</span>
+              <User size={12} className="text-muted shrink-0" />
+              <span className="text-[11px] text-app-2">{SELLER_INFO.name}</span>
             </div>
             <div className="flex items-center gap-2.5">
-              <MapPin size={12} className="text-slate-500 shrink-0" />
-              <span className="text-[11px] text-slate-300 leading-snug">{SELLER_INFO.address}</span>
+              <MapPin size={12} className="text-muted shrink-0" />
+              <span className="text-[11px] text-app-2 leading-snug">{SELLER_INFO.address}</span>
             </div>
             <div className="flex items-center gap-2.5">
-              <Phone size={12} className="text-slate-500 shrink-0" />
+              <Phone size={12} className="text-muted shrink-0" />
               <a
                 href={`tel:${SELLER_INFO.phone}`}
                 className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
@@ -209,7 +209,7 @@ export default function LicenseGate({
               </a>
             </div>
             <div className="flex items-center gap-2.5">
-              <Mail size={12} className="text-slate-500 shrink-0" />
+              <Mail size={12} className="text-muted shrink-0" />
               <a
                 href={`mailto:${SELLER_INFO.email}`}
                 className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
@@ -222,7 +222,7 @@ export default function LicenseGate({
           {/* ── Key form ── */}
           <form onSubmit={handleActivate} className="mt-5 space-y-3">
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-muted mb-1.5">
                 License Key (VTC-XXXX-XXXX-XXXX-XXXX)
               </label>
               <input
@@ -233,7 +233,7 @@ export default function LicenseGate({
                 autoCapitalize="characters"
                 autoCorrect="off"
                 spellCheck={false}
-                className="w-full px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm font-mono font-bold tracking-wider text-slate-100 placeholder:text-slate-600 placeholder:font-sans outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                className="w-full px-4 py-3 bg-app border border-app rounded-xl text-sm font-mono font-bold tracking-wider text-app-2 placeholder:text-muted-2 placeholder:font-sans outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
               />
             </div>
 
@@ -265,7 +265,7 @@ export default function LicenseGate({
                   setError("");
                   onActivated();
                 }}
-                className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-[#21293d] text-xs font-bold text-slate-500 hover:text-slate-300 hover:border-slate-500/50 transition-colors"
+                className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-app text-xs font-bold text-muted hover:text-app-2 hover:border-muted/50 transition-colors"
               >
                 <RefreshCw size={12} /> Refresh
               </button>
@@ -305,13 +305,13 @@ export default function LicenseGate({
           )}
 
           {/* ── Footer ── */}
-          <div className="mt-5 pt-4 border-t border-[#1a2234] flex items-center justify-between">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-700">
+          <div className="mt-5 pt-4 border-t border-app-2 flex items-center justify-between">
+            <span className="text-[9px] font-black uppercase tracking-widest text-app">
               V-TECH PRO · Licensing
             </span>
             <button
               onClick={onLogout}
-              className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-red-400 transition-colors"
+              className="flex items-center gap-1.5 text-xs font-bold text-muted hover:text-red-400 transition-colors"
             >
               <LogOut size={13} /> Logout
             </button>

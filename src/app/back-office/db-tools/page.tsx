@@ -229,13 +229,13 @@ export default function DbToolsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
+    <div className="min-h-screen bg-app font-sans pb-12">
       <div className="max-w-4xl mx-auto px-4 pt-6 space-y-5">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Link
             href="/back-office"
-            className="w-10 h-10 bg-[#161b27] border border-[#21293d] rounded-xl flex items-center justify-center text-slate-500 hover:text-white hover:border-blue-500/30 transition-all"
+            className="w-10 h-10 bg-panel border border-app rounded-xl flex items-center justify-center text-muted hover:text-white hover:border-blue-500/30 transition-all"
           >
             <ArrowLeft size={18} />
           </Link>
@@ -243,32 +243,32 @@ export default function DbToolsPage() {
             <h1 className="text-2xl font-black text-white tracking-tight">
               DB Tools & Schema Manager
             </h1>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
+            <p className="text-xs text-muted font-medium mt-0.5">
               PostgreSQL backup, restore, schema verification & deployment
             </p>
           </div>
         </div>
 
         {/* Schema Health Check */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5 bg-gradient-to-r from-blue-600/15 to-transparent border-b border-[#21293d]">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3.5 bg-gradient-to-r from-blue-600/15 to-transparent border-b border-app">
             <div className="flex items-center gap-2.5">
               <Database size={14} className="text-blue-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 Schema Health Check
               </h3>
             </div>
             <button
               onClick={runSchemaCheck}
               disabled={checking}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 rounded-lg text-xs font-bold transition disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted rounded-lg text-xs font-bold transition disabled:opacity-50"
             >
               <RefreshIcon spinning={checking} /> Re-check
             </button>
           </div>
           <div className="p-5">
             {schemaChecks.length === 0 && !checking ? (
-              <p className="text-slate-600 text-sm">Run check to verify schema...</p>
+              <p className="text-muted-2 text-sm">Run check to verify schema...</p>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {schemaChecks.map((c) => (
@@ -292,7 +292,7 @@ export default function DbToolsPage() {
                       )}
                       <span className="text-xs font-black text-white">{c.name}</span>
                     </div>
-                    <p className="text-[10px] text-slate-500 font-medium">{c.detail}</p>
+                    <p className="text-[10px] text-muted font-medium">{c.detail}</p>
                   </div>
                 ))}
               </div>
@@ -301,10 +301,10 @@ export default function DbToolsPage() {
         </div>
 
         {/* SQL Quick Copy */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-purple-600/15 to-transparent border-b border-[#21293d]">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-purple-600/15 to-transparent border-b border-app">
             <Terminal size={14} className="text-purple-400" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
               Quick SQL Queries
             </h3>
           </div>
@@ -313,16 +313,16 @@ export default function DbToolsPage() {
               <div key={key} className="group">
                 <div
                   onClick={() => setShowSql((p) => ({ ...p, [key]: !p[key] }))}
-                  className="w-full flex items-center justify-between px-4 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl hover:border-purple-500/30 transition-all text-left cursor-pointer"
+                  className="w-full flex items-center justify-between px-4 py-2.5 bg-app border border-app rounded-xl hover:border-purple-500/30 transition-all text-left cursor-pointer"
                 >
-                  <span className="text-sm font-bold text-slate-300">{formatQueryName(key)}</span>
+                  <span className="text-sm font-bold text-app-2">{formatQueryName(key)}</span>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         copyToClipboard(sql, key);
                       }}
-                      className="p-1.5 rounded-lg hover:bg-purple-500/10 text-slate-600 hover:text-purple-400 transition-all"
+                      className="p-1.5 rounded-lg hover:bg-purple-500/10 text-muted-2 hover:text-purple-400 transition-all"
                     >
                       {copiedId === key ? (
                         <Check size={14} className="text-emerald-400" />
@@ -331,15 +331,15 @@ export default function DbToolsPage() {
                       )}
                     </button>
                     {showSql[key] ? (
-                      <ChevronUp size={14} className="text-slate-600" />
+                      <ChevronUp size={14} className="text-muted-2" />
                     ) : (
-                      <ChevronDown size={14} className="text-slate-600" />
+                      <ChevronDown size={14} className="text-muted-2" />
                     )}
                   </div>
                 </div>
                 {showSql[key] && (
-                  <div className="mt-1 p-3 bg-[#0a0e16] border border-[#1a2133] rounded-xl overflow-x-auto">
-                    <pre className="text-[11px] text-slate-400 font-mono whitespace-pre-wrap leading-relaxed">
+                  <div className="mt-1 p-3 bg-app border border-app-2 rounded-xl overflow-x-auto">
+                    <pre className="text-[11px] text-muted font-mono whitespace-pre-wrap leading-relaxed">
                       {sql}
                     </pre>
                   </div>
@@ -350,15 +350,15 @@ export default function DbToolsPage() {
         </div>
 
         {/* pg_dump Tool Info */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-emerald-600/15 to-transparent border-b border-[#21293d]">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-emerald-600/15 to-transparent border-b border-app">
             <HardDrive size={14} className="text-emerald-400" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
               pg_dump / pg_restore Tools
             </h3>
           </div>
           <div className="p-5 space-y-4">
-            <p className="text-slate-400 text-sm leading-relaxed">
+            <p className="text-muted text-sm leading-relaxed">
               Server-side PostgreSQL backup/restore —{" "}
               <span className="text-emerald-400 font-bold">schema + data</span> dono included. Ye
               tools <span className="text-white font-bold">apke computer</span> par chalte hain
@@ -367,7 +367,7 @@ export default function DbToolsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Dump commands */}
-              <div className="bg-[#0d1117] border border-[#21293d] rounded-xl p-4 space-y-2">
+              <div className="bg-app border border-app rounded-xl p-4 space-y-2">
                 <div className="flex items-center gap-2 mb-2">
                   <Download size={14} className="text-emerald-400" />
                   <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">
@@ -385,11 +385,11 @@ export default function DbToolsPage() {
                       <code className="text-[10px] text-emerald-400/80 font-mono block truncate">
                         {cmd}
                       </code>
-                      <span className="text-[9px] text-slate-600">{desc}</span>
+                      <span className="text-[9px] text-muted-2">{desc}</span>
                     </div>
                     <button
                       onClick={() => copyToClipboard(cmd, cmd)}
-                      className="p-1 rounded hover:bg-emerald-500/10 text-slate-700 hover:text-emerald-400 transition-all flex-shrink-0"
+                      className="p-1 rounded hover:bg-emerald-500/10 text-app hover:text-emerald-400 transition-all flex-shrink-0"
                     >
                       {copiedId === cmd ? (
                         <Check size={12} className="text-emerald-400" />
@@ -402,7 +402,7 @@ export default function DbToolsPage() {
               </div>
 
               {/* Restore commands */}
-              <div className="bg-[#0d1117] border border-[#21293d] rounded-xl p-4 space-y-2">
+              <div className="bg-app border border-app rounded-xl p-4 space-y-2">
                 <div className="flex items-center gap-2 mb-2">
                   <Upload size={14} className="text-amber-400" />
                   <span className="text-xs font-black text-amber-400 uppercase tracking-wider">
@@ -425,11 +425,11 @@ export default function DbToolsPage() {
                       <code className="text-[10px] text-amber-400/80 font-mono block truncate">
                         {cmd}
                       </code>
-                      <span className="text-[9px] text-slate-600">{desc}</span>
+                      <span className="text-[9px] text-muted-2">{desc}</span>
                     </div>
                     <button
                       onClick={() => copyToClipboard(cmd, cmd)}
-                      className="p-1 rounded hover:bg-amber-500/10 text-slate-700 hover:text-amber-400 transition-all flex-shrink-0"
+                      className="p-1 rounded hover:bg-amber-500/10 text-app hover:text-amber-400 transition-all flex-shrink-0"
                     >
                       {copiedId === cmd ? (
                         <Check size={12} className="text-amber-400" />
@@ -440,9 +440,9 @@ export default function DbToolsPage() {
                   </div>
                 ))}
 
-                <div className="pt-2 mt-2 border-t border-[#21293d]">
-                  <p className="text-[9px] text-slate-600 mb-1">Prerequisites:</p>
-                  <code className="text-[10px] text-slate-500 font-mono">
+                <div className="pt-2 mt-2 border-t border-app">
+                  <p className="text-[9px] text-muted-2 mb-1">Prerequisites:</p>
+                  <code className="text-[10px] text-muted font-mono">
                     scoop install postgresql
                   </code>
                 </div>
@@ -459,10 +459,10 @@ export default function DbToolsPage() {
         </div>
 
         {/* Deployment Steps */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-sky-600/15 to-transparent border-b border-[#21293d]">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-sky-600/15 to-transparent border-b border-app">
             <PlayCircle size={14} className="text-sky-400" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
               New Client Deployment — Step by Step
             </h3>
           </div>
@@ -472,33 +472,33 @@ export default function DbToolsPage() {
                 <div key={s.step} className="group">
                   <button
                     onClick={() => setExpandedStep(expandedStep === s.step ? null : s.step)}
-                    className="w-full flex items-center gap-3 px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl hover:border-sky-500/30 transition-all text-left"
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-app border border-app rounded-xl hover:border-sky-500/30 transition-all text-left"
                   >
                     <div className="w-7 h-7 bg-sky-500/10 border border-sky-500/20 rounded-lg flex items-center justify-center text-sky-400 text-xs font-black flex-shrink-0">
                       {s.step}
                     </div>
                     <div className="min-w-0 flex-1">
                       <span className="text-sm font-bold text-white block">{s.title}</span>
-                      <span className="text-[10px] text-slate-500 block truncate">{s.desc}</span>
+                      <span className="text-[10px] text-muted block truncate">{s.desc}</span>
                     </div>
-                    {s.cmd && <Terminal size={12} className="text-slate-600 flex-shrink-0" />}
+                    {s.cmd && <Terminal size={12} className="text-muted-2 flex-shrink-0" />}
                     {expandedStep === s.step ? (
-                      <ChevronUp size={14} className="text-slate-600" />
+                      <ChevronUp size={14} className="text-muted-2" />
                     ) : (
-                      <ChevronDown size={14} className="text-slate-600" />
+                      <ChevronDown size={14} className="text-muted-2" />
                     )}
                   </button>
                   {expandedStep === s.step && (
-                    <div className="mt-1 ml-10 p-3 bg-[#0a0e16] border border-[#1a2133] rounded-xl">
-                      <p className="text-xs text-slate-400 leading-relaxed">{s.desc}</p>
+                    <div className="mt-1 ml-10 p-3 bg-app border border-app-2 rounded-xl">
+                      <p className="text-xs text-muted leading-relaxed">{s.desc}</p>
                       {s.cmd && (
-                        <div className="mt-2 flex items-center gap-2 p-2 bg-[#161b27] border border-[#21293d] rounded-lg">
+                        <div className="mt-2 flex items-center gap-2 p-2 bg-panel border border-app rounded-lg">
                           <code className="text-[10px] text-sky-400 font-mono flex-1 overflow-x-auto whitespace-nowrap">
                             {s.cmd}
                           </code>
                           <button
                             onClick={() => copyToClipboard(s.cmd!, `step-${s.step}`)}
-                            className="p-1 rounded hover:bg-sky-500/10 text-slate-600 hover:text-sky-400 transition-all flex-shrink-0"
+                            className="p-1 rounded hover:bg-sky-500/10 text-muted-2 hover:text-sky-400 transition-all flex-shrink-0"
                           >
                             {copiedId === `step-${s.step}` ? (
                               <Check size={12} className="text-emerald-400" />
@@ -517,10 +517,10 @@ export default function DbToolsPage() {
         </div>
 
         {/* Schema Files Reference */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-rose-600/15 to-transparent border-b border-[#21293d]">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-rose-600/15 to-transparent border-b border-app">
             <FileCode size={14} className="text-rose-400" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
               Schema Files Reference
             </h3>
           </div>
@@ -528,7 +528,7 @@ export default function DbToolsPage() {
             {SCHEMA_FILES.map((f) => (
               <div
                 key={f.id}
-                className="flex items-center gap-3 px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-xl"
+                className="flex items-center gap-3 px-4 py-3 bg-app border border-app rounded-xl"
               >
                 <div
                   className={`w-2 h-2 rounded-full flex-shrink-0 ${
@@ -541,7 +541,7 @@ export default function DbToolsPage() {
                 />
                 <div className="min-w-0 flex-1">
                   <code className="text-xs font-bold text-white block font-mono">{f.label}</code>
-                  <span className="text-[10px] text-slate-500 block">{f.desc}</span>
+                  <span className="text-[10px] text-muted block">{f.desc}</span>
                 </div>
                 <span
                   className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
@@ -572,9 +572,9 @@ export default function DbToolsPage() {
 
         {/* Footer */}
         <div className="text-center pt-4">
-          <p className="text-[10px] text-slate-700 font-medium">
+          <p className="text-[10px] text-app font-medium">
             V-Technologies · DB Tools ·{" "}
-            <Link href="/back-office" className="text-slate-600 hover:text-white transition-colors">
+            <Link href="/back-office" className="text-muted-2 hover:text-white transition-colors">
               ← Back to Back Office
             </Link>
           </p>

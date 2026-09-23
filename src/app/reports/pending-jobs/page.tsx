@@ -72,14 +72,14 @@ const DMYDateField = ({ value, onChange }: { value: string; onChange: (iso: stri
 
   return (
     <div className="relative">
-      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-2" size={16} />
       <input
         type="text"
         inputMode="numeric"
         placeholder="dd/mm/yyyy"
         value={text}
         onChange={(e) => handle(e.target.value)}
-        className="w-full pl-12 pr-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-sm text-slate-200 outline-none focus:border-amber-500 transition-all placeholder:text-slate-600"
+        className="w-full pl-12 pr-4 py-3 bg-app border border-app rounded-2xl text-sm text-app-2 outline-none focus:border-amber-500 transition-all placeholder:text-muted-2"
       />
     </div>
   );
@@ -348,13 +348,13 @@ function PendingJobsContent() {
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto pb-20">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-[2rem] p-6 shadow-2xl relative overflow-hidden">
+      <div className="bg-panel border border-app rounded-[2rem] p-6 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-3xl rounded-full -mr-20 -mt-20 pointer-events-none" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative">
           <div className="flex items-center gap-5">
             <Link
               href="/reports"
-              className="w-12 h-12 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-2xl text-slate-500 hover:text-white hover:bg-blue-600/10 hover:border-blue-500/40 transition-all group"
+              className="w-12 h-12 flex items-center justify-center bg-app border border-app rounded-2xl text-muted hover:text-white hover:bg-blue-600/10 hover:border-blue-500/40 transition-all group"
             >
               <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
             </Link>
@@ -363,13 +363,13 @@ function PendingJobsContent() {
             </div>
             <div>
               <h1 className="text-3xl font-black text-white tracking-tight">Jobs in Shop</h1>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-[0.3em]">
+              <p className="text-xs text-muted font-bold uppercase tracking-[0.3em]">
                 All jobs in the workshop (yet to be delivered)
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="bg-[#0d1117] border border-amber-500/20 px-6 py-3 rounded-2xl flex flex-col items-end">
+            <div className="bg-app border border-amber-500/20 px-6 py-3 rounded-2xl flex flex-col items-end">
               <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">
                 Total Shop Value
               </span>
@@ -377,7 +377,7 @@ function PendingJobsContent() {
             </div>
             <button
               onClick={() => window.print()}
-              className="w-12 h-12 flex items-center justify-center bg-[#1e2637] border border-[#2a3550] hover:border-indigo-500/40 text-slate-400 hover:text-white rounded-2xl transition-all shadow-lg"
+              className="w-12 h-12 flex items-center justify-center bg-panel-2 border border-app-2 hover:border-indigo-500/40 text-muted hover:text-white rounded-2xl transition-all shadow-lg"
             >
               <Printer size={20} />
             </button>
@@ -387,9 +387,9 @@ function PendingJobsContent() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 no-print">
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 md:p-5 flex items-center justify-between gap-3">
+        <div className="bg-panel border border-app rounded-2xl p-4 md:p-5 flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+            <p className="text-[10px] md:text-xs font-bold text-muted uppercase tracking-wider mb-1">
               Jobs in Shop
             </p>
             <h3 className="text-xl md:text-2xl font-black text-white">{totalPending}</h3>
@@ -398,9 +398,9 @@ function PendingJobsContent() {
             <ListChecks size={20} />
           </div>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 md:p-5 flex items-center justify-between gap-3">
+        <div className="bg-panel border border-app rounded-2xl p-4 md:p-5 flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+            <p className="text-[10px] md:text-xs font-bold text-muted uppercase tracking-wider mb-1">
               Value in Shop
             </p>
             <h3 className="text-xl md:text-2xl font-black text-amber-400">{inr(totalAmount)}</h3>
@@ -409,9 +409,9 @@ function PendingJobsContent() {
             <Clock size={20} />
           </div>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 md:p-5 flex items-center justify-between gap-3">
+        <div className="bg-panel border border-app rounded-2xl p-4 md:p-5 flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+            <p className="text-[10px] md:text-xs font-bold text-muted uppercase tracking-wider mb-1">
               Overdue (&gt;7 days)
             </p>
             <h3 className="text-xl md:text-2xl font-black text-red-400">{overdueCount}</h3>
@@ -420,9 +420,9 @@ function PendingJobsContent() {
             <AlertTriangle size={20} />
           </div>
         </div>
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 md:p-5 flex items-center justify-between gap-3">
+        <div className="bg-panel border border-app rounded-2xl p-4 md:p-5 flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+            <p className="text-[10px] md:text-xs font-bold text-muted uppercase tracking-wider mb-1">
               Oldest Job
             </p>
             <h3 className="text-xl md:text-2xl font-black text-blue-400">
@@ -436,15 +436,15 @@ function PendingJobsContent() {
       </div>
 
       {/* Filters Card (single box) */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-[2rem] p-4 md:p-6 no-print shadow-2xl">
+      <div className="bg-panel border border-app rounded-[2rem] p-4 md:p-6 no-print shadow-2xl">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
-          <div className="flex items-center gap-2 bg-[#0d1117] border border-[#21293d] rounded-2xl p-1 w-max">
+          <div className="flex items-center gap-2 bg-app border border-app rounded-2xl p-1 w-max">
             <button
               onClick={applyAll}
               className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
                 !monthView
                   ? "bg-emerald-600 text-white shadow-md shadow-emerald-900/20"
-                  : "text-slate-400 hover:text-slate-200"
+                  : "text-muted hover:text-app-2"
               }`}
             >
               All Time
@@ -454,7 +454,7 @@ function PendingJobsContent() {
               className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
                 monthView
                   ? "bg-amber-600 text-white shadow-md shadow-amber-900/20"
-                  : "text-slate-400 hover:text-slate-200"
+                  : "text-muted hover:text-app-2"
               }`}
             >
               Monthly
@@ -465,7 +465,7 @@ function PendingJobsContent() {
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => shiftMonth(-1)}
-                className="w-10 h-10 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-400 hover:text-white hover:border-amber-500/50 hover:bg-[#1c2231] transition-all"
+                className="w-10 h-10 flex items-center justify-center bg-app border border-app rounded-xl text-muted hover:text-white hover:border-amber-500/50 hover:bg-panel-2 transition-all"
                 title="Previous Month"
               >
                 <ChevronLeft size={16} />
@@ -474,11 +474,11 @@ function PendingJobsContent() {
                 type="month"
                 value={anchorMonth}
                 onChange={(e) => e.target.value && applyMonth(e.target.value)}
-                className="px-3 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-xs font-bold text-slate-200 outline-none focus:border-amber-500/50 text-center [color-scheme:dark]"
+                className="px-3 py-2 bg-app border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-amber-500/50 text-center [color-scheme:dark]"
               />
               <button
                 onClick={() => shiftMonth(1)}
-                className="w-10 h-10 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-400 hover:text-white hover:border-amber-500/50 hover:bg-[#1c2231] transition-all"
+                className="w-10 h-10 flex items-center justify-center bg-app border border-app rounded-xl text-muted hover:text-white hover:border-amber-500/50 hover:bg-panel-2 transition-all"
                 title="Next Month"
               >
                 <ChevronRight size={16} />
@@ -507,14 +507,14 @@ function PendingJobsContent() {
           </span>
         </div>
 
-        <div className="h-px bg-[#21293d] mb-5" />
+        <div className="h-px bg-panel-2 mb-5" />
 
         <form
           onSubmit={handleFilter}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-end"
         >
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-slate-600 tracking-[0.2em] ml-2">
+            <label className="text-[10px] font-black uppercase text-muted-2 tracking-[0.2em] ml-2">
               Created From (dd/mm/yyyy)
             </label>
             <DMYDateField
@@ -526,7 +526,7 @@ function PendingJobsContent() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-slate-600 tracking-[0.2em] ml-2">
+            <label className="text-[10px] font-black uppercase text-muted-2 tracking-[0.2em] ml-2">
               Created To (dd/mm/yyyy)
             </label>
             <DMYDateField
@@ -538,13 +538,13 @@ function PendingJobsContent() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-slate-600 tracking-[0.2em] ml-2">
+            <label className="text-[10px] font-black uppercase text-muted-2 tracking-[0.2em] ml-2">
               Job Status
             </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full px-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-sm text-slate-200 outline-none focus:border-amber-500 transition-all cursor-pointer"
+              className="w-full px-4 py-3 bg-app border border-app rounded-2xl text-sm text-app-2 outline-none focus:border-amber-500 transition-all cursor-pointer"
             >
               <option value="all">All Status</option>
               <option value="0">Just Pending</option>
@@ -562,22 +562,22 @@ function PendingJobsContent() {
         </form>
 
         <div className="relative mt-4">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-2" size={16} />
           <input
             type="text"
             placeholder="Search by Job ID, Client, Contact or Item..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-[#0d1117] border border-[#21293d] rounded-2xl text-sm text-slate-200 outline-none focus:border-amber-500 transition-all shadow-inner"
+            className="w-full pl-12 pr-4 py-3 bg-app border border-app rounded-2xl text-sm text-app-2 outline-none focus:border-amber-500 transition-all shadow-inner"
           />
         </div>
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:block bg-[#161b27] border border-[#21293d] rounded-[2.5rem] overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 no-print">
+      <div className="hidden md:block bg-panel border border-app rounded-[2.5rem] overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 no-print">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="bg-[#0d1117] text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">
+            <thead className="bg-app text-[10px] font-black uppercase text-muted tracking-[0.2em]">
               <tr>
                 <th className="px-6 py-5">Job ID / Date</th>
                 <th className="px-6 py-5">Client Details</th>
@@ -601,7 +601,7 @@ function PendingJobsContent() {
                   ))
               ) : filteredJobs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center text-slate-600 italic">
+                  <td colSpan={7} className="px-6 py-20 text-center text-muted-2 italic">
                     No jobs in shop found for the selected criteria.
                   </td>
                 </tr>
@@ -616,7 +616,7 @@ function PendingJobsContent() {
                         >
                           #{job.job_id}
                         </Link>
-                        <span className="text-[10px] text-slate-500 mt-1 font-bold">
+                        <span className="text-[10px] text-muted mt-1 font-bold">
                           {formatIST(job.date_created, {
                             day: "2-digit",
                             month: "short",
@@ -629,12 +629,12 @@ function PendingJobsContent() {
                       <div className="flex flex-col">
                         <Link
                           href={`/clients/${job.client_name}/view`}
-                          className="text-slate-200 font-bold hover:text-blue-400 transition-colors"
+                          className="text-app-2 font-bold hover:text-blue-400 transition-colors"
                         >
                           {job.client?.firstname} {job.client?.lastname}
                         </Link>
-                        <span className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
-                          <Smartphone size={10} className="text-slate-700" /> {job.client?.contact}
+                        <span className="text-xs text-muted flex items-center gap-1.5 mt-1">
+                          <Smartphone size={10} className="text-app" /> {job.client?.contact}
                         </span>
                       </div>
                     </td>
@@ -699,11 +699,11 @@ function PendingJobsContent() {
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3 no-print">
         {loading ? (
-          <div className="bg-[#161b27] border border-[#21293d] rounded-3xl overflow-hidden p-6">
+          <div className="bg-panel border border-app rounded-3xl overflow-hidden p-6">
             <Loader2 size={28} className="animate-spin text-amber-500 mx-auto" />
           </div>
         ) : filteredJobs.length === 0 ? (
-          <div className="bg-[#161b27] border border-[#21293d] rounded-3xl py-16 px-6 text-center text-slate-600 italic">
+          <div className="bg-panel border border-app rounded-3xl py-16 px-6 text-center text-muted-2 italic">
             No jobs in shop found for the selected criteria.
           </div>
         ) : (
@@ -712,7 +712,7 @@ function PendingJobsContent() {
             return (
               <div
                 key={job.id}
-                className="bg-[#161b27] border border-[#21293d] rounded-3xl p-4 shadow-xl hover:border-amber-500/40 transition-all animate-in fade-in slide-in-from-bottom-2 duration-500"
+                className="bg-panel border border-app rounded-3xl p-4 shadow-xl hover:border-amber-500/40 transition-all animate-in fade-in slide-in-from-bottom-2 duration-500"
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <Link
@@ -720,7 +720,7 @@ function PendingJobsContent() {
                     className="text-white font-black text-base hover:text-amber-500 transition-colors leading-tight"
                   >
                     #{job.job_id}
-                    <span className="block text-[10px] text-slate-500 font-bold mt-0.5">
+                    <span className="block text-[10px] text-muted font-bold mt-0.5">
                       {formatIST(job.date_created, {
                         day: "2-digit",
                         month: "short",
@@ -742,7 +742,7 @@ function PendingJobsContent() {
                   </div>
                 </div>
 
-                <div className="border-t border-[#21293d] pt-3 space-y-2.5">
+                <div className="border-t border-app pt-3 space-y-2.5">
                   <div className="flex items-center justify-between gap-3">
                     <Link
                       href={`/clients/${job.client_name}/view`}
@@ -750,8 +750,8 @@ function PendingJobsContent() {
                     >
                       {job.client?.firstname} {job.client?.lastname}
                     </Link>
-                    <span className="text-xs text-slate-400 flex items-center gap-1 shrink-0">
-                      <Smartphone size={11} className="text-slate-600" /> {job.client?.contact}
+                    <span className="text-xs text-muted flex items-center gap-1 shrink-0">
+                      <Smartphone size={11} className="text-muted-2" /> {job.client?.contact}
                     </span>
                   </div>
                   <div>
@@ -792,14 +792,14 @@ function PendingJobsContent() {
 
       {/* Pagination */}
       {filteredJobs.length > 0 && (
-        <div className="hidden md:flex items-center justify-between flex-wrap gap-3 bg-[#161b27] border border-[#21293d] rounded-2xl p-3 no-print">
+        <div className="hidden md:flex items-center justify-between flex-wrap gap-3 bg-panel border border-app rounded-2xl p-3 no-print">
           <div className="flex items-center gap-3 flex-wrap px-2">
-            <label className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <label className="flex items-center gap-2 text-[11px] font-bold text-muted uppercase tracking-wider">
               Rows/page
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                className="bg-[#0d1117] border border-[#21293d] rounded-lg px-2 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-amber-500/50"
+                className="bg-app border border-app rounded-lg px-2 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-amber-500/50"
               >
                 <option value={10}>10</option>
                 <option value={12}>12</option>
@@ -809,14 +809,14 @@ function PendingJobsContent() {
                 <option value={0}>All</option>
               </select>
             </label>
-            <p className="text-xs text-slate-500 font-bold">
+            <p className="text-xs text-muted font-bold">
               Showing{" "}
-              <span className="text-slate-300">
+              <span className="text-app-2">
                 {filteredJobs.length > 0
                   ? `${(safePage - 1) * effectiveSize + 1}–${Math.min(safePage * effectiveSize, filteredJobs.length)}`
                   : "0–0"}
               </span>{" "}
-              of <span className="text-slate-300">{filteredJobs.length}</span> jobs in shop
+              of <span className="text-app-2">{filteredJobs.length}</span> jobs in shop
             </p>
           </div>
           {totalPages > 1 && (
@@ -824,7 +824,7 @@ function PendingJobsContent() {
               <button
                 onClick={() => setPage(1)}
                 disabled={safePage <= 1}
-                className="w-9 h-9 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-300 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="w-9 h-9 flex items-center justify-center bg-app border border-app rounded-xl text-app-2 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 title="First page"
               >
                 <ChevronsLeft size={15} />
@@ -832,7 +832,7 @@ function PendingJobsContent() {
               <button
                 onClick={() => setPage(safePage - 1)}
                 disabled={safePage <= 1}
-                className="w-9 h-9 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-300 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="w-9 h-9 flex items-center justify-center bg-app border border-app rounded-xl text-app-2 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 title="Previous page"
               >
                 <ChevronLeft size={15} />
@@ -841,7 +841,7 @@ function PendingJobsContent() {
                 n === "…" ? (
                   <span
                     key={`ellipsis-${idx}`}
-                    className="w-9 h-9 flex items-center justify-center text-slate-600 text-xs font-bold select-none"
+                    className="w-9 h-9 flex items-center justify-center text-muted-2 text-xs font-bold select-none"
                   >
                     …
                   </span>
@@ -852,7 +852,7 @@ function PendingJobsContent() {
                     className={`w-9 h-9 flex items-center justify-center rounded-xl text-xs font-black transition-all ${
                       n === safePage
                         ? "bg-amber-600 text-white shadow-md shadow-amber-900/20"
-                        : "bg-[#0d1117] border border-[#21293d] text-slate-400 hover:text-white hover:border-amber-500/50"
+                        : "bg-app border border-app text-muted hover:text-white hover:border-amber-500/50"
                     }`}
                   >
                     {n}
@@ -862,7 +862,7 @@ function PendingJobsContent() {
               <button
                 onClick={() => setPage(safePage + 1)}
                 disabled={safePage >= totalPages}
-                className="w-9 h-9 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-300 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="w-9 h-9 flex items-center justify-center bg-app border border-app rounded-xl text-app-2 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 title="Next page"
               >
                 <ChevronRight size={15} />
@@ -870,7 +870,7 @@ function PendingJobsContent() {
               <button
                 onClick={() => setPage(totalPages)}
                 disabled={safePage >= totalPages}
-                className="w-9 h-9 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-300 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="w-9 h-9 flex items-center justify-center bg-app border border-app rounded-xl text-app-2 hover:text-white hover:border-amber-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 title="Last page"
               >
                 <ChevronsRight size={15} />
@@ -888,7 +888,7 @@ function PendingJobsContent() {
               {["Job ID", "Client", "Item / Fault", "Status", "Aging", "Amount"].map((h) => (
                 <th
                   key={h}
-                  className="border border-gray-300 bg-gray-100 px-2 py-2 text-left font-black uppercase tracking-wide"
+                  className="border border-app-2 bg-gray-100 px-2 py-2 text-left font-black uppercase tracking-wide"
                 >
                   {h}
                 </th>
@@ -898,7 +898,7 @@ function PendingJobsContent() {
           <tbody>
             {filteredJobs.map((job) => (
               <tr key={job.id}>
-                <td className="border border-gray-300 px-2 py-1.5 font-bold">
+                <td className="border border-app-2 px-2 py-1.5 font-bold">
                   #{job.job_id}
                   <div className="text-[10px] text-gray-500 font-normal">
                     {formatIST(job.date_created, {
@@ -908,21 +908,21 @@ function PendingJobsContent() {
                     })}
                   </div>
                 </td>
-                <td className="border border-gray-300 px-2 py-1.5">
+                <td className="border border-app-2 px-2 py-1.5">
                   {job.client?.firstname} {job.client?.lastname}
                   <div className="text-[10px] text-gray-500">{job.client?.contact}</div>
                 </td>
-                <td className="border border-gray-300 px-2 py-1.5">
+                <td className="border border-app-2 px-2 py-1.5">
                   {job.item}
                   <div className="text-[10px] text-gray-500">Fault: {job.fault}</div>
                 </td>
-                <td className="border border-gray-300 px-2 py-1.5">
+                <td className="border border-app-2 px-2 py-1.5">
                   {STATUS_MAP[job.status]?.label}
                 </td>
-                <td className="border border-gray-300 px-2 py-1.5 text-center">
+                <td className="border border-app-2 px-2 py-1.5 text-center">
                   {daysPending(job.date_created)}d
                 </td>
-                <td className="border border-gray-300 px-2 py-1.5 text-right font-bold">
+                <td className="border border-app-2 px-2 py-1.5 text-right font-bold">
                   {inr(job.amount)}
                 </td>
               </tr>

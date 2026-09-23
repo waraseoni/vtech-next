@@ -61,7 +61,7 @@ function PhoneChip({ phone, big = false }: { phone: string; big?: boolean }) {
 }
 
 function ContactBlock({ persons }: { persons: ContactPerson[] }) {
-  if (persons.length === 0) return <span className="text-slate-700 text-xs">—</span>;
+  if (persons.length === 0) return <span className="text-app text-xs">—</span>;
   return (
     <div className="flex flex-col gap-2">
       {persons.map((p, i) => (
@@ -71,24 +71,24 @@ function ContactBlock({ persons }: { persons: ContactPerson[] }) {
               {p.is_primary && (
                 <Star size={9} className="text-amber-400 flex-shrink-0" fill="currentColor" />
               )}
-              <span className="text-slate-500 text-[10px] font-black uppercase tracking-wide truncate">
+              <span className="text-muted text-[10px] font-black uppercase tracking-wide truncate">
                 {p.name || "Person"}
               </span>
               {p.role && (
-                <span className="text-slate-700 text-[10px] normal-case tracking-normal truncate">
+                <span className="text-app text-[10px] normal-case tracking-normal truncate">
                   · {p.role}
                 </span>
               )}
             </div>
           )}
           {p.phones.length === 0 ? (
-            <span className="text-xs text-slate-700">—</span>
+            <span className="text-xs text-app">—</span>
           ) : (
             <div className="flex flex-col gap-1">
               {p.phones.map((ph, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-1.5 text-slate-400 text-xs min-w-0"
+                  className="flex items-center gap-1.5 text-muted text-xs min-w-0"
                 >
                   {ph.is_primary && (
                     <Star
@@ -97,7 +97,7 @@ function ContactBlock({ persons }: { persons: ContactPerson[] }) {
                       fill="currentColor"
                     />
                   )}
-                  <span className="text-slate-600 text-[9px] font-black uppercase flex-shrink-0">
+                  <span className="text-muted-2 text-[9px] font-black uppercase flex-shrink-0">
                     {ph.label}
                   </span>
                   <span className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -259,35 +259,35 @@ export default function SuppliersPage() {
   return (
     <AdminPage title="Suppliers" subtitle="Supplier catalog management">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-[#21293d] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-app flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 min-w-[180px]">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
               />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search suppliers..."
-                className="pl-9 pr-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-blue-500 w-full sm:w-64"
+                className="pl-9 pr-4 py-2 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-app outline-none focus:border-blue-500 w-full sm:w-64"
               />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-2">
               {filtered.length} of {rows.length}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <Link
               href="/products"
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 bg-app border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
             >
               <Package size={13} /> Products
             </Link>
             <Link
               href="/inventory/purchase-orders"
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 bg-app border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
             >
               <ClipboardList size={13} /> Purchase Orders
             </Link>
@@ -308,20 +308,20 @@ export default function SuppliersPage() {
 
         {loading ? (
           <div className="px-5 py-12 text-center">
-            <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">
+            <Loader2 size={24} className="animate-spin text-muted-2 mx-auto mb-2" />
+            <p className="text-muted-2 text-xs font-extrabold uppercase tracking-widest">
               Loading...
             </p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="px-5 py-12 text-center text-slate-600 text-sm">No suppliers found.</div>
+          <div className="px-5 py-12 text-center text-muted-2 text-sm">No suppliers found.</div>
         ) : (
           <>
             {!isMobile && (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-[#111520]">
-                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                  <thead className="bg-panel-2">
+                    <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                       <th className="text-left px-4 py-3">Supplier Name</th>
                       <th className="text-left px-4 py-3">Contact Numbers</th>
                       <th className="text-left px-4 py-3">Email</th>
@@ -349,7 +349,7 @@ export default function SuppliersPage() {
                                     alt={`${s.name} visiting card`}
                                     width={48}
                                     height={48}
-                                    className="w-12 h-12 rounded-xl object-cover border border-[#21293d]"
+                                    className="w-12 h-12 rounded-xl object-cover border border-app"
                                   />
                                 </button>
                               ) : (
@@ -359,7 +359,7 @@ export default function SuppliersPage() {
                               )}
                               <Link
                                 href={`/suppliers/${s.id}`}
-                                className="font-bold text-slate-200 hover:text-emerald-400 hover:underline transition-colors"
+                                className="font-bold text-app-2 hover:text-emerald-400 hover:underline transition-colors"
                               >
                                 {s.name}
                               </Link>
@@ -373,25 +373,25 @@ export default function SuppliersPage() {
                               <a
                                 href={`mailto:${s.email}`}
                                 title={`Email: ${s.email}`}
-                                className="flex items-center gap-1.5 text-slate-400 hover:text-blue-400 text-xs hover:underline transition-colors"
+                                className="flex items-center gap-1.5 text-muted hover:text-blue-400 text-xs hover:underline transition-colors"
                               >
-                                <Mail size={11} className="text-slate-600" /> {s.email}
+                                <Mail size={11} className="text-muted-2" /> {s.email}
                               </a>
                             ) : (
-                              <span className="text-slate-700 text-xs">—</span>
+                              <span className="text-app text-xs">—</span>
                             )}
                           </td>
                           <td className="px-4 py-3.5">
                             {s.address ? (
                               <div
-                                className="flex items-center gap-1.5 text-slate-400 text-xs max-w-[200px] truncate"
+                                className="flex items-center gap-1.5 text-muted text-xs max-w-[200px] truncate"
                                 title={s.address}
                               >
-                                <MapPin size={11} className="text-slate-600 flex-shrink-0" />{" "}
+                                <MapPin size={11} className="text-muted-2 flex-shrink-0" />{" "}
                                 {s.address}
                               </div>
                             ) : (
-                              <span className="text-slate-700 text-xs">—</span>
+                              <span className="text-app text-xs">—</span>
                             )}
                           </td>
                           <td className="px-4 py-3.5 text-center">
@@ -400,7 +400,7 @@ export default function SuppliersPage() {
                               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
                                 s.status === 1
                                   ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-                                  : "bg-slate-500/10 border-slate-500/20 text-slate-500 hover:bg-slate-500/20"
+                                  : "bg-muted/10 border-muted/20 text-muted hover:bg-muted/20"
                               }`}
                             >
                               {s.status === 1 ? (
@@ -483,7 +483,7 @@ export default function SuppliersPage() {
                                 alt={`${s.name} visiting card`}
                                 width={40}
                                 height={40}
-                                className="w-10 h-10 rounded-xl object-cover border border-[#21293d]"
+                                className="w-10 h-10 rounded-xl object-cover border border-app"
                               />
                             </button>
                           ) : (
@@ -494,7 +494,7 @@ export default function SuppliersPage() {
                           <div className="min-w-0">
                             <Link
                               href={`/suppliers/${s.id}`}
-                              className="font-bold text-slate-200 text-sm truncate hover:text-emerald-400 hover:underline transition-colors"
+                              className="font-bold text-app-2 text-sm truncate hover:text-emerald-400 hover:underline transition-colors"
                             >
                               {s.name}
                             </Link>
@@ -502,13 +502,13 @@ export default function SuppliersPage() {
                               <a
                                 href={`mailto:${s.email}`}
                                 title={`Email: ${s.email}`}
-                                className="flex items-center gap-1 text-[10px] text-slate-600 truncate hover:text-blue-400 hover:underline transition-colors"
+                                className="flex items-center gap-1 text-[10px] text-muted-2 truncate hover:text-blue-400 hover:underline transition-colors"
                               >
-                                <Mail size={9} className="text-slate-600 flex-shrink-0" />
+                                <Mail size={9} className="text-muted-2 flex-shrink-0" />
                                 <span className="truncate">{s.email}</span>
                               </a>
                             ) : (
-                              <div className="text-[10px] text-slate-700 truncate">
+                              <div className="text-[10px] text-app truncate">
                                 {place || "No email"}
                               </div>
                             )}
@@ -519,7 +519,7 @@ export default function SuppliersPage() {
                           className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
                             s.status === 1
                               ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-                              : "bg-slate-500/10 border-slate-500/20 text-slate-500 hover:bg-slate-500/20"
+                              : "bg-muted/10 border-muted/20 text-muted hover:bg-muted/20"
                           }`}
                         >
                           {s.status === 1 ? <ToggleRight size={13} /> : <ToggleLeft size={13} />}
@@ -542,8 +542,8 @@ export default function SuppliersPage() {
                           {Math.abs(due).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                         </span>
                         {place && (
-                          <span className="flex items-center gap-1 text-[11px] text-slate-500">
-                            <MapPin size={10} className="text-slate-600" />
+                          <span className="flex items-center gap-1 text-[11px] text-muted">
+                            <MapPin size={10} className="text-muted-2" />
                             {place}
                           </span>
                         )}
@@ -551,15 +551,15 @@ export default function SuppliersPage() {
 
                       {/* Contacts */}
                       {personsOf(s).length > 0 && (
-                        <div className="bg-[#111520] border border-[#21293d] rounded-xl px-3 py-2.5">
+                        <div className="bg-panel-2 border border-app rounded-xl px-3 py-2.5">
                           <ContactBlock persons={personsOf(s)} />
                         </div>
                       )}
 
                       {/* Address */}
                       {s.address && (
-                        <div className="flex items-start gap-1.5 text-xs text-slate-500">
-                          <MapPin size={11} className="text-slate-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex items-start gap-1.5 text-xs text-muted">
+                          <MapPin size={11} className="text-muted-2 flex-shrink-0 mt-0.5" />
                           <span className="flex-1 min-w-0 truncate" title={s.address}>
                             {s.address}
                           </span>
@@ -567,23 +567,23 @@ export default function SuppliersPage() {
                       )}
 
                       {/* Actions */}
-                      <div className="flex items-center gap-2 pt-3 border-t border-[#21293d]">
+                      <div className="flex items-center gap-2 pt-3 border-t border-app">
                         <Link
                           href={`/suppliers/${s.id}`}
-                          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[#111520] border border-[#21293d] text-slate-400 hover:text-emerald-400 hover:border-emerald-500/30 transition text-xs font-bold"
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-panel-2 border border-app text-muted hover:text-emerald-400 hover:border-emerald-500/30 transition text-xs font-bold"
                         >
                           <Eye size={12} /> View
                         </Link>
                         <button
                           onClick={() => openEdit(s)}
-                          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[#111520] border border-[#21293d] text-slate-400 hover:text-blue-400 hover:border-blue-500/30 transition text-xs font-bold"
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-panel-2 border border-app text-muted hover:text-blue-400 hover:border-blue-500/30 transition text-xs font-bold"
                         >
                           <Edit3 size={12} /> Edit
                         </button>
                         {userRole === "admin" && (
                           <button
                             onClick={() => handleDelete(s.id, s.name)}
-                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[#111520] border border-[#21293d] text-slate-400 hover:text-red-400 hover:border-red-500/30 transition text-xs font-bold"
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-panel-2 border border-app text-muted hover:text-red-400 hover:border-red-500/30 transition text-xs font-bold"
                           >
                             <Trash2 size={12} /> Delete
                           </button>

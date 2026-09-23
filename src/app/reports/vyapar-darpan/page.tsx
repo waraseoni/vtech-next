@@ -22,7 +22,7 @@ export default async function VyaparDarpanPage({
   const to = isValidDate(params.to || "") ? params.to! : "";
 
   return (
-    <div className="min-h-screen bg-[#0d1117]">
+    <div className="min-h-screen bg-app">
       <Suspense
         fallback={<PageLoader icon={Store} label="Polishing the Mirror..." tone="purple" />}
       >

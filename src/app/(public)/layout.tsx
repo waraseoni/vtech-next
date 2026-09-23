@@ -152,19 +152,19 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   const linkCls = (href: string, exact = false) => {
     const active = exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
     return `relative text-[13px] font-semibold transition-colors ${
-      active ? "text-white" : "text-slate-400 hover:text-white"
+      active ? "text-white" : "text-muted hover:text-white"
     }`;
   };
 
   return (
-    <div className="min-h-screen bg-[#070714] text-white overflow-x-hidden">
+    <div className="min-h-screen bg-app text-white overflow-x-hidden">
       <ImageLightbox />
       {/* ─── NAVBAR ─────────────────────────────────────────────────────── */}
       <header
         className={`fixed inset-x-0 top-0 z-50 border-b transition-all duration-300 ${
           scrolled || menuOpen
-            ? "bg-[#070714]/90 backdrop-blur-xl border-white/[0.06]"
-            : "bg-[#070714]/40 backdrop-blur-md border-transparent"
+            ? "bg-app/90 backdrop-blur-xl border-white/[0.06]"
+            : "bg-app/40 backdrop-blur-md border-transparent"
         }`}
       >
         <div className="mx-auto max-w-7xl px-4 h-14 flex items-center justify-between gap-3">
@@ -196,7 +196,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   pathname.startsWith("/industrial") ||
                   pathname.startsWith("/power-supply")
                     ? "text-white"
-                    : "text-slate-400 group-hover:text-white"
+                    : "text-muted group-hover:text-white"
                 }`}
               >
                 Services
@@ -220,7 +220,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-white">{s.label}</p>
-                        <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">{s.desc}</p>
+                        <p className="text-[11px] text-muted mt-0.5 line-clamp-1">{s.desc}</p>
                       </div>
                     </Link>
                   ))}
@@ -287,7 +287,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
       {/* ─── MOBILE MENU (full-screen sheet) ────────────────────────────── */}
       {menuOpen && (
-        <div className="md:hidden fixed inset-0 top-14 z-40 bg-[#070714]/98 backdrop-blur-xl overflow-y-auto anim-fade">
+        <div className="md:hidden fixed inset-0 top-14 z-40 bg-app/98 backdrop-blur-xl overflow-y-auto anim-fade">
           <nav className="px-4 pt-3 pb-8 flex flex-col gap-1">
             <Link
               href="/"
@@ -307,7 +307,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 </span>
                 <ChevronDown
                   size={16}
-                  className={`text-slate-500 transition-transform duration-200 ${servicesOpen ? "rotate-180" : ""}`}
+                  className={`text-muted transition-transform duration-200 ${servicesOpen ? "rotate-180" : ""}`}
                 />
               </button>
               {servicesOpen && (
@@ -319,7 +319,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                       className={`flex items-start gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
                         pathname.startsWith(s.href)
                           ? "bg-blue-500/15 text-blue-300"
-                          : "text-slate-300 active:bg-white/[0.06]"
+                          : "text-app-2 active:bg-white/[0.06]"
                       }`}
                     >
                       <div className="w-7 h-7 shrink-0 bg-blue-500/15 rounded-lg flex items-center justify-center mt-0.5">
@@ -327,7 +327,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                       </div>
                       <div>
                         <p className="font-bold text-[14px]">{s.label}</p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">{s.desc}</p>
+                        <p className="text-[11px] text-muted mt-0.5">{s.desc}</p>
                       </div>
                     </Link>
                   ))}
@@ -381,7 +381,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <main className="pt-14">{children}</main>
 
       {/* ─── FOOTER ─────────────────────────────────────────────────────── */}
-      <footer className="border-t border-white/[0.06] bg-[#05050f]">
+      <footer className="border-t border-white/[0.06] bg-app">
         <div className="mx-auto max-w-7xl px-4 py-10">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Brand */}
@@ -394,7 +394,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   {info.shop_name || SITE.name}
                 </span>
               </div>
-              <p className="text-[13px] text-slate-500 leading-relaxed">
+              <p className="text-[13px] text-muted leading-relaxed">
                 {SITE.tagline} — Trusted repair center since {info.established_year || 2007}. Fast
                 repairs, genuine parts, fair rates.
               </p>
@@ -402,14 +402,14 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
             {/* Quick links */}
             <div>
-              <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-3">
+              <h4 className="text-[11px] font-black uppercase tracking-widest text-muted mb-3">
                 Quick Links
               </h4>
               <ul className="space-y-2.5">
                 <li>
                   <Link
                     href="/"
-                    className="text-[13px] text-slate-400 hover:text-white transition-colors"
+                    className="text-[13px] text-muted hover:text-white transition-colors"
                   >
                     Home
                   </Link>
@@ -417,7 +417,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 <li>
                   <Link
                     href="/job-status"
-                    className="text-[13px] text-slate-400 hover:text-white transition-colors"
+                    className="text-[13px] text-muted hover:text-white transition-colors"
                   >
                     Track Your Repair
                   </Link>
@@ -425,7 +425,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 <li>
                   <Link
                     href="/about"
-                    className="text-[13px] text-slate-400 hover:text-white transition-colors"
+                    className="text-[13px] text-muted hover:text-white transition-colors"
                   >
                     About Us
                   </Link>
@@ -433,7 +433,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 <li>
                   <Link
                     href="/contact"
-                    className="text-[13px] text-slate-400 hover:text-white transition-colors"
+                    className="text-[13px] text-muted hover:text-white transition-colors"
                   >
                     Contact / Inquiry
                   </Link>
@@ -443,7 +443,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
             {/* Services */}
             <div>
-              <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-3">
+              <h4 className="text-[11px] font-black uppercase tracking-widest text-muted mb-3">
                 Our Services
               </h4>
               <ul className="space-y-2.5">
@@ -451,7 +451,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   <li key={s.href}>
                     <Link
                       href={s.href}
-                      className="text-[13px] text-slate-400 hover:text-white transition-colors"
+                      className="text-[13px] text-muted hover:text-white transition-colors"
                     >
                       {s.label}
                     </Link>
@@ -462,14 +462,14 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
             {/* Contact */}
             <div>
-              <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-3">
+              <h4 className="text-[11px] font-black uppercase tracking-widest text-muted mb-3">
                 Contact Us
               </h4>
               <ul className="space-y-3">
                 <li>
                   <a
                     href={`tel:+${(info.phone || SITE.phone).replace(/\D/g, "")}`}
-                    className="flex items-start gap-2.5 text-[13px] text-slate-400 hover:text-white transition-colors"
+                    className="flex items-start gap-2.5 text-[13px] text-muted hover:text-white transition-colors"
                   >
                     <Phone size={15} className="mt-0.5 shrink-0 text-emerald-400" />{" "}
                     {info.phone || SITE.phone}
@@ -478,17 +478,17 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 <li>
                   <a
                     href={`mailto:${info.email || SITE.email}`}
-                    className="flex items-start gap-2.5 text-[13px] text-slate-400 hover:text-white transition-colors"
+                    className="flex items-start gap-2.5 text-[13px] text-muted hover:text-white transition-colors"
                   >
                     <Mail size={15} className="mt-0.5 shrink-0 text-blue-400" />{" "}
                     {info.email || SITE.email}
                   </a>
                 </li>
-                <li className="flex items-start gap-2.5 text-[13px] text-slate-400">
+                <li className="flex items-start gap-2.5 text-[13px] text-muted">
                   <MapPin size={15} className="mt-0.5 shrink-0 text-cyan-400" />{" "}
                   {info.address || SITE.address}
                 </li>
-                <li className="flex items-start gap-2.5 text-[13px] text-slate-400">
+                <li className="flex items-start gap-2.5 text-[13px] text-muted">
                   <Clock size={15} className="mt-0.5 shrink-0 text-amber-400" />{" "}
                   {info.business_hours || "Mon–Sat · 9:00 AM – 8:00 PM"}
                 </li>
@@ -508,19 +508,19 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
           {/* Bottom bar */}
           <div className="mt-8 pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-[12px] text-slate-600">
+            <p className="text-[12px] text-muted-2">
               © {new Date().getFullYear()} {info.shop_name || SITE.name}
             </p>
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setQrOpen(true)}
-                className="flex items-center gap-1.5 text-[12px] font-bold text-slate-500 hover:text-cyan-400 transition-colors"
+                className="flex items-center gap-1.5 text-[12px] font-bold text-muted hover:text-cyan-400 transition-colors"
               >
                 <QrCode size={13} /> Scan / Share
               </button>
               <Link
                 href="/login"
-                className="text-[12px] font-bold text-slate-500 hover:text-blue-400 transition-colors"
+                className="text-[12px] font-bold text-muted hover:text-blue-400 transition-colors"
               >
                 Staff Login →
               </Link>

@@ -356,11 +356,11 @@ export default function MechanicLedger() {
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto pb-10">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-panel border border-app rounded-2xl p-5 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Link
             href="/mechanics"
-            className="w-10 h-10 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-xl text-slate-500 hover:text-white transition-all no-print"
+            className="w-10 h-10 flex items-center justify-center bg-app border border-app rounded-xl text-muted hover:text-white transition-all no-print"
           >
             <ArrowLeft size={18} />
           </Link>
@@ -369,7 +369,7 @@ export default function MechanicLedger() {
           </div>
           <div>
             <h1 className="text-xl font-black text-white">Daily Ledger: {name}</h1>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">
+            <p className="text-[10px] text-muted uppercase tracking-widest font-bold mt-0.5">
               Staff Earnings & Advance History
             </p>
           </div>
@@ -377,7 +377,7 @@ export default function MechanicLedger() {
         <div className="flex items-center gap-2 no-print">
           <button
             onClick={handlePrint}
-            className="px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2"
           >
             <Printer size={14} /> Print Ledger
           </button>
@@ -385,15 +385,15 @@ export default function MechanicLedger() {
       </div>
 
       {/* Filter & Navigation */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 shadow-lg no-print flex flex-wrap items-center justify-center gap-4">
+      <div className="bg-panel border border-app rounded-2xl p-4 shadow-lg no-print flex flex-wrap items-center justify-center gap-4">
         <button
           onClick={() => changeMonth(-1)}
-          className="w-10 h-10 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-full text-slate-400 hover:text-white hover:border-blue-500 transition-all"
+          className="w-10 h-10 flex items-center justify-center bg-app border border-app rounded-full text-muted hover:text-white hover:border-blue-500 transition-all"
         >
           <ChevronLeft size={20} />
         </button>
 
-        <div className="flex items-center gap-3 bg-[#0d1117] px-4 py-2 rounded-2xl border border-[#21293d]">
+        <div className="flex items-center gap-3 bg-app px-4 py-2 rounded-2xl border border-app">
           <Calendar size={16} className="text-blue-500" />
           <input
             type="date"
@@ -401,7 +401,7 @@ export default function MechanicLedger() {
             onChange={(e) => setFrom(e.target.value)}
             className="bg-transparent border-none text-sm text-white outline-none [color-scheme:dark]"
           />
-          <span className="text-slate-600 font-bold">to</span>
+          <span className="text-muted-2 font-bold">to</span>
           <input
             type="date"
             value={to}
@@ -412,7 +412,7 @@ export default function MechanicLedger() {
 
         <button
           onClick={() => changeMonth(1)}
-          className="w-10 h-10 flex items-center justify-center bg-[#0d1117] border border-[#21293d] rounded-full text-slate-400 hover:text-white hover:border-blue-500 transition-all"
+          className="w-10 h-10 flex items-center justify-center bg-app border border-app rounded-full text-muted hover:text-white hover:border-blue-500 transition-all"
         >
           <ChevronRight size={20} />
         </button>
@@ -458,11 +458,11 @@ export default function MechanicLedger() {
       </div>
 
       {/* Ledger Table */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-3xl overflow-hidden shadow-2xl print:border-none print:shadow-none">
+      <div className="bg-panel border border-app rounded-3xl overflow-hidden shadow-2xl print:border-none print:shadow-none">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left border-collapse">
             <thead>
-              <tr className="bg-[#0d1117] border-b border-[#21293d] text-[10px] font-black uppercase text-slate-500 tracking-widest">
+              <tr className="bg-app border-b border-app text-[10px] font-black uppercase text-muted tracking-widest">
                 <th className="px-4 py-4 text-center">Date</th>
                 <th className="px-4 py-4 text-center">Status</th>
                 <th className="px-4 py-4 text-right">Wage</th>
@@ -489,9 +489,9 @@ export default function MechanicLedger() {
               {ledgerData.map((row, idx) => (
                 <tr key={idx} className="hover:bg-white/[0.02] transition-colors group">
                   <td className="px-4 py-4 text-center">
-                    <span className="text-slate-300 font-bold">{format(row.date, "dd MMM")}</span>
+                    <span className="text-app-2 font-bold">{format(row.date, "dd MMM")}</span>
                     <br />
-                    <span className="text-[9px] text-slate-600 uppercase font-black">
+                    <span className="text-[9px] text-muted-2 uppercase font-black">
                       {format(row.date, "eee")}
                     </span>
                   </td>
@@ -504,13 +504,13 @@ export default function MechanicLedger() {
                             ? "bg-amber-500/10 text-amber-400"
                             : row.attStatus === "Absent"
                               ? "bg-rose-500/10 text-rose-400"
-                              : "text-slate-700"
+                              : "text-app"
                       }`}
                     >
                       {row.attStatus}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-right font-bold text-slate-300">
+                  <td className="px-4 py-4 text-right font-bold text-app-2">
                     {row.wage > 0 ? inr(row.wage) : "—"}
                   </td>
                   <td className="px-4 py-4">
@@ -519,7 +519,7 @@ export default function MechanicLedger() {
                         row.jobs.map((j) => (
                           <div
                             key={j.id}
-                            className="flex items-center justify-between gap-4 text-[11px] bg-[#0d1117]/50 rounded-lg px-2 py-1 border border-white/[0.03]"
+                            className="flex items-center justify-between gap-4 text-[11px] bg-app/50 rounded-lg px-2 py-1 border border-white/[0.03]"
                           >
                             <div className="flex items-center gap-2 truncate">
                               <Link
@@ -529,22 +529,22 @@ export default function MechanicLedger() {
                               >
                                 #{j.job_id}
                               </Link>
-                              <span className="text-slate-500 truncate max-w-[120px]">
+                              <span className="text-muted truncate max-w-[120px]">
                                 {j.item}
                               </span>
                               <span
-                                className={`text-[9px] font-bold ${j.status === 5 ? "text-emerald-500" : "text-slate-600"}`}
+                                className={`text-[9px] font-bold ${j.status === 5 ? "text-emerald-500" : "text-muted-2"}`}
                               >
                                 {j.status === 5 ? "Delivered" : "Pending"}
                               </span>
                             </div>
-                            <span className="text-slate-400 font-bold whitespace-nowrap">
+                            <span className="text-muted font-bold whitespace-nowrap">
                               ₹{(parseFloat(j.mechanic_commission_amount) || 0).toFixed(0)}
                             </span>
                           </div>
                         ))
                       ) : (
-                        <span className="text-slate-700 italic text-xs">No jobs recorded</span>
+                        <span className="text-app italic text-xs">No jobs recorded</span>
                       )}
                     </div>
                   </td>
@@ -555,7 +555,7 @@ export default function MechanicLedger() {
                       </span>
                       {row.commGenerated > row.commPayable && (
                         <span
-                          className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter"
+                          className="text-[9px] text-muted-2 font-bold uppercase tracking-tighter"
                           title="Total Generated"
                         >
                           Gen: {inr(row.commGenerated)}
@@ -572,17 +572,17 @@ export default function MechanicLedger() {
                 </tr>
               ))}
             </tbody>
-            <tfoot className="bg-[#0d1117] border-t-2 border-[#21293d]">
+            <tfoot className="bg-app border-t-2 border-app">
               <tr className="font-bold">
                 <td
                   colSpan={4}
-                  className="px-4 py-4 text-right text-slate-500 text-[10px] uppercase tracking-widest"
+                  className="px-4 py-4 text-right text-muted text-[10px] uppercase tracking-widest"
                 >
                   Period Totals (Wage + Pay. Comm - Adv):
                 </td>
                 <td className="px-4 py-4 text-right">
                   <div className="text-emerald-400">{inr(totalPeriod.payable)}</div>
-                  <div className="text-[9px] text-slate-600 uppercase">
+                  <div className="text-[9px] text-muted-2 uppercase">
                     Total Gen: {inr(totalPeriod.generated)}
                   </div>
                 </td>
@@ -599,7 +599,7 @@ export default function MechanicLedger() {
       {/* Info Box */}
       <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-4 flex items-start gap-3 no-print">
         <Info className="text-blue-400 flex-shrink-0" size={18} />
-        <div className="text-xs text-slate-500 space-y-1">
+        <div className="text-xs text-muted space-y-1">
           <p>
             <strong className="text-blue-400">Ledger Logic:</strong> Running balance calculates from
             Opening Balance + Earned Wages + Payable Commission (Delivered only) - Advance Payments.
@@ -663,15 +663,15 @@ function SummaryCard({
     rose: "text-rose-400 bg-rose-500/10 border-rose-500/20",
   };
   return (
-    <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 shadow-lg">
+    <div className="bg-panel border border-app rounded-2xl p-4 shadow-lg">
       <div className="flex items-center gap-3">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors[color]}`}>
           {icon}
         </div>
         <div>
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</p>
+          <p className="text-[9px] font-black uppercase tracking-widest text-muted">{label}</p>
           <p className="text-lg font-black text-white">{inr(value)}</p>
-          {sub && <p className="text-[9px] text-slate-600 font-bold uppercase">{sub}</p>}
+          {sub && <p className="text-[9px] text-muted-2 font-bold uppercase">{sub}</p>}
         </div>
       </div>
     </div>

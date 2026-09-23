@@ -102,15 +102,15 @@ function StatCard({
     purple: "bg-purple-500/10 text-purple-400",
   };
   return (
-    <div className="bg-[#161b27] border border-[#21293d] rounded-3xl p-5 shadow-xl group hover:border-indigo-500/30 transition-all">
+    <div className="bg-panel border border-app rounded-3xl p-5 shadow-xl group hover:border-indigo-500/30 transition-all">
       <div className="flex items-center gap-3 mb-3">
         <div className={`p-2 rounded-xl ${tones[tone]}`}>
           <Icon size={16} />
         </div>
         <div className="space-y-0.5">
-          <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{label}</p>
+          <p className="text-[10px] font-black text-muted-2 uppercase tracking-widest">{label}</p>
           {sub && (
-            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">{sub}</p>
+            <p className="text-[8px] font-bold text-muted uppercase tracking-tighter">{sub}</p>
           )}
         </div>
       </div>
@@ -122,7 +122,7 @@ function StatCard({
 function PRow({
   label,
   value,
-  tone = "text-slate-300",
+  tone = "text-app-2",
   sub,
 }: {
   label: string;
@@ -131,10 +131,10 @@ function PRow({
   sub?: string;
 }) {
   return (
-    <tr className="border-b border-[#21293d] hover:bg-white/[0.01] transition-colors">
-      <td className="px-6 py-3 text-sm text-slate-400">
+    <tr className="border-b border-app hover:bg-white/[0.01] transition-colors">
+      <td className="px-6 py-3 text-sm text-muted">
         {label}
-        {sub && <div className="text-[10px] text-slate-600 mt-0.5">{sub}</div>}
+        {sub && <div className="text-[10px] text-muted-2 mt-0.5">{sub}</div>}
       </td>
       <td className={`px-6 py-3 text-right font-black tabular-nums ${tone}`}>{rupee(value, 2)}</td>
     </tr>
@@ -197,14 +197,14 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
 
   if (loading) {
     return (
-      <div className="min-h-[70vh] bg-[#0d1117] flex flex-col items-center justify-center gap-4">
+      <div className="min-h-[70vh] bg-app flex flex-col items-center justify-center gap-4">
         <div className="relative">
           <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
             <Store size={28} className="text-indigo-500/60" />
           </div>
           <div className="absolute inset-0 rounded-2xl border border-indigo-500/40 animate-ping" />
         </div>
-        <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.3em]">
+        <p className="text-muted-2 text-xs font-bold uppercase tracking-[0.3em]">
           Polishing the Mirror...
         </p>
       </div>
@@ -213,13 +213,13 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
 
   if (error) {
     return (
-      <div className="min-h-[70vh] bg-[#0d1117] flex items-center justify-center p-6">
-        <div className="bg-[#161b27] border border-red-500/20 rounded-2xl p-8 max-w-md w-full text-center">
+      <div className="min-h-[70vh] bg-app flex items-center justify-center p-6">
+        <div className="bg-panel border border-red-500/20 rounded-2xl p-8 max-w-md w-full text-center">
           <div className="w-14 h-14 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <AlertTriangle size={24} className="text-red-400" />
           </div>
           <h3 className="text-white font-extrabold text-lg mb-2">Report Load Failed</h3>
-          <p className="text-slate-500 text-sm mb-5">{error}</p>
+          <p className="text-muted text-sm mb-5">{error}</p>
           <button
             onClick={fetchData}
             className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-extrabold text-sm transition-all"
@@ -237,9 +237,9 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
   const bs = data.balanceSheet;
 
   return (
-    <div className="min-h-screen bg-[#0d1117] pb-20 font-sans">
+    <div className="min-h-screen bg-app pb-20 font-sans">
       {/* ══════════ HEADER ══════════ */}
-      <div className="relative overflow-hidden bg-[#0d1117] border-b border-[#21293d]">
+      <div className="relative overflow-hidden bg-app border-b border-app">
         <div
           className="absolute inset-0 opacity-[0.025]"
           style={{
@@ -252,7 +252,7 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
             <div className="flex items-center gap-4">
               <Link
                 href="/reports"
-                className="w-11 h-11 flex items-center justify-center bg-[#161b27] border border-[#21293d] rounded-xl text-slate-500 hover:text-white hover:border-indigo-500/40 transition-all flex-shrink-0"
+                className="w-11 h-11 flex items-center justify-center bg-panel border border-app rounded-xl text-muted hover:text-white hover:border-indigo-500/40 transition-all flex-shrink-0"
               >
                 <ArrowLeft size={18} />
               </Link>
@@ -263,14 +263,14 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
                 <h1 className="text-2xl font-black text-white tracking-tight leading-none">
                   Vyapar Darpan
                 </h1>
-                <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.2em] mt-1">
+                <p className="text-muted-2 text-xs font-bold uppercase tracking-[0.2em] mt-1">
                   {formatIST(from, { month: "long", year: "numeric" })} · Business Mirror
                 </p>
               </div>
             </div>
             <button
               onClick={() => window.print()}
-              className="no-print flex items-center gap-2 px-4 py-2.5 bg-[#161b27] hover:bg-[#1e2740] border border-[#21293d] hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 rounded-xl text-xs font-extrabold transition-all"
+              className="no-print flex items-center gap-2 px-4 py-2.5 bg-panel hover:bg-panel-2 border border-app hover:border-indigo-500/30 text-muted hover:text-indigo-400 rounded-xl text-xs font-extrabold transition-all"
             >
               <Printer size={13} /> Print Analysis
             </button>
@@ -314,7 +314,7 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
         {/* ══════════ FILTER BAR ══════════ */}
         <form
           onSubmit={handleFilter}
-          className="no-print bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4"
+          className="no-print bg-panel border border-app rounded-2xl px-5 py-4"
         >
           <div className="flex flex-wrap gap-3 items-end">
             {[
@@ -322,7 +322,7 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
               { label: "Darpan End", val: to, set: setTo },
             ].map(({ label, val, set }) => (
               <div key={label}>
-                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-600 mb-1.5">
+                <label className="block text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-1.5">
                   {label}
                 </label>
                 <input
@@ -330,7 +330,7 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
                   required
                   value={val}
                   onChange={(e) => set(e.target.value)}
-                  className="bg-[#111520] border border-[#21293d] text-slate-300 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-indigo-500/40 transition-all [color-scheme:dark]"
+                  className="bg-panel-2 border border-app text-app-2 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-indigo-500/40 transition-all [color-scheme:dark]"
                 />
               </div>
             ))}
@@ -344,21 +344,21 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
               <button
                 type="button"
                 onClick={() => goToMonth("prev")}
-                className="w-[38px] h-[38px] bg-[#111520] border border-[#21293d] hover:border-slate-600 text-slate-500 hover:text-white rounded-xl flex items-center justify-center transition-all"
+                className="w-[38px] h-[38px] bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-xl flex items-center justify-center transition-all"
               >
                 <ChevronLeft size={14} />
               </button>
               <button
                 type="button"
                 onClick={resetMonth}
-                className="flex items-center gap-1.5 px-3 h-[38px] bg-[#111520] border border-[#21293d] hover:border-slate-600 text-slate-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 h-[38px] bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
                 <RefreshCw size={11} /> This Month
               </button>
               <button
                 type="button"
                 onClick={() => goToMonth("next")}
-                className="w-[38px] h-[38px] bg-[#111520] border border-[#21293d] hover:border-slate-600 text-slate-500 hover:text-white rounded-xl flex items-center justify-center transition-all"
+                className="w-[38px] h-[38px] bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-xl flex items-center justify-center transition-all"
               >
                 <ChevronRight size={14} />
               </button>
@@ -368,19 +368,19 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
 
         {/* ══════════ VYAPARIK KHATA (P&L) ══════════ */}
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[#21293d] bg-[#111520]">
+          <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-app bg-panel-2">
               <TrendingUp size={13} className="text-blue-400" />
-              <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+              <span className="text-xs font-extrabold text-muted uppercase tracking-wider">
                 व्यापारिक खाता (Trading / P&L)
               </span>
             </div>
             <table className="w-full">
               <tbody>
-                <tr className="border-b border-[#21293d]">
+                <tr className="border-b border-app">
                   <td
                     colSpan={2}
-                    className="px-4 py-2 text-[9px] font-extrabold uppercase tracking-widest text-slate-700 bg-[#0f1520]"
+                    className="px-4 py-2 text-[9px] font-extrabold uppercase tracking-widest text-app bg-app"
                   >
                     आय (Income) — {inr(data.counts.deliveredJobs)} repair jobs ·{" "}
                     {inr(data.counts.walkinSales + data.counts.clientSales)} sales
@@ -393,16 +393,16 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
                 />
                 <PRow label="Walk-in Sales" value={t.walkinIncome} />
                 <PRow label="Client Direct Sales" value={t.clientSalesIncome} sub="Credit sales" />
-                <tr className="border-b border-[#21293d] bg-blue-500/5">
+                <tr className="border-b border-app bg-blue-500/5">
                   <td className="px-6 py-2.5 text-xs font-extrabold text-blue-400">Kul Bikri</td>
                   <td className="px-6 py-2.5 text-xs font-black text-right text-blue-400 tabular-nums">
                     {rupee(t.totalSales, 2)}
                   </td>
                 </tr>
-                <tr className="border-b border-[#21293d]">
+                <tr className="border-b border-app">
                   <td
                     colSpan={2}
-                    className="px-4 py-2 text-[9px] font-extrabold uppercase tracking-widest text-slate-700 bg-[#0f1520]"
+                    className="px-4 py-2 text-[9px] font-extrabold uppercase tracking-widest text-app bg-app"
                   >
                     माल की लागत (Cost of Parts)
                   </td>
@@ -431,10 +431,10 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
           </div>
 
           {/* Anya Kharche */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[#21293d] bg-[#111520]">
+          <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-app bg-panel-2">
               <TrendingDown size={13} className="text-red-400" />
-              <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+              <span className="text-xs font-extrabold text-muted uppercase tracking-wider">
                 अन्य खर्चे (Indirect Expenses)
               </span>
             </div>
@@ -507,19 +507,19 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
           </div>
 
           {/* Chittha (Balance Sheet) */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[#21293d] bg-[#111520]">
+          <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-app bg-panel-2">
               <Scale size={13} className="text-indigo-400" />
-              <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+              <span className="text-xs font-extrabold text-muted uppercase tracking-wider">
                 चिट्ठा (Balance Sheet)
               </span>
             </div>
             <table className="w-full">
               <tbody>
-                <tr className="border-b border-[#21293d]">
+                <tr className="border-b border-app">
                   <td
                     colSpan={2}
-                    className="px-4 py-1.5 text-[9px] font-extrabold uppercase tracking-widest text-slate-700 bg-[#0f1520]"
+                    className="px-4 py-1.5 text-[9px] font-extrabold uppercase tracking-widest text-app bg-app"
                   >
                     संपत्ति (Assets)
                   </td>
@@ -530,7 +530,7 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
                   value={bs.assetCash}
                   sub="Positive net profit as capital"
                 />
-                <tr className="border-b border-[#21293d] bg-blue-500/5">
+                <tr className="border-b border-app bg-blue-500/5">
                   <td className="px-6 py-2.5 text-xs font-extrabold text-blue-400">
                     Total Assets (Sampatti)
                   </td>
@@ -538,10 +538,10 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
                     {rupee(bs.assetStock + bs.assetCash, 2)}
                   </td>
                 </tr>
-                <tr className="border-b border-[#21293d]">
+                <tr className="border-b border-app">
                   <td
                     colSpan={2}
-                    className="px-4 py-1.5 text-[9px] font-extrabold uppercase tracking-widest text-slate-700 bg-[#0f1520]"
+                    className="px-4 py-1.5 text-[9px] font-extrabold uppercase tracking-widest text-app bg-app"
                   >
                     दायित्व (Liabilities)
                   </td>
@@ -552,7 +552,7 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
                   value={-bs.liabilityStaff}
                   tone="text-red-400"
                 />
-                <tr className="border-b border-[#21293d] bg-red-500/5">
+                <tr className="border-b border-app bg-red-500/5">
                   <td className="px-6 py-2.5 text-xs font-extrabold text-red-400">
                     Total Liabilities (Dindari)
                   </td>
@@ -603,12 +603,12 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
           ].map(({ label, value, color }) => (
             <div
               key={label}
-              className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center gap-3"
+              className="bg-panel border border-app rounded-2xl p-4 flex items-center gap-3"
             >
               <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center`} />
               <div>
                 <div className="text-xl font-black text-white leading-none">{value}</div>
-                <div className="text-[9px] font-extrabold uppercase tracking-widest text-slate-600 mt-1">
+                <div className="text-[9px] font-extrabold uppercase tracking-widest text-muted-2 mt-1">
                   {label}
                 </div>
               </div>

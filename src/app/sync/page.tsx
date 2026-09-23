@@ -176,7 +176,7 @@ export default function SyncPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 pt-6 space-y-4">
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
+      <div className="bg-panel border border-app rounded-2xl px-5 py-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center">
@@ -184,7 +184,7 @@ export default function SyncPage() {
             </div>
             <div>
               <h1 className="text-lg font-black text-white">Supabase → MariaDB Sync</h1>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+              <p className="text-[10px] text-muted uppercase tracking-wider">
                 Mode:{" "}
                 <span
                   className={
@@ -205,7 +205,7 @@ export default function SyncPage() {
             <button
               onClick={() => load(true)}
               disabled={loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-400 rounded-lg text-xs font-bold transition disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted rounded-lg text-xs font-bold transition disabled:opacity-50"
             >
               <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Refresh
             </button>
@@ -213,7 +213,7 @@ export default function SyncPage() {
               onClick={handleSync}
               disabled={syncing || mode === "off"}
               title={mode === "off" ? "Sync OFF hai — pehle mode ko Auto/Manual karo" : undefined}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-[#0a0e16] rounded-lg text-xs font-black transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-app rounded-lg text-xs font-black transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {syncing ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
               {syncing ? "Sync chal raha hai…" : mode === "off" ? "Sync OFF" : "Sync Now"}
@@ -224,18 +224,18 @@ export default function SyncPage() {
 
       {/* Sync Mode selector */}
       {!loading && info && (
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4">
           <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
             <div className="flex items-center gap-2">
-              <Settings2 size={14} className="text-slate-500" />
-              <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <Settings2 size={14} className="text-muted" />
+              <span className="text-[10px] font-black uppercase text-muted tracking-wider">
                 Sync Mode
               </span>
             </div>
             {info.task_enabled !== null && (
-              <span className="text-[10px] font-bold text-slate-500">
+              <span className="text-[10px] font-bold text-muted">
                 Task Scheduler:{" "}
-                <span className={mode === "auto" ? "text-emerald-400" : "text-slate-500"}>
+                <span className={mode === "auto" ? "text-emerald-400" : "text-muted"}>
                   {info.task_enabled ? "ON" : "OFF"}
                 </span>
               </span>
@@ -256,11 +256,11 @@ export default function SyncPage() {
                         : m === "manual"
                           ? "bg-amber-500/10 border-amber-500/40"
                           : "bg-red-500/10 border-red-500/40"
-                      : "bg-[#0d1117] border-[#21293d] hover:border-[#2a3550]"
+                      : "bg-app border-app hover:border-app-2"
                   } ${changingMode ? "opacity-60" : ""}`}
                 >
                   <span
-                    className={`mt-0.5 flex-shrink-0 ${active ? (m === "auto" ? "text-emerald-400" : m === "manual" ? "text-amber-400" : "text-red-400") : "text-slate-600"}`}
+                    className={`mt-0.5 flex-shrink-0 ${active ? (m === "auto" ? "text-emerald-400" : m === "manual" ? "text-amber-400" : "text-red-400") : "text-muted-2"}`}
                   >
                     {m === "auto" ? (
                       <RefreshCw size={16} />
@@ -272,11 +272,11 @@ export default function SyncPage() {
                   </span>
                   <span className="min-w-0">
                     <span
-                      className={`block text-xs font-black uppercase tracking-wider ${active ? "text-white" : "text-slate-400"}`}
+                      className={`block text-xs font-black uppercase tracking-wider ${active ? "text-white" : "text-muted"}`}
                     >
                       {MODE_INFO[m].title}
                     </span>
-                    <span className="block text-[10px] text-slate-500 mt-0.5 leading-snug">
+                    <span className="block text-[10px] text-muted mt-0.5 leading-snug">
                       {MODE_INFO[m].desc}
                     </span>
                   </span>
@@ -309,10 +309,10 @@ export default function SyncPage() {
 
       {/* Last sync card */}
       {!loading && info && (
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4">
           <div className="flex items-center gap-2 mb-3">
-            <Clock size={14} className="text-slate-500" />
-            <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
+            <Clock size={14} className="text-muted" />
+            <span className="text-[10px] font-black uppercase text-muted tracking-wider">
               Last Sync
             </span>
           </div>
@@ -330,27 +330,27 @@ export default function SyncPage() {
                   >
                     {last.status === "OK" ? "Successful" : "Failed"}
                   </span>
-                  <span className="text-xs text-slate-400">{fmtTime(last.started_at)}</span>
+                  <span className="text-xs text-muted">{fmtTime(last.started_at)}</span>
                 </div>
-                <span className="text-[10px] text-slate-500 font-mono">#{last.id}</span>
+                <span className="text-[10px] text-muted font-mono">#{last.id}</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div className="bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-2.5">
-                  <p className="text-[9px] text-slate-500 font-black uppercase flex items-center gap-1">
+                <div className="bg-app border border-app rounded-xl px-3 py-2.5">
+                  <p className="text-[9px] text-muted font-black uppercase flex items-center gap-1">
                     <Table2 size={10} /> Tables
                   </p>
                   <p className="text-lg font-black text-white mt-1">{last.tables}</p>
                 </div>
-                <div className="bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-2.5">
-                  <p className="text-[9px] text-slate-500 font-black uppercase flex items-center gap-1">
+                <div className="bg-app border border-app rounded-xl px-3 py-2.5">
+                  <p className="text-[9px] text-muted font-black uppercase flex items-center gap-1">
                     <Rows3 size={10} /> Rows
                   </p>
                   <p className="text-lg font-black text-white mt-1">
                     {Number(last.rows).toLocaleString()}
                   </p>
                 </div>
-                <div className="bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-2.5">
-                  <p className="text-[9px] text-slate-500 font-black uppercase flex items-center gap-1">
+                <div className="bg-app border border-app rounded-xl px-3 py-2.5">
+                  <p className="text-[9px] text-muted font-black uppercase flex items-center gap-1">
                     <TriangleAlert size={10} /> Mismatch
                   </p>
                   <p
@@ -359,8 +359,8 @@ export default function SyncPage() {
                     {last.mismatches}
                   </p>
                 </div>
-                <div className="bg-[#0d1117] border border-[#21293d] rounded-xl px-3 py-2.5">
-                  <p className="text-[9px] text-slate-500 font-black uppercase flex items-center gap-1">
+                <div className="bg-app border border-app rounded-xl px-3 py-2.5">
+                  <p className="text-[9px] text-muted font-black uppercase flex items-center gap-1">
                     <Clock size={10} /> Duration
                   </p>
                   <p className="text-lg font-black text-white mt-1">{fmtDur(last.duration_sec)}</p>
@@ -373,7 +373,7 @@ export default function SyncPage() {
               )}
             </div>
           ) : (
-            <p className="text-slate-500 text-sm">
+            <p className="text-muted text-sm">
               Abhi koi sync record nahi — pehli baar{" "}
               <span className="text-emerald-400 font-bold">Sync Now</span> dabao.
             </p>
@@ -383,26 +383,26 @@ export default function SyncPage() {
 
       {/* Auto-sync info */}
       {!loading && info && (
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center gap-3">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4 flex items-center gap-3">
           <CalendarClock
             size={16}
             className={`flex-shrink-0 ${mode === "auto" ? "text-emerald-400" : mode === "manual" ? "text-amber-400" : "text-red-400"}`}
           />
           <div className="min-w-0">
-            <p className="text-xs font-bold text-slate-300">
+            <p className="text-xs font-bold text-app-2">
               {mode === "auto"
                 ? "Auto-sync active"
                 : mode === "manual"
                   ? "Manual mode — auto-sync off"
                   : "Sync OFF"}
             </p>
-            <p className="text-[11px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-muted mt-0.5">
               {mode === "auto"
                 ? `${info.schedule_note} — is machine pe Task Scheduler har 15 min me script chala deta hai. Log: `
                 : mode === "manual"
                   ? "Scheduled sync abhi band hai — data sirf 'Sync Now' dabane par update hoga. Log: "
                   : "Sync poori tarah band hai — na auto, na Sync Now. Mode on karke hi wapas shuru hoga. Log: "}
-              <span className="font-mono text-slate-400">{info.log_file}</span>
+              <span className="font-mono text-muted">{info.log_file}</span>
             </p>
           </div>
         </div>
@@ -410,25 +410,25 @@ export default function SyncPage() {
 
       {/* Connection info */}
       {!loading && info && (
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4">
           <div className="flex items-center gap-2 mb-3">
-            <Server size={14} className="text-slate-500" />
-            <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
+            <Server size={14} className="text-muted" />
+            <span className="text-[10px] font-black uppercase text-muted tracking-wider">
               Connection
             </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-            <div className="bg-[#0d1117] border border-[#21293d] rounded-lg px-3 py-2 flex items-center gap-2">
+            <div className="bg-app border border-app rounded-lg px-3 py-2 flex items-center gap-2">
               <Database size={11} className="text-indigo-400" />
-              <span className="text-slate-500">Source:</span>
-              <span className="text-slate-300 font-mono truncate">
+              <span className="text-muted">Source:</span>
+              <span className="text-app-2 font-mono truncate">
                 {info.supabase_url.replace("https://", "")}
               </span>
             </div>
-            <div className="bg-[#0d1117] border border-[#21293d] rounded-lg px-3 py-2 flex items-center gap-2">
+            <div className="bg-app border border-app rounded-lg px-3 py-2 flex items-center gap-2">
               <Server size={11} className="text-emerald-400" />
-              <span className="text-slate-500">Target:</span>
-              <span className="text-slate-300 font-mono truncate">
+              <span className="text-muted">Target:</span>
+              <span className="text-app-2 font-mono truncate">
                 {info.mariadb.host}:{info.mariadb.port}/{info.mariadb.db}
               </span>
             </div>
@@ -437,22 +437,22 @@ export default function SyncPage() {
       )}
 
       {/* History */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-        <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-indigo-600/20 to-transparent border-b border-[#21293d]">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+        <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-indigo-600/20 to-transparent border-b border-app">
           <FileText size={14} className="text-indigo-400" />
-          <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+          <h3 className="text-xs font-black uppercase tracking-wider text-muted">
             Sync History
           </h3>
-          <span className="ml-auto text-[10px] text-slate-500">
+          <span className="ml-auto text-[10px] text-muted">
             Last {(info?.history ?? []).length}
           </span>
         </div>
         <div className="max-h-80 overflow-y-auto">
           {(info?.history ?? []).length === 0 && !loading ? (
-            <p className="px-5 py-6 text-sm text-slate-500 text-center">Koi history nahi.</p>
+            <p className="px-5 py-6 text-sm text-muted text-center">Koi history nahi.</p>
           ) : (
             <table className="w-full text-[11px]">
-              <thead className="sticky top-0 bg-[#121723] text-slate-500 uppercase text-[9px] tracking-wider">
+              <thead className="sticky top-0 bg-panel-2 text-muted uppercase text-[9px] tracking-wider">
                 <tr>
                   <th className="text-left px-5 py-2 font-black">Time</th>
                   <th className="text-left px-3 py-2 font-black">Status</th>
@@ -464,8 +464,8 @@ export default function SyncPage() {
               </thead>
               <tbody>
                 {(info?.history ?? []).map((h) => (
-                  <tr key={h.id} className="border-t border-[#1a2133]">
-                    <td className="px-5 py-2 text-slate-300 whitespace-nowrap">
+                  <tr key={h.id} className="border-t border-app-2">
+                    <td className="px-5 py-2 text-app-2 whitespace-nowrap">
                       {fmtTime(h.started_at)}
                     </td>
                     <td className="px-3 py-2">
@@ -480,16 +480,16 @@ export default function SyncPage() {
                         {h.status}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-right text-slate-400">{h.tables}</td>
-                    <td className="px-3 py-2 text-right text-slate-400">
+                    <td className="px-3 py-2 text-right text-muted">{h.tables}</td>
+                    <td className="px-3 py-2 text-right text-muted">
                       {Number(h.rows).toLocaleString()}
                     </td>
                     <td
-                      className={`px-3 py-2 text-right ${h.mismatches > 0 ? "text-amber-400 font-bold" : "text-slate-500"}`}
+                      className={`px-3 py-2 text-right ${h.mismatches > 0 ? "text-amber-400 font-bold" : "text-muted"}`}
                     >
                       {h.mismatches}
                     </td>
-                    <td className="px-5 py-2 text-right text-slate-500 font-mono">
+                    <td className="px-5 py-2 text-right text-muted font-mono">
                       {fmtDur(h.duration_sec)}
                     </td>
                   </tr>
@@ -502,10 +502,10 @@ export default function SyncPage() {
 
       {/* Recent log */}
       {!loading && info && info.log.length > 0 && (
-        <div className="bg-[#0d1117] border border-[#21293d] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2.5 px-5 py-3 border-b border-[#21293d]">
-            <FileText size={13} className="text-slate-500" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+        <div className="bg-app border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3 border-b border-app">
+            <FileText size={13} className="text-muted" />
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
               Recent Log
             </h3>
           </div>
@@ -513,7 +513,7 @@ export default function SyncPage() {
             {info.log.map((l, i) => (
               <p
                 key={i}
-                className={`text-[10px] font-mono leading-relaxed ${l.includes("FAIL") ? "text-red-400/80" : "text-slate-500"}`}
+                className={`text-[10px] font-mono leading-relaxed ${l.includes("FAIL") ? "text-red-400/80" : "text-muted"}`}
               >
                 {l}
               </p>

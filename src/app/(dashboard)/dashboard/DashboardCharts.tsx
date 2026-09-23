@@ -32,7 +32,7 @@ const inr = (v: number, digits = 0) =>
 function EmptyChart({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center justify-center h-full min-h-[120px] text-center">
-      <p className="text-slate-500 text-xs font-bold">{label}</p>
+      <p className="text-muted text-xs font-bold">{label}</p>
     </div>
   );
 }
@@ -48,8 +48,8 @@ const RevTooltip = ({
 }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-slate-100 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2 shadow-xl text-xs">
-      <p className="text-slate-500 mb-0.5 font-bold">{label}</p>
+    <div className="bg-panel-2 dark:bg-panel-2 border border-app-2 dark:border-app rounded-xl px-3 py-2 shadow-xl text-xs">
+      <p className="text-muted mb-0.5 font-bold">{label}</p>
       <p className="text-blue-400 font-black text-sm">{inr(n(payload[0]?.value), 2)}</p>
     </div>
   );
@@ -58,11 +58,11 @@ const StatusTooltip = ({ active, payload }: { active?: boolean; payload?: Toolti
   if (!active || !payload?.length) return null;
   const d = payload[0]?.payload as StatusPoint;
   return (
-    <div className="bg-slate-100 dark:bg-[#111520] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2 shadow-xl text-xs">
+    <div className="bg-panel-2 dark:bg-panel-2 border border-app-2 dark:border-app rounded-xl px-3 py-2 shadow-xl text-xs">
       <p className="font-bold mb-0.5" style={{ color: d.color }}>
         {d.name}
       </p>
-      <p className="text-slate-900 dark:text-white font-black">{d.value} jobs</p>
+      <p className="text-app dark:text-white font-black">{d.value} jobs</p>
     </div>
   );
 };
@@ -81,8 +81,8 @@ export default function DashboardCharts({ revenueData, statusData, totalJobs, is
       <div className="lg:col-span-2 glass rounded-3xl border theme-border p-5">
         <div className="flex items-start justify-between mb-5">
           <div>
-            <h3 className="text-sm font-black text-slate-900 dark:text-white">Monthly Revenue</h3>
-            <p className="text-slate-600 text-[10px] mt-0.5 font-bold uppercase tracking-wider">
+            <h3 className="text-sm font-black text-app dark:text-white">Monthly Revenue</h3>
+            <p className="text-muted-2 text-[10px] mt-0.5 font-bold uppercase tracking-wider">
               Last 12 months · Repair + Direct Sales
             </p>
           </div>
@@ -140,12 +140,12 @@ export default function DashboardCharts({ revenueData, statusData, totalJobs, is
       <div className="glass rounded-3xl border theme-border p-5">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-sm font-black text-slate-900 dark:text-white">Job Status</h3>
-            <p className="text-slate-600 text-[10px] mt-0.5 font-bold uppercase tracking-wider">
+            <h3 className="text-sm font-black text-app dark:text-white">Job Status</h3>
+            <p className="text-muted-2 text-[10px] mt-0.5 font-bold uppercase tracking-wider">
               {totalJobs} total active jobs
             </p>
           </div>
-          <span className="bg-slate-100 dark:bg-[#111520] text-slate-600 text-[10px] font-black rounded-xl px-3 py-1 uppercase tracking-wider">
+          <span className="bg-panel-2 dark:bg-panel-2 text-muted-2 text-[10px] font-black rounded-xl px-3 py-1 uppercase tracking-wider">
             All Time
           </span>
         </div>
@@ -180,11 +180,11 @@ export default function DashboardCharts({ revenueData, statusData, totalJobs, is
                       className="w-2 h-2 rounded-full flex-shrink-0"
                       style={{ backgroundColor: d.color }}
                     />
-                    <span className="text-slate-500">{d.name}</span>
+                    <span className="text-muted">{d.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-900 dark:text-white font-black">{d.value}</span>
-                    <span className="text-slate-700 text-[10px] w-7 text-right">
+                    <span className="text-app dark:text-white font-black">{d.value}</span>
+                    <span className="text-app text-[10px] w-7 text-right">
                       {totalJobs > 0 ? ((d.value / totalJobs) * 100).toFixed(0) : 0}%
                     </span>
                   </div>

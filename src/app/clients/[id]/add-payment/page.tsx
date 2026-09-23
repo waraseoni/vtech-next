@@ -47,10 +47,10 @@ function todayIST(): string {
 const inr = (n: number) => "₹" + Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 const inputCls =
-  "w-full px-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-white font-bold text-sm placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all [color-scheme:dark]";
+  "w-full px-4 py-3 bg-panel-2 border border-app rounded-xl text-white font-bold text-sm placeholder:text-app outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all [color-scheme:dark]";
 
 const labelCls =
-  "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-2";
+  "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-2";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -224,11 +224,11 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    // BUG FIX 13: dark theme — bg-[#0d1117] matching rest of app
-    <div className="min-h-screen bg-[#0d1117] text-white font-sans">
+    // BUG FIX 13: dark theme — bg-app matching rest of app
+    <div className="min-h-screen bg-app text-white font-sans">
       <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-4">
         {/* ── HEADER ──────────────────────────────────────────────────── */}
-        <div className="relative overflow-hidden bg-[#161b27] rounded-3xl border border-[#21293d] p-5">
+        <div className="relative overflow-hidden bg-panel rounded-3xl border border-app p-5">
           <div
             className="absolute inset-0 opacity-[0.025]"
             style={{
@@ -240,7 +240,7 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
           <div className="relative flex items-center gap-4">
             <Link
               href={`/clients/${clientId}/view`}
-              className="w-10 h-10 flex items-center justify-center bg-[#111520] border border-[#21293d] hover:border-slate-500 rounded-xl text-slate-500 hover:text-white transition-all flex-shrink-0"
+              className="w-10 h-10 flex items-center justify-center bg-panel-2 border border-app hover:border-muted rounded-xl text-muted hover:text-white transition-all flex-shrink-0"
             >
               <ArrowLeft size={17} />
             </Link>
@@ -252,7 +252,7 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
                 <h1 className="text-lg font-black tracking-tight text-white leading-none">
                   Add Payment
                 </h1>
-                <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-1 truncate">
+                <p className="text-[10px] text-muted font-black uppercase tracking-[0.2em] mt-1 truncate">
                   {fetchingMeta ? "Loading…" : clientName || `Client #${clientId}`}
                 </p>
               </div>
@@ -277,7 +277,7 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
               {balance > 0 ? <TrendingDown size={18} /> : <CheckCircle2 size={18} />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+              <p className="text-[10px] font-black uppercase tracking-wider text-muted">
                 {balance > 0 ? "Outstanding Balance (Due)" : "Advance / Credit"}
               </p>
               <p
@@ -299,7 +299,7 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
         )}
 
         {/* ── FORM ────────────────────────────────────────────────────── */}
-        <div className="bg-[#161b27] rounded-3xl border border-[#21293d] p-5 md:p-6">
+        <div className="bg-panel rounded-3xl border border-app p-5 md:p-6">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Amount + Date */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -360,12 +360,12 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
                     {amount ? inr(netAmount) : "—"}
                   </span>
                   {amount && parseFloat(discount) > 0 && (
-                    <span className="text-slate-700 text-xs">
+                    <span className="text-app text-xs">
                       ({amount} + {discount})
                     </span>
                   )}
                 </div>
-                <p className="text-[9px] text-slate-700 mt-1 ml-1">Auto-calculated by database</p>
+                <p className="text-[9px] text-app mt-1 ml-1">Auto-calculated by database</p>
               </div>
             </div>
 
@@ -384,7 +384,7 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
                     className={`py-2.5 px-3 rounded-xl text-xs font-black border transition-all ${
                       paymentMode === mode
                         ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/20"
-                        : "bg-[#111520] border-[#21293d] text-slate-500 hover:border-slate-500 hover:text-slate-300"
+                        : "bg-panel-2 border-app text-muted hover:border-muted hover:text-app-2"
                     }`}
                   >
                     {mode}
@@ -412,7 +412,7 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
                     className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black border transition-all ${
                       referenceType === t
                         ? "bg-amber-500/20 border-amber-500/30 text-amber-300"
-                        : "bg-[#111520] border-[#21293d] text-slate-500 hover:border-slate-500 hover:text-slate-300"
+                        : "bg-panel-2 border-app text-muted hover:border-muted hover:text-app-2"
                     }`}
                   >
                     {t === "none" && "No Reference"}
@@ -481,27 +481,27 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
 
             {/* Summary strip */}
             {amount && parseFloat(amount) > 0 && (
-              <div className="bg-[#111520] rounded-2xl border border-[#21293d] p-4 space-y-2.5">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+              <div className="bg-panel-2 rounded-2xl border border-app p-4 space-y-2.5">
+                <p className="text-[10px] font-black uppercase tracking-wider text-muted-2">
                   Payment Summary
                 </p>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Amount</span>
+                  <span className="text-muted">Amount</span>
                   <span className="text-white font-bold">{inr(parseFloat(amount) || 0)}</span>
                 </div>
                 {parseFloat(discount) > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Discount</span>
+                    <span className="text-muted">Discount</span>
                     <span className="text-amber-400 font-bold">− {inr(parseFloat(discount))}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm border-t border-[#21293d] pt-2">
-                  <span className="text-slate-400 font-black">Net Received</span>
+                <div className="flex justify-between text-sm border-t border-app pt-2">
+                  <span className="text-muted font-black">Net Received</span>
                   <span className="text-emerald-400 font-black text-base">{inr(netAmount)}</span>
                 </div>
                 {balance !== null && balance > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Remaining After</span>
+                    <span className="text-muted">Remaining After</span>
                     <span
                       className={`font-black ${balance - netAmount > 0 ? "text-red-400" : "text-emerald-400"}`}
                     >
@@ -509,7 +509,7 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between text-xs text-slate-600">
+                <div className="flex justify-between text-xs text-muted-2">
                   <span>Mode</span>
                   <span>{paymentMode}</span>
                 </div>
@@ -537,7 +537,7 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
               </button>
               <Link
                 href={`/clients/${clientId}/view`}
-                className="px-6 py-3.5 bg-[#111520] border border-[#21293d] hover:border-slate-500 text-slate-400 hover:text-white rounded-2xl font-bold text-sm transition-all no-underline"
+                className="px-6 py-3.5 bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-2xl font-bold text-sm transition-all no-underline"
               >
                 Cancel
               </Link>

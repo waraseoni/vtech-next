@@ -97,7 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="h-full" data-theme="dark" suppressHydrationWarning>
       {/* Body colors hardcoded NAHI — globals.css ka body{background:var(--background)}
           rule attribute ke hisaab se turant sahi color deta hai (pehle yahan
-          bg-[#0d1117] text-slate-200 hardcoded tha jo light theme se ladta tha). */}
+          bg-app text-app-2 hardcoded tha jo light theme se ladta tha). */}
       <body
         className={`h-full m-0 font-sans antialiased overflow-x-hidden`}
       >

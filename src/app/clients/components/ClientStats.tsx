@@ -10,14 +10,14 @@ type StatCardProps = {
 };
 
 const StatCard = ({ label, value, icon, color }: StatCardProps) => (
-  <div className={`bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center gap-4`}>
+  <div className={`bg-panel border border-app rounded-2xl p-4 flex items-center gap-4`}>
     <div
       className={`w-9 h-9 rounded-lg bg-${color}-500/20 text-${color}-400 flex items-center justify-center flex-shrink-0`}
     >
       {icon}
     </div>
     <div>
-      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{label}</p>
+      <p className="text-[11px] font-bold text-muted uppercase tracking-wider">{label}</p>
       <p className="text-xl font-black text-white leading-tight">{value}</p>
     </div>
   </div>

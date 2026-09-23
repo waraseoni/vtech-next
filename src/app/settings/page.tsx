@@ -38,10 +38,10 @@ import PageLoader from "@/components/PageLoader";
 import { toast } from "@/lib/toast";
 
 const inputCls =
-  "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
-const labelCls = "block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5";
-const fieldsets = "bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden";
-const fHdr = "flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r border-b border-[#21293d]";
+  "w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-app";
+const labelCls = "block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5";
+const fieldsets = "bg-panel border border-app rounded-2xl overflow-hidden";
+const fHdr = "flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r border-b border-app";
 
 type SysInfo = Record<string, string>;
 
@@ -644,18 +644,18 @@ export default function SettingsPage() {
   if (loading) return <PageLoader icon={Settings} label="loading settings..." tone="blue" />;
 
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
+    <div className="min-h-screen bg-app font-sans pb-12">
       <form onSubmit={handleSave}>
         <div className="max-w-2xl mx-auto px-4 pt-6 space-y-4">
           {/* Header */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+          <div className="bg-panel border border-app rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-slate-500 to-slate-700 rounded-xl flex items-center justify-center">
                 <Settings2 size={18} className="text-white" />
               </div>
               <div>
                 <h1 className="text-lg font-black text-white">System Information</h1>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+                <p className="text-[10px] text-muted uppercase tracking-wider">
                   Admin Panel · Settings
                 </p>
               </div>
@@ -663,7 +663,7 @@ export default function SettingsPage() {
             <div className="flex items-center gap-2">
               <span
                 title={APP_VERSION_FULL}
-                className="px-2 py-1 rounded-lg bg-[#0d1117] border border-[#21293d] text-[10px] font-bold text-slate-400"
+                className="px-2 py-1 rounded-lg bg-app border border-app text-[10px] font-bold text-muted"
               >
                 ver {APP_VERSION_FULL}
               </span>
@@ -690,7 +690,7 @@ export default function SettingsPage() {
           <div className={fieldsets}>
             <div className={`${fHdr} from-blue-600/20 to-transparent`}>
               <Tag size={14} className="text-blue-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 System Identity
               </h3>
             </div>
@@ -700,7 +700,7 @@ export default function SettingsPage() {
                 <div className="relative">
                   <Building2
                     size={14}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                   />
                   <input
                     type="text"
@@ -727,7 +727,7 @@ export default function SettingsPage() {
                 <div className="relative">
                   <User
                     size={14}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                   />
                   <input
                     type="text"
@@ -737,13 +737,13 @@ export default function SettingsPage() {
                     className={`${inputCls} pl-9`}
                   />
                 </div>
-                <p className="text-[10px] text-slate-700 mt-1">
+                <p className="text-[10px] text-app mt-1">
                   WhatsApp messages ke {`{firm_owner}`} placeholder mein yeh naam use hoga.
                 </p>
               </div>
               <div>
                 <label className={labelCls}>System Logo</label>
-                <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4">
+                <div className="bg-app rounded-xl border border-app p-4">
                   <div className="flex items-center gap-4 flex-wrap">
                     {logo ? (
                       <Image
@@ -755,12 +755,12 @@ export default function SettingsPage() {
                         onDoubleClick={() => openImageLightbox(logo, "System Logo")}
                       />
                     ) : (
-                      <div className="w-24 h-16 rounded-lg bg-white/5 border border-dashed border-[#2a3450] flex items-center justify-center">
-                        <ImageIcon size={20} className="text-slate-600" />
+                      <div className="w-24 h-16 rounded-lg bg-white/5 border border-dashed border-app-2 flex items-center justify-center">
+                        <ImageIcon size={20} className="text-muted-2" />
                       </div>
                     )}
                     <div className="flex-1 min-w-[180px]">
-                      <p className="text-xs font-bold text-slate-400 mb-2">
+                      <p className="text-xs font-bold text-muted mb-2">
                         Bills &amp; invoices ke header mein yeh logo dikhega.
                       </p>
                       <input
@@ -790,7 +790,7 @@ export default function SettingsPage() {
                         </button>
                         {logoPopup && (
                           <div className="relative">
-                            <div className="absolute top-full left-0 mt-1 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                            <div className="absolute top-full left-0 mt-1 z-50 bg-panel border border-app-2 rounded-xl shadow-2xl p-1.5 min-w-[120px]">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -844,7 +844,7 @@ export default function SettingsPage() {
                         )}
                       </div>
                       {logoFileName && (
-                        <p className="text-[10px] text-slate-600 mt-1.5">{logoFileName}</p>
+                        <p className="text-[10px] text-muted-2 mt-1.5">{logoFileName}</p>
                       )}
                     </div>
                   </div>
@@ -852,7 +852,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <label className={labelCls}>Website Cover</label>
-                <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4">
+                <div className="bg-app rounded-xl border border-app p-4">
                   <div className="flex items-center gap-4 flex-wrap">
                     {cover ? (
                       <Image
@@ -860,16 +860,16 @@ export default function SettingsPage() {
                         alt="Cover"
                         width={260}
                         height={112}
-                        className="max-h-28 max-w-[260px] object-cover rounded-lg border border-[#21293d] cursor-zoom-in"
+                        className="max-h-28 max-w-[260px] object-cover rounded-lg border border-app cursor-zoom-in"
                         onDoubleClick={() => openImageLightbox(cover, "Website Cover")}
                       />
                     ) : (
-                      <div className="w-36 h-24 rounded-lg bg-white/5 border border-dashed border-[#2a3450] flex items-center justify-center">
-                        <ImageIcon size={20} className="text-slate-600" />
+                      <div className="w-36 h-24 rounded-lg bg-white/5 border border-dashed border-app-2 flex items-center justify-center">
+                        <ImageIcon size={20} className="text-muted-2" />
                       </div>
                     )}
                     <div className="flex-1 min-w-[180px]">
-                      <p className="text-xs font-bold text-slate-400 mb-2">
+                      <p className="text-xs font-bold text-muted mb-2">
                         Public website ke home page par yeh cover dikhega.
                       </p>
                       <input
@@ -899,7 +899,7 @@ export default function SettingsPage() {
                         </button>
                         {coverPopup && (
                           <div className="relative">
-                            <div className="absolute top-full left-0 mt-1 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                            <div className="absolute top-full left-0 mt-1 z-50 bg-panel border border-app-2 rounded-xl shadow-2xl p-1.5 min-w-[120px]">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -953,7 +953,7 @@ export default function SettingsPage() {
                         )}
                       </div>
                       {coverFileName && (
-                        <p className="text-[10px] text-slate-600 mt-1.5">{coverFileName}</p>
+                        <p className="text-[10px] text-muted-2 mt-1.5">{coverFileName}</p>
                       )}
                     </div>
                   </div>
@@ -966,7 +966,7 @@ export default function SettingsPage() {
           <div className={fieldsets}>
             <div className={`${fHdr} from-emerald-600/20 to-transparent`}>
               <Phone size={14} className="text-emerald-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 Contact Information
               </h3>
             </div>
@@ -976,7 +976,7 @@ export default function SettingsPage() {
                 <div className="relative">
                   <Mail
                     size={14}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                   />
                   <input
                     type="email"
@@ -992,7 +992,7 @@ export default function SettingsPage() {
                 <div className="relative">
                   <Phone
                     size={14}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                   />
                   <input
                     type="text"
@@ -1008,7 +1008,7 @@ export default function SettingsPage() {
                 <div className="relative">
                   <MapPin
                     size={14}
-                    className="absolute left-3 top-3.5 text-slate-600 pointer-events-none"
+                    className="absolute left-3 top-3.5 text-muted-2 pointer-events-none"
                   />
                   <textarea
                     value={address}
@@ -1026,7 +1026,7 @@ export default function SettingsPage() {
           <div className={fieldsets}>
             <div className={`${fHdr} from-amber-600/20 to-transparent`}>
               <ShieldCheck size={14} className="text-amber-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 GST Information
               </h3>
             </div>
@@ -1041,7 +1041,7 @@ export default function SettingsPage() {
                   maxLength={15}
                   className={`${inputCls} font-mono tracking-widest`}
                 />
-                <p className="text-[10px] text-slate-700 mt-1">
+                <p className="text-[10px] text-app mt-1">
                   GST Invoice par yeh number dikhega.
                 </p>
               </div>
@@ -1060,7 +1060,7 @@ export default function SettingsPage() {
               >
                 <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
               </svg>
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 UPI Payment
               </h3>
             </div>
@@ -1074,7 +1074,7 @@ export default function SettingsPage() {
                   placeholder="9179105875@ybl"
                   className={`${inputCls} font-mono`}
                 />
-                <p className="text-[10px] text-slate-700 mt-1">
+                <p className="text-[10px] text-app mt-1">
                   Invoice/Receipt par scan-to-pay QR code mein yeh UPI ID dikhegi.
                 </p>
               </div>
@@ -1085,7 +1085,7 @@ export default function SettingsPage() {
           <div className={fieldsets}>
             <div className={`${fHdr} from-teal-600/20 to-transparent`}>
               <Clock size={14} className="text-teal-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 Business Hours
               </h3>
             </div>
@@ -1124,8 +1124,8 @@ export default function SettingsPage() {
           {/* Activity Log Retention */}
           <div className={fieldsets}>
             <div className={`${fHdr} from-slate-600/20 to-transparent`}>
-              <History size={14} className="text-slate-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <History size={14} className="text-muted" />
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 Activity Log Retention
               </h3>
             </div>
@@ -1138,7 +1138,7 @@ export default function SettingsPage() {
                 onChange={(e) => setLogRetention(e.target.value)}
                 className={inputCls}
               />
-              <p className="text-[10px] text-slate-700 mt-1">
+              <p className="text-[10px] text-app mt-1">
                 Clean old logs action sirf isse zyada din purane logs delete karega. Default: 90
                 days.
               </p>
@@ -1149,7 +1149,7 @@ export default function SettingsPage() {
           <div className={fieldsets}>
             <div className={`${fHdr} from-amber-600/20 to-transparent`}>
               <Timer size={14} className="text-amber-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 Auto Logoff / Session
               </h3>
             </div>
@@ -1168,7 +1168,7 @@ export default function SettingsPage() {
                       className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
                         !sessionNever && sessionMinutes === String(m)
                           ? "bg-amber-500/15 text-amber-300 border-amber-500/50"
-                          : "bg-[#0d1117] text-slate-400 border-[#21293d] hover:text-white"
+                          : "bg-app text-muted border-app hover:text-white"
                       }`}
                     >
                       {m} min
@@ -1180,13 +1180,13 @@ export default function SettingsPage() {
                     className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
                       sessionNever
                         ? "bg-red-500/15 text-red-300 border-red-500/50"
-                        : "bg-[#0d1117] text-slate-400 border-[#21293d] hover:text-white"
+                        : "bg-app text-muted border-app hover:text-white"
                     }`}
                   >
                     Never
                   </button>
                 </div>
-                <p className="text-[10px] text-slate-700 mt-2">
+                <p className="text-[10px] text-app mt-2">
                   Itne minute tak koi activity na hone par user ko auto-logout kar dega.
                   &quot;Never&quot; = hamesha active rahega (sirf manual logout). Default: 30 min.
                 </p>
@@ -1202,13 +1202,13 @@ export default function SettingsPage() {
                     onChange={(e) => setWarnMinutes(e.target.value)}
                     className={inputCls}
                   />
-                  <p className="text-[10px] text-slate-700 mt-1">
+                  <p className="text-[10px] text-app mt-1">
                     Logout se itne minute pehle warning modal dikhana hai. Default: 2 min.
                   </p>
                 </div>
                 <div>
                   <label className={labelCls}>Current Setting</label>
-                  <div className="px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm font-bold text-slate-300">
+                  <div className="px-3 py-2.5 bg-app border border-app rounded-xl text-sm font-bold text-app-2">
                     {sessionNever
                       ? "Never (off)"
                       : `Login ke baad ${sessionMinutes} min idle → logout`}
@@ -1235,12 +1235,12 @@ export default function SettingsPage() {
           <div className={fieldsets}>
             <div className={`${fHdr} from-blue-600/20 to-transparent`}>
               <MapPin size={14} className="text-blue-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 Attendance Geofencing
               </h3>
             </div>
             <div className="p-5 space-y-4">
-              <label className="flex items-center gap-2.5 text-xs font-bold text-slate-400 cursor-pointer">
+              <label className="flex items-center gap-2.5 text-xs font-bold text-muted cursor-pointer">
                 <input
                   type="checkbox"
                   checked={gfEnabled}
@@ -1249,7 +1249,7 @@ export default function SettingsPage() {
                 />
                 Self check-in / check-out ke liye GPS location verify karein
               </label>
-              <p className="text-[10px] text-slate-700">
+              <p className="text-[10px] text-app">
                 Enable hone par staff office radius ke bahar se attendance mark nahi kar payenge.
                 Check-in/out ki coordinates record par audit ke liye save hoti hain. (Admin ka
                 manual time-editing geofence se exempt rehta hai.)
@@ -1301,14 +1301,14 @@ export default function SettingsPage() {
           <div className={fieldsets}>
             <div className={`${fHdr} from-violet-600/20 to-transparent`}>
               <Pen size={14} className="text-violet-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 Digital Signature
               </h3>
             </div>
             <div className="p-5 space-y-4">
               {/* Current signature preview */}
               {signature && (
-                <div className="flex items-center gap-4 p-4 bg-[#0d1117] rounded-xl border border-[#21293d]">
+                <div className="flex items-center gap-4 p-4 bg-app rounded-xl border border-app">
                   <Image
                     src={signature}
                     alt="Signature"
@@ -1330,9 +1330,9 @@ export default function SettingsPage() {
 
               {/* Upload */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4 text-center">
-                  <Upload size={24} className="mx-auto text-slate-500 mb-2" />
-                  <p className="text-xs font-bold text-slate-400 mb-2">Upload Image</p>
+                <div className="bg-app rounded-xl border border-app p-4 text-center">
+                  <Upload size={24} className="mx-auto text-muted mb-2" />
+                  <p className="text-xs font-bold text-muted mb-2">Upload Image</p>
                   <input
                     ref={fileRef}
                     type="file"
@@ -1358,7 +1358,7 @@ export default function SettingsPage() {
                     </button>
                     {sigPopup && (
                       <div className="relative">
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 bg-[#161b27] border border-[#2e3a55] rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 bg-panel border border-app-2 rounded-xl shadow-2xl p-1.5 min-w-[120px]">
                           <button
                             type="button"
                             onClick={() => {
@@ -1389,7 +1389,7 @@ export default function SettingsPage() {
                       </div>
                     )}
                   </div>
-                  {sigFileName && <p className="text-[10px] text-slate-600 mt-1">{sigFileName}</p>}
+                  {sigFileName && <p className="text-[10px] text-muted-2 mt-1">{sigFileName}</p>}
                   {sigFile && (
                     <button
                       type="button"
@@ -1401,9 +1401,9 @@ export default function SettingsPage() {
                     </button>
                   )}
                 </div>
-                <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4 text-center">
-                  <Pen size={24} className="mx-auto text-slate-500 mb-2" />
-                  <p className="text-xs font-bold text-slate-400 mb-2">Draw Signature</p>
+                <div className="bg-app rounded-xl border border-app p-4 text-center">
+                  <Pen size={24} className="mx-auto text-muted mb-2" />
+                  <p className="text-xs font-bold text-muted mb-2">Draw Signature</p>
                   <button
                     type="button"
                     onClick={() => {
@@ -1419,8 +1419,8 @@ export default function SettingsPage() {
 
               {/* Canvas */}
               {showCanvas && (
-                <div className="bg-[#0d1117] rounded-xl border border-[#21293d] p-4">
-                  <p className="text-[10px] text-slate-600 mb-2 text-center">
+                <div className="bg-app rounded-xl border border-app p-4">
+                  <p className="text-[10px] text-muted-2 mb-2 text-center">
                     Mouse ya finger se draw karein
                   </p>
                   <div className="flex justify-center">
@@ -1428,7 +1428,7 @@ export default function SettingsPage() {
                       ref={canvasRef}
                       width={450}
                       height={150}
-                      className="border-2 border-[#21293d] rounded-lg bg-white cursor-crosshair touch-none"
+                      className="border-2 border-app rounded-lg bg-white cursor-crosshair touch-none"
                       onMouseDown={startDraw}
                       onMouseMove={draw}
                       onMouseUp={endDraw}
@@ -1442,7 +1442,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={clearCanvas}
-                      className="text-xs bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg"
+                      className="text-xs bg-slate-700 text-app-2 px-3 py-1.5 rounded-lg"
                     >
                       Clear
                     </button>
@@ -1475,12 +1475,12 @@ export default function SettingsPage() {
                 <circle cx="16" cy="12" r="1.5" />
                 <path d="M10 16c.5.5 1.5 1 3 1s2.5-.5 3-1" />
               </svg>
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 AI Settings
               </h3>
             </div>
             <div className="p-5 space-y-4">
-              <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 text-xs text-slate-500">
+              <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 text-xs text-muted">
                 <p>
                   <strong>Groq</strong> (recommended — free, no billing) ya{" "}
                   <strong>Google Gemini</strong> select karein.
@@ -1538,7 +1538,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => setShowAiKey(!showAiKey)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-app-2"
                     >
                       {showAiKey ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -1569,7 +1569,7 @@ export default function SettingsPage() {
                 >
                   {aiTesting ? "Testing..." : "Test API"}
                 </button>
-                {aiTestResult && <span className="text-xs text-slate-500">{aiTestResult}</span>}
+                {aiTestResult && <span className="text-xs text-muted">{aiTestResult}</span>}
                 <button
                   type="button"
                   onClick={handleSaveAi}
@@ -1586,7 +1586,7 @@ export default function SettingsPage() {
           <div className={fieldsets}>
             <div className={`${fHdr} from-blue-600/20 to-transparent`}>
               <Bell size={14} className="text-blue-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 Push Notifications
               </h3>
             </div>
@@ -1597,7 +1597,7 @@ export default function SettingsPage() {
           <div className={fieldsets}>
             <div className={`${fHdr} from-emerald-600/20 to-transparent`}>
               <KeyRound size={14} className="text-emerald-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
                 License Activation
               </h3>
             </div>
@@ -1615,7 +1615,7 @@ export default function SettingsPage() {
                   <AlertCircle size={18} className="text-amber-400 mt-0.5 shrink-0" />
                 )}
                 <div>
-                  <p className="text-xs font-black text-slate-300">
+                  <p className="text-xs font-black text-app-2">
                     {license?.activated
                       ? "Active ✅"
                       : license === null
@@ -1623,7 +1623,7 @@ export default function SettingsPage() {
                         : "Trial / Not activated"}
                   </p>
                   {license?.activated ? (
-                    <p className="text-[11px] text-slate-500 mt-1">
+                    <p className="text-[11px] text-muted mt-1">
                       Plan:{" "}
                       <span className="text-emerald-400 font-bold uppercase">{license.plan}</span>
                       {license.shopName && <> · {license.shopName}</>}
@@ -1635,7 +1635,7 @@ export default function SettingsPage() {
                       )}
                     </p>
                   ) : (
-                    <p className="text-[11px] text-slate-500 mt-1">
+                    <p className="text-[11px] text-muted mt-1">
                       License key daalein aur Activate dabaein. Key seller se milegi.
                     </p>
                   )}
@@ -1688,8 +1688,8 @@ export default function SettingsPage() {
           </div>
 
           {/* Preview card */}
-          <div className="bg-[#0d1f35] border border-blue-500/20 rounded-2xl p-5">
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-600 mb-3">
+          <div className="bg-app border border-blue-500/20 rounded-2xl p-5">
+            <p className="text-[10px] font-black uppercase tracking-wider text-muted-2 mb-3">
               Preview — Bills & Reports mein aise dikhega
             </p>
             <div className="space-y-1">
@@ -1705,8 +1705,8 @@ export default function SettingsPage() {
               )}
               <p className="text-white font-black text-base">{name || "System Name"}</p>
               {shortName && <p className="text-blue-400 text-xs font-bold">{shortName}</p>}
-              <p className="text-slate-400 text-xs">{address || "Address"}</p>
-              <p className="text-slate-400 text-xs">
+              <p className="text-muted text-xs">{address || "Address"}</p>
+              <p className="text-muted text-xs">
                 {contact && <span>📞 {contact}</span>}
                 {contact && email && <span className="mx-2">|</span>}
                 {email && <span>✉ {email}</span>}

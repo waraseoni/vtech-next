@@ -562,13 +562,13 @@ function SalaryContent() {
           <h1 className="text-xl font-black text-white flex items-center gap-2">
             <Wallet size={22} className="text-blue-500" /> Salary Management
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-muted mt-1">
             V-Tech Electronics Staff & Commission Reports
           </p>
         </div>
         <button
           onClick={() => window.open(`/api/print-salary?month=${month}`, "_blank")}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#161b27] border border-[#21293d] rounded-xl text-sm font-bold text-slate-300 hover:text-white hover:border-blue-500/50 hover:bg-[#1c2231] transition-all shadow-sm"
+          className="flex items-center gap-2 px-5 py-2.5 bg-panel border border-app rounded-xl text-sm font-bold text-app-2 hover:text-white hover:border-blue-500/50 hover:bg-panel-2 transition-all shadow-sm"
         >
           <Printer size={16} /> Print Report
         </button>
@@ -580,12 +580,12 @@ function SalaryContent() {
         <p className="text-gray-600 font-bold">Salary Statement: {monthLabel}</p>
       </div>
 
-      <div className="flex gap-2 print:hidden bg-[#161b27] p-1.5 rounded-2xl border border-[#21293d] w-max">
+      <div className="flex gap-2 print:hidden bg-panel p-1.5 rounded-2xl border border-app w-max">
         {(["report", "control"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setActiveTab(t)}
-            className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === t ? "bg-blue-600 text-white shadow-md shadow-blue-900/20" : "text-slate-400 hover:text-slate-200"}`}
+            className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === t ? "bg-blue-600 text-white shadow-md shadow-blue-900/20" : "text-muted hover:text-app-2"}`}
           >
             {t === "report" ? "Salary Report" : "Salary Rate Master"}
           </button>
@@ -596,9 +596,9 @@ function SalaryContent() {
         <div className="space-y-4">
           {/* Top Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:hidden">
-            <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center justify-between">
+            <div className="bg-panel border border-app rounded-2xl p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <p className="text-xs font-bold text-muted uppercase tracking-wider mb-1">
                   Total Payable
                 </p>
                 <h3 className="text-xl font-black text-emerald-400">{inr(summaryTotals.payout)}</h3>
@@ -607,9 +607,9 @@ function SalaryContent() {
                 <ArrowUpRight size={20} />
               </div>
             </div>
-            <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center justify-between">
+            <div className="bg-panel border border-app rounded-2xl p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <p className="text-xs font-bold text-muted uppercase tracking-wider mb-1">
                   Month Advances
                 </p>
                 <h3 className="text-xl font-black text-red-400">{inr(summaryTotals.advances)}</h3>
@@ -618,9 +618,9 @@ function SalaryContent() {
                 <ArrowDownRight size={20} />
               </div>
             </div>
-            <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center justify-between">
+            <div className="bg-panel border border-app rounded-2xl p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <p className="text-xs font-bold text-muted uppercase tracking-wider mb-1">
                   Total Commissions
                 </p>
                 <h3 className="text-xl font-black text-blue-400">
@@ -634,11 +634,11 @@ function SalaryContent() {
           </div>
 
           {/* Month Navigator */}
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3 print:hidden">
+          <div className="bg-panel border border-app rounded-2xl p-3 print:hidden">
             <div className="flex items-center justify-center flex-wrap gap-4">
               <button
                 onClick={() => navigate("prev")}
-                className="w-10 h-10 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-full text-slate-400 hover:text-white hover:border-blue-500/50 hover:bg-[#1c2231] transition-all"
+                className="w-10 h-10 flex items-center justify-center bg-panel-2 border border-app rounded-full text-muted hover:text-white hover:border-blue-500/50 hover:bg-panel-2 transition-all"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -646,7 +646,7 @@ function SalaryContent() {
                 type="month"
                 value={month}
                 onChange={(e) => setMonth(e.target.value)}
-                className="px-4 py-2 bg-[#111520] border border-[#21293d] rounded-xl text-sm font-black text-white outline-none focus:border-blue-500/50 text-center"
+                className="px-4 py-2 bg-panel-2 border border-app rounded-xl text-sm font-black text-white outline-none focus:border-blue-500/50 text-center"
               />
               {month !== currentMonth && (
                 <button
@@ -660,7 +660,7 @@ function SalaryContent() {
               )}
               <button
                 onClick={() => navigate("next")}
-                className="w-10 h-10 flex items-center justify-center bg-[#111520] border border-[#21293d] rounded-full text-slate-400 hover:text-white hover:border-blue-500/50 hover:bg-[#1c2231] transition-all"
+                className="w-10 h-10 flex items-center justify-center bg-panel-2 border border-app rounded-full text-muted hover:text-white hover:border-blue-500/50 hover:bg-panel-2 transition-all"
               >
                 <ChevronRight size={16} />
               </button>
@@ -668,11 +668,11 @@ function SalaryContent() {
           </div>
 
           {/* Main Table */}
-          <div className="bg-[#161b27] print:bg-white border border-[#21293d] print:border-gray-300 rounded-2xl overflow-hidden print:rounded-none">
+          <div className="bg-panel print:bg-white border border-app print:border-app-2 rounded-2xl overflow-hidden print:rounded-none">
             <div className="overflow-x-auto">
               <table className="w-full print:text-black">
                 <thead>
-                  <tr className="bg-[#111520] print:bg-gray-100">
+                  <tr className="bg-panel-2 print:bg-gray-100">
                     {[
                       "#",
                       "Staff Name",
@@ -686,7 +686,7 @@ function SalaryContent() {
                     ].map((h, idx) => (
                       <th
                         key={h}
-                        className={`px-4 py-3 text-[10px] print:text-xs font-black uppercase text-slate-500 print:text-gray-800 tracking-widest text-left ${idx === 8 ? "print:hidden" : ""}`}
+                        className={`px-4 py-3 text-[10px] print:text-xs font-black uppercase text-muted print:text-gray-800 tracking-widest text-left ${idx === 8 ? "print:hidden" : ""}`}
                       >
                         {h}
                       </th>
@@ -698,14 +698,14 @@ function SalaryContent() {
                     <tr>
                       <td colSpan={9} className="text-center py-16">
                         <Loader2 size={24} className="animate-spin text-blue-500 mx-auto mb-2" />
-                        <p className="text-slate-500 text-xs font-bold">Crunching numbers...</p>
+                        <p className="text-muted text-xs font-bold">Crunching numbers...</p>
                       </td>
                     </tr>
                   ) : rows.length === 0 ? (
                     <tr>
                       <td
                         colSpan={9}
-                        className="text-center py-12 text-slate-500 text-sm font-bold"
+                        className="text-center py-12 text-muted text-sm font-bold"
                       >
                         No staff records found.
                       </td>
@@ -716,7 +716,7 @@ function SalaryContent() {
                         key={r.id}
                         className="hover:bg-white/[0.02] print:hover:bg-transparent transition-colors"
                       >
-                        <td className="px-4 py-3 text-xs text-slate-500 print:text-black text-center">
+                        <td className="px-4 py-3 text-xs text-muted print:text-black text-center">
                           {i + 1}
                         </td>
                         <td className="px-4 py-3">
@@ -730,26 +730,26 @@ function SalaryContent() {
                         <td className="px-4 py-3 text-xs">
                           <Link
                             href={`/attendance?view=report&month=${month}`}
-                            className="flex items-center gap-1.5 bg-[#111520] hover:bg-[#1a2030] border border-transparent hover:border-[#21293d] print:bg-transparent w-max px-2 py-1 rounded-lg print:p-0 transition-all group"
+                            className="flex items-center gap-1.5 bg-panel-2 hover:bg-panel-2 border border-transparent hover:border-app print:bg-transparent w-max px-2 py-1 rounded-lg print:p-0 transition-all group"
                             title="Click to view Attendance Monthly Report"
                           >
                             <span className="text-emerald-400 print:text-green-700 font-black group-hover:underline">
                               {r.present_count}
                             </span>
-                            <span className="text-slate-600 print:text-black">|</span>
+                            <span className="text-muted-2 print:text-black">|</span>
                             <span className="text-amber-400 print:text-orange-600 font-black group-hover:underline">
                               {r.half_day_count}
                             </span>
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-xs text-right text-slate-300 print:text-black">
+                        <td className="px-4 py-3 text-xs text-right text-app-2 print:text-black">
                           {inr(r.current_fix)}
                         </td>
                         <td className="px-4 py-3 text-xs text-right font-bold text-blue-400 print:text-black">
                           {inr(r.current_comm)}
                         </td>
                         <td
-                          className={`px-4 py-3 text-xs text-right font-black ${r.old_balance < 0 ? "text-red-400 print:text-red-700" : "text-slate-400 print:text-black"}`}
+                          className={`px-4 py-3 text-xs text-right font-black ${r.old_balance < 0 ? "text-red-400 print:text-red-700" : "text-muted print:text-black"}`}
                         >
                           {inr(r.old_balance)}
                         </td>
@@ -775,7 +775,7 @@ function SalaryContent() {
                               Pay
                             </button>
                           ) : (
-                            <span className="px-3 py-1.5 bg-[#111520] text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                            <span className="px-3 py-1.5 bg-panel-2 text-muted rounded-lg text-[10px] font-bold uppercase tracking-wider">
                               Settled
                             </span>
                           )}
@@ -791,16 +791,16 @@ function SalaryContent() {
       )}
 
       {activeTab === "control" && (
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-[#111520]">
+                <tr className="bg-panel-2">
                   {["#", "Staff Name", "Role", "Current Daily Wage", "Last Updated", "Action"].map(
                     (h) => (
                       <th
                         key={h}
-                        className={`px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-widest text-left ${h === "Last Updated" ? "text-center" : ""}`}
+                        className={`px-4 py-3 text-[10px] font-black uppercase text-muted tracking-widest text-left ${h === "Last Updated" ? "text-center" : ""}`}
                       >
                         {h}
                       </th>
@@ -811,17 +811,17 @@ function SalaryContent() {
               <tbody className="divide-y divide-[#21293d]/50">
                 {mechanics.map((m, i) => (
                   <tr key={m.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-4 py-3 text-xs text-slate-500 text-center">{i + 1}</td>
-                    <td className="px-4 py-3 font-bold text-slate-200">
+                    <td className="px-4 py-3 text-xs text-muted text-center">{i + 1}</td>
+                    <td className="px-4 py-3 font-bold text-app-2">
                       {[m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ")}
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-400">
+                    <td className="px-4 py-3 text-xs text-muted">
                       {m.designation || "Technician"}
                     </td>
                     <td className="px-4 py-3 text-sm font-black text-emerald-400">
                       {inr(m.daily_salary)}
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-400 text-center">
+                    <td className="px-4 py-3 text-xs text-muted text-center">
                       {m.last_updated
                         ? new Date(m.last_updated).toLocaleDateString("en-IN", {
                             day: "2-digit",
@@ -848,7 +848,7 @@ function SalaryContent() {
                         </button>
                         <button
                           onClick={() => openHistory(m.id, [m.firstname, m.lastname].join(" "))}
-                          className="px-3 py-1.5 bg-slate-500/10 border border-[#21293d] text-slate-400 rounded-lg text-xs font-bold hover:bg-[#1c2231] hover:text-white transition-all flex items-center gap-1.5"
+                          className="px-3 py-1.5 bg-muted/10 border border-app text-muted rounded-lg text-xs font-bold hover:bg-panel-2 hover:text-white transition-all flex items-center gap-1.5"
                         >
                           <History size={12} /> History
                         </button>
@@ -865,14 +865,14 @@ function SalaryContent() {
       {/* Pay Modal */}
       {showPayModal && payTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl p-6">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-sm shadow-2xl p-6">
             <h3 className="font-black text-lg text-white mb-2">Issue Salary Payment</h3>
-            <div className="bg-[#111520] border border-[#21293d] rounded-xl p-4 mb-5">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+            <div className="bg-panel-2 border border-app rounded-xl p-4 mb-5">
+              <p className="text-xs font-bold text-muted uppercase tracking-wider mb-1">
                 Staff Member
               </p>
-              <p className="text-sm font-black text-slate-200 mb-3">{payTarget.name}</p>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+              <p className="text-sm font-black text-app-2 mb-3">{payTarget.name}</p>
+              <p className="text-xs font-bold text-muted uppercase tracking-wider mb-1">
                 Settlement Amount
               </p>
               <p className="text-2xl font-black text-emerald-400">{inr(payTarget.amount)}</p>
@@ -889,7 +889,7 @@ function SalaryContent() {
                   setShowPayModal(false);
                   setPayTarget(null);
                 }}
-                className="px-5 py-3 bg-[#111520] border border-[#21293d] text-slate-400 hover:text-white hover:bg-[#1c2231] rounded-xl text-sm font-bold transition-all"
+                className="px-5 py-3 bg-panel-2 border border-app text-muted hover:text-white hover:bg-panel-2 rounded-xl text-sm font-bold transition-all"
               >
                 Cancel
               </button>
@@ -901,13 +901,13 @@ function SalaryContent() {
       {/* Ledger Modal */}
       {showLedgerModal && ledgerTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-3xl shadow-2xl max-h-[85vh] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between p-5 bg-[#111520] border-b border-[#21293d]">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-3xl shadow-2xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-5 bg-panel-2 border-b border-app">
               <div>
                 <h3 className="font-black text-white text-lg flex items-center gap-2">
                   <Wallet size={18} className="text-blue-500" /> Passbook: {ledgerTarget.name}
                 </h3>
-                <p className="text-xs font-bold text-slate-500 mt-1">
+                <p className="text-xs font-bold text-muted mt-1">
                   {new Date(ledgerFrom).toLocaleDateString("en-IN", {
                     month: "short",
                     year: "numeric",
@@ -916,14 +916,14 @@ function SalaryContent() {
               </div>
               <button
                 onClick={() => setShowLedgerModal(false)}
-                className="w-9 h-9 flex items-center justify-center bg-[#161b27] border border-[#21293d] hover:border-slate-500 rounded-xl text-slate-400 hover:text-white transition-all"
+                className="w-9 h-9 flex items-center justify-center bg-panel border border-app hover:border-muted rounded-xl text-muted hover:text-white transition-all"
               >
                 <X size={16} />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-0">
               <table className="w-full">
-                <thead className="sticky top-0 bg-[#161b27] shadow-sm z-10 border-b border-[#21293d]">
+                <thead className="sticky top-0 bg-panel shadow-sm z-10 border-b border-app">
                   <tr>
                     {[
                       "Date",
@@ -935,7 +935,7 @@ function SalaryContent() {
                     ].map((h) => (
                       <th
                         key={h}
-                        className="px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-widest text-left"
+                        className="px-4 py-3 text-[10px] font-black uppercase text-muted tracking-widest text-left"
                       >
                         {h}
                       </th>
@@ -953,7 +953,7 @@ function SalaryContent() {
                     <tr>
                       <td
                         colSpan={6}
-                        className="text-center py-12 text-slate-500 text-sm font-bold"
+                        className="text-center py-12 text-muted text-sm font-bold"
                       >
                         No transactions this month.
                       </td>
@@ -964,7 +964,7 @@ function SalaryContent() {
                         key={i}
                         className={`hover:bg-white/[0.02] transition-colors ${e.type === "opening" ? "bg-amber-500/5" : ""}`}
                       >
-                        <td className="px-4 py-3 text-xs font-bold text-slate-400">{e.date}</td>
+                        <td className="px-4 py-3 text-xs font-bold text-muted">{e.date}</td>
                         <td className="px-4 py-3 text-xs font-black">
                           {e.status === "Present" ? (
                             <span className="text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md">
@@ -975,7 +975,7 @@ function SalaryContent() {
                               Half Day
                             </span>
                           ) : e.status === "—" ? (
-                            <span className="text-slate-500">—</span>
+                            <span className="text-muted">—</span>
                           ) : (
                             <span className="text-red-400 bg-red-500/10 px-2 py-1 rounded-md">
                               Absent
@@ -1009,27 +1009,27 @@ function SalaryContent() {
       {/* Salary Rate Master Modal */}
       {salaryRateModal && salaryTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl p-6">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-sm shadow-2xl p-6">
             <h3 className="font-black text-lg text-white mb-5 flex items-center gap-2">
               <Edit2 size={18} className="text-blue-500" /> Update Daily Rate
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-1.5">
+                <label className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5">
                   Staff Name
                 </label>
                 <input
                   value={salaryTarget.name}
                   readOnly
-                  className="w-full px-4 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-sm font-bold text-slate-400 cursor-not-allowed"
+                  className="w-full px-4 py-2.5 bg-panel-2 border border-app rounded-xl text-sm font-bold text-muted cursor-not-allowed"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-1.5">
+                <label className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5">
                   New Daily Wage
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted font-bold">
                     ₹
                   </span>
                   <input
@@ -1037,26 +1037,26 @@ function SalaryContent() {
                     value={newSalary}
                     onChange={(e) => setNewSalary(e.target.value)}
                     step="any"
-                    className="w-full pl-8 pr-4 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-sm font-black text-white outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all"
+                    className="w-full pl-8 pr-4 py-2.5 bg-panel-2 border border-app rounded-xl text-sm font-black text-white outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all"
                     placeholder="0.00"
                   />
                 </div>
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-1.5">
+                <label className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5">
                   Effective Date (From when?)
                 </label>
                 <input
                   type="date"
                   value={newEffectiveDate}
                   onChange={(e) => setNewEffectiveDate(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-sm font-bold text-slate-300 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all style-calendar"
+                  className="w-full px-4 py-2.5 bg-panel-2 border border-app rounded-xl text-sm font-bold text-app-2 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all style-calendar"
                 />
-                <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
+                <p className="text-[10px] text-muted mt-1.5 leading-relaxed">
                   Select a past date if this raise was applicable from earlier this month.
                 </p>
               </div>
-              <div className="flex gap-3 pt-4 border-t border-[#21293d]">
+              <div className="flex gap-3 pt-4 border-t border-app">
                 <button
                   onClick={handleUpdateSalary}
                   className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-black text-white shadow-lg shadow-blue-900/20 transition-all"
@@ -1068,7 +1068,7 @@ function SalaryContent() {
                     setSalaryRateModal(false);
                     setSalaryTarget(null);
                   }}
-                  className="px-5 py-3 bg-[#111520] border border-[#21293d] text-slate-400 hover:text-white hover:bg-[#1c2231] rounded-xl text-sm font-bold transition-all"
+                  className="px-5 py-3 bg-panel-2 border border-app text-muted hover:text-white hover:bg-panel-2 rounded-xl text-sm font-bold transition-all"
                 >
                   Cancel
                 </button>
@@ -1080,20 +1080,20 @@ function SalaryContent() {
       {/* Salary History Modal */}
       {historyModal && historyTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh]">
-            <div className="p-5 bg-[#111520] border-b border-[#21293d] flex items-center justify-between">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh]">
+            <div className="p-5 bg-panel-2 border-b border-app flex items-center justify-between">
               <div>
                 <h3 className="font-black text-white text-lg flex items-center gap-2">
                   <History size={20} className="text-blue-500" /> Salary History
                 </h3>
-                <p className="text-xs font-bold text-slate-500 mt-1">{historyTarget.name}</p>
+                <p className="text-xs font-bold text-muted mt-1">{historyTarget.name}</p>
               </div>
               <button
                 onClick={() => {
                   setHistoryModal(false);
                   setEditingEntry(null);
                 }}
-                className="w-9 h-9 flex items-center justify-center bg-[#161b27] border border-[#21293d] hover:border-slate-500 rounded-xl text-slate-400 hover:text-white transition-all"
+                className="w-9 h-9 flex items-center justify-center bg-panel border border-app hover:border-muted rounded-xl text-muted hover:text-white transition-all"
               >
                 <X size={16} />
               </button>
@@ -1101,12 +1101,12 @@ function SalaryContent() {
 
             <div className="flex-1 overflow-y-auto">
               <table className="w-full">
-                <thead className="sticky top-0 bg-[#161b27] border-b border-[#21293d] z-10">
+                <thead className="sticky top-0 bg-panel border-b border-app z-10">
                   <tr>
                     {["Effective Date", "Daily Rate", "Action"].map((h) => (
                       <th
                         key={h}
-                        className="px-5 py-3 text-[10px] font-black uppercase text-slate-500 tracking-widest text-left"
+                        className="px-5 py-3 text-[10px] font-black uppercase text-muted tracking-widest text-left"
                       >
                         {h}
                       </th>
@@ -1124,7 +1124,7 @@ function SalaryContent() {
                     <tr>
                       <td
                         colSpan={3}
-                        className="py-12 text-center text-slate-500 text-sm font-bold"
+                        className="py-12 text-center text-muted text-sm font-bold"
                       >
                         No history records found.
                       </td>
@@ -1132,7 +1132,7 @@ function SalaryContent() {
                   ) : (
                     historyEntries.map((e) => (
                       <tr key={e.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="px-5 py-3 text-sm font-bold text-slate-300">
+                        <td className="px-5 py-3 text-sm font-bold text-app-2">
                           {new Date(e.effective_date).toLocaleDateString("en-IN", {
                             day: "2-digit",
                             month: "short",
@@ -1170,36 +1170,36 @@ function SalaryContent() {
             </div>
 
             {editingEntry && (
-              <div className="p-5 bg-[#111520] border-t border-[#21293d] animate-in slide-in-from-bottom-5 duration-300">
+              <div className="p-5 bg-panel-2 border-t border-app animate-in slide-in-from-bottom-5 duration-300">
                 <h4 className="text-xs font-black uppercase text-white tracking-widest mb-4 flex items-center gap-2">
                   <Edit2 size={12} className="text-blue-500" /> Edit Record
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-1.5">
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5">
                       New Rate
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xs">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-bold text-xs">
                         ₹
                       </span>
                       <input
                         type="number"
                         value={editSalary}
                         onChange={(e) => setEditSalary(e.target.value)}
-                        className="w-full pl-7 pr-3 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-sm font-black text-white outline-none focus:border-blue-500/50"
+                        className="w-full pl-7 pr-3 py-2 bg-panel border border-app rounded-xl text-sm font-black text-white outline-none focus:border-blue-500/50"
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-1.5">
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5">
                       Effective Date
                     </label>
                     <input
                       type="date"
                       value={editDate}
                       onChange={(e) => setEditDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-[#161b27] border border-[#21293d] rounded-xl text-sm font-bold text-slate-300 outline-none focus:border-blue-500/50 style-calendar"
+                      className="w-full px-3 py-2 bg-panel border border-app rounded-xl text-sm font-bold text-app-2 outline-none focus:border-blue-500/50 style-calendar"
                     />
                   </div>
                 </div>
@@ -1212,7 +1212,7 @@ function SalaryContent() {
                   </button>
                   <button
                     onClick={() => setEditingEntry(null)}
-                    className="px-5 py-2.5 bg-[#161b27] border border-[#21293d] text-slate-400 hover:text-white hover:bg-[#1c2231] rounded-xl text-xs font-bold transition-all"
+                    className="px-5 py-2.5 bg-panel border border-app text-muted hover:text-white hover:bg-panel-2 rounded-xl text-xs font-bold transition-all"
                   >
                     Cancel
                   </button>
@@ -1220,7 +1220,7 @@ function SalaryContent() {
               </div>
             )}
 
-            <div className="p-4 bg-[#111520] border-t border-[#21293d] text-[10px] text-slate-500 text-center font-bold uppercase tracking-widest">
+            <div className="p-4 bg-panel-2 border-t border-app text-[10px] text-muted text-center font-bold uppercase tracking-widest">
               Total History Records: {historyEntries.length}
             </div>
           </div>

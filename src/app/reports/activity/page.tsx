@@ -186,7 +186,7 @@ export default function ActivityLogPage() {
       return "bg-amber-500/10 text-amber-400 border-amber-500/20";
     if (m.includes("sale")) return "bg-pink-500/10 text-pink-400 border-pink-500/20";
     if (m.includes("mechanic")) return "bg-purple-500/10 text-purple-400 border-purple-500/20";
-    return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+    return "bg-muted/10 text-muted border-muted/20";
   };
 
   const getActionStyles = (action: string) => {
@@ -223,21 +223,21 @@ export default function ActivityLogPage() {
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#161b27] border border-[#21293d] p-5 rounded-2xl shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-panel border border-app p-5 rounded-2xl shadow-xl">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/40">
             <Activity className="text-white" size={24} />
           </div>
           <div>
             <h1 className="text-xl font-black text-white tracking-tight">System Activity Log</h1>
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+            <p className="text-xs text-muted font-bold uppercase tracking-wider mt-0.5">
               Track all changes and actions
             </p>
           </div>
         </div>
         <button
           onClick={fetchLogs}
-          className="flex items-center gap-2 px-4 py-2 bg-[#0d1117] border border-[#21293d] hover:border-blue-500/50 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-app border border-app hover:border-blue-500/50 rounded-xl text-xs font-bold text-muted hover:text-white transition-all shadow-sm"
         >
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           Refresh
@@ -253,7 +253,7 @@ export default function ActivityLogPage() {
       </div>
 
       <div className="flex items-center justify-between gap-3 p-4 bg-blue-500/5 border border-blue-500/15 rounded-2xl">
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-muted">
           <Info size={13} className="inline mr-1 text-blue-400" />
           Retention: <strong className="text-blue-400">{retention} days</strong>. Cleaning logs will
           remove entries older than this from the database.
@@ -266,22 +266,22 @@ export default function ActivityLogPage() {
       {/* Filters */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <form onSubmit={handleSearch} className="lg:col-span-2 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-2" size={16} />
           <input
             type="text"
             placeholder="Search action or details..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-[#161b27] border border-[#21293d] rounded-xl text-sm text-slate-300 outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all"
+            className="w-full pl-12 pr-4 py-3 bg-panel border border-app rounded-xl text-sm text-app-2 outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all"
           />
         </form>
 
         <div className="relative">
-          <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+          <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-2" size={16} />
           <select
             value={moduleFilter}
             onChange={(e) => setModuleFilter(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-[#161b27] border border-[#21293d] rounded-xl text-sm text-slate-300 outline-none appearance-none focus:border-blue-500/50 transition-all cursor-pointer"
+            className="w-full pl-12 pr-4 py-3 bg-panel border border-app rounded-xl text-sm text-app-2 outline-none appearance-none focus:border-blue-500/50 transition-all cursor-pointer"
           >
             <option value="all">All Modules</option>
             {modules.map((m) => (
@@ -300,24 +300,24 @@ export default function ActivityLogPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-3xl overflow-hidden shadow-2xl">
+      <div className="bg-panel border border-app rounded-3xl overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-[#0d1117]/50 border-b border-[#21293d]">
-                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">
+              <tr className="bg-app/50 border-b border-app">
+                <th className="px-6 py-4 text-[10px] font-black uppercase text-muted tracking-widest">
                   Time & User
                 </th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">
+                <th className="px-6 py-4 text-[10px] font-black uppercase text-muted tracking-widest">
                   Module
                 </th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">
+                <th className="px-6 py-4 text-[10px] font-black uppercase text-muted tracking-widest">
                   Action
                 </th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">
+                <th className="px-6 py-4 text-[10px] font-black uppercase text-muted tracking-widest">
                   Details
                 </th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">
+                <th className="px-6 py-4 text-[10px] font-black uppercase text-muted tracking-widest">
                   Navigation
                 </th>
               </tr>
@@ -338,10 +338,10 @@ export default function ActivityLogPage() {
                   <tr key={log.id} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-300">
+                        <span className="text-sm font-bold text-app-2">
                           {format(new Date(log.date_created), "hh:mm a")}
                         </span>
-                        <span className="text-[10px] text-slate-600 font-medium">
+                        <span className="text-[10px] text-muted-2 font-medium">
                           {format(new Date(log.date_created), "dd MMM, yyyy")}
                         </span>
                         <div className="flex items-center gap-1.5 mt-2 text-blue-400/80">
@@ -374,7 +374,7 @@ export default function ActivityLogPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="max-w-xs sm:max-w-sm">
-                        <p className="text-xs text-slate-400 leading-relaxed font-medium">
+                        <p className="text-xs text-muted leading-relaxed font-medium">
                           {log.details || "No additional details"}
                         </p>
                       </div>
@@ -384,7 +384,7 @@ export default function ActivityLogPage() {
                         const link = getRelatedLink(log.module, log.meta_id);
                         if (!link)
                           return (
-                            <span className="text-slate-700 text-[10px] font-bold tracking-widest uppercase">
+                            <span className="text-app text-[10px] font-bold tracking-widest uppercase">
                               N/A
                             </span>
                           );
@@ -412,8 +412,8 @@ export default function ActivityLogPage() {
                 <tr>
                   <td colSpan={4} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
-                      <History size={40} className="text-slate-800" />
-                      <p className="text-sm font-bold text-slate-600">No activity logs found</p>
+                      <History size={40} className="text-app" />
+                      <p className="text-sm font-bold text-muted-2">No activity logs found</p>
                     </div>
                   </td>
                 </tr>
@@ -423,19 +423,19 @@ export default function ActivityLogPage() {
         </div>
 
         {/* Footer info */}
-        <div className="px-6 py-4 bg-[#0d1117]/30 border-t border-[#21293d] flex items-center justify-between">
-          <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">
+        <div className="px-6 py-4 bg-app/30 border-t border-app flex items-center justify-between">
+          <p className="text-[10px] text-muted-2 font-bold uppercase tracking-widest">
             Showing last 100 system events
           </p>
           <div className="flex items-center gap-2">
             <button
-              className="p-2 text-slate-700 hover:text-slate-400 transition-colors disabled:opacity-30"
+              className="p-2 text-app hover:text-muted transition-colors disabled:opacity-30"
               disabled
             >
               <ChevronLeft size={16} />
             </button>
             <button
-              className="p-2 text-slate-700 hover:text-slate-400 transition-colors disabled:opacity-30"
+              className="p-2 text-app hover:text-muted transition-colors disabled:opacity-30"
               disabled
             >
               <ChevronRight size={16} />

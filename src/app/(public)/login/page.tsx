@@ -43,7 +43,7 @@ function TabButton({
       className={`flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
         active
           ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
-          : "bg-[#111520] text-slate-500 hover:text-slate-300"
+          : "bg-panel-2 text-muted hover:text-app-2"
       }`}
     >
       {icon}
@@ -209,7 +209,7 @@ export default function LoginPage() {
 
   return (
     <PullToRefresh className="min-h-screen">
-      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center px-4 relative overflow-hidden">
+      <div className="min-h-screen bg-app flex items-center justify-center px-4 relative overflow-hidden">
       {/* Background glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-3xl" />
@@ -224,13 +224,13 @@ export default function LoginPage() {
           <h1 className="text-2xl font-black text-white tracking-tight">
             V-TECH <span className="text-blue-400 font-light">PRO</span>
           </h1>
-          <p className="text-slate-600 text-xs font-bold uppercase tracking-[0.2em] mt-1">
+          <p className="text-muted-2 text-xs font-bold uppercase tracking-[0.2em] mt-1">
             Management System
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-7 shadow-2xl">
+        <div className="bg-panel border border-app rounded-2xl p-7 shadow-2xl">
           {/* Tabs */}
           <div className="flex gap-2 mb-6">
             <TabButton
@@ -253,7 +253,7 @@ export default function LoginPage() {
             <h2 className="text-lg font-black text-white">
               {tab === "staff" ? "Staff Login" : "Client Login"}
             </h2>
-            <p className="text-slate-600 text-sm mt-0.5">
+            <p className="text-muted-2 text-sm mt-0.5">
               {tab === "staff" ? "Login to manage your shop" : "Email OTP se apne repairs dekhein"}
             </p>
           </div>
@@ -277,13 +277,13 @@ export default function LoginPage() {
           {tab === "staff" && (
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Email Address
                 </label>
                 <div className="relative">
                   <Mail
                     size={15}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                   />
                   <input
                     type="email"
@@ -291,19 +291,19 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full pl-10 pr-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-panel-2 border border-app rounded-xl text-sm text-white font-medium placeholder:text-app outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Password
                 </label>
                 <div className="relative">
                   <Lock
                     size={15}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                   />
                   <input
                     type={showPass ? "text" : "password"}
@@ -311,12 +311,12 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full pl-10 pr-11 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                    className="w-full pl-10 pr-11 py-3 bg-panel-2 border border-app rounded-xl text-sm text-white font-medium placeholder:text-app outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPass((v) => !v)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-2 hover:text-muted transition-colors"
                   >
                     {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
@@ -328,7 +328,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setRememberMe((v) => !v)}
                   className={`w-9 h-5 rounded-full transition-all duration-200 flex-shrink-0 relative ${
-                    rememberMe ? "bg-blue-600" : "bg-[#21293d]"
+                    rememberMe ? "bg-blue-600" : "bg-panel-2"
                   }`}
                 >
                   <span
@@ -339,7 +339,7 @@ export default function LoginPage() {
                 </button>
                 <label
                   onClick={() => setRememberMe((v) => !v)}
-                  className="text-xs font-bold text-slate-500 cursor-pointer select-none hover:text-slate-400 transition-colors"
+                  className="text-xs font-bold text-muted cursor-pointer select-none hover:text-muted transition-colors"
                 >
                   Remember My Email
                 </label>
@@ -368,13 +368,13 @@ export default function LoginPage() {
               {otpStep === "request" ? (
                 <form onSubmit={handleSendOtp} className="space-y-4">
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                       Apna Register Email
                     </label>
                     <div className="relative">
                       <Mail
                         size={15}
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                       />
                       <input
                         type="email"
@@ -382,10 +382,10 @@ export default function LoginPage() {
                         value={clientEmail}
                         onChange={(e) => setClientEmail(e.target.value)}
                         required
-                        className="w-full pl-10 pr-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                        className="w-full pl-10 pr-4 py-3 bg-panel-2 border border-app rounded-xl text-sm text-white font-medium placeholder:text-app outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                       />
                     </div>
-                    <p className="text-[11px] text-slate-600 mt-2">
+                    <p className="text-[11px] text-muted-2 mt-2">
                       OTP usi email par jayega jo dukaan me register hai. Pehle shop se apna email
                       confirm karwayein.
                     </p>
@@ -412,19 +412,19 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setOtpStep("request")}
-                    className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors"
+                    className="flex items-center gap-1.5 text-xs font-bold text-muted hover:text-app-2 transition-colors"
                   >
                     <ArrowLeft size={13} /> {clientEmail} — change
                   </button>
 
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                       OTP Code
                     </label>
                     <div className="relative">
                       <KeyRound
                         size={15}
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none"
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                       />
                       <input
                         type="text"
@@ -434,7 +434,7 @@ export default function LoginPage() {
                         value={otp}
                         onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
                         required
-                        className="w-full pl-10 pr-4 py-3 bg-[#111520] border border-[#21293d] rounded-xl text-sm text-white font-medium placeholder:text-slate-700 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                        className="w-full pl-10 pr-4 py-3 bg-panel-2 border border-app rounded-xl text-sm text-white font-medium placeholder:text-app outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                       />
                     </div>
                   </div>
@@ -459,7 +459,7 @@ export default function LoginPage() {
                     type="button"
                     onClick={handleSendOtp}
                     disabled={loading}
-                    className="w-full py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-xs font-bold text-slate-400 hover:bg-[#1a2234] hover:text-white transition-all disabled:opacity-50"
+                    className="w-full py-2.5 bg-panel-2 border border-app rounded-xl text-xs font-bold text-muted hover:bg-panel-2 hover:text-white transition-all disabled:opacity-50"
                   >
                     Resend OTP
                   </button>
@@ -473,7 +473,7 @@ export default function LoginPage() {
         <div className="mt-6">
           <a
             href="/job-status"
-            className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#111520] border border-[#21293d] rounded-xl text-slate-400 text-xs font-bold hover:bg-[#1a2234] hover:text-white transition-all"
+            className="flex items-center justify-center gap-2 w-full py-2.5 bg-panel-2 border border-app rounded-xl text-muted text-xs font-bold hover:bg-panel-2 hover:text-white transition-all"
           >
             <Globe size={14} />
             Track Job Status (No Login Required)
@@ -481,10 +481,10 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-slate-700 text-[11px] mt-5 font-medium">
+        <p className="text-center text-app text-[11px] mt-5 font-medium">
           {SITE.name} · {SITE.phone}
         </p>
-        <p className="text-center text-slate-700 text-[10px] mt-1 font-medium">
+        <p className="text-center text-app text-[10px] mt-1 font-medium">
           <span
             className="px-1.5 py-0.5 rounded border border-slate-800 bg-slate-900/40"
             title={APP_VERSION_FULL}

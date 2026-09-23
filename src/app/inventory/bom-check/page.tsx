@@ -159,8 +159,8 @@ const STATUS_META: Record<
   },
   notfound: {
     label: "Not in catalog",
-    chip: "bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/30",
-    dot: "bg-slate-500",
+    chip: "bg-muted/15 text-muted-2 dark:text-muted border-muted/30",
+    dot: "bg-muted",
   },
 };
 
@@ -516,9 +516,9 @@ export default function BomCheckPage() {
   const issueCount = lines?.filter((l) => l.status === "outofstock" || l.status === "insufficient" || l.status === "notfound").length ?? 0;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0d1117] font-sans pb-16">
+    <div className="min-h-screen bg-white dark:bg-app font-sans pb-16">
       {/* ── HERO ── */}
-      <div className="relative overflow-hidden bg-white dark:bg-[#0d1117] border-b border-slate-200 dark:border-[#21293d]">
+      <div className="relative overflow-hidden bg-white dark:bg-app border-b border-app-2 dark:border-app">
         <div
           className="absolute inset-0 opacity-[0.03]"
           style={{
@@ -539,23 +539,23 @@ export default function BomCheckPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <Link href="/inventory" className="text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-300 transition-colors">
+                  <Link href="/inventory" className="text-xs text-muted hover:text-app dark:hover:text-app-2 transition-colors">
                     Inventory
                   </Link>
-                  <span className="text-slate-400 dark:text-slate-700 text-xs">/</span>
-                  <span className="text-xs text-slate-800 dark:text-slate-300">BOM Check</span>
+                  <span className="text-muted dark:text-app text-xs">/</span>
+                  <span className="text-xs text-app dark:text-app-2">BOM Check</span>
                 </div>
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-0.5">
+                <h1 className="text-xl sm:text-2xl font-black text-app dark:text-white tracking-tight mt-0.5">
                   BOM Checker
                 </h1>
-                <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
+                <p className="text-muted dark:text-muted text-sm mt-0.5">
                   Component list paste karein — live stock + AI Hinglish summary.
                 </p>
               </div>
             </div>
             <button
               onClick={() => { void loadCatalog(); }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#21293d] dark:hover:bg-[#2a3348] text-slate-600 dark:text-slate-300 text-sm font-semibold transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3348] text-muted-2 dark:text-app-2 text-sm font-semibold transition-colors"
             >
               <RefreshCw size={15} /> Reload Catalog
             </button>
@@ -566,29 +566,29 @@ export default function BomCheckPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid lg:grid-cols-5 gap-6">
         {/* ── Input ── */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white dark:bg-[#161b25] border border-slate-200 dark:border-[#21293d] rounded-2xl p-5">
+          <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
-              <ClipboardList size={16} className="text-slate-500 dark:text-slate-400" />
-              <h2 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">BOM input</h2>
+              <ClipboardList size={16} className="text-muted dark:text-muted" />
+              <h2 className="text-sm font-black text-app dark:text-white tracking-tight">BOM input</h2>
             </div>
             <input
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
               placeholder="Project name (optional)"
-              className="mb-3 w-full bg-white dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/60"
+              className="mb-3 w-full bg-white dark:bg-app border border-app-2 dark:border-app rounded-xl px-3 py-2.5 text-sm text-app dark:text-white placeholder:text-muted dark:placeholder:text-muted-2 focus:outline-none focus:border-cyan-500/60"
             />
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={"NE555 Timer IC - 2\n4x IRF540N MOSFET\n10k Resistor (10)\nBC547 Transistor 5"}
               rows={10}
-              className="w-full bg-white dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/60 resize-y"
+              className="w-full bg-white dark:bg-app border border-app-2 dark:border-app rounded-xl px-3 py-2.5 text-sm text-app dark:text-white placeholder:text-muted dark:placeholder:text-muted-2 focus:outline-none focus:border-cyan-500/60 resize-y"
             />
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
                 onClick={openSaveModal}
                 disabled={!input.trim()}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#0d1117] dark:hover:bg-[#21293d] border border-slate-200 dark:border-[#21293d] text-xs font-bold text-slate-600 dark:text-slate-300 hover:border-cyan-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-panel-2 hover:bg-panel-2 dark:bg-app dark:hover:bg-panel-2 border border-app-2 dark:border-app text-xs font-bold text-muted-2 dark:text-app-2 hover:border-cyan-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Abhi likha hua BOM template ke roop me save karo"
               >
                 <Save size={13} /> Save as Template
@@ -608,8 +608,8 @@ export default function BomCheckPage() {
               Check Stock
             </button>
 
-            <div className="mt-5 pt-4 border-t border-slate-200 dark:border-[#21293d]">
-              <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-600 mb-2">
+            <div className="mt-5 pt-4 border-t border-app-2 dark:border-app">
+              <div className="text-[10px] font-black uppercase tracking-widest text-muted dark:text-muted-2 mb-2">
                 Sample BOMs
               </div>
               <div className="flex flex-wrap gap-2">
@@ -617,7 +617,7 @@ export default function BomCheckPage() {
                   <button
                     key={s.name}
                     onClick={() => setInput(s.lines)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] text-xs text-slate-600 dark:text-slate-300 hover:border-cyan-500/40 hover:text-slate-900 dark:hover:text-white transition-colors"
+                    className="px-3 py-1.5 rounded-xl bg-panel-2 dark:bg-app border border-app-2 dark:border-app text-xs text-muted-2 dark:text-app-2 hover:border-cyan-500/40 hover:text-app dark:hover:text-white transition-colors"
                   >
                     {s.name}
                   </button>
@@ -625,22 +625,22 @@ export default function BomCheckPage() {
               </div>
             </div>
 
-            <div className="mt-5 pt-4 border-t border-slate-200 dark:border-[#21293d]">
+            <div className="mt-5 pt-4 border-t border-app-2 dark:border-app">
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-600">
+                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted dark:text-muted-2">
                   <Bookmark size={12} />
                   Saved Templates
                 </div>
                 <button
                   onClick={() => void loadTemplates()}
                   title="Refresh"
-                  className="text-slate-400 dark:text-slate-600 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                  className="text-muted dark:text-muted-2 hover:text-app dark:hover:text-app-2 transition-colors"
                 >
                   <RefreshCw size={12} />
                 </button>
               </div>
               {templates.length === 0 ? (
-                <p className="text-xs text-slate-500 dark:text-slate-600">
+                <p className="text-xs text-muted dark:text-muted-2">
                   Koi saved template nahi — save karke re-use karo.
                 </p>
               ) : (
@@ -648,18 +648,18 @@ export default function BomCheckPage() {
                   {templates.map((t) => (
                     <div
                       key={t.id}
-                      className="flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] px-2.5 py-1.5"
+                      className="flex items-center gap-1.5 rounded-xl bg-panel-2 dark:bg-app border border-app-2 dark:border-app px-2.5 py-1.5"
                     >
                       <div className="min-w-0 flex-1">
                         <button
                           onClick={() => loadTemplate(t)}
                           title="Textarea me load karo"
-                          className="block w-full text-left text-xs font-bold text-slate-800 dark:text-slate-200 truncate hover:text-cyan-700 dark:hover:text-cyan-400 transition-colors"
+                          className="block w-full text-left text-xs font-bold text-app dark:text-app-2 truncate hover:text-cyan-700 dark:hover:text-cyan-400 transition-colors"
                         >
                           {t.name}
                         </button>
                         {t.description && (
-                          <p className="truncate text-[10px] text-slate-500 dark:text-slate-600">
+                          <p className="truncate text-[10px] text-muted dark:text-muted-2">
                             {t.description}
                           </p>
                         )}
@@ -667,14 +667,14 @@ export default function BomCheckPage() {
                       <button
                         onClick={() => editTemplate(t)}
                         title="Edit"
-                        className="p-1.5 rounded-lg text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-[#21293d] transition-colors"
+                        className="p-1.5 rounded-lg text-muted dark:text-muted hover:text-app dark:hover:text-white hover:bg-panel-2 dark:hover:bg-panel-2 transition-colors"
                       >
                         <Pencil size={12} />
                       </button>
                       <button
                         onClick={() => void deleteTemplate(t)}
                         title="Delete"
-                        className="p-1.5 rounded-lg text-slate-500 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-200 dark:hover:bg-[#21293d] transition-colors"
+                        className="p-1.5 rounded-lg text-muted dark:text-muted hover:text-rose-600 dark:hover:text-rose-400 hover:bg-panel-2 dark:hover:bg-panel-2 transition-colors"
                       >
                         <Trash2 size={12} />
                       </button>
@@ -689,9 +689,9 @@ export default function BomCheckPage() {
         {/* ── Results ── */}
         <div className="lg:col-span-3 space-y-4">
           {!lines ? (
-            <div className="bg-white dark:bg-[#161b25] border border-dashed border-slate-300 dark:border-[#21293d] rounded-2xl p-12 text-center">
-              <ClipboardList size={32} className="text-slate-400 dark:text-slate-700 mx-auto mb-3" />
-              <p className="text-slate-500 dark:text-slate-400 text-sm">
+            <div className="bg-white dark:bg-panel-2 border border-dashed border-app-2 dark:border-app rounded-2xl p-12 text-center">
+              <ClipboardList size={32} className="text-muted dark:text-app mx-auto mb-3" />
+              <p className="text-muted dark:text-muted text-sm">
                 Component list paste karein aur Check Stock dabayein.
               </p>
             </div>
@@ -699,20 +699,20 @@ export default function BomCheckPage() {
             <>
               {/* Summary */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white dark:bg-[#161b25] border border-slate-200 dark:border-[#21293d] rounded-2xl p-4">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-500">
+                <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-4">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-muted dark:text-muted">
                     Total parts
                   </div>
-                  <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">{lines.length}</div>
+                  <div className="text-2xl font-black text-app dark:text-white mt-1">{lines.length}</div>
                 </div>
-                <div className="bg-white dark:bg-[#161b25] border border-slate-200 dark:border-[#21293d] rounded-2xl p-4">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-500">
+                <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-4">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-muted dark:text-muted">
                     Available
                   </div>
                   <div className="text-2xl font-black text-emerald-500 dark:text-emerald-400 mt-1">{availCount}</div>
                 </div>
-                <div className="bg-white dark:bg-[#161b25] border border-slate-200 dark:border-[#21293d] rounded-2xl p-4">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-500">
+                <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-4">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-muted dark:text-muted">
                     Issues
                   </div>
                   <div className="text-2xl font-black text-rose-500 dark:text-rose-400 mt-1">{issueCount}</div>
@@ -724,7 +724,7 @@ export default function BomCheckPage() {
                       : "bg-rose-500/10 border-rose-500/30"
                   }`}
                 >
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-500">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-muted dark:text-muted">
                     Can start
                   </div>
                   <div
@@ -739,15 +739,15 @@ export default function BomCheckPage() {
               </div>
 
               {/* Line table */}
-              <div className="bg-white dark:bg-[#161b25] border border-slate-200 dark:border-[#21293d] rounded-2xl overflow-hidden">
-                <div className="px-5 py-3 border-b border-slate-200 dark:border-[#21293d] flex items-center gap-2">
-                  <Layers size={15} className="text-slate-500 dark:text-slate-400" />
-                  <h2 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">Line details</h2>
+              <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl overflow-hidden">
+                <div className="px-5 py-3 border-b border-app-2 dark:border-app flex items-center gap-2">
+                  <Layers size={15} className="text-muted dark:text-muted" />
+                  <h2 className="text-sm font-black text-app dark:text-white tracking-tight">Line details</h2>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-slate-50 dark:bg-[#111520] text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-600 text-left">
+                      <tr className="bg-slate-50 dark:bg-panel-2 text-[10px] font-black uppercase tracking-widest text-muted dark:text-muted-2 text-left">
                         <th className="px-4 py-2.5">Component</th>
                         <th className="px-4 py-2.5">Matched</th>
                         <th className="px-4 py-2.5 text-center">Need</th>
@@ -761,11 +761,11 @@ export default function BomCheckPage() {
                         const meta = STATUS_META[l.status];
                         const sups = l.product ? (suppliers.get(l.product.id) || []) : [];
                         return (
-                          <tr key={l.key} className="border-t border-slate-100 dark:border-[#1a2134] hover:bg-slate-50 dark:hover:bg-[#0d1117]/40">
+                          <tr key={l.key} className="border-t border-app-2 dark:border-app-2 hover:bg-slate-50 dark:hover:bg-app/40">
                             <td className="px-4 py-3 align-top">
-                              <div className="text-slate-900 dark:text-white font-semibold">{l.rawName}</div>
+                              <div className="text-app dark:text-white font-semibold">{l.rawName}</div>
                               {sups.length > 0 && (
-                                <div className="text-[10px] text-slate-500 dark:text-slate-600 mt-1">
+                                <div className="text-[10px] text-muted dark:text-muted-2 mt-1">
                                   Suppliers: {sups.map((s) => s.name).join(", ")}
                                 </div>
                               )}
@@ -773,11 +773,11 @@ export default function BomCheckPage() {
                             <td className="px-4 py-3 align-top">
                               {l.product ? (
                                 <div>
-                                  <div className="text-slate-700 dark:text-slate-200">{l.product.name}</div>
-                                  <div className="text-[10px] text-slate-500 dark:text-slate-600">id {l.product.id}</div>
+                                  <div className="text-app dark:text-app-2">{l.product.name}</div>
+                                  <div className="text-[10px] text-muted dark:text-muted-2">id {l.product.id}</div>
                                   {l.alternates.length > 0 && (
-                                    <div className="mt-2 border-t border-slate-100 dark:border-[#1a2134] pt-1.5">
-                                      <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                    <div className="mt-2 border-t border-app-2 dark:border-app-2 pt-1.5">
+                                      <div className="text-[10px] font-bold uppercase tracking-wide text-muted dark:text-muted">
                                         Other matches ({l.alternates.length})
                                       </div>
                                       <div className="mt-1 space-y-1">
@@ -786,9 +786,9 @@ export default function BomCheckPage() {
                                             key={alt.product.id}
                                             className="flex items-baseline justify-between gap-2 text-[11px]"
                                           >
-                                            <span className="text-slate-600 dark:text-slate-300">
+                                            <span className="text-muted-2 dark:text-app-2">
                                               {alt.product.name}
-                                              <span className="text-slate-400 dark:text-slate-500"> #{alt.product.id}</span>
+                                              <span className="text-muted dark:text-muted"> #{alt.product.id}</span>
                                             </span>
                                             <span
                                               className={`font-bold whitespace-nowrap ${
@@ -806,18 +806,18 @@ export default function BomCheckPage() {
                                   )}
                                 </div>
                               ) : (
-                                <span className="text-[11px] text-slate-500 dark:text-slate-600">—</span>
+                                <span className="text-[11px] text-muted dark:text-muted-2">—</span>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-center text-slate-900 dark:text-white font-semibold">{l.qty}</td>
-                            <td className="px-4 py-3 text-center font-black text-slate-700 dark:text-slate-200">
+                            <td className="px-4 py-3 text-center text-app dark:text-white font-semibold">{l.qty}</td>
+                            <td className="px-4 py-3 text-center font-black text-app dark:text-app-2">
                               {l.available}
                             </td>
                             <td className="px-4 py-3 text-center">
                               {l.available < l.qty ? (
                                 <span className="text-rose-600 dark:text-rose-400 font-black">-{l.deficit}</span>
                               ) : (
-                                <span className="text-slate-500 dark:text-slate-600">0</span>
+                                <span className="text-muted dark:text-muted-2">0</span>
                               )}
                             </td>
                             <td className="px-4 py-3">
@@ -839,14 +839,14 @@ export default function BomCheckPage() {
               </div>
 
               {/* AI summary */}
-              <div className="bg-white dark:bg-[#161b25] border border-slate-200 dark:border-[#21293d] rounded-2xl p-5">
+              <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5">
                 {analysis ? (
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Sparkles size={16} className="text-cyan-500 dark:text-cyan-400" />
-                      <h2 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">AI Analysis</h2>
+                      <h2 className="text-sm font-black text-app dark:text-white tracking-tight">AI Analysis</h2>
                     </div>
-                    <div className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                    <div className="whitespace-pre-wrap text-sm text-app dark:text-app-2 leading-relaxed">
                       {analysis}
                     </div>
                   </div>
@@ -854,7 +854,7 @@ export default function BomCheckPage() {
                   <button
                     onClick={() => void runAnalysis()}
                     disabled={analyzing || !hasIssues}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-100 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] text-cyan-700 dark:text-cyan-300 hover:border-cyan-500/40 hover:text-slate-900 dark:hover:text-white text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-panel-2 dark:bg-app border border-app-2 dark:border-app text-cyan-700 dark:text-cyan-300 hover:border-cyan-500/40 hover:text-app dark:hover:text-white text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {analyzing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                     {analyzing ? "Analyzing..." : hasIssues ? "Check with AI" : "Sab stock available hai"}
@@ -862,7 +862,7 @@ export default function BomCheckPage() {
                 )}
 
                 {!analysis && !hasIssues && lines.length > 0 && (
-                  <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-600 text-center">
+                  <p className="mt-2 text-[11px] text-muted dark:text-muted-2 text-center">
                     AI summary enabled sirf issues hone pe (kuch kharida/nahi mila) — sab theek ho to zaroorat nahi.
                   </p>
                 )}
@@ -882,15 +882,15 @@ export default function BomCheckPage() {
       {/* ── Template save/edit modal (Phase 3) ── */}
       {tmplModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm bg-white dark:bg-[#161b25] border border-slate-200 dark:border-[#21293d] rounded-2xl p-5 space-y-3">
+          <div className="w-full max-w-sm bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
+              <h3 className="text-sm font-black text-app dark:text-white tracking-tight">
                 {tmplModal.mode === "edit" ? "Edit Template" : "Save as Template"}
               </h3>
               <button
                 onClick={() => setTmplModal(null)}
                 disabled={tmplBusy}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-[#21293d] transition-colors"
+                className="p-1.5 rounded-lg text-muted hover:text-app dark:hover:text-white hover:bg-panel-2 dark:hover:bg-panel-2 transition-colors"
               >
                 <X size={16} />
               </button>
@@ -899,14 +899,14 @@ export default function BomCheckPage() {
               value={tmplName}
               onChange={(e) => setTmplName(e.target.value)}
               placeholder="Template naam (e.g. Motor Driver BOM)"
-              className="w-full bg-white dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/60"
+              className="w-full bg-white dark:bg-app border border-app-2 dark:border-app rounded-xl px-3 py-2.5 text-sm text-app dark:text-white placeholder:text-muted dark:placeholder:text-muted-2 focus:outline-none focus:border-cyan-500/60"
             />
             <textarea
               value={tmplDesc}
               onChange={(e) => setTmplDesc(e.target.value)}
               rows={2}
               placeholder="Note (optional)"
-              className="w-full bg-white dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/60 resize-y"
+              className="w-full bg-white dark:bg-app border border-app-2 dark:border-app rounded-xl px-3 py-2.5 text-sm text-app dark:text-white placeholder:text-muted dark:placeholder:text-muted-2 focus:outline-none focus:border-cyan-500/60 resize-y"
             />
             {tmplMsg && (
               <p className="text-xs font-semibold text-rose-600 dark:text-rose-400">{tmplMsg}</p>
@@ -915,7 +915,7 @@ export default function BomCheckPage() {
               <button
                 onClick={() => setTmplModal(null)}
                 disabled={tmplBusy}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-[#0d1117] border border-slate-200 dark:border-[#21293d] text-xs font-bold text-slate-600 dark:text-slate-300 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 rounded-xl bg-panel-2 dark:bg-app border border-app-2 dark:border-app text-xs font-bold text-muted-2 dark:text-app-2 disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>

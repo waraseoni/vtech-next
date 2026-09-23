@@ -82,10 +82,10 @@ interface BulkRow {
 }
 
 const iCls =
-  "w-full px-2.5 py-2 bg-[#0d1117] border border-[#21293d] rounded-lg text-xs text-white outline-none focus:border-blue-500/60 transition-all";
+  "w-full px-2.5 py-2 bg-app border border-app rounded-lg text-xs text-white outline-none focus:border-blue-500/60 transition-all";
 const iClsErr =
-  "w-full px-2.5 py-2 bg-[#0d1117] border border-red-500/60 rounded-lg text-xs text-white outline-none focus:border-red-400 transition-all";
-const lCls = "block text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-1";
+  "w-full px-2.5 py-2 bg-app border border-red-500/60 rounded-lg text-xs text-white outline-none focus:border-red-400 transition-all";
+const lCls = "block text-[9px] font-bold uppercase tracking-wider text-muted mb-1";
 const fieldErr = (fields: string[] | undefined, key: string) => fields?.includes(key);
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -363,17 +363,17 @@ export default function BulkJobPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
+    <div className="min-h-screen bg-app font-sans pb-16">
       <div className="max-w-[1200px] mx-auto px-3 sm:px-5 pt-4 space-y-4">
         {/* ── Header ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+        <div className="bg-panel border border-app rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center">
               <Wrench size={18} className="text-white" />
             </div>
             <div>
               <h1 className="text-lg font-black text-white">Bulk Job Sheet Entry</h1>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+              <p className="text-[10px] text-muted uppercase tracking-wider">
                 Multi-item entry · Start Job ID:
                 <span className="ml-1 text-amber-400 font-black">#{baseJobId}</span>
               </p>
@@ -382,7 +382,7 @@ export default function BulkJobPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/jobs"
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-300 rounded-xl text-xs font-bold no-underline transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 bg-panel-2 border border-app-2 hover:bg-panel-2 text-app-2 rounded-xl text-xs font-bold no-underline transition-all"
             >
               <ArrowLeft size={13} /> Cancel
             </Link>
@@ -406,10 +406,10 @@ export default function BulkJobPage() {
         </div>
 
         {/* ── Client + Global Mechanic ── */}
-        <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-5">
+        <div className="bg-panel border border-app rounded-2xl p-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted mb-1.5">
                 Client Name <span className="text-red-400">*</span>
               </label>
               <SearchableSelect
@@ -424,7 +424,7 @@ export default function BulkJobPage() {
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted mb-1.5">
                 Default Mechanic (sabhi rows ke liye)
               </label>
               <SearchableSelect
@@ -434,7 +434,7 @@ export default function BulkJobPage() {
                 placeholder="Select Default Mechanic"
                 clearLabel="Select Default Mechanic"
               />
-              <p className="text-[9px] text-slate-600 mt-1.5">
+              <p className="text-[9px] text-muted-2 mt-1.5">
                 Select karne par sabhi rows (purani aur nayi dono) me apply hota hai
               </p>
             </div>
@@ -459,10 +459,10 @@ export default function BulkJobPage() {
         )}
 
         {/* ── Desktop Table View ── */}
-        <div className="hidden md:block bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
+        <div className="hidden md:block bg-panel border border-app rounded-2xl overflow-hidden">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-emerald-900/40 border-b border-[#21293d]">
+              <tr className="bg-emerald-900/40 border-b border-app">
                 <th className="px-3 py-3 text-center text-[9px] font-black text-emerald-300 uppercase w-10">
                   #
                 </th>
@@ -498,7 +498,7 @@ export default function BulkJobPage() {
                       rErrs ? "bg-red-500/[0.05]" : "hover:bg-white/[0.015]"
                     }`}
                   >
-                    <td className="px-3 py-2.5 text-center text-slate-600 font-bold">
+                    <td className="px-3 py-2.5 text-center text-muted-2 font-bold">
                       {i + 1}
                       {rErrs && (
                         <span className="block text-[8px] text-red-400 font-black uppercase">
@@ -507,8 +507,8 @@ export default function BulkJobPage() {
                       )}
                     </td>
                     <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-1 bg-[#0d1117] border border-[#21293d] rounded-lg px-2.5 py-1.5 justify-center">
-                        <Hash size={10} className="text-slate-600" />
+                      <div className="flex items-center gap-1 bg-app border border-app rounded-lg px-2.5 py-1.5 justify-center">
+                        <Hash size={10} className="text-muted-2" />
                         <span className="text-amber-400 font-black text-xs">{row.estJobId}</span>
                       </div>
                     </td>
@@ -594,13 +594,13 @@ export default function BulkJobPage() {
               <div
                 key={row.id}
                 data-bulk-row={row.id}
-                className={`bg-[#161b27] border rounded-2xl p-4 relative ${
+                className={`bg-panel border rounded-2xl p-4 relative ${
                   rErrs
                     ? "border-red-500/60 border-l-4 border-l-red-500"
-                    : "border-[#21293d] border-l-4 border-l-emerald-500"
+                    : "border-app border-l-4 border-l-emerald-500"
                 }`}
               >
-                <span className="absolute top-3 right-4 text-slate-700 font-black text-lg">
+                <span className="absolute top-3 right-4 text-app font-black text-lg">
                   #{i + 1}
                 </span>
                 {rErrs && (
@@ -611,8 +611,8 @@ export default function BulkJobPage() {
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>
                     <label className={lCls}>Job ID (Est.)</label>
-                    <div className="flex items-center gap-1 bg-[#0d1117] border border-[#21293d] rounded-lg px-2.5 py-2">
-                      <Hash size={10} className="text-slate-600" />
+                    <div className="flex items-center gap-1 bg-app border border-app rounded-lg px-2.5 py-2">
+                      <Hash size={10} className="text-muted-2" />
                       <span className="text-amber-400 font-black text-xs">{row.estJobId}</span>
                     </div>
                   </div>
@@ -696,12 +696,12 @@ export default function BulkJobPage() {
         <div className="flex items-center justify-between flex-wrap gap-3 py-2">
           <button
             onClick={addRow}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#1e2637] border border-[#2a3550] hover:bg-[#252f45] text-slate-300 rounded-xl text-sm font-bold transition-all"
+            className="flex items-center gap-2 px-5 py-2.5 bg-panel-2 border border-app-2 hover:bg-panel-2 text-app-2 rounded-xl text-sm font-bold transition-all"
           >
             <Plus size={15} /> Add New Row
           </button>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-600">
+            <span className="text-xs text-muted-2">
               {rows.filter((r) => r.item.trim() && r.fault.trim()).length} / {rows.length} rows
               filled
             </span>

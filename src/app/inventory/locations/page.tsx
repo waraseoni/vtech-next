@@ -391,13 +391,13 @@ export default function LocationsPage() {
         ].map((s) => (
           <div
             key={s.label}
-            className="bg-[#161b27] border border-[#21293d] rounded-2xl p-4 flex items-center gap-3"
+            className="bg-panel border border-app rounded-2xl p-4 flex items-center gap-3"
           >
-            <div className={`p-2.5 rounded-xl bg-[#0d1117] ${s.color}`}>
+            <div className={`p-2.5 rounded-xl bg-app ${s.color}`}>
               <s.icon size={18} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                 {s.label}
               </p>
               <p className="text-xl font-black text-white">{s.value}</p>
@@ -407,29 +407,29 @@ export default function LocationsPage() {
       </div>
 
       {/* ─── Main Table Card ─────────────────────────────────────────── */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-[#21293d] flex items-center justify-between flex-wrap gap-3">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-app flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
               />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search locations..."
-                className="pl-9 pr-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-blue-500 w-64"
+                className="pl-9 pr-4 py-2 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-app outline-none focus:border-blue-500 w-64"
               />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-2">
               {filtered.length} of {rows.length}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push("/inventory/locations/manage")}
-              className="flex items-center gap-2 px-4 py-2 bg-[#111520] border border-[#21293d] text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
             >
               <Settings2 size={14} /> Manage Hierarchy
             </button>
@@ -450,18 +450,18 @@ export default function LocationsPage() {
 
         {loading ? (
           <div className="px-5 py-12 text-center">
-            <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">
+            <Loader2 size={24} className="animate-spin text-muted-2 mx-auto mb-2" />
+            <p className="text-muted-2 text-xs font-extrabold uppercase tracking-widest">
               Loading...
             </p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="px-5 py-12 text-center text-slate-600 text-sm">No locations found.</div>
+          <div className="px-5 py-12 text-center text-muted-2 text-sm">No locations found.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[#111520]">
-                <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+              <thead className="bg-panel-2">
+                <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                   <th className="text-left px-4 py-3 w-24">Code</th>
                   <th className="text-left px-4 py-3">Zone</th>
                   <th className="text-left px-4 py-3">Rack</th>
@@ -496,8 +496,8 @@ export default function LocationsPage() {
       {/* ─── Add / Edit Modal ────────────────────────────────────────── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-5 border-b border-app">
               <h3 className="font-bold text-white flex items-center gap-2">
                 {editing ? (
                   <>
@@ -511,7 +511,7 @@ export default function LocationsPage() {
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+                className="p-1.5 rounded-lg hover:bg-white/10 text-muted transition"
               >
                 <X size={16} />
               </button>
@@ -525,7 +525,7 @@ export default function LocationsPage() {
 
               {/* Zone */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Zone <span className="text-red-400">*</span>
                 </label>
                 <select
@@ -540,7 +540,7 @@ export default function LocationsPage() {
                       box_id: null,
                     }));
                   }}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                 >
                   <option value="">Select Zone...</option>
                   {hierarchy.zones
@@ -555,7 +555,7 @@ export default function LocationsPage() {
 
               {/* Rack */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Rack
                 </label>
                 <select
@@ -565,7 +565,7 @@ export default function LocationsPage() {
                     setForm((f) => ({ ...f, rack_id: v, bin_id: null, box_id: null }));
                   }}
                   disabled={!form.zone_id}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500 disabled:opacity-40"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500 disabled:opacity-40"
                 >
                   <option value="">Select Rack...</option>
                   {hierarchy.racks
@@ -580,7 +580,7 @@ export default function LocationsPage() {
 
               {/* Bin */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Bin / Drawer
                 </label>
                 <select
@@ -590,7 +590,7 @@ export default function LocationsPage() {
                     setForm((f) => ({ ...f, bin_id: v, box_id: null }));
                   }}
                   disabled={!form.rack_id}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500 disabled:opacity-40"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500 disabled:opacity-40"
                 >
                   <option value="">Select Bin...</option>
                   {hierarchy.bins
@@ -605,9 +605,9 @@ export default function LocationsPage() {
 
               {/* Box */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Box{" "}
-                  <span className="text-slate-700 normal-case tracking-normal font-normal">
+                  <span className="text-app normal-case tracking-normal font-normal">
                     (optional)
                   </span>
                 </label>
@@ -620,7 +620,7 @@ export default function LocationsPage() {
                     }))
                   }
                   disabled={!form.bin_id}
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500 disabled:opacity-40"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500 disabled:opacity-40"
                 >
                   <option value="">Select Box...</option>
                   {hierarchy.boxes
@@ -635,9 +635,9 @@ export default function LocationsPage() {
 
               {/* Label */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
                   Label{" "}
-                  <span className="text-slate-700 normal-case tracking-normal font-normal">
+                  <span className="text-app normal-case tracking-normal font-normal">
                     (optional)
                   </span>
                 </label>
@@ -645,14 +645,14 @@ export default function LocationsPage() {
                   value={form.label}
                   onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
                   placeholder="e.g. Near entrance, Top shelf"
-                  className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white placeholder:text-slate-700 outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                 />
               </div>
 
               {/* Code Preview */}
               {previewCode && (
                 <div className="flex items-center gap-2 p-3 bg-blue-500/5 border border-blue-500/20 rounded-xl">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-muted-2">
                     Code:
                   </span>
                   <span className="text-sm font-mono font-bold text-blue-400">{previewCode}</span>
@@ -678,7 +678,7 @@ export default function LocationsPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-2.5 bg-[#111520] border border-[#21293d] text-slate-400 rounded-xl font-bold text-sm hover:bg-[#1a2234] transition"
+                  className="px-6 py-2.5 bg-panel-2 border border-app text-muted rounded-xl font-bold text-sm hover:bg-panel-2 transition"
                 >
                   Cancel
                 </button>
@@ -691,14 +691,14 @@ export default function LocationsPage() {
       {/* ─── QR Code Modal ───────────────────────────────────────────── */}
       {qrModalLoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#161b27] border border-[#21293d] rounded-2xl w-full max-w-sm shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between p-5 border-b border-[#21293d]">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-sm shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-5 border-b border-app">
               <h3 className="font-bold text-white flex items-center gap-2">
                 <QrCode size={16} className="text-blue-400" /> Location QR Code
               </h3>
               <button
                 onClick={() => setQrModalLoc(null)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 transition"
+                className="p-1.5 rounded-lg hover:bg-white/10 text-muted transition"
               >
                 <X size={16} />
               </button>
@@ -721,9 +721,9 @@ export default function LocationsPage() {
                 )}
                 <p className="text-sm font-bold text-white">{locPath(toParts(qrModalLoc))}</p>
                 {qrModalLoc.label && (
-                  <p className="text-xs text-slate-500 mt-0.5">{qrModalLoc.label}</p>
+                  <p className="text-xs text-muted mt-0.5">{qrModalLoc.label}</p>
                 )}
-                <p className="text-[10px] text-slate-600 mt-1 font-mono break-all">
+                <p className="text-[10px] text-muted-2 mt-1 font-mono break-all">
                   {qrToken(toParts(qrModalLoc))}
                 </p>
               </div>
@@ -773,42 +773,42 @@ function LocationRow({
               {loc.code}
             </span>
           ) : (
-            <span className="text-slate-700 text-xs">—</span>
+            <span className="text-app text-xs">—</span>
           )}
         </td>
         <td className="px-4 py-3.5">
           {loc.zone ? (
-            <span className="font-bold text-slate-200 text-xs">{loc.zone}</span>
+            <span className="font-bold text-app-2 text-xs">{loc.zone}</span>
           ) : (
-            <span className="text-slate-700 text-xs">—</span>
+            <span className="text-app text-xs">—</span>
           )}
         </td>
         <td className="px-4 py-3.5">
           {loc.rack ? (
-            <span className="text-slate-300 text-xs">{loc.rack}</span>
+            <span className="text-app-2 text-xs">{loc.rack}</span>
           ) : (
-            <span className="text-slate-700 text-xs">—</span>
+            <span className="text-app text-xs">—</span>
           )}
         </td>
         <td className="px-4 py-3.5">
           {loc.bin ? (
-            <span className="text-slate-300 text-xs">{loc.bin}</span>
+            <span className="text-app-2 text-xs">{loc.bin}</span>
           ) : (
-            <span className="text-slate-700 text-xs">—</span>
+            <span className="text-app text-xs">—</span>
           )}
         </td>
         <td className="px-4 py-3.5">
           {loc.box ? (
-            <span className="text-slate-300 text-xs">{loc.box}</span>
+            <span className="text-app-2 text-xs">{loc.box}</span>
           ) : (
-            <span className="text-slate-700 text-xs">—</span>
+            <span className="text-app text-xs">—</span>
           )}
         </td>
         <td className="px-4 py-3.5">
           {loc.label ? (
-            <span className="text-slate-400 text-xs">{loc.label}</span>
+            <span className="text-muted text-xs">{loc.label}</span>
           ) : (
-            <span className="text-slate-700 text-xs">—</span>
+            <span className="text-app text-xs">—</span>
           )}
         </td>
         <td className="px-4 py-3.5 text-center">
@@ -827,7 +827,7 @@ function LocationRow({
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
               loc.status === 1
                 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-                : "bg-slate-500/10 border-slate-500/20 text-slate-500 hover:bg-slate-500/20"
+                : "bg-muted/10 border-muted/20 text-muted hover:bg-muted/20"
             }`}
           >
             {loc.status === 1 ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
@@ -861,15 +861,15 @@ function LocationRow({
       </tr>
       {isExpanded && loc.products.length > 0 && (
         <tr>
-          <td colSpan={9} className="px-6 py-3 bg-[#111520]">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-2">
+          <td colSpan={9} className="px-6 py-3 bg-panel-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-2 mb-2">
               Products at this location
             </p>
             <div className="flex flex-wrap gap-2">
               {loc.products.map((p) => (
                 <span
                   key={p.id}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#161b27] border border-[#21293d] text-xs text-slate-300"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-panel border border-app text-xs text-app-2"
                 >
                   <Package size={11} className="text-violet-500" />
                   {p.name}
@@ -881,8 +881,8 @@ function LocationRow({
       )}
       {isExpanded && loc.products.length === 0 && (
         <tr>
-          <td colSpan={9} className="px-6 py-3 bg-[#111520]">
-            <p className="text-xs text-slate-600 italic">No products assigned to this location.</p>
+          <td colSpan={9} className="px-6 py-3 bg-panel-2">
+            <p className="text-xs text-muted-2 italic">No products assigned to this location.</p>
           </td>
         </tr>
       )}

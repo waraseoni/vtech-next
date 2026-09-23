@@ -156,41 +156,41 @@ export default function ProductsPage() {
   return (
     <AdminPage title="Products" subtitle="Product catalog management" allowStaff>
       {/* Header */}
-      <div className="bg-[#161b27] border border-[#21293d] rounded-2xl overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-[#21293d] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-app flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 min-w-[180px]">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
               />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search products..."
-                className="pl-9 pr-4 py-2 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-slate-200 placeholder:text-slate-700 outline-none focus:border-blue-500 w-full sm:w-64"
+                className="pl-9 pr-4 py-2 bg-app border border-app rounded-xl text-sm text-app-2 placeholder:text-app outline-none focus:border-blue-500 w-full sm:w-64"
               />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-2">
               {filtered.length} of {rows.length} products
             </span>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               href="/inventory"
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 bg-app border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
             >
               <Boxes size={13} /> Inventory
             </Link>
             <Link
               href="/inventory/locate"
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 bg-app border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
             >
               <MapPin size={13} /> Spare Finder
             </Link>
             <Link
               href="/inventory/purchase-orders"
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#0d1117] border border-[#21293d] text-slate-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 bg-app border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
             >
               <FileText size={13} /> POs
             </Link>
@@ -211,20 +211,20 @@ export default function ProductsPage() {
 
         {loading ? (
           <div className="px-5 py-12 text-center">
-            <Loader2 size={24} className="animate-spin text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-600 text-xs font-extrabold uppercase tracking-widest">
+            <Loader2 size={24} className="animate-spin text-muted-2 mx-auto mb-2" />
+            <p className="text-muted-2 text-xs font-extrabold uppercase tracking-widest">
               Loading...
             </p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="px-5 py-12 text-center text-slate-600 text-sm">No products found.</div>
+          <div className="px-5 py-12 text-center text-muted-2 text-sm">No products found.</div>
         ) : (
           <>
             {!isMobile && (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-[#111520]">
-                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                  <thead className="bg-panel-2">
+                    <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
                       <th className="text-left px-4 py-3">Product Name</th>
                       <th className="text-left px-4 py-3">Description</th>
                       <th className="text-center px-4 py-3">HSN</th>
@@ -252,7 +252,7 @@ export default function ProductsPage() {
                                   alt={p.name}
                                   width={48}
                                   height={48}
-                                  className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+                                  className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-app cursor-zoom-in"
                                   onDoubleClick={(e) => {
                                     e.stopPropagation();
                                     openImageLightbox(p.image_path, p.name);
@@ -264,11 +264,11 @@ export default function ProductsPage() {
                               ) : (
                                 <Package size={14} className="text-amber-500 flex-shrink-0" />
                               )}
-                              <span className="font-bold text-slate-200">{p.name}</span>
+                              <span className="font-bold text-app-2">{p.name}</span>
                             </div>
                           </td>
                           <td
-                            className="px-4 py-3.5 text-slate-500 text-xs max-w-[180px] truncate"
+                            className="px-4 py-3.5 text-muted text-xs max-w-[180px] truncate"
                             title={p.description || ""}
                           >
                             {p.description || "—"}
@@ -279,7 +279,7 @@ export default function ProductsPage() {
                                 {p.hsn}
                               </span>
                             ) : (
-                              <span className="text-slate-700 text-xs">—</span>
+                              <span className="text-app text-xs">—</span>
                             )}
                           </td>
                           <td className="px-4 py-3.5 text-center">
@@ -288,10 +288,10 @@ export default function ProductsPage() {
                                 {p.barcode}
                               </span>
                             ) : (
-                              <span className="text-slate-700 text-xs">—</span>
+                              <span className="text-app text-xs">—</span>
                             )}
                           </td>
-                          <td className="px-4 py-3.5 text-right text-slate-400">
+                          <td className="px-4 py-3.5 text-right text-muted">
                             {inr(p.cost_price)}
                           </td>
                           <td className="px-4 py-3.5 text-right">
@@ -305,7 +305,7 @@ export default function ProductsPage() {
                                 {margin.toFixed(1)}%
                               </span>
                             ) : (
-                              <span className="text-slate-700 text-xs">—</span>
+                              <span className="text-app text-xs">—</span>
                             )}
                           </td>
                           <td className="px-4 py-3.5 text-center">
@@ -314,7 +314,7 @@ export default function ProductsPage() {
                               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
                                 p.status === 1
                                   ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-                                  : "bg-slate-500/10 border-slate-500/20 text-slate-500 hover:bg-slate-500/20"
+                                  : "bg-muted/10 border-muted/20 text-muted hover:bg-muted/20"
                               }`}
                             >
                               {p.status === 1 ? (
@@ -348,10 +348,10 @@ export default function ProductsPage() {
                     })}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-[#111520] border-t border-[#21293d]">
+                    <tr className="bg-panel-2 border-t border-app">
                       <td
                         colSpan={4}
-                        className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-wider text-slate-600"
+                        className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-wider text-muted-2"
                       >
                         Total Value:
                       </td>
@@ -383,7 +383,7 @@ export default function ProductsPage() {
                               alt={p.name}
                               width={40}
                               height={40}
-                              className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-[#21293d] cursor-zoom-in"
+                              className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-app cursor-zoom-in"
                               onDoubleClick={(e) => {
                                 e.stopPropagation();
                                 openImageLightbox(p.image_path, p.name);
@@ -393,15 +393,15 @@ export default function ProductsPage() {
                               }}
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-[#21293d] flex items-center justify-center flex-shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-app flex items-center justify-center flex-shrink-0">
                               <Package size={16} className="text-amber-500" />
                             </div>
                           )}
                           <div className="min-w-0">
-                            <div className="font-bold text-slate-200 text-sm truncate">
+                            <div className="font-bold text-app-2 text-sm truncate">
                               {p.name}
                             </div>
-                            <div className="text-xs text-slate-600 truncate">
+                            <div className="text-xs text-muted-2 truncate">
                               {p.description || "—"}
                             </div>
                           </div>
@@ -411,7 +411,7 @@ export default function ProductsPage() {
                           className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
                             p.status === 1
                               ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-                              : "bg-slate-500/10 border-slate-500/20 text-slate-500 hover:bg-slate-500/20"
+                              : "bg-muted/10 border-muted/20 text-muted hover:bg-muted/20"
                           }`}
                         >
                           {p.status === 1 ? <ToggleRight size={13} /> : <ToggleLeft size={13} />}
@@ -431,34 +431,34 @@ export default function ProductsPage() {
                             {p.barcode}
                           </span>
                         ) : (
-                          <span className="text-slate-700 text-[10px]">No barcode</span>
+                          <span className="text-app text-[10px]">No barcode</span>
                         )}
                       </div>
 
                       {/* Prices row */}
                       <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-[#0d1117] border border-[#1a2234] rounded-xl px-2 py-2 text-center">
-                          <div className="text-[8px] font-black uppercase tracking-widest text-slate-600">
+                        <div className="bg-app border border-app-2 rounded-xl px-2 py-2 text-center">
+                          <div className="text-[8px] font-black uppercase tracking-widest text-muted-2">
                             Cost
                           </div>
-                          <div className="text-slate-400 text-xs font-bold mt-0.5">
+                          <div className="text-muted text-xs font-bold mt-0.5">
                             {inr(p.cost_price)}
                           </div>
                         </div>
-                        <div className="bg-[#0d1117] border border-[#1a2234] rounded-xl px-2 py-2 text-center">
-                          <div className="text-[8px] font-black uppercase tracking-widest text-slate-600">
+                        <div className="bg-app border border-app-2 rounded-xl px-2 py-2 text-center">
+                          <div className="text-[8px] font-black uppercase tracking-widest text-muted-2">
                             Selling
                           </div>
                           <div className="text-emerald-400 text-xs font-black mt-0.5">
                             {inr(p.price)}
                           </div>
                         </div>
-                        <div className="bg-[#0d1117] border border-[#1a2234] rounded-xl px-2 py-2 text-center">
-                          <div className="text-[8px] font-black uppercase tracking-widest text-slate-600">
+                        <div className="bg-app border border-app-2 rounded-xl px-2 py-2 text-center">
+                          <div className="text-[8px] font-black uppercase tracking-widest text-muted-2">
                             Margin
                           </div>
                           <div
-                            className={`text-xs font-black mt-0.5 ${margin !== null ? (margin >= 20 ? "text-emerald-400" : margin >= 10 ? "text-amber-400" : "text-red-400") : "text-slate-600"}`}
+                            className={`text-xs font-black mt-0.5 ${margin !== null ? (margin >= 20 ? "text-emerald-400" : margin >= 10 ? "text-amber-400" : "text-red-400") : "text-muted-2"}`}
                           >
                             {margin !== null ? `${margin.toFixed(1)}%` : "—"}
                           </div>
@@ -485,8 +485,8 @@ export default function ProductsPage() {
                     </div>
                   );
                 })}
-                <div className="px-4 py-3 bg-[#111520] flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                <div className="px-4 py-3 bg-panel-2 flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-muted-2">
                     Total Value:
                   </span>
                   <span className="font-black text-emerald-400">{inr(totalValue)}</span>
@@ -498,13 +498,13 @@ export default function ProductsPage() {
 
         {/* Pagination */}
         {filtered.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-[#21293d]">
-            <div className="flex items-center gap-2 text-[11px] text-slate-600 font-bold">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-app">
+            <div className="flex items-center gap-2 text-[11px] text-muted-2 font-bold">
               <span>Show</span>
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                className="bg-[#0d1117] border border-[#21293d] text-slate-300 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60"
+                className="bg-app border border-app text-app-2 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500/60"
               >
                 {[10, 25, 50, 100, 0].map((n) => (
                   <option key={n} value={n}>
@@ -518,17 +518,17 @@ export default function ProductsPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={safePage <= 1}
-                className="px-3 py-1.5 bg-[#0d1117] border border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 bg-app border border-app hover:border-blue-500/40 text-muted hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Prev
               </button>
-              <span className="px-3 py-1.5 text-[11px] font-black text-slate-400 bg-[#0d1117] border border-[#21293d] rounded-lg">
+              <span className="px-3 py-1.5 text-[11px] font-black text-muted bg-app border border-app rounded-lg">
                 {safePage} / {pageCount}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
                 disabled={safePage >= pageCount}
-                className="px-3 py-1.5 bg-[#0d1117] border border-[#21293d] hover:border-blue-500/40 text-slate-400 hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 bg-app border border-app hover:border-blue-500/40 text-muted hover:text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Next
               </button>
