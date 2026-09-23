@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.27.0](https://github.com/waraseoni/vtech-next/compare/v1.26.0...v1.27.0) (2026-09-23)
+
+### Features
+
+* **ui:** Phase 1a semantic tokens — remove dark/light !important override layer ([bd6d899](https://github.com/waraseoni/vtech-next/commit/bd6d89963b705afc6f96ddc0ef19165607fdf874))
+
 ## [1.26.0](https://github.com/waraseoni/vtech-next/compare/v1.25.1...v1.26.0) (2026-09-23)
 
 ### Features
